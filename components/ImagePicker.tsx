@@ -349,25 +349,10 @@ export function ImagePicker({
           </div>
 
           <div className="image-picker__grid">
-            {/* Cover/plain pickers keep a "None" tile to clear the photo. */}
-            {!recipeMode && (
-              <button
-                type="button"
-                className={`image-picker__photo image-picker__photo--action ${
-                  !current && selectedGrid.length === 0 ? "is-active" : ""
-                }`}
-                onClick={() => choose(() => onSelect(undefined))}
-                aria-label="No photo"
-                aria-pressed={!current && selectedGrid.length === 0}
-              >
-                <span className="image-picker__none-icon" aria-hidden />
-                <span className="image-picker__tile-label">None</span>
-              </button>
-            )}
-
-            {/* Upload sits right after None: the two ways to have NO existing
-                photo selected yet (clear it, or bring a new one) belong next
-                to each other, ahead of the photos already on file. */}
+            {/* Upload leads, None follows: adding a photo is what someone opens
+                this for far more often than clearing one. The two still sit
+                together, ahead of the photos already on file, since both are
+                ways to have no existing photo selected. */}
             <label
               className={`image-picker__photo image-picker__photo--action image-picker__photo--upload ${
                 uploading ? "is-busy" : ""
@@ -392,6 +377,22 @@ export function ImagePicker({
                 }}
               />
             </label>
+
+            {/* Cover/plain pickers keep a "None" tile to clear the photo. */}
+            {!recipeMode && (
+              <button
+                type="button"
+                className={`image-picker__photo image-picker__photo--action ${
+                  !current && selectedGrid.length === 0 ? "is-active" : ""
+                }`}
+                onClick={() => choose(() => onSelect(undefined))}
+                aria-label="No photo"
+                aria-pressed={!current && selectedGrid.length === 0}
+              >
+                <span className="image-picker__none-icon" aria-hidden />
+                <span className="image-picker__tile-label">None</span>
+              </button>
+            )}
 
             {uniqueImages.map((image, index) => {
               const failed = failedImages.has(image);

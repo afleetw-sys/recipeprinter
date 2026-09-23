@@ -33,7 +33,8 @@ import { useModalFocus } from "@/lib/useModalFocus";
 import { navigateAfterOverlayHistory, useBackDismiss } from "@/lib/useBackDismiss";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
-import { MobileStructureSheet } from "@/components/print/MobileStructureSheet";
+import { MobileStructureSheet, type MobileBookSheet } from "@/components/print/MobileStructureSheet";
+import { EditTips } from "@/components/print/EditTips";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
@@ -105,6 +106,8 @@ import {
 import { track } from "@/lib/analytics";
 import {
   BookIcon,
+  PagesIcon,
+  PagePlusIcon,
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -596,10 +599,6 @@ export default function PrintPage() {
     items?.some((item) => Boolean(item.recipe?.image)) ?? false;
   const anyRecipeHasSourceUrl =
     items?.some((item) => Boolean(item.recipe?.sourceUrl)) ?? false;
-  /** Whether any recipe arrived with a website blurb. With none, the checkbox
-      would govern nothing, so it is not offered. */
-  const anyRecipeHasDescription =
-    items?.some((item) => Boolean(item.recipe?.description?.trim())) ?? false;
   const cookbookMode = Boolean(projectMeta.meta.cookbookMode);
   /**
    * Does this project hold a book — either on screen, or set aside?
@@ -1624,13 +1623,30 @@ export default function PrintPage() {
     return { title: "", template };
   }
 
-  /** The back cover's own recovery, mirroring `addCover` above — deleting either
-      cover used to be a dead end for the back one specifically, since only the
-      front had a way back onto the page. */
   function addBackCover() {
     const cover = projectMeta.meta.backCover ?? defaultBackCover();
     projectMeta.setBackCover(cover);
     setPendingFocusNavId("cover-back");
+  }
+
+  /**
+   * The Pages checkboxes for the two covers, so every optional page in a book
+   * (front cover, dedication, contents, back cover) turns on and off the same
+   * way. Ticking one puts the page back and goes to it. Unticking one asks
+   * first, the same question the page's own delete button asks: a cover holds
+   * the book's title, author and photo, more than a checkbox should drop
+   * without a word. These replaced the page list's "Add cover" and "Add back
+   * cover" buttons, which only existed on desktop, so a phone had no way to
+   * bring a deleted cover back.
+   */
+  function toggleCover(side: "front" | "back") {
+    const current = side === "front" ? projectMeta.meta.cover : projectMeta.meta.backCover;
+    if (current) {
+      setPendingDelete({ kind: "cover", side, title: side === "front" ? "the cover" : "the back cover" });
+      return;
+    }
+    if (side === "front") addCover();
+    else addBackCover();
   }
 
   /** Toggles the dedication front-matter page. Adding one seeds a quiet,
@@ -4107,7 +4123,12 @@ export default function PrintPage() {
        recipe link that used to sit under them with them did not — it moved to
        the group that changes every recipe. */
     return (
-      <CheckboxGroup label="Extra pages" className="recipe-config-section recipe-config-section--settings">
+      <CheckboxGroup label="Pages" className="recipe-config-section recipe-config-section--settings">
+        <Checkbox
+            label="Front cover"
+            checked={Boolean(projectMeta.meta.cover)}
+            onChange={() => toggleCover("front")}
+        />
         <Checkbox
             label="Dedication"
             checked={Boolean(projectMeta.meta.frontMatter || projectMeta.meta.dedication)}
@@ -4117,6 +4138,11 @@ export default function PrintPage() {
             label="Table of contents"
             checked={Boolean(projectMeta.meta.tableOfContents)}
             onChange={(event) => projectMeta.setTableOfContents(event.target.checked)}
+        />
+        <Checkbox
+            label="Back cover"
+            checked={Boolean(projectMeta.meta.backCover)}
+            onChange={() => toggleCover("back")}
         />
       </CheckboxGroup>
     );
@@ -4650,8 +4676,12 @@ export default function PrintPage() {
   // The page rail (reorder/structure) is hidden on phones because the desktop
   // one relies on drag-and-drop, which doesn't exist on touch. This is the
   // mobile stand-in: a bottom sheet with the same structure controls driven by
-  // taps instead. Cookbook mode only — plain cards have no sections to arrange.
+  // taps instead, opened from the floating page-sorter button over the deck.
+  // Cookbook mode only — plain cards have no sections to arrange.
   const [structureSheetOpen, setStructureSheetOpen] = useState(false);
+  // The bottom bar's Pages and Every recipe tiles: book-wide settings, one
+  // sheet each, kept apart from the structure list above.
+  const [bookSheet, setBookSheet] = useState<MobileBookSheet>(null);
   // The print-setup panel is a persistent sidebar on desktop and a modal
   // drawer on mobile, so it can only claim to be a dialog in the second case.
   // While it is one, it gets a real focus trap and Escape-to-close — it
@@ -5430,8 +5460,6 @@ export default function PrintPage() {
           enterOrganizeMode={enterOrganizeMode}
           exitOrganizeMode={exitOrganizeMode}
           projectMeta={projectMeta}
-          addCover={addCover}
-          addBackCover={addBackCover}
           cookbookView={cookbookView}
           navItems={navItems}
           navIndexForSheet={navIndexForSheet}
@@ -5560,9 +5588,6 @@ export default function PrintPage() {
         )}
 
         <PrintConfigPanel
-          showDescription={showDescription}
-          setShowDescription={setShowDescription}
-          anyRecipeHasDescription={anyRecipeHasDescription}
           configPanelRef={configPanelRef}
           mobileDrawer={mobileDrawer}
           setMobileDrawer={setMobileDrawer}
@@ -5587,6 +5612,12 @@ export default function PrintPage() {
         />
 
         <div className="recipe-mobile-actions no-print">
+          {/* One tip for the whole deck, just above the tools, rather than one
+              hanging under each page. Recipe cards only: a cookbook shows none.
+              Only with a page to act on, since every tip is about one. */}
+          {!cookbookMode && recipeCount > 0 && (
+            <EditTips editing={Boolean(activeInlineEdit?.editingTarget)} />
+          )}
           {/* No way into a cookbook here on purpose. Building a book — covers,
               chapters, page layouts, the organizer — is not something the phone
               layout does well yet, and selling someone a $19.99 document they
@@ -5617,23 +5648,26 @@ export default function PrintPage() {
                   (an import still parsing counts), so the two never disagree. */}
               {recipeCount > 0 ? "Add more" : "Add recipe"}
             </button>
-            {/* Pages/structure — the mobile stand-in for the drag-only desktop
-                rail, which is hidden on touch. Cookbook mode only. */}
+            {/* The pages a book gains beyond its recipes. Cookbook mode only;
+                its Photos sibling sits further along, beside Links, since both
+                are about what every recipe carries. The structure list lives
+                behind the floating page-sorter button instead. */}
             {cookbookMode && (
               <button
                 type="button"
-                className={`recipe-mobile-toolbar__btn ${structureSheetOpen ? "is-active" : ""}`}
-                aria-pressed={structureSheetOpen}
+                className={`recipe-mobile-toolbar__btn ${bookSheet === "extras" ? "is-active" : ""}`}
+                aria-pressed={bookSheet === "extras"}
                 aria-haspopup="dialog"
                 onClick={() => {
                   setSizeMenuOpen(false);
-                  setStructureSheetOpen((open) => !open);
+                  setStructureSheetOpen(false);
+                  setBookSheet((open) => (open === "extras" ? null : "extras"));
                 }}
               >
                 <span className="recipe-mobile-toolbar__btn-icon">
-                  <BookIcon size={ICON_SIZE.lg} />
+                  <PagePlusIcon size={ICON_SIZE.lg} />
                 </span>
-                Book
+                Pages
               </button>
             )}
             {/* Size is a recipe-card concept only — hidden in cookbook mode,
@@ -5666,6 +5700,28 @@ export default function PrintPage() {
               </span>
               Themes
             </button>
+            {/* What every recipe in the book carries: its link and its photo
+                layout, one sheet, as the desktop panel's "Every recipe" group
+                holds them. Cookbook mode only; recipe cards keep their own
+                Show Photo and Links toggles below. */}
+            {cookbookMode && (
+              <button
+                type="button"
+                className={`recipe-mobile-toolbar__btn ${bookSheet === "recipes" ? "is-active" : ""}`}
+                aria-pressed={bookSheet === "recipes"}
+                aria-haspopup="dialog"
+                onClick={() => {
+                  setSizeMenuOpen(false);
+                  setStructureSheetOpen(false);
+                  setBookSheet((open) => (open === "recipes" ? null : "recipes"));
+                }}
+              >
+                <span className="recipe-mobile-toolbar__btn-icon">
+                  <ImageIcon size={ICON_SIZE.lg} />
+                </span>
+                Every recipe
+              </button>
+            )}
             {/* With more than one recipe possible, this is the only place on
                 mobile to show/hide photos across all of them at once — the
                 per-page toolbar's photo control only ever acts on the one
@@ -5690,13 +5746,9 @@ export default function PrintPage() {
                 Show Photo
               </button>
             )}
-            {/* Same reasoning as Show Photo above, but this one still shows
-                in a cookbook (`singleRecipeOnly` is always false there — a
-                book can hold many recipes regardless of Pro) since a
-                cookbook's per-page toolbar has no link toggle of its own;
-                see the matching gate on that toolbar button in
-                PrintDeck.tsx. */}
-            {anyRecipeHasSourceUrl && !singleRecipeOnly && (
+            {/* Same reasoning as Show Photo above. A cookbook has this in its
+                "Every recipe" sheet instead, beside the photo layout. */}
+            {anyRecipeHasSourceUrl && !cookbookMode && !singleRecipeOnly && (
               <button
                 type="button"
                 className="recipe-mobile-toolbar__btn"
@@ -5710,7 +5762,9 @@ export default function PrintPage() {
                 >
                   <LinkIcon size={ICON_SIZE.lg} />
                 </span>
-                Show Link
+                {/* The tile's on/off state already says "shown"; the verb only
+                    made the label longer than its neighbours. */}
+                Links
               </button>
             )}
           </div>
@@ -5733,19 +5787,45 @@ export default function PrintPage() {
           </button>
         </div>
 
+        {/* Pages/structure — the mobile stand-in for the drag-only desktop
+            rail, which is hidden on touch. It floats over the deck, apart from
+            the bottom bar's tools, because it is about the pages themselves.
+            The glyph is PowerPoint's Slide Sorter: every page laid out small. */}
+        {cookbookMode && (
+          <button
+            type="button"
+            className={`recipe-pages-fab no-print ${structureSheetOpen ? "is-active" : ""}`}
+            aria-label="Organize pages"
+            aria-haspopup="dialog"
+            aria-expanded={structureSheetOpen}
+            onClick={() => {
+              setSizeMenuOpen(false);
+              setBookSheet(null);
+              setStructureSheetOpen((open) => !open);
+            }}
+          >
+            <PagesIcon size={ICON_SIZE.lg} />
+          </button>
+        )}
+
         <MobileStructureSheet
           projectMeta={projectMeta}
           sections={sections}
           toggleDedication={toggleDedication}
+          toggleCover={toggleCover}
           anyRecipeHasImage={anyRecipeHasImage}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
+          showSourceUrl={showSourceUrl}
+          setShowSourceUrl={setBookShowSourceUrl}
           renameSectionEverywhere={renameSectionEverywhere}
           moveSectionInBook={moveSectionInBook}
           requestDeleteSection={requestDeleteSection}
           navigateToRecipe={navigateToRecipe}
           moveRecipeInBook={moveRecipeInBook}
           addStructureSection={addStructureSection}
+          bookSheet={bookSheet}
+          setBookSheet={setBookSheet}
           structureSheetOpen={structureSheetOpen}
           setStructureSheetOpen={setStructureSheetOpen}
         />

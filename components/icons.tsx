@@ -254,6 +254,26 @@ export const AppsIcon = (p: IconProps) => (
   </Base>
 );
 
+/** Every page laid out small, side by side: PowerPoint's Slide Sorter view.
+    Opens the cookbook's page structure on mobile. */
+export const PagesIcon = (p: IconProps) => (
+  <Base {...p}>
+    <rect x="3" y="4.5" width="7.5" height="6" rx="1.2" />
+    <rect x="13.5" y="4.5" width="7.5" height="6" rx="1.2" />
+    <rect x="3" y="13.5" width="7.5" height="6" rx="1.2" />
+    <rect x="13.5" y="13.5" width="7.5" height="6" rx="1.2" />
+  </Base>
+);
+
+/** A page with a plus: pages the book gains (dedication, contents). */
+export const PagePlusIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M14 3.5H7A2 2 0 005 5.5v13a2 2 0 002 2h10a2 2 0 002-2V8.5z" />
+    <path d="M14 3.5v5h5" />
+    <path d="M12 11.5v6M9 14.5h6" />
+  </Base>
+);
+
 export const BookIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M4 5.5C4 4.67 4.67 4 5.5 4H12v16H5.5A1.5 1.5 0 014 18.5v-13z" />

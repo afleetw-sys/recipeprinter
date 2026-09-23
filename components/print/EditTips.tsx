@@ -36,18 +36,16 @@ function thisLoadNumber(): number {
 }
 
 /**
- * A single line of "how do I" on the artboard under the page being edited, one
- * of the things a first-time editor does not know they can do.
+ * A single line of "how do I" at the top of the phone's action bar, one of the
+ * things a first-time editor does not know they can do.
  *
  * One per LOAD, not a rotation. A line that changes while you are reading it or
  * in the middle of a task is a distraction, and these are the wrong thing to be
  * distracted by. Each visit gets the next tip along and keeps it.
  *
- * It hangs off the bottom edge of the active page rather than sitting in the
- * action bar, so it belongs to the artboard: zoom in and it travels with the
- * page and leaves the frame, instead of staying pinned over a card that has
- * grown past it. It is rendered by the active slide (see PrintDeck), which is
- * also why it needs no "is there a recipe" check of its own.
+ * One strip for the whole deck, just above the tools, rendered by the print
+ * page only when there is a recipe to act on. It used to hang under each page
+ * as you scrolled to it; a tip under every page was a tip too many.
  *
  * Quiet by construction: one italic line that takes no pointer events, so it
  * can never eat a tap meant for the page.

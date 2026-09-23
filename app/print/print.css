@@ -148,17 +148,7 @@
 }
 
 /* Layout only. The box, corner, type and hover all come from
-   `.btn.btn-secondary.btn-compact` on the element itself — this used to
-   restate every one of them at values that had drifted from the shared
-   button, which is the whole reason the rail and the header stopped
-   matching. */
-.recipe-page-rail__add-cover {
-  flex-shrink: 0;
-  width: 100%;
-  margin: 0 0 2px;
-}
-
-/* Layout only — see the note on `__add-cover`. The trailing chevron hugs the
+   `.btn.btn-secondary.btn-compact` on the element itself. The trailing chevron hugs the
    label rather than taking the button's own 8px gap: it is an affordance on
    the label, not a second item beside it. */
 .recipe-page-rail__organize {
@@ -541,12 +531,6 @@
   .recipe-organize-bar__actions .btn-ghost {
     display: none;
   }
-}
-
-.recipe-page-rail__add-cover:hover {
-  border-color: color-mix(in srgb, var(--cp-accent) 46%, var(--cp-line));
-  background: var(--cp-overlay-hover);
-  color: var(--cp-accent);
 }
 
 .recipe-page-rail__item {
@@ -2528,7 +2512,8 @@
 .recipe-mobile-actions,
 .recipe-mobile-sheet,
 .recipe-mobile-sheet__backdrop,
-.recipe-config-panel__close {
+.recipe-config-panel__close,
+.recipe-pages-fab {
   display: none;
 }
 
@@ -2541,7 +2526,7 @@
   .recipe-toast {
     right: 16px;
     left: 16px;
-    bottom: calc(132px + env(safe-area-inset-bottom));
+    bottom: calc(var(--rp-mobile-bar-reserve, 132px) + env(safe-area-inset-bottom));
     max-width: none;
   }
 
@@ -2556,12 +2541,24 @@
     display: none;
   }
 
+  /* The room kept clear under the deck for the fixed action bar. The bar is
+     ~121px; with the one-line tip in it (recipe cards) it is ~24px taller,
+     and the shell, the toast and the Pages button all read this so none of
+     them sits behind it. */
+  .recipe-print-page {
+    --rp-mobile-bar-reserve: 132px;
+  }
+
+  .recipe-print-page:has(.recipe-mobile-actions .recipe-edit-tips) {
+    --rp-mobile-bar-reserve: 156px;
+  }
+
   .recipe-print-shell {
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: minmax(0, 1fr);
     height: 100dvh;
-    padding: 0 0 132px !important;
+    padding: 0 0 var(--rp-mobile-bar-reserve, 132px) !important;
     gap: 0;
     overflow: hidden;
   }
@@ -2627,7 +2624,9 @@
   .recipe-mobile-toolbar {
     display: flex;
     flex: 0 0 auto;
-    gap: 8px;
+    /* 6, not 8: the two pixels a gap gives back are what let a cookbook's four
+       tiles fit a 375px phone with "Every recipe" on one line. */
+    gap: 6px;
     /* `safe center`: center the row under Print when the tiles are narrower
        than it (a short row reading left-aligned looked like it was avoiding
        the right half of the bar for no reason) — but fall back to plain
@@ -2675,8 +2674,16 @@
     align-items: center;
     justify-content: center;
     gap: 5px;
+    /* 92px, and shrinks to fit rather than scroll: a cookbook has four
+       tiles (Add, Pages, Themes, Every recipe), and on a 375px phone
+       four at 92 overflowed. 80 is the floor where the longest label ("Every
+       recipe", ~73px, with the row's 6px gap) still sits on one line, level
+       with its neighbours'; below that the row scrolls, as it always has. */
+    flex: 0 1 92px;
     width: 92px;
-    padding: 10px 6px;
+    min-width: 80px;
+    padding: 10px 4px;
+    white-space: nowrap;
     border: 0;
     border-radius: 14px;
     background: var(--cp-surface-strong);
@@ -2848,6 +2855,9 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+    /* A sheet's list scrolls on its own and never hands the gesture on to
+       the page behind it, which is locked and would swallow it. */
+    overscroll-behavior: contain;
     padding: 8px 12px 4px;
   }
 
@@ -2866,6 +2876,23 @@
      here just widens the gap above its border slightly, which is harmless. */
   .image-picker-sheet .recipe-mobile-sheet__scroll {
     padding-bottom: 24px;
+  }
+
+  /* Whatever opens the sheet sits right under its title. The photo section
+     brings a 24px top margin from the desktop dialog, where it separates
+     the photos from the controls above them; first in a sheet, there is
+     nothing above it but the header's own padding, and the two stacked
+     into a gap that read as something missing. */
+  .image-picker-sheet .recipe-mobile-sheet__scroll > :first-child {
+    margin-top: 0;
+  }
+
+  /* Three across, not four or five: on a phone a photo has to be big enough
+     to tell apart from its neighbours, and a longer list is fine, since the
+     sheet scrolls. */
+  .image-picker-sheet .image-picker__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
   }
 
   /* Cut lines / two-sided, under the size tiles in the same sheet — see the
@@ -2887,27 +2914,11 @@
     padding: 8px 4px 14px;
   }
 
-  .recipe-structure-sheet__photos {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  /* Small caps eyebrow — same role as `.recipe-config-label` on desktop, sized
-     for the sheet. Doubles as the divider between the settings and the section
-     list. */
-  .recipe-structure-sheet__group-label {
-    display: block;
+  .recipe-structure-sheet__note {
+    margin: 0;
     color: var(--cp-ink-soft);
-    font-size: var(--cp-fs-label);
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .recipe-structure-sheet__group-label--structure {
-    padding: 14px 4px 2px;
-    border-top: 1px solid var(--cp-line);
+    font-size: var(--cp-fs-caption);
+    line-height: 1.4;
   }
 
   .recipe-structure-sheet__section {
@@ -3054,37 +3065,31 @@
     overflow: hidden;
   }
 
+  /* Phones scroll the deck up and down, the same stack as the desktop. It
+     used to be a sideways filmstrip, which on a phone meant a page sized to
+     leave room for its neighbours either side and a cookbook spread squeezed
+     into what was left. Vertically a page takes the full width and the next
+     one peeks in underneath. `useDeckScroller` sets `--deck-top-pad` so the
+     first and last pages can rest in the middle, and its 72px snap inset is
+     what keeps the page toolbar clear above the page it belongs to. */
   .recipe-page-deck {
     display: flex;
     flex: 1 1 auto;
-    flex-direction: row;
+    flex-direction: column;
+    /* `safe` for the same reason as the desktop rule: a zoomed page wider
+       than the deck has to overflow on the side scrolling can reach. */
     align-items: center;
-    /* Centres a deck that FITS (one recipe, nothing to scroll to), which
-       flex-start would left-align instead.
-    
-       `safe` is load-bearing, not a nicety. Plain `center` also distributes
-       NEGATIVE free space, so an overflowing deck gets half its overflow laid
-       out before the scroll origin — the first pages sat at `offsetLeft: -406`
-       with `scrollLeft` already at its minimum of 0, so no swipe, scroll or
-       click could ever reach them. `safe` falls back to `start` the moment
-       content overflows, which is the only case that scrolls at all.
-    
-       Plain `center` stays first: a browser without `safe` support drops the
-       second declaration entirely and keeps the old behaviour. */
-    justify-content: center;
-    justify-content: safe center;
+    align-items: safe center;
     gap: 16px;
     min-height: 0;
-    /* Extra top room so the front/back flip control can sit above the card
-       instead of overlapping its content. */
-    padding: 54px 40px 18px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-padding-inline: 40px;
+    padding: var(--deck-top-pad, 44vh) 20px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-padding-top: 72px;
+    scroll-padding-bottom: 72px;
     /* `mandatory`, matching the desktop deck — a swipe snaps as it decelerates,
-       landing on a card rather than resting between two. Only acts at
-       gesture/momentum end, so it doesn't yank a card mid-drag. */
-    scroll-snap-type: x mandatory;
+       landing on a page rather than resting between two. */
+    scroll-snap-type: y mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     /* Pan, but never pinch: a pinch on the card is the DECK's zoom
@@ -3093,27 +3098,17 @@
     touch-action: pan-x pan-y;
   }
 
-  /* Zoomed in past fit (set by `useDeckScroller`), the card is bigger than the
-     strip it sits in. So the strip stops snapping, and scrolls in both
-     directions where it only ever scrolled sideways. `safe` for the same reason
-     as the deck's own centring: plain `center` puts half the overflow before
-     the scroll origin, where nothing can reach it. */
+  /* Zoomed in past fit (set by `useDeckScroller`), the page is bigger than
+     the window, so the deck stops snapping and pans sideways too. */
   .recipe-page-deck[data-free-scroll="true"] {
-    overflow-y: auto;
+    overflow-x: auto;
     scroll-snap-type: none;
-    align-items: safe center;
   }
 
   .recipe-page-slide {
     display: grid;
     place-items: center;
-    /* Leaves ~40px of the neighbouring slide peeking in on each side, so it
-       reads as a horizontally scrollable deck rather than a single page.
-       A floor rather than a fixed width: a zoomed card is wider than that, and
-       a slide that stayed the same width let it spill out both sides, where the
-       left half is past the scroll origin and cannot be scrolled to. */
     flex: 0 0 auto;
-    min-width: calc(100vw - 96px);
     scroll-snap-align: center;
     opacity: 1;
     cursor: default;
@@ -3122,6 +3117,38 @@
   .recipe-page-slide:not(.is-active) {
     display: grid;
     opacity: 0.72;
+  }
+
+  /* The cookbook's Pages button (MobileStructureSheet): floats over the
+     deck, bottom right, clear of the action bar by the same 132px reserve
+     the toast uses. A floating control, so it gets a shadow (the only kind
+     of thing that does). Below the sheets (80/81) and the action bar (75). */
+  .recipe-pages-fab {
+    position: fixed;
+    right: 16px;
+    bottom: calc(var(--rp-mobile-bar-reserve, 132px) + 12px + env(safe-area-inset-bottom));
+    z-index: 74;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--cp-line);
+    border-radius: 999px;
+    background: var(--cp-card);
+    color: var(--cp-ink);
+    box-shadow: var(--cp-shadow-md);
+    cursor: pointer;
+  }
+
+  .recipe-pages-fab.is-active {
+    border-color: var(--cp-selected-border);
+    background: var(--cp-selected-fill);
+    color: var(--cp-selected-text);
+  }
+
+  .recipe-pages-fab:focus-visible {
+    outline: var(--cp-focus-ring);
+    outline-offset: var(--cp-focus-ring-offset);
   }
 
   /* The same edge the desktop page rail uses for its selected thumbnail
@@ -3152,7 +3179,12 @@
     bottom: calc(100% + 10px);
     left: 50%;
     z-index: 6;
-    width: min(calc(100vw - 32px), var(--preview-w, 100%));
+    /* The screen's width, not the page's. Held to the page, a cookbook page
+       (a spread's half, ~170px on a phone) wrapped its toolbar onto two or
+       three lines, taller than the 72px the deck keeps clear above a page, so
+       its top line slid under the header. Pages are centred in the deck, so
+       a bar centred on the page is centred on the screen. */
+    width: calc(100vw - 32px);
     transform: translateX(-50%);
   }
 
@@ -3286,20 +3318,15 @@
     background: var(--cp-page);
   }
 
-  /* One line of how-to on the artboard, hanging off the bottom edge of the
-     active page. It is a child of the page's slide, so it scrolls and zooms
-     with it: zoom in and it leaves the frame along with the card's edge rather
-     than staying pinned over a card that has outgrown it. Centred on the page,
-     not on the screen, for the same reason. The strip ignores pointers, so it
-     can never eat a tap meant for anything under it. */
+  /* One line of how-to, the first thing in the action bar, just above its
+     tools. It used to hang under the active page, which meant a tip under
+     every page you scrolled to and room kept between pages for it. Centred,
+     quiet, and it ignores pointers, so it can never eat a tap. The bar's gap
+     (10px) sits under it; the negative margin trims that to 6 so the line
+     reads as a caption to the tools rather than a row of its own. */
   .recipe-edit-tips {
-    position: absolute;
-    top: 100%;
-    left: 50%;
     display: block;
-    margin-top: 12px;
-    transform: translateX(-50%);
-    white-space: nowrap;
+    margin-bottom: -4px;
     pointer-events: none;
     color: var(--cp-ink-soft);
     font-size: 12.5px;
@@ -5113,8 +5140,8 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 9px;
 }
-/* "None" and "Upload" ride in the grid as square action tiles — upload trailing,
-   none leading — instead of separate full-width buttons above it. */
+/* "Upload" and "None" ride in the grid as square action tiles, upload leading,
+   instead of separate full-width buttons above it. */
 .image-picker__photo.image-picker__photo--action {
   display: flex;
   flex-direction: column;
@@ -5242,6 +5269,15 @@
    `.image-picker__footer`'s own space-between still does the layout. */
 .recipe-mobile-sheet__footer .image-picker__footer .btn {
   flex: none;
+}
+/* And the row itself fills the sheet's footer, so the count sits at the far
+   left and Done at the far right. As a fixed-size child it sat bunched on the
+   left, carrying its own desktop padding and border inside the sheet
+   footer's, which drew a second, shorter rule above it. */
+.recipe-mobile-sheet__footer .image-picker__footer {
+  flex: 1 1 auto;
+  padding: 0;
+  border-top: 0;
 }
 .image-picker__count {
   font-size: var(--cp-fs-caption);

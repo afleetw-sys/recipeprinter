@@ -253,7 +253,7 @@ async function settle(ms = 0) {
 }
 
 /** A change to the book, made the way the cook makes one: through a setting. */
-async function editASetting(setting: "setShowSourceUrl" | "setShowPhoto" | "setShowDescription" = "setShowSourceUrl") {
+async function editASetting(setting: "setShowSourceUrl" | "setShowPhoto" = "setShowSourceUrl") {
   await act(async () => {
     panel.props[setting]((current: unknown) => !current);
   });
@@ -474,7 +474,9 @@ describe("autosaving edits", () => {
     // setting: toggling the same one back would just restore the saved state.
     await editASetting("setShowPhoto");
     await settle(1600);
-    await editASetting("setShowDescription");
+    await act(async () => {
+      panel.props.setTemplate("bistro");
+    });
     await settle(1600);
     expect(io.savePrintProject).toHaveBeenCalledTimes(1);
 
@@ -489,7 +491,7 @@ describe("autosaving edits", () => {
     // ...and it holds the LATEST state (both later edits), not the first one's.
     const settings = io.savePrintProject.mock.calls[1][0].settings;
     expect(settings.showPhoto).toBe(false);
-    expect(settings.showDescription).toBe(false);
+    expect(settings.template).toBe("bistro");
   });
 });
 

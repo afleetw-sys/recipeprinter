@@ -159,8 +159,6 @@ interface PageRailProps {
   enterOrganizeMode: () => void;
   exitOrganizeMode: () => void;
   projectMeta: ReturnType<typeof useProjectMeta>;
-  addCover: () => void;
-  addBackCover: () => void;
   cookbookView: boolean;
   navItems: ReturnType<typeof usePrintSheets>["navItems"];
   navIndexForSheet: Map<number, number>;
@@ -228,8 +226,6 @@ export function PageRail(props: PageRailProps) {
     enterOrganizeMode,
     exitOrganizeMode,
     projectMeta,
-    addCover,
-    addBackCover,
     cookbookView,
     navItems,
     navIndexForSheet,
@@ -665,35 +661,6 @@ export function PageRail(props: PageRailProps) {
                 </button>
               </div>
             </div>
-          )}
-          {projectMeta.meta.cookbookMode && !projectMeta.meta.cover && (
-            <button
-              type="button"
-              className="btn btn-secondary btn-compact recipe-page-rail__add-cover"
-              onClick={() => {
-                setAddMenuOpen(false);
-                addCover();
-              }}
-            >
-              <PlusIcon size={ICON_SIZE.md} />
-              Add cover
-            </button>
-          )}
-          {/* The front cover's own recovery button, mirrored — deleting the back
-              cover used to be a dead end, with no way back onto the page short
-              of hand-editing project data. */}
-          {projectMeta.meta.cookbookMode && !projectMeta.meta.backCover && (
-            <button
-              type="button"
-              className="btn btn-secondary btn-compact recipe-page-rail__add-cover"
-              onClick={() => {
-                setAddMenuOpen(false);
-                addBackCover();
-              }}
-            >
-              <PlusIcon size={ICON_SIZE.md} />
-              Add back cover
-            </button>
           )}
           {cookbookView
             ? (() => {

@@ -1,6 +1,5 @@
 "use client";
 
-import { EditTips } from "@/components/print/EditTips";
 import { Fragment, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type {
   CSSProperties,
@@ -1199,7 +1198,11 @@ export function PrintDeck(props: PrintDeckProps) {
         <section
           className="recipe-page-canvas"
           aria-label="Selected page"
-          data-single-recipe={singleRecipePrintView ? "true" : "false"}
+          // A one-card deck. Never a cookbook: a book with one recipe still
+          // has a cover, contents and more pages to swipe between, and the
+          // one-card styling snapped its slides by their start edge, which
+          // parked the cover off-centre and hid the fact there was more.
+          data-single-recipe={singleRecipePrintView && !cookbookView ? "true" : "false"}
         >
           {/* Body/heading and bold/italic, floating over the line being typed
               rather than joining the page's bar. It anchors itself to whatever
@@ -1517,9 +1520,6 @@ export function PrintDeck(props: PrintDeckProps) {
                               ? -((previewDims.w * deckScale + 12) / 2)
                               : (previewDims.w * deckScale + 12) / 2,
                         )}
-                      {isActive && (
-                        <EditTips editing={Boolean(activeInlineEdit?.editingTarget)} />
-                      )}
                       <div
                         className={`recipe-spread ${spread.single ? "recipe-spread--single" : ""} ${
                           isActive &&
@@ -1610,7 +1610,6 @@ export function PrintDeck(props: PrintDeckProps) {
                   {isActive &&
                     activeNavItem &&
                     renderActiveControls(activeNavItem, previewDims.w * deckScale)}
-                  {isActive && <EditTips editing={Boolean(activeInlineEdit?.editingTarget)} />}
                   {!(renderAllPages || Math.abs(index - activeNavIndex) <= DECK_WINDOW) ? (
                     <PagePlaceholder
                       // The SAME box the real page occupies. A cookbook page is

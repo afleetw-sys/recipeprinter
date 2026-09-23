@@ -13,39 +13,62 @@ interface MobileStructureSheetProps {
   projectMeta: ReturnType<typeof useProjectMeta>;
   sections: Section[];
   toggleDedication: () => void;
+  toggleCover: (side: "front" | "back") => void;
   anyRecipeHasImage: boolean;
   bookPhotoStyle: PhotoStyle | null;
   applyBookPhotoStyle: (mode: PhotoStyle) => void;
+  showSourceUrl: boolean;
+  setShowSourceUrl: (next: boolean) => void;
   renameSectionEverywhere: (sectionId: string, value: string) => void;
   moveSectionInBook: (sectionId: string, direction: -1 | 1) => void;
   requestDeleteSection: (sectionId: string) => void;
   navigateToRecipe: (itemId: string) => void;
   moveRecipeInBook: (itemId: string, direction: -1 | 1) => void;
   addStructureSection: () => void;
+  bookSheet: MobileBookSheet;
+  setBookSheet: Dispatch<SetStateAction<MobileBookSheet>>;
   structureSheetOpen: boolean;
   setStructureSheetOpen: Dispatch<SetStateAction<boolean>>;
 }
 
+/** Which of the book-wide sheets is open, from the bottom bar's tiles. */
+export type MobileBookSheet = "extras" | "recipes" | null;
+
 /**
- * The mobile "Book" bottom sheet: book-wide settings (table of contents,
- * opening page, photos) plus a reorderable list of sections and recipes.
- * Desktop uses the page rail and the Book Settings panel instead; this is the
- * touch-native equivalent, since the mobile config drawer only ever opens the
- * Themes section.
+ * The mobile cookbook sheets. Desktop uses the page rail and the Book
+ * Settings panel instead; these are the touch-native equivalents, since the
+ * mobile config drawer only ever opens the Themes section.
+ *
+ * - "Pages" and "Every recipe" (each its own tile in the bottom bar):
+ *   the book-wide settings, grouped the way the desktop panel groups them,
+ *   pages the book gains and then what every recipe carries (its link and
+ *   its photo layout). They used to share one "Book" sheet.
+ * - "Organize" (the floating page-sorter button over the deck): the
+ *   reorderable list of chapters and recipes, named for the desktop rail's
+ *   "Organize recipes" view it stands in for.
+ *
+ * The structure list used to sit under the settings too. It is what a cook
+ * comes back to again and again, and it answers a different question from
+ * how the book is set up, so it has its own way in.
  */
 export function MobileStructureSheet({
   projectMeta,
   sections,
   toggleDedication,
+  toggleCover,
   anyRecipeHasImage,
   bookPhotoStyle,
   applyBookPhotoStyle,
+  showSourceUrl,
+  setShowSourceUrl,
   renameSectionEverywhere,
   moveSectionInBook,
   requestDeleteSection,
   navigateToRecipe,
   moveRecipeInBook,
   addStructureSection,
+  bookSheet,
+  setBookSheet,
   structureSheetOpen,
   setStructureSheetOpen,
 }: MobileStructureSheetProps) {
@@ -54,10 +77,96 @@ export function MobileStructureSheet({
     const recipeCount = orderedIds.length;
     const metaSections = projectMeta.meta.sections;
     return (
+      <>
+        <MobileSheet
+          open={bookSheet === "extras"}
+          onClose={() => setBookSheet(null)}
+          title="Pages"
+          className="recipe-structure-sheet"
+        >
+            {/* The same controls as the desktop "Book Settings" panel's
+                Pages group. */}
+            <div className="recipe-structure-sheet__settings">
+              <Checkbox
+                  label="Front cover"
+                  checked={Boolean(projectMeta.meta.cover)}
+                  onChange={() => toggleCover("front")}
+              />
+              <Checkbox
+                  label="Dedication"
+                  checked={Boolean(projectMeta.meta.frontMatter || projectMeta.meta.dedication)}
+                  onChange={toggleDedication}
+              />
+              <Checkbox
+                  label="Table of contents"
+                  checked={Boolean(projectMeta.meta.tableOfContents)}
+                  onChange={(event) => projectMeta.setTableOfContents(event.target.checked)}
+              />
+              <Checkbox
+                  label="Back cover"
+                  checked={Boolean(projectMeta.meta.backCover)}
+                  onChange={() => toggleCover("back")}
+              />
+            </div>
+        </MobileSheet>
+
+        <MobileSheet
+          open={bookSheet === "recipes"}
+          onClose={() => setBookSheet(null)}
+          title="Every recipe"
+          className="recipe-structure-sheet"
+        >
+            {/* The desktop panel's "Every recipe" group: the link, then the
+                photo layout. Always offered in a cookbook, as on desktop: a
+                recipe can be given a link by hand, and this is the book-wide
+                default it is measured against. */}
+            <div className="recipe-structure-sheet__settings">
+              <Checkbox
+                  label="Recipe link"
+                  checked={showSourceUrl}
+                  onChange={(event) => setShowSourceUrl(event.target.checked)}
+              />
+              <span className="recipe-config-sublabel" id="sheet-photos-label">
+                Photos
+              </span>
+              {/* The tiles change nothing on screen until a recipe has a
+                  photo, so a new book can look as though they are broken.
+                  Same note the desktop panel gives. */}
+              {!anyRecipeHasImage && (
+                <p className="recipe-structure-sheet__note">
+                  Add a photo to a recipe to see these layouts on its page.
+                </p>
+              )}
+              <div
+                className="recipe-photo-style"
+                role="radiogroup"
+                aria-labelledby="sheet-photos-label"
+              >
+                {PHOTO_STYLE_OPTIONS.map((option) => (
+                  <SelectTile
+                    key={option.id}
+                    selected={bookPhotoStyle === option.id}
+                    className="recipe-photo-style__tile"
+                  >
+                    <input
+                      type="radio"
+                      name="recipe-sheet-photo-style"
+                      className="sr-only"
+                      checked={bookPhotoStyle === option.id}
+                      onChange={() => applyBookPhotoStyle(option.id)}
+                    />
+                    <PhotoStylePreview id={option.id} />
+                    <span className="recipe-photo-style__tile-label">{option.short}</span>
+                  </SelectTile>
+                ))}
+              </div>
+            </div>
+        </MobileSheet>
+
         <MobileSheet
           open={structureSheetOpen}
           onClose={() => setStructureSheetOpen(false)}
-          title="Book"
+          title="Organize"
           subtitle={
             <>
               {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"} ·{" "}
@@ -65,7 +174,7 @@ export function MobileStructureSheet({
               {namedSectionCount(sections) === 1 ? "chapter" : "chapters"}
             </>
           }
-          ariaLabel="Pages and structure"
+          ariaLabel="Organize pages"
           className="recipe-structure-sheet"
           footer={
             <>
@@ -80,60 +189,6 @@ export function MobileStructureSheet({
             </>
           }
         >
-            {/* Book-wide settings — the same controls as the desktop "Book
-                Settings" panel, which the mobile config drawer never exposes
-                (it only ever opens the Themes section). */}
-            {/* Grouped the way the desktop panel groups them: pages the book
-                gains, then what every recipe carries. Same settings, same two
-                questions, so the same two headings. */}
-            <div className="recipe-structure-sheet__settings">
-              <span className="recipe-structure-sheet__group-label">Extra pages</span>
-              <Checkbox
-                  label="Dedication"
-                  checked={Boolean(projectMeta.meta.frontMatter || projectMeta.meta.dedication)}
-                  onChange={toggleDedication}
-              />
-              <Checkbox
-                  label="Table of contents"
-                  checked={Boolean(projectMeta.meta.tableOfContents)}
-                  onChange={(event) => projectMeta.setTableOfContents(event.target.checked)}
-              />
-              {anyRecipeHasImage && (
-                <div className="recipe-structure-sheet__photos">
-                  <span className="recipe-config-sublabel" id="sheet-photos-label">
-                    Photos
-                  </span>
-                  <div
-                    className="recipe-photo-style"
-                    role="radiogroup"
-                    aria-labelledby="sheet-photos-label"
-                  >
-                    {PHOTO_STYLE_OPTIONS.map((option) => (
-                      <SelectTile
-                        key={option.id}
-                        selected={bookPhotoStyle === option.id}
-                        className="recipe-photo-style__tile"
-                      >
-                        <input
-                          type="radio"
-                          name="recipe-sheet-photo-style"
-                          className="sr-only"
-                          checked={bookPhotoStyle === option.id}
-                          onChange={() => applyBookPhotoStyle(option.id)}
-                        />
-                        <PhotoStylePreview id={option.id} />
-                        <span className="recipe-photo-style__tile-label">{option.short}</span>
-                      </SelectTile>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <span className="recipe-structure-sheet__group-label recipe-structure-sheet__group-label--structure">
-              Structure
-            </span>
-
             {sections.map((section) => {
               const metaIndex = metaSections.findIndex((candidate) => candidate.id === section.id);
               const canSectionUp = metaIndex > 0;
@@ -222,7 +277,7 @@ export function MobileStructureSheet({
                     })}
                     {section.items.length === 0 && (
                       <li className="recipe-structure-sheet__empty">
-                        Empty — step a recipe here with the arrows above.
+                        No recipes yet. Use the arrows to move one into this chapter.
                       </li>
                     )}
                   </ul>
@@ -230,5 +285,6 @@ export function MobileStructureSheet({
               );
             })}
         </MobileSheet>
+      </>
     );
 }

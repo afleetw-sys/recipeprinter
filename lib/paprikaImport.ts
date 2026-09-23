@@ -332,7 +332,12 @@ export function adaptPaprikaRecipe(value: unknown): Recipe | null {
 
   return {
     title: title ?? "Untitled recipe",
-    description: asString(data.description) ?? asString(data.notes),
+    // Paprika fills `description` from the website a recipe was saved from,
+    // which we never keep (see `withoutWebsiteDescription` in lib/cookpilot.ts);
+    // without a source link it is the cook's own. `notes` is always theirs, so
+    // it lands in their own field rather than behind the website toggle.
+    description: sourceUrl ? undefined : asString(data.description),
+    note: asString(data.notes),
     sourceUrl,
     sourceName: asString(data.source) ?? (sourceUrl ? hostnameOf(sourceUrl) : undefined),
     prepTime: asString(data.prep_time),
