@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { adaptCookPilotRecipe, adaptCookPilotRecipes, sourceUrlFromResponse } from "@/lib/cookpilot";
+import {
+  adaptCookPilotRecipe,
+  adaptCookPilotRecipes,
+  sourceUrlFromResponse,
+  withoutWebsiteDescription,
+} from "@/lib/cookpilot";
 
 // A minimal CookPilot RecipeData (section-based) with one ingredient and one step.
 function recipeData(title: string) {
@@ -136,5 +141,32 @@ describe("sourceUrlFromResponse", () => {
     const recipe = adaptCookPilotRecipe(body, sourceUrlFromResponse(body));
     expect(recipe?.sourceUrl).toBe("https://www.example.com/bread");
     expect(recipe?.sourceName).toBe("example.com");
+  });
+});
+
+describe("website descriptions", () => {
+  it("never keeps a web page's own description, single or roundup", () => {
+    const blurb = { ...recipeData("Borscht"), description: "The BEST borscht, trust me." };
+    const [single] = adaptCookPilotRecipes({ recipe: blurb }, "https://x.example/r");
+    expect(single).not.toHaveProperty("description");
+    const roundup = adaptCookPilotRecipes({ recipes: [blurb, blurb] }, "https://x.example/r");
+    expect(roundup.every((recipe) => !("description" in recipe))).toBe(true);
+  });
+
+  it("leaves the single adapter alone, since photos and pasted text use it too", () => {
+    const blurb = { ...recipeData("Borscht"), description: "My family's soup." };
+    expect(adaptCookPilotRecipe({ recipe: blurb })?.description).toBe("My family's soup.");
+  });
+
+  it("keeps the cook's own note when it drops the website's description", () => {
+    const out = withoutWebsiteDescription({
+      title: "Borscht",
+      description: "SEO filler",
+      note: "Double the dill.",
+      ingredients: [],
+      instructions: [],
+    });
+    expect(out).not.toHaveProperty("description");
+    expect(out.note).toBe("Double the dill.");
   });
 });

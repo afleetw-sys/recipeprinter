@@ -228,11 +228,18 @@ describe("adaptPaprikaRecipe", () => {
     expect(unnamed?.sourceName).toBe("x.example");
   });
 
-  it("uses notes as the description only when there is no description", () => {
-    expect(adaptPaprikaRecipe(record({ notes: "Freezes well." }))?.description).toBe("Freezes well.");
-    expect(
-      adaptPaprikaRecipe(record({ description: "A beet soup.", notes: "Freezes well." }))?.description,
-    ).toBe("A beet soup.");
+  it("keeps the cook's notes as their own note, never as the website description", () => {
+    const recipe = adaptPaprikaRecipe(record({ notes: "Freezes well." }));
+    expect(recipe?.note).toBe("Freezes well.");
+    expect(recipe?.description).toBeUndefined();
+  });
+
+  it("drops a description saved from a website, and keeps one the cook wrote", () => {
+    const fromSite = adaptPaprikaRecipe(
+      record({ description: "The best borscht on the internet!", source_url: "https://x.example/r" }),
+    );
+    expect(fromSite?.description).toBeUndefined();
+    expect(adaptPaprikaRecipe(record({ description: "A beet soup." }))?.description).toBe("A beet soup.");
   });
 
   it("titles an untitled recipe rather than dropping it", () => {

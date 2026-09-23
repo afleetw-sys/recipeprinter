@@ -8,7 +8,7 @@ import { captureFailedImportImages, recordFailedImport } from "@/lib/failedImpor
 import { placeholderHostMessage } from "@/lib/friendlyErrors";
 import { unwrapRedirectUrl } from "@/lib/importUrl";
 import { prepareImageDataUrls } from "@/lib/imageImport";
-import { normalizeImportURL } from "@/lib/cookpilot";
+import { normalizeImportURL, withoutWebsiteDescription } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
 import { uid } from "@/lib/ids";
 import { deleteLocalPhoto, isBlobUrl, localPhotoUrls } from "@/lib/localPhotos";
@@ -672,7 +672,12 @@ export function useQueue() {
       track("recipe_import_started", { ...outcome, importId: id, ...(url ? { url } : {}) });
       try {
         const result = await work();
-        const recipes = Array.isArray(result) ? result : [result];
+        // A URL import is a website's page, and we keep none of a website's
+        // own description (see `withoutWebsiteDescription`). The parser path
+        // already drops it; this holds at the point of storage regardless.
+        const recipes = (Array.isArray(result) ? result : [result]).map((recipe) =>
+          origin.source === "url" ? withoutWebsiteDescription(recipe) : recipe,
+        );
         // parseUrlAll/parseImages/parseText throw rather than resolve empty, so this
         // is a defensive guard, not an expected branch.
         if (recipes.length === 0) {

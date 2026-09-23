@@ -191,6 +191,27 @@ export function adaptCookPilotRecipe(body: unknown, sourceUrl?: string): Recipe 
 }
 
 /**
+ * A recipe without the description its website gave it.
+ *
+ * That blurb is the blogger's writing, not a fact about the dish, and we store
+ * what we import and print it into books people keep. For legal reasons we
+ * keep none of it: the cook writes their own (`note`), which is always there
+ * to type into on a cookbook page. CookPilot already strips it from anything it
+ * sends us; this is the same rule on our side, so it holds whatever the parser
+ * returns and whichever path a recipe arrives by.
+ *
+ * Applied to web-sourced recipes only. A photo or pasted text is the cook's own
+ * input, and a library recipe with no source link is their own writing.
+ * Recipes stored before this rule keep what they have.
+ */
+export function withoutWebsiteDescription(recipe: Recipe): Recipe {
+  if (recipe.description === undefined) return recipe;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { description, ...rest } = recipe;
+  return rest;
+}
+
+/**
  * Array-aware sibling of `adaptCookPilotRecipe` for the RecipePrinter-only
  * multi-recipe URL path. When CookPilot returns `{ recipes: RecipeData[] }` (a
  * roundup page), each element is flattened through the single-recipe adapter and
@@ -199,14 +220,17 @@ export function adaptCookPilotRecipe(body: unknown, sourceUrl?: string): Recipe 
  * as a one-element array — so a normal single-recipe response still yields one.
  */
 export function adaptCookPilotRecipes(body: unknown, sourceUrl?: string): Recipe[] {
+  // Only ever a web page's parse (the route and its callable fallback), so
+  // the website's own description goes here, before anything can store it.
   if (body && typeof body === "object" && Array.isArray((body as AnyRecord).recipes)) {
     const recipes = (body as AnyRecord).recipes as unknown[];
     return recipes
       .map((entry) => adaptCookPilotRecipe(entry, sourceUrl))
-      .filter((recipe): recipe is Recipe => recipe !== null);
+      .filter((recipe): recipe is Recipe => recipe !== null)
+      .map(withoutWebsiteDescription);
   }
   const one = adaptCookPilotRecipe(body, sourceUrl);
-  return one ? [one] : [];
+  return one ? [withoutWebsiteDescription(one)] : [];
 }
 
 function parseRecipeJSON(recipeJSON: string | undefined): AnyRecord | null {

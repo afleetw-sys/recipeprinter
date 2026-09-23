@@ -276,7 +276,10 @@ function recipeFromStoredDocuments(
   const recipeData: AnyRecord = {
     schemaVersion: detail?.schemaVersion ?? 2,
     title: summary.title,
-    description: detail?.description ?? null,
+    // A recipe that came from a website carries that website's description,
+    // which we never keep (see `withoutWebsiteDescription`). One with no source
+    // link is the cook's own writing, and comes along.
+    description: summary.sourceURL ? null : detail?.description ?? null,
     servings: summary.preferredServings ?? summary.servings,
     prepTime: detail?.prepTime ?? null,
     cookTime: detail?.cookTime ?? null,
