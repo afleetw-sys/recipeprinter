@@ -35,6 +35,7 @@ import {
   type PrintCardSize,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
+import { blankPageReason } from "@/lib/usePrintSheets";
 import type { NavItem, PageSheet, SheetSlot, usePrintSheets } from "@/lib/usePrintSheets";
 import {
   sectionHasArtPage,
@@ -1404,7 +1405,7 @@ export function PrintDeck(props: PrintDeckProps) {
                       ? spread.left
                       : null;
                   const designedBlank = leftSlot?.kind === "toc";
-                  const renderBlank = (trailing = false) => (
+                  const renderBlank = (trailing = false, reason?: string) => (
                     <div
                       className={`recipe-spread__blank recipe-template--${previewTemplate} ${
                         designedBlank ? "recipe-spread__blank--designed" : ""
@@ -1414,7 +1415,7 @@ export function PrintDeck(props: PrintDeckProps) {
                           ? `${RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === previewTemplate)?.label ?? "Template"} decorative page`
                           : undefined
                       }
-                      aria-hidden={designedBlank ? undefined : true}
+                      aria-hidden={designedBlank || reason ? undefined : true}
                       style={{
                         width: `${previewDims.w * deckScale}px`,
                         height: `${previewDims.h * deckScale}px`,
@@ -1423,6 +1424,7 @@ export function PrintDeck(props: PrintDeckProps) {
                       {leftSlot?.kind === "toc" ? (
                         <div className="recipe-spread__blank-decoration" aria-hidden />
                       ) : null}
+                      {reason ? <p className="recipe-spread__blank-reason no-print">{reason}</p> : null}
                     </div>
                   );
                   // Far from the reader, and not printing: hold the page's box
@@ -1446,7 +1448,12 @@ export function PrintDeck(props: PrintDeckProps) {
                     }
                     const ni = navIndexForSheet.get(sheetIndex);
                     const pageNav = ni != null ? navItems[ni] : null;
-                    if (!pageNav) return renderBlank();
+                    if (!pageNav) {
+                      // A blank leaf the book prints on purpose: say why, on
+                      // screen only, so it isn't mistaken for a missing page.
+                      const isBlankLeaf = pageSheet.slots.some((slot) => slot?.kind === "blank");
+                      return renderBlank(false, isBlankLeaf ? blankPageReason(sheets, sheetIndex) : undefined);
+                    }
                     // A linked spread (image or TOC) outlines both pages when
                     // either is focused; a normal spread, and a section spread,
                     // only the specific page — a section spread gets its OWN

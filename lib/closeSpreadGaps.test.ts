@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { closeSpreadGaps, type PageSheet } from "@/lib/usePrintSheets";
+import { blankPageReason, closeSpreadGaps, type PageSheet } from "@/lib/usePrintSheets";
 
 /* Sheets, stripped to the two things assembleSpreads reads: what kind of
    page it is, and whether it is one half of a facing pair. No cover in front,
@@ -97,5 +97,27 @@ describe("closeSpreadGaps", () => {
       "divider",
       "section-photo",
     ]);
+  });
+});
+
+describe("blankPageReason", () => {
+  const blankIndex = (sheets: PageSheet[]) => kinds(sheets).indexOf("blank");
+
+  it("explains a blank that keeps a photo beside its recipe", () => {
+    const sheets = [photo(), recipe()];
+    closeSpreadGaps(sheets);
+    expect(blankPageReason(sheets, blankIndex(sheets))).toMatch(/photo faces its recipe/);
+  });
+
+  it("explains a blank that keeps a chapter opener beside its art", () => {
+    const sheets = [recipe(), recipe(), opener(), openerPhoto()];
+    closeSpreadGaps(sheets);
+    expect(blankPageReason(sheets, blankIndex(sheets))).toMatch(/chapter opens facing its photo/);
+  });
+
+  it("explains a blank that finishes the contents' own spread", () => {
+    const sheets = [toc(), toc(), opener(), recipe()];
+    closeSpreadGaps(sheets);
+    expect(blankPageReason(sheets, blankIndex(sheets))).toMatch(/contents has a spread to itself/);
   });
 });

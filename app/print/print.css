@@ -1585,6 +1585,22 @@
   background: var(--recipe-bg, var(--cp-card));
 }
 
+/* Why a blank page is blank. Screen only: the page prints empty. */
+.recipe-spread__blank {
+  position: relative;
+}
+
+.recipe-spread__blank-reason {
+  position: absolute;
+  inset: auto 12% 50%;
+  transform: translateY(50%);
+  margin: 0;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  line-height: 1.4;
+  text-align: center;
+}
+
 /* The first slide's controls float above the card like every other slide's —
    NOT pushed into normal flow. They used to be `position: static` for the first
    slide, on the theory that it "has nothing above it" so a floating control

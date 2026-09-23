@@ -311,6 +311,25 @@ export function closeSpreadGaps(sheets: PageSheet[]): void {
 }
 
 /**
+ * Why the blank leaf at `index` is there, in a line the preview shows on it
+ * (never printed). An empty page with no explanation reads as a bug.
+ *
+ * Read from the page after it, because that is the page each blank exists
+ * for: closeSpreadGaps only ever adds one to move what follows onto a
+ * left-hand page.
+ */
+export function blankPageReason(sheets: PageSheet[], index: number): string {
+  if (sheets[index - 1]?.slots.some((slot) => slot?.kind === "toc")) {
+    return "Prints blank so the contents has a spread to itself.";
+  }
+  if (sheets[index + 1]?.layoutKind === "image") return "Prints blank so the photo faces its recipe.";
+  if (sheets[index + 2]?.layoutKind === "section-photo") {
+    return "Prints blank so the chapter opens facing its photo.";
+  }
+  return "Prints blank so the next two pages face each other.";
+}
+
+/**
  * A deliberately empty leaf, there so a pair of pages lies open together.
  *
  * Not decoration and not a mistake: page 1 is on the RIGHT, because a print
