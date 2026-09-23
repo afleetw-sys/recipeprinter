@@ -4140,7 +4140,7 @@ export default function PrintPage() {
                   </span>
                 </span>
               }
-              hint="Longer recipes print on the back too."
+              hint="Longer recipes print on the back."
               checked={doubleSided}
               onChange={(event) => setDoubleSided(event.target.checked)}
           />
