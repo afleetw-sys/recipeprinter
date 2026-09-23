@@ -1490,6 +1490,15 @@ export function PrintDeck(props: PrintDeckProps) {
                         spread.single ? "recipe-page-slide--single" : ""
                       }`}
                       data-first={index === 0 ? "true" : undefined}
+                      data-last={index === spreads.length - 1 ? "true" : undefined}
+                      // A lone page (cover, dedication, back cover) is one page
+                      // wide, not a spread's two. The phone filmstrip reads this
+                      // to size its slot, and to centre the first and last one.
+                      style={
+                        spread.single
+                          ? ({ "--slide-page-w": `${previewDims.w * deckScale}px` } as CSSProperties)
+                          : undefined
+                      }
                       onClick={() => {
                         if (!isActive) goToSlide(index);
                       }}
@@ -1517,9 +1526,7 @@ export function PrintDeck(props: PrintDeckProps) {
                               ? -((previewDims.w * deckScale + 12) / 2)
                               : (previewDims.w * deckScale + 12) / 2,
                         )}
-                      {isActive && (
-                        <EditTips editing={Boolean(activeInlineEdit?.editingTarget)} />
-                      )}
+                      {/* No EditTips here: a cookbook shows none. */}
                       <div
                         className={`recipe-spread ${spread.single ? "recipe-spread--single" : ""} ${
                           isActive &&

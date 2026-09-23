@@ -2528,7 +2528,8 @@
 .recipe-mobile-actions,
 .recipe-mobile-sheet,
 .recipe-mobile-sheet__backdrop,
-.recipe-config-panel__close {
+.recipe-config-panel__close,
+.recipe-pages-fab {
   display: none;
 }
 
@@ -3122,6 +3123,60 @@
   .recipe-page-slide:not(.is-active) {
     display: grid;
     opacity: 0.72;
+  }
+
+  /* A cookbook's lone pages (cover, dedication, back cover) are one page
+     wide. The floor above is a spread's width, so a lone page sat in the
+     middle of room for two, with its neighbours pushed out of sight. Its slot
+     is its own width instead. The first and last slides still need to centre,
+     and a narrow slide at either end of the strip can't scroll that far, so
+     they carry the missing distance as a margin. It is a percentage of the
+     deck's content box, which is the window minus the deck's 40px padding
+     either side, so `50% - page/2` lands the page's centre on the window's.
+     `--slide-page-w` comes from PrintDeck, and grows with zoom, where the
+     margin runs out at zero. */
+  .recipe-page-deck--book > .recipe-page-slide--single {
+    min-width: 0;
+  }
+
+  .recipe-page-deck--book > .recipe-page-slide--single[data-first="true"] {
+    margin-inline-start: max(0px, calc(50% - var(--slide-page-w, 0px) / 2));
+  }
+
+  .recipe-page-deck--book > .recipe-page-slide--single[data-last="true"] {
+    margin-inline-end: max(0px, calc(50% - var(--slide-page-w, 0px) / 2));
+  }
+
+  /* The cookbook's Pages button (MobileStructureSheet): floats over the
+     deck, bottom right, clear of the action bar by the same 132px reserve
+     the toast uses. A floating control, so it gets a shadow (the only kind
+     of thing that does). Below the sheets (80/81) and the action bar (75). */
+  .recipe-pages-fab {
+    position: fixed;
+    right: 16px;
+    bottom: calc(132px + 12px + env(safe-area-inset-bottom));
+    z-index: 74;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--cp-line);
+    border-radius: 999px;
+    background: var(--cp-card);
+    color: var(--cp-ink);
+    box-shadow: var(--cp-shadow-md);
+    cursor: pointer;
+  }
+
+  .recipe-pages-fab.is-active {
+    border-color: var(--cp-selected-border);
+    background: var(--cp-selected-fill);
+    color: var(--cp-selected-text);
+  }
+
+  .recipe-pages-fab:focus-visible {
+    outline: var(--cp-focus-ring);
+    outline-offset: var(--cp-focus-ring-offset);
   }
 
   /* The same edge the desktop page rail uses for its selected thumbnail

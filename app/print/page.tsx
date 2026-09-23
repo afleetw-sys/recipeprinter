@@ -105,6 +105,7 @@ import {
 import { track } from "@/lib/analytics";
 import {
   BookIcon,
+  PagesIcon,
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -4650,8 +4651,12 @@ export default function PrintPage() {
   // The page rail (reorder/structure) is hidden on phones because the desktop
   // one relies on drag-and-drop, which doesn't exist on touch. This is the
   // mobile stand-in: a bottom sheet with the same structure controls driven by
-  // taps instead. Cookbook mode only — plain cards have no sections to arrange.
+  // taps instead, opened from the floating page-sorter button over the deck.
+  // Cookbook mode only — plain cards have no sections to arrange.
   const [structureSheetOpen, setStructureSheetOpen] = useState(false);
+  // The bottom bar's Book button: book-wide settings, kept apart from the
+  // structure list above.
+  const [bookSheetOpen, setBookSheetOpen] = useState(false);
   // The print-setup panel is a persistent sidebar on desktop and a modal
   // drawer on mobile, so it can only claim to be a dialog in the second case.
   // While it is one, it gets a real focus trap and Escape-to-close — it
@@ -5617,17 +5622,18 @@ export default function PrintPage() {
                   (an import still parsing counts), so the two never disagree. */}
               {recipeCount > 0 ? "Add more" : "Add recipe"}
             </button>
-            {/* Pages/structure — the mobile stand-in for the drag-only desktop
-                rail, which is hidden on touch. Cookbook mode only. */}
+            {/* Book-wide settings. The structure list lives behind the
+                floating page-sorter button instead. Cookbook mode only. */}
             {cookbookMode && (
               <button
                 type="button"
-                className={`recipe-mobile-toolbar__btn ${structureSheetOpen ? "is-active" : ""}`}
-                aria-pressed={structureSheetOpen}
+                className={`recipe-mobile-toolbar__btn ${bookSheetOpen ? "is-active" : ""}`}
+                aria-pressed={bookSheetOpen}
                 aria-haspopup="dialog"
                 onClick={() => {
                   setSizeMenuOpen(false);
-                  setStructureSheetOpen((open) => !open);
+                  setStructureSheetOpen(false);
+                  setBookSheetOpen((open) => !open);
                 }}
               >
                 <span className="recipe-mobile-toolbar__btn-icon">
@@ -5733,6 +5739,27 @@ export default function PrintPage() {
           </button>
         </div>
 
+        {/* Pages/structure — the mobile stand-in for the drag-only desktop
+            rail, which is hidden on touch. It floats over the deck, apart from
+            the bottom bar's tools, because it is about the pages themselves.
+            The glyph is PowerPoint's Slide Sorter: every page laid out small. */}
+        {cookbookMode && (
+          <button
+            type="button"
+            className={`recipe-pages-fab no-print ${structureSheetOpen ? "is-active" : ""}`}
+            aria-label="Pages"
+            aria-haspopup="dialog"
+            aria-expanded={structureSheetOpen}
+            onClick={() => {
+              setSizeMenuOpen(false);
+              setBookSheetOpen(false);
+              setStructureSheetOpen((open) => !open);
+            }}
+          >
+            <PagesIcon size={ICON_SIZE.lg} />
+          </button>
+        )}
+
         <MobileStructureSheet
           projectMeta={projectMeta}
           sections={sections}
@@ -5746,6 +5773,8 @@ export default function PrintPage() {
           navigateToRecipe={navigateToRecipe}
           moveRecipeInBook={moveRecipeInBook}
           addStructureSection={addStructureSection}
+          bookSheetOpen={bookSheetOpen}
+          setBookSheetOpen={setBookSheetOpen}
           structureSheetOpen={structureSheetOpen}
           setStructureSheetOpen={setStructureSheetOpen}
         />

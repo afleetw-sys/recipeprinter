@@ -22,16 +22,25 @@ interface MobileStructureSheetProps {
   navigateToRecipe: (itemId: string) => void;
   moveRecipeInBook: (itemId: string, direction: -1 | 1) => void;
   addStructureSection: () => void;
+  bookSheetOpen: boolean;
+  setBookSheetOpen: Dispatch<SetStateAction<boolean>>;
   structureSheetOpen: boolean;
   setStructureSheetOpen: Dispatch<SetStateAction<boolean>>;
 }
 
 /**
- * The mobile "Book" bottom sheet: book-wide settings (table of contents,
- * opening page, photos) plus a reorderable list of sections and recipes.
- * Desktop uses the page rail and the Book Settings panel instead; this is the
- * touch-native equivalent, since the mobile config drawer only ever opens the
- * Themes section.
+ * The two mobile cookbook sheets. Desktop uses the page rail and the Book
+ * Settings panel instead; these are the touch-native equivalents, since the
+ * mobile config drawer only ever opens the Themes section.
+ *
+ * - "Book" (the bottom bar's Book button): book-wide settings, the extra
+ *   pages and photos.
+ * - "Pages" (the floating page-sorter button over the deck): the reorderable
+ *   list of chapters and recipes.
+ *
+ * They used to be one sheet, with the structure list under the settings. The
+ * list is what a cook comes back to again and again, and it answers a
+ * different question from how the book is set up, so it has its own way in.
  */
 export function MobileStructureSheet({
   projectMeta,
@@ -46,6 +55,8 @@ export function MobileStructureSheet({
   navigateToRecipe,
   moveRecipeInBook,
   addStructureSection,
+  bookSheetOpen,
+  setBookSheetOpen,
   structureSheetOpen,
   setStructureSheetOpen,
 }: MobileStructureSheetProps) {
@@ -54,31 +65,12 @@ export function MobileStructureSheet({
     const recipeCount = orderedIds.length;
     const metaSections = projectMeta.meta.sections;
     return (
+      <>
         <MobileSheet
-          open={structureSheetOpen}
-          onClose={() => setStructureSheetOpen(false)}
+          open={bookSheetOpen}
+          onClose={() => setBookSheetOpen(false)}
           title="Book"
-          subtitle={
-            <>
-              {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"} ·{" "}
-              {namedSectionCount(sections)}{" "}
-              {namedSectionCount(sections) === 1 ? "chapter" : "chapters"}
-            </>
-          }
-          ariaLabel="Pages and structure"
           className="recipe-structure-sheet"
-          footer={
-            <>
-              <button
-                type="button"
-                className="btn btn-secondary btn-compact"
-                onClick={addStructureSection}
-              >
-                <PlusIcon size={ICON_SIZE.sm} />
-                Add chapter
-              </button>
-            </>
-          }
         >
             {/* Book-wide settings — the same controls as the desktop "Book
                 Settings" panel, which the mobile config drawer never exposes
@@ -129,11 +121,34 @@ export function MobileStructureSheet({
                 </div>
               )}
             </div>
+        </MobileSheet>
 
-            <span className="recipe-structure-sheet__group-label recipe-structure-sheet__group-label--structure">
-              Structure
-            </span>
-
+        <MobileSheet
+          open={structureSheetOpen}
+          onClose={() => setStructureSheetOpen(false)}
+          title="Pages"
+          subtitle={
+            <>
+              {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"} ·{" "}
+              {namedSectionCount(sections)}{" "}
+              {namedSectionCount(sections) === 1 ? "chapter" : "chapters"}
+            </>
+          }
+          ariaLabel="Pages and structure"
+          className="recipe-structure-sheet"
+          footer={
+            <>
+              <button
+                type="button"
+                className="btn btn-secondary btn-compact"
+                onClick={addStructureSection}
+              >
+                <PlusIcon size={ICON_SIZE.sm} />
+                Add chapter
+              </button>
+            </>
+          }
+        >
             {sections.map((section) => {
               const metaIndex = metaSections.findIndex((candidate) => candidate.id === section.id);
               const canSectionUp = metaIndex > 0;
@@ -222,7 +237,7 @@ export function MobileStructureSheet({
                     })}
                     {section.items.length === 0 && (
                       <li className="recipe-structure-sheet__empty">
-                        Empty — step a recipe here with the arrows above.
+                        No recipes yet. Use the arrows to move one into this chapter.
                       </li>
                     )}
                   </ul>
@@ -230,5 +245,6 @@ export function MobileStructureSheet({
               );
             })}
         </MobileSheet>
+      </>
     );
 }
