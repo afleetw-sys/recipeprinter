@@ -672,6 +672,9 @@ export interface ProSubscriptionDetails {
    *  `expiresAtMs`, it isn't revoked the moment someone cancels. */
   active: boolean;
   willRenew: boolean;
+  /** Bought as a single month (`pro_one_month`) rather than a subscription.
+   *  It never renews, but nobody canceled anything either. */
+  oneMonth: boolean;
   expiresAtMs: number | null;
 }
 
@@ -682,7 +685,7 @@ export interface ProSubscriptionDetails {
 export function proSubscriptionDetails(customerInfo: CustomerInfo | null): ProSubscriptionDetails {
   const entitlement = customerInfo?.entitlements.all[RECIPEPRINTER_PRO_ENTITLEMENT_ID];
   if (!entitlement) {
-    return { cycle: null, active: false, willRenew: false, expiresAtMs: null };
+    return { cycle: null, active: false, willRenew: false, oneMonth: false, expiresAtMs: null };
   }
   const product = entitlement.productIdentifier;
   const cycle: ProBillingCycle | null =
@@ -695,6 +698,7 @@ export function proSubscriptionDetails(customerInfo: CustomerInfo | null): ProSu
     cycle,
     active: entitlement.isActive,
     willRenew: entitlement.willRenew,
+    oneMonth: product === RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID,
     expiresAtMs: entitlement.expirationDate ? entitlement.expirationDate.getTime() : null,
   };
 }
