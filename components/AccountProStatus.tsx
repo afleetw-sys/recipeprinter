@@ -13,7 +13,6 @@ import { AccountImageImportUsage } from "@/components/AccountImageImportUsage";
 import { track } from "@/lib/analytics";
 import {
   loadRecipePrinterCustomerInfo,
-  proManagementUrl,
   proSubscriptionDetails,
 } from "@/lib/recipePrinterPurchases";
 import { useProPurchase } from "@/lib/useProPurchase";
@@ -132,7 +131,9 @@ export function AccountProStatus({ user }: { user: User }) {
     [proCustomerInfo, proInfoStatus, proInfoLastVerifiedAtMs, proMirroredEntitlements, proMirrorSyncedAtMs],
   );
   const proDetails = proSubscriptionDetails(effectiveProInfo.customerInfo);
-  const proManagementLink = proManagementUrl(effectiveProInfo.customerInfo);
+  // RevenueCat's hosted billing portal, where a subscriber changes plan or
+  // cancels. Null with no purchase relationship yet (and on a mirror fallback).
+  const proManagementLink = effectiveProInfo.customerInfo?.managementURL ?? null;
 
   const { proBusy, purchaseProAndContinue } = useProPurchase({
     revenueCatUserId: uid,

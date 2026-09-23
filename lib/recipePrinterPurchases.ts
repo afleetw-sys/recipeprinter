@@ -608,13 +608,6 @@ export async function waitForProEntitlement(userId: string): Promise<CustomerInf
   return customerInfo;
 }
 
-/** RevenueCat's hosted billing-management link for the signed-in customer —
- *  where a subscriber changes plan or cancels. Null when the SDK has no
- *  portal URL to offer (e.g. no purchase relationship yet). */
-export function proManagementUrl(customerInfo: CustomerInfo | null): string | null {
-  return customerInfo?.managementURL ?? null;
-}
-
 export interface ProSubscriptionDetails {
   cycle: ProBillingCycle | null;
   /** True even while canceled (`willRenew: false`) — access lasts through

@@ -158,6 +158,11 @@ export function useCookbookPurchase({
     // true the moment the buyer committed, not re-read mid-flow, and visible
     // to the catch block below too.
     const usingDiscount = discountEligible;
+    const eventProps = {
+      product: "cookbook" as const,
+      customerId: revenueCatUserId,
+      ...(usingDiscount ? { discount: "pro_first" as const } : {}),
+    };
     try {
       if (isCookbookProjectUnlocked(projectId)) {
         setProjectUnlocked(true);
@@ -165,11 +170,7 @@ export function useCookbookPurchase({
         return;
       }
 
-      track("purchase_started", {
-        product: "cookbook",
-        customerId: revenueCatUserId,
-        ...(usingDiscount ? { discount: "pro_first" as const } : {}),
-      });
+      track("purchase_started", eventProps);
       const result = await purchaseRecipePrinterCookbook({
         userId: revenueCatUserId,
         email: cookPilotUser?.email,
@@ -178,20 +179,12 @@ export function useCookbookPurchase({
       });
 
       if (result.cancelled) {
-        track("purchase_cancelled", {
-          product: "cookbook",
-          customerId: revenueCatUserId,
-          ...(usingDiscount ? { discount: "pro_first" as const } : {}),
-        });
+        track("purchase_cancelled", eventProps);
         showToast("Purchase cancelled. Your cookbook is still here when you're ready.");
         return;
       }
 
-      track("purchase_completed", {
-        product: "cookbook",
-        customerId: revenueCatUserId,
-        ...(usingDiscount ? { discount: "pro_first" as const } : {}),
-      });
+      track("purchase_completed", eventProps);
 
       markCookbookProjectUnlockedLocal(projectId);
       setProjectUnlocked(true);
@@ -212,12 +205,7 @@ export function useCookbookPurchase({
     } catch (error) {
       // See the same catch in usePremiumTemplatePurchase: a charge that
       // clears upstream and then throws here left no event at all.
-      track("purchase_failed", {
-        product: "cookbook",
-        reason: truncateReason(error),
-        customerId: revenueCatUserId,
-        ...(usingDiscount ? { discount: "pro_first" as const } : {}),
-      });
+      track("purchase_failed", { ...eventProps, reason: truncateReason(error) });
       showErrorToast(friendlyPurchaseSetupError(error));
     } finally {
       setCookbookPurchaseBusy(false);
