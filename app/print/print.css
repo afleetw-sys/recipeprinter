@@ -6753,7 +6753,8 @@ textarea.recipe-card__toc-title {
   display: flex;
   flex-direction: column;
   /* Width and aspect ratio are set inline from PAGE_DIMS × deckScale, so the
-     outline is the exact size and shape the page it stands in for would be. */
+     outline is the exact size and shape the page it stands in for would be —
+     unless that is too small to hold the words (see --compact). */
   max-width: 100%;
   max-height: 100%;
   padding: 30px 28px;
@@ -6833,6 +6834,26 @@ textarea.recipe-card__toc-title {
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-small);
   line-height: 1.45;
+}
+
+/* A page too small to hold the words. On a phone the page scales down to
+   ~140-200px wide while the title, copy and button do not, so the button sat
+   on the border and the copy spilled out below it. The words win: the outline
+   stops being page-shaped (no aspect ratio is set inline), takes the width the
+   copy needs, and is as tall as the copy. The ghost goes, since it is
+   decoration and took most of the height the words needed. */
+.recipe-page-empty__sheet--compact {
+  width: min(280px, 100%);
+  max-height: none;
+  padding: 28px 24px;
+}
+
+.recipe-page-empty__sheet--compact .recipe-page-empty__ghost {
+  display: none;
+}
+
+.recipe-page-empty__sheet--compact .recipe-page-empty__copy {
+  padding: 0;
 }
 
 /* A 6×4 card is a third the height of a sheet: the ghost keeps only its header
