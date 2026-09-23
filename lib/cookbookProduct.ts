@@ -3,7 +3,6 @@
 // the permanent ownership record is our project-scoped unlock, not a global
 // cookbook entitlement — there is no account-wide entitlement to read.
 export const RECIPEPRINTER_COOKBOOK_OFFERING_ID = "cookbook";
-export const RECIPEPRINTER_COOKBOOK_PACKAGE_ID = "cookbook";
 export const RECIPEPRINTER_COOKBOOK_PRODUCT_ID = "cookbook";
 
 // A second, discounted product/package — 20% off, for a Pro subscriber's
@@ -15,7 +14,6 @@ export const RECIPEPRINTER_COOKBOOK_PRODUCT_ID = "cookbook";
 // hand). CookPilot's `recordFirstCookbookGrant` is what decides eligibility
 // server-side (see lib/recipePrinterUserProfile.ts's
 // `firstCookbookGrantedAt` for how the client reads that signal back).
-export const RECIPEPRINTER_COOKBOOK_DISCOUNT_PACKAGE_ID = "cookbook_pro_first";
 export const RECIPEPRINTER_COOKBOOK_DISCOUNT_PRODUCT_ID = "cookbook_pro_first";
 
 // The cookbook's price, shown wherever we name it ourselves (e.g. the welcome

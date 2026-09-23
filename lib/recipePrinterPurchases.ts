@@ -13,14 +13,11 @@ import {
 import { isProductionRuntime } from "@/lib/appEnvironment";
 import { localStore } from "@/lib/storage";
 import {
-  RECIPEPRINTER_COOKBOOK_DISCOUNT_PACKAGE_ID,
   RECIPEPRINTER_COOKBOOK_DISCOUNT_PRODUCT_ID,
   RECIPEPRINTER_COOKBOOK_OFFERING_ID,
-  RECIPEPRINTER_COOKBOOK_PACKAGE_ID,
   RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
 } from "@/lib/cookbookProduct";
 import {
-  proPackageId,
   proProductId,
   RECIPEPRINTER_PRO_ENTITLEMENT_ID,
   RECIPEPRINTER_PRO_OFFERING_ID,
@@ -38,7 +35,6 @@ type PurchasesModule = typeof import("@revenuecat/purchases-js");
 let purchasesModulePromise: Promise<PurchasesModule> | null = null;
 let purchasesInstance: Purchases | null = null;
 let configuredUserId: string | null = null;
-let configuringPromise: Promise<Purchases> | null = null;
 
 const RECIPEPRINTER_CUSTOMER_STORAGE_KEY = "recipeprinter:revenuecat-user-id:v1";
 const RECIPEPRINTER_KNOWN_CUSTOMER_STORAGE_KEY =
@@ -153,49 +149,22 @@ export async function recipePrinterCustomerId(): Promise<string> {
 async function getPurchases(userId: string): Promise<Purchases> {
   const { Purchases } = await loadPurchasesModule();
 
-  if (purchasesInstance) {
-    if (configuredUserId !== userId) {
-      await purchasesInstance.changeUser(userId);
-      configuredUserId = userId;
-    }
-    return purchasesInstance;
+  // `configure` is synchronous, and nothing awaits between this check and the
+  // assignment, so concurrent first callers can't both get past it: the first
+  // to resume configures, and the rest find the instance.
+  if (!purchasesInstance) {
+    purchasesInstance = Purchases.configure({ apiKey: revenueCatApiKey(), appUserId: userId });
+    configuredUserId = userId;
+    // This call is what creates the customer record, so this is the honest
+    // moment to record that one now exists. Marking here rather than at each
+    // call site means every future path — purchase, login, price lookup —
+    // stays covered without having to remember.
+    markRecipePrinterCustomerKnown();
+  } else if (configuredUserId !== userId) {
+    await purchasesInstance.changeUser(userId);
+    configuredUserId = userId;
   }
-
-  // Concurrent first-time callers (e.g. two effects both requesting the SDK
-  // on mount) must await the same configure() rather than each racing past
-  // the `!purchasesInstance` check above. If the in-flight configure was for
-  // a different identity, switch before returning so entitlement reads don't
-  // accidentally use a stale anonymous customer while Firebase is logging in.
-  if (configuringPromise) {
-    const instance = await configuringPromise;
-    if (configuredUserId !== userId) {
-      await instance.changeUser(userId);
-      configuredUserId = userId;
-    }
-    return instance;
-  }
-
-  if (!configuringPromise) {
-    const apiKey = revenueCatApiKey();
-    configuringPromise = (async () => {
-      try {
-        const instance = Purchases.configure({ apiKey, appUserId: userId });
-        purchasesInstance = instance;
-        configuredUserId = userId;
-        // This call is what creates the customer record, so this is the
-        // honest moment to record that one now exists. Marking here rather
-        // than at each call site means every future path — purchase, login,
-        // price lookup — stays covered without having to remember.
-        markRecipePrinterCustomerKnown();
-        return instance;
-      } catch (error) {
-        configuringPromise = null;
-        throw error;
-      }
-    })();
-  }
-
-  return configuringPromise;
+  return purchasesInstance;
 }
 
 export function hasTemplateEntitlement(
@@ -447,33 +416,19 @@ async function offeringFor(purchases: Purchases, offeringId: string): Promise<Of
 }
 
 /**
- * Resolves one purchasable package within an offering.
+ * The package in an offering that sells exactly `productId`, or null.
  *
- * Three lookups because RevenueCat dashboard configuration drifts: the product
- * identifier is the reliable key, but packages have historically been reachable
- * only by package id, so both are tried.
- *
- * The closing identity check is the part that matters, and the reason this is
- * one function instead of four copies. The two fallbacks match by *package* id,
- * which is a dashboard-side label — if it were ever pointed at a different
- * product, they would happily return a package that charges for something else.
- * Returning null unless the resolved package's product identifier is exactly
- * the one asked for makes selling the wrong item structurally impossible, and
- * having it in one place means it can't be forgotten at a fifth call site.
+ * Matched by product, never by package id: a package id is a dashboard-side
+ * label, and if it were ever pointed at a different product a lookup by it
+ * would happily charge for something else. (This used to also try the package
+ * id, twice, then re-check the product; the SDK builds `packagesById` from the
+ * same list as `availablePackages`, so those lookups could only ever return
+ * what this one already finds.)
  */
-function findPackage(
-  offering: Offering | null,
-  packageId: string,
-  productId: string,
-): Package | null {
-  const candidate =
-    offering?.availablePackages.find(
-      (option) => option.webBillingProduct.identifier === productId,
-    ) ??
-    offering?.packagesById[packageId] ??
-    offering?.availablePackages.find((option) => option.identifier === packageId);
-
-  return candidate?.webBillingProduct.identifier === productId ? candidate : null;
+function findPackage(offering: Offering | null, productId: string): Package | null {
+  return (
+    offering?.availablePackages.find((option) => option.webBillingProduct.identifier === productId) ?? null
+  );
 }
 
 /**
@@ -592,13 +547,10 @@ async function packageForCookbook(
   discountEligible: boolean,
 ): Promise<Package> {
   const offering = await offeringFor(purchases, RECIPEPRINTER_COOKBOOK_OFFERING_ID);
-  const rcPackage = discountEligible
-    ? findPackage(
-        offering,
-        RECIPEPRINTER_COOKBOOK_DISCOUNT_PACKAGE_ID,
-        RECIPEPRINTER_COOKBOOK_DISCOUNT_PRODUCT_ID,
-      )
-    : findPackage(offering, RECIPEPRINTER_COOKBOOK_PACKAGE_ID, RECIPEPRINTER_COOKBOOK_PRODUCT_ID);
+  const rcPackage = findPackage(
+    offering,
+    discountEligible ? RECIPEPRINTER_COOKBOOK_DISCOUNT_PRODUCT_ID : RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
+  );
   if (!rcPackage) throw new Error("The cookbook upgrade isn't ready to buy yet.");
   return rcPackage;
 }
@@ -631,11 +583,7 @@ export async function purchaseRecipePrinterCookbook({
 }
 
 async function packageForPro(purchases: Purchases, plan: ProPlan): Promise<Package> {
-  const rcPackage = findPackage(
-    await offeringFor(purchases, RECIPEPRINTER_PRO_OFFERING_ID),
-    proPackageId(plan),
-    proProductId(plan),
-  );
+  const rcPackage = findPackage(await offeringFor(purchases, RECIPEPRINTER_PRO_OFFERING_ID), proProductId(plan));
   if (!rcPackage) throw new Error("RecipePrinter Pro isn't ready to buy yet.");
   return rcPackage;
 }

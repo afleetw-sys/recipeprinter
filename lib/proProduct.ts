@@ -19,11 +19,6 @@ export const RECIPEPRINTER_PRO_ENTITLEMENT_ID = "pro";
 
 export type ProBillingCycle = "monthly" | "annual";
 
-export const RECIPEPRINTER_PRO_PACKAGE_IDS = {
-  monthly: "pro_monthly",
-  annual: "pro_annual",
-} as const satisfies Record<ProBillingCycle, string>;
-
 export const RECIPEPRINTER_PRO_PRODUCT_IDS = {
   monthly: "pro_monthly",
   annual: "pro_annual",
@@ -38,7 +33,6 @@ export const RECIPEPRINTER_PRO_PRODUCT_IDS = {
 // grants cookbooks (see `waitForProEntitlement`). Match
 // RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID in CookPilot's
 // functions/src/recipePrinterRevenueCat.ts.
-export const RECIPEPRINTER_PRO_ONE_MONTH_PACKAGE_ID = "pro_one_month";
 export const RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID = "pro_one_month";
 /** The product id RevenueCat puts on a one-month promotional "pro" grant —
  *  what the entitlement reads as once a one-month purchase has been granted. */
@@ -53,10 +47,6 @@ export interface ProPlan {
 
 export function buysOneMonth({ cycle, autoRenew }: ProPlan): boolean {
   return cycle === "monthly" && !autoRenew;
-}
-
-export function proPackageId(plan: ProPlan): string {
-  return buysOneMonth(plan) ? RECIPEPRINTER_PRO_ONE_MONTH_PACKAGE_ID : RECIPEPRINTER_PRO_PACKAGE_IDS[plan.cycle];
 }
 
 export function proProductId(plan: ProPlan): string {
