@@ -34,6 +34,7 @@ import { navigateAfterOverlayHistory, useBackDismiss } from "@/lib/useBackDismis
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { MobileStructureSheet, type MobileBookSheet } from "@/components/print/MobileStructureSheet";
+import { EditTips } from "@/components/print/EditTips";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
@@ -5593,6 +5594,12 @@ export default function PrintPage() {
         />
 
         <div className="recipe-mobile-actions no-print">
+          {/* One tip for the whole deck, just above the tools, rather than one
+              hanging under each page. Recipe cards only: a cookbook shows none.
+              Only with a page to act on, since every tip is about one. */}
+          {!cookbookMode && recipeCount > 0 && (
+            <EditTips editing={Boolean(activeInlineEdit?.editingTarget)} />
+          )}
           {/* No way into a cookbook here on purpose. Building a book — covers,
               chapters, page layouts, the organizer — is not something the phone
               layout does well yet, and selling someone a $19.99 document they
@@ -5623,33 +5630,28 @@ export default function PrintPage() {
                   (an import still parsing counts), so the two never disagree. */}
               {recipeCount > 0 ? "Add more" : "Add recipe"}
             </button>
-            {/* Book-wide settings, one tile each: the extra pages the book
-                gains, and how every recipe carries its photo. The structure
-                list lives behind the floating page-sorter button instead.
-                Cookbook mode only. */}
-            {cookbookMode &&
-              (
-                [
-                  { id: "extras", label: "Extra pages", icon: <PagePlusIcon size={ICON_SIZE.lg} /> },
-                  { id: "photos", label: "Photos", icon: <ImageIcon size={ICON_SIZE.lg} /> },
-                ] as const
-              ).map((tile) => (
-                <button
-                  key={tile.id}
-                  type="button"
-                  className={`recipe-mobile-toolbar__btn ${bookSheet === tile.id ? "is-active" : ""}`}
-                  aria-pressed={bookSheet === tile.id}
-                  aria-haspopup="dialog"
-                  onClick={() => {
-                    setSizeMenuOpen(false);
-                    setStructureSheetOpen(false);
-                    setBookSheet((open) => (open === tile.id ? null : tile.id));
-                  }}
-                >
-                  <span className="recipe-mobile-toolbar__btn-icon">{tile.icon}</span>
-                  {tile.label}
-                </button>
-              ))}
+            {/* The pages a book gains beyond its recipes. Cookbook mode only;
+                its Photos sibling sits further along, beside Links, since both
+                are about what every recipe carries. The structure list lives
+                behind the floating page-sorter button instead. */}
+            {cookbookMode && (
+              <button
+                type="button"
+                className={`recipe-mobile-toolbar__btn ${bookSheet === "extras" ? "is-active" : ""}`}
+                aria-pressed={bookSheet === "extras"}
+                aria-haspopup="dialog"
+                onClick={() => {
+                  setSizeMenuOpen(false);
+                  setStructureSheetOpen(false);
+                  setBookSheet((open) => (open === "extras" ? null : "extras"));
+                }}
+              >
+                <span className="recipe-mobile-toolbar__btn-icon">
+                  <PagePlusIcon size={ICON_SIZE.lg} />
+                </span>
+                Extra pages
+              </button>
+            )}
             {/* Size is a recipe-card concept only — hidden in cookbook mode,
                 where every page is a bound letter page. */}
             {!projectMeta.meta.cookbookMode && (
@@ -5680,6 +5682,26 @@ export default function PrintPage() {
               </span>
               Themes
             </button>
+            {/* How every recipe in the book carries its photo. Left of Links:
+                the two settings every recipe page shares sit together. */}
+            {cookbookMode && (
+              <button
+                type="button"
+                className={`recipe-mobile-toolbar__btn ${bookSheet === "photos" ? "is-active" : ""}`}
+                aria-pressed={bookSheet === "photos"}
+                aria-haspopup="dialog"
+                onClick={() => {
+                  setSizeMenuOpen(false);
+                  setStructureSheetOpen(false);
+                  setBookSheet((open) => (open === "photos" ? null : "photos"));
+                }}
+              >
+                <span className="recipe-mobile-toolbar__btn-icon">
+                  <ImageIcon size={ICON_SIZE.lg} />
+                </span>
+                Photos
+              </button>
+            )}
             {/* With more than one recipe possible, this is the only place on
                 mobile to show/hide photos across all of them at once — the
                 per-page toolbar's photo control only ever acts on the one
@@ -5724,7 +5746,9 @@ export default function PrintPage() {
                 >
                   <LinkIcon size={ICON_SIZE.lg} />
                 </span>
-                Show Link
+                {/* The tile's on/off state already says "shown"; the verb only
+                    made the label longer than its neighbours. */}
+                Links
               </button>
             )}
           </div>

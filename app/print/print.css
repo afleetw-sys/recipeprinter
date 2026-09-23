@@ -2542,7 +2542,7 @@
   .recipe-toast {
     right: 16px;
     left: 16px;
-    bottom: calc(132px + env(safe-area-inset-bottom));
+    bottom: calc(var(--rp-mobile-bar-reserve, 132px) + env(safe-area-inset-bottom));
     max-width: none;
   }
 
@@ -2557,12 +2557,24 @@
     display: none;
   }
 
+  /* The room kept clear under the deck for the fixed action bar. The bar is
+     ~121px; with the one-line tip in it (recipe cards) it is ~24px taller,
+     and the shell, the toast and the Pages button all read this so none of
+     them sits behind it. */
+  .recipe-print-page {
+    --rp-mobile-bar-reserve: 132px;
+  }
+
+  .recipe-print-page:has(.recipe-mobile-actions .recipe-edit-tips) {
+    --rp-mobile-bar-reserve: 156px;
+  }
+
   .recipe-print-shell {
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: minmax(0, 1fr);
     height: 100dvh;
-    padding: 0 0 132px !important;
+    padding: 0 0 var(--rp-mobile-bar-reserve, 132px) !important;
     gap: 0;
     overflow: hidden;
   }
@@ -3082,10 +3094,7 @@
        than the deck has to overflow on the side scrolling can reach. */
     align-items: center;
     align-items: safe center;
-    /* Room for the one-line tip that hangs under the active page
-       (`.recipe-edit-tips`, 12px down, ~16px tall), which would otherwise sit
-       on top of the next page. */
-    gap: 40px;
+    gap: 16px;
     min-height: 0;
     padding: var(--deck-top-pad, 44vh) 20px;
     overflow-x: hidden;
@@ -3131,7 +3140,7 @@
   .recipe-pages-fab {
     position: fixed;
     right: 16px;
-    bottom: calc(132px + 12px + env(safe-area-inset-bottom));
+    bottom: calc(var(--rp-mobile-bar-reserve, 132px) + 12px + env(safe-area-inset-bottom));
     z-index: 74;
     display: grid;
     place-items: center;
@@ -3323,20 +3332,15 @@
     background: var(--cp-page);
   }
 
-  /* One line of how-to on the artboard, hanging off the bottom edge of the
-     active page. It is a child of the page's slide, so it scrolls and zooms
-     with it: zoom in and it leaves the frame along with the card's edge rather
-     than staying pinned over a card that has outgrown it. Centred on the page,
-     not on the screen, for the same reason. The strip ignores pointers, so it
-     can never eat a tap meant for anything under it. */
+  /* One line of how-to, the first thing in the action bar, just above its
+     tools. It used to hang under the active page, which meant a tip under
+     every page you scrolled to and room kept between pages for it. Centred,
+     quiet, and it ignores pointers, so it can never eat a tap. The bar's gap
+     (10px) sits under it; the negative margin trims that to 6 so the line
+     reads as a caption to the tools rather than a row of its own. */
   .recipe-edit-tips {
-    position: absolute;
-    top: 100%;
-    left: 50%;
     display: block;
-    margin-top: 12px;
-    transform: translateX(-50%);
-    white-space: nowrap;
+    margin-bottom: -4px;
     pointer-events: none;
     color: var(--cp-ink-soft);
     font-size: 12.5px;
