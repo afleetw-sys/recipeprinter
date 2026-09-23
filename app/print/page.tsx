@@ -1488,6 +1488,16 @@ export default function PrintPage() {
   // state for the tip it can raise.
   const photoStyleStreakRef = useRef<PhotoStyleStreak | null>(null);
   const [photoStyleTip, setPhotoStyleTip] = useState<PhotoStyleTipState | null>(null);
+  // Earned but not yet shown: the choice that earns it is made inside a
+  // recipe's Photo dialog, and a tip that opens under that dialog is a tip
+  // nobody sees. It waits until no Photo dialog is open.
+  const [pendingPhotoStyleTip, setPendingPhotoStyleTip] = useState<
+    { mode: PhotoStyle; remaining: number } | null
+  >(null);
+  const [openPhotoPickers, setOpenPhotoPickers] = useState(0);
+  const notePhotoPickerOpen = useCallback((open: boolean) => {
+    setOpenPhotoPickers((count) => Math.max(0, count + (open ? 1 : -1)));
+  }, []);
 
   // Toggling the book-wide "Recipe link" setting overrides every per-recipe
   // choice, the same way a book-wide Photos option does (above): the book snaps
@@ -4553,17 +4563,28 @@ export default function PrintPage() {
       (item) => item.id !== recipeId && photoModeFor(item.id) !== mode,
     ).length;
     if (!shouldOfferBookPhotoStyle(streak, remaining)) return;
+    setPendingPhotoStyleTip({ mode, remaining });
+  }
+
+  // Shows an earned tip once the Photo dialog it was earned in has closed.
+  useEffect(() => {
+    if (!pendingPhotoStyleTip || openPhotoPickers > 0) return;
+    const { mode, remaining } = pendingPhotoStyleTip;
+    setPendingPhotoStyleTip(null);
     markPhotoStyleTipSeen();
-    setPhotoStyleTip({ mode });
+    const phone = window.matchMedia("(max-width: 820px)").matches;
+    setPhotoStyleTip({ mode, surface: phone ? "sheet" : "panel" });
     track("photo_style_tip_shown", { mode, remaining });
-    if (window.matchMedia("(max-width: 820px)").matches) {
+    if (phone) {
       setMobileDrawer(null);
       setStructureSheetOpen(false);
       setBookSheet("recipes");
     } else {
       setPanelCollapsed(false);
     }
-  }
+    // Everything else here is a stable setter, or declared further down.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPhotoStyleTip, openPhotoPickers]);
 
   function acceptPhotoStyleTip(mode: PhotoStyle) {
     track("photo_style_tip_answered", { mode, accepted: true });
@@ -4620,6 +4641,7 @@ export default function PrintPage() {
         // recipe came in without a photo.
         label={own ? "Photo" : "Add photo"}
         className="recipe-page-toolbar__photo"
+        onOpenChange={notePhotoPickerOpen}
         openSignal={photoDialogSignal(recipeId)}
         onOpenSignalConsumed={() => clearPhotoDialogSignal(recipeId)}
       />
@@ -4656,6 +4678,7 @@ export default function PrintPage() {
         onOpenSignalConsumed={() => clearPhotoDialogSignal(recipeId)}
         label="Photo"
         className="recipe-page-toolbar__photo"
+        onOpenChange={notePhotoPickerOpen}
       />
     );
   };
@@ -4747,7 +4770,7 @@ export default function PrintPage() {
   // without answering is an answer, and leaving the tip in state would bring
   // it back the next time the sheet is opened for something else.
   useEffect(() => {
-    if (bookSheet === null && photoStyleTip && window.matchMedia("(max-width: 820px)").matches) {
+    if (bookSheet === null && photoStyleTip?.surface === "sheet") {
       dismissPhotoStyleTip();
     }
     // Only a change of sheet should answer for the cook.
@@ -5675,7 +5698,7 @@ export default function PrintPage() {
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
-          photoStyleTip={photoStyleTip}
+          photoStyleTip={photoStyleTip?.surface === "panel" ? photoStyleTip : null}
           onAcceptPhotoStyleTip={acceptPhotoStyleTip}
           onDismissPhotoStyleTip={dismissPhotoStyleTip}
           showPhoto={showPhoto}
@@ -5896,7 +5919,7 @@ export default function PrintPage() {
           anyRecipeHasImage={anyRecipeHasImage}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
-          photoStyleTip={photoStyleTip}
+          photoStyleTip={photoStyleTip?.surface === "sheet" ? photoStyleTip : null}
           onAcceptPhotoStyleTip={acceptPhotoStyleTip}
           onDismissPhotoStyleTip={dismissPhotoStyleTip}
           showSourceUrl={showSourceUrl}

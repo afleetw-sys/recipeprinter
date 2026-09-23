@@ -40,6 +40,7 @@ export function ImagePicker({
   onPlacementChange,
   openSignal,
   onOpenSignalConsumed,
+  onOpenChange,
   label = "Choose photo",
   className = "",
 }: {
@@ -78,10 +79,21 @@ export function ImagePicker({
       one-shot pulse instead of a standing "open me" that outlives the click
       that made it. */
   onOpenSignalConsumed?: () => void;
+  /** Told when the dialog opens and when it goes away, whether it was closed
+      or this picker was unmounted while open (the deck unmounts pages it
+      scrolls away from), so every open is matched by exactly one close. */
+  onOpenChange?: (open: boolean) => void;
   label?: string;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const onOpenChangeRef = useRef(onOpenChange);
+  onOpenChangeRef.current = onOpenChange;
+  useEffect(() => {
+    if (!open) return;
+    onOpenChangeRef.current?.(true);
+    return () => onOpenChangeRef.current?.(false);
+  }, [open]);
   useEffect(() => {
     if (openSignal) {
       setOpen(true);
