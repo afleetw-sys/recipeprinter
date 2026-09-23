@@ -11,6 +11,7 @@ import { errorParts } from "@/lib/friendlyErrors";
 import { anonymousOwnerId } from "@/lib/anonymousOwner";
 import type { ImportFailureCode } from "@/lib/analytics";
 import { parseRecipeText } from "@/lib/textRecipe";
+import { imageLimitDetails, imageLimitMessage } from "@/lib/imageImportQuota";
 import type { BotWallVendor, ParseResponse, Recipe } from "@/types/recipe";
 
 interface LocalParseOutcome {
@@ -72,7 +73,7 @@ function withAnonId(data: unknown): unknown {
   }
 }
 
-async function callCookPilotParser(name: string, data: unknown): Promise<unknown> {
+export async function callCookPilotParser(name: string, data: unknown): Promise<unknown> {
   const [{ httpsCallable }, { getFns }] = await Promise.all([
     import("firebase/functions"),
     import("@/lib/firebase/functions"),
@@ -121,6 +122,10 @@ function friendlyError(
   // Fundamentally different from a bad input: waiting fixes it, and telling the
   // cook to re-shoot a perfectly good photo is actively wrong.
   if (code.includes("resource-exhausted") && /limit|per hour/i.test(message)) {
+    // The photo-import limit says how many the hour allowed and when it
+    // resets, so the cook hears exactly that instead of "a little while".
+    const imageLimit = imageLimitDetails(err);
+    if (imageLimit) return new ImportError(imageLimitMessage(imageLimit), "rate_limited");
     return new ImportError(
       "You've hit the import limit for now. Wait a little while and try again.",
       "rate_limited",

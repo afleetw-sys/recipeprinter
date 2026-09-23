@@ -8,6 +8,8 @@ import { ProBadge } from "@/components/ProBadge";
 import { SegmentedControl } from "@/components/Controls";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
 import { PRO_BENEFITS } from "@/lib/proUpgradeCopy";
+import { FREE_IMAGE_IMPORT_BENEFIT, PRO_IMAGE_IMPORT_BENEFIT } from "@/lib/imageImportQuota";
+import { AccountImageImportUsage } from "@/components/AccountImageImportUsage";
 import { track } from "@/lib/analytics";
 import {
   loadRecipePrinterCustomerInfo,
@@ -34,10 +36,13 @@ import {
 // "One recipe at a time" is real (see PrintSetupControls.tsx's "This
 // recipe" title) but it's a constraint, not a benefit, so it doesn't belong
 // on a list meant to make the case for staying on Basic being a perfectly
-// good deal.
+// good deal. Photo imports are the exception to "unlimited": each one is a
+// paid model call, so they are counted by the hour, and the Pro card names
+// its larger allowance (see lib/imageImportQuota.ts).
 const BASIC_BENEFITS = [
   "Unlimited imports from any recipe website",
   "Unlimited imports from Instagram, TikTok, Pinterest & more",
+  FREE_IMAGE_IMPORT_BENEFIT,
   "Letter-size printing with two free themes",
 ];
 
@@ -236,7 +241,12 @@ export function AccountProStatus({ user }: { user: User }) {
                   {PRO_BENEFITS.map((benefit) => (
                     <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
                       <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                      {benefit}
+                      <div className="min-w-0 flex-1">
+                        {benefit}
+                        {/* This hour's usage, under the allowance it counts
+                            against, on the card for the plan you're on. */}
+                        {benefit === PRO_IMAGE_IMPORT_BENEFIT && <AccountImageImportUsage uid={uid} />}
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -299,7 +309,12 @@ export function AccountProStatus({ user }: { user: User }) {
                   {BASIC_BENEFITS.map((benefit) => (
                     <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
                       <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                      {benefit}
+                      <div className="min-w-0 flex-1">
+                        {benefit}
+                        {/* This hour's usage, under the allowance it counts
+                            against, on the card for the plan you're on. */}
+                        {benefit === FREE_IMAGE_IMPORT_BENEFIT && <AccountImageImportUsage uid={uid} />}
+                      </div>
                     </li>
                   ))}
                 </ul>

@@ -28,7 +28,7 @@ type PurchasedProduct = "premium_template" | "cookbook" | "pro";
 /** The Pro-only capability a Free user ran into. Named narrowly enough to be
  *  useful in a funnel ("which feature drives upgrades") without carrying any
  *  recipe content. */
-type ProFeature = "theme" | "card_size" | "batch_print" | "advanced_layout";
+type ProFeature = "theme" | "card_size" | "batch_print" | "advanced_layout" | "image_imports";
 
 /**
  * Why an import failed, as a small closed vocabulary rather than a free-text
@@ -309,6 +309,16 @@ type EventProps = {
    *  previously-locked card size printed). Separate from `purchase_completed`
    *  so the funnel shows "paid" versus "got value" as two distinct steps. */
   pro_feature_used: { feature: ProFeature };
+  /** A cook set the same photo layout on recipe after recipe by hand, and
+   *  was pointed at the book-wide Photos control (lib/photoStyleStreak.ts).
+   *  `accepted` is whether they then picked a layout for every recipe, and
+   *  `chosen` which one, since it need not be the one they were setting. */
+  photo_style_tip_shown: { mode: "none" | "card" | "full"; remaining: number };
+  photo_style_tip_answered: {
+    mode: "none" | "card" | "full";
+    accepted: boolean;
+    chosen?: "none" | "card" | "full";
+  };
   /** A Pro subscriber opened RevenueCat's billing portal from the account
    *  menu to manage or cancel. Confirms cancellation is actually
    *  discoverable, not just theoretically available. */

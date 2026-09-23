@@ -2192,6 +2192,102 @@
   box-shadow: var(--cp-selected-ring);
 }
 
+/* The Photos label + tiles, as one unit the photo-style tip can point at
+   (components/print/PhotoStyleTip.tsx). Invisible to layout normally; while
+   the tip shows it becomes a real box, so the spotlight has something to
+   measure and the tip sits with the tiles it is about. No tint or frame of its
+   own: the scrim around it is the highlight. */
+.recipe-photo-style-group {
+  display: contents;
+}
+.recipe-photo-style-group.is-highlighted {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Everything but the spotlit section, dimmed. Its opening is cut with a
+   clip-path (see `spotlightPath`), which also lets clicks through to the
+   section. The dialog layer, so the sticky header dims too; it is portalled
+   to the end of <body>, which puts it over a phone sheet on the same layer,
+   and on a phone the section lives in one. */
+.recipe-photo-style-spotlight {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  background: var(--cp-scrim);
+  animation: rp-photo-spotlight-in 200ms ease-out;
+}
+@keyframes rp-photo-spotlight-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .recipe-photo-style-spotlight { animation: none; }
+}
+
+/* The tip itself, floating beside the spotlit section and pointing at it.
+   Positioned from script (see `tooltipLayout`); the modifier says which side
+   of the section it sits on, and `--arrow` where along its edge the arrow
+   goes. Floating, so it gets a shadow. Above the scrim: same layer, later in
+   the document. */
+.recipe-photo-style-tooltip {
+  position: fixed;
+  z-index: var(--z-dialog);
+  width: min(260px, calc(100vw - 24px));
+  padding: 12px 10px 12px 14px;
+  border: 1px solid var(--cp-line);
+  border-radius: 12px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-lg);
+  animation: rp-photo-spotlight-in 200ms ease-out;
+}
+.recipe-photo-style-tooltip::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--cp-card);
+  border: 1px solid var(--cp-line);
+  transform: rotate(45deg);
+}
+/* Each arrow shows only the two borders that face the section. */
+.recipe-photo-style-tooltip--left::after {
+  top: calc(var(--arrow) - 6px);
+  right: -7px;
+  border-width: 1px 1px 0 0;
+}
+.recipe-photo-style-tooltip--top::after {
+  bottom: -7px;
+  left: calc(var(--arrow) - 6px);
+  border-width: 0 1px 1px 0;
+}
+.recipe-photo-style-tooltip--bottom::after {
+  top: -7px;
+  left: calc(var(--arrow) - 6px);
+  border-width: 1px 0 0 1px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .recipe-photo-style-tooltip { animation: none; }
+}
+.recipe-photo-style-tooltip__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.recipe-photo-style-tooltip__title {
+  margin: 2px 0 0;
+  font-size: var(--cp-fs-small);
+  font-weight: 700;
+  color: var(--cp-ink);
+}
+.recipe-photo-style-tooltip__body {
+  margin: 2px 24px 0 0;
+  font-size: var(--cp-fs-caption);
+  color: var(--cp-ink-soft);
+}
+
 /* The real radio is sr-only, so surface keyboard focus on the visible tile. */
 .recipe-photo-style__tile:has(input:focus-visible) {
   outline: var(--cp-focus-ring);

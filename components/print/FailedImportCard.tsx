@@ -1,6 +1,6 @@
 "use client";
 
-import { ICON_SIZE, PlusIcon, TrashIcon } from "@/components/icons";
+import { CrownIcon, ICON_SIZE, PlusIcon, TrashIcon } from "@/components/icons";
 import type { QueueItem } from "@/types/recipe";
 
 /** Same fallback `lib/queue.ts` writes to `error` itself when a failure
@@ -19,10 +19,15 @@ export function FailedImportCard({
   item,
   onTryAnotherWay,
   onRemove,
+  onUpgrade,
 }: {
   item: QueueItem;
   onTryAnotherWay: () => void;
   onRemove: () => void;
+  /** Offered when a free account ran out of photo imports for the hour: Pro
+      raises the allowance, so it is the one fix that works right now. The
+      deck passes it only then; see `PrintDeck`. */
+  onUpgrade?: () => void;
 }) {
   return (
     <div className="recipe-page-failed__body" role="group" aria-label={`${item.source} didn't import`}>
@@ -37,7 +42,17 @@ export function FailedImportCard({
       <p className="recipe-page-failed__message">{item.error || GENERIC_MESSAGE}</p>
 
       <div className="recipe-page-failed__actions">
-        <button type="button" className="btn btn-primary btn-compact" onClick={onTryAnotherWay}>
+        {onUpgrade && (
+          <button type="button" className="btn btn-primary btn-compact" onClick={onUpgrade}>
+            <CrownIcon size={ICON_SIZE.md} />
+            Upgrade to Pro
+          </button>
+        )}
+        <button
+          type="button"
+          className={`btn ${onUpgrade ? "btn-secondary" : "btn-primary"} btn-compact`}
+          onClick={onTryAnotherWay}
+        >
           <PlusIcon size={ICON_SIZE.md} />
           Try another way
         </button>

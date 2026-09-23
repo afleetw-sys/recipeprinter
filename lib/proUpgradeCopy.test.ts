@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { PRO_BENEFITS, proUpgradeCopy } from "@/lib/proUpgradeCopy";
+import { IMAGE_IMPORT_LIMIT_TRIGGER, PRO_BENEFITS, proUpgradeCopy } from "@/lib/proUpgradeCopy";
 
 describe("proUpgradeCopy", () => {
   test("Add more recipes names multi-recipe printing and leads with it", () => {
@@ -23,6 +23,7 @@ describe("proUpgradeCopy", () => {
       "All premium themes",
       "Print multiple recipes at once",
       "4×6 recipe cards",
+      "30 image imports an hour",
       "20% off your first cookbook",
     ]);
   });
@@ -34,11 +35,12 @@ describe("proUpgradeCopy", () => {
       "Print multiple recipes at once",
       "4×6 recipe cards",
       "All premium themes",
+      "30 image imports an hour",
       "20% off your first cookbook",
     ]);
   });
 
-  test("every variant keeps exactly the same four benefits", () => {
+  test("every variant keeps exactly the same benefits", () => {
     for (const reasons of [[], ["theme"], ["card_size"], ["multi_recipe"], ["theme", "card_size", "multi_recipe"]] as const) {
       expect([...proUpgradeCopy([...reasons], "print_button").benefits].sort()).toEqual([...PRO_BENEFITS].sort());
     }
@@ -52,5 +54,12 @@ describe("proUpgradeCopy", () => {
         ctaLabel: "Unlock Pro",
       });
     }
+  });
+
+  test("hitting the image limit names the Pro allowance and leads with it", () => {
+    const copy = proUpgradeCopy([], IMAGE_IMPORT_LIMIT_TRIGGER);
+    expect(copy.title).toBe("Import up to 30 images an hour");
+    expect(copy.benefits[0]).toBe("30 image imports an hour");
+    expect([...copy.benefits].sort()).toEqual([...PRO_BENEFITS].sort());
   });
 });

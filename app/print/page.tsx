@@ -89,7 +89,15 @@ import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { useProPurchase } from "@/lib/useProPurchase";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
-import { proUpgradeCopy } from "@/lib/proUpgradeCopy";
+import { IMAGE_IMPORT_LIMIT_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
+import {
+  markPhotoStyleTipSeen,
+  photoStyleTipSeen,
+  recordPhotoChoice,
+  shouldOfferBookPhotoStyle,
+  type PhotoStyleStreak,
+} from "@/lib/photoStyleStreak";
+import type { PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
 import {
   activeProLockReasons,
   computeProLocks,
@@ -1474,6 +1482,23 @@ export default function PrintPage() {
     return modes.size === 1 ? (Array.from(modes)[0] as PhotoStyle) : null;
   }, [items, photoModeFor, photoStyle]);
 
+  // Someone setting the same photo layout recipe after recipe from each page's
+  // toolbar, who may not know the "Every recipe" Photos control exists. See
+  // lib/photoStyleStreak.ts. A ref for the streak (nothing renders from it),
+  // state for the tip it can raise.
+  const photoStyleStreakRef = useRef<PhotoStyleStreak | null>(null);
+  const [photoStyleTip, setPhotoStyleTip] = useState<PhotoStyleTipState | null>(null);
+  // Earned but not yet shown: the choice that earns it is made inside a
+  // recipe's Photo dialog, and a tip that opens under that dialog is a tip
+  // nobody sees. It waits until no Photo dialog is open.
+  const [pendingPhotoStyleTip, setPendingPhotoStyleTip] = useState<
+    { mode: PhotoStyle; remaining: number } | null
+  >(null);
+  const [openPhotoPickers, setOpenPhotoPickers] = useState(0);
+  const notePhotoPickerOpen = useCallback((open: boolean) => {
+    setOpenPhotoPickers((count) => Math.max(0, count + (open ? 1 : -1)));
+  }, []);
+
   // Toggling the book-wide "Recipe link" setting overrides every per-recipe
   // choice, the same way a book-wide Photos option does (above): the book snaps
   // to what was just chosen, so "off" means off. Handed to every control that
@@ -1493,6 +1518,12 @@ export default function PrintPage() {
   // default AND clear the individual placement overrides so the whole book snaps
   // to it (custom facing photos / focal points are kept).
   function applyBookPhotoStyle(mode: PhotoStyle) {
+    // The tip has no button of its own: picking one of these tiles while it
+    // shows is its answer.
+    if (photoStyleTip) {
+      track("photo_style_tip_answered", { mode: photoStyleTip.mode, accepted: true, chosen: mode });
+      setPhotoStyleTip(null);
+    }
     projectMeta.setPhotoStyle(mode);
     projectMeta.clearItemPhotoOverrides();
     // Chapter openers are part of the book, not an exception to it: a placement
@@ -2858,7 +2889,9 @@ export default function PrintPage() {
       setShowProUpgradeDialog(false);
       if (outcome !== "purchased" && outcome !== "already-active") return;
       if (outcome === "purchased") {
-        track("pro_feature_used", { feature: proLockFeature() });
+        track("pro_feature_used", {
+          feature: trigger === IMAGE_IMPORT_LIMIT_TRIGGER ? "image_imports" : proLockFeature(),
+        });
         if (cookPilotUser && autosaveEnabledForCurrentMode) void handleSaveProject();
       }
       if (trigger === "print_button") void handlePrint();
@@ -4496,6 +4529,7 @@ export default function PrintPage() {
     setPhotoDialog((current) => (current?.key === key ? null : current));
 
   function setRecipePhotoMode(recipeId: string, mode: PhotoStyle) {
+    notePhotoChoice(recipeId, mode);
     if (showEmptyFields && activeRecipeId === recipeId) keepEditingRef.current = recipeId;
     setPendingFocusRecipeId(recipeId);
     const image = items?.find((item) => item.id === recipeId)?.recipe?.image;
@@ -4515,6 +4549,51 @@ export default function PrintPage() {
     const hero = mode === "full" ? image : undefined;
     projectMeta.setItemPhotoMode(recipeId, mode, hero);
   }
+  /**
+   * Counts a per-recipe photo choice toward the streak, and once it is long
+   * enough, points the cook at the book-wide control: the panel opens (or, on a
+   * phone, the "Every recipe" sheet) with the Photos tiles highlighted and the
+   * tip under them. Once per device, marked when shown, so a reload before
+   * answering does not bring it back.
+   */
+  function notePhotoChoice(recipeId: string, mode: PhotoStyle) {
+    if (!cookbookMode) return;
+    const streak = recordPhotoChoice(photoStyleStreakRef.current, recipeId, mode);
+    photoStyleStreakRef.current = streak;
+    if (photoStyleTip || photoStyleTipSeen()) return;
+    // The recipe just changed still reads its old mode here, so it is left out.
+    const remaining = (items ?? []).filter(
+      (item) => item.id !== recipeId && photoModeFor(item.id) !== mode,
+    ).length;
+    if (!shouldOfferBookPhotoStyle(streak, remaining)) return;
+    setPendingPhotoStyleTip({ mode, remaining });
+  }
+
+  // Shows an earned tip once the Photo dialog it was earned in has closed.
+  useEffect(() => {
+    if (!pendingPhotoStyleTip || openPhotoPickers > 0) return;
+    const { mode, remaining } = pendingPhotoStyleTip;
+    setPendingPhotoStyleTip(null);
+    markPhotoStyleTipSeen();
+    const phone = window.matchMedia("(max-width: 820px)").matches;
+    setPhotoStyleTip({ mode, surface: phone ? "sheet" : "panel" });
+    track("photo_style_tip_shown", { mode, remaining });
+    if (phone) {
+      setMobileDrawer(null);
+      setStructureSheetOpen(false);
+      setBookSheet("recipes");
+    } else {
+      setPanelCollapsed(false);
+    }
+    // Everything else here is a stable setter, or declared further down.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPhotoStyleTip, openPhotoPickers]);
+
+  function dismissPhotoStyleTip() {
+    if (photoStyleTip) track("photo_style_tip_answered", { mode: photoStyleTip.mode, accepted: false });
+    setPhotoStyleTip(null);
+  }
+
   // The per-recipe photo placement toggle (cookbook): an always-present
   // None / In-page / Full-page switch that sits next to the Edit button, so
   // placement is one click away in every mode (not only when the photo is off).
@@ -4560,6 +4639,7 @@ export default function PrintPage() {
         // recipe came in without a photo.
         label={own ? "Photo" : "Add photo"}
         className="recipe-page-toolbar__photo"
+        onOpenChange={notePhotoPickerOpen}
         openSignal={photoDialogSignal(recipeId)}
         onOpenSignalConsumed={() => clearPhotoDialogSignal(recipeId)}
       />
@@ -4596,6 +4676,7 @@ export default function PrintPage() {
         onOpenSignalConsumed={() => clearPhotoDialogSignal(recipeId)}
         label="Photo"
         className="recipe-page-toolbar__photo"
+        onOpenChange={notePhotoPickerOpen}
       />
     );
   };
@@ -4682,6 +4763,18 @@ export default function PrintPage() {
   // The bottom bar's Pages and Every recipe tiles: book-wide settings, one
   // sheet each, kept apart from the structure list above.
   const [bookSheet, setBookSheet] = useState<MobileBookSheet>(null);
+
+  // On a phone the tip lives in the "Every recipe" sheet. Closing the sheet
+  // without answering is an answer, and leaving the tip in state would bring
+  // it back the next time the sheet is opened for something else.
+  useEffect(() => {
+    if (bookSheet === null && photoStyleTip?.surface === "sheet") {
+      dismissPhotoStyleTip();
+    }
+    // Only a change of sheet should answer for the cook.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookSheet]);
+
   // The print-setup panel is a persistent sidebar on desktop and a modal
   // drawer on mobile, so it can only claim to be a dialog in the second case.
   // While it is one, it gets a real focus trap and Escape-to-close — it
@@ -5572,6 +5665,11 @@ export default function PrintPage() {
           failedImports={failedImports}
           onTryAnotherImportWay={tryAnotherImportWay}
           onRemoveImport={queue.remove}
+          onUpgradeForImageImports={
+            hasProEntitlement(effectiveCustomerInfo.customerInfo)
+              ? undefined
+              : () => openProUpgradeDialog(IMAGE_IMPORT_LIMIT_TRIGGER)
+          }
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           openAddRecipeBelow={openAddRecipeBelow}
           renderAllPages={renderAllPages}
@@ -5598,6 +5696,8 @@ export default function PrintPage() {
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
+          photoStyleTip={photoStyleTip?.surface === "panel" ? photoStyleTip : null}
+          onDismissPhotoStyleTip={dismissPhotoStyleTip}
           showPhoto={showPhoto}
           setShowPhoto={setShowPhoto}
           showSourceUrl={showSourceUrl}
@@ -5816,6 +5916,8 @@ export default function PrintPage() {
           anyRecipeHasImage={anyRecipeHasImage}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
+          photoStyleTip={photoStyleTip?.surface === "sheet" ? photoStyleTip : null}
+          onDismissPhotoStyleTip={dismissPhotoStyleTip}
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setBookShowSourceUrl}
           renameSectionEverywhere={renameSectionEverywhere}
