@@ -2691,7 +2691,7 @@
     justify-content: center;
     gap: 5px;
     /* 92px, and shrinks to fit rather than scroll: a cookbook has four
-       tiles (Add, Extra pages, Themes, Every recipe), and on a 375px phone
+       tiles (Add, Pages, Themes, Every recipe), and on a 375px phone
        four at 92 overflowed. 80 is the floor where the longest label ("Every
        recipe", ~73px, with the row's 6px gap) still sits on one line, level
        with its neighbours'; below that the row scrolls, as it always has. */

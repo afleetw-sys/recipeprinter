@@ -38,12 +38,13 @@ export type MobileBookSheet = "extras" | "recipes" | null;
  * Settings panel instead; these are the touch-native equivalents, since the
  * mobile config drawer only ever opens the Themes section.
  *
- * - "Extra pages" and "Every recipe" (each its own tile in the bottom bar):
+ * - "Pages" and "Every recipe" (each its own tile in the bottom bar):
  *   the book-wide settings, grouped the way the desktop panel groups them,
  *   pages the book gains and then what every recipe carries (its link and
  *   its photo layout). They used to share one "Book" sheet.
- * - "Pages" (the floating page-sorter button over the deck): the reorderable
- *   list of chapters and recipes.
+ * - "Organize" (the floating page-sorter button over the deck): the
+ *   reorderable list of chapters and recipes, named for the desktop rail's
+ *   "Organize recipes" view it stands in for.
  *
  * The structure list used to sit under the settings too. It is what a cook
  * comes back to again and again, and it answers a different question from
@@ -78,11 +79,11 @@ export function MobileStructureSheet({
         <MobileSheet
           open={bookSheet === "extras"}
           onClose={() => setBookSheet(null)}
-          title="Extra pages"
+          title="Pages"
           className="recipe-structure-sheet"
         >
             {/* The same controls as the desktop "Book Settings" panel's
-                Extra pages group. */}
+                Pages group. */}
             <div className="recipe-structure-sheet__settings">
               <Checkbox
                   label="Dedication"
@@ -153,7 +154,7 @@ export function MobileStructureSheet({
         <MobileSheet
           open={structureSheetOpen}
           onClose={() => setStructureSheetOpen(false)}
-          title="Pages"
+          title="Organize"
           subtitle={
             <>
               {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"} ·{" "}
@@ -161,7 +162,7 @@ export function MobileStructureSheet({
               {namedSectionCount(sections) === 1 ? "chapter" : "chapters"}
             </>
           }
-          ariaLabel="Pages and structure"
+          ariaLabel="Organize pages"
           className="recipe-structure-sheet"
           footer={
             <>

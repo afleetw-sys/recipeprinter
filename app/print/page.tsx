@@ -4106,7 +4106,7 @@ export default function PrintPage() {
        recipe link that used to sit under them with them did not — it moved to
        the group that changes every recipe. */
     return (
-      <CheckboxGroup label="Extra pages" className="recipe-config-section recipe-config-section--settings">
+      <CheckboxGroup label="Pages" className="recipe-config-section recipe-config-section--settings">
         <Checkbox
             label="Dedication"
             checked={Boolean(projectMeta.meta.frontMatter || projectMeta.meta.dedication)}
@@ -4652,7 +4652,7 @@ export default function PrintPage() {
   // taps instead, opened from the floating page-sorter button over the deck.
   // Cookbook mode only — plain cards have no sections to arrange.
   const [structureSheetOpen, setStructureSheetOpen] = useState(false);
-  // The bottom bar's Extra pages and Photos tiles: book-wide settings, one
+  // The bottom bar's Pages and Every recipe tiles: book-wide settings, one
   // sheet each, kept apart from the structure list above.
   const [bookSheet, setBookSheet] = useState<MobileBookSheet>(null);
   // The print-setup panel is a persistent sidebar on desktop and a modal
@@ -5642,7 +5642,7 @@ export default function PrintPage() {
                 <span className="recipe-mobile-toolbar__btn-icon">
                   <PagePlusIcon size={ICON_SIZE.lg} />
                 </span>
-                Extra pages
+                Pages
               </button>
             )}
             {/* Size is a recipe-card concept only — hidden in cookbook mode,
@@ -5770,7 +5770,7 @@ export default function PrintPage() {
           <button
             type="button"
             className={`recipe-pages-fab no-print ${structureSheetOpen ? "is-active" : ""}`}
-            aria-label="Pages"
+            aria-label="Organize pages"
             aria-haspopup="dialog"
             aria-expanded={structureSheetOpen}
             onClick={() => {
