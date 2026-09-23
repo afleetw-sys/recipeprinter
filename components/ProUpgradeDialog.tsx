@@ -187,7 +187,7 @@ export function ProUpgradeDialog({
                     <Checkbox
                       className="pro-plan-card__renew"
                       label="Auto-renew monthly"
-                      hint="Only need Pro for one project? Uncheck this and it ends after a month."
+                      hint="Uncheck for a single month of Pro, with nothing to cancel later."
                       checked={monthlyAutoRenew}
                       onChange={(event) => toggleMonthlyAutoRenew(event.target.checked)}
                     />
