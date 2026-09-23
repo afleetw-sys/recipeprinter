@@ -2857,6 +2857,9 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+    /* A sheet's list scrolls on its own and never hands the gesture on to
+       the page behind it, which is locked and would swallow it. */
+    overscroll-behavior: contain;
     padding: 8px 12px 4px;
   }
 
@@ -2875,6 +2878,14 @@
      here just widens the gap above its border slightly, which is harmless. */
   .image-picker-sheet .recipe-mobile-sheet__scroll {
     padding-bottom: 24px;
+  }
+
+  /* Three across, not four or five: on a phone a photo has to be big enough
+     to tell apart from its neighbours, and a longer list is fine, since the
+     sheet scrolls. */
+  .image-picker-sheet .image-picker__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
   }
 
   /* Cut lines / two-sided, under the size tiles in the same sheet — see the
@@ -5289,6 +5300,15 @@
    `.image-picker__footer`'s own space-between still does the layout. */
 .recipe-mobile-sheet__footer .image-picker__footer .btn {
   flex: none;
+}
+/* And the row itself fills the sheet's footer, so the count sits at the far
+   left and Done at the far right. As a fixed-size child it sat bunched on the
+   left, carrying its own desktop padding and border inside the sheet
+   footer's, which drew a second, shorter rule above it. */
+.recipe-mobile-sheet__footer .image-picker__footer {
+  flex: 1 1 auto;
+  padding: 0;
+  border-top: 0;
 }
 .image-picker__count {
   font-size: var(--cp-fs-caption);
