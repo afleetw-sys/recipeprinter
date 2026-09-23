@@ -226,8 +226,7 @@ export function useDeckScroller({
       during render. */
   const zoomGestureRef = useRef(false);
   const scrollSyncTimerRef = useRef<number | undefined>(undefined);
-  // Content-space center of each slide (top for the vertical desktop deck, left
-  // for the horizontal mobile one), cached so the scroll listener can find the
+  // Content-space center of each slide, cached so the scroll listener can find the
   // closest slide by arithmetic instead of measuring every slide on every
   // frame. Slide positions only change with count / scale / size, never with
   // scroll position, so this is recomputed on those changes (via the dirty
@@ -319,31 +318,9 @@ export function useDeckScroller({
    */
   const applyDeckGeometry = useCallback(
     (el: HTMLDivElement, scale: number) => {
-      // The mobile deck is a horizontal filmstrip with its own fixed padding
-      // and no snapport to centre anything in — so none of the centring below
-      // applies. The one thing it does need is the same free-scroll switch: a
-      // pinched-in card is bigger than the strip it sits in, and the strip
-      // snaps and clips vertically until told to stop (see print.css).
-      if (isDeckMobile()) {
-        const slideW = el.clientWidth - 96;
-        const slideH = el.clientHeight;
-        if (slideW <= 0 || slideH <= 0) return;
-        // The fit, worked out the way the fit effect below works it out. Free
-        // scroll is "past fit" rather than "bigger than the window": at fit the
-        // card fills its slot almost to the pixel, and measuring overflow
-        // against the window would flip the deck in and out of free scroll on
-        // rounding alone.
-        const fit = Math.max(
-          0.12,
-          Math.min(1.05, slideW / pageWidth, (slideH * 0.86) / pageHeight),
-        );
-        if (scale > fit * 1.02) {
-          el.dataset.freeScroll = "true";
-        } else if (!zoomGestureRef.current) {
-          delete el.dataset.freeScroll;
-        }
-        return;
-      }
+      // Phones scroll the same vertical stack as the desktop deck (they used
+      // to be a sideways filmstrip with its own geometry), so one set of
+      // centring rules serves both.
       const availW = el.clientWidth - 40;
       const availH = el.clientHeight;
       if (availW <= 0 || availH <= 0) return;
@@ -431,10 +408,10 @@ export function useDeckScroller({
       // Any resize moves the slides, so the cached centers are stale.
       centersDirtyRef.current = true;
       const mobile = isDeckMobile();
-      // On mobile each slide is narrower than the deck itself (100vw - 96px)
-      // so neighbouring pages peek in on both sides; the scale must fit that
-      // slide width, not the full deck width, or the card overflows its slot.
-      const availW = el.clientWidth - (mobile ? 96 : 40);
+      // The deck's 20px side padding, both sides. A phone scrolls the same
+      // vertical stack as the desktop, so a page takes the full width and the
+      // next one peeks in underneath rather than beside it.
+      const availW = el.clientWidth - 40;
       const availH = el.clientHeight;
       if (availW > 0 && availH > 0) {
         const widthScale = availW / pageWidth;
@@ -446,9 +423,7 @@ export function useDeckScroller({
         // would then be clipped by the deck's own overflow. This does not bind
         // at the budget above; it is the guard that keeps the two rules
         // consistent if the deck is ever short enough that it would.
-        const snapportScale = mobile
-          ? Infinity
-          : (availH - DECK_SCROLL_PADDING_TOP * 2) / pageHeight;
+        const snapportScale = (availH - DECK_SCROLL_PADDING_TOP * 2) / pageHeight;
         // The fit, then the cook's zoom on top of it. Clamping BEFORE the
         // multiply is what makes 100% mean "as large as this window allows"
         // and 150% mean half again — rather than the ceiling swallowing the
@@ -874,18 +849,6 @@ export function useDeckScroller({
    */
   const centerElement = useCallback(
     (deck: HTMLDivElement, slide: HTMLElement, behavior: ScrollBehavior = "auto") => {
-      if (isDeckMobile()) {
-        const targetLeft = slide.offsetLeft - (deck.clientWidth - slide.offsetWidth) / 2;
-        const maxLeft = deck.scrollWidth - deck.clientWidth;
-        // Round so the resting position is pixel-identical to the CSS snap
-        // point; a fractional target is what lets snapping nudge afterward.
-        scrollDeckTo(deck, {
-          left: Math.round(Math.max(0, Math.min(targetLeft, maxLeft))),
-          behavior,
-        });
-        return;
-      }
-
       // Control clearance is no longer applied here: `scroll-padding-top` owns
       // it, and honouring that is exactly what keeps this in agreement with the
       // browser. Two implementations of one intent is what drifted.
@@ -950,17 +913,17 @@ export function useDeckScroller({
     // nothing to compare against (the deck is mid-remeasure, so its slides are
     // unmounted). Null means "leave the selection alone" — the old code fell
     // through to index 0 and yanked the cook back to the cover.
-    const closestIndex = (mobile: boolean): number | null => {
+    const closestIndex = (): number | null => {
       // Re-measure once after a layout change, then reuse the cache for every
       // frame of the scroll that follows — no getBoundingClientRect per frame.
       if (centersDirtyRef.current) measureSlideCenters();
       const centers = slideCentersRef.current;
-      const mid = mobile ? el.scrollLeft + el.clientWidth / 2 : el.scrollTop + el.clientHeight / 2;
+      const mid = el.scrollTop + el.clientHeight / 2;
       let bestIndex: number | null = null;
       let bestDist = Number.POSITIVE_INFINITY;
       for (let index = 0; index < centers.length; index += 1) {
         if (!slideRefs.current[index]) continue;
-        const center = mobile ? centers[index].left : centers[index].top;
+        const center = centers[index].top;
         const dist = Math.abs(center - mid);
         if (dist < bestDist) {
           bestDist = dist;
@@ -971,22 +934,20 @@ export function useDeckScroller({
     };
 
     /** The import card nearest the middle, if one is nearer than every page. */
-    const closestImport = (mobile: boolean): { id: string; dist: number } | null => {
+    const closestImport = (): { id: string; dist: number } | null => {
       const cards = el.querySelectorAll<HTMLElement>(
         "[data-pending-import-id], [data-failed-import-id]",
       );
       if (cards.length === 0) return null;
       const deckRect = el.getBoundingClientRect();
-      const mid = mobile ? el.clientWidth / 2 : el.clientHeight / 2;
+      const mid = el.clientHeight / 2;
       let best: { id: string; dist: number } | null = null;
       cards.forEach((card) => {
         const id =
           card.dataset.pendingImportId ?? card.dataset.failedImportId ?? null;
         if (!id) return;
         const rect = card.getBoundingClientRect();
-        const centre = mobile
-          ? rect.left - deckRect.left + rect.width / 2
-          : rect.top - deckRect.top + rect.height / 2;
+        const centre = rect.top - deckRect.top + rect.height / 2;
         const dist = Math.abs(centre - mid);
         if (!best || dist < best.dist) best = { id, dist };
       });
@@ -1001,24 +962,20 @@ export function useDeckScroller({
       // chose.
       if (suppressScrollSyncRef.current || zoomGestureRef.current) return;
       if (el.scrollHeight !== measuredScrollHeightRef.current) centersDirtyRef.current = true;
-      const mobile = isDeckMobile();
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        const next = closestIndex(mobile);
+        const next = closestIndex();
         // Whichever is actually nearest wins, page or import. Measured in the
         // deck's own coordinates so the two are comparable: `closestIndex`
         // works in scroll space, this in viewport space against the same
         // midpoint.
-        const nearestImport = closestImport(mobile);
+        const nearestImport = closestImport();
         if (nearestImport) {
           const pageDist =
             next === null
               ? Number.POSITIVE_INFINITY
               : Math.abs(
-                  (mobile
-                    ? slideCentersRef.current[next].left - el.scrollLeft
-                    : slideCentersRef.current[next].top - el.scrollTop) -
-                    (mobile ? el.clientWidth / 2 : el.clientHeight / 2),
+                  slideCentersRef.current[next].top - el.scrollTop - el.clientHeight / 2,
                 );
           if (nearestImport.dist < pageDist) {
             onImportSlideChangeRef.current?.(nearestImport.id);

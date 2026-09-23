@@ -2880,6 +2880,15 @@
     padding-bottom: 24px;
   }
 
+  /* Whatever opens the sheet sits right under its title. The photo section
+     brings a 24px top margin from the desktop dialog, where it separates
+     the photos from the controls above them; first in a sheet, there is
+     nothing above it but the header's own padding, and the two stacked
+     into a gap that read as something missing. */
+  .image-picker-sheet .recipe-mobile-sheet__scroll > :first-child {
+    margin-top: 0;
+  }
+
   /* Three across, not four or five: on a phone a photo has to be big enough
      to tell apart from its neighbours, and a longer list is fine, since the
      sheet scrolls. */
@@ -3058,37 +3067,34 @@
     overflow: hidden;
   }
 
+  /* Phones scroll the deck up and down, the same stack as the desktop. It
+     used to be a sideways filmstrip, which on a phone meant a page sized to
+     leave room for its neighbours either side and a cookbook spread squeezed
+     into what was left. Vertically a page takes the full width and the next
+     one peeks in underneath. `useDeckScroller` sets `--deck-top-pad` so the
+     first and last pages can rest in the middle, and its 72px snap inset is
+     what keeps the page toolbar clear above the page it belongs to. */
   .recipe-page-deck {
     display: flex;
     flex: 1 1 auto;
-    flex-direction: row;
+    flex-direction: column;
+    /* `safe` for the same reason as the desktop rule: a zoomed page wider
+       than the deck has to overflow on the side scrolling can reach. */
     align-items: center;
-    /* Centres a deck that FITS (one recipe, nothing to scroll to), which
-       flex-start would left-align instead.
-    
-       `safe` is load-bearing, not a nicety. Plain `center` also distributes
-       NEGATIVE free space, so an overflowing deck gets half its overflow laid
-       out before the scroll origin — the first pages sat at `offsetLeft: -406`
-       with `scrollLeft` already at its minimum of 0, so no swipe, scroll or
-       click could ever reach them. `safe` falls back to `start` the moment
-       content overflows, which is the only case that scrolls at all.
-    
-       Plain `center` stays first: a browser without `safe` support drops the
-       second declaration entirely and keeps the old behaviour. */
-    justify-content: center;
-    justify-content: safe center;
-    gap: 16px;
+    align-items: safe center;
+    /* Room for the one-line tip that hangs under the active page
+       (`.recipe-edit-tips`, 12px down, ~16px tall), which would otherwise sit
+       on top of the next page. */
+    gap: 40px;
     min-height: 0;
-    /* Extra top room so the front/back flip control can sit above the card
-       instead of overlapping its content. */
-    padding: 54px 40px 18px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-padding-inline: 40px;
+    padding: var(--deck-top-pad, 44vh) 20px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-padding-top: 72px;
+    scroll-padding-bottom: 72px;
     /* `mandatory`, matching the desktop deck — a swipe snaps as it decelerates,
-       landing on a card rather than resting between two. Only acts at
-       gesture/momentum end, so it doesn't yank a card mid-drag. */
-    scroll-snap-type: x mandatory;
+       landing on a page rather than resting between two. */
+    scroll-snap-type: y mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     /* Pan, but never pinch: a pinch on the card is the DECK's zoom
@@ -3097,27 +3103,17 @@
     touch-action: pan-x pan-y;
   }
 
-  /* Zoomed in past fit (set by `useDeckScroller`), the card is bigger than the
-     strip it sits in. So the strip stops snapping, and scrolls in both
-     directions where it only ever scrolled sideways. `safe` for the same reason
-     as the deck's own centring: plain `center` puts half the overflow before
-     the scroll origin, where nothing can reach it. */
+  /* Zoomed in past fit (set by `useDeckScroller`), the page is bigger than
+     the window, so the deck stops snapping and pans sideways too. */
   .recipe-page-deck[data-free-scroll="true"] {
-    overflow-y: auto;
+    overflow-x: auto;
     scroll-snap-type: none;
-    align-items: safe center;
   }
 
   .recipe-page-slide {
     display: grid;
     place-items: center;
-    /* Leaves ~40px of the neighbouring slide peeking in on each side, so it
-       reads as a horizontally scrollable deck rather than a single page.
-       A floor rather than a fixed width: a zoomed card is wider than that, and
-       a slide that stayed the same width let it spill out both sides, where the
-       left half is past the scroll origin and cannot be scrolled to. */
     flex: 0 0 auto;
-    min-width: calc(100vw - 96px);
     scroll-snap-align: center;
     opacity: 1;
     cursor: default;
@@ -3126,28 +3122,6 @@
   .recipe-page-slide:not(.is-active) {
     display: grid;
     opacity: 0.72;
-  }
-
-  /* A cookbook's lone pages (cover, dedication, back cover) are one page
-     wide. The floor above is a spread's width, so a lone page sat in the
-     middle of room for two, with its neighbours pushed out of sight. Its slot
-     is its own width instead. The first and last slides still need to centre,
-     and a narrow slide at either end of the strip can't scroll that far, so
-     they carry the missing distance as a margin. It is a percentage of the
-     deck's content box, which is the window minus the deck's 40px padding
-     either side, so `50% - page/2` lands the page's centre on the window's.
-     `--slide-page-w` comes from PrintDeck, and grows with zoom, where the
-     margin runs out at zero. */
-  .recipe-page-deck--book > .recipe-page-slide--single {
-    min-width: 0;
-  }
-
-  .recipe-page-deck--book > .recipe-page-slide--single[data-first="true"] {
-    margin-inline-start: max(0px, calc(50% - var(--slide-page-w, 0px) / 2));
-  }
-
-  .recipe-page-deck--book > .recipe-page-slide--single[data-last="true"] {
-    margin-inline-end: max(0px, calc(50% - var(--slide-page-w, 0px) / 2));
   }
 
   /* The cookbook's Pages button (MobileStructureSheet): floats over the
@@ -3210,7 +3184,12 @@
     bottom: calc(100% + 10px);
     left: 50%;
     z-index: 6;
-    width: min(calc(100vw - 32px), var(--preview-w, 100%));
+    /* The screen's width, not the page's. Held to the page, a cookbook page
+       (a spread's half, ~170px on a phone) wrapped its toolbar onto two or
+       three lines, taller than the 72px the deck keeps clear above a page, so
+       its top line slid under the header. Pages are centred in the deck, so
+       a bar centred on the page is centred on the screen. */
+    width: calc(100vw - 32px);
     transform: translateX(-50%);
   }
 
