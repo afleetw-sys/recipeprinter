@@ -262,7 +262,13 @@ type EventProps = {
   /** The Pro upgrade dialog was shown. `trigger` matches
    *  `pro_feature_encountered`'s `source` when it opened one, or names the
    *  entry point otherwise (e.g. "account_menu"). */
-  paywall_viewed: { trigger: string };
+  paywall_viewed: {
+    trigger: string;
+    /** Print presses only: the lock that stopped the print (`card_size` is a
+     *  4×6 card, `theme` a premium theme, `multi_recipe` more than one
+     *  recipe), or `several` when more than one applied at once. */
+    reason?: "theme" | "card_size" | "multi_recipe" | "several";
+  };
   /** The upgrade dialog was dismissed from its plan step without Continue
    *  ever being pressed, and it asked why instead of closing (once per person
    *  ever, see `lib/proDeclineAsked.ts`). Compare against
