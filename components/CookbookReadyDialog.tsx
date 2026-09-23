@@ -723,8 +723,8 @@ function AwaitingCover({
         <span className="cookbook-cover-size__label">Cover size</span>
         <span className="cookbook-cover-size__hint">
           {shopStatesNumbers && destination?.id === "lulu"
-            ? "Your cover's size depends on your page count and paper, so Lulu works it out for you. Copy the Dimensions and Spine Width from its REQUIREMENTS section into the boxes below."
-            : "Your cover's size depends on your page count and paper, so your printer works it out for you. Copy the exact numbers it gives you into the boxes below."}
+            ? "Depends on your page count and paper. Enter the Dimensions and Spine Width from Lulu's REQUIREMENTS."
+            : "Depends on your page count and paper. Enter the exact numbers your printer gives you."}
         </span>
         {/* Sheet first, spine last: that is the order a print service states
             them in, and reading them back off their page in a different
