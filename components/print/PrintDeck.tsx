@@ -1199,7 +1199,11 @@ export function PrintDeck(props: PrintDeckProps) {
         <section
           className="recipe-page-canvas"
           aria-label="Selected page"
-          data-single-recipe={singleRecipePrintView ? "true" : "false"}
+          // A one-card deck. Never a cookbook: a book with one recipe still
+          // has a cover, contents and more pages to swipe between, and the
+          // one-card styling snapped its slides by their start edge, which
+          // parked the cover off-centre and hid the fact there was more.
+          data-single-recipe={singleRecipePrintView && !cookbookView ? "true" : "false"}
         >
           {/* Body/heading and bold/italic, floating over the line being typed
               rather than joining the page's bar. It anchors itself to whatever
