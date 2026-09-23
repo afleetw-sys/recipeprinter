@@ -26,6 +26,8 @@ import {
   SpinnerIcon,
 } from "@/components/icons";
 
+const COOKPILOT_SITE_URL = "https://cookpilotapp.com/";
+
 export { prewarmCookPilotImport };
 
 /**
@@ -322,14 +324,24 @@ export function RecipeAppsPanel({
   // starting state for everybody, and "Not connected" spent a chip saying so
   // on every first visit; the button already says what to do about it.
   //
-  // The count joins the chip only once it is known. A number that appears a
-  // moment later is fine; a wrong one that corrects itself is not.
-  const cookPilotStatus = ready && user
-    ? cookPilotTotal === null
-      ? "Signed in"
-      : `Signed in · ${cookPilotTotal} ${cookPilotTotal === 1 ? "recipe" : "recipes"}`
+  // The chip is the library, never the account. It used to read "Signed in",
+  // and someone who had only ever signed in to RecipePrinter took that as a
+  // claim they had signed in to a second app. One account covers both, so the
+  // sign-in is not news here; how many recipes are waiting over there is. No
+  // chip until the count is known, and none at zero.
+  const cookPilotStatus = ready && user && cookPilotTotal
+    ? `${cookPilotTotal} ${cookPilotTotal === 1 ? "recipe" : "recipes"}`
     : undefined;
   const cookPilotNote = ready ? undefined : "Checking your account…";
+  // Signed in with nothing in CookPilot is where most RecipePrinter-first
+  // accounts start. The picker would open on an empty list, so the card points
+  // at the app instead.
+  const cookPilotEmpty = Boolean(ready && user && cookPilotTotal === 0);
+  const cookPilotDescription = !user
+    ? "Sign in and your saved recipes come straight across."
+    : cookPilotEmpty
+      ? "Your RecipePrinter account works in CookPilot too. Recipes you save there will show up here."
+      : "Your RecipePrinter account works in CookPilot too, so your saved recipes are ready to bring across.";
 
   const paprikaLibrary = useMemo(
     () => cachedPaprikaLibrary(),
@@ -443,7 +455,7 @@ export function RecipeAppsPanel({
       <ul className="grid gap-cp-2 sm:grid-cols-2">
         <IntegrationCard
           name="CookPilot"
-          description="Sign in and your saved recipes come straight across."
+          description={cookPilotDescription}
           status={cookPilotStatus}
           note={cookPilotNote}
           addedCount={addedCounts.cookpilot}
@@ -451,8 +463,12 @@ export function RecipeAppsPanel({
           // Pressing this while signed out lands on a sign-in screen, not a
           // recipe list (see CookPilotImportSource's `!user` branch) — the
           // button has to say so rather than promise the wrong next screen.
-          action={user ? "Choose recipes" : "Sign in"}
-          onOpen={() => open("cookpilot")}
+          action={!user ? "Sign in" : cookPilotEmpty ? "Get CookPilot" : "Choose recipes"}
+          onOpen={
+            cookPilotEmpty
+              ? () => window.open(COOKPILOT_SITE_URL, "_blank", "noopener,noreferrer")
+              : () => open("cookpilot")
+          }
         />
         <IntegrationCard
           name="Paprika"
