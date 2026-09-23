@@ -106,18 +106,18 @@ describe("blankPageReason", () => {
   it("explains a blank that keeps a photo beside its recipe", () => {
     const sheets = [photo(), recipe()];
     closeSpreadGaps(sheets);
-    expect(blankPageReason(sheets, blankIndex(sheets))).toMatch(/photo faces its recipe/);
+    expect(blankPageReason(sheets, blankIndex(sheets))).toMatch(/photo sits beside its recipe/);
   });
 
   it("explains a blank that keeps a chapter opener beside its art", () => {
     const sheets = [recipe(), recipe(), opener(), openerPhoto()];
     closeSpreadGaps(sheets);
-    expect(blankPageReason(sheets, blankIndex(sheets))).toMatch(/chapter opens facing its photo/);
+    expect(blankPageReason(sheets, blankIndex(sheets))).toMatch(/chapter sits beside its photo/);
   });
 
-  it("explains a blank that finishes the contents' own spread", () => {
+  it("explains a blank that keeps the recipes off the contents' last opening", () => {
     const sheets = [toc(), toc(), opener(), recipe()];
     closeSpreadGaps(sheets);
-    expect(blankPageReason(sheets, blankIndex(sheets))).toMatch(/contents has a spread to itself/);
+    expect(blankPageReason(sheets, blankIndex(sheets))).toMatch(/recipes start after a page turn/);
   });
 });

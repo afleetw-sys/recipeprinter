@@ -320,13 +320,13 @@ export function closeSpreadGaps(sheets: PageSheet[]): void {
  */
 export function blankPageReason(sheets: PageSheet[], index: number): string {
   if (sheets[index - 1]?.slots.some((slot) => slot?.kind === "toc")) {
-    return "Prints blank so the contents has a spread to itself.";
+    return "Prints blank so the recipes start after a page turn.";
   }
-  if (sheets[index + 1]?.layoutKind === "image") return "Prints blank so the photo faces its recipe.";
+  if (sheets[index + 1]?.layoutKind === "image") return "Prints blank so the photo sits beside its recipe.";
   if (sheets[index + 2]?.layoutKind === "section-photo") {
-    return "Prints blank so the chapter opens facing its photo.";
+    return "Prints blank so the chapter sits beside its photo.";
   }
-  return "Prints blank so the next two pages face each other.";
+  return "Prints blank so the next two pages sit side by side.";
 }
 
 /**
