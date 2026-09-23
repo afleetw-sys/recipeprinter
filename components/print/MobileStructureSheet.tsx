@@ -13,6 +13,7 @@ interface MobileStructureSheetProps {
   projectMeta: ReturnType<typeof useProjectMeta>;
   sections: Section[];
   toggleDedication: () => void;
+  toggleCover: (side: "front" | "back") => void;
   anyRecipeHasImage: boolean;
   bookPhotoStyle: PhotoStyle | null;
   applyBookPhotoStyle: (mode: PhotoStyle) => void;
@@ -54,6 +55,7 @@ export function MobileStructureSheet({
   projectMeta,
   sections,
   toggleDedication,
+  toggleCover,
   anyRecipeHasImage,
   bookPhotoStyle,
   applyBookPhotoStyle,
@@ -86,6 +88,11 @@ export function MobileStructureSheet({
                 Pages group. */}
             <div className="recipe-structure-sheet__settings">
               <Checkbox
+                  label="Front cover"
+                  checked={Boolean(projectMeta.meta.cover)}
+                  onChange={() => toggleCover("front")}
+              />
+              <Checkbox
                   label="Dedication"
                   checked={Boolean(projectMeta.meta.frontMatter || projectMeta.meta.dedication)}
                   onChange={toggleDedication}
@@ -94,6 +101,11 @@ export function MobileStructureSheet({
                   label="Table of contents"
                   checked={Boolean(projectMeta.meta.tableOfContents)}
                   onChange={(event) => projectMeta.setTableOfContents(event.target.checked)}
+              />
+              <Checkbox
+                  label="Back cover"
+                  checked={Boolean(projectMeta.meta.backCover)}
+                  onChange={() => toggleCover("back")}
               />
             </div>
         </MobileSheet>

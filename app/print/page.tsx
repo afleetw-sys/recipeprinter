@@ -1623,13 +1623,30 @@ export default function PrintPage() {
     return { title: "", template };
   }
 
-  /** The back cover's own recovery, mirroring `addCover` above — deleting either
-      cover used to be a dead end for the back one specifically, since only the
-      front had a way back onto the page. */
   function addBackCover() {
     const cover = projectMeta.meta.backCover ?? defaultBackCover();
     projectMeta.setBackCover(cover);
     setPendingFocusNavId("cover-back");
+  }
+
+  /**
+   * The Pages checkboxes for the two covers, so every optional page in a book
+   * (front cover, dedication, contents, back cover) turns on and off the same
+   * way. Ticking one puts the page back and goes to it. Unticking one asks
+   * first, the same question the page's own delete button asks: a cover holds
+   * the book's title, author and photo, more than a checkbox should drop
+   * without a word. These replaced the page list's "Add cover" and "Add back
+   * cover" buttons, which only existed on desktop, so a phone had no way to
+   * bring a deleted cover back.
+   */
+  function toggleCover(side: "front" | "back") {
+    const current = side === "front" ? projectMeta.meta.cover : projectMeta.meta.backCover;
+    if (current) {
+      setPendingDelete({ kind: "cover", side, title: side === "front" ? "the cover" : "the back cover" });
+      return;
+    }
+    if (side === "front") addCover();
+    else addBackCover();
   }
 
   /** Toggles the dedication front-matter page. Adding one seeds a quiet,
@@ -4108,6 +4125,11 @@ export default function PrintPage() {
     return (
       <CheckboxGroup label="Pages" className="recipe-config-section recipe-config-section--settings">
         <Checkbox
+            label="Front cover"
+            checked={Boolean(projectMeta.meta.cover)}
+            onChange={() => toggleCover("front")}
+        />
+        <Checkbox
             label="Dedication"
             checked={Boolean(projectMeta.meta.frontMatter || projectMeta.meta.dedication)}
             onChange={toggleDedication}
@@ -4116,6 +4138,11 @@ export default function PrintPage() {
             label="Table of contents"
             checked={Boolean(projectMeta.meta.tableOfContents)}
             onChange={(event) => projectMeta.setTableOfContents(event.target.checked)}
+        />
+        <Checkbox
+            label="Back cover"
+            checked={Boolean(projectMeta.meta.backCover)}
+            onChange={() => toggleCover("back")}
         />
       </CheckboxGroup>
     );
@@ -5433,8 +5460,6 @@ export default function PrintPage() {
           enterOrganizeMode={enterOrganizeMode}
           exitOrganizeMode={exitOrganizeMode}
           projectMeta={projectMeta}
-          addCover={addCover}
-          addBackCover={addBackCover}
           cookbookView={cookbookView}
           navItems={navItems}
           navIndexForSheet={navIndexForSheet}
@@ -5787,6 +5812,7 @@ export default function PrintPage() {
           projectMeta={projectMeta}
           sections={sections}
           toggleDedication={toggleDedication}
+          toggleCover={toggleCover}
           anyRecipeHasImage={anyRecipeHasImage}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}

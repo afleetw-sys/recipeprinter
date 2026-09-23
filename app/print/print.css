@@ -148,17 +148,7 @@
 }
 
 /* Layout only. The box, corner, type and hover all come from
-   `.btn.btn-secondary.btn-compact` on the element itself — this used to
-   restate every one of them at values that had drifted from the shared
-   button, which is the whole reason the rail and the header stopped
-   matching. */
-.recipe-page-rail__add-cover {
-  flex-shrink: 0;
-  width: 100%;
-  margin: 0 0 2px;
-}
-
-/* Layout only — see the note on `__add-cover`. The trailing chevron hugs the
+   `.btn.btn-secondary.btn-compact` on the element itself. The trailing chevron hugs the
    label rather than taking the button's own 8px gap: it is an affordance on
    the label, not a second item beside it. */
 .recipe-page-rail__organize {
@@ -541,12 +531,6 @@
   .recipe-organize-bar__actions .btn-ghost {
     display: none;
   }
-}
-
-.recipe-page-rail__add-cover:hover {
-  border-color: color-mix(in srgb, var(--cp-accent) 46%, var(--cp-line));
-  background: var(--cp-overlay-hover);
-  color: var(--cp-accent);
 }
 
 .recipe-page-rail__item {
