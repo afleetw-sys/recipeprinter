@@ -2226,27 +2226,66 @@
   .recipe-photo-style-spotlight { animation: none; }
 }
 
-.recipe-photo-style-tip {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+/* The tip itself, floating beside the spotlit section and pointing at it.
+   Positioned from script (see `tooltipLayout`); the modifier says which side
+   of the section it sits on, and `--arrow` where along its edge the arrow
+   goes. Floating, so it gets a shadow. Above the scrim: same layer, later in
+   the document. */
+.recipe-photo-style-tooltip {
+  position: fixed;
+  z-index: var(--z-dialog);
+  width: min(260px, calc(100vw - 24px));
+  padding: 12px 10px 12px 14px;
+  border: 1px solid var(--cp-line);
+  border-radius: 12px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-lg);
+  animation: rp-photo-spotlight-in 200ms ease-out;
 }
-.recipe-photo-style-tip__title {
-  margin: 0;
+.recipe-photo-style-tooltip::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--cp-card);
+  border: 1px solid var(--cp-line);
+  transform: rotate(45deg);
+}
+/* Each arrow shows only the two borders that face the section. */
+.recipe-photo-style-tooltip--left::after {
+  top: calc(var(--arrow) - 6px);
+  right: -7px;
+  border-width: 1px 1px 0 0;
+}
+.recipe-photo-style-tooltip--top::after {
+  bottom: -7px;
+  left: calc(var(--arrow) - 6px);
+  border-width: 0 1px 1px 0;
+}
+.recipe-photo-style-tooltip--bottom::after {
+  top: -7px;
+  left: calc(var(--arrow) - 6px);
+  border-width: 1px 0 0 1px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .recipe-photo-style-tooltip { animation: none; }
+}
+.recipe-photo-style-tooltip__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.recipe-photo-style-tooltip__title {
+  margin: 2px 0 0;
   font-size: var(--cp-fs-small);
   font-weight: 700;
   color: var(--cp-ink);
 }
-.recipe-photo-style-tip__body {
-  margin: 0;
+.recipe-photo-style-tooltip__body {
+  margin: 2px 24px 0 0;
   font-size: var(--cp-fs-caption);
   color: var(--cp-ink-soft);
-}
-.recipe-photo-style-tip__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 6px;
 }
 
 /* The real radio is sr-only, so surface keyboard focus on the visible tile. */

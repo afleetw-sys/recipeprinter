@@ -28,7 +28,6 @@ interface PrintSetupControlsProps {
   /** Set when the cook has been choosing the same photo layout recipe by
       recipe; see components/print/PhotoStyleTip.tsx. */
   photoStyleTip?: PhotoStyleTipState | null;
-  onAcceptPhotoStyleTip?: (mode: PhotoStyle) => void;
   onDismissPhotoStyleTip?: () => void;
   showPhoto: boolean;
   setShowPhoto: Dispatch<SetStateAction<boolean>>;
@@ -64,7 +63,6 @@ export function PrintSetupControls({
   bookPhotoStyle,
   applyBookPhotoStyle,
   photoStyleTip,
-  onAcceptPhotoStyleTip,
   onDismissPhotoStyleTip,
   showPhoto,
   setShowPhoto,
@@ -201,8 +199,8 @@ export function PrintSetupControls({
                 </SelectTile>
               ))}
             </div>
-            {photoStyleTip && onAcceptPhotoStyleTip && onDismissPhotoStyleTip && (
-              <PhotoStyleTip tip={photoStyleTip} onAccept={onAcceptPhotoStyleTip} onDismiss={onDismissPhotoStyleTip} />
+            {photoStyleTip && onDismissPhotoStyleTip && (
+              <PhotoStyleTip onDismiss={onDismissPhotoStyleTip} />
             )}
           </div>
         </div>

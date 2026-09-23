@@ -2,15 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { IconButton } from "@/components/Controls";
+import { ICON_SIZE, XIcon } from "@/components/icons";
 import type { PhotoStyle } from "@/lib/project";
-
-/** What we noticed, per layout. Says what they were doing, not that they
-    were doing it the long way. */
-const NOTICED: Record<PhotoStyle, string> = {
-  none: "Looks like you're removing recipe photos one at a time.",
-  card: "Looks like you're moving recipe photos into the page one at a time.",
-  full: "Looks like you're giving recipes a full-page photo one at a time.",
-};
 
 export interface PhotoStyleTipState {
   mode: PhotoStyle;
@@ -25,6 +19,28 @@ export interface PhotoStyleTipState {
 /** Room left around the section inside the spotlight's opening. */
 const SPOTLIGHT_PAD = 8;
 const SPOTLIGHT_RADIUS = 14;
+/** From the opening's edge to the tooltip, room for its arrow. */
+const TOOLTIP_GAP = 12;
+/** Closest the tooltip comes to the edge of the screen. */
+const EDGE = 12;
+/** How close the arrow may come to a corner of the tooltip. */
+const ARROW_INSET = 18;
+
+type Side = "left" | "top" | "bottom";
+
+interface Layout {
+  path: string;
+  side: Side;
+  top: number;
+  left: number;
+  /** Along the tooltip's edge, where the arrow sits, so it points at the
+      middle of the section even when the tooltip is pushed off-centre. */
+  arrow: number;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), Math.max(min, max));
+}
 
 /**
  * The scrim's shape: the whole screen, minus a rounded opening over `rect`.
@@ -50,22 +66,61 @@ function spotlightPath(rect: DOMRect): string {
 }
 
 /**
- * Dims everything but the "Every recipe" Photos section. Follows the section
- * every frame while it shows: the panel scrolls, and on a phone the sheet it
- * lives in is still sliding up when this mounts. Only re-renders when the
- * section actually moved.
+ * Where the tooltip goes: beside the section when there is room to its left
+ * (the desktop panel, on the right edge of the screen), otherwise above it (a
+ * phone's sheet, at the bottom), otherwise below.
  */
-function Spotlight({ target, onDismiss }: { target: HTMLElement; onDismiss: () => void }) {
-  const [path, setPath] = useState<string | null>(null);
+function tooltipLayout(rect: DOMRect, tooltip: { width: number; height: number }): Omit<Layout, "path"> {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const offset = SPOTLIGHT_PAD + TOOLTIP_GAP;
+  const midX = rect.left + rect.width / 2;
+  const midY = rect.top + rect.height / 2;
+
+  if (rect.left - offset - tooltip.width >= EDGE) {
+    const top = clamp(midY - tooltip.height / 2, EDGE, h - tooltip.height - EDGE);
+    return {
+      side: "left",
+      left: rect.left - offset - tooltip.width,
+      top,
+      arrow: clamp(midY - top, ARROW_INSET, tooltip.height - ARROW_INSET),
+    };
+  }
+  const left = clamp(midX - tooltip.width / 2, EDGE, w - tooltip.width - EDGE);
+  const arrow = clamp(midX - left, ARROW_INSET, tooltip.width - ARROW_INSET);
+  if (rect.top - offset - tooltip.height >= EDGE) {
+    return { side: "top", top: rect.top - offset - tooltip.height, left, arrow };
+  }
+  return { side: "bottom", top: rect.bottom + offset, left, arrow };
+}
+
+/**
+ * Dims everything but the "Every recipe" Photos section and floats the tip
+ * beside it, pointing at it. Follows the section every frame while it shows:
+ * the panel scrolls, and on a phone the sheet it lives in is still sliding up
+ * when this mounts. Only re-renders when something actually moved.
+ */
+function SpotlightTooltip({ target, onDismiss }: { target: HTMLElement; onDismiss: () => void }) {
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [layout, setLayout] = useState<Layout | null>(null);
 
   useEffect(() => {
     let frame = 0;
     let last = "";
     const follow = () => {
-      const next = spotlightPath(target.getBoundingClientRect());
-      if (next !== last) {
-        last = next;
-        setPath(next);
+      const rect = target.getBoundingClientRect();
+      const tooltip = tooltipRef.current;
+      const next: Layout = {
+        path: spotlightPath(rect),
+        ...tooltipLayout(rect, {
+          width: tooltip?.offsetWidth ?? 0,
+          height: tooltip?.offsetHeight ?? 0,
+        }),
+      };
+      const key = JSON.stringify(next);
+      if (key !== last) {
+        last = key;
+        setLayout(next);
       }
       frame = requestAnimationFrame(follow);
     };
@@ -73,35 +128,57 @@ function Spotlight({ target, onDismiss }: { target: HTMLElement; onDismiss: () =
     return () => cancelAnimationFrame(frame);
   }, [target]);
 
-  if (!path) return null;
   return createPortal(
-    <div
-      className="recipe-photo-style-spotlight no-print"
-      style={{ clipPath: `path(evenodd, "${path}")` }}
-      onClick={onDismiss}
-      aria-hidden
-    />,
+    <>
+      {layout && (
+        <div
+          className="recipe-photo-style-spotlight no-print"
+          style={{ clipPath: `path(evenodd, "${layout.path}")` }}
+          onClick={onDismiss}
+          aria-hidden
+        />
+      )}
+      <div
+        ref={tooltipRef}
+        className={`recipe-photo-style-tooltip recipe-photo-style-tooltip--${layout?.side ?? "left"} no-print`}
+        role="dialog"
+        aria-labelledby="photo-style-tooltip-title"
+        style={{
+          top: layout?.top ?? 0,
+          left: layout?.left ?? 0,
+          // Measured before it is placed, so it stays invisible for that
+          // first frame rather than flashing in the corner.
+          visibility: layout ? "visible" : "hidden",
+          ["--arrow" as string]: `${layout?.arrow ?? 0}px`,
+        }}
+      >
+        <div className="recipe-photo-style-tooltip__head">
+          <p id="photo-style-tooltip-title" className="recipe-photo-style-tooltip__title">
+            Change every recipe at once
+          </p>
+          <IconButton className="icon-button--compact icon-button--bare" onClick={onDismiss} aria-label="Close">
+            <XIcon size={ICON_SIZE.sm} />
+          </IconButton>
+        </div>
+        <p className="recipe-photo-style-tooltip__body">
+          These settings update the photo on every recipe in one go.
+        </p>
+      </div>
+    </>,
     document.body,
   );
 }
 
 /**
- * Shown under the "Every recipe" Photos tiles once a cook has set the same
- * layout on recipe after recipe from each page's own Photo dialog (see
- * lib/photoStyleStreak.ts). Everything but that section is dimmed, so the
- * tiles the copy talks about are the only thing lit. Clicking the dimmed part
- * is "Not now".
+ * Mounted inside the "Every recipe" Photos section once a cook has set the
+ * same layout on recipe after recipe from each page's own Photo dialog (see
+ * lib/photoStyleStreak.ts). Takes no room there itself: it only finds the
+ * section, then dims everything else and floats the tip beside it. The tiles
+ * in the section are the answer; closing, Escape, or a click on the dimmed
+ * part is "not now".
  */
-export function PhotoStyleTip({
-  tip,
-  onAccept,
-  onDismiss,
-}: {
-  tip: PhotoStyleTipState;
-  onAccept: (mode: PhotoStyle) => void;
-  onDismiss: () => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
+export function PhotoStyleTip({ onDismiss }: { onDismiss: () => void }) {
+  const ref = useRef<HTMLSpanElement>(null);
   const [section, setSection] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -119,20 +196,8 @@ export function PhotoStyleTip({
   }, [onDismiss]);
 
   return (
-    <div ref={ref} className="recipe-photo-style-tip" role="note">
-      {section && <Spotlight target={section} onDismiss={onDismiss} />}
-      <p className="recipe-photo-style-tip__title">Change every recipe at once</p>
-      <p className="recipe-photo-style-tip__body">
-        {NOTICED[tip.mode]} These settings update the photo on every recipe in one go.
-      </p>
-      <div className="recipe-photo-style-tip__actions">
-        <button type="button" className="btn btn-primary btn-compact" onClick={() => onAccept(tip.mode)}>
-          Apply to every recipe
-        </button>
-        <button type="button" className="btn-ghost btn-compact" onClick={onDismiss}>
-          Not now
-        </button>
-      </div>
-    </div>
+    <span ref={ref} hidden>
+      {section && <SpotlightTooltip target={section} onDismiss={onDismiss} />}
+    </span>
   );
 }

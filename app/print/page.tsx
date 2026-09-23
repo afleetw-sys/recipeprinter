@@ -1518,9 +1518,12 @@ export default function PrintPage() {
   // default AND clear the individual placement overrides so the whole book snaps
   // to it (custom facing photos / focal points are kept).
   function applyBookPhotoStyle(mode: PhotoStyle) {
-    // Whichever way the book-wide choice was made, the tip about making it has
-    // done its job.
-    setPhotoStyleTip(null);
+    // The tip has no button of its own: picking one of these tiles while it
+    // shows is its answer.
+    if (photoStyleTip) {
+      track("photo_style_tip_answered", { mode: photoStyleTip.mode, accepted: true, chosen: mode });
+      setPhotoStyleTip(null);
+    }
     projectMeta.setPhotoStyle(mode);
     projectMeta.clearItemPhotoOverrides();
     // Chapter openers are part of the book, not an exception to it: a placement
@@ -4586,11 +4589,6 @@ export default function PrintPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingPhotoStyleTip, openPhotoPickers]);
 
-  function acceptPhotoStyleTip(mode: PhotoStyle) {
-    track("photo_style_tip_answered", { mode, accepted: true });
-    applyBookPhotoStyle(mode);
-  }
-
   function dismissPhotoStyleTip() {
     if (photoStyleTip) track("photo_style_tip_answered", { mode: photoStyleTip.mode, accepted: false });
     setPhotoStyleTip(null);
@@ -5699,7 +5697,6 @@ export default function PrintPage() {
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
           photoStyleTip={photoStyleTip?.surface === "panel" ? photoStyleTip : null}
-          onAcceptPhotoStyleTip={acceptPhotoStyleTip}
           onDismissPhotoStyleTip={dismissPhotoStyleTip}
           showPhoto={showPhoto}
           setShowPhoto={setShowPhoto}
@@ -5920,7 +5917,6 @@ export default function PrintPage() {
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
           photoStyleTip={photoStyleTip?.surface === "sheet" ? photoStyleTip : null}
-          onAcceptPhotoStyleTip={acceptPhotoStyleTip}
           onDismissPhotoStyleTip={dismissPhotoStyleTip}
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setBookShowSourceUrl}

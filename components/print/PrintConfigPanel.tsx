@@ -29,7 +29,6 @@ interface PrintConfigPanelProps {
   /** Set when the cook has been choosing the same photo layout recipe by
       recipe; see components/print/PhotoStyleTip.tsx. */
   photoStyleTip?: PhotoStyleTipState | null;
-  onAcceptPhotoStyleTip?: (mode: PhotoStyle) => void;
   onDismissPhotoStyleTip?: () => void;
   showPhoto: boolean;
   setShowPhoto: Dispatch<SetStateAction<boolean>>;
@@ -70,7 +69,6 @@ export function PrintConfigPanel({
   bookPhotoStyle,
   applyBookPhotoStyle,
   photoStyleTip,
-  onAcceptPhotoStyleTip,
   onDismissPhotoStyleTip,
   showPhoto,
   setShowPhoto,
@@ -127,7 +125,6 @@ export function PrintConfigPanel({
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
           photoStyleTip={photoStyleTip}
-          onAcceptPhotoStyleTip={onAcceptPhotoStyleTip}
           onDismissPhotoStyleTip={onDismissPhotoStyleTip}
           showPhoto={showPhoto}
           setShowPhoto={setShowPhoto}
