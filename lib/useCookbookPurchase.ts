@@ -12,8 +12,6 @@ import {
   isCookbookProjectUnlocked,
   loadCookbookProjectUnlock,
   markCookbookProjectUnlockedLocal,
-  markCookbookUnlockPending,
-  pendingCookbookUnlock,
 } from "@/lib/cookbookUnlocks";
 
 interface UseCookbookPurchaseOptions {
@@ -113,16 +111,6 @@ export function useCookbookPurchase({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cookPilotUser?.uid, projectId]);
 
-  // A purchase that completed on THIS device but whose webhook write hasn't
-  // landed yet. `markCookbookUnlockPending` is set at checkout and cleared once
-  // the project is marked, so this only ever matches the project just bought —
-  // it cannot grant a different one.
-  useEffect(() => {
-    if (projectUnlocked || pendingCookbookUnlock() !== projectId) return;
-    markCookbookProjectUnlockedLocal(projectId);
-    setProjectUnlocked(true);
-  }, [projectId, projectUnlocked]);
-
   /* The legacy account-wide bridge lived here, and it was a free-unlock hole.
      It granted access to whatever project was open whenever the RevenueCat
      `cookbook` entitlement was present and no unlock doc was found — guarded
@@ -207,7 +195,6 @@ export function useCookbookPurchase({
         ...(usingDiscount ? { discount: "pro_first" as const } : {}),
       });
 
-      markCookbookUnlockPending(projectId);
       markCookbookProjectUnlockedLocal(projectId);
       setProjectUnlocked(true);
       // The durable record is the server's: RevenueCat fires the purchase event

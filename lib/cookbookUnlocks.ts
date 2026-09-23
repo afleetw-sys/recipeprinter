@@ -12,7 +12,6 @@ import {
 } from "@/lib/firebase/recipePrinterPaths";
 
 const UNLOCKS_KEY = "recipeprinter:cookbook-unlocks:v1";
-const PENDING_KEY = "recipeprinter:cookbook-unlock-pending:v1";
 
 interface UnlockMap {
   [projectId: string]: { unlockedAt: number };
@@ -57,8 +56,6 @@ export function markCookbookProjectsUnlockedLocal(projectIds: readonly string[])
     added = true;
   }
   if (added) localStore.setJson(UNLOCKS_KEY, map);
-  const pending = localStore.get(PENDING_KEY);
-  if (pending && projectIds.includes(pending)) localStore.remove(PENDING_KEY);
 }
 
 /**
@@ -74,7 +71,6 @@ export function transferCookbookProjectUnlockLocal(fromProjectId: string, toProj
   if (!existing) return;
   const { [fromProjectId]: _moved, ...rest } = map;
   localStore.setJson(UNLOCKS_KEY, { ...rest, [toProjectId]: existing });
-  if (localStore.get(PENDING_KEY) === fromProjectId) localStore.set(PENDING_KEY, toProjectId);
 }
 
 /**
@@ -107,14 +103,6 @@ const LOCAL_UNLOCK_GRACE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 function localUnlockIsRecent(projectId: string): boolean {
   const at = unlocks()[projectId]?.unlockedAt;
   return typeof at === "number" && Date.now() - at < LOCAL_UNLOCK_GRACE_MS;
-}
-
-export function markCookbookUnlockPending(projectId: string): void {
-  localStore.set(PENDING_KEY, projectId);
-}
-
-export function pendingCookbookUnlock(): string | null {
-  return localStore.get(PENDING_KEY);
 }
 
 /* `claimLegacyCookbookUnlock` and `markProjectScopedCookbookPurchase` lived

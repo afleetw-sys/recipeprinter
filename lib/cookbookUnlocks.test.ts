@@ -3,8 +3,6 @@ import {
   isCookbookProjectUnlocked,
   loadCookbookProjectUnlock,
   markCookbookProjectUnlockedLocal,
-  markCookbookUnlockPending,
-  pendingCookbookUnlock,
 } from "@/lib/cookbookUnlocks";
 
 class MemoryStorage {
@@ -32,13 +30,6 @@ describe("project-scoped cookbook unlocks", () => {
     markCookbookProjectUnlockedLocal("book-a");
     expect(isCookbookProjectUnlocked("book-a")).toBe(true);
     expect(isCookbookProjectUnlocked("book-b")).toBe(false);
-  });
-
-  it("keeps a pending purchase marker until its project is unlocked", () => {
-    markCookbookUnlockPending("book-a");
-    expect(pendingCookbookUnlock()).toBe("book-a");
-    markCookbookProjectUnlockedLocal("book-a");
-    expect(pendingCookbookUnlock()).toBeNull();
   });
 
   // The legacy account-wide bridge used to be tested here. It is gone: it
