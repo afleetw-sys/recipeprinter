@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ImportError } from "@/lib/parser";
-import { normalizeFractions, parseText, parseUrlAll } from "@/lib/parser";
+import { normalizeFractions, parseImages, parseText, parseUrlAll } from "@/lib/parser";
 
 // What these tests are about is one decision: after `/api/parse` fails, do we
 // go on to run CookPilot's parser AGAIN through its client callable? The route
@@ -406,5 +406,51 @@ describe("normalizeFractions", () => {
     for (const glyph of ["½", "⅓", "⅔", "¼", "¾", "⅕", "⅙", "⅛", "⅜", "⅝", "⅞"]) {
       expect(normalizeFractions(`${glyph} cup`)).toMatch(/^\d+\/\d+ cup$/);
     }
+  });
+});
+
+describe("parseImages at the hourly photo limit", () => {
+  const RESETS_AT = new Date(2026, 8, 23, 15, 42).getTime();
+  const RESET_TIME = new Date(RESETS_AT).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+
+  function limitError(details?: Record<string, unknown>, limit = 5) {
+    return Object.assign(new Error(`Image parsing limit of ${limit} per hour reached. Please try again later.`), {
+      code: "functions/resource-exhausted",
+      details,
+    });
+  }
+
+  afterEach(() => callable.mockReset());
+
+  it("tells a free account how many it used, when they come back, and what Pro gives", async () => {
+    callable.mockRejectedValue(
+      limitError({ reason: "image_hourly_limit", limit: 5, resetsAtMs: RESETS_AT, pro: false }),
+    );
+
+    const failure = await parseImages(["data:image/jpeg;base64,AAAA"]).catch((err: unknown) => err);
+
+    expect(failure).toBeInstanceOf(ImportError);
+    expect((failure as ImportError).code).toBe("rate_limited");
+    expect((failure as ImportError).message).toBe(
+      `You've already done 5 photo imports this hour. You can import more at ${RESET_TIME}, or upgrade to Pro for 30 an hour.`,
+    );
+  });
+
+  it("does not pitch Pro to a Pro account", async () => {
+    callable.mockRejectedValue(
+      limitError({ reason: "image_hourly_limit", limit: 30, resetsAtMs: RESETS_AT, pro: true }, 30),
+    );
+
+    await expect(parseImages(["data:image/jpeg;base64,AAAA"])).rejects.toThrow(
+      `You've already done 30 photo imports this hour. You can import more photos at ${RESET_TIME}.`,
+    );
+  });
+
+  it("still names the number when the backend sends no details", async () => {
+    callable.mockRejectedValue(limitError(undefined));
+
+    await expect(parseImages(["data:image/jpeg;base64,AAAA"])).rejects.toThrow(
+      "You've already done 5 photo imports this hour. You can import more within the hour, or upgrade to Pro for 30 an hour.",
+    );
   });
 });

@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { AccountPersonalDetails } from "@/components/AccountPersonalDetails";
 import { AccountProStatus } from "@/components/AccountProStatus";
+import { AccountImageImportUsage } from "@/components/AccountImageImportUsage";
 import { AccountIcon, ICON_SIZE, SpinnerIcon } from "@/components/icons";
 
 /**
@@ -50,6 +51,7 @@ export default function AccountPage() {
           <>
             <AccountPersonalDetails user={user} />
             <AccountProStatus user={user} />
+            <AccountImageImportUsage uid={user.uid} />
           </>
         ) : (
           /* Nothing here belongs to a signed-out visitor — no name, no email,

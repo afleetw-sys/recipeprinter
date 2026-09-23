@@ -1,4 +1,5 @@
 import type { ProLockReason } from "@/lib/recipePrinterPurchases";
+import { IMAGE_IMPORTS_PER_HOUR_PRO, PRO_IMAGE_IMPORT_BENEFIT } from "@/lib/imageImportQuota";
 
 // Every one of these is a real, implemented gate (see computeProLocks in
 // lib/recipePrinterPurchases.ts). A "20% off your first cookbook export"
@@ -21,8 +22,17 @@ const COOKBOOK_BENEFIT = "20% off your first cookbook";
 
 // Exported so `AccountProStatus` can show the same list to a Free account —
 // one list, so a change here doesn't quietly leave the two surfaces
-// disagreeing about what Pro actually includes.
-export const PRO_BENEFITS = [...Object.values(BENEFIT_BY_REASON), COOKBOOK_BENEFIT];
+// disagreeing about what Pro actually includes. The photo-import allowance is
+// enforced by CookPilot per plan (see lib/imageImportQuota.ts), not by a lock
+// here, so it has no `ProLockReason`.
+export const PRO_BENEFITS = [
+  ...Object.values(BENEFIT_BY_REASON),
+  PRO_IMAGE_IMPORT_BENEFIT,
+  COOKBOOK_BENEFIT,
+];
+
+/** Opened from a photo import that hit the free hourly limit. */
+export const IMAGE_IMPORT_LIMIT_TRIGGER = "image_import_limit";
 
 const TITLE_BY_REASON: Record<ProLockReason, string> = {
   multi_recipe: "Print multiple recipes at once",
@@ -32,7 +42,7 @@ const TITLE_BY_REASON: Record<ProLockReason, string> = {
 
 export interface ProUpgradeCopy {
   title: string;
-  /** All four benefits, with whichever triggered the dialog first. */
+  /** Every benefit, with whichever triggered the dialog first. */
   benefits: string[];
   ctaLabel: string;
 }
@@ -53,6 +63,13 @@ const GENERIC_COPY: ProUpgradeCopy = {
  * card size happens to be selected at that moment.
  */
 export function proUpgradeCopy(reasons: ProLockReason[], trigger: string): ProUpgradeCopy {
+  if (trigger === IMAGE_IMPORT_LIMIT_TRIGGER) {
+    return {
+      title: `Import up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photos an hour`,
+      benefits: [PRO_IMAGE_IMPORT_BENEFIT, ...PRO_BENEFITS.filter((b) => b !== PRO_IMAGE_IMPORT_BENEFIT)],
+      ctaLabel: "Unlock Pro",
+    };
+  }
   if (trigger === "topbar_button" || reasons.length === 0) return GENERIC_COPY;
   const triggered = new Set(reasons.map((reason) => BENEFIT_BY_REASON[reason]));
   return {

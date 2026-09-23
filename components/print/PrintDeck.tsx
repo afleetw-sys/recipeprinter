@@ -286,6 +286,9 @@ interface PrintDeckProps {
   settlingIds?: ReadonlySet<string>;
   onTryAnotherImportWay: (id: string) => void;
   onRemoveImport: (id: string) => void;
+  /** Opens the Pro upgrade from a photo import that hit the free hourly
+      limit. Omitted for an account that already has Pro. */
+  onUpgradeForImageImports?: () => void;
   /** The recipe an import was added BELOW, if any — the deck places its
       placeholder page right after that recipe, the way the rail does. */
   pendingAddAfterRecipeId: string | null;
@@ -400,6 +403,7 @@ export function PrintDeck(props: PrintDeckProps) {
     settlingIds,
     onTryAnotherImportWay,
     onRemoveImport,
+    onUpgradeForImageImports,
     pendingAddAfterRecipeId,
     renderAllPages,
   } = props;
@@ -1165,6 +1169,11 @@ export function PrintDeck(props: PrintDeckProps) {
                 item={failedItem}
                 onTryAnotherWay={() => onTryAnotherImportWay(failedItem.id)}
                 onRemove={() => onRemoveImport(failedItem.id)}
+                onUpgrade={
+                  failedItem.method === "image" && failedItem.errorCode === "rate_limited"
+                    ? onUpgradeForImageImports
+                    : undefined
+                }
               />
             </div>
           </div>

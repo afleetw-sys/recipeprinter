@@ -89,7 +89,7 @@ import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { useProPurchase } from "@/lib/useProPurchase";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
-import { proUpgradeCopy } from "@/lib/proUpgradeCopy";
+import { IMAGE_IMPORT_LIMIT_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
 import {
   activeProLockReasons,
   computeProLocks,
@@ -2858,7 +2858,9 @@ export default function PrintPage() {
       setShowProUpgradeDialog(false);
       if (outcome !== "purchased" && outcome !== "already-active") return;
       if (outcome === "purchased") {
-        track("pro_feature_used", { feature: proLockFeature() });
+        track("pro_feature_used", {
+          feature: trigger === IMAGE_IMPORT_LIMIT_TRIGGER ? "image_imports" : proLockFeature(),
+        });
         if (cookPilotUser && autosaveEnabledForCurrentMode) void handleSaveProject();
       }
       if (trigger === "print_button") void handlePrint();
@@ -5572,6 +5574,11 @@ export default function PrintPage() {
           failedImports={failedImports}
           onTryAnotherImportWay={tryAnotherImportWay}
           onRemoveImport={queue.remove}
+          onUpgradeForImageImports={
+            hasProEntitlement(effectiveCustomerInfo.customerInfo)
+              ? undefined
+              : () => openProUpgradeDialog(IMAGE_IMPORT_LIMIT_TRIGGER)
+          }
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           openAddRecipeBelow={openAddRecipeBelow}
           renderAllPages={renderAllPages}
