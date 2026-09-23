@@ -1,9 +1,9 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import type { User } from "firebase/auth";
 import { Dialog } from "@/components/Dialog";
-import { Checkbox, SelectTile } from "@/components/Controls";
+import { Checkbox } from "@/components/Controls";
 import { CookPilotLoginForm } from "@/components/CookPilotAuth";
 import { CheckIcon, CrownIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import { track } from "@/lib/analytics";
@@ -152,11 +152,20 @@ export function ProUpgradeDialog({
             {PRO_PLAN_CYCLES.map((cycle) => {
               const selected = selectedCycle === cycle;
               return (
-                <Fragment key={cycle}>
-                  <SelectTile
-                    selected={selected}
-                    className={selected ? "pro-plan-card" : "pro-plan-card pro-plan-card--compact"}
-                  >
+                // A div, not `SelectTile`'s label: Monthly holds its own
+                // checkbox, and a label can't hold another. The radio keeps
+                // its own label inside, and a click anywhere on the card
+                // still picks the plan.
+                <div
+                  key={cycle}
+                  className={
+                    selected
+                      ? "select-tile is-active pro-plan-card"
+                      : "select-tile pro-plan-card pro-plan-card--compact"
+                  }
+                  onClick={() => selectCycle(cycle)}
+                >
+                  <label className="pro-plan-card__choice">
                     <input
                       type="radio"
                       name="pro-cycle"
@@ -164,25 +173,26 @@ export function ProUpgradeDialog({
                       checked={selected}
                       onChange={() => selectCycle(cycle)}
                     />
-                    <div className="pro-plan-card__row">
+                    <span className="pro-plan-card__row">
                       <span className="pro-plan-card__name">{PRO_CYCLE_LABEL[cycle]}</span>
-                    </div>
-                    <p className="pro-plan-card__price">
+                    </span>
+                    <span className="pro-plan-card__price">
                       {PRO_PRICE_FALLBACKS[cycle]}
                       {cycle === "annual" && (
                         <span className="pro-plan-card__note"> · Save {savingsPercent}%</span>
                       )}
-                    </p>
-                  </SelectTile>
+                    </span>
+                  </label>
                   {cycle === "monthly" && selected && (
                     <Checkbox
-                      label="Continue Pro monthly"
+                      className="pro-plan-card__renew"
+                      label="Auto-renew monthly"
                       hint="Uncheck to end Pro automatically after your first month."
                       checked={monthlyAutoRenew}
                       onChange={(event) => toggleMonthlyAutoRenew(event.target.checked)}
                     />
                   )}
-                </Fragment>
+                </div>
               );
             })}
           </div>

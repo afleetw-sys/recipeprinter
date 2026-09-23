@@ -1542,6 +1542,28 @@
       transition: none;
     }
   }
+  /* The radio's own label inside the card (the card is a div so Monthly can
+     also hold its auto-renew checkbox). Stacks name over price the way the
+     card itself used to. */
+  .pro-plan-card__choice {
+    display: flex;
+    flex-direction: column;
+    gap: inherit;
+    cursor: pointer;
+  }
+  .pro-plan-card__renew {
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid var(--cp-line);
+  }
+  /* The card's focus ring is for the radio; the checkbox inside wears its own. */
+  .pro-plan-card:has(.pro-plan-card__renew input:focus-visible) {
+    outline: none;
+  }
+  .pro-plan-card__renew input:focus-visible {
+    outline: var(--cp-focus-ring);
+    outline-offset: var(--cp-focus-ring-offset);
+  }
   .pro-plan-card__row {
     display: flex;
     align-items: center;
