@@ -4,6 +4,7 @@ import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { PrintSetupControls } from "@/components/print/PrintSetupControls";
+import type { PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
 import { ThemePicker } from "@/components/print/ThemePicker";
 import type { PhotoStyle } from "@/lib/project";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
@@ -25,6 +26,11 @@ interface PrintConfigPanelProps {
   anyRecipeHasSourceUrl: boolean;
   bookPhotoStyle: PhotoStyle | null;
   applyBookPhotoStyle: (mode: PhotoStyle) => void;
+  /** Set when the cook has been choosing the same photo layout recipe by
+      recipe; see components/print/PhotoStyleTip.tsx. */
+  photoStyleTip?: PhotoStyleTipState | null;
+  onAcceptPhotoStyleTip?: (mode: PhotoStyle) => void;
+  onDismissPhotoStyleTip?: () => void;
   showPhoto: boolean;
   setShowPhoto: Dispatch<SetStateAction<boolean>>;
   showSourceUrl: boolean;
@@ -63,6 +69,9 @@ export function PrintConfigPanel({
   anyRecipeHasSourceUrl,
   bookPhotoStyle,
   applyBookPhotoStyle,
+  photoStyleTip,
+  onAcceptPhotoStyleTip,
+  onDismissPhotoStyleTip,
   showPhoto,
   setShowPhoto,
   showSourceUrl,
@@ -117,6 +126,9 @@ export function PrintConfigPanel({
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
+          photoStyleTip={photoStyleTip}
+          onAcceptPhotoStyleTip={onAcceptPhotoStyleTip}
+          onDismissPhotoStyleTip={onDismissPhotoStyleTip}
           showPhoto={showPhoto}
           setShowPhoto={setShowPhoto}
           showSourceUrl={showSourceUrl}

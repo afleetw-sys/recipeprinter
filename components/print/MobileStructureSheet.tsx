@@ -5,6 +5,7 @@ import { Checkbox, SelectTile } from "@/components/Controls";
 import { ChevronDownIcon, TrashIcon, PlusIcon, ICON_SIZE } from "@/components/icons";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
+import { PhotoStyleTip, type PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
 import { ChapterNameInput } from "@/components/print/ChapterNameInput";
 import { namedSectionCount, useProjectMeta, type PhotoStyle } from "@/lib/project";
 import type { Section } from "@/types/recipe";
@@ -17,6 +18,11 @@ interface MobileStructureSheetProps {
   anyRecipeHasImage: boolean;
   bookPhotoStyle: PhotoStyle | null;
   applyBookPhotoStyle: (mode: PhotoStyle) => void;
+  /** Set when the cook has been choosing the same photo layout recipe by
+      recipe; see components/print/PhotoStyleTip.tsx. */
+  photoStyleTip?: PhotoStyleTipState | null;
+  onAcceptPhotoStyleTip?: (mode: PhotoStyle) => void;
+  onDismissPhotoStyleTip?: () => void;
   showSourceUrl: boolean;
   setShowSourceUrl: (next: boolean) => void;
   renameSectionEverywhere: (sectionId: string, value: string) => void;
@@ -59,6 +65,9 @@ export function MobileStructureSheet({
   anyRecipeHasImage,
   bookPhotoStyle,
   applyBookPhotoStyle,
+  photoStyleTip,
+  onAcceptPhotoStyleTip,
+  onDismissPhotoStyleTip,
   showSourceUrl,
   setShowSourceUrl,
   renameSectionEverywhere,
@@ -126,39 +135,47 @@ export function MobileStructureSheet({
                   checked={showSourceUrl}
                   onChange={(event) => setShowSourceUrl(event.target.checked)}
               />
-              <span className="recipe-config-sublabel" id="sheet-photos-label">
-                Photos
-              </span>
-              {/* The tiles change nothing on screen until a recipe has a
-                  photo, so a new book can look as though they are broken.
-                  Same note the desktop panel gives. */}
-              {!anyRecipeHasImage && (
-                <p className="recipe-structure-sheet__note">
-                  Add a photo to a recipe to see these layouts on its page.
-                </p>
-              )}
               <div
-                className="recipe-photo-style"
-                role="radiogroup"
-                aria-labelledby="sheet-photos-label"
+                data-photo-style-section
+                className={`recipe-photo-style-group ${photoStyleTip ? "is-highlighted" : ""}`}
               >
-                {PHOTO_STYLE_OPTIONS.map((option) => (
-                  <SelectTile
-                    key={option.id}
-                    selected={bookPhotoStyle === option.id}
-                    className="recipe-photo-style__tile"
-                  >
-                    <input
-                      type="radio"
-                      name="recipe-sheet-photo-style"
-                      className="sr-only"
-                      checked={bookPhotoStyle === option.id}
-                      onChange={() => applyBookPhotoStyle(option.id)}
-                    />
-                    <PhotoStylePreview id={option.id} />
-                    <span className="recipe-photo-style__tile-label">{option.short}</span>
-                  </SelectTile>
-                ))}
+                <span className="recipe-config-sublabel" id="sheet-photos-label">
+                  Photos
+                </span>
+                {/* The tiles change nothing on screen until a recipe has a
+                    photo, so a new book can look as though they are broken.
+                    Same note the desktop panel gives. */}
+                {!anyRecipeHasImage && (
+                  <p className="recipe-structure-sheet__note">
+                    Add a photo to a recipe to see these layouts on its page.
+                  </p>
+                )}
+                <div
+                  className="recipe-photo-style"
+                  role="radiogroup"
+                  aria-labelledby="sheet-photos-label"
+                >
+                  {PHOTO_STYLE_OPTIONS.map((option) => (
+                    <SelectTile
+                      key={option.id}
+                      selected={bookPhotoStyle === option.id}
+                      className="recipe-photo-style__tile"
+                    >
+                      <input
+                        type="radio"
+                        name="recipe-sheet-photo-style"
+                        className="sr-only"
+                        checked={bookPhotoStyle === option.id}
+                        onChange={() => applyBookPhotoStyle(option.id)}
+                      />
+                      <PhotoStylePreview id={option.id} />
+                      <span className="recipe-photo-style__tile-label">{option.short}</span>
+                    </SelectTile>
+                  ))}
+                </div>
+                {photoStyleTip && onAcceptPhotoStyleTip && onDismissPhotoStyleTip && (
+                  <PhotoStyleTip tip={photoStyleTip} onAccept={onAcceptPhotoStyleTip} onDismiss={onDismissPhotoStyleTip} />
+                )}
               </div>
             </div>
         </MobileSheet>

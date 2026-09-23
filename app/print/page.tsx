@@ -91,6 +91,14 @@ import { useProPurchase } from "@/lib/useProPurchase";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
 import { IMAGE_IMPORT_LIMIT_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
 import {
+  markPhotoStyleTipSeen,
+  photoStyleTipSeen,
+  recordPhotoChoice,
+  shouldOfferBookPhotoStyle,
+  type PhotoStyleStreak,
+} from "@/lib/photoStyleStreak";
+import type { PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
+import {
   activeProLockReasons,
   computeProLocks,
   hasMultiRecipeEntitlement,
@@ -1474,6 +1482,13 @@ export default function PrintPage() {
     return modes.size === 1 ? (Array.from(modes)[0] as PhotoStyle) : null;
   }, [items, photoModeFor, photoStyle]);
 
+  // Someone setting the same photo layout recipe after recipe from each page's
+  // toolbar, who may not know the "Every recipe" Photos control exists. See
+  // lib/photoStyleStreak.ts. A ref for the streak (nothing renders from it),
+  // state for the tip it can raise.
+  const photoStyleStreakRef = useRef<PhotoStyleStreak | null>(null);
+  const [photoStyleTip, setPhotoStyleTip] = useState<PhotoStyleTipState | null>(null);
+
   // Toggling the book-wide "Recipe link" setting overrides every per-recipe
   // choice, the same way a book-wide Photos option does (above): the book snaps
   // to what was just chosen, so "off" means off. Handed to every control that
@@ -1493,6 +1508,9 @@ export default function PrintPage() {
   // default AND clear the individual placement overrides so the whole book snaps
   // to it (custom facing photos / focal points are kept).
   function applyBookPhotoStyle(mode: PhotoStyle) {
+    // Whichever way the book-wide choice was made, the tip about making it has
+    // done its job.
+    setPhotoStyleTip(null);
     projectMeta.setPhotoStyle(mode);
     projectMeta.clearItemPhotoOverrides();
     // Chapter openers are part of the book, not an exception to it: a placement
@@ -4498,6 +4516,7 @@ export default function PrintPage() {
     setPhotoDialog((current) => (current?.key === key ? null : current));
 
   function setRecipePhotoMode(recipeId: string, mode: PhotoStyle) {
+    notePhotoChoice(recipeId, mode);
     if (showEmptyFields && activeRecipeId === recipeId) keepEditingRef.current = recipeId;
     setPendingFocusRecipeId(recipeId);
     const image = items?.find((item) => item.id === recipeId)?.recipe?.image;
@@ -4517,6 +4536,45 @@ export default function PrintPage() {
     const hero = mode === "full" ? image : undefined;
     projectMeta.setItemPhotoMode(recipeId, mode, hero);
   }
+  /**
+   * Counts a per-recipe photo choice toward the streak, and once it is long
+   * enough, points the cook at the book-wide control: the panel opens (or, on a
+   * phone, the "Every recipe" sheet) with the Photos tiles highlighted and the
+   * tip under them. Once per device, marked when shown, so a reload before
+   * answering does not bring it back.
+   */
+  function notePhotoChoice(recipeId: string, mode: PhotoStyle) {
+    if (!cookbookMode) return;
+    const streak = recordPhotoChoice(photoStyleStreakRef.current, recipeId, mode);
+    photoStyleStreakRef.current = streak;
+    if (photoStyleTip || photoStyleTipSeen()) return;
+    // The recipe just changed still reads its old mode here, so it is left out.
+    const remaining = (items ?? []).filter(
+      (item) => item.id !== recipeId && photoModeFor(item.id) !== mode,
+    ).length;
+    if (!shouldOfferBookPhotoStyle(streak, remaining)) return;
+    markPhotoStyleTipSeen();
+    setPhotoStyleTip({ mode });
+    track("photo_style_tip_shown", { mode, remaining });
+    if (window.matchMedia("(max-width: 820px)").matches) {
+      setMobileDrawer(null);
+      setStructureSheetOpen(false);
+      setBookSheet("recipes");
+    } else {
+      setPanelCollapsed(false);
+    }
+  }
+
+  function acceptPhotoStyleTip(mode: PhotoStyle) {
+    track("photo_style_tip_answered", { mode, accepted: true });
+    applyBookPhotoStyle(mode);
+  }
+
+  function dismissPhotoStyleTip() {
+    if (photoStyleTip) track("photo_style_tip_answered", { mode: photoStyleTip.mode, accepted: false });
+    setPhotoStyleTip(null);
+  }
+
   // The per-recipe photo placement toggle (cookbook): an always-present
   // None / In-page / Full-page switch that sits next to the Edit button, so
   // placement is one click away in every mode (not only when the photo is off).
@@ -4684,6 +4742,18 @@ export default function PrintPage() {
   // The bottom bar's Pages and Every recipe tiles: book-wide settings, one
   // sheet each, kept apart from the structure list above.
   const [bookSheet, setBookSheet] = useState<MobileBookSheet>(null);
+
+  // On a phone the tip lives in the "Every recipe" sheet. Closing the sheet
+  // without answering is an answer, and leaving the tip in state would bring
+  // it back the next time the sheet is opened for something else.
+  useEffect(() => {
+    if (bookSheet === null && photoStyleTip && window.matchMedia("(max-width: 820px)").matches) {
+      dismissPhotoStyleTip();
+    }
+    // Only a change of sheet should answer for the cook.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookSheet]);
+
   // The print-setup panel is a persistent sidebar on desktop and a modal
   // drawer on mobile, so it can only claim to be a dialog in the second case.
   // While it is one, it gets a real focus trap and Escape-to-close — it
@@ -5605,6 +5675,9 @@ export default function PrintPage() {
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
+          photoStyleTip={photoStyleTip}
+          onAcceptPhotoStyleTip={acceptPhotoStyleTip}
+          onDismissPhotoStyleTip={dismissPhotoStyleTip}
           showPhoto={showPhoto}
           setShowPhoto={setShowPhoto}
           showSourceUrl={showSourceUrl}
@@ -5823,6 +5896,9 @@ export default function PrintPage() {
           anyRecipeHasImage={anyRecipeHasImage}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
+          photoStyleTip={photoStyleTip}
+          onAcceptPhotoStyleTip={acceptPhotoStyleTip}
+          onDismissPhotoStyleTip={dismissPhotoStyleTip}
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setBookShowSourceUrl}
           renameSectionEverywhere={renameSectionEverywhere}

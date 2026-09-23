@@ -6,6 +6,7 @@ import { Checkbox, CheckboxGroup, SelectTile } from "@/components/Controls";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import type { PrintCardSize } from "@/components/RecipeCardPrint";
 import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
+import { PhotoStyleTip, type PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
 import { hasMultiRecipeEntitlement } from "@/lib/recipePrinterPurchases";
 import type { PhotoStyle } from "@/lib/project";
 
@@ -24,6 +25,11 @@ interface PrintSetupControlsProps {
       hides the clear action: there is nothing left for it to take. */
   bookPhotoStyle: PhotoStyle | null;
   applyBookPhotoStyle: (mode: PhotoStyle) => void;
+  /** Set when the cook has been choosing the same photo layout recipe by
+      recipe; see components/print/PhotoStyleTip.tsx. */
+  photoStyleTip?: PhotoStyleTipState | null;
+  onAcceptPhotoStyleTip?: (mode: PhotoStyle) => void;
+  onDismissPhotoStyleTip?: () => void;
   showPhoto: boolean;
   setShowPhoto: Dispatch<SetStateAction<boolean>>;
   showSourceUrl: boolean;
@@ -57,6 +63,9 @@ export function PrintSetupControls({
   anyRecipeHasSourceUrl,
   bookPhotoStyle,
   applyBookPhotoStyle,
+  photoStyleTip,
+  onAcceptPhotoStyleTip,
+  onDismissPhotoStyleTip,
   showPhoto,
   setShowPhoto,
   showSourceUrl,
@@ -154,39 +163,47 @@ export function PrintSetupControls({
           {/* Plain text, not a second uppercase heading: the tiles belong to
               "Every recipe" like the checkboxes above them, and an eyebrow here
               made them a section of their own. */}
-          <span className="recipe-config-sublabel" id="recipe-photos-label">
-            Photos
-          </span>
-          {/* A subtitle under the label. These tiles change nothing on screen
-              until a recipe has a photo, so a new book can look as though they
-              are broken. Say why. */}
-          {!anyRecipeHasImage && (
-            <p className="-mt-1 text-cp-caption text-ink-soft">
-              Add a photo to a recipe to see these layouts on its page.
-            </p>
-          )}
           <div
-            className="recipe-photo-style"
-            role="radiogroup"
-            aria-labelledby="recipe-photos-label"
+            data-photo-style-section
+            className={`recipe-photo-style-group ${photoStyleTip ? "is-highlighted" : ""}`}
           >
-            {PHOTO_STYLE_OPTIONS.map((option) => (
-              <SelectTile
-                key={option.id}
-                selected={bookPhotoStyle === option.id}
-                className="recipe-photo-style__tile"
-              >
-                <input
-                  type="radio"
-                  name="recipe-photo-style"
-                  className="sr-only"
-                  checked={bookPhotoStyle === option.id}
-                  onChange={() => applyBookPhotoStyle(option.id)}
-                />
-                <PhotoStylePreview id={option.id} />
-                <span className="recipe-photo-style__tile-label">{option.short}</span>
-              </SelectTile>
-            ))}
+            <span className="recipe-config-sublabel" id="recipe-photos-label">
+              Photos
+            </span>
+            {/* A subtitle under the label. These tiles change nothing on screen
+                until a recipe has a photo, so a new book can look as though they
+                are broken. Say why. */}
+            {!anyRecipeHasImage && (
+              <p className="-mt-1 text-cp-caption text-ink-soft">
+                Add a photo to a recipe to see these layouts on its page.
+              </p>
+            )}
+            <div
+              className="recipe-photo-style"
+              role="radiogroup"
+              aria-labelledby="recipe-photos-label"
+            >
+              {PHOTO_STYLE_OPTIONS.map((option) => (
+                <SelectTile
+                  key={option.id}
+                  selected={bookPhotoStyle === option.id}
+                  className="recipe-photo-style__tile"
+                >
+                  <input
+                    type="radio"
+                    name="recipe-photo-style"
+                    className="sr-only"
+                    checked={bookPhotoStyle === option.id}
+                    onChange={() => applyBookPhotoStyle(option.id)}
+                  />
+                  <PhotoStylePreview id={option.id} />
+                  <span className="recipe-photo-style__tile-label">{option.short}</span>
+                </SelectTile>
+              ))}
+            </div>
+            {photoStyleTip && onAcceptPhotoStyleTip && onDismissPhotoStyleTip && (
+              <PhotoStyleTip tip={photoStyleTip} onAccept={onAcceptPhotoStyleTip} onDismiss={onDismissPhotoStyleTip} />
+            )}
           </div>
         </div>
       )}
