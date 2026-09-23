@@ -16,6 +16,8 @@ interface MobileStructureSheetProps {
   anyRecipeHasImage: boolean;
   bookPhotoStyle: PhotoStyle | null;
   applyBookPhotoStyle: (mode: PhotoStyle) => void;
+  showSourceUrl: boolean;
+  setShowSourceUrl: (next: boolean) => void;
   renameSectionEverywhere: (sectionId: string, value: string) => void;
   moveSectionInBook: (sectionId: string, direction: -1 | 1) => void;
   requestDeleteSection: (sectionId: string) => void;
@@ -29,16 +31,17 @@ interface MobileStructureSheetProps {
 }
 
 /** Which of the book-wide sheets is open, from the bottom bar's tiles. */
-export type MobileBookSheet = "extras" | "photos" | null;
+export type MobileBookSheet = "extras" | "recipes" | null;
 
 /**
  * The mobile cookbook sheets. Desktop uses the page rail and the Book
  * Settings panel instead; these are the touch-native equivalents, since the
  * mobile config drawer only ever opens the Themes section.
  *
- * - "Extra pages" and "Photos" (each its own tile in the bottom bar): the
- *   book-wide settings. They used to share one "Book" sheet, which made a
- *   cook open a settings sheet to find either one.
+ * - "Extra pages" and "Every recipe" (each its own tile in the bottom bar):
+ *   the book-wide settings, grouped the way the desktop panel groups them,
+ *   pages the book gains and then what every recipe carries (its link and
+ *   its photo layout). They used to share one "Book" sheet.
  * - "Pages" (the floating page-sorter button over the deck): the reorderable
  *   list of chapters and recipes.
  *
@@ -53,6 +56,8 @@ export function MobileStructureSheet({
   anyRecipeHasImage,
   bookPhotoStyle,
   applyBookPhotoStyle,
+  showSourceUrl,
+  setShowSourceUrl,
   renameSectionEverywhere,
   moveSectionInBook,
   requestDeleteSection,
@@ -93,12 +98,24 @@ export function MobileStructureSheet({
         </MobileSheet>
 
         <MobileSheet
-          open={bookSheet === "photos"}
+          open={bookSheet === "recipes"}
           onClose={() => setBookSheet(null)}
-          title="Photos"
+          title="Every recipe"
           className="recipe-structure-sheet"
         >
+            {/* The desktop panel's "Every recipe" group: the link, then the
+                photo layout. Always offered in a cookbook, as on desktop: a
+                recipe can be given a link by hand, and this is the book-wide
+                default it is measured against. */}
             <div className="recipe-structure-sheet__settings">
+              <Checkbox
+                  label="Recipe link"
+                  checked={showSourceUrl}
+                  onChange={(event) => setShowSourceUrl(event.target.checked)}
+              />
+              <span className="recipe-config-sublabel" id="sheet-photos-label">
+                Photos
+              </span>
               {/* The tiles change nothing on screen until a recipe has a
                   photo, so a new book can look as though they are broken.
                   Same note the desktop panel gives. */}
@@ -110,7 +127,7 @@ export function MobileStructureSheet({
               <div
                 className="recipe-photo-style"
                 role="radiogroup"
-                aria-label="Photo layout"
+                aria-labelledby="sheet-photos-label"
               >
                 {PHOTO_STYLE_OPTIONS.map((option) => (
                   <SelectTile

@@ -2640,7 +2640,9 @@
   .recipe-mobile-toolbar {
     display: flex;
     flex: 0 0 auto;
-    gap: 8px;
+    /* 6, not 8: the two pixels a gap gives back are what let a cookbook's four
+       tiles fit a 375px phone with "Every recipe" on one line. */
+    gap: 6px;
     /* `safe center`: center the row under Print when the tiles are narrower
        than it (a short row reading left-aligned looked like it was avoiding
        the right half of the bar for no reason) — but fall back to plain
@@ -2689,10 +2691,10 @@
     justify-content: center;
     gap: 5px;
     /* 92px, and shrinks to fit rather than scroll: a cookbook has four
-       tiles (Add, Extra pages, Photos, Themes), and on a 375px phone four at
-       92 overflowed. 80 is the floor where "Extra pages" (~72px) still sits
-       on one line, level with its neighbours' labels; below that the row
-       scrolls, as it always has. */
+       tiles (Add, Extra pages, Themes, Every recipe), and on a 375px phone
+       four at 92 overflowed. 80 is the floor where the longest label ("Every
+       recipe", ~73px, with the row's 6px gap) still sits on one line, level
+       with its neighbours'; below that the row scrolls, as it always has. */
     flex: 0 1 92px;
     width: 92px;
     min-width: 80px;
@@ -5154,8 +5156,8 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 9px;
 }
-/* "None" and "Upload" ride in the grid as square action tiles — upload trailing,
-   none leading — instead of separate full-width buttons above it. */
+/* "Upload" and "None" ride in the grid as square action tiles, upload leading,
+   instead of separate full-width buttons above it. */
 .image-picker__photo.image-picker__photo--action {
   display: flex;
   flex-direction: column;

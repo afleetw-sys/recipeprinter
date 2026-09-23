@@ -599,10 +599,6 @@ export default function PrintPage() {
     items?.some((item) => Boolean(item.recipe?.image)) ?? false;
   const anyRecipeHasSourceUrl =
     items?.some((item) => Boolean(item.recipe?.sourceUrl)) ?? false;
-  /** Whether any recipe arrived with a website blurb. With none, the checkbox
-      would govern nothing, so it is not offered. */
-  const anyRecipeHasDescription =
-    items?.some((item) => Boolean(item.recipe?.description?.trim())) ?? false;
   const cookbookMode = Boolean(projectMeta.meta.cookbookMode);
   /**
    * Does this project hold a book — either on screen, or set aside?
@@ -5567,9 +5563,6 @@ export default function PrintPage() {
         )}
 
         <PrintConfigPanel
-          showDescription={showDescription}
-          setShowDescription={setShowDescription}
-          anyRecipeHasDescription={anyRecipeHasDescription}
           configPanelRef={configPanelRef}
           mobileDrawer={mobileDrawer}
           setMobileDrawer={setMobileDrawer}
@@ -5682,24 +5675,26 @@ export default function PrintPage() {
               </span>
               Themes
             </button>
-            {/* How every recipe in the book carries its photo. Left of Links:
-                the two settings every recipe page shares sit together. */}
+            {/* What every recipe in the book carries: its link and its photo
+                layout, one sheet, as the desktop panel's "Every recipe" group
+                holds them. Cookbook mode only; recipe cards keep their own
+                Show Photo and Links toggles below. */}
             {cookbookMode && (
               <button
                 type="button"
-                className={`recipe-mobile-toolbar__btn ${bookSheet === "photos" ? "is-active" : ""}`}
-                aria-pressed={bookSheet === "photos"}
+                className={`recipe-mobile-toolbar__btn ${bookSheet === "recipes" ? "is-active" : ""}`}
+                aria-pressed={bookSheet === "recipes"}
                 aria-haspopup="dialog"
                 onClick={() => {
                   setSizeMenuOpen(false);
                   setStructureSheetOpen(false);
-                  setBookSheet((open) => (open === "photos" ? null : "photos"));
+                  setBookSheet((open) => (open === "recipes" ? null : "recipes"));
                 }}
               >
                 <span className="recipe-mobile-toolbar__btn-icon">
                   <ImageIcon size={ICON_SIZE.lg} />
                 </span>
-                Photos
+                Every recipe
               </button>
             )}
             {/* With more than one recipe possible, this is the only place on
@@ -5726,13 +5721,9 @@ export default function PrintPage() {
                 Show Photo
               </button>
             )}
-            {/* Same reasoning as Show Photo above, but this one still shows
-                in a cookbook (`singleRecipeOnly` is always false there — a
-                book can hold many recipes regardless of Pro) since a
-                cookbook's per-page toolbar has no link toggle of its own;
-                see the matching gate on that toolbar button in
-                PrintDeck.tsx. */}
-            {anyRecipeHasSourceUrl && !singleRecipeOnly && (
+            {/* Same reasoning as Show Photo above. A cookbook has this in its
+                "Every recipe" sheet instead, beside the photo layout. */}
+            {anyRecipeHasSourceUrl && !cookbookMode && !singleRecipeOnly && (
               <button
                 type="button"
                 className="recipe-mobile-toolbar__btn"
@@ -5799,6 +5790,8 @@ export default function PrintPage() {
           anyRecipeHasImage={anyRecipeHasImage}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
+          showSourceUrl={showSourceUrl}
+          setShowSourceUrl={setBookShowSourceUrl}
           renameSectionEverywhere={renameSectionEverywhere}
           moveSectionInBook={moveSectionInBook}
           requestDeleteSection={requestDeleteSection}
