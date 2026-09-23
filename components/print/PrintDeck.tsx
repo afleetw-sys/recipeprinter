@@ -408,6 +408,14 @@ export function PrintDeck(props: PrintDeckProps) {
     renderAllPages,
   } = props;
 
+  // The empty-state outline is the page at the deck's scale, which on a phone
+  // is too small to hold its title, copy and button (they do not scale). Below
+  // these sizes it gives up the page's shape for the words' sake. A 6x4 card
+  // shows no ghost columns, so it needs less height.
+  const emptySheetCompact =
+    previewDims.w * deckScale < 280 ||
+    previewDims.h * deckScale < (previewCardSize === "card-6x4" ? 190 : 340);
+
   // Whether a chapter's facing/art page can exist AT ALL right now — mirrors
   // `cookbookLayouts` in lib/usePrintSheets.tsx exactly (cookbook mode AND
   // letter size; the 4×6 card format has no facing pages, ever, regardless
@@ -1312,16 +1320,21 @@ export function PrintDeck(props: PrintDeckProps) {
               <div
                   className={`recipe-page-empty__sheet ${
                     previewCardSize === "card-6x4" ? "recipe-page-empty__sheet--card" : ""
-                  }`}
+                  } ${emptySheetCompact ? "recipe-page-empty__sheet--compact" : ""}`}
                   /* The outline stands in for a page you have not made yet, so
                      it is the size that page WOULD be: `previewDims`, the
                      same box a real page is laid out at, not a fixed width
                      that happened to look about right. It follows the size
-                     control and the zoom for the same reason. */
-                  style={{
-                    width: previewDims.w * deckScale,
-                    aspectRatio: `${previewDims.w} / ${previewDims.h}`,
-                  }}
+                     control and the zoom for the same reason. Unless that page
+                     is too small for the words, when --compact sizes it. */
+                  style={
+                    emptySheetCompact
+                      ? undefined
+                      : {
+                          width: previewDims.w * deckScale,
+                          aspectRatio: `${previewDims.w} / ${previewDims.h}`,
+                        }
+                  }
                 >
                   {/* Enough of a card to be recognisable as one and no more: a
                       title bar, a rule, and — where there is room for them —
