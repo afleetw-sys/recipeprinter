@@ -23,7 +23,7 @@ describe("proUpgradeCopy", () => {
       "All premium themes",
       "Print multiple recipes at once",
       "4×6 recipe cards",
-      "30 photo imports an hour",
+      "30 image imports an hour",
       "20% off your first cookbook",
     ]);
   });
@@ -35,7 +35,7 @@ describe("proUpgradeCopy", () => {
       "Print multiple recipes at once",
       "4×6 recipe cards",
       "All premium themes",
-      "30 photo imports an hour",
+      "30 image imports an hour",
       "20% off your first cookbook",
     ]);
   });
@@ -56,10 +56,10 @@ describe("proUpgradeCopy", () => {
     }
   });
 
-  test("hitting the photo limit names the Pro allowance and leads with it", () => {
+  test("hitting the image limit names the Pro allowance and leads with it", () => {
     const copy = proUpgradeCopy([], IMAGE_IMPORT_LIMIT_TRIGGER);
-    expect(copy.title).toBe("Import up to 30 photos an hour");
-    expect(copy.benefits[0]).toBe("30 photo imports an hour");
+    expect(copy.title).toBe("Import up to 30 images an hour");
+    expect(copy.benefits[0]).toBe("30 image imports an hour");
     expect([...copy.benefits].sort()).toEqual([...PRO_BENEFITS].sort());
   });
 });

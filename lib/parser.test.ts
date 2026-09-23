@@ -432,7 +432,7 @@ describe("parseImages at the hourly photo limit", () => {
     expect(failure).toBeInstanceOf(ImportError);
     expect((failure as ImportError).code).toBe("rate_limited");
     expect((failure as ImportError).message).toBe(
-      `You've already done 5 photo imports this hour. You can import more at ${RESET_TIME}, or upgrade to Pro for 30 an hour.`,
+      `You've already done 5 image imports this hour. You can import more at ${RESET_TIME}, or upgrade to Pro for 30 image imports an hour.`,
     );
   });
 
@@ -442,7 +442,7 @@ describe("parseImages at the hourly photo limit", () => {
     );
 
     await expect(parseImages(["data:image/jpeg;base64,AAAA"])).rejects.toThrow(
-      `You've already done 30 photo imports this hour. You can import more photos at ${RESET_TIME}.`,
+      `You've already done 30 image imports this hour. You can import more images at ${RESET_TIME}.`,
     );
   });
 
@@ -450,7 +450,7 @@ describe("parseImages at the hourly photo limit", () => {
     callable.mockRejectedValue(limitError(undefined));
 
     await expect(parseImages(["data:image/jpeg;base64,AAAA"])).rejects.toThrow(
-      "You've already done 5 photo imports this hour. You can import more within the hour, or upgrade to Pro for 30 an hour.",
+      "You've already done 5 image imports this hour. You can import more within the hour, or upgrade to Pro for 30 image imports an hour.",
     );
   });
 });

@@ -8,7 +8,8 @@ import { ProBadge } from "@/components/ProBadge";
 import { SegmentedControl } from "@/components/Controls";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
 import { PRO_BENEFITS } from "@/lib/proUpgradeCopy";
-import { FREE_IMAGE_IMPORT_BENEFIT } from "@/lib/imageImportQuota";
+import { FREE_IMAGE_IMPORT_BENEFIT, PRO_IMAGE_IMPORT_BENEFIT } from "@/lib/imageImportQuota";
+import { AccountImageImportUsage } from "@/components/AccountImageImportUsage";
 import { track } from "@/lib/analytics";
 import {
   loadRecipePrinterCustomerInfo,
@@ -240,7 +241,12 @@ export function AccountProStatus({ user }: { user: User }) {
                   {PRO_BENEFITS.map((benefit) => (
                     <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
                       <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                      {benefit}
+                      <div className="min-w-0 flex-1">
+                        {benefit}
+                        {/* This hour's usage, under the allowance it counts
+                            against, on the card for the plan you're on. */}
+                        {benefit === PRO_IMAGE_IMPORT_BENEFIT && <AccountImageImportUsage uid={uid} />}
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -303,7 +309,12 @@ export function AccountProStatus({ user }: { user: User }) {
                   {BASIC_BENEFITS.map((benefit) => (
                     <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
                       <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                      {benefit}
+                      <div className="min-w-0 flex-1">
+                        {benefit}
+                        {/* This hour's usage, under the allowance it counts
+                            against, on the card for the plan you're on. */}
+                        {benefit === FREE_IMAGE_IMPORT_BENEFIT && <AccountImageImportUsage uid={uid} />}
+                      </div>
                     </li>
                   ))}
                 </ul>

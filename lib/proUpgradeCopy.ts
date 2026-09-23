@@ -65,7 +65,7 @@ const GENERIC_COPY: ProUpgradeCopy = {
 export function proUpgradeCopy(reasons: ProLockReason[], trigger: string): ProUpgradeCopy {
   if (trigger === IMAGE_IMPORT_LIMIT_TRIGGER) {
     return {
-      title: `Import up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photos an hour`,
+      title: `Import up to ${IMAGE_IMPORTS_PER_HOUR_PRO} images an hour`,
       benefits: [PRO_IMAGE_IMPORT_BENEFIT, ...PRO_BENEFITS.filter((b) => b !== PRO_IMAGE_IMPORT_BENEFIT)],
       ctaLabel: "Unlock Pro",
     };

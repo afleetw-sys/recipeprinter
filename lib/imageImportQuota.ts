@@ -1,5 +1,5 @@
 /**
- * Photo imports per hour, by plan.
+ * Image imports per hour, by plan.
  *
  * CookPilot enforces these (functions/src/imageImportLimits.ts, separate repo,
  * keep in sync by hand). They live here too because they are part of what Pro
@@ -10,8 +10,8 @@
 export const IMAGE_IMPORTS_PER_HOUR_FREE = 5;
 export const IMAGE_IMPORTS_PER_HOUR_PRO = 30;
 
-export const FREE_IMAGE_IMPORT_BENEFIT = `${IMAGE_IMPORTS_PER_HOUR_FREE} photo imports an hour`;
-export const PRO_IMAGE_IMPORT_BENEFIT = `${IMAGE_IMPORTS_PER_HOUR_PRO} photo imports an hour`;
+export const FREE_IMAGE_IMPORT_BENEFIT = `${IMAGE_IMPORTS_PER_HOUR_FREE} image imports an hour`;
+export const PRO_IMAGE_IMPORT_BENEFIT = `${IMAGE_IMPORTS_PER_HOUR_PRO} image imports an hour`;
 
 export interface ImageImportQuota {
   used: number;
@@ -65,10 +65,10 @@ export function formatResetTime(ms: number): string {
  * would give them instead.
  */
 export function imageLimitMessage({ limit, resetsAtMs, pro }: ImageLimitDetails): string {
-  const used = `You've already done ${limit} photo imports this hour.`;
+  const used = `You've already done ${limit} image imports this hour.`;
   const when = resetsAtMs !== null ? `at ${formatResetTime(resetsAtMs)}` : "within the hour";
-  if (pro) return `${used} You can import more photos ${when}.`;
-  return `${used} You can import more ${when}, or upgrade to Pro for ${IMAGE_IMPORTS_PER_HOUR_PRO} an hour.`;
+  if (pro) return `${used} You can import more images ${when}.`;
+  return `${used} You can import more ${when}, or upgrade to Pro for ${IMAGE_IMPORTS_PER_HOUR_PRO} image imports an hour.`;
 }
 
 function parseQuota(data: unknown): ImageImportQuota | null {
