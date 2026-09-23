@@ -368,8 +368,8 @@ export function AccountProStatus({ user }: { user: User }) {
                   disabled={proBusy}
                   onClick={() => {
                     track("paywall_viewed", { trigger: "account_menu" });
-                    track("pro_continue_clicked", { cycle: billingCycle });
-                    void purchaseProAndContinue(billingCycle, () => undefined);
+                    track("pro_continue_clicked", { cycle: billingCycle, auto_renew: true });
+                    void purchaseProAndContinue({ cycle: billingCycle, autoRenew: true }, () => undefined);
                   }}
                 >
                   {proBusy ? "Opening checkout…" : "Upgrade"}
@@ -386,7 +386,7 @@ export function AccountProStatus({ user }: { user: User }) {
           busy={proBusy}
           cookPilotUser={user}
           onClose={() => setShowProUpgradeDialog(false)}
-          onChoose={(cycle) => void purchaseProAndContinue(cycle, () => setShowProUpgradeDialog(false))}
+          onChoose={(plan) => void purchaseProAndContinue(plan, () => setShowProUpgradeDialog(false))}
         />
       )}
     </section>

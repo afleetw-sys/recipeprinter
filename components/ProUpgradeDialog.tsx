@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import type { User } from "firebase/auth";
 import { Dialog } from "@/components/Dialog";
-import { SelectTile } from "@/components/Controls";
+import { Checkbox, SelectTile } from "@/components/Controls";
 import { CookPilotLoginForm } from "@/components/CookPilotAuth";
 import { CheckIcon, CrownIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import { track } from "@/lib/analytics";
 import { PRO_BENEFITS } from "@/lib/proUpgradeCopy";
 import {
+  PRO_ONE_MONTH_PRICE_FALLBACK,
   PRO_PRICE_FALLBACKS,
   proAnnualSavingsPercent,
   type ProBillingCycle,
+  type ProPlan,
 } from "@/lib/proProduct";
 
 const PRO_CYCLE_LABEL: Record<ProBillingCycle, string> = {
@@ -48,15 +50,15 @@ export function ProUpgradeDialog({
   ctaLabel = "Unlock Pro and continue",
 }: {
   onClose: () => void;
-  /** Starts checkout for `cycle` — called immediately for a signed-in cook,
+  /** Starts checkout for `plan` — called immediately for a signed-in cook,
       or right after sign-in succeeds for one who wasn't. Either way this is
       the only place checkout ever starts, so a plan is chosen at most once. */
-  onChoose: (cycle: ProBillingCycle) => void;
+  onChoose: (plan: ProPlan) => void;
   /** Fired the moment a signed-out cook picks a plan, before this dialog
       swaps to its sign-in step — lets the caller remember the choice
       somewhere that survives a phone's sign-in redirect (which reloads the
       page before `onChoose` could ever fire from here). */
-  onSignInRequired?: (cycle: ProBillingCycle) => void;
+  onSignInRequired?: (plan: ProPlan) => void;
   busy: boolean;
   cookPilotUser: User | null;
   title?: string;
@@ -66,7 +68,10 @@ export function ProUpgradeDialog({
 }) {
   const [step, setStep] = useState<"plan" | "signin">("plan");
   const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>("monthly");
-  const [pendingCycle, setPendingCycle] = useState<ProBillingCycle | null>(null);
+  // Starts checked on every open: each caller mounts this dialog only while
+  // it's showing, so closing it throws this state away.
+  const [monthlyAutoRenew, setMonthlyAutoRenew] = useState(true);
+  const [pendingPlan, setPendingPlan] = useState<ProPlan | null>(null);
   const [formBusy, setFormBusy] = useState(false);
 
   function selectCycle(cycle: ProBillingCycle) {
@@ -75,20 +80,28 @@ export function ProUpgradeDialog({
     track("pro_plan_selected", { cycle });
   }
 
+  function toggleMonthlyAutoRenew(enabled: boolean) {
+    setMonthlyAutoRenew(enabled);
+    track("pro_auto_renew_toggled", { enabled });
+  }
+
   function handleContinue(cycle: ProBillingCycle) {
-    track("pro_continue_clicked", { cycle });
-    setPendingCycle(cycle);
+    // Annual always renews; the checkbox only exists under Monthly.
+    const plan: ProPlan = { cycle, autoRenew: cycle === "annual" || monthlyAutoRenew };
+    track("pro_continue_clicked", { cycle, auto_renew: plan.autoRenew });
+    setPendingPlan(plan);
     if (cookPilotUser) {
-      onChoose(cycle);
+      onChoose(plan);
       return;
     }
     track("auth_started_from_upgrade", { trigger: title });
-    onSignInRequired?.(cycle);
+    onSignInRequired?.(plan);
     setStep("signin");
   }
 
   const closeDisabled = busy || formBusy;
   const savingsPercent = proAnnualSavingsPercent();
+  const buyingOneMonth = selectedCycle === "monthly" && !monthlyAutoRenew;
 
   return (
     <Dialog
@@ -139,28 +152,37 @@ export function ProUpgradeDialog({
             {PRO_PLAN_CYCLES.map((cycle) => {
               const selected = selectedCycle === cycle;
               return (
-                <SelectTile
-                  key={cycle}
-                  selected={selected}
-                  className={selected ? "pro-plan-card" : "pro-plan-card pro-plan-card--compact"}
-                >
-                  <input
-                    type="radio"
-                    name="pro-cycle"
-                    className="sr-only"
-                    checked={selected}
-                    onChange={() => selectCycle(cycle)}
-                  />
-                  <div className="pro-plan-card__row">
-                    <span className="pro-plan-card__name">{PRO_CYCLE_LABEL[cycle]}</span>
-                  </div>
-                  <p className="pro-plan-card__price">
-                    {PRO_PRICE_FALLBACKS[cycle]}
-                    {cycle === "annual" && (
-                      <span className="pro-plan-card__note"> · Save {savingsPercent}%</span>
-                    )}
-                  </p>
-                </SelectTile>
+                <Fragment key={cycle}>
+                  <SelectTile
+                    selected={selected}
+                    className={selected ? "pro-plan-card" : "pro-plan-card pro-plan-card--compact"}
+                  >
+                    <input
+                      type="radio"
+                      name="pro-cycle"
+                      className="sr-only"
+                      checked={selected}
+                      onChange={() => selectCycle(cycle)}
+                    />
+                    <div className="pro-plan-card__row">
+                      <span className="pro-plan-card__name">{PRO_CYCLE_LABEL[cycle]}</span>
+                    </div>
+                    <p className="pro-plan-card__price">
+                      {PRO_PRICE_FALLBACKS[cycle]}
+                      {cycle === "annual" && (
+                        <span className="pro-plan-card__note"> · Save {savingsPercent}%</span>
+                      )}
+                    </p>
+                  </SelectTile>
+                  {cycle === "monthly" && selected && (
+                    <Checkbox
+                      label="Continue Pro monthly"
+                      hint="Uncheck to end Pro automatically after your first month."
+                      checked={monthlyAutoRenew}
+                      onChange={(event) => toggleMonthlyAutoRenew(event.target.checked)}
+                    />
+                  )}
+                </Fragment>
               );
             })}
           </div>
@@ -172,7 +194,9 @@ export function ProUpgradeDialog({
           >
             {ctaLabel}
           </button>
-          <p className="text-cp-label text-ink-soft text-center">Cancel anytime from your account settings page.</p>
+          {!buyingOneMonth && (
+            <p className="text-cp-label text-ink-soft text-center">Cancel anytime from your account settings page.</p>
+          )}
         </>
       ) : (
         <>
@@ -183,9 +207,11 @@ export function ProUpgradeDialog({
             <p className="mt-1 text-cp-body text-ink-soft">
               Sign in or create an account to keep your Pro membership and purchases in one place.
             </p>
-            {pendingCycle && (
+            {pendingPlan && (
               <p className="mt-2 text-cp-label text-ink-soft font-semibold">
-                {PRO_CYCLE_LABEL[pendingCycle]} · {PRO_PRICE_FALLBACKS[pendingCycle]}
+                {pendingPlan.autoRenew
+                  ? `${PRO_CYCLE_LABEL[pendingPlan.cycle]} · ${PRO_PRICE_FALLBACKS[pendingPlan.cycle]}`
+                  : `One month · ${PRO_ONE_MONTH_PRICE_FALLBACK}`}
               </p>
             )}
           </div>
@@ -193,7 +219,7 @@ export function ProUpgradeDialog({
             autoFocus
             onBusyChange={setFormBusy}
             onAuthenticated={() => {
-              if (pendingCycle) onChoose(pendingCycle);
+              if (pendingPlan) onChoose(pendingPlan);
             }}
           />
           <button

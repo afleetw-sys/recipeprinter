@@ -6,7 +6,7 @@ import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { track, truncateReason } from "@/lib/analytics";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import { hasProEntitlement, purchaseRecipePrinterPro } from "@/lib/recipePrinterPurchases";
-import type { ProBillingCycle } from "@/lib/proProduct";
+import type { ProPlan } from "@/lib/proProduct";
 
 interface UseProPurchaseOptions {
   /** Shared with usePremiumTemplatePurchase — this hook reuses that hook's
@@ -70,9 +70,10 @@ export function useProPurchase({
    *  one session — or clicking through a stale dialog — can't start a second
    *  checkout for a subscription the customer already holds. */
   async function purchaseProAndContinue(
-    cycle: ProBillingCycle,
+    plan: ProPlan,
     onSettled: (outcome: ProPurchaseOutcome) => void,
   ) {
+    const { cycle } = plan;
     if (!revenueCatUserId) {
       showToast("Purchases aren't ready yet. Wait a moment, then try again.");
       onSettled("failed");
@@ -87,11 +88,16 @@ export function useProPurchase({
     setProBusy(true);
     clearToast();
     try {
-      track("purchase_started", { product: "pro", cycle, customerId: revenueCatUserId });
+      track("purchase_started", {
+        product: "pro",
+        cycle,
+        auto_renew: plan.autoRenew,
+        customerId: revenueCatUserId,
+      });
       const result = await purchaseRecipePrinterPro({
         userId: revenueCatUserId,
         email: cookPilotUser?.email,
-        cycle,
+        plan,
       });
       setCustomerInfo(result.customerInfo);
       markCustomerInfoVerified();

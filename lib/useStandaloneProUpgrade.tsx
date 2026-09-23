@@ -10,7 +10,7 @@ import {
   rememberProUpgradeIntent,
   takeProUpgradeIntent,
 } from "@/lib/proUpgradeIntent";
-import type { ProBillingCycle } from "@/lib/proProduct";
+import type { ProPlan } from "@/lib/proProduct";
 import { loadRecipePrinterCustomerInfo } from "@/lib/recipePrinterPurchases";
 import { useProPurchase } from "@/lib/useProPurchase";
 
@@ -47,7 +47,7 @@ export function useStandaloneProUpgrade(trigger: string): {
   /** Whose customer info `customerInfo` is, so a purchase never starts against
       the previous account's answer (or before there is one). */
   const [customerInfoUid, setCustomerInfoUid] = useState<string | null>(null);
-  const [pendingCycle, setPendingCycle] = useState<ProBillingCycle | null>(null);
+  const [pendingPlan, setPendingPlan] = useState<ProPlan | null>(null);
   const [proMessage, setProMessage] = useState<string | null>(null);
   const [proJustActivated, setProJustActivated] = useState(false);
 
@@ -92,23 +92,23 @@ export function useStandaloneProUpgrade(trigger: string): {
   useEffect(() => {
     if (!uid) return;
     const intent = takeProUpgradeIntent();
-    if (intent) setPendingCycle(intent.cycle);
+    if (intent) setPendingPlan(intent.plan);
   }, [uid]);
 
   // Checkout, once there is an account AND its entitlement has been read. Runs
   // from an effect so it sees this render's `customerInfo`, not the one the
   // dialog's callback closed over.
   useEffect(() => {
-    if (!pendingCycle || !uid || customerInfoUid !== uid) return;
-    setPendingCycle(null);
-    void purchaseProAndContinue(pendingCycle, (outcome) => {
+    if (!pendingPlan || !uid || customerInfoUid !== uid) return;
+    setPendingPlan(null);
+    void purchaseProAndContinue(pendingPlan, (outcome) => {
       setOpen(false);
       if (outcome === "purchased" || outcome === "already-active") setProJustActivated(true);
     });
     // `purchaseProAndContinue` is rebuilt every render; the values it reads are
     // this effect's own dependencies.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingCycle, uid, customerInfoUid]);
+  }, [pendingPlan, uid, customerInfoUid]);
 
   const openProUpgrade = useCallback(() => {
     setProMessage(null);
@@ -125,15 +125,15 @@ export function useStandaloneProUpgrade(trigger: string): {
         // the stored intent, or signing in later for something unrelated
         // would launch a checkout for a plan nobody committed to.
         forgetProUpgradeIntent();
-        setPendingCycle(null);
+        setPendingPlan(null);
         setOpen(false);
       }}
-      onSignInRequired={(cycle) => rememberProUpgradeIntent(trigger, cycle)}
-      onChoose={(cycle) => {
+      onSignInRequired={(plan) => rememberProUpgradeIntent(trigger, plan)}
+      onChoose={(plan) => {
         // Signed out, this is the dialog reporting a successful sign-in before
         // the account has reached this hook. The intent is already stored and
         // the effect above spends it when it does.
-        if (uid) setPendingCycle(cycle);
+        if (uid) setPendingPlan(plan);
       }}
     />
   ) : null;

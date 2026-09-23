@@ -1,7 +1,7 @@
 "use client";
 
 import { sessionStore } from "@/lib/storage";
-import type { ProBillingCycle } from "@/lib/proProduct";
+import type { ProPlan } from "@/lib/proProduct";
 
 /**
  * "I chose a Pro plan, and then you asked me to sign in."
@@ -35,7 +35,7 @@ export interface ProUpgradeIntent {
       first opened — carried along so the resumed checkout's own events
       (`purchase_started`, etc.) can be understood in the same context. */
   trigger: string;
-  cycle: ProBillingCycle;
+  plan: ProPlan;
 }
 
 interface StoredProUpgradeIntent extends ProUpgradeIntent {
@@ -44,10 +44,10 @@ interface StoredProUpgradeIntent extends ProUpgradeIntent {
 
 /** Records the plan a signed-out cook chose, waiting on the sign-in that
  *  will let checkout for it actually start. */
-export function rememberProUpgradeIntent(trigger: string, cycle: ProBillingCycle): void {
+export function rememberProUpgradeIntent(trigger: string, plan: ProPlan): void {
   sessionStore.setJson(PRO_UPGRADE_INTENT_KEY, {
     trigger,
-    cycle,
+    plan,
     at: Date.now(),
   } satisfies StoredProUpgradeIntent);
 }
@@ -65,7 +65,11 @@ export function takeProUpgradeIntent(now = Date.now()): ProUpgradeIntent | null 
   if (!intent) return null;
   forgetProUpgradeIntent();
   const expired = !Number.isFinite(intent.at) || now - intent.at > PRO_UPGRADE_INTENT_TTL_MS;
-  return expired ? null : { trigger: intent.trigger, cycle: intent.cycle };
+  // An intent written before `plan` existed held a bare `cycle`, and every
+  // plan back then renewed.
+  const legacy = intent as Partial<StoredProUpgradeIntent> & { cycle?: ProPlan["cycle"] };
+  const plan = intent.plan ?? (legacy.cycle ? { cycle: legacy.cycle, autoRenew: true } : null);
+  return expired || !plan ? null : { trigger: intent.trigger, plan };
 }
 
 /**

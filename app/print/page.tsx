@@ -76,7 +76,7 @@ import {
   rememberProUpgradeIntent,
   takeProUpgradeIntent,
 } from "@/lib/proUpgradeIntent";
-import type { ProBillingCycle } from "@/lib/proProduct";
+import type { ProPlan } from "@/lib/proProduct";
 import { loadLocalProject } from "@/lib/localProjects";
 import { printDocumentTitle } from "@/lib/printDocumentTitle";
 import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
@@ -2631,7 +2631,7 @@ export default function PrintPage() {
     // right answer in THIS call, synchronously, to decide whether to resume
     // a print afterward.
     setProUpgradeTrigger(intent.trigger);
-    continueProCheckout(intent.cycle, intent.trigger);
+    continueProCheckout(intent.plan, intent.trigger);
     // The uid, not the User object — see the save-intent effect above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cookPilotUser?.uid]);
@@ -2860,11 +2860,11 @@ export default function PrintPage() {
    * succeeds (see `onAuthenticated` inside the dialog, and the intent-
    * spending effect below for the case where sign-in reloads the page).
    */
-  function handleProSignInRequired(cycle: ProBillingCycle) {
-    rememberProUpgradeIntent(proUpgradeTrigger, cycle);
+  function handleProSignInRequired(plan: ProPlan) {
+    rememberProUpgradeIntent(proUpgradeTrigger, plan);
   }
 
-  /** Starts checkout for `cycle` — called by `ProUpgradeDialog` once it's
+  /** Starts checkout for `plan` — called by `ProUpgradeDialog` once it's
    *  known the cook is signed in (immediately, or right after signing in
    *  inside the dialog's own sign-in step). Settles to every outcome the
    *  same way: close the dialog and return to the editor; only a completed
@@ -2893,14 +2893,14 @@ export default function PrintPage() {
    *  — the same gate the debounced autosave effect uses — so a project
    *  that's already been saved once keeps saving through a purchase, but
    *  one that never was doesn't get its first save from a purchase alone. */
-  function continueProCheckout(cycle: ProBillingCycle, trigger: string = proUpgradeTrigger) {
+  function continueProCheckout(plan: ProPlan, trigger: string = proUpgradeTrigger) {
     // Covers checkout itself being torn down by a reload (a bank redirect, 3-D
     // Secure) the same way `rememberProUpgradeIntent` covers the sign-in step
     // before it — see that function's doc comment. Cleared the moment
     // `onSettled` actually runs, since that only happens when checkout
     // resolved in this same session and needs no persisted fallback.
     if (trigger === "print_button") rememberPendingPrintAfterCheckout();
-    void purchaseProAndContinue(cycle, (outcome) => {
+    void purchaseProAndContinue(plan, (outcome) => {
       forgetPendingPrintAfterCheckout();
       setShowProUpgradeDialog(false);
       if (outcome !== "purchased" && outcome !== "already-active") return;

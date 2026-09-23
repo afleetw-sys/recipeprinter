@@ -29,12 +29,32 @@ export const RECIPEPRINTER_PRO_PRODUCT_IDS = {
   annual: "pro_annual",
 } as const satisfies Record<ProBillingCycle, string>;
 
-export function proPackageId(cycle: ProBillingCycle): string {
-  return RECIPEPRINTER_PRO_PACKAGE_IDS[cycle];
+// One month of Pro that does not renew — what Monthly buys when "Continue Pro
+// monthly" is unchecked. A non-renewing product in the same "pro" offering,
+// attached to the same "pro" entitlement with a one-month duration, so it
+// grants and expires Pro exactly the way a canceled monthly subscription
+// does and every entitlement check stays as it is. Must exist in RevenueCat's
+// dashboard before an unchecked Monthly can resolve a package.
+export const RECIPEPRINTER_PRO_ONE_MONTH_PACKAGE_ID = "pro_one_month";
+export const RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID = "pro_one_month";
+
+/** What the upgrade dialog hands to checkout. `autoRenew` only ever changes
+ *  anything for Monthly; Annual always renews. */
+export interface ProPlan {
+  cycle: ProBillingCycle;
+  autoRenew: boolean;
 }
 
-export function proProductId(cycle: ProBillingCycle): string {
-  return RECIPEPRINTER_PRO_PRODUCT_IDS[cycle];
+function buysOneMonth({ cycle, autoRenew }: ProPlan): boolean {
+  return cycle === "monthly" && !autoRenew;
+}
+
+export function proPackageId(plan: ProPlan): string {
+  return buysOneMonth(plan) ? RECIPEPRINTER_PRO_ONE_MONTH_PACKAGE_ID : RECIPEPRINTER_PRO_PACKAGE_IDS[plan.cycle];
+}
+
+export function proProductId(plan: ProPlan): string {
+  return buysOneMonth(plan) ? RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID : RECIPEPRINTER_PRO_PRODUCT_IDS[plan.cycle];
 }
 
 // Static fallbacks only, shown before checkout loads a live price (same
@@ -42,6 +62,9 @@ export function proProductId(cycle: ProBillingCycle): string {
 // price. Keep these in sync with the RevenueCat product if they ever change.
 export const PRO_MONTHLY_PRICE_FALLBACK = "$4.99/mo";
 export const PRO_ANNUAL_PRICE_FALLBACK = "$39.99/yr";
+
+// One month that doesn't renew, priced the same as a month of the subscription.
+export const PRO_ONE_MONTH_PRICE_FALLBACK = "$4.99";
 
 export const PRO_PRICE_FALLBACKS = {
   monthly: PRO_MONTHLY_PRICE_FALLBACK,

@@ -24,7 +24,10 @@ import {
   proProductId,
   RECIPEPRINTER_PRO_ENTITLEMENT_ID,
   RECIPEPRINTER_PRO_OFFERING_ID,
+  RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID,
+  RECIPEPRINTER_PRO_PRODUCT_IDS,
   type ProBillingCycle,
+  type ProPlan,
 } from "@/lib/proProduct";
 import { isProOnlyCardSize } from "@/lib/printTemplates";
 import type { PrintCardSize, RecipePrintTemplate } from "@/types/recipe";
@@ -627,11 +630,11 @@ export async function purchaseRecipePrinterCookbook({
   });
 }
 
-async function packageForPro(purchases: Purchases, cycle: ProBillingCycle): Promise<Package> {
+async function packageForPro(purchases: Purchases, plan: ProPlan): Promise<Package> {
   const rcPackage = findPackage(
     await offeringFor(purchases, RECIPEPRINTER_PRO_OFFERING_ID),
-    proPackageId(cycle),
-    proProductId(cycle),
+    proPackageId(plan),
+    proProductId(plan),
   );
   if (!rcPackage) throw new Error("RecipePrinter Pro isn't ready to buy yet.");
   return rcPackage;
@@ -640,18 +643,19 @@ async function packageForPro(purchases: Purchases, cycle: ProBillingCycle): Prom
 export async function purchaseRecipePrinterPro({
   userId,
   email,
-  cycle,
+  plan,
 }: {
   userId: string;
   email?: string | null;
-  cycle: ProBillingCycle;
+  plan: ProPlan;
 }): Promise<{ customerInfo: CustomerInfo; cancelled: boolean }> {
   const purchases = await getPurchases(userId);
-  const rcPackage = await packageForPro(purchases, cycle);
+  const rcPackage = await packageForPro(purchases, plan);
   return checkout(purchases, rcPackage, email, {
     product: "recipeprinter",
     offer: "pro",
-    cycle,
+    cycle: plan.cycle,
+    auto_renew: String(plan.autoRenew),
   });
 }
 
@@ -680,10 +684,11 @@ export function proSubscriptionDetails(customerInfo: CustomerInfo | null): ProSu
   if (!entitlement) {
     return { cycle: null, active: false, willRenew: false, expiresAtMs: null };
   }
+  const product = entitlement.productIdentifier;
   const cycle: ProBillingCycle | null =
-    entitlement.productIdentifier === proProductId("annual")
+    product === RECIPEPRINTER_PRO_PRODUCT_IDS.annual
       ? "annual"
-      : entitlement.productIdentifier === proProductId("monthly")
+      : product === RECIPEPRINTER_PRO_PRODUCT_IDS.monthly || product === RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID
         ? "monthly"
         : null;
   return {

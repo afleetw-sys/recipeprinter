@@ -270,7 +270,10 @@ type EventProps = {
   /** Continue was pressed on the upgrade dialog's plan step, for whichever
    *  cycle was selected at the time — the step right before checkout (signed
    *  in) or the sign-in gate (signed out). */
-  pro_continue_clicked: { cycle: "monthly" | "annual" };
+  pro_continue_clicked: { cycle: "monthly" | "annual"; auto_renew: boolean };
+  /** "Continue Pro monthly" under the Monthly tile was checked or unchecked.
+   *  Unchecked buys one month of Pro that ends on its own. */
+  pro_auto_renew_toggled: { enabled: boolean };
   /** The sign-in dialog opened specifically because signing in was required
    *  to continue a Pro purchase (as opposed to the cookbook's existing
    *  "protect your purchase" use of the same dialog). Doubles as the
@@ -352,6 +355,9 @@ type EventProps = {
     template?: RecipePrintTemplate;
     /** Monthly vs. annual — only meaningful for `product: "pro"`. */
     cycle?: "monthly" | "annual";
+    /** Pro only: false when Monthly was bought as a single month that
+     *  won't renew. Always true for Annual. */
+    auto_renew?: boolean;
     /** Set only for a `product: "cookbook"` purchase resolved against the
      *  discounted product — lets the funnel measure how often the 20%-off
      *  first-cookbook perk is actually used, not just offered. */
