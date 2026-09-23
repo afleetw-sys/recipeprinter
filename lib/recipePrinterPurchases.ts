@@ -660,25 +660,15 @@ export async function purchaseRecipePrinterPro({
 }
 
 /**
- * Turns a just-paid month of Pro into Pro. The purchase itself grants
- * nothing (see RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID): CookPilot reads it
- * from RevenueCat and grants a one-month promotional "pro". Then this reads
- * the customer back until Pro shows, since the webhook may be the one
- * finishing a grant the call found already underway.
- *
- * Returns the freshest customer info either way; the caller decides what a
- * still-missing Pro means. Throws only when the grant call itself failed.
+ * Reads the customer back until Pro shows, after a one-month checkout. That
+ * purchase grants nothing itself: CookPilot's webhook turns it into a
+ * one-month promotional "pro" a few seconds later (see
+ * RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID). Returns the last read either way.
  */
-export async function grantPurchasedProMonth(userId: string): Promise<CustomerInfo> {
-  const [{ httpsCallable }, { getFns }] = await Promise.all([
-    import("firebase/functions"),
-    import("@/lib/firebase/functions"),
-  ]);
-  await httpsCallable(getFns(), "grantRecipePrinterProMonth")({});
-
+export async function waitForProEntitlement(userId: string): Promise<CustomerInfo> {
   const purchases = await getPurchases(userId);
   let customerInfo = await purchases.getCustomerInfo();
-  for (let attempt = 0; attempt < 4 && !hasProEntitlement(customerInfo); attempt += 1) {
+  for (let attempt = 0; attempt < 6 && !hasProEntitlement(customerInfo); attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, 1500));
     customerInfo = await purchases.getCustomerInfo();
   }

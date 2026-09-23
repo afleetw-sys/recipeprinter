@@ -33,9 +33,9 @@ export const RECIPEPRINTER_PRO_PRODUCT_IDS = {
 // monthly" is unchecked. RevenueCat Web Billing has no purchase that grants an
 // entitlement for a fixed time (one attached to "pro" would grant it forever),
 // so this is a CONSUMABLE in the "pro" offering attached to NO entitlement.
-// Buying it grants nothing by itself: CookPilot's `grantRecipePrinterProMonth`
-// (called right after checkout, see `grantPurchasedProMonth`) and its webhook
-// turn each purchase into a one-month promotional "pro" grant. Match
+// Buying it grants nothing by itself: CookPilot's RevenueCat webhook turns
+// each purchase into a one-month promotional "pro" grant, the same way it
+// grants cookbooks (see `waitForProEntitlement`). Match
 // RECIPEPRINTER_PRO_ONE_MONTH_PRODUCT_ID in CookPilot's
 // functions/src/recipePrinterRevenueCat.ts.
 export const RECIPEPRINTER_PRO_ONE_MONTH_PACKAGE_ID = "pro_one_month";

@@ -6,9 +6,9 @@ import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { track, truncateReason } from "@/lib/analytics";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import {
-  grantPurchasedProMonth,
   hasProEntitlement,
   purchaseRecipePrinterPro,
+  waitForProEntitlement,
 } from "@/lib/recipePrinterPurchases";
 import { buysOneMonth, type ProPlan } from "@/lib/proProduct";
 
@@ -115,21 +115,12 @@ export function useProPurchase({
 
       track("purchase_completed", { product: "pro", cycle, customerId: revenueCatUserId });
 
-      // A month bought on its own grants nothing at checkout; CookPilot turns
-      // it into Pro. A failure here is after the charge, so it is not a failed
-      // purchase: the webhook grants the same month, and the message below
-      // tells them it is on its way.
+      // A month bought on its own grants nothing at checkout: CookPilot's
+      // webhook turns it into Pro a moment later.
       let settledInfo = result.customerInfo;
       if (buysOneMonth(plan)) {
-        try {
-          settledInfo = await grantPurchasedProMonth(revenueCatUserId);
-          setCustomerInfo(settledInfo);
-        } catch (error) {
-          track("pro_month_grant_failed", {
-            reason: truncateReason(error),
-            customerId: revenueCatUserId,
-          });
-        }
+        settledInfo = await waitForProEntitlement(revenueCatUserId);
+        setCustomerInfo(settledInfo);
       }
 
       if (!hasProEntitlement(settledInfo)) {

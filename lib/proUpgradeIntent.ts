@@ -22,7 +22,8 @@ import type { ProPlan } from "@/lib/proProduct";
  * account because we asked, only to land back on a plain print page with
  * their plan choice forgotten.
  */
-const PRO_UPGRADE_INTENT_KEY = "recipeprinter:pro-upgrade-after-signin:v1";
+// v2: stores a `plan` (cycle + auto-renew) where v1 stored a bare `cycle`.
+const PRO_UPGRADE_INTENT_KEY = "recipeprinter:pro-upgrade-after-signin:v2";
 
 /** Same rationale as `SAVE_INTENT_TTL_MS`: long enough for a slow sign-in or
  *  password reset, short enough that a forgotten choice doesn't fire a
@@ -65,11 +66,7 @@ export function takeProUpgradeIntent(now = Date.now()): ProUpgradeIntent | null 
   if (!intent) return null;
   forgetProUpgradeIntent();
   const expired = !Number.isFinite(intent.at) || now - intent.at > PRO_UPGRADE_INTENT_TTL_MS;
-  // An intent written before `plan` existed held a bare `cycle`, and every
-  // plan back then renewed.
-  const legacy = intent as Partial<StoredProUpgradeIntent> & { cycle?: ProPlan["cycle"] };
-  const plan = intent.plan ?? (legacy.cycle ? { cycle: legacy.cycle, autoRenew: true } : null);
-  return expired || !plan ? null : { trigger: intent.trigger, plan };
+  return expired ? null : { trigger: intent.trigger, plan: intent.plan };
 }
 
 /**
