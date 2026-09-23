@@ -137,17 +137,14 @@ export function AccountProStatus({ user }: { user: User }) {
   const { proBusy, purchaseProAndContinue } = useProPurchase({
     revenueCatUserId: uid,
     customerInfo: effectiveProInfo.customerInfo,
-    setCustomerInfo: setProCustomerInfo,
-    markCustomerInfoVerified: () => {
+    acceptCustomerInfo: (info) => {
+      setProCustomerInfo(info);
       setProInfoStatus("ok");
       setProInfoLastVerifiedAtMs(Date.now());
     },
     cookPilotUser: user,
     showToast: setProMessage,
     clearToast: () => setProMessage(null),
-    // No print/export action to return to from here — this is a standing
-    // status surface, not something a purchase resumes into.
-    onFreshPurchase: () => undefined,
   });
 
   return (

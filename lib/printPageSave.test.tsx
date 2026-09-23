@@ -140,9 +140,7 @@ vi.mock("@/lib/usePremiumTemplatePurchase", () => ({
     revenueCatUserId: null,
     customerInfo: null,
     customerInfoStatus: "idle",
-    customerInfoLastVerifiedAtMs: null,
-    setCustomerInfo: vi.fn(),
-    markCustomerInfoVerified: vi.fn(),
+    acceptCustomerInfo: vi.fn(),
     selectedPremiumTemplate: null,
   }),
 }));

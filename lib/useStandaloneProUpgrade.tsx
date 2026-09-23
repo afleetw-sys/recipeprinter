@@ -54,12 +54,10 @@ export function useStandaloneProUpgrade(trigger: string): {
   const { proBusy, purchaseProAndContinue } = useProPurchase({
     revenueCatUserId: uid,
     customerInfo,
-    setCustomerInfo,
-    markCustomerInfoVerified: () => undefined,
+    acceptCustomerInfo: setCustomerInfo,
     cookPilotUser: user,
     showToast: setProMessage,
     clearToast: () => setProMessage(null),
-    onFreshPurchase: () => undefined,
   });
 
   // The entitlement read that `purchaseProAndContinue` checks first, so

@@ -2640,9 +2640,7 @@ export default function PrintPage() {
     revenueCatUserId,
     customerInfo,
     customerInfoStatus,
-    customerInfoLastVerifiedAtMs,
-    setCustomerInfo,
-    markCustomerInfoVerified,
+    acceptCustomerInfo,
     selectedPremiumTemplate,
   } = usePremiumTemplatePurchase({
     items,
@@ -2667,12 +2665,13 @@ export default function PrintPage() {
       resolveEffectiveCustomerInfo({
         liveCustomerInfo: customerInfo,
         liveStatus: customerInfoStatus,
-        liveLastVerifiedAtMs: customerInfoLastVerifiedAtMs,
+        // /print reads only `.customerInfo` from this, never when it was verified.
+        liveLastVerifiedAtMs: null,
         mirroredEntitlements,
         mirrorSyncedAtMs,
         nowMs: Date.now(),
       }),
-    [customerInfo, customerInfoStatus, customerInfoLastVerifiedAtMs, mirroredEntitlements, mirrorSyncedAtMs],
+    [customerInfo, customerInfoStatus, mirroredEntitlements, mirrorSyncedAtMs],
   );
 
   // Resumes a print that was waiting on Pro checkout when a reload tore the
@@ -2724,9 +2723,6 @@ export default function PrintPage() {
     showToast,
     showErrorToast,
     clearToast,
-    // Cookbook protection is handled by the persistent banner in cookbook
-    // mode. Do not interrupt a newly purchased book with a login modal.
-    onFreshPurchase: () => undefined,
     // Optimistic: the real, webhook-confirmed timestamp lands in Firestore
     // asynchronously regardless, but a second cookbook purchase attempted
     // later in this same session must not also see `firstCookbookGrantedAt`
@@ -2739,19 +2735,11 @@ export default function PrintPage() {
   const { proBusy, purchaseProAndContinue } = useProPurchase({
     revenueCatUserId,
     customerInfo,
-    setCustomerInfo,
-    markCustomerInfoVerified,
+    acceptCustomerInfo,
     cookPilotUser,
     showToast,
     showErrorToast,
     clearToast,
-    // Unlike a template purchase, Pro checkout only ever runs signed in (see
-    // `ProUpgradeDialog`'s sign-in step and `continueProCheckout`), so there
-    // is no signed-out buyer to prompt for an account afterward — this
-    // always resolves to "none".
-    onFreshPurchase: () => {
-      postPrintActionRef.current = "none";
-    },
   });
   const [showProUpgradeDialog, setShowProUpgradeDialog] = useState(false);
   // State, not a ref: the dialog's title read this during render
@@ -2904,6 +2892,8 @@ export default function PrintPage() {
       setShowProUpgradeDialog(false);
       if (outcome !== "purchased" && outcome !== "already-active") return;
       if (outcome === "purchased") {
+        // Someone who just paid isn't asked for a donation after this print.
+        postPrintActionRef.current = "none";
         track("pro_feature_used", {
           feature: trigger === IMAGE_IMPORT_LIMIT_TRIGGER ? "image_imports" : proLockFeature(),
         });

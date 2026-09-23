@@ -18,21 +18,16 @@ interface UseProPurchaseOptions {
       a second time. */
   revenueCatUserId: string | null;
   customerInfo: CustomerInfo | null;
-  /** Pushes the fresh `CustomerInfo` a purchase returns into the shared state
-      `usePremiumTemplatePurchase` owns, so every other gate (theme lock, card
-      size lock) sees the new Pro entitlement immediately. */
-  setCustomerInfo: (info: CustomerInfo) => void;
-  /** A successful purchase call is itself a live, successful RevenueCat
-      verification — mark it as such the same way `usePremiumTemplatePurchase`
-      does internally, so a fallback to the Firestore mirror never lingers
-      past the moment a fresh purchase just proved the live SDK works. */
-  markCustomerInfoVerified: () => void;
+  /** Takes the fresh `CustomerInfo` a purchase returns, so every other gate
+      (theme lock, card size lock) sees the new Pro entitlement immediately.
+      It is also a live, successful RevenueCat read, so an owner that falls
+      back to the Firestore mirror should record it as verified. */
+  acceptCustomerInfo: (info: CustomerInfo) => void;
   cookPilotUser: User | null;
   showToast: (message: string) => void;
   /** For a failure the cook needs to notice; falls back to `showToast`. */
   showErrorToast?: (message: string) => void;
   clearToast: () => void;
-  onFreshPurchase: () => void;
 }
 
 /**
@@ -56,13 +51,11 @@ export type ProPurchaseOutcome = "purchased" | "already-active" | "cancelled" | 
 export function useProPurchase({
   revenueCatUserId,
   customerInfo,
-  setCustomerInfo,
-  markCustomerInfoVerified,
+  acceptCustomerInfo,
   cookPilotUser,
   showToast,
   showErrorToast = showToast,
   clearToast,
-  onFreshPurchase,
 }: UseProPurchaseOptions) {
   const [proBusy, setProBusy] = useState(false);
 
@@ -103,8 +96,7 @@ export function useProPurchase({
         email: cookPilotUser?.email,
         plan,
       });
-      setCustomerInfo(result.customerInfo);
-      markCustomerInfoVerified();
+      acceptCustomerInfo(result.customerInfo);
 
       if (result.cancelled) {
         track("purchase_cancelled", { product: "pro", cycle, customerId: revenueCatUserId });
@@ -120,7 +112,7 @@ export function useProPurchase({
       let settledInfo = result.customerInfo;
       if (buysOneMonth(plan)) {
         settledInfo = await waitForProEntitlement(revenueCatUserId);
-        setCustomerInfo(settledInfo);
+        acceptCustomerInfo(settledInfo);
       }
 
       if (!hasProEntitlement(settledInfo)) {
@@ -129,7 +121,6 @@ export function useProPurchase({
         return;
       }
 
-      onFreshPurchase();
       onSettled("purchased");
     } catch (error) {
       // See the same catch in usePremiumTemplatePurchase/useCookbookPurchase:

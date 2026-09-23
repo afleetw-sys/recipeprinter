@@ -49,7 +49,6 @@ export function usePremiumTemplatePurchase({
   // mirror only on a genuine failure, never on a confirmed empty answer (see
   // lib/proAccessFallback.ts's `resolveEffectiveCustomerInfo`).
   const [customerInfoStatus, setCustomerInfoStatus] = useState<CustomerInfoLoadStatus>("idle");
-  const [customerInfoLastVerifiedAtMs, setCustomerInfoLastVerifiedAtMs] = useState<number | null>(null);
   const linkedCookPilotUidRef = useRef<string | null>(null);
   const revenueCatUserIdRef = useRef<string | null>(null);
   const identityRequestRef = useRef(0);
@@ -90,7 +89,6 @@ export function usePremiumTemplatePurchase({
     if (!info) {
       if (revenueCatUserIdRef.current === userId) {
         setCustomerInfoStatus("ok");
-        setCustomerInfoLastVerifiedAtMs(Date.now());
       }
       return null;
     }
@@ -100,7 +98,6 @@ export function usePremiumTemplatePurchase({
     if (revenueCatUserIdRef.current === userId) {
       setCustomerInfo(info);
       setCustomerInfoStatus("ok");
-      setCustomerInfoLastVerifiedAtMs(Date.now());
     }
     return info;
   }
@@ -145,7 +142,6 @@ export function usePremiumTemplatePurchase({
         setRevenueCatIdentity(uid);
         setCustomerInfo(linkedInfo);
         setCustomerInfoStatus("ok");
-        setCustomerInfoLastVerifiedAtMs(Date.now());
         // Already linked in a prior visit (this is a page refresh, not a
         // fresh sign-in) — restoring entitlements silently is enough, the
         // toast would just be noise every time the page reloads.
@@ -193,19 +189,12 @@ export function usePremiumTemplatePurchase({
     revenueCatUserId,
     customerInfo,
     customerInfoStatus,
-    customerInfoLastVerifiedAtMs,
-    // Exposed so `useProPurchase` (a sibling hook, not a duplicate identity/
-    // SDK setup) can push the fresh `CustomerInfo` a Pro purchase returns
-    // into this shared state, the same way this hook updates it internally
-    // after a claim.
-    setCustomerInfo,
-    // Same reasoning as `setCustomerInfo` above: a Pro purchase's own
-    // successful response is itself a live RevenueCat verification, so
-    // `useProPurchase` marks it through this rather than reaching in to set
-    // the two pieces of state directly.
-    markCustomerInfoVerified: () => {
+    // For `useProPurchase` (a sibling hook, not a duplicate identity/SDK
+    // setup): the `CustomerInfo` a Pro purchase returns is a live, successful
+    // RevenueCat read, so it lands here the same way a refresh does.
+    acceptCustomerInfo: (info: CustomerInfo) => {
+      setCustomerInfo(info);
       setCustomerInfoStatus("ok");
-      setCustomerInfoLastVerifiedAtMs(Date.now());
     },
     selectedPremiumTemplate,
   };

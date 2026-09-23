@@ -32,7 +32,6 @@ interface UseCookbookPurchaseOptions {
       kind of message (the account menu's inline status) falls back to `showToast`. */
   showErrorToast?: (message: string) => void;
   clearToast: () => void;
-  onFreshPurchase: () => void;
   /** Fired once a purchase actually grants (never on cancel/failure) with
       whether it used the discount — lets the caller optimistically mark
       this account as no longer eligible immediately, without waiting for a
@@ -67,7 +66,6 @@ export function useCookbookPurchase({
   showToast,
   showErrorToast = showToast,
   clearToast,
-  onFreshPurchase,
   onCookbookGranted,
 }: UseCookbookPurchaseOptions) {
   const [cookbookPurchaseBusy, setCookbookPurchaseBusy] = useState(false);
@@ -209,7 +207,6 @@ export function useCookbookPurchase({
       // this device in the meantime, so the buyer never sees "not purchased"
       // while the webhook lands.
 
-      onFreshPurchase();
       onCookbookGranted(usingDiscount);
       onUnlocked(true);
     } catch (error) {
