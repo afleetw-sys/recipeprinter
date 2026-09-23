@@ -436,8 +436,8 @@ export const ScaledPage = memo(function ScaledPage({
     );
   }
 
-  // An opening blank: a real printed leaf with nothing on it, there so the book
-  // opens on the right page (see `padOpening` in lib/usePrintSheets.tsx). It
+  // A blank: a real printed leaf with nothing on it, there so a pair of pages
+  // lies open together (see `closeSpreadGaps` in lib/usePrintSheets.tsx). It
   // has to render as a PAGE — an empty sheet that drew nothing would simply not
   // be in the file, which is the opposite of what it is for.
   if (anySlot.kind === "blank") {
