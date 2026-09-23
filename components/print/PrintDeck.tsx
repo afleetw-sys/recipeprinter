@@ -730,10 +730,9 @@ export function PrintDeck(props: PrintDeckProps) {
     if (!navItem.flip && !editable && !photoControl && !linkControl && !addImagePageButton) {
       return null;
     }
-    const insideCard = navItem.kind === "divider" || navItem.kind === "section-photo";
     return (
       <div
-        className={`recipe-page-canvas__controls ${insideCard ? "recipe-page-canvas__controls--inside" : ""} no-print`}
+        className="recipe-page-canvas__controls no-print"
         style={{
           "--preview-w": `${previewW}px`,
           "--preview-offset": `${horizontalOffset}px`,
@@ -1424,7 +1423,12 @@ export function PrintDeck(props: PrintDeckProps) {
                       {leftSlot?.kind === "toc" ? (
                         <div className="recipe-spread__blank-decoration" aria-hidden />
                       ) : null}
-                      {reason ? <p className="recipe-spread__blank-reason no-print">{reason}</p> : null}
+                      {reason ? (
+                        <div className="recipe-spread__blank-note no-print">
+                          <p className="recipe-spread__blank-note-title">Blank page</p>
+                          <p className="recipe-spread__blank-note-reason">{reason}</p>
+                        </div>
+                      ) : null}
                     </div>
                   );
                   // Far from the reader, and not printing: hold the page's box
@@ -1515,9 +1519,9 @@ export function PrintDeck(props: PrintDeckProps) {
                           activeNavItem,
                           // A linked spread is one page as far as the reader is
                           // concerned, so its toolbar spans both sheets and sits
-                          // centred over the pair. A section spread's per-page
-                          // toolbar stays sized and offset to its own half —
-                          // it's the spread-level toolbar above that spans both.
+                          // centred over the pair. Every other spread, a chapter
+                          // opener's included, floats the toolbar over the half
+                          // being edited.
                           linkedSpread
                             ? spreadWidth * deckScale
                             : previewDims.w * deckScale,

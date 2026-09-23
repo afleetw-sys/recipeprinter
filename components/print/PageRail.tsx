@@ -786,12 +786,14 @@ export function PageRail(props: PageRailProps) {
                   } else if (spread.single) {
                     const nav = rightNav ?? leftNav;
                     const sheet = spread.right ?? spread.left;
+                    const isBlankLeaf =
+                      sheet != null && sheets[sheet]?.slots.some((slot) => slot?.kind === "blank");
                     addUnit({
                       index,
                       focusSheet: sheet,
                       nav,
                       thumbSheets: sheet != null ? [sheet] : [],
-                      label: nav?.label ?? "Page",
+                      label: nav?.label ?? (isBlankLeaf ? "Blank page" : "Page"),
                       soleUnit: true,
                       sectionId: namedSectionIdFor(nav),
                     });
