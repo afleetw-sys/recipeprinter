@@ -4061,6 +4061,7 @@ export default function PrintPage() {
         {cardSize === "card-6x4" && (
           <Checkbox
               label="Cut lines"
+              hint="Only shows when printed."
               checked={showCutLines}
               onChange={(event) => setShowCutLines(event.target.checked)}
           />
