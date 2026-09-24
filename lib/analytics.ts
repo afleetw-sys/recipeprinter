@@ -265,8 +265,8 @@ type EventProps = {
    *  entry point otherwise (e.g. "account_menu"). */
   paywall_viewed: { trigger: string };
   /** The upgrade dialog was dismissed from its plan step without Continue
-   *  ever being pressed, and it asked why instead of closing (at most once a
-   *  week per browser, see `components/ProUpgradeDialog.tsx`). Compare against
+   *  ever being pressed, and it asked why instead of closing (once per person
+   *  ever, see `lib/proDeclineAsked.ts`). Compare against
    *  `pro_decline_answered` for the skip rate. */
   pro_decline_asked: Record<string, never>;
   /** One tap on the "what held you back" question. Closing it without a tap

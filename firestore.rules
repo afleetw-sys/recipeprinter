@@ -177,6 +177,13 @@ service cloud.firestore {
         ])
         && request.resource.data.lastSeenAt == request.time
         && validRecipePrinterProfile(request.resource.data);
+      // The Pro dialog's "what held you back" question was asked on this
+      // account (lib/proDeclineAsked.ts). Write-once, server clock, so it is
+      // asked once per person across devices.
+      allow update: if owns(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["proDeclineAskedAt"])
+        && !("proDeclineAskedAt" in resource.data)
+        && request.resource.data.proDeclineAskedAt == request.time;
       allow delete: if false;
 
       match /printProjects/{projectId} {

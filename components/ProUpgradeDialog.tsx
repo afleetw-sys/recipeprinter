@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { Dialog } from "@/components/Dialog";
 import { SelectTile } from "@/components/Controls";
 import { CookPilotLoginForm } from "@/components/CookPilotAuth";
 import { CheckIcon, CrownIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import { track, type ProDeclineReason } from "@/lib/analytics";
+import {
+  loadProDeclineAskedOnAccount,
+  markProDeclineAsked,
+  proDeclineAskedOnDevice,
+} from "@/lib/proDeclineAsked";
 import { PRO_BENEFITS } from "@/lib/proUpgradeCopy";
 import {
   PRO_PRICE_FALLBACKS,
@@ -31,30 +36,6 @@ const DECLINE_REASONS: { reason: ProDeclineReason; label: string }[] = [
   { reason: "just_looking", label: "Just looking for now" },
 ];
 
-// Asking every time someone closes the paywall would turn a question into a
-// toll. Once a week per browser still catches a returning cook's answer.
-const DECLINE_ASKED_KEY = "rp:pro-decline-asked-at";
-const DECLINE_ASK_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
-
-function shouldAskDeclineReason(): boolean {
-  try {
-    const last = Number(window.localStorage.getItem(DECLINE_ASKED_KEY));
-    return !last || Date.now() - last > DECLINE_ASK_INTERVAL_MS;
-  } catch {
-    // No storage (private window, blocked site data): never ask, rather than
-    // ask on every close.
-    return false;
-  }
-}
-
-function markDeclineReasonAsked() {
-  try {
-    window.localStorage.setItem(DECLINE_ASKED_KEY, String(Date.now()));
-  } catch {
-    // Best effort, see above.
-  }
-}
-
 /**
  * The one Pro upsell screen in the app — one dialog, start to finish.
  *
@@ -73,8 +54,8 @@ function markDeclineReasonAsked() {
  * Closing from the plan step, before Continue was ever pressed, turns the
  * dialog into one question: what held you back. A tap on an answer records it
  * and closes; closing again closes for real. It never follows the sign-in
- * step (that is sign-in friction, not a no to the price) and is asked at most
- * once a week per browser.
+ * step (that is sign-in friction, not a no to the price), and it is asked once
+ * per person ever (lib/proDeclineAsked.ts).
  */
 export function ProUpgradeDialog({
   onClose,
@@ -107,6 +88,32 @@ export function ProUpgradeDialog({
   const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>("monthly");
   const [pendingCycle, setPendingCycle] = useState<ProBillingCycle | null>(null);
   const [formBusy, setFormBusy] = useState(false);
+  const uid = cookPilotUser?.uid ?? null;
+  // Whether this account has been asked on any device. Null until read, and
+  // the question waits for the answer: closing before it arrives just closes.
+  const [askedOnAccount, setAskedOnAccount] = useState<{ uid: string | null; asked: boolean } | null>(null);
+
+  useEffect(() => {
+    if (!uid) {
+      setAskedOnAccount({ uid: null, asked: false });
+      return;
+    }
+    let alive = true;
+    loadProDeclineAskedOnAccount(uid)
+      .then((asked) => {
+        if (!alive) return;
+        setAskedOnAccount({ uid, asked });
+        // Asked here while signed out, now signed in: carry it to the account
+        // so their other devices know.
+        if (!asked && proDeclineAskedOnDevice()) void markProDeclineAsked(uid);
+      })
+      .catch(() => {
+        if (alive) setAskedOnAccount({ uid, asked: true });
+      });
+    return () => {
+      alive = false;
+    };
+  }, [uid]);
 
   function selectCycle(cycle: ProBillingCycle) {
     if (cycle === selectedCycle) return;
@@ -127,8 +134,13 @@ export function ProUpgradeDialog({
   }
 
   function handleClose() {
-    if (step === "plan" && !pendingPlan && !busy && shouldAskDeclineReason()) {
-      markDeclineReasonAsked();
+    const mayAsk =
+      askedOnAccount !== null &&
+      askedOnAccount.uid === uid &&
+      !askedOnAccount.asked &&
+      !proDeclineAskedOnDevice();
+    if (step === "plan" && !pendingPlan && !busy && mayAsk) {
+      void markProDeclineAsked(uid);
       track("pro_decline_asked", {});
       setStep("decline");
       return;
