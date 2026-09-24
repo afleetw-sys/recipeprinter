@@ -19,6 +19,14 @@ import type {
 } from "@/types/recipe";
 import type { FeedbackType } from "@/lib/feedback";
 
+/** Answers to the upgrade dialog's one-tap "what held you back" question. */
+export type ProDeclineReason =
+  | "too_expensive"
+  | "no_more_subscriptions"
+  | "only_need_once"
+  | "free_is_enough"
+  | "just_looking";
+
 /** What product a paywall or purchase refers to. "premium_template" is kept
  *  for historical event compatibility — new template purchases no longer
  *  happen (see lib/premiumTemplates.ts), but old PostHog data stays readable
@@ -256,6 +264,14 @@ type EventProps = {
    *  `pro_feature_encountered`'s `source` when it opened one, or names the
    *  entry point otherwise (e.g. "account_menu"). */
   paywall_viewed: { trigger: string };
+  /** The upgrade dialog was dismissed from its plan step without Continue
+   *  ever being pressed, and it asked why instead of closing (at most once a
+   *  week per browser, see `components/ProUpgradeDialog.tsx`). Compare against
+   *  `pro_decline_answered` for the skip rate. */
+  pro_decline_asked: Record<string, never>;
+  /** One tap on the "what held you back" question. Closing it without a tap
+   *  sends nothing, so skips are `pro_decline_asked` minus these. */
+  pro_decline_answered: { reason: ProDeclineReason };
   /** The Monthly/Annual tile was picked in the upgrade dialog — an interest
    *  signal, fired the moment the toggle changes, before Continue is ever
    *  pressed. Separate from `pro_continue_clicked` so the funnel can tell

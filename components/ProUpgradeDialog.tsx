@@ -6,7 +6,7 @@ import { Dialog } from "@/components/Dialog";
 import { SelectTile } from "@/components/Controls";
 import { CookPilotLoginForm } from "@/components/CookPilotAuth";
 import { CheckIcon, CrownIcon, ICON_SIZE, XIcon } from "@/components/icons";
-import { track } from "@/lib/analytics";
+import { track, type ProDeclineReason } from "@/lib/analytics";
 import { PRO_BENEFITS } from "@/lib/proUpgradeCopy";
 import {
   PRO_PRICE_FALLBACKS,
@@ -22,6 +22,39 @@ const PRO_CYCLE_LABEL: Record<ProBillingCycle, string> = {
 // Display order of the plan tiles — Monthly always first, whichever is selected.
 const PRO_PLAN_CYCLES: ProBillingCycle[] = ["monthly", "annual"];
 
+/** The one-tap answers to "what held you back", in display order. */
+const DECLINE_REASONS: { reason: ProDeclineReason; label: string }[] = [
+  { reason: "too_expensive", label: "Too expensive" },
+  { reason: "no_more_subscriptions", label: "I don't want another subscription" },
+  { reason: "only_need_once", label: "I only need it once" },
+  { reason: "free_is_enough", label: "Free does what I need" },
+  { reason: "just_looking", label: "Just looking for now" },
+];
+
+// Asking every time someone closes the paywall would turn a question into a
+// toll. Once a week per browser still catches a returning cook's answer.
+const DECLINE_ASKED_KEY = "rp:pro-decline-asked-at";
+const DECLINE_ASK_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+
+function shouldAskDeclineReason(): boolean {
+  try {
+    const last = Number(window.localStorage.getItem(DECLINE_ASKED_KEY));
+    return !last || Date.now() - last > DECLINE_ASK_INTERVAL_MS;
+  } catch {
+    // No storage (private window, blocked site data): never ask, rather than
+    // ask on every close.
+    return false;
+  }
+}
+
+function markDeclineReasonAsked() {
+  try {
+    window.localStorage.setItem(DECLINE_ASKED_KEY, String(Date.now()));
+  } catch {
+    // Best effort, see above.
+  }
+}
+
 /**
  * The one Pro upsell screen in the app — one dialog, start to finish.
  *
@@ -36,6 +69,12 @@ const PRO_PLAN_CYCLES: ProBillingCycle[] = ["monthly", "annual"];
  * The sign-in step embeds `CookPilotLoginForm` (the same form
  * `CookPilotLoginDialog` uses) rather than reimplementing email/password/
  * Google/Apple sign-in here.
+ *
+ * Closing from the plan step, before Continue was ever pressed, turns the
+ * dialog into one question: what held you back. A tap on an answer records it
+ * and closes; closing again closes for real. It never follows the sign-in
+ * step (that is sign-in friction, not a no to the price) and is asked at most
+ * once a week per browser.
  */
 export function ProUpgradeDialog({
   onClose,
@@ -64,7 +103,7 @@ export function ProUpgradeDialog({
   benefits?: string[];
   ctaLabel?: string;
 }) {
-  const [step, setStep] = useState<"plan" | "signin">("plan");
+  const [step, setStep] = useState<"plan" | "signin" | "decline">("plan");
   const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>("monthly");
   const [pendingCycle, setPendingCycle] = useState<ProBillingCycle | null>(null);
   const [formBusy, setFormBusy] = useState(false);
@@ -87,12 +126,27 @@ export function ProUpgradeDialog({
     setStep("signin");
   }
 
+  function handleClose() {
+    if (step === "plan" && !pendingPlan && !busy && shouldAskDeclineReason()) {
+      markDeclineReasonAsked();
+      track("pro_decline_asked", {});
+      setStep("decline");
+      return;
+    }
+    onClose();
+  }
+
+  function answerDecline(reason: ProDeclineReason) {
+    track("pro_decline_answered", { reason });
+    onClose();
+  }
+
   const closeDisabled = busy || formBusy;
   const savingsPercent = proAnnualSavingsPercent();
 
   return (
     <Dialog
-      onClose={onClose}
+      onClose={handleClose}
       closeDisabled={closeDisabled}
       labelledBy="pro-upgrade-title"
       className="fixed inset-0 z-[var(--z-dialog)] flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
@@ -104,12 +158,33 @@ export function ProUpgradeDialog({
         className="icon-close-btn absolute right-3 top-3"
         aria-label="Close"
         disabled={closeDisabled}
-        onClick={onClose}
+        onClick={handleClose}
       >
         <XIcon size={ICON_SIZE.md} />
       </button>
 
-      {step === "plan" ? (
+      {step === "decline" ? (
+        <>
+          <div className="pr-8">
+            <h2 id="pro-upgrade-title" className="text-cp-dialog-title font-extrabold tracking-tight">
+              What held you back?
+            </h2>
+            <p className="mt-1 text-cp-body text-ink-soft">One tap helps us make RecipePrinter better.</p>
+          </div>
+          <div className="flex flex-col gap-cp-2">
+            {DECLINE_REASONS.map(({ reason, label }) => (
+              <button
+                key={reason}
+                type="button"
+                className="btn btn-secondary w-full"
+                onClick={() => answerDecline(reason)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : step === "plan" ? (
         <>
           <div className="flex items-center gap-2 pr-8">
             {/* Trailing on the mobile sheet (below `sm`, the same breakpoint
