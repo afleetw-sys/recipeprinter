@@ -138,7 +138,7 @@ export function ProUpgradeDialog({
       askedOnAccount.uid === uid &&
       !askedOnAccount.asked &&
       !proDeclineAskedOnDevice();
-    if (step === "plan" && !pendingPlan && !busy && mayAsk) {
+    if (step === "plan" && !pendingCycle && !busy && mayAsk) {
       void markProDeclineAsked(uid);
       track("pro_decline_asked", {});
       setStep("decline");
