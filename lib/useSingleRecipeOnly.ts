@@ -28,21 +28,29 @@ import {
  */
 export function useSingleRecipeOnly(): boolean {
   const { user } = useCookPilotAuth();
+  const uid = user?.uid ?? null;
   const [hasMultiRecipe, setHasMultiRecipe] = useState(false);
 
+  // Keyed on the uid, not the User object: Firebase hands out a new one on
+  // every token refresh, which re-read RevenueCat hourly for an unchanged account.
   useEffect(() => {
-    if (!user) {
+    if (!uid) {
       setHasMultiRecipe(false);
       return;
     }
     let alive = true;
-    loadRecipePrinterCustomerInfo(user.uid).then((info) => {
-      if (alive) setHasMultiRecipe(hasMultiRecipeEntitlement(info));
-    });
+    loadRecipePrinterCustomerInfo(uid)
+      .then((info) => {
+        if (alive) setHasMultiRecipe(hasMultiRecipeEntitlement(info));
+      })
+      .catch((error) => {
+        // Stays single-recipe, the pessimistic answer, as while it loads.
+        console.warn("RecipePrinter: could not load multi-recipe access", error);
+      });
     return () => {
       alive = false;
     };
-  }, [user]);
+  }, [uid]);
 
   return !hasMultiRecipe;
 }
