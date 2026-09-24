@@ -27,11 +27,10 @@ const PRO_CYCLE_LABEL: Record<ProBillingCycle, string> = {
 // Display order of the plan tiles — Monthly always first, whichever is selected.
 const PRO_PLAN_CYCLES: ProBillingCycle[] = ["monthly", "annual"];
 
-/** The one-tap answers to "what held you back", in display order. */
+/** The one-tap answers to "Not upgrading today?", in display order. */
 const DECLINE_REASONS: { reason: ProDeclineReason; label: string }[] = [
   { reason: "too_expensive", label: "Too expensive" },
   { reason: "no_more_subscriptions", label: "I don't want another subscription" },
-  { reason: "only_need_once", label: "I only need it once" },
   { reason: "free_is_enough", label: "Free does what I need" },
   { reason: "just_looking", label: "Just looking for now" },
 ];
@@ -52,7 +51,7 @@ const DECLINE_REASONS: { reason: ProDeclineReason; label: string }[] = [
  * Google/Apple sign-in here.
  *
  * Closing from the plan step, before Continue was ever pressed, turns the
- * dialog into one question: what held you back. A tap on an answer records it
+ * dialog into one question: why not upgrade today. A tap on an answer records it
  * and closes; closing again closes for real. It never follows the sign-in
  * step (that is sign-in friction, not a no to the price), and it is asked once
  * per person ever (lib/proDeclineAsked.ts).
@@ -179,9 +178,9 @@ export function ProUpgradeDialog({
         <>
           <div className="pr-8">
             <h2 id="pro-upgrade-title" className="text-cp-dialog-title font-extrabold tracking-tight">
-              What held you back?
+              Not upgrading today?
             </h2>
-            <p className="mt-1 text-cp-body text-ink-soft">One tap helps us make RecipePrinter better.</p>
+            <p className="mt-1 text-cp-body text-ink-soft">Tell us why in one tap. It helps us make RecipePrinter better.</p>
           </div>
           <div className="flex flex-col gap-cp-2">
             {DECLINE_REASONS.map(({ reason, label }) => (

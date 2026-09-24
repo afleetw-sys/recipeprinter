@@ -19,11 +19,10 @@ import type {
 } from "@/types/recipe";
 import type { FeedbackType } from "@/lib/feedback";
 
-/** Answers to the upgrade dialog's one-tap "what held you back" question. */
+/** Answers to the upgrade dialog's one-tap "Not upgrading today?" question. */
 export type ProDeclineReason =
   | "too_expensive"
   | "no_more_subscriptions"
-  | "only_need_once"
   | "free_is_enough"
   | "just_looking";
 
@@ -269,7 +268,7 @@ type EventProps = {
    *  ever, see `lib/proDeclineAsked.ts`). Compare against
    *  `pro_decline_answered` for the skip rate. */
   pro_decline_asked: Record<string, never>;
-  /** One tap on the "what held you back" question. Closing it without a tap
+  /** One tap on the "Not upgrading today?" question. Closing it without a tap
    *  sends nothing, so skips are `pro_decline_asked` minus these. */
   pro_decline_answered: { reason: ProDeclineReason };
   /** The Monthly/Annual tile was picked in the upgrade dialog — an interest

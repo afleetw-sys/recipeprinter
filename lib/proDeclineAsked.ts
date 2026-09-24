@@ -2,7 +2,7 @@ import { recipePrinterUserPath } from "@/lib/firebase/recipePrinterPaths";
 import { localStore } from "@/lib/storage";
 
 /**
- * Whether the Pro dialog's "what held you back" question has been asked
+ * Whether the Pro dialog's "Not upgrading today?" question has been asked
  * (components/ProUpgradeDialog.tsx). It is asked once per person, ever: once
  * per browser, and once per account wherever that account signs in. A second
  * device is only asked again when we have no way to know it is the same

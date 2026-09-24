@@ -177,7 +177,7 @@ service cloud.firestore {
         ])
         && request.resource.data.lastSeenAt == request.time
         && validRecipePrinterProfile(request.resource.data);
-      // The Pro dialog's "what held you back" question was asked on this
+      // The Pro dialog's "Not upgrading today?" question was asked on this
       // account (lib/proDeclineAsked.ts). Write-once, server clock, so it is
       // asked once per person across devices.
       allow update: if owns(uid)
