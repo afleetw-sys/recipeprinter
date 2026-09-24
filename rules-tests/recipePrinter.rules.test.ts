@@ -104,6 +104,22 @@ describe("Recipe Printer Firestore namespace", () => {
     );
   });
 
+  test("the Pro decline question can be marked asked once, by its owner", async () => {
+    const path = "products/recipePrinter/users/decline-owner";
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), path), { createdAt: new Date(), lastSeenAt: new Date() });
+    });
+    const owner = environment.authenticatedContext("decline-owner").firestore();
+    const stranger = environment.authenticatedContext("stranger").firestore();
+    await assertFails(updateDoc(doc(stranger, path), { proDeclineAskedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(owner, path), { proDeclineAskedAt: new Date(0) }));
+    await assertFails(
+      updateDoc(doc(owner, path), { proDeclineAskedAt: serverTimestamp(), entitlement: "premium" }),
+    );
+    await assertSucceeds(updateDoc(doc(owner, path), { proDeclineAskedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(owner, path), { proDeclineAskedAt: serverTimestamp() }));
+  });
+
   test("public users can read published shared cards only", async () => {
     await environment.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), "products/recipePrinter/sharedRecipeCards/live"), {

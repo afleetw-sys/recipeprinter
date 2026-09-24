@@ -103,6 +103,7 @@ import {
   computeProLocks,
   hasMultiRecipeEntitlement,
   hasProEntitlement,
+  type ProLockReason,
 } from "@/lib/recipePrinterPurchases";
 import { resolveEffectiveCustomerInfo } from "@/lib/proAccessFallback";
 import { isFirstCookbookDiscountEligible } from "@/lib/cookbookProduct";
@@ -2827,6 +2828,21 @@ export default function PrintPage() {
   const proUpgradeDialogCopy = proUpgradeCopy(proUpgradeLockReasons, proUpgradeTrigger);
 
   /**
+   * Which Pro lock a Print press ran into, for `paywall_viewed`. `print_button`
+   * alone lumps a 4×6 print, a premium-theme print and a multi-recipe print
+   * together, and which of those people will pay for is the question the
+   * funnel is there to answer. Only for Print: every other trigger already
+   * names its reason, or has none (the header button), and reading the locks
+   * then would report whatever happened to be selected, not what was asked for.
+   */
+  function printPaywallReason(trigger: string): { reason?: ProLockReason | "several" } {
+    if (trigger !== "print_button") return {};
+    const reasons = activeProLockReasons({ themeLocked, cardSizeLocked, multiRecipeLocked }, trigger);
+    if (reasons.length === 0) return {};
+    return { reason: reasons.length === 1 ? reasons[0] : "several" };
+  }
+
+  /**
    * Opens the upgrade dialog — plan choice first, for everyone, signed in or
    * not. `ProUpgradeDialog` itself turns into sign-in in place if the cook
    * picks a plan while signed out (see `onSignInRequired`/`onChoose` below);
@@ -2834,7 +2850,7 @@ export default function PrintPage() {
    */
   function openProUpgradeDialog(trigger: string) {
     setProUpgradeTrigger(trigger);
-    track("paywall_viewed", { trigger });
+    track("paywall_viewed", { trigger, ...printPaywallReason(trigger) });
     setShowProUpgradeDialog(true);
   }
 

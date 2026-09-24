@@ -19,6 +19,13 @@ import type {
 } from "@/types/recipe";
 import type { FeedbackType } from "@/lib/feedback";
 
+/** Answers to the upgrade dialog's one-tap "Not upgrading today?" question. */
+export type ProDeclineReason =
+  | "too_expensive"
+  | "no_more_subscriptions"
+  | "free_is_enough"
+  | "just_looking";
+
 /** What product a paywall or purchase refers to. "premium_template" is kept
  *  for historical event compatibility — new template purchases no longer
  *  happen (see lib/premiumTemplates.ts), but old PostHog data stays readable
@@ -255,7 +262,21 @@ type EventProps = {
   /** The Pro upgrade dialog was shown. `trigger` matches
    *  `pro_feature_encountered`'s `source` when it opened one, or names the
    *  entry point otherwise (e.g. "account_menu"). */
-  paywall_viewed: { trigger: string };
+  paywall_viewed: {
+    trigger: string;
+    /** Print presses only: the lock that stopped the print (`card_size` is a
+     *  4×6 card, `theme` a premium theme, `multi_recipe` more than one
+     *  recipe), or `several` when more than one applied at once. */
+    reason?: "theme" | "card_size" | "multi_recipe" | "several";
+  };
+  /** The upgrade dialog was dismissed from its plan step without Continue
+   *  ever being pressed, and it asked why instead of closing (once per person
+   *  ever, see `lib/proDeclineAsked.ts`). Compare against
+   *  `pro_decline_answered` for the skip rate. */
+  pro_decline_asked: Record<string, never>;
+  /** One tap on the "Not upgrading today?" question. Closing it without a tap
+   *  sends nothing, so skips are `pro_decline_asked` minus these. */
+  pro_decline_answered: { reason: ProDeclineReason };
   /** The Monthly/Annual tile was picked in the upgrade dialog — an interest
    *  signal, fired the moment the toggle changes, before Continue is ever
    *  pressed. Separate from `pro_continue_clicked` so the funnel can tell

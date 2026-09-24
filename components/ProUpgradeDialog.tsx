@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { Dialog } from "@/components/Dialog";
 import { SelectTile } from "@/components/Controls";
 import { CookPilotLoginForm } from "@/components/CookPilotAuth";
 import { CheckIcon, CrownIcon, ICON_SIZE, XIcon } from "@/components/icons";
-import { track } from "@/lib/analytics";
+import { track, type ProDeclineReason } from "@/lib/analytics";
+import {
+  loadProDeclineAskedOnAccount,
+  markProDeclineAsked,
+  proDeclineAskedOnDevice,
+} from "@/lib/proDeclineAsked";
 import { PRO_BENEFITS } from "@/lib/proUpgradeCopy";
 import {
   PRO_PRICE_FALLBACKS,
@@ -22,6 +27,14 @@ const PRO_CYCLE_LABEL: Record<ProBillingCycle, string> = {
 // Display order of the plan tiles — Monthly always first, whichever is selected.
 const PRO_PLAN_CYCLES: ProBillingCycle[] = ["monthly", "annual"];
 
+/** The one-tap answers to "Not upgrading today?", in display order. */
+const DECLINE_REASONS: { reason: ProDeclineReason; label: string }[] = [
+  { reason: "too_expensive", label: "Too expensive" },
+  { reason: "no_more_subscriptions", label: "I don't want another subscription" },
+  { reason: "free_is_enough", label: "Free does what I need" },
+  { reason: "just_looking", label: "Just looking for now" },
+];
+
 /**
  * The one Pro upsell screen in the app — one dialog, start to finish.
  *
@@ -36,6 +49,12 @@ const PRO_PLAN_CYCLES: ProBillingCycle[] = ["monthly", "annual"];
  * The sign-in step embeds `CookPilotLoginForm` (the same form
  * `CookPilotLoginDialog` uses) rather than reimplementing email/password/
  * Google/Apple sign-in here.
+ *
+ * Closing from the plan step, before Continue was ever pressed, turns the
+ * dialog into one question: why not upgrade today. A tap on an answer records it
+ * and closes; closing again closes for real. It never follows the sign-in
+ * step (that is sign-in friction, not a no to the price), and it is asked once
+ * per person ever (lib/proDeclineAsked.ts).
  */
 export function ProUpgradeDialog({
   onClose,
@@ -64,10 +83,36 @@ export function ProUpgradeDialog({
   benefits?: string[];
   ctaLabel?: string;
 }) {
-  const [step, setStep] = useState<"plan" | "signin">("plan");
+  const [step, setStep] = useState<"plan" | "signin" | "decline">("plan");
   const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>("monthly");
   const [pendingCycle, setPendingCycle] = useState<ProBillingCycle | null>(null);
   const [formBusy, setFormBusy] = useState(false);
+  const uid = cookPilotUser?.uid ?? null;
+  // Whether this account has been asked on any device. Null until read, and
+  // the question waits for the answer: closing before it arrives just closes.
+  const [askedOnAccount, setAskedOnAccount] = useState<{ uid: string | null; asked: boolean } | null>(null);
+
+  useEffect(() => {
+    if (!uid) {
+      setAskedOnAccount({ uid: null, asked: false });
+      return;
+    }
+    let alive = true;
+    loadProDeclineAskedOnAccount(uid)
+      .then((asked) => {
+        if (!alive) return;
+        setAskedOnAccount({ uid, asked });
+        // Asked here while signed out, now signed in: carry it to the account
+        // so their other devices know.
+        if (!asked && proDeclineAskedOnDevice()) void markProDeclineAsked(uid);
+      })
+      .catch(() => {
+        if (alive) setAskedOnAccount({ uid, asked: true });
+      });
+    return () => {
+      alive = false;
+    };
+  }, [uid]);
 
   function selectCycle(cycle: ProBillingCycle) {
     if (cycle === selectedCycle) return;
@@ -87,12 +132,32 @@ export function ProUpgradeDialog({
     setStep("signin");
   }
 
+  function handleClose() {
+    const mayAsk =
+      askedOnAccount !== null &&
+      askedOnAccount.uid === uid &&
+      !askedOnAccount.asked &&
+      !proDeclineAskedOnDevice();
+    if (step === "plan" && !pendingCycle && !busy && mayAsk) {
+      void markProDeclineAsked(uid);
+      track("pro_decline_asked", {});
+      setStep("decline");
+      return;
+    }
+    onClose();
+  }
+
+  function answerDecline(reason: ProDeclineReason) {
+    track("pro_decline_answered", { reason });
+    onClose();
+  }
+
   const closeDisabled = busy || formBusy;
   const savingsPercent = proAnnualSavingsPercent();
 
   return (
     <Dialog
-      onClose={onClose}
+      onClose={handleClose}
       closeDisabled={closeDisabled}
       labelledBy="pro-upgrade-title"
       className="fixed inset-0 z-[var(--z-dialog)] flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
@@ -104,12 +169,33 @@ export function ProUpgradeDialog({
         className="icon-close-btn absolute right-3 top-3"
         aria-label="Close"
         disabled={closeDisabled}
-        onClick={onClose}
+        onClick={handleClose}
       >
         <XIcon size={ICON_SIZE.md} />
       </button>
 
-      {step === "plan" ? (
+      {step === "decline" ? (
+        <>
+          <div className="pr-8">
+            <h2 id="pro-upgrade-title" className="text-cp-dialog-title font-extrabold tracking-tight">
+              Not upgrading today?
+            </h2>
+            <p className="mt-1 text-cp-body text-ink-soft">Tell us why in one tap. It helps us make RecipePrinter better.</p>
+          </div>
+          <div className="flex flex-col gap-cp-2">
+            {DECLINE_REASONS.map(({ reason, label }) => (
+              <button
+                key={reason}
+                type="button"
+                className="btn btn-secondary w-full"
+                onClick={() => answerDecline(reason)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : step === "plan" ? (
         <>
           <div className="flex items-center gap-2 pr-8">
             {/* Trailing on the mobile sheet (below `sm`, the same breakpoint
