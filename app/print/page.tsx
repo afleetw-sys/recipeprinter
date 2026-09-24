@@ -2616,11 +2616,11 @@ export default function PrintPage() {
   // Resumes checkout once an account exists, for a cook who chose a Pro plan
   // and was then sent through a phone's sign-in redirect — which reloads the
   // page and would otherwise lose the plan they already chose inside
-  // `ProUpgradeDialog`. A same-tab sign-in (popup or email/password) never
-  // reaches this effect at all: the dialog calls `onChoose` itself the
-  // moment `CookPilotLoginForm` reports success, with no reload in between.
-  // No project to wait on here, unlike the save intent above — just an
-  // account.
+  // `ProUpgradeDialog`. A same-tab sign-in (popup or email/password) reaches
+  // here too, but by then the dialog's own `onChoose` has already run
+  // `continueProCheckout`, which spends the intent, so there is nothing left
+  // to take. Either way checkout waits in `pendingProCheckout` until this
+  // page's RevenueCat identity is the account (see the effect below it).
   useEffect(() => {
     if (!cookPilotUser) return;
     const intent = takeProUpgradeIntent();
@@ -2881,6 +2881,29 @@ export default function PrintPage() {
    *  that's already been saved once keeps saving through a purchase, but
    *  one that never was doesn't get its first save from a purchase alone. */
   function continueProCheckout(plan: ProPlan, trigger: string = proUpgradeTrigger) {
+    // The choice is being acted on now: a stored intent must not start it a
+    // second time when the sign-in that just happened reaches the effect above.
+    forgetProUpgradeIntent();
+    setPendingProCheckout({ plan, trigger });
+  }
+
+  // Checkout for a chosen plan, once this page's RevenueCat identity IS the
+  // signed-in account. Right after signing in (inside the dialog, or back from
+  // a phone's redirect) it is still the anonymous id, or nothing, until
+  // `identifyRecipePrinterCustomer` resolves, and starting then bought Pro for
+  // the anonymous customer instead of the account. Runs from an effect so it
+  // uses this render's `purchaseProAndContinue`, with the resolved identity and
+  // that account's own entitlements.
+  const [pendingProCheckout, setPendingProCheckout] = useState<{ plan: ProPlan; trigger: string } | null>(null);
+  useEffect(() => {
+    if (!pendingProCheckout || !cookPilotUser || revenueCatUserId !== cookPilotUser.uid) return;
+    setPendingProCheckout(null);
+    startProCheckout(pendingProCheckout.plan, pendingProCheckout.trigger);
+    // `startProCheckout` is rebuilt every render; what it reads is these.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingProCheckout, cookPilotUser?.uid, revenueCatUserId]);
+
+  function startProCheckout(plan: ProPlan, trigger: string) {
     // Covers checkout itself being torn down by a reload (a bank redirect, 3-D
     // Secure) the same way `rememberProUpgradeIntent` covers the sign-in step
     // before it — see that function's doc comment. Cleared the moment
@@ -6025,6 +6048,7 @@ export default function PrintPage() {
             // unrelated flow (e.g. pressing Save) would surprise-launch a
             // checkout for a plan the cook never actually committed to.
             forgetProUpgradeIntent();
+            setPendingProCheckout(null);
             setShowProUpgradeDialog(false);
           }}
           onSignInRequired={handleProSignInRequired}

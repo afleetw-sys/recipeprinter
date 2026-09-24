@@ -103,14 +103,20 @@ export function usePremiumTemplatePurchase({
   }
 
   const hasItems = (items?.length ?? 0) > 0;
+  // Signed out, gated on having something to print: that path only reads (or
+  // mints locally) the anonymous id and does not configure the SDK, so no
+  // RevenueCat customer exists until there's a purchase, a claim, or a login.
+  // Signed in there is already a login, so the account's identity resolves
+  // even on an empty page. It used to wait for items too, which left a
+  // signed-in cook on an empty /print unable to buy Pro at all ("Purchases
+  // aren't ready yet"), since checkout needs this identity.
+  const wantsIdentity = hasItems || Boolean(cookPilotUser);
 
   useEffect(() => {
-    // Gated on having something to print. This only reads (or mints locally)
-    // the anonymous id — it does not configure the SDK, so no RevenueCat
-    // customer exists until there's a purchase, a claim, or a login. Wait for
-    // Firebase's initial auth restore first so a signed-in browser does not
-    // briefly load anonymous entitlements and mark owned templates as locked.
-    if (!hasItems || !cookPilotAuthReady) return;
+    // Wait for Firebase's initial auth restore first so a signed-in browser
+    // does not briefly load anonymous entitlements and mark owned templates
+    // as locked.
+    if (!wantsIdentity || !cookPilotAuthReady) return;
 
     const requestId = identityRequestRef.current + 1;
     identityRequestRef.current = requestId;
@@ -160,8 +166,10 @@ export function usePremiumTemplatePurchase({
     return () => {
       cancelled = true;
     };
-    // Keyed on WHETHER there is anything to print, not on the item list, and on
-    // the uid rather than the User object.
+    // Keyed on WHETHER there is anything to print (folded into
+    // `wantsIdentity`, which a signed-in cook holds true regardless, so items
+    // arriving later don't identify a second time), not on the item list, and
+    // on the uid rather than the User object.
     //
     // `items` is a useMemo that produces a new array on every queue change, and
     // the effect only ever asked it one question: is it empty? So every
@@ -171,7 +179,7 @@ export function usePremiumTemplatePurchase({
     // Firebase hands `onAuthStateChanged` a fresh one on every token refresh
     // (roughly hourly), so an account that hadn't changed re-ran this too.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cookPilotAuthReady, cookPilotUser?.uid, hasItems]);
+  }, [cookPilotAuthReady, cookPilotUser?.uid, wantsIdentity]);
 
   useEffect(() => {
     if (!revenueCatUserId) return;

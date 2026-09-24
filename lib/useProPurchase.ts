@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { track, truncateReason } from "@/lib/analytics";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import {
   hasProEntitlement,
+  loadRecipePrinterCustomerInfo,
   purchaseRecipePrinterPro,
   waitForProEntitlement,
 } from "@/lib/recipePrinterPurchases";
@@ -58,6 +59,10 @@ export function useProPurchase({
   clearToast,
 }: UseProPurchaseOptions) {
   const [proBusy, setProBusy] = useState(false);
+  // State lags a render behind; this doesn't. Two starts in the same tick (a
+  // sign-in that both calls `onChoose` and resumes a stored intent) must not
+  // open two checkouts.
+  const inFlightRef = useRef(false);
 
   /** Buys Pro, then hands control back to `onSettled` with the outcome —
    *  called for every ending (success, cancel, or failure), never just the
@@ -77,14 +82,28 @@ export function useProPurchase({
       return;
     }
 
+    if (inFlightRef.current) return;
     if (hasProEntitlement(customerInfo)) {
       onSettled("already-active");
       return;
     }
 
+    inFlightRef.current = true;
     setProBusy(true);
     clearToast();
     try {
+      // Ask RevenueCat, not the last answer we were handed: that one can be
+      // stale, most dangerously right after a one-month purchase whose
+      // webhook grant landed after `waitForProEntitlement` stopped looking,
+      // where buying again would charge for a second month. A failed read is
+      // no answer, so checkout goes ahead exactly as it did before.
+      const fresh = await loadRecipePrinterCustomerInfo(revenueCatUserId).catch(() => null);
+      if (fresh && hasProEntitlement(fresh)) {
+        acceptCustomerInfo(fresh);
+        onSettled("already-active");
+        return;
+      }
+
       track("purchase_started", {
         product: "pro",
         cycle,
@@ -116,7 +135,9 @@ export function useProPurchase({
       }
 
       if (!hasProEntitlement(settledInfo)) {
-        showErrorToast("Your purchase went through, but Pro isn't ready yet. Wait a moment, then try again.");
+        // Not "try again": buying again is exactly what must not happen here.
+        // The fresh read above now catches the grant when it lands.
+        showErrorToast("Your purchase went through. Pro can take a minute to switch on, so reload the page shortly.");
         onSettled("failed");
         return;
       }
@@ -135,6 +156,7 @@ export function useProPurchase({
       showErrorToast(friendlyPurchaseSetupError(error));
       onSettled("failed");
     } finally {
+      inFlightRef.current = false;
       setProBusy(false);
     }
   }

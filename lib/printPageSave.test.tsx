@@ -135,15 +135,38 @@ vi.mock("@/lib/useDeckScroller", () => ({
     goToDeckElement: vi.fn(),
   }),
 }));
-vi.mock("@/lib/usePremiumTemplatePurchase", () => ({
-  usePremiumTemplatePurchase: () => ({
-    revenueCatUserId: null,
-    customerInfo: null,
-    customerInfoStatus: "idle",
-    acceptCustomerInfo: vi.fn(),
-    selectedPremiumTemplate: null,
-  }),
-}));
+/** The page's RevenueCat identity, which the real hook resolves asynchronously
+    after sign-in. A store, so changing it re-renders the page like the hook's
+    own state change would. */
+const rcIdentity = vi.hoisted(() => {
+  const listeners = new Set<() => void>();
+  let userId: string | null = null;
+  return {
+    get: () => userId,
+    set(next: string | null) {
+      userId = next;
+      listeners.forEach((listener) => listener());
+    },
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+});
+vi.mock("@/lib/usePremiumTemplatePurchase", async () => {
+  const react = await import("react");
+  return {
+    usePremiumTemplatePurchase: () => ({
+      revenueCatUserId: react.useSyncExternalStore(rcIdentity.subscribe, rcIdentity.get, rcIdentity.get),
+      customerInfo: null,
+      customerInfoStatus: "idle",
+      acceptCustomerInfo: vi.fn(),
+      selectedPremiumTemplate: null,
+    }),
+  };
+});
 vi.mock("@/lib/useCookbookPurchase", () => ({
   useCookbookPurchase: () => ({
     cookbookPrice: null,
@@ -153,8 +176,15 @@ vi.mock("@/lib/useCookbookPurchase", () => ({
     purchaseCookbookAndContinue: vi.fn(),
   }),
 }));
+/** Every checkout the page started, with the identity it was started for. */
+const proCheckouts = vi.hoisted(() => [] as Array<{ userId: string | null; cycle: string }>);
 vi.mock("@/lib/useProPurchase", () => ({
-  useProPurchase: () => ({ proBusy: false, purchaseProAndContinue: vi.fn() }),
+  useProPurchase: (options: { revenueCatUserId: string | null }) => ({
+    proBusy: false,
+    purchaseProAndContinue: (plan: { cycle: string }) => {
+      proCheckouts.push({ userId: options.revenueCatUserId, cycle: plan.cycle });
+    },
+  }),
 }));
 
 // ---- components that only paint -------------------------------------------
@@ -188,7 +218,14 @@ vi.mock("@/components/CookbookWelcomeDialog", () => ({ CookbookWelcomeDialog: nu
 vi.mock("@/components/CookbookReadyDialog", () => ({ CookbookReadyDialog: nullComponent }));
 vi.mock("@/components/ImagePicker", () => ({ ImagePicker: nullComponent }));
 vi.mock("@/components/RecipeLoadingState", () => ({ RecipeLoadingState: nullComponent }));
-vi.mock("@/components/ProUpgradeDialog", () => ({ ProUpgradeDialog: nullComponent }));
+/** The open Pro dialog's latest props, or null while it is closed. */
+const proDialog = vi.hoisted(() => ({ props: null as null | Record<string, (...args: unknown[]) => void> }));
+vi.mock("@/components/ProUpgradeDialog", () => ({
+  ProUpgradeDialog: (props: Record<string, (...args: unknown[]) => void>) => {
+    proDialog.props = props;
+    return null;
+  },
+}));
 vi.mock("@/components/print/MobileStructureSheet", () => ({ MobileStructureSheet: nullComponent }));
 vi.mock("@/components/print/MobileSheet", () => ({ MobileSheet: nullComponent }));
 vi.mock("@/components/print/PrintConfigPanel", () => ({
@@ -280,6 +317,9 @@ beforeEach(() => {
   localStorage.clear();
   nav.search = "";
   authStore.set({ user: null, ready: true, redirectError: null });
+  rcIdentity.set(null);
+  proCheckouts.length = 0;
+  proDialog.props = null;
   io.savePrintProject.mockReset().mockImplementation(async (project: { revision?: number }) => ({
     ...project,
     revision: Number(project.revision ?? 0) + 1,
@@ -670,5 +710,86 @@ describe("a different account", () => {
     act(() => authStore.set({ user: null }));
     await settle(50);
     expect(saveControlText()).not.toContain("Saved");
+  });
+});
+
+describe("buying Pro right after signing in", () => {
+  const MONTHLY = { cycle: "monthly", autoRenew: true };
+
+  async function openProDialog() {
+    await act(async () => {
+      Array.from(document.querySelectorAll("button"))
+        .find((button) => button.textContent?.trim() === "Upgrade to Pro")!
+        .click();
+    });
+    expect(proDialog.props).not.toBeNull();
+  }
+
+  it("signing in inside the dialog starts one checkout, for the account, once its identity resolves", async () => {
+    seedRecipes(1);
+    rcIdentity.set("$RCAnonymousID:guest");
+    await renderPrintPage();
+    await settle(500);
+    await openProDialog();
+
+    // Signed out: the dialog stores the plan, then turns into sign-in.
+    await act(async () => proDialog.props!.onSignInRequired(MONTHLY));
+    // Sign-in succeeds, and the dialog calls onChoose at once, as
+    // CookPilotLoginForm's onAuthenticated does.
+    signIn();
+    await act(async () => proDialog.props!.onChoose(MONTHLY));
+    await settle(500);
+    // Still the anonymous customer: nothing may be bought yet.
+    expect(proCheckouts).toEqual([]);
+
+    act(() => rcIdentity.set("alice"));
+    await settle(500);
+    expect(proCheckouts).toEqual([{ userId: "alice", cycle: "monthly" }]);
+  });
+
+  it("back from a phone's sign-in redirect, checkout waits for the account's identity", async () => {
+    seedRecipes(1);
+    const first = await renderPrintPage();
+    await settle(500);
+    await openProDialog();
+    await act(async () => proDialog.props!.onSignInRequired(MONTHLY));
+    first.unmount();
+
+    signIn();
+    await renderPrintPage();
+    await settle(500);
+    expect(proCheckouts).toEqual([]);
+
+    act(() => rcIdentity.set("alice"));
+    await settle(500);
+    expect(proCheckouts).toEqual([{ userId: "alice", cycle: "monthly" }]);
+  });
+
+  it("a signed-in cook goes straight to checkout", async () => {
+    seedRecipes(1);
+    signIn();
+    rcIdentity.set("alice");
+    await renderPrintPage();
+    await settle(500);
+    await openProDialog();
+    await act(async () => proDialog.props!.onChoose(MONTHLY));
+    await settle(50);
+    expect(proCheckouts).toEqual([{ userId: "alice", cycle: "monthly" }]);
+  });
+
+  it("closing the dialog while waiting drops the plan", async () => {
+    seedRecipes(1);
+    rcIdentity.set("$RCAnonymousID:guest");
+    await renderPrintPage();
+    await settle(500);
+    await openProDialog();
+    await act(async () => proDialog.props!.onSignInRequired(MONTHLY));
+    signIn();
+    await act(async () => proDialog.props!.onChoose(MONTHLY));
+    await act(async () => proDialog.props!.onClose());
+
+    act(() => rcIdentity.set("alice"));
+    await settle(500);
+    expect(proCheckouts).toEqual([]);
   });
 });
