@@ -180,6 +180,20 @@ describe("package resolution", () => {
     }
   });
 
+  it("never charges for a cookbook the webhook couldn't tie to its project", async () => {
+    sdk.offerings = offeringsWith("cookbook", [fakePackage("cookbook", "cookbook")]);
+    const purchases = await freshModule();
+    sdk.configure.mockImplementationOnce(() => {
+      sdk.instance = makeInstance();
+      sdk.instance.setAttributes.mockRejectedValueOnce(new Error("network"));
+      return sdk.instance;
+    });
+    await expect(
+      purchases.purchaseRecipePrinterCookbook({ userId: "u1", projectId: "book-1", discountEligible: false }),
+    ).rejects.toThrow("network");
+    expect(sdk.instance?.purchase).not.toHaveBeenCalled();
+  });
+
   it("refuses the cookbook when neither product is offered", async () => {
     sdk.offerings = offeringsWith("cookbook", [fakePackage("cookbook", "pro_monthly")]);
     const purchases = await freshModule();
