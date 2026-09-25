@@ -4,6 +4,7 @@ import {
   adaptCookPilotRecipes,
   sourceUrlFromResponse,
   withoutWebsiteDescription,
+  sourceNotesFromResponse,
 } from "@/lib/cookpilot";
 
 // A minimal CookPilot RecipeData (section-based) with one ingredient and one step.
@@ -168,5 +169,30 @@ describe("website descriptions", () => {
     });
     expect(out).not.toHaveProperty("description");
     expect(out.note).toBe("Double the dill.");
+  });
+});
+
+describe("a source's notes", () => {
+  // A website's or creator's notes are their writing, which RecipePrinter keeps none of. Only pasted
+  // text (the cook's own input) takes them, in `parseText`; the generic adapter never does.
+  const withNotes = {
+    recipe: {
+      title: "Loaf",
+      notes: "Keeps for three days.",
+      ingredientSections: [{ title: null, ingredients: [{ name: "flour", amount: "500", unit: "g" }] }],
+      instructionSections: [],
+    },
+  };
+
+  it("are not taken into an imported recipe's note", () => {
+    expect(adaptCookPilotRecipe(withNotes)?.note).toBeUndefined();
+  });
+
+  it("are readable by a caller that imports the cook's own text", () => {
+    expect(sourceNotesFromResponse(withNotes)).toBe("Keeps for three days.");
+    expect(sourceNotesFromResponse({ data: withNotes })).toBe("Keeps for three days.");
+    expect(sourceNotesFromResponse({ recipe: { title: "No notes" } })).toBeUndefined();
+    // The image parser's envelope.
+    expect(sourceNotesFromResponse({ recipeJSON: JSON.stringify(withNotes.recipe) })).toBe("Keeps for three days.");
   });
 });

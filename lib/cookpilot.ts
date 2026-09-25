@@ -128,6 +128,31 @@ export function sourceUrlFromResponse(body: unknown): string | undefined {
 }
 
 /**
+ * The notes CookPilot read out of the source ("Notes: keeps for three days"), or undefined.
+ *
+ * Deliberately NOT part of `adaptCookPilotRecipe`: a website's or a creator's notes are their writing,
+ * which we keep none of (see `withoutWebsiteDescription`). Only a caller importing the cook's own
+ * input — pasted text or a photo — takes these into the recipe's `note`. Never a URL import.
+ */
+export function sourceNotesFromResponse(body: unknown): string | undefined {
+  if (!body || typeof body !== "object") return undefined;
+  return asString(recipeNodeFrom(body as AnyRecord)?.notes);
+}
+
+/** The recipe inside any of CookPilot's envelopes: { recipe }, { data: { recipe } }, a `recipeJSON`
+    string (the image parser), or raw RecipeData. */
+function recipeNodeFrom(root: AnyRecord): AnyRecord | null {
+  const fromJson = parseRecipeJSON(
+    (root.recipeJSON as string | undefined) ??
+      ((root.data as AnyRecord)?.recipeJSON as string | undefined),
+  );
+  return (root.recipe as AnyRecord) ??
+    ((root.data as AnyRecord)?.recipe as AnyRecord) ??
+    fromJson ??
+    root;
+}
+
+/**
  * Adapts CookPilot's parser output into a flat `Recipe`. `body` is the parsed
  * JSON from CookPilot; `sourceUrl` is the original import URL when known.
  */
@@ -135,18 +160,7 @@ export function adaptCookPilotRecipe(body: unknown, sourceUrl?: string): Recipe 
   if (!body || typeof body !== "object") return null;
   const root = body as AnyRecord;
 
-  // The image parser can return the recipe as a JSON string in `recipeJSON`.
-  const fromJson = parseRecipeJSON(
-    (root.recipeJSON as string | undefined) ??
-      ((root.data as AnyRecord)?.recipeJSON as string | undefined),
-  );
-
-  // Unwrap the common envelopes: { recipe }, { data: { recipe } }, raw RecipeData.
-  const data =
-    (root.recipe as AnyRecord) ??
-    ((root.data as AnyRecord)?.recipe as AnyRecord) ??
-    fromJson ??
-    root;
+  const data = recipeNodeFrom(root);
   if (!data || typeof data !== "object") return null;
 
   // Already flat (RecipePrinter shape)?

@@ -224,13 +224,13 @@ describe("parseUrlAll — links answered without a parse", () => {
   });
 });
 
-describe("parseText — reading the paste ourselves", () => {
-  // The text is already in the browser. Every one of these cases used to end
-  // in an error telling the cook to go add headings to a recipe they had
-  // already typed out correctly.
+describe("parseText — CookPilot reads the paste", () => {
+  // Pasted text is read by CookPilot's shared parser only. The local fallback
+  // that used to read it here was deleted once the shared parser handled every
+  // case it did (CookPilot: functions/src/__tests__/recipePrinterTextFallback.test.ts).
   const PASTE = "Banana Bread\n2 cups flour\n1, Bake it.";
 
-  it("prefers CookPilot when it finds a recipe", async () => {
+  it("returns the recipe CookPilot found", async () => {
     const recipe = await parseText(PASTE);
     expect(recipe.title).toBe("Fallback Borscht");
   });
@@ -250,24 +250,40 @@ describe("parseText — reading the paste ourselves", () => {
     expect(recipe.sourceUrl).toBeUndefined();
   });
 
-  it("reads the text locally when CookPilot finds nothing in it", async () => {
-    callable.mockResolvedValue({ data: {} });
+  it("keeps the paste's notes section as the recipe's note", async () => {
+    callable.mockResolvedValue({
+      data: { recipe: { ...COOKPILOT_RESULT.data.recipe, notes: "Keeps for three days." } },
+    });
 
     const recipe = await parseText(PASTE);
 
-    expect(recipe.title).toBe("Banana Bread");
-    expect(recipe.ingredients[0].raw).toBe("2 cups flour");
-    expect(recipe.instructions[0].text).toBe("Bake it.");
+    expect(recipe.note).toBe("Keeps for three days.");
   });
 
-  it("reads the text locally when the backend is unreachable", async () => {
+  it("carries CookPilot's total time", async () => {
+    callable.mockResolvedValue({
+      data: { recipe: { ...COOKPILOT_RESULT.data.recipe, totalTime: "2 hours" } },
+    });
+
+    const recipe = await parseText(PASTE);
+
+    expect(recipe.totalTime).toBe("2 hours");
+  });
+
+  it("says there is no recipe when CookPilot finds none", async () => {
+    callable.mockResolvedValue({ data: {} });
+
+    await expect(parseText("Hey there\nAre you free on Thursday?")).rejects.toThrow(
+      /couldn't pick a recipe/i,
+    );
+  });
+
+  it("does not blame the text when the backend is unreachable", async () => {
     callable.mockRejectedValue(
       Object.assign(new Error("App Check token is invalid"), { code: "functions/unauthenticated" }),
     );
 
-    const recipe = await parseText(PASTE);
-
-    expect(recipe.title).toBe("Banana Bread");
+    await expect(parseText(PASTE)).rejects.not.toThrow(/couldn't pick a recipe/i);
   });
 
   it("does not route around the import limit", async () => {
@@ -280,20 +296,12 @@ describe("parseText — reading the paste ourselves", () => {
     await expect(parseText(PASTE)).rejects.toThrow(/import limit/i);
   });
 
-  it("still says no when there is no recipe in the text", async () => {
-    callable.mockResolvedValue({ data: {} });
+  it("sends the text with fractions normalized", async () => {
+    await parseText("Shortbread\n1½ cups flour");
 
-    await expect(parseText("Hey there\nAre you free on Thursday?")).rejects.toThrow(
-      /couldn't pick a recipe/i,
+    expect(callable).toHaveBeenLastCalledWith(
+      expect.objectContaining({ caption: "Shortbread\n1 1/2 cups flour" }),
     );
-  });
-
-  it("normalizes fractions before reading locally", async () => {
-    callable.mockResolvedValue({ data: {} });
-
-    const recipe = await parseText("Shortbread\n1½ cups flour");
-
-    expect(recipe.ingredients[0].raw).toBe("1 1/2 cups flour");
   });
 });
 
@@ -406,6 +414,22 @@ describe("normalizeFractions", () => {
     for (const glyph of ["½", "⅓", "⅔", "¼", "¾", "⅕", "⅙", "⅛", "⅜", "⅝", "⅞"]) {
       expect(normalizeFractions(`${glyph} cup`)).toMatch(/^\d+\/\d+ cup$/);
     }
+  });
+});
+
+describe("parseImages — a photographed card's notes", () => {
+  afterEach(() => callable.mockReset());
+
+  it("keeps the card's notes as the recipe's note", async () => {
+    callable.mockResolvedValue({
+      data: {
+        recipeJSON: JSON.stringify({ ...COOKPILOT_RESULT.data.recipe, notes: "Best eaten the same day." }),
+      },
+    });
+
+    const recipe = await parseImages(["data:image/jpeg;base64,AAAA"]);
+
+    expect(recipe.note).toBe("Best eaten the same day.");
   });
 });
 
