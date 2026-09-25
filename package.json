@@ -16,6 +16,7 @@
     "test:auth": "npx firebase-tools@14.27.0 --config firebase.auth-test.json emulators:exec --only auth --project demo-recipeprinter \"vitest run --config vitest.auth.config.ts\"",
     "test:rules": "npx firebase-tools@14.27.0 --config firebase.rules-test.json emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "pdf:dev": "node scripts/pdf-renderer-dev.mjs",
     "pdf:stress": "node scripts/pdf-export-stress.mjs",
     "logo:build": "node scripts/build-logo-assets.mjs",
@@ -34,6 +35,7 @@
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.1",
+    "@playwright/test": "^1.63.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^20",

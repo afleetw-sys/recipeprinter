@@ -37,3 +37,7 @@ scratch-export.pdf
 # scratch output for local scripts (pdf:stress, diagnostic renders, etc.) —
 # multi-MB/GB binaries, never meant to be committed
 tmp/
+
+# Playwright (npm run test:e2e)
+/test-results/
+/playwright-report/
