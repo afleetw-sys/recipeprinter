@@ -79,3 +79,11 @@ jobs:
 
       - name: Security rules
         run: npm run test:rules
+
+      # The real Firebase Auth SDK against the Auth emulator. Rides in this job
+      # because it already has the emulator tooling installed; the Auth emulator
+      # itself needs no JVM. It existed for a long time without running
+      # anywhere but a laptop, which is the same failure the comment at the
+      # top of this file describes.
+      - name: Auth flows
+        run: npm run test:auth
