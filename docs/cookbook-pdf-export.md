@@ -39,9 +39,13 @@ CookbookReadyDialog  →  lib/cookbookPdfExport.ts
 ## Running it locally
 
 ```bash
-npm run pdf:dev      # renderer on :8899, in a second terminal
-npm run dev
+npm run dev          # app on :3000 AND the renderer on :8899
 ```
+
+`npm run dev` (`scripts/dev.mjs`) starts the renderer alongside Next and stops
+it with Next. If something is already listening on :8899 it reuses that
+instead. `npm run dev:app` is plain `next dev`; `npm run pdf:dev` is the
+renderer alone.
 
 and in `.env.local`:
 
