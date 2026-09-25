@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SAVE_FAILURES, SAVE_STATUS_LABEL } from "@/components/AccountControl";
-import { fileProjectLocally } from "@/lib/localProjects";
 import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { PrintDialogs } from "@/components/PrintDialogs";
@@ -2339,30 +2338,29 @@ export default function PrintPage() {
   }
 
   /**
-   * Going home: navigate right away, then put this project away and start a
-   * fresh one behind that.
+   * Going home: navigate, and let the homepage put this project away.
    *
-   * The filing work — `fileProjectLocally` re-serializes the WHOLE local
-   * shelf, up to `MAX_LOCAL_PROJECTS` projects with their recipes inline (see
-   * the comment on that constant) — used to run before `goHome()`, on the
-   * reasoning that clearing the desk had to be gated on the write succeeding.
-   * That reasoning still holds, but blocking the navigation on it does not:
-   * a click on the logo froze on however large the shelf had grown, when nothing
-   * about leaving actually depends on the write finishing first.
+   * This page does not clear itself on the way out, on purpose. `router.push`
+   * returns straight away, but Next keeps THIS page on screen until "/" has
+   * loaded, so anything cleared here re-renders /print as an emptied workspace
+   * for the whole wait. That flash is what the cook sees as the recipes being
+   * deleted. It survived two fixes: a "Going home…" loading state (81567ff),
+   * which covered the flash with a wait, and a `setTimeout(0)` (b663159),
+   * which still fires long before the navigation lands.
    *
-   * So navigation goes first, and the write/clear/save follow in a `setTimeout`
-   * right after — off the paint that takes you to "/", not off the safety
-   * gate. Clearing still only happens once the write reports success: a
-   * failed write (private mode, quota) leaves the working copy exactly where
-   * it was, sessionStorage and all, and the homepage's own recovery has
-   * nothing to do because there was never a `/print` reload to recover from.
+   * The homepage already does the filing on arrival (see the release effect
+   * in components/PrinterWorkspace.tsx): it files a printable project to the
+   * device shelf and only then clears the queue and meta. That runs after /print
+   * has unmounted, and `useQueue`/`useProjectMeta` flush their pending writes
+   * on unmount, so it reads exactly what was on screen.
    *
-   * The ACCOUNT copy is fired and not awaited, same as before — it is not
-   * load-bearing, the device copy already made this safe, and a signed-in
-   * cook ends up with both copies regardless of timing.
+   * What the homepage can't do is the ACCOUNT save, because it is kept free of
+   * Firebase. So that one is fired here, only when the cook asked for this mode
+   * to be kept (`autosaveEnabledForCurrentMode`: saved at least once), and not
+   * awaited. It targets the project's own id, the same document autosave has
+   * been writing, and a client navigation doesn't cancel the request.
    */
-  /** Re-entrancy guard: one click on the logo should file the project once,
-      not once per click before navigation actually leaves. */
+  /** Re-entrancy guard: one click on the logo should navigate once. */
   const leavingHomeRef = useRef(false);
 
   /**
@@ -2384,51 +2382,11 @@ export default function PrintPage() {
    */
   function handleNavigateHome() {
     if (leavingHomeRef.current) return;
+    leavingHomeRef.current = true;
 
     const printable = queue.items.some((item) => item.status === "ready" && item.recipe);
-
-    leavingHomeRef.current = true;
     goHome();
-    if (!printable) return;
-
-    // Filing the project — and the account save riding on it — happens after
-    // navigation has actually kicked off, so the (possibly large) shelf
-    // rewrite in `fileProjectLocally` never sits between a click and the page
-    // leaving. See the comment above this function for why blocking on it was
-    // never required for safety in the first place.
-    window.setTimeout(() => {
-      // Files under the project this content already is, if it has been
-      // printed before — so the account save below is pointed at the same
-      // document rather than creating its own copy of it.
-      const filed = fileProjectLocally(queue.items, projectMeta.meta);
-      if (filed) projectMeta.setProjectId(filed);
-      /**
-       * Leaving does not put a draft in the account.
-       *
-       * This used to be `cookPilotUser && filed`, so being signed in was the
-       * whole condition: print a few cards, click the logo, and a copy landed
-       * in the profile of someone who never asked for one. Signing in is how
-       * you reach your saved work, not a standing instruction to keep
-       * everything you touch, and a library that fills itself with every
-       * Tuesday's dinner prints is a log rather than a library.
-       *
-       * `autosaveEnabledForCurrentMode` is the existing answer to "did the
-       * cook ask us to keep THIS" — this mode of this project has been saved
-       * at least once. Reusing it rather than restating the condition keeps
-       * the two from drifting apart. The local shelf below is unaffected:
-       * that is the working copy people rely on when they reopen /print, and
-       * it never leaves the device.
-       */
-      if (filed && autosaveEnabledForCurrentMode) void handleSaveProject(filed);
-
-      // Only now is the desk safe to clear — and releasing the project id is
-      // the half that makes the next import a NEW project rather than another
-      // edit of this one.
-      if (filed) {
-        queue.clear();
-        projectMeta.startNewProject();
-      }
-    }, 0);
+    if (printable && autosaveEnabledForCurrentMode) void handleSaveProject();
   }
 
   // Best-effort push to Firestore when the tab is being hidden/closed, so a
