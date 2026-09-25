@@ -1,0 +1,95 @@
+{
+  "recipe": {
+    "title": "Lemon Herb Chicken",
+    "description": null,
+    "servings": 4,
+    "prepTime": "10 min",
+    "cookTime": "25 min",
+    "totalTime": null,
+    "notes": null,
+    "imageURL": null,
+    "ingredientSections": [
+      {
+        "id": "cf5f996d-5cf6-4a19-96c3-1acfa7bdfc4e",
+        "title": null,
+        "ingredients": [
+          {
+            "id": "4488702d-59bd-460d-9b5e-31e4a2377601",
+            "name": "boneless chicken thighs",
+            "amount": "4",
+            "unit": null,
+            "notes": null
+          },
+          {
+            "id": "fa200494-554c-4166-a4c3-e6ff68139df1",
+            "name": "olive oil",
+            "amount": "2",
+            "unit": "tablespoons",
+            "notes": null
+          },
+          {
+            "id": "5032a626-84cf-4a74-820a-716486df73f2",
+            "name": "lemon",
+            "amount": "1",
+            "unit": null,
+            "notes": "zested and juiced"
+          },
+          {
+            "id": "12b739cb-d940-43de-a45d-fa72fe18604b",
+            "name": "garlic",
+            "amount": "3",
+            "unit": "cloves",
+            "notes": "minced"
+          },
+          {
+            "id": "9a87de83-3528-4b7c-8738-f0125d28f0b5",
+            "name": "chopped fresh thyme",
+            "amount": "1",
+            "unit": "tablespoon",
+            "notes": null
+          },
+          {
+            "id": "6dd6a040-ede7-45e4-a1c7-78f870e1dd70",
+            "name": "salt",
+            "amount": "1",
+            "unit": "teaspoon",
+            "notes": null
+          }
+        ]
+      }
+    ],
+    "instructionSections": [
+      {
+        "id": "8a8f4b16-ac42-4fde-8278-9bf3afaaec8a",
+        "title": null,
+        "instructions": [
+          {
+            "id": "6a1fc995-a096-4f53-9b4c-206cb2b66c25",
+            "stepNumber": 1,
+            "text": "Heat the oven to 425°F."
+          },
+          {
+            "id": "d7e1d4a7-2f1b-4303-ad06-dff4ac21238c",
+            "stepNumber": 2,
+            "text": "Toss the chicken with the oil, lemon, garlic, thyme, and salt."
+          },
+          {
+            "id": "fcb4c7ed-f85c-4fa4-a884-fb790cd27394",
+            "stepNumber": 3,
+            "text": "Roast on a sheet pan until cooked through, about 25 minutes."
+          },
+          {
+            "id": "cb9feb50-2e9e-427c-b537-bd499c3f4506",
+            "stepNumber": 4,
+            "text": "Rest for five minutes, then spoon the pan juices over the top."
+          }
+        ]
+      }
+    ],
+    "tags": [],
+    "systemTags": []
+  },
+  "parser": {
+    "source": "json-ld"
+  }
+}

@@ -2,6 +2,7 @@ import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import {
   browserLocalPersistence,
   browserSessionPersistence,
+  connectAuthEmulator,
   getAuth,
   inMemoryPersistence,
   indexedDBLocalPersistence,
@@ -9,6 +10,7 @@ import {
   type Auth,
 } from "firebase/auth";
 import { ensureAppCheck } from "./appCheck";
+import { FIREBASE_EMULATOR, useFirebaseEmulators } from "./emulators";
 
 // Initializes the same Firebase project CookPilot uses, so RecipePrinter is a
 // genuine second client of CookPilot's backend rather than a reimplementation.
@@ -42,7 +44,8 @@ export function getFirebaseApp(): FirebaseApp {
   // Initialize App Check the moment the app exists, so EVERY service obtained
   // from it — Auth, Firestore, Storage, Functions — has its requests attested.
   // No-ops on the server and after the first call (see `ensureAppCheck`).
-  ensureAppCheck(appInstance);
+  // The emulators the browser tests use do not check attestation.
+  if (!useFirebaseEmulators) ensureAppCheck(appInstance);
   return appInstance;
 }
 
@@ -79,6 +82,11 @@ export function getFirebaseAuth(): Auth {
     });
   } catch {
     authInstance = getAuth(app);
+  }
+  if (useFirebaseEmulators) {
+    connectAuthEmulator(authInstance, `http://${FIREBASE_EMULATOR.host}:${FIREBASE_EMULATOR.authPort}`, {
+      disableWarnings: true,
+    });
   }
   return authInstance;
 }

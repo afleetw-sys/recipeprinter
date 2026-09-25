@@ -89,9 +89,10 @@ jobs:
         run: npm run test:auth
 
   # The app in a real browser (Playwright), against a production build on
-  # localhost. Its own job because it builds the app and downloads Chromium.
-  # Nothing here can reach production: analytics only starts on the production
-  # hostnames, and no test talks to live Firebase, CookPilot or RevenueCat.
+  # localhost, with Firebase emulators and a CookPilot stand-in. Its own job
+  # because it builds the app and downloads Chromium. Nothing here can reach
+  # production: analytics only starts on the production hostnames, and every
+  # test fails if the browser contacts anything but localhost (e2e/guarded.ts).
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -103,6 +104,12 @@ jobs:
         with:
           node-version: 20
           cache: npm
+
+      # The Firestore and Storage emulators are JVM programs.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
 
       - run: npm ci
 
