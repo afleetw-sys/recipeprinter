@@ -12,4 +12,6 @@ export const FIREBASE_EMULATOR = {
   authPort: 9199,
   firestorePort: 8180,
   storagePort: 9299,
+  /** CookPilot's callables have no emulator; e2e/stubs/cookpilot.mjs answers them. */
+  functionsPort: 3211,
 } as const;
