@@ -575,6 +575,12 @@ export function initAnalytics(): void {
 
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   if (!key || !isProductionRuntime()) return;
+  // `/export` is only ever opened by the cookbook PDF renderer's headless
+  // Chrome on Cloud Run, never by a person. It sits under the root layout like
+  // every route, so without this each paid export (and every health-check
+  // render) stored a brand-new anonymous PostHog person with an /export
+  // pageview: a fresh browser profile every time, so never the same one twice.
+  if (window.location.pathname.startsWith("/export")) return;
 
   // From here we are committed to loading. Set the flag synchronously (before
   // the await) so events fired between now and the bundle arriving get queued
