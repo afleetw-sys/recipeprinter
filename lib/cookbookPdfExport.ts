@@ -30,13 +30,50 @@ export class CookbookPdfError extends Error {
   /** True when there was no session at all (offer "Create free account"), false
       when there was one and it didn't hold up (offer "Sign in"). */
   readonly needsAccount: boolean;
+  /** Where it failed, for `cookbook_export_failed`. The message is copy for the
+      cook and can change; this is what an alert can count on. */
+  readonly stage: CookbookExportFailureStage;
+  /** The route's HTTP status, when the failure was an answer from it. */
+  readonly status?: number;
 
-  constructor(message: string, options: { needsAuth?: boolean; needsAccount?: boolean } = {}) {
+  constructor(
+    message: string,
+    options: { stage: CookbookExportFailureStage; status?: number; needsAuth?: boolean; needsAccount?: boolean },
+  ) {
     super(message);
     this.name = "CookbookPdfError";
+    this.stage = options.stage;
+    this.status = options.status;
     this.needsAuth = options.needsAuth ?? false;
     this.needsAccount = options.needsAccount ?? false;
   }
+}
+
+/**
+ * - `sign_in`: the route wants an account or a sign-in (`needsAuth`). The cook
+ *   can fix this, so it is not by itself a sign that anything broke.
+ * - `session`: signed in, yet the route refused the token even after a refresh.
+ * - `server`: any other non-OK answer from the route, the renderer included.
+ * - `invalid_response`: an OK answer without a usable download URL.
+ * - `photos`: a browser-local photo could not be uploaded before rendering.
+ * - `no_cover`: a cover was asked for on a format that has none.
+ * - `unexpected`: anything that was not a CookbookPdfError, e.g. the request
+ *   never reaching the route at all.
+ */
+export type CookbookExportFailureStage =
+  | "sign_in"
+  | "session"
+  | "server"
+  | "invalid_response"
+  | "photos"
+  | "no_cover"
+  | "unexpected";
+
+/** What `cookbook_export_failed` records about a caught export error. Never the
+    message: it can quote the route's error body. */
+export function cookbookExportFailure(error: unknown): { stage: CookbookExportFailureStage; status?: number } {
+  if (!(error instanceof CookbookPdfError)) return { stage: "unexpected" };
+  return error.status === undefined ? { stage: error.stage } : { stage: error.stage, status: error.status };
 }
 
 /**
@@ -140,10 +177,12 @@ async function renderPdf(request: RenderRequest): Promise<RenderedPdf> {
     if (response.status === 401 && idToken) {
       throw new CookbookPdfError(
         "We couldn't confirm your sign-in. Sign out from the account menu, sign back in, and try again.",
-        { needsAuth: false, needsAccount: false },
+        { stage: "session", status: response.status, needsAuth: false, needsAccount: false },
       );
     }
     throw new CookbookPdfError(body.error ?? "The cookbook couldn't be exported.", {
+      stage: body.needsAuth ? "sign_in" : "server",
+      status: response.status,
       needsAuth: Boolean(body.needsAuth),
       needsAccount: Boolean(body.needsAccount),
     });
@@ -172,7 +211,10 @@ async function renderPdf(request: RenderRequest): Promise<RenderedPdf> {
     !Number.isSafeInteger(pageCount) ||
     pageCount < 1
   ) {
-    throw new CookbookPdfError("The cookbook renderer returned an invalid response. Try again in a moment.");
+    throw new CookbookPdfError("The cookbook renderer returned an invalid response. Try again in a moment.", {
+      stage: "invalid_response",
+      status: response.status,
+    });
   }
   return {downloadUrl, pageCount};
 }
@@ -253,6 +295,7 @@ async function materializeBookPhotos(project: PrintProject): Promise<PrintProjec
     if (error instanceof CookbookPdfError) throw error;
     throw new CookbookPdfError(
       "We couldn't prepare your photos for export. Check your connection and try again.",
+      { stage: "photos" },
     );
   }
 }
@@ -271,6 +314,7 @@ export async function assertExportPhotosAreRemote(
   if (localPhotos.length > 0) {
     throw new CookbookPdfError(
       `We couldn't prepare ${localPhotos.length === 1 ? "one photo" : `${localPhotos.length} photos`} for export. Check your connection and try again.`,
+      { stage: "photos" },
     );
   }
 }

@@ -18,6 +18,7 @@ import type {
   RecipePrintTemplate,
 } from "@/types/recipe";
 import type { FeedbackType } from "@/lib/feedback";
+import type { CookbookExportFailureStage } from "@/lib/cookbookPdfExport";
 
 /** Answers to the upgrade dialog's one-tap "Not upgrading today?" question. */
 export type ProDeclineReason =
@@ -421,6 +422,16 @@ type EventProps = {
   cookbook_export_download_started: {
     preset: CookbookPresetId;
     role: "pages" | "cover" | "package";
+  };
+  /** An export the cook asked for did not produce a file. Until this existed a
+      failed export showed the cook an error and recorded nothing, so the paid
+      feature could break with no trace but a support email. `stage` is the
+      alertable part; `sign_in` is the cook being asked to sign in, not a fault. */
+  cookbook_export_failed: {
+    preset: CookbookPresetId;
+    role: "pages" | "cover";
+    stage: CookbookExportFailureStage;
+    status?: number;
   };
   /** A failed cover was prepared without rendering the safe interior again. */
   cookbook_cover_retry_succeeded: { preset: CookbookPresetId };
