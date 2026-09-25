@@ -167,6 +167,7 @@ export function AddRecipeDialog({
       <div className="recipe-add-dialog__body">
         <ImportPanel
           commitRef={commitImportRef}
+          onSubmitted={onClose}
           hideSubmit
           showAllModes
           /* Read once per open: `Dialog` renders nothing while closed, so the
