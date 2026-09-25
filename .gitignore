@@ -41,3 +41,7 @@ tmp/
 # Playwright (npm run test:e2e)
 /test-results/
 /playwright-report/
+
+# Firebase emulator logs (browser tests, rules tests)
+firebase-debug.log
+*-debug.log
