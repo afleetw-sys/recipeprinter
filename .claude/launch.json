@@ -16,6 +16,12 @@
       "autoPort": true
     },
     {
+      "name": "pdf-renderer",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "pdf:dev"],
+      "port": 8899
+    },
+    {
       "name": "recipeprinter-prod",
       "runtimeExecutable": "sh",
       "runtimeArgs": ["-c", "NEXT_DIST_DIR=.next-preview npx next start -p 3100"],

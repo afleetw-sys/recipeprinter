@@ -19,6 +19,7 @@ import {
   type PreparedCookbookPages,
   type PreparedPdfFile,
   CookbookPdfError,
+  cookbookExportFailure,
   cookbookPdfFileName,
   downloadPreparedFile,
   prepareCookbookCover,
@@ -2990,6 +2991,7 @@ export default function PrintPage() {
         setCookbookCoverPending(pages);
       }
     } catch (error) {
+      track("cookbook_export_failed", { preset: presetId, role: "pages", ...cookbookExportFailure(error) });
       setCookbookExportError(
         error instanceof CookbookPdfError
           ? error.message
@@ -3015,12 +3017,13 @@ export default function PrintPage() {
     setCookbookExportProgress("rendering-cover");
     try {
       const cover = await prepareCookbookCover(pages, coverSheet, setCookbookExportProgress);
-      if (!cover) throw new CookbookPdfError("This format doesn't require a separate cover.");
+      if (!cover) throw new CookbookPdfError("This format doesn't require a separate cover.", { stage: "no_cover" });
       downloadPreparedFile(cover);
       setLastCookbookExport({ presetId, files: [pages.file, cover] });
       setCookbookCoverPending(null);
       track("cookbook_export_download_started", { preset: presetId, role: "cover" });
     } catch (error) {
+      track("cookbook_export_failed", { preset: presetId, role: "cover", ...cookbookExportFailure(error) });
       setCookbookExportError(
         error instanceof CookbookPdfError
           ? `Your pages PDF is safe, but the cover couldn't be prepared. ${error.message}`

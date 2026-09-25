@@ -215,7 +215,13 @@ export async function POST(request: Request) {
       return jsonError("The cookbook took too long to render. Try again in a moment.", 504);
     }
     console.warn(`cookbook-pdf: renderer unreachable requestId=${requestId}`, error);
-    return jsonError("The cookbook renderer didn't respond.", 502);
+    // Locally this almost always means the second server was never started:
+    // the app is up on :3000 but nothing is listening at RECIPEPRINTER_PDF_URL.
+    const devDetail =
+      process.env.NODE_ENV === "development"
+        ? ` (dev: nothing answered at ${endpoint}. Run \`npm run pdf:dev\` in a second terminal.)`
+        : "";
+    return jsonError(`The cookbook renderer didn't respond.${devDetail}`, 502);
   }
 
   if (!response.ok) {

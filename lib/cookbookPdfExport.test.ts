@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   assertExportPhotosAreRemote,
+  cookbookExportFailure,
   cookbookPdfFileName,
   coverWrapProject,
   prepareCookbookCover,
@@ -147,5 +148,64 @@ describe("cover-only retry", () => {
     expect((requests[0]?.project as { sections: unknown[] }).sections).toEqual([]);
     expect(cover?.role).toBe("cover");
     expect(cover?.downloadUrl).toBe("https://storage.example/cover.pdf");
+  });
+});
+
+describe("cookbook_export_failed classification", () => {
+  const pages = {
+    project: {
+      id: "book-1",
+      cover: { title: "Family Table" },
+      sections: [],
+      settings: { template: "classic" },
+    } as unknown as import("@/types/recipe").PrintProject,
+    preset: "hardcover-8x10" as const,
+    file: { name: "pages.pdf", downloadUrl: "https://storage.example/pages.pdf", role: "pages" as const },
+    pageCount: 128,
+  };
+
+  function routeAnswers(status: number, body: unknown) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } })),
+    );
+  }
+
+  async function failureOf(run: () => Promise<unknown>) {
+    try {
+      await run();
+    } catch (error) {
+      return cookbookExportFailure(error);
+    }
+    throw new Error("expected the export to fail");
+  }
+
+  it("a renderer failure behind the route is `server`, with the status", async () => {
+    routeAnswers(502, { error: "The cookbook renderer didn't respond." });
+    expect(await failureOf(() => prepareCookbookCover(pages))).toEqual({ stage: "server", status: 502 });
+  });
+
+  it("being asked to sign in is `sign_in`, which alerts can leave out", async () => {
+    routeAnswers(401, { error: "Sign in to export.", needsAuth: true, needsAccount: true });
+    expect(await failureOf(() => prepareCookbookCover(pages))).toEqual({ stage: "sign_in", status: 401 });
+  });
+
+  it("an OK answer with no download URL is `invalid_response`", async () => {
+    routeAnswers(200, { pageCount: 1 });
+    expect(await failureOf(() => prepareCookbookCover(pages))).toEqual({ stage: "invalid_response", status: 200 });
+  });
+
+  it("a request that never reaches the route is `unexpected`", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new TypeError("Failed to fetch");
+    }));
+    expect(await failureOf(() => prepareCookbookCover(pages))).toEqual({ stage: "unexpected" });
+  });
+
+  it("a photo left in the browser is `photos`", async () => {
+    const project = { id: "book-1", sections: [] } as unknown as import("@/types/recipe").PrintProject;
+    expect(
+      await failureOf(() => assertExportPhotosAreRemote(project, async () => ["blob:failed"])),
+    ).toEqual({ stage: "photos" });
   });
 });

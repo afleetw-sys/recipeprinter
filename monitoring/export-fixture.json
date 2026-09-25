@@ -1,0 +1,94 @@
+{
+  "preset": "us-letter",
+  "healthCheck": true,
+  "project": {
+    "id": "production-monitor-fixture",
+    "kind": "cookbook",
+    "title": "Production Monitor",
+    "cover": { "title": "Production Monitor" },
+    "settings": {
+      "cardSize": "letter",
+      "template": "classic",
+      "doubleSided": true,
+      "showPhoto": false,
+      "showSourceUrl": false,
+      "showDescription": true,
+      "showCutLines": false,
+      "cookbookMode": true,
+      "tableOfContents": true,
+      "sectionDividers": true,
+      "photoStyle": "card"
+    },
+    "sections": [
+      {
+        "id": "monitor-section-1",
+        "title": "Everyday",
+        "intro": "Three short recipes the daily production check renders.",
+        "showOpener": true,
+        "items": [
+          {
+            "id": "monitor-recipe-1",
+            "method": "manual",
+            "source": "production monitor fixture",
+            "status": "ready",
+            "title": "Buttered Toast",
+            "addedAt": 1,
+            "recipe": {
+              "title": "Buttered Toast",
+              "description": "A fixture recipe. Nothing here is real.",
+              "prepTime": "2 minutes",
+              "cookTime": "3 minutes",
+              "servings": "1 serving",
+              "ingredients": [{ "raw": "2 slices bread" }, { "raw": "1 tablespoon butter" }],
+              "instructions": [
+                { "step": 1, "text": "Toast the bread until golden." },
+                { "step": 2, "text": "Spread with butter while warm." }
+              ]
+            }
+          },
+          {
+            "id": "monitor-recipe-2",
+            "method": "manual",
+            "source": "production monitor fixture",
+            "status": "ready",
+            "title": "Scrambled Eggs",
+            "addedAt": 2,
+            "recipe": {
+              "title": "Scrambled Eggs",
+              "description": "A fixture recipe. Nothing here is real.",
+              "prepTime": "2 minutes",
+              "cookTime": "5 minutes",
+              "servings": "2 servings",
+              "ingredients": [{ "raw": "4 eggs" }, { "raw": "1 tablespoon butter" }, { "raw": "Salt" }],
+              "instructions": [
+                { "step": 1, "text": "Whisk the eggs with a pinch of salt." },
+                { "step": 2, "text": "Melt the butter over low heat, add the eggs, and stir until just set." }
+              ]
+            }
+          },
+          {
+            "id": "monitor-recipe-3",
+            "method": "manual",
+            "source": "production monitor fixture",
+            "status": "ready",
+            "title": "Green Salad",
+            "addedAt": 3,
+            "recipe": {
+              "title": "Green Salad",
+              "description": "A fixture recipe. Nothing here is real.",
+              "prepTime": "5 minutes",
+              "servings": "2 servings",
+              "ingredients": [{ "raw": "1 head lettuce" }, { "raw": "2 tablespoons olive oil" }, { "raw": "1 tablespoon vinegar" }],
+              "instructions": [
+                { "step": 1, "text": "Tear the lettuce into a bowl." },
+                { "step": 2, "text": "Whisk the oil and vinegar, then toss with the lettuce." }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "createdAt": 1,
+    "updatedAt": 1
+  }
+}
