@@ -8944,6 +8944,17 @@ textarea.recipe-card__toc-title {
   --recipe-card-padding-bottom: 0.8in;
 }
 
+/* A back or continued face has no title, and its first line ("Steps
+   continued") already sits a little below the padding edge, so it takes much
+   less top padding than the front: about the side gap again, not twice it. */
+.recipe-template--supper .recipe-card--continued {
+  --recipe-card-padding-top: 0.2in;
+}
+
+.recipe-print-preview--letter .recipe-template--supper .recipe-card--continued {
+  --recipe-card-padding-top: 0.36in;
+}
+
 .recipe-template--supper .recipe-card__title {
   color: var(--recipe-accent);
 }
