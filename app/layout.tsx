@@ -3,6 +3,7 @@ import {
   Birthstone,
   Cormorant_Garamond,
   Courier_Prime,
+  Fraunces,
   Gochi_Hand,
   Jost,
   Karla,
@@ -93,6 +94,14 @@ const cormorant = Cormorant_Garamond({
 const nunitoSans = Nunito_Sans({
   subsets: ["latin"],
   variable: "--font-nunito-sans",
+  display: "swap",
+  preload: false,
+});
+
+// Market's title face, soft and a little playful, over Garden's Nunito Sans.
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
   display: "swap",
   preload: false,
 });
@@ -203,7 +212,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${karla.variable}`}
+      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${fraunces.variable} ${karla.variable}`}
     >
       <body>
         <KeyboardInsetWatcher />

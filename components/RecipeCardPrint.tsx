@@ -348,6 +348,20 @@ function QuiltStrip() {
   );
 }
 
+// Market: a teal bar across the top and a row of the artist's cut-paper
+// groceries along the foot. The row is one image (public/images/market-band.svg),
+// assembled from public/images/groceries at the positions measured off the
+// mockup, so it prints as vector and keeps its spacing at any card width.
+function MarketArt() {
+  return (
+    <>
+      <div className="recipe-card__market-bar" aria-hidden />
+      {/* eslint-disable-next-line @next/next/no-img-element -- fixed decorative vector art, not a photo to optimize */}
+      <img className="recipe-card__market-band" src="/images/market-band.svg" alt="" aria-hidden />
+    </>
+  );
+}
+
 // Garden's foot: a sage band of hills across the bottom and a vine of
 // tomatoes in the corner. Both are the artist's own SVGs, drawn as images so
 // they print as vector.
@@ -398,6 +412,7 @@ function TemplateDecoration({
   if (template === "pantry") return <PantryRuleLines />;
   if (template === "garden") return <GardenArt />;
   if (template === "quilt") return <QuiltStrip />;
+  if (template === "market") return <MarketArt />;
   return null;
 }
 
