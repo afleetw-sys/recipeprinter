@@ -7,6 +7,7 @@ import {
   Courier_Prime,
   DM_Sans,
   DM_Serif_Display,
+  Fondamento,
   Gochi_Hand,
   Jost,
   Karla,
@@ -97,6 +98,15 @@ const cormorant = Cormorant_Garamond({
 const nunitoSans = Nunito_Sans({
   subsets: ["latin"],
   variable: "--font-nunito-sans",
+  display: "swap",
+  preload: false,
+});
+
+// Christmas's title face, a calligraphic serif with a looped capital.
+const fondamento = Fondamento({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-fondamento",
   display: "swap",
   preload: false,
 });
@@ -241,7 +251,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${karla.variable}`}
+      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${fondamento.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${karla.variable}`}
     >
       <body>
         <KeyboardInsetWatcher />

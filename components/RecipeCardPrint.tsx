@@ -399,6 +399,16 @@ function PosterArt() {
   );
 }
 
+// Christmas: a row of the artist's Santa hats along the foot. One image
+// (public/images/christmas-hats.svg), each hat placed and turned as the artist
+// set it; the linen stock is the card's background in print.css.
+function ChristmasHats() {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- fixed decorative art, not a photo to optimize
+    <img className="recipe-card__christmas-hats" src="/images/christmas-hats.svg" alt="" aria-hidden />
+  );
+}
+
 // Supper: a deep red rounded frame with a utensil set into its bottom edge.
 // The utensil takes turns down the list (fork, spoon, knife) by the recipe's
 // place in it, so every face of one recipe carries the same one. Each image is
@@ -460,6 +470,7 @@ function TemplateDecoration({
   if (template === "market") return <MarketArt />;
   if (template === "supper") return <SupperFrame index={recipeIndex} />;
   if (template === "poster") return <PosterArt />;
+  if (template === "christmas") return <ChristmasHats />;
   return null;
 }
 

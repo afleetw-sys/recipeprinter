@@ -2473,6 +2473,44 @@
   gap: 10px;
 }
 
+/* "Seasonal themes": opens the out-of-season group under the main grid (see
+   ThemePicker). Reads as the panel's own small uppercase labels, not a button
+   competing with the themes themselves. */
+.recipe-template-seasonal-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin: 14px 0 10px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.recipe-template-seasonal-toggle:hover {
+  color: var(--cp-ink);
+}
+
+.recipe-template-seasonal-toggle:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+  border-radius: 6px;
+}
+
+.recipe-template-seasonal-toggle svg {
+  transition: transform 150ms ease;
+}
+
+.recipe-template-seasonal-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
 .recipe-template-option {
   position: relative;
   display: block;
@@ -7347,7 +7385,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--market,
   .recipe-template--supper,
   .recipe-template--diner,
-  .recipe-template--poster
+  .recipe-template--poster,
+  .recipe-template--christmas
 ) .recipe-card__footer {
   display: none;
 }
@@ -7363,7 +7402,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--market,
   .recipe-template--supper,
   .recipe-template--diner,
-  .recipe-template--poster
+  .recipe-template--poster,
+  .recipe-template--christmas
 ) .recipe-card__footer:has(.recipe-card__footer-source) {
   display: flex;
 }
@@ -7379,7 +7419,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--market,
   .recipe-template--supper,
   .recipe-template--diner,
-  .recipe-template--poster
+  .recipe-template--poster,
+  .recipe-template--christmas
 ) .recipe-card__footer-brand {
   display: none;
 }
@@ -8559,12 +8600,12 @@ textarea.recipe-card__toc-title {
 /* A smaller photo than the default on the newer themes, whose art already
    gives the card its picture: 0.72in on a 6x4 (Keepsake's size) and 1.3in on
    Full Page, against the default 0.92in / 1.7in. */
-.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster) .recipe-card__header--with-photo .recipe-card__photo {
+.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster, .recipe-template--christmas) .recipe-card__header--with-photo .recipe-card__photo {
   width: 0.72in;
   height: 0.72in;
 }
 
-.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster) .recipe-card__header--with-photo .recipe-card__photo {
+.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster, .recipe-template--christmas) .recipe-card__header--with-photo .recipe-card__photo {
   width: 1.3in;
   height: 1.3in;
 }
@@ -8666,7 +8707,8 @@ textarea.recipe-card__toc-title {
 .recipe-template--market .recipe-card__header,
 .recipe-template--supper .recipe-card__header,
 .recipe-template--diner .recipe-card__header,
-.recipe-template--poster .recipe-card__header {
+.recipe-template--poster .recipe-card__header,
+.recipe-template--christmas .recipe-card__header {
   border-bottom: 0;
 }
 
@@ -9245,4 +9287,75 @@ textarea.recipe-card__toc-title {
   box-sizing: border-box;
   border: calc(16 * var(--poster-u)) solid #1f1f1f;
   background: #ffffff;
+}
+
+/* ── Christmas (seasonal) ──────────────────────────────────────────────────
+   Linen stock, a red calligraphic title and a row of the artist's Santa hats
+   along the foot. Measured off the artist's 1500-unit-wide card:
+   `--christmas-u` is one of those units at this card's width.
+
+   The linen is the artist's texture repeated as the card's background, at
+   the artwork's 452-unit tile size, so it covers a portrait Full Page sheet
+   as well as a 4x6 without stretching. The tile is mirrored four ways
+   (christmas-linen.svg) so every edge meets its own reflection: repeated
+   plain, the photo's edges showed as a faint grid of seams. The hats are one image, 156
+   units tall, on the card's bottom edge; the bottom padding clears them, and
+   it is what the face measurer treats as the end of the page. */
+.recipe-template--christmas {
+  --recipe-bg: #d7d5d1;
+  --recipe-ink: #2c2624;
+  --recipe-muted: #6b625d;
+  --recipe-accent: #c92e31;
+  --recipe-accent-2: #c92e31;
+  --recipe-bullet: #c92e31;
+  --recipe-line: rgba(201, 46, 49, 0.25);
+  --recipe-step-bg: #eceae6;
+  --recipe-footer: #6b625d;
+  --recipe-radius: 0;
+  --recipe-title-font: var(--font-fondamento), Georgia, serif;
+  --christmas-u: calc(var(--recipe-card-width) / 1500);
+}
+
+.recipe-template--christmas .recipe-card {
+  background-color: #d7d5d1;
+  background-image: url("/images/christmas-linen.svg");
+  background-size: calc(904 * var(--christmas-u)) calc(904 * var(--christmas-u));
+  background-repeat: repeat;
+  --recipe-card-padding-bottom: calc(170 * var(--christmas-u));
+}
+
+.recipe-template--christmas .recipe-card__title {
+  color: #c92e31;
+  font-size: calc(var(--recipe-card-title-size) * 1.45);
+  font-weight: 400;
+  letter-spacing: 0;
+  font-synthesis: none;
+}
+
+.recipe-template--christmas .recipe-card__step-number {
+  color: #c92e31;
+}
+
+.recipe-template--christmas .recipe-card__photo-img {
+  border-radius: 4px;
+}
+
+/* Hidden unless the card is Christmas, like every template decoration (see
+   `.recipe-card__counter-band`). */
+.recipe-card__christmas-hats {
+  position: absolute;
+  display: none;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-template--christmas .recipe-card__christmas-hats {
+  display: block;
 }
