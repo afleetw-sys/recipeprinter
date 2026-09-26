@@ -8520,9 +8520,9 @@ textarea.recipe-card__toc-title {
 
 /* A mask also clips everything outside the box it sits on, and a row's
    "+ Add below" (`.recipe-card__add-line`) hangs off the row's bottom edge, so
-   the ink would cut it in half. It only shows on hover or focus, so the ink
-   steps aside then. Print never hovers, so paper keeps it. */
-.recipe-template--typewriter :is(.recipe-card__ingredients li, .recipe-card__method li, .recipe-card__label):is(:hover, :focus-within) {
+   the ink would cut it in half. Section titles carry one too. It only shows
+   on hover or focus, so the ink steps aside then. Print never hovers, so paper keeps it. */
+.recipe-template--typewriter :is(.recipe-card__ingredients li, .recipe-card__method li, .recipe-card__label, .recipe-card__section-title):is(:hover, :focus-within) {
   -webkit-mask-image: none;
   mask-image: none;
 }
