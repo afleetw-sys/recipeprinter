@@ -8616,7 +8616,7 @@ textarea.recipe-card__toc-title {
    on to the next face instead of running over the fruit. Set on the card
    itself so it also beats the smaller padding a continued face asks for. */
 .recipe-template--garden {
-  --recipe-bg: #e6ebdc;
+  --recipe-bg: #e7ebdb;
   --recipe-ink: #33392a;
   --recipe-muted: #6f745f;
   --recipe-accent: #5f6b45;
@@ -8629,7 +8629,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--garden .recipe-card {
-  --recipe-card-padding-bottom: 0.86in;
+  --recipe-card-padding-bottom: 0.78in;
 }
 
 .recipe-print-preview--letter .recipe-template--garden .recipe-card {
@@ -8659,13 +8659,21 @@ textarea.recipe-card__toc-title {
 }
 
 /* The whole band, at its own proportions across the card's width: nothing
-   cropped from its ends or its ragged top. */
+   cropped from its ends or its ragged top. On 4x6 it sits lower: the box is
+   shorter than the art, and `cover` at the card's width trims only the solid
+   fill at the bottom. */
 .recipe-card__garden-band {
   left: 0;
   right: 0;
   bottom: 0;
   width: 100%;
   height: auto;
+}
+
+.recipe-print-preview--card-6x4 .recipe-card__garden-band {
+  height: 0.66in;
+  object-fit: cover;
+  object-position: top;
 }
 
 .recipe-card__garden-tomatoes {
@@ -8698,13 +8706,27 @@ textarea.recipe-card__toc-title {
   --recipe-step-bg: #f4dda2;
   --recipe-footer: #7a6446;
   --recipe-radius: 0;
-  --quilt-strip: 0.55in;
-  --quilt-gutter: 0.22in;
+  --quilt-strip: 0.58in;
+  --quilt-gutter: 0.2in;
 }
 
 .recipe-print-preview--letter .recipe-template--quilt {
-  --quilt-strip: 0.8in;
+  --quilt-strip: 0.782in;
   --quilt-gutter: 0.36in;
+}
+
+/* A whole number of tiles fills the card's height exactly, so none is cut
+   off at the bottom. Each size gets its own strip (see `QuiltStrip`): 7 tiles
+   down a 3.75in card, 15 down a 10.75in page, and the widths above are the
+   ones at which those counts are square. The SVG is told to fill its box
+   exactly, so what little rounding is left is absorbed without a crop. */
+.recipe-card__quilt-tiles {
+  display: none;
+}
+
+.recipe-print-preview--card-6x4 .recipe-card__quilt-tiles--card,
+.recipe-print-preview--letter .recipe-card__quilt-tiles--letter {
+  display: block;
 }
 
 .recipe-template--quilt .recipe-card {
