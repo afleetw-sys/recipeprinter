@@ -379,16 +379,21 @@ function GardenArt() {
 
 // Poster: a colour band across the top, a white frame with a heavy black
 // border over it, and the title on a tab of the band's colour. The colour takes
-// turns by recipe, like Supper's utensil; the colours themselves live in
-// print.css (`.recipe-card__poster-band--N`), so adding one is a CSS change
-// plus bumping this count.
+// turns by recipe, like Supper's utensil. It is chosen on the card itself
+// (`data-poster-color`, set in RecipeCardFace), not by this decoration, so a
+// surface that skips decorations (the page rail's thumbnails) still paints the
+// tab the recipe's colour. The colours live in print.css
+// (`[data-poster-color="N"]`); adding one is a CSS rule plus bumping this count.
 const POSTER_COLOR_COUNT = 11;
 
-function PosterArt({ index = 0 }: { index?: number }) {
-  const color = ((index % POSTER_COLOR_COUNT) + POSTER_COLOR_COUNT) % POSTER_COLOR_COUNT;
+function posterColor(recipeIndex: number): number {
+  return ((recipeIndex % POSTER_COLOR_COUNT) + POSTER_COLOR_COUNT) % POSTER_COLOR_COUNT;
+}
+
+function PosterArt() {
   return (
     <>
-      <div className={`recipe-card__poster-band recipe-card__poster-band--${color}`} aria-hidden />
+      <div className="recipe-card__poster-band" aria-hidden />
       <div className="recipe-card__poster-frame" aria-hidden />
     </>
   );
@@ -454,7 +459,7 @@ function TemplateDecoration({
   if (template === "quilt") return <QuiltStrip />;
   if (template === "market") return <MarketArt />;
   if (template === "supper") return <SupperFrame index={recipeIndex} />;
-  if (template === "poster") return <PosterArt index={recipeIndex} />;
+  if (template === "poster") return <PosterArt />;
   return null;
 }
 
@@ -1064,6 +1069,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       }`}
       data-has-back={hasBackFace ? "true" : undefined}
       data-preview-hidden={previewHidden ? "true" : undefined}
+      data-poster-color={template === "poster" ? posterColor(recipeIndex) : undefined}
     >
       <div className="recipe-card__accent" aria-hidden />
       <TemplateDecoration

@@ -9105,9 +9105,11 @@ textarea.recipe-card__toc-title {
    this card's width. Band 300 units tall; border 16, inset 24 from the card's
    edges; title 72 units; the tab padded 24 all round.
 
-   The colour takes turns by recipe (`PosterArt` picks the band class); the tab
-   follows the band via `:has`. Add a colour by adding a band class here and
-   bumping POSTER_COLOR_COUNT in RecipeCardPrint.
+   The colour takes turns by recipe: RecipeCardFace marks the card with
+   `data-poster-color`, and the band and the tab both read `--poster-color`
+   from it, so a thumbnail without the band still gets the right tab. Add a
+   colour with another rule below and by bumping POSTER_COLOR_COUNT in
+   RecipeCardPrint.
 
    The band and frame sit at z-index -1 inside an isolated card, so they paint
    over the card's background but under its text. */
@@ -9130,43 +9132,43 @@ textarea.recipe-card__toc-title {
 
 /* The colours, in the order recipes take them (the first is the default
    above). Keep POSTER_COLOR_COUNT in RecipeCardPrint in step. */
-.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--1) {
+.recipe-template--poster .recipe-card[data-poster-color="1"] {
   --poster-color: #b5aacb;
 }
 
-.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--2) {
+.recipe-template--poster .recipe-card[data-poster-color="2"] {
   --poster-color: #64a9a4;
 }
 
-.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--3) {
+.recipe-template--poster .recipe-card[data-poster-color="3"] {
   --poster-color: #eca360;
 }
 
-.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--4) {
+.recipe-template--poster .recipe-card[data-poster-color="4"] {
   --poster-color: #749dcf;
 }
 
-.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--5) {
+.recipe-template--poster .recipe-card[data-poster-color="5"] {
   --poster-color: #f0e999;
 }
 
-.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--6) {
+.recipe-template--poster .recipe-card[data-poster-color="6"] {
   --poster-color: #a89666;
 }
 
-.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--7) {
+.recipe-template--poster .recipe-card[data-poster-color="7"] {
   --poster-color: #ac5280;
 }
 
-.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--8) {
+.recipe-template--poster .recipe-card[data-poster-color="8"] {
   --poster-color: #bfd3e9;
 }
 
-.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--9) {
+.recipe-template--poster .recipe-card[data-poster-color="9"] {
   --poster-color: #ac7a63;
 }
 
-.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--10) {
+.recipe-template--poster .recipe-card[data-poster-color="10"] {
   --poster-color: #87c39c;
 }
 
