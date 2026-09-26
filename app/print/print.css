@@ -9176,9 +9176,14 @@ textarea.recipe-card__toc-title {
 }
 
 /* Scaled with the card's width alone, 72 units read small on a Full Page
-   sheet, which is taller for its width than a 4x6. Letter gets 96. */
+   sheet, which is taller for its width than a 4x6. Letter's title gets 86,
+   and the cook time and servings line under it grows a little with it. */
 .recipe-print-preview--letter .recipe-template--poster .recipe-card__title {
-  font-size: calc(96 * var(--poster-u));
+  font-size: calc(86 * var(--poster-u));
+}
+
+.recipe-print-preview--letter .recipe-template--poster .recipe-card__meta {
+  font-size: calc(var(--recipe-card-meta-size) * 1.15);
 }
 
 .recipe-template--poster .recipe-card__meta {
