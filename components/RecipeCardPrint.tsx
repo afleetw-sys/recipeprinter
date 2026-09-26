@@ -293,6 +293,49 @@ function CounterCheckerBand() {
   );
 }
 
+// Quilt's strip: the artist's tile (green-checks.svg / red-checks.svg) stacked
+// down the left edge, green then rust. Drawn here rather than as <img>s so it
+// stays vector in print (see the Bistro spine above), in the tile's own units:
+// 164 square, gold frame 14.67 thick. Tiles overlap by one frame so neighbours
+// share a single gold bar, as in the artwork. The CSS sets the strip's width;
+// the viewBox scales to it and the SVG clips whatever runs past the card.
+const QUILT_TILE = 164;
+const QUILT_FRAME = 14.6722;
+const QUILT_PITCH = QUILT_TILE - QUILT_FRAME;
+// 24 tiles covers a Letter page even at the widest strip.
+const QUILT_ROWS = 24;
+const QUILT_DIAMONDS =
+  "M143.053 51.3522L112.486 20.7852L81.9192 51.3522L51.3522 20.7852L20.7852 51.3522L51.3522 81.9192L20.7852 112.486L51.3522 143.053L81.9192 112.486L112.486 143.053L143.053 112.486L112.486 81.9192L143.053 51.3522ZM112.486 81.9192L81.9192 112.486L51.3522 81.9192L81.9192 51.3522L112.486 81.9192Z";
+
+function QuiltStrip() {
+  const height = QUILT_PITCH * QUILT_ROWS + QUILT_FRAME;
+  return (
+    <div className="recipe-card__quilt" aria-hidden>
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${QUILT_TILE} ${height}`}
+        preserveAspectRatio="xMinYMin slice"
+        focusable="false"
+      >
+        <rect width={QUILT_TILE} height={height} fill="#C5A34B" />
+        {Array.from({ length: QUILT_ROWS }, (_, row) => (
+          <g key={row} transform={`translate(0 ${row * QUILT_PITCH})`}>
+            <rect
+              x={QUILT_FRAME}
+              y={QUILT_FRAME}
+              width={QUILT_TILE - QUILT_FRAME * 2}
+              height={QUILT_TILE - QUILT_FRAME * 2}
+              fill="#F4DDA2"
+            />
+            <path fillRule="evenodd" d={QUILT_DIAMONDS} fill={row % 2 === 0 ? "#668031" : "#8C370D"} />
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
 // Garden's foot: a sage band of hills across the bottom and a vine of
 // tomatoes in the corner. Both are the artist's own SVGs, drawn as images so
 // they print as vector.
@@ -342,6 +385,7 @@ function TemplateDecoration({
   if (template === "counter") return <CounterCheckerBand />;
   if (template === "pantry") return <PantryRuleLines />;
   if (template === "garden") return <GardenArt />;
+  if (template === "quilt") return <QuiltStrip />;
   return null;
 }
 

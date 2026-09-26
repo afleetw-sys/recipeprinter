@@ -7334,7 +7334,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--counter,
   .recipe-template--keepsake,
   .recipe-template--typewriter,
-  .recipe-template--garden
+  .recipe-template--garden,
+  .recipe-template--quilt
 ) .recipe-card__footer {
   display: none;
 }
@@ -7345,7 +7346,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--counter,
   .recipe-template--keepsake,
   .recipe-template--typewriter,
-  .recipe-template--garden
+  .recipe-template--garden,
+  .recipe-template--quilt
 ) .recipe-card__footer:has(.recipe-card__footer-source) {
   display: flex;
 }
@@ -7356,7 +7358,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--counter,
   .recipe-template--keepsake,
   .recipe-template--typewriter,
-  .recipe-template--garden
+  .recipe-template--garden,
+  .recipe-template--quilt
 ) .recipe-card__footer-brand {
   display: none;
 }
@@ -8677,4 +8680,74 @@ textarea.recipe-card__toc-title {
 
 .recipe-print-preview--letter .recipe-card__garden-tomatoes {
   width: 2.7in;
+}
+
+/* ── Quilt ─────────────────────────────────────────────────────────────────
+   Warm cream stock with a strip of the artist's quilt tiles down the left edge
+   (`QuiltStrip`), green and rust diamonds in gold frames. The type picks up the
+   tiles: a rust title, green headings and bullets, on a dark brown ink.
+
+   `--quilt-strip` is the strip's width; the content, and the footer, which is
+   positioned off the card edge rather than its padding, both start a gutter
+   past it. */
+.recipe-template--quilt {
+  --recipe-bg: #fbf1d7;
+  --recipe-ink: #3a2a1c;
+  --recipe-muted: #7a6446;
+  --recipe-accent: #8c370d;
+  --recipe-accent-2: #668031;
+  --recipe-bullet: #668031;
+  --recipe-line: rgba(197, 163, 75, 0.45);
+  --recipe-step-bg: #f4dda2;
+  --recipe-footer: #7a6446;
+  --recipe-radius: 0;
+  --quilt-strip: 0.55in;
+  --quilt-gutter: 0.22in;
+}
+
+.recipe-print-preview--letter .recipe-template--quilt {
+  --quilt-strip: 0.8in;
+  --quilt-gutter: 0.36in;
+}
+
+.recipe-template--quilt .recipe-card {
+  padding-left: calc(var(--quilt-strip) + var(--quilt-gutter));
+}
+
+.recipe-template--quilt .recipe-card__footer {
+  left: calc(var(--quilt-strip) + var(--quilt-gutter));
+}
+
+.recipe-template--quilt .recipe-card__title,
+.recipe-template--quilt .recipe-card__divider-title,
+.recipe-template--quilt .recipe-card__cover-title {
+  color: var(--recipe-accent);
+}
+
+.recipe-template--quilt .recipe-card__label,
+.recipe-template--quilt .recipe-card__section-title {
+  color: var(--recipe-accent-2);
+}
+
+.recipe-template--quilt .recipe-card__step-number {
+  color: var(--recipe-accent);
+}
+
+/* Hidden unless the card is Quilt, like every template decoration (see
+   `.recipe-card__counter-band`). */
+.recipe-card__quilt {
+  position: absolute;
+  display: none;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--quilt-strip);
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-template--quilt .recipe-card__quilt {
+  display: block;
 }
