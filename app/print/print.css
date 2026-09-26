@@ -8619,7 +8619,7 @@ textarea.recipe-card__toc-title {
 }
 
 /* ── Garden ────────────────────────────────────────────────────────────────
-   Pale sage stock with the artist's sage hills along the foot and a vine of
+   Soft green stock with the artist's sage hills along the foot and a vine of
    tomatoes tucked into the bottom-right corner. Colour comes from the art;
    the type stays in olive and sage so it sits with it, with tomato bullets.
 
@@ -8629,7 +8629,8 @@ textarea.recipe-card__toc-title {
    on to the next face instead of running over the fruit. Set on the card
    itself so it also beats the smaller padding a continued face asks for. */
 .recipe-template--garden {
-  --recipe-bg: #e7ebdb;
+  --recipe-bg: #eceee5;
+  --garden-tomatoes: 1.5in;
   --recipe-ink: #33392a;
   --recipe-muted: #6f745f;
   --recipe-accent: #5f6b45;
@@ -8649,11 +8650,11 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--garden .recipe-card {
-  --recipe-card-padding-bottom: 0.78in;
+  --recipe-card-padding-bottom: 0.9in;
 }
 
 .recipe-print-preview--letter .recipe-template--garden .recipe-card {
-  --recipe-card-padding-bottom: 1.6in;
+  --recipe-card-padding-bottom: 1.85in;
 }
 
 /* Hidden unless the card is Garden, like every template decoration (see
@@ -8689,6 +8690,9 @@ textarea.recipe-card__toc-title {
   bottom: 0;
   width: 100%;
   height: auto;
+  /* The hills stop behind the leftmost tomatoes, so none shows between or
+     through the fruit (the tomato art is drawn at 75% opacity). */
+  clip-path: inset(0 calc(var(--garden-tomatoes) * 0.8) 0 0);
 }
 
 .recipe-print-preview--card-6x4 .recipe-card__garden-band {
@@ -8700,12 +8704,12 @@ textarea.recipe-card__toc-title {
 .recipe-card__garden-tomatoes {
   right: 0;
   bottom: 0;
-  width: 1.3in;
+  width: var(--garden-tomatoes);
   height: auto;
 }
 
-.recipe-print-preview--letter .recipe-card__garden-tomatoes {
-  width: 2.7in;
+.recipe-print-preview--letter .recipe-template--garden {
+  --garden-tomatoes: 3.1in;
 }
 
 /* ── Quilt ─────────────────────────────────────────────────────────────────
