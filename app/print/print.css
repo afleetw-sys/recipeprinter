@@ -8804,8 +8804,8 @@ textarea.recipe-card__toc-title {
    Warm off-white stock, a thin teal bar across the top, and the artist's row
    of cut-paper groceries along the foot. Sizes are fractions of the card's
    width, taken off a 2000px-wide mockup, so both card sizes keep the same
-   proportions: the grocery row is 130/2000 tall and 30/2000 off the bottom
-   edge; the bar is 22/2000, a third of the mockup's, and thin enough that the
+   proportions: the grocery row (two runs of the eight groceries, evenly
+   spaced) is 130/2000 tall and 30/2000 off the bottom edge; the bar is 22/2000, a third of the mockup's, and thin enough that the
    card's own top padding already clears it.
 
    The card's bottom padding clears the art, and that padding is

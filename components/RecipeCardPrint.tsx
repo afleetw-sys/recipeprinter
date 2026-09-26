@@ -350,8 +350,9 @@ function QuiltStrip() {
 
 // Market: a thin teal bar across the top and a row of the artist's cut-paper
 // groceries along the foot. The row is one image (public/images/market-band.svg),
-// assembled from public/images/groceries at the positions measured off the
-// mockup, so it prints as vector and keeps its spacing at any card width.
+// assembled from public/images/groceries at the mockup's scale, two runs of
+// the eight evenly spaced, so it prints as vector and keeps its spacing at any
+// card width.
 function MarketArt() {
   return (
     <>
