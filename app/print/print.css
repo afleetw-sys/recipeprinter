@@ -9008,9 +9008,9 @@ textarea.recipe-card__toc-title {
 }
 
 /* ── Diner ─────────────────────────────────────────────────────────────────
-   Peach stock and a heavy red Caprasimo title with a black outline and a hard
-   black offset shadow, with the photo framed in a sky-blue box with a dashed
-   black edge. Measured off the artist's frame, which is about 1500 units
+   Pale peach stock (#FFF1E5) and a heavy red Caprasimo title with a black
+   outline and a hard black offset shadow, with the photo framed in a sky-blue
+   box with a dashed black edge. Measured off the artist's frame, which is about 1500 units
    wide: `--diner-u` is one of those units at this card's width, so both sizes
    keep the design's proportions.
 
@@ -9021,7 +9021,7 @@ textarea.recipe-card__toc-title {
      only a few dashes around a photo this small), drawn as SVG (`.recipe-card__diner-box`) since a
      CSS dashed border can't be told how long to make its dashes. */
 .recipe-template--diner {
-  --recipe-bg: #fde6d2;
+  --recipe-bg: #fff1e5;
   --recipe-ink: #1f1a17;
   --recipe-muted: #5c4b40;
   --recipe-accent: #1f1a17;
