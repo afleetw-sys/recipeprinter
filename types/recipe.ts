@@ -31,7 +31,8 @@ export type RecipePrintTemplate =
   | "quilt"
   | "market"
   | "supper"
-  | "diner";
+  | "diner"
+  | "poster";
 
 export type CardSectionLayout = "standard" | "stacked";
 

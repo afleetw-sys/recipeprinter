@@ -377,6 +377,23 @@ function GardenArt() {
   );
 }
 
+// Poster: a colour band across the top, a white frame with a heavy black
+// border over it, and the title on a tab of the band's colour. The colour takes
+// turns by recipe, like Supper's utensil; the colours themselves live in
+// print.css (`.recipe-card__poster-band--N`), so adding one is a CSS change
+// plus bumping this count.
+const POSTER_COLOR_COUNT = 2;
+
+function PosterArt({ index = 0 }: { index?: number }) {
+  const color = ((index % POSTER_COLOR_COUNT) + POSTER_COLOR_COUNT) % POSTER_COLOR_COUNT;
+  return (
+    <>
+      <div className={`recipe-card__poster-band recipe-card__poster-band--${color}`} aria-hidden />
+      <div className="recipe-card__poster-frame" aria-hidden />
+    </>
+  );
+}
+
 // Supper: a deep red rounded frame with a utensil set into its bottom edge.
 // The utensil takes turns down the list (fork, spoon, knife) by the recipe's
 // place in it, so every face of one recipe carries the same one. Each image is
@@ -437,6 +454,7 @@ function TemplateDecoration({
   if (template === "quilt") return <QuiltStrip />;
   if (template === "market") return <MarketArt />;
   if (template === "supper") return <SupperFrame index={recipeIndex} />;
+  if (template === "poster") return <PosterArt index={recipeIndex} />;
   return null;
 }
 

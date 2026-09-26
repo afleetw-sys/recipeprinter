@@ -7346,7 +7346,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--quilt,
   .recipe-template--market,
   .recipe-template--supper,
-  .recipe-template--diner
+  .recipe-template--diner,
+  .recipe-template--poster
 ) .recipe-card__footer {
   display: none;
 }
@@ -7361,7 +7362,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--quilt,
   .recipe-template--market,
   .recipe-template--supper,
-  .recipe-template--diner
+  .recipe-template--diner,
+  .recipe-template--poster
 ) .recipe-card__footer:has(.recipe-card__footer-source) {
   display: flex;
 }
@@ -7376,7 +7378,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--quilt,
   .recipe-template--market,
   .recipe-template--supper,
-  .recipe-template--diner
+  .recipe-template--diner,
+  .recipe-template--poster
 ) .recipe-card__footer-brand {
   display: none;
 }
@@ -8597,12 +8600,12 @@ textarea.recipe-card__toc-title {
 /* A smaller photo than the default on the newer themes, whose art already
    gives the card its picture: 0.72in on a 6x4 (Keepsake's size) and 1.3in on
    Full Page, against the default 0.92in / 1.7in. */
-.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner) .recipe-card__header--with-photo .recipe-card__photo {
+.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster) .recipe-card__header--with-photo .recipe-card__photo {
   width: 0.72in;
   height: 0.72in;
 }
 
-.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner) .recipe-card__header--with-photo .recipe-card__photo {
+.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster) .recipe-card__header--with-photo .recipe-card__photo {
   width: 1.3in;
   height: 1.3in;
 }
@@ -8703,7 +8706,8 @@ textarea.recipe-card__toc-title {
 .recipe-template--quilt .recipe-card__header,
 .recipe-template--market .recipe-card__header,
 .recipe-template--supper .recipe-card__header,
-.recipe-template--diner .recipe-card__header {
+.recipe-template--diner .recipe-card__header,
+.recipe-template--poster .recipe-card__header {
   border-bottom: 0;
 }
 
@@ -9090,4 +9094,116 @@ textarea.recipe-card__toc-title {
   stroke: #000;
   stroke-width: calc(6 * var(--diner-u));
   stroke-dasharray: calc(24 * var(--diner-u)) calc(18 * var(--diner-u));
+}
+
+/* ── Poster ────────────────────────────────────────────────────────────────
+   A colour band across the top of the card, a white frame with a heavy black
+   border laid over it, and the title in Anton on a tab of the band's colour
+   that reaches up to the card's corner and covers the frame's. Measured off
+   the artist's 1500-unit-wide frame: `--poster-u` is one of those units at
+   this card's width. Band 300 units tall; border 16, inset 24 from the card's
+   edges; title 72 units, starting 24 in.
+
+   The colour takes turns by recipe (`PosterArt` picks the band class); the tab
+   follows the band via `:has`. Add a colour by adding a band class here and
+   bumping POSTER_COLOR_COUNT in RecipeCardPrint.
+
+   The band and frame sit at z-index -1 inside an isolated card, so they paint
+   over the card's background but under its text. */
+.recipe-template--poster {
+  --recipe-bg: #ffffff;
+  --recipe-ink: #1f1f1f;
+  --recipe-muted: #5b5b5b;
+  --recipe-accent: #1f1f1f;
+  --recipe-accent-2: #1f1f1f;
+  --recipe-bullet: #1f1f1f;
+  --recipe-line: rgba(31, 31, 31, 0.2);
+  --recipe-step-bg: #1f1f1f;
+  --recipe-footer: #5b5b5b;
+  --recipe-radius: 0;
+  --recipe-title-font: var(--font-anton), Impact, sans-serif;
+  --poster-u: calc(var(--recipe-card-width) / 1500);
+  --poster-color: #bbf65c;
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+}
+
+.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--1) {
+  --poster-color: #b4aacb;
+}
+
+.recipe-template--poster .recipe-card {
+  isolation: isolate;
+  --recipe-card-padding-x: calc(76 * var(--poster-u));
+  --recipe-card-padding-top: calc(70 * var(--poster-u));
+  --recipe-card-padding-bottom: calc(70 * var(--poster-u));
+}
+
+/* The tab hangs from the card's top edge, so the header keeps no top margin
+   of its own, and the title can't be centred against a photo the way other
+   themes do it. */
+.recipe-template--poster .recipe-card__header {
+  margin-top: 0;
+}
+
+.recipe-template--poster .recipe-card__header--with-photo {
+  align-items: flex-start;
+}
+
+.recipe-template--poster .recipe-card__header--with-photo .recipe-card__headline {
+  justify-content: flex-start;
+}
+
+/* The tab: pulled out to the card's left edge and up to its top, padded so
+   the text starts 24 units in, as in the design. */
+.recipe-template--poster .recipe-card__title {
+  width: fit-content;
+  max-width: calc(100% + 76 * var(--poster-u));
+  margin: calc(-70 * var(--poster-u)) 0 0 calc(-76 * var(--poster-u));
+  padding: calc(16 * var(--poster-u)) calc(24 * var(--poster-u)) calc(12 * var(--poster-u));
+  background: var(--poster-color);
+  font-size: calc(72 * var(--poster-u));
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: 0;
+  text-transform: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-template--poster .recipe-card__meta {
+  margin-top: calc(18 * var(--poster-u));
+}
+
+.recipe-template--poster .recipe-card__step-number {
+  color: #ffffff;
+}
+
+.recipe-card__poster-band,
+.recipe-card__poster-frame {
+  position: absolute;
+  display: none;
+  z-index: -1;
+  pointer-events: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-template--poster .recipe-card__poster-band,
+.recipe-template--poster .recipe-card__poster-frame {
+  display: block;
+}
+
+.recipe-card__poster-band {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(300 * var(--poster-u));
+  background: var(--poster-color);
+}
+
+.recipe-card__poster-frame {
+  inset: calc(24 * var(--poster-u));
+  box-sizing: border-box;
+  border: calc(16 * var(--poster-u)) solid #1f1f1f;
+  background: #ffffff;
 }
