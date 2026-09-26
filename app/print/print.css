@@ -6168,19 +6168,12 @@ textarea.recipe-card__toc-title {
   border-bottom: 0;
 }
 
-/* 6x4 is landscape with room to spare, so on the clean-frame templates lead
-   with a larger photo to the left of the title instead of a small corner
-   thumbnail — it fills the otherwise-empty header band. (The centring this
-   rule used to also declare is now in the base `--with-photo` rule.) */
-.recipe-print-preview--card-6x4 .recipe-template--classic .recipe-card__header--with-photo,
-.recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card__header--with-photo {
-  justify-content: flex-start;
-  gap: 0.16in;
-}
-
+/* A larger photo on the clean-frame templates' 6x4 card. It stays on the
+   right, where it sits at Full Page and on every other template: these two
+   used to move it left of the title on 6x4 only, so the same recipe swapped
+   sides when the cook changed size. */
 .recipe-print-preview--card-6x4 .recipe-template--classic .recipe-card__header--with-photo .recipe-card__photo,
 .recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card__header--with-photo .recipe-card__photo {
-  order: -1;
   width: 0.82in;
   height: 0.82in;
 }
@@ -8595,15 +8588,17 @@ textarea.recipe-card__toc-title {
   line-height: inherit;
 }
 
-/* A smaller photo than the default: on a typed card the words are the point. */
-.recipe-print-preview--card-6x4 .recipe-template--typewriter .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.8in;
-  height: 0.8in;
+/* A smaller photo than the default on the newer themes, whose art already
+   gives the card its picture: 0.72in on a 6x4 (Keepsake's size) and 1.3in on
+   Full Page, against the default 0.92in / 1.7in. */
+.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market) .recipe-card__header--with-photo .recipe-card__photo {
+  width: 0.72in;
+  height: 0.72in;
 }
 
-.recipe-print-preview--letter .recipe-template--typewriter .recipe-card__header--with-photo .recipe-card__photo {
-  width: 1.4in;
-  height: 1.4in;
+.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market) .recipe-card__header--with-photo .recipe-card__photo {
+  width: 1.3in;
+  height: 1.3in;
 }
 
 /* "1." typed in line with the step, not a badge. */
@@ -8821,7 +8816,7 @@ textarea.recipe-card__toc-title {
   --recipe-muted: #7a716a;
   --recipe-accent: #498988;
   --recipe-accent-2: #498988;
-  --recipe-bullet: #d31e46;
+  --recipe-bullet: #498988;
   --recipe-line: rgba(73, 137, 136, 0.3);
   --recipe-step-bg: #dcebea;
   --recipe-footer: #7a716a;
@@ -8849,23 +8844,6 @@ textarea.recipe-card__toc-title {
 
 .recipe-template--market .recipe-card__step-number {
   color: #2f6463;
-}
-
-/* Bullets pick up the groceries, in their order along the row. */
-.recipe-template--market .recipe-card__ingredients li:nth-child(6n + 2)::before {
-  background: #f56955;
-}
-.recipe-template--market .recipe-card__ingredients li:nth-child(6n + 3)::before {
-  background: #02a19f;
-}
-.recipe-template--market .recipe-card__ingredients li:nth-child(6n + 4)::before {
-  background: #f4b025;
-}
-.recipe-template--market .recipe-card__ingredients li:nth-child(6n + 5)::before {
-  background: #e3870b;
-}
-.recipe-template--market .recipe-card__ingredients li:nth-child(6n + 6)::before {
-  background: #853d7d;
 }
 
 .recipe-template--market .recipe-card__photo-img {
