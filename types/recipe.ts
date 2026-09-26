@@ -29,7 +29,8 @@ export type RecipePrintTemplate =
   | "typewriter"
   | "garden"
   | "quilt"
-  | "market";
+  | "market"
+  | "supper";
 
 export type CardSectionLayout = "standard" | "stacked";
 

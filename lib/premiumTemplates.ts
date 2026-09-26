@@ -20,7 +20,7 @@ export const PREMIUM_TEMPLATE_ENTITLEMENTS = {
 // Pro (or a cookbook's own unlock) is the only way in. Kept out of the map
 // above on purpose, because every id in it is mirrored from RevenueCat and
 // treated as a lifetime grant (lib/proAccessFallback.ts).
-const PRO_ONLY_TEMPLATES = ["typewriter", "garden", "quilt", "market"] as const satisfies readonly RecipePrintTemplate[];
+const PRO_ONLY_TEMPLATES = ["typewriter", "garden", "quilt", "market", "supper"] as const satisfies readonly RecipePrintTemplate[];
 
 export type PremiumRecipePrintTemplate =
   | keyof typeof PREMIUM_TEMPLATE_ENTITLEMENTS

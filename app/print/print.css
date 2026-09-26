@@ -7344,7 +7344,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--typewriter,
   .recipe-template--garden,
   .recipe-template--quilt,
-  .recipe-template--market
+  .recipe-template--market,
+  .recipe-template--supper
 ) .recipe-card__footer {
   display: none;
 }
@@ -7357,7 +7358,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--typewriter,
   .recipe-template--garden,
   .recipe-template--quilt,
-  .recipe-template--market
+  .recipe-template--market,
+  .recipe-template--supper
 ) .recipe-card__footer:has(.recipe-card__footer-source) {
   display: flex;
 }
@@ -7370,7 +7372,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--typewriter,
   .recipe-template--garden,
   .recipe-template--quilt,
-  .recipe-template--market
+  .recipe-template--market,
+  .recipe-template--supper
 ) .recipe-card__footer-brand {
   display: none;
 }
@@ -8591,12 +8594,12 @@ textarea.recipe-card__toc-title {
 /* A smaller photo than the default on the newer themes, whose art already
    gives the card its picture: 0.72in on a 6x4 (Keepsake's size) and 1.3in on
    Full Page, against the default 0.92in / 1.7in. */
-.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market) .recipe-card__header--with-photo .recipe-card__photo {
+.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper) .recipe-card__header--with-photo .recipe-card__photo {
   width: 0.72in;
   height: 0.72in;
 }
 
-.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market) .recipe-card__header--with-photo .recipe-card__photo {
+.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper) .recipe-card__header--with-photo .recipe-card__photo {
   width: 1.3in;
   height: 1.3in;
 }
@@ -8682,7 +8685,8 @@ textarea.recipe-card__toc-title {
 
 .recipe-template--garden .recipe-card__header,
 .recipe-template--quilt .recipe-card__header,
-.recipe-template--market .recipe-card__header {
+.recipe-template--market .recipe-card__header,
+.recipe-template--supper .recipe-card__header {
   border-bottom: 0;
 }
 
@@ -8891,4 +8895,77 @@ textarea.recipe-card__toc-title {
   bottom: calc(var(--recipe-card-width) * 0.015);
   width: 100%;
   height: auto;
+}
+
+/* ── Supper ────────────────────────────────────────────────────────────────
+   Warm cream stock inside a deep red rounded frame, with a utensil set into
+   the frame's bottom edge that takes turns by recipe (`SupperFrame`).
+
+   Everything is in the artwork's own units, scaled to the card: the artist's
+   frame is 1452 wide with a 16-unit line and a 48-unit outer corner, and
+   `--supper-u` is one of those units at this card's width. The frame is inset
+   2% of the card's width, as in the mockup. Each utensil image is the art's
+   strip from y 770 to 880; its bottom sits 28 units below the frame's outer
+   bottom edge (852), which is what puts the utensil on the line.
+
+   The bottom padding clears the tallest utensil (the spoon's bowl), and it is
+   what the face measurer treats as the end of the page. */
+.recipe-template--supper {
+  --recipe-bg: #eedfc4;
+  --recipe-ink: #2f1f1a;
+  --recipe-muted: #7d6353;
+  --recipe-accent: #7a151b;
+  --recipe-accent-2: #7a151b;
+  --recipe-bullet: #7a151b;
+  --recipe-line: rgba(122, 21, 27, 0.25);
+  --recipe-step-bg: #e3cfae;
+  --recipe-footer: #7d6353;
+  --recipe-radius: 0;
+  --supper-inset: calc(var(--recipe-card-width) * 0.02);
+  --supper-u: calc((var(--recipe-card-width) - 2 * var(--supper-inset)) / 1452);
+}
+
+.recipe-template--supper .recipe-card {
+  --recipe-card-padding-top: 0.34in;
+  --recipe-card-padding-bottom: 0.46in;
+}
+
+.recipe-print-preview--letter .recipe-template--supper .recipe-card {
+  --recipe-card-padding-top: 0.72in;
+  --recipe-card-padding-bottom: 0.78in;
+}
+
+.recipe-template--supper .recipe-card__title {
+  color: var(--recipe-accent);
+}
+
+/* Hidden unless the card is Supper, like every template decoration (see
+   `.recipe-card__counter-band`). */
+.recipe-card__supper-frame,
+.recipe-card__supper-utensil {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  user-select: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-template--supper .recipe-card__supper-frame,
+.recipe-template--supper .recipe-card__supper-utensil {
+  display: block;
+}
+
+.recipe-card__supper-frame {
+  inset: var(--supper-inset);
+  box-sizing: border-box;
+  border: calc(16 * var(--supper-u)) solid #7a151b;
+  border-radius: calc(48 * var(--supper-u));
+}
+
+.recipe-card__supper-utensil {
+  left: var(--supper-inset);
+  width: calc(100% - 2 * var(--supper-inset));
+  height: auto;
+  bottom: calc(var(--supper-inset) - 28 * var(--supper-u));
 }
