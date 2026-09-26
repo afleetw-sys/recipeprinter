@@ -8984,7 +8984,8 @@ textarea.recipe-card__toc-title {
    - Title: 96 units, #DB3937, a 2-unit black outline outside the letters
      (a 4-unit stroke painted under the fill), shadow -5, 4, no blur.
    - Photo frame: #A5DAEA, 30-unit corners, a 6-unit black stroke inside the
-     edge dashed 45 on 48 off, drawn as SVG (`.recipe-card__diner-box`) since a
+     edge dashed 18 on 14 off (shorter than the mockup's 45/48, which left
+     only a few dashes around a photo this small), drawn as SVG (`.recipe-card__diner-box`) since a
      CSS dashed border can't be told how long to make its dashes. */
 .recipe-template--diner {
   --recipe-bg: #fde6d2;
@@ -9047,5 +9048,5 @@ textarea.recipe-card__toc-title {
   fill: none;
   stroke: #000;
   stroke-width: calc(6 * var(--diner-u));
-  stroke-dasharray: calc(45 * var(--diner-u)) calc(48 * var(--diner-u));
+  stroke-dasharray: calc(18 * var(--diner-u)) calc(14 * var(--diner-u));
 }
