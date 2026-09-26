@@ -7,7 +7,6 @@ import {
   Courier_Prime,
   DM_Sans,
   DM_Serif_Display,
-  Fondamento,
   Gochi_Hand,
   Jost,
   Karla,
@@ -15,6 +14,7 @@ import {
   Nunito_Sans,
   Playfair_Display,
 } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { NoFocusZoom } from "@/components/NoFocusZoom";
 import { KeyboardInsetWatcher } from "@/components/KeyboardInsetWatcher";
@@ -102,11 +102,12 @@ const nunitoSans = Nunito_Sans({
   preload: false,
 });
 
-// Christmas's title face, a calligraphic serif with a looped capital.
-const fondamento = Fondamento({
-  subsets: ["latin"],
+// Christmas's title face: Harrington, the decorative serif in the artist's
+// mockup. Not on Google Fonts, so it ships from app/fonts.
+const harrington = localFont({
+  src: "./fonts/Harrington.ttf",
   weight: "400",
-  variable: "--font-fondamento",
+  variable: "--font-harrington",
   display: "swap",
   preload: false,
 });
@@ -251,7 +252,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${fondamento.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${karla.variable}`}
+      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${harrington.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${karla.variable}`}
     >
       <body>
         <KeyboardInsetWatcher />
