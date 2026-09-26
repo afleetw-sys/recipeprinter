@@ -1644,9 +1644,17 @@
   scroll-snap-align: center;
 }
 
-/* Render a real-size card and scale it down so previews look like the paper. */
+/* Render a real-size card and scale it down so previews look like the paper.
+
+   `content-box` so the 1px frame sits OUTSIDE the page-sized box. Under the
+   app-wide border-box it sat inside it: the card, which is exactly the page's
+   size, was pushed 1px down and clipped 2px short on the bottom and right.
+   Invisible on most themes, but anything drawn to the card's edge lost its
+   last pixels, and Quilt's bottom tile frame printed visibly thinner than the
+   rest on screen. */
 .recipe-page-scaler {
   position: relative;
+  box-sizing: content-box;
   width: calc(var(--page-w) * var(--page-scale));
   height: calc(var(--page-h) * var(--page-scale));
   overflow: hidden;
@@ -1663,6 +1671,8 @@
    so a rail thumb is a genuine mini card rather than a flat colour stand-in.
    The box size is kept in sync with RAIL_THUMB_WIDTH / RAIL_THUMB_HEIGHT. */
 .recipe-page-rail__thumb .recipe-page-scaler {
+  /* A fixed-size crop box in the rail, sized to its slot frame included. */
+  box-sizing: border-box;
   width: 112px;
   height: 74px;
   border-radius: 5px;
