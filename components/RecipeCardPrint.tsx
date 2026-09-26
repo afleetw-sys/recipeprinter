@@ -293,6 +293,20 @@ function CounterCheckerBand() {
   );
 }
 
+// Garden's foot: a sage band of hills across the bottom and a vine of
+// tomatoes in the corner. Both are the artist's own SVGs, drawn as images so
+// they print as vector.
+function GardenArt() {
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element -- fixed decorative vector art, not a photo to optimize */}
+      <img className="recipe-card__garden-band" src="/images/garden-cityscape.svg" alt="" aria-hidden />
+      {/* eslint-disable-next-line @next/next/no-img-element -- as above */}
+      <img className="recipe-card__garden-tomatoes" src="/images/garden-tomatoes.svg" alt="" aria-hidden />
+    </>
+  );
+}
+
 /**
  * The template's decorative layer — the one part of a card that is pure
  * ornament, and by far the most expensive: bistro's checker spine is 240 SVG
@@ -327,6 +341,7 @@ function TemplateDecoration({
   if (template === "bistro") return <BistroCheckerSpine />;
   if (template === "counter") return <CounterCheckerBand />;
   if (template === "pantry") return <PantryRuleLines />;
+  if (template === "garden") return <GardenArt />;
   return null;
 }
 
