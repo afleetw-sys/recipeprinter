@@ -8644,6 +8644,12 @@ textarea.recipe-card__toc-title {
   font-family: var(--font-nunito-sans), system-ui, sans-serif;
 }
 
+/* Cormorant's lowercase is small for its point size, so at the shared title
+   size it read a size smaller than every other theme's title. */
+.recipe-template--garden .recipe-card__title {
+  font-size: calc(var(--recipe-card-title-size) * 1.25);
+}
+
 /* Softened corners, like everything else the art draws. */
 .recipe-template--garden .recipe-card__photo-img {
   border-radius: 6px;
