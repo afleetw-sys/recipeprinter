@@ -9098,11 +9098,12 @@ textarea.recipe-card__toc-title {
 
 /* ── Poster ────────────────────────────────────────────────────────────────
    A colour band across the top of the card, a white frame with a heavy black
-   border laid over it, and the title in Anton on a tab of the band's colour
-   that reaches up to the card's corner and covers the frame's. Measured off
+   border laid over it, and a tab of the band's colour holding the title (in
+   Anton) and the cook time and servings, which reaches up to the card's
+   corner and covers the frame's. Measured off
    the artist's 1500-unit-wide frame: `--poster-u` is one of those units at
    this card's width. Band 300 units tall; border 16, inset 24 from the card's
-   edges; title 72 units, starting 24 in.
+   edges; title 72 units; the tab padded 24 all round.
 
    The colour takes turns by recipe (`PosterArt` picks the band class); the tab
    follows the band via `:has`. Add a colour by adding a band class here and
@@ -9123,12 +9124,50 @@ textarea.recipe-card__toc-title {
   --recipe-radius: 0;
   --recipe-title-font: var(--font-anton), Impact, sans-serif;
   --poster-u: calc(var(--recipe-card-width) / 1500);
-  --poster-color: #bbf65c;
+  --poster-color: #bbf55b;
   font-family: var(--font-dm-sans), system-ui, sans-serif;
 }
 
+/* The colours, in the order recipes take them (the first is the default
+   above). Keep POSTER_COLOR_COUNT in RecipeCardPrint in step. */
 .recipe-template--poster .recipe-card:has(.recipe-card__poster-band--1) {
-  --poster-color: #b4aacb;
+  --poster-color: #b5aacb;
+}
+
+.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--2) {
+  --poster-color: #64a9a4;
+}
+
+.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--3) {
+  --poster-color: #eca360;
+}
+
+.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--4) {
+  --poster-color: #749dcf;
+}
+
+.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--5) {
+  --poster-color: #f0e999;
+}
+
+.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--6) {
+  --poster-color: #a89666;
+}
+
+.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--7) {
+  --poster-color: #ac5280;
+}
+
+.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--8) {
+  --poster-color: #bfd3e9;
+}
+
+.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--9) {
+  --poster-color: #ac7a63;
+}
+
+.recipe-template--poster .recipe-card:has(.recipe-card__poster-band--10) {
+  --poster-color: #87c39c;
 }
 
 .recipe-template--poster .recipe-card {
@@ -9150,28 +9189,39 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--poster .recipe-card__header--with-photo .recipe-card__headline {
+  align-self: flex-start;
   justify-content: flex-start;
 }
 
-/* The tab: pulled out to the card's left edge and up to its top, padded so
-   the text starts 24 units in, as in the design. */
-.recipe-template--poster .recipe-card__title {
+/* The tab: the headline block (title, then cook time and servings), pulled
+   out to the card's left edge and up to its top, padded 24 units all round. */
+.recipe-template--poster .recipe-card__headline {
+  flex: 0 1 auto;
   width: fit-content;
   max-width: calc(100% + 76 * var(--poster-u));
   margin: calc(-70 * var(--poster-u)) 0 0 calc(-76 * var(--poster-u));
-  padding: calc(16 * var(--poster-u)) calc(24 * var(--poster-u)) calc(12 * var(--poster-u));
+  padding: calc(24 * var(--poster-u));
   background: var(--poster-color);
-  font-size: calc(72 * var(--poster-u));
-  font-weight: 400;
-  line-height: 1.12;
-  letter-spacing: 0;
-  text-transform: none;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
 
+.recipe-template--poster .recipe-card__title {
+  font-size: calc(72 * var(--poster-u));
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .recipe-template--poster .recipe-card__meta {
-  margin-top: calc(18 * var(--poster-u));
+  margin-top: calc(10 * var(--poster-u));
+  color: #1f1f1f;
+}
+
+/* Below the tab, before the recipe. */
+.recipe-template--poster .recipe-card__header {
+  margin-bottom: calc(10 * var(--poster-u));
 }
 
 .recipe-template--poster .recipe-card__step-number {

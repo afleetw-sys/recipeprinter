@@ -382,7 +382,7 @@ function GardenArt() {
 // turns by recipe, like Supper's utensil; the colours themselves live in
 // print.css (`.recipe-card__poster-band--N`), so adding one is a CSS change
 // plus bumping this count.
-const POSTER_COLOR_COUNT = 2;
+const POSTER_COLOR_COUNT = 11;
 
 function PosterArt({ index = 0 }: { index?: number }) {
   const color = ((index % POSTER_COLOR_COUNT) + POSTER_COLOR_COUNT) % POSTER_COLOR_COUNT;
