@@ -9062,7 +9062,7 @@ textarea.recipe-card__toc-title {
    corner and covers the frame's. Measured off
    the artist's 1500-unit-wide frame: `--poster-u` is one of those units at
    this card's width. Band 300 units tall; border 16, inset 24 from the card's
-   edges; title 72 units; the tab padded 24 all round.
+   edges; title 72 units; the tab padded 32 all round.
 
    The colour takes turns by recipe: RecipeCardFace marks the card with
    `data-poster-color`, and the band and the tab both read `--poster-color`
@@ -9155,13 +9155,13 @@ textarea.recipe-card__toc-title {
 }
 
 /* The tab: the headline block (title, then cook time and servings), pulled
-   out to the card's left edge and up to its top, padded 24 units all round. */
+   out to the card's left edge and up to its top, padded 32 units all round. */
 .recipe-template--poster .recipe-card__headline {
   flex: 0 1 auto;
   width: fit-content;
   max-width: calc(100% + 76 * var(--poster-u));
   margin: calc(-70 * var(--poster-u)) 0 0 calc(-76 * var(--poster-u));
-  padding: calc(24 * var(--poster-u));
+  padding: calc(32 * var(--poster-u));
   background: var(--poster-color);
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
