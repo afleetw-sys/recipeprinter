@@ -82,6 +82,7 @@ export function ImportPanel({
   onAddText,
   onAddReadyRecipes,
   commitRef,
+  onSubmitted,
   libraryLocked = false,
   librarySingleSelect,
   onStartEmpty,
@@ -123,6 +124,10 @@ export function ImportPanel({
   /** Filled in by this panel with a function that submits whatever is in the
       form, so a parent's own "done" button can finish the job. */
   commitRef?: MutableRefObject<(() => boolean) | null>;
+  /** The form's own submit (Enter in a field) handed its entry off. A surface
+      that closes on its own Add should close on this too, or Enter adds the
+      recipe and leaves the dialog sitting there as if nothing happened. */
+  onSubmitted?: () => void;
   /** This account already has the one recipe a free, non-cookbook plan can
       print (see `RecipeSourceList`'s own `locked` doc) — passed straight
       through to the "Recipe apps" tab's library pickers. */
@@ -488,7 +493,9 @@ export function ImportPanel({
       ) : (
       <form
         className={`flex flex-col ${workspace ? "gap-cp-5 mt-cp-5" : "gap-cp-4 mt-cp-4"}`}
-        onSubmit={handleSubmit}
+        onSubmit={(e) => {
+          if (handleSubmit(e)) onSubmitted?.();
+        }}
       >
         {mode === "url" && (
           <div className="flex flex-col">
