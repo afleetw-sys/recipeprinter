@@ -293,6 +293,90 @@ function CounterCheckerBand() {
   );
 }
 
+// Quilt's strip: the artist's tile (green-checks.svg / red-checks.svg) stacked
+// down the left edge, green then rust. Drawn here rather than as <img>s so it
+// stays vector in print (see the Bistro spine above), in the tile's own units:
+// 164 square, gold frame 14.67 thick. Tiles overlap by one frame so neighbours
+// share a single gold bar, as in the artwork.
+//
+// The strip holds a whole number of tiles, never a clipped last one: one SVG
+// per card size, each with the tile count that fills that card's height, and
+// the CSS sets the strip width at which that count is square.
+const QUILT_TILE = 164;
+const QUILT_FRAME = 14.6722;
+const QUILT_PITCH = QUILT_TILE - QUILT_FRAME;
+/** Tiles down a 3.75in 4x6 card and a 10.75in Letter page. */
+const QUILT_ROWS_CARD = 7;
+const QUILT_ROWS_LETTER = 15;
+const QUILT_DIAMONDS =
+  "M143.053 51.3522L112.486 20.7852L81.9192 51.3522L51.3522 20.7852L20.7852 51.3522L51.3522 81.9192L20.7852 112.486L51.3522 143.053L81.9192 112.486L112.486 143.053L143.053 112.486L112.486 81.9192L143.053 51.3522ZM112.486 81.9192L81.9192 112.486L51.3522 81.9192L81.9192 51.3522L112.486 81.9192Z";
+
+function QuiltTiles({ rows, className }: { rows: number; className: string }) {
+  const height = QUILT_PITCH * rows + QUILT_FRAME;
+  return (
+    <svg
+      className={className}
+      width="100%"
+      height="100%"
+      viewBox={`0 0 ${QUILT_TILE} ${height}`}
+      preserveAspectRatio="none"
+      focusable="false"
+    >
+      <rect width={QUILT_TILE} height={height} fill="#C5A34B" />
+      {Array.from({ length: rows }, (_, row) => (
+        <g key={row} transform={`translate(0 ${row * QUILT_PITCH})`}>
+          <rect
+            x={QUILT_FRAME}
+            y={QUILT_FRAME}
+            width={QUILT_TILE - QUILT_FRAME * 2}
+            height={QUILT_TILE - QUILT_FRAME * 2}
+            fill="#F4DDA2"
+          />
+          <path fillRule="evenodd" d={QUILT_DIAMONDS} fill={row % 2 === 0 ? "#668031" : "#8C370D"} />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function QuiltStrip() {
+  return (
+    <div className="recipe-card__quilt" aria-hidden>
+      <QuiltTiles rows={QUILT_ROWS_CARD} className="recipe-card__quilt-tiles recipe-card__quilt-tiles--card" />
+      <QuiltTiles rows={QUILT_ROWS_LETTER} className="recipe-card__quilt-tiles recipe-card__quilt-tiles--letter" />
+    </div>
+  );
+}
+
+// Market: a thin teal bar across the top and a row of the artist's cut-paper
+// groceries along the foot. The row is one image (public/images/market-band.svg),
+// assembled from public/images/groceries at the mockup's scale, two runs of
+// the eight evenly spaced, so it prints as vector and keeps its spacing at any
+// card width.
+function MarketArt() {
+  return (
+    <>
+      <div className="recipe-card__market-bar" aria-hidden />
+      {/* eslint-disable-next-line @next/next/no-img-element -- fixed decorative vector art, not a photo to optimize */}
+      <img className="recipe-card__market-band" src="/images/market-band.svg" alt="" aria-hidden />
+    </>
+  );
+}
+
+// Garden's foot: a sage band of hills across the bottom and a vine of
+// tomatoes in the corner. Both are the artist's own SVGs, drawn as images so
+// they print as vector.
+function GardenArt() {
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element -- fixed decorative vector art, not a photo to optimize */}
+      <img className="recipe-card__garden-band" src="/images/garden-cityscape.svg" alt="" aria-hidden />
+      {/* eslint-disable-next-line @next/next/no-img-element -- as above */}
+      <img className="recipe-card__garden-tomatoes" src="/images/garden-tomatoes.svg" alt="" aria-hidden />
+    </>
+  );
+}
+
 /**
  * The template's decorative layer — the one part of a card that is pure
  * ornament, and by far the most expensive: bistro's checker spine is 240 SVG
@@ -327,6 +411,9 @@ function TemplateDecoration({
   if (template === "bistro") return <BistroCheckerSpine />;
   if (template === "counter") return <CounterCheckerBand />;
   if (template === "pantry") return <PantryRuleLines />;
+  if (template === "garden") return <GardenArt />;
+  if (template === "quilt") return <QuiltStrip />;
+  if (template === "market") return <MarketArt />;
   return null;
 }
 

@@ -5,9 +5,6 @@ import { ICON_SIZE, TrashIcon, XIcon } from "@/components/icons";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Dialog } from "@/components/Dialog";
 
-const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
-const COFFEE_LOGO_SRC = "/images/buy-me-a-coffee-logo.png";
-
 export function PrintDialogs({
   showDonateDialog,
   onCloseDonateDialog,
@@ -77,13 +74,11 @@ export function PrintDialogs({
               />
             </div>
             <h2 id="print-success-title">Ready for your counter, binder, or fridge door.</h2>
-            <p>Support and feedback help me make RecipePrinter better.</p>
-            {/* Quieter action left, primary right — the order every dialog
-                in the app reads in. */}
+            <p>Feedback helps me make RecipePrinter better.</p>
             <div className="print-success-dialog__actions">
               <button
                 type="button"
-                className="btn btn-ghost"
+                className="btn btn-primary"
                 onClick={() => {
                   onCloseDonateDialog();
                   onOpenFeedbackDialog();
@@ -91,23 +86,6 @@ export function PrintDialogs({
               >
                 Leave feedback
               </button>
-              <a
-                href={COFFEE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={COFFEE_LOGO_SRC}
-                  alt=""
-                  aria-hidden="true"
-                  className="h-5 w-5 rounded-full"
-                  width={20}
-                  height={20}
-                />
-                Support RecipePrinter
-              </a>
             </div>
       </Dialog>
       {/* The shared confirm, not a second one built on the panel above. */}

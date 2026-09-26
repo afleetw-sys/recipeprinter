@@ -151,7 +151,7 @@ function RecipeRow({
           Added
         </span>
       ) : locked ? (
-        <ProBadge variant="inline" className="flex-shrink-0" />
+        <ProBadge variant="inline" className="flex-shrink-0" tooltip="Printing more than one recipe is Pro" />
       ) : singleSelect ? (
         // No box when unselected — an empty tickbox next to every other row
         // reads as "tick as many as you want," which isn't true here. The

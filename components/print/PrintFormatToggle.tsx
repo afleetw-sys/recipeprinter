@@ -74,7 +74,7 @@ export function PrintFormatToggle({
             <span className="print-format-toggle__text">
               <span className="print-format-toggle__label">
                 {option.label}
-                {locked && <ProBadge variant="inline" label={false} />}
+                {locked && <ProBadge variant="inline" label={false} tooltip="This size is Pro" />}
               </span>
               <span className="print-format-toggle__detail">{option.detail}</span>
             </span>

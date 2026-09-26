@@ -1308,7 +1308,7 @@ export function PrintDeck(props: PrintDeckProps) {
                  Not while an import is on its way, though, and not while one is
                  sitting there having failed. Both of those render their own
                  page-shaped sheet below, so the outline was a SECOND empty page
-                 beside them, captioned "No pages yet" next to a spinner reading
+                 beside them, captioned "No recipes yet" next to a spinner reading
                  "Getting the recipe from smittenkitchen.com…". That pairing is
                  the first thing a visitor handed off from a landing page sees,
                  which is the worst possible place for the app to contradict
@@ -1362,7 +1362,7 @@ export function PrintDeck(props: PrintDeckProps) {
                       empty page, the way a page's content would — under it they
                       read as a caption about the page instead. */}
                   <div className="recipe-page-empty__copy">
-                    <p className="recipe-page-empty__title">No pages yet</p>
+                    <p className="recipe-page-empty__title">No recipes yet</p>
                     <p className="recipe-page-empty__body">
                       Add a recipe and it will show up here, laid out and ready to print.
                     </p>

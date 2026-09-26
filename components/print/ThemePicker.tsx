@@ -90,7 +90,7 @@ export function ThemePicker({
                   printing this template is actually requested (see the Print
                   button below) — locked themes stay fully selectable and
                   previewable here. */}
-              {locked && <ProBadge />}
+              {locked && <ProBadge tooltip="This theme is Pro" />}
               <TemplateThumbnail template={option.id} />
             </div>
           );

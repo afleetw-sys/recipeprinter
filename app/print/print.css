@@ -1644,9 +1644,17 @@
   scroll-snap-align: center;
 }
 
-/* Render a real-size card and scale it down so previews look like the paper. */
+/* Render a real-size card and scale it down so previews look like the paper.
+
+   `content-box` so the 1px frame sits OUTSIDE the page-sized box. Under the
+   app-wide border-box it sat inside it: the card, which is exactly the page's
+   size, was pushed 1px down and clipped 2px short on the bottom and right.
+   Invisible on most themes, but anything drawn to the card's edge lost its
+   last pixels, and Quilt's bottom tile frame printed visibly thinner than the
+   rest on screen. */
 .recipe-page-scaler {
   position: relative;
+  box-sizing: content-box;
   width: calc(var(--page-w) * var(--page-scale));
   height: calc(var(--page-h) * var(--page-scale));
   overflow: hidden;
@@ -1663,6 +1671,8 @@
    so a rail thumb is a genuine mini card rather than a flat colour stand-in.
    The box size is kept in sync with RAIL_THUMB_WIDTH / RAIL_THUMB_HEIGHT. */
 .recipe-page-rail__thumb .recipe-page-scaler {
+  /* A fixed-size crop box in the rail, sized to its slot frame included. */
+  box-sizing: border-box;
   width: 112px;
   height: 74px;
   border-radius: 5px;
@@ -6158,19 +6168,12 @@ textarea.recipe-card__toc-title {
   border-bottom: 0;
 }
 
-/* 6x4 is landscape with room to spare, so on the clean-frame templates lead
-   with a larger photo to the left of the title instead of a small corner
-   thumbnail — it fills the otherwise-empty header band. (The centring this
-   rule used to also declare is now in the base `--with-photo` rule.) */
-.recipe-print-preview--card-6x4 .recipe-template--classic .recipe-card__header--with-photo,
-.recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card__header--with-photo {
-  justify-content: flex-start;
-  gap: 0.16in;
-}
-
+/* A larger photo on the clean-frame templates' 6x4 card. It stays on the
+   right, where it sits at Full Page and on every other template: these two
+   used to move it left of the title on 6x4 only, so the same recipe swapped
+   sides when the cook changed size. */
 .recipe-print-preview--card-6x4 .recipe-template--classic .recipe-card__header--with-photo .recipe-card__photo,
 .recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card__header--with-photo .recipe-card__photo {
-  order: -1;
   width: 0.82in;
   height: 0.82in;
 }
@@ -6303,10 +6306,11 @@ textarea.recipe-card__toc-title {
 
 /* ── Heirloom: a sepia keepsake snapshot tipped into the page, Polaroid mat ── */
 .recipe-template--heirloom .recipe-card__photo {
-  border-radius: 1px;
+  border-radius: 3px;
 }
 .recipe-template--heirloom .recipe-card__photo-img {
-  border-radius: 0;
+  /* Just softened: with its mat gone, a hard corner read as a raw paste-in. */
+  border-radius: 3px;
 }
 
 /* ── Keepsake: a small inset photo window built into the recipe card ─────── */
@@ -6472,10 +6476,14 @@ textarea.recipe-card__toc-title {
    base input rule inherits, and form controls don't reliably inherit them on
    their own, so they're pulled from `.recipe-card__meta` explicitly to match
    the surrounding "5 min · Serves 4" text exactly (including any template's
-   own override of that class). */
+   own override of that class).
+
+   The cap is only a backstop against a runaway value; `field-sizing` does the
+   real sizing. It was 1.05in, which Full Page's larger meta type overran:
+   "Serves 48 bars" was clipped on every theme there, most on the wider faces. */
 .recipe-card__inline-input--meta {
   width: auto;
-  max-width: 1.05in;
+  max-width: 2.4in;
   field-sizing: content;
   letter-spacing: inherit;
   text-transform: inherit;
@@ -7333,7 +7341,10 @@ textarea.recipe-card__toc-title {
   .recipe-template--bistro,
   .recipe-template--counter,
   .recipe-template--keepsake,
-  .recipe-template--typewriter
+  .recipe-template--typewriter,
+  .recipe-template--garden,
+  .recipe-template--quilt,
+  .recipe-template--market
 ) .recipe-card__footer {
   display: none;
 }
@@ -7343,7 +7354,10 @@ textarea.recipe-card__toc-title {
   .recipe-template--bistro,
   .recipe-template--counter,
   .recipe-template--keepsake,
-  .recipe-template--typewriter
+  .recipe-template--typewriter,
+  .recipe-template--garden,
+  .recipe-template--quilt,
+  .recipe-template--market
 ) .recipe-card__footer:has(.recipe-card__footer-source) {
   display: flex;
 }
@@ -7353,7 +7367,10 @@ textarea.recipe-card__toc-title {
   .recipe-template--bistro,
   .recipe-template--counter,
   .recipe-template--keepsake,
-  .recipe-template--typewriter
+  .recipe-template--typewriter,
+  .recipe-template--garden,
+  .recipe-template--quilt,
+  .recipe-template--market
 ) .recipe-card__footer-brand {
   display: none;
 }
@@ -7584,8 +7601,8 @@ textarea.recipe-card__toc-title {
      This was `nowrap` plus buttons free to shrink below their own content,
      which kept them side by side by letting the LABELS out of the boxes: a
      `.btn` is `white-space: nowrap`, so a narrowed button does not reflow its
-     text, it spills it past its own rounded edge. "Support RecipePrinter" on a
-     phone was sitting outside the button it belongs to. Wrapping is the part
+     text, it spills it past its own rounded edge. A long label on a phone was
+     sitting outside the button it belongs to. Wrapping is the part
      worth giving up. */
   flex-wrap: wrap;
 }
@@ -8571,15 +8588,17 @@ textarea.recipe-card__toc-title {
   line-height: inherit;
 }
 
-/* A smaller photo than the default: on a typed card the words are the point. */
-.recipe-print-preview--card-6x4 .recipe-template--typewriter .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.8in;
-  height: 0.8in;
+/* A smaller photo than the default on the newer themes, whose art already
+   gives the card its picture: 0.72in on a 6x4 (Keepsake's size) and 1.3in on
+   Full Page, against the default 0.92in / 1.7in. */
+.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market) .recipe-card__header--with-photo .recipe-card__photo {
+  width: 0.72in;
+  height: 0.72in;
 }
 
-.recipe-print-preview--letter .recipe-template--typewriter .recipe-card__header--with-photo .recipe-card__photo {
-  width: 1.4in;
-  height: 1.4in;
+.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market) .recipe-card__header--with-photo .recipe-card__photo {
+  width: 1.3in;
+  height: 1.3in;
 }
 
 /* "1." typed in line with the step, not a badge. */
@@ -8597,4 +8616,269 @@ textarea.recipe-card__toc-title {
 
 .recipe-template--typewriter .recipe-card__step-number::after {
   content: ".";
+}
+
+/* ── Garden ────────────────────────────────────────────────────────────────
+   Pale sage stock with the artist's sage hills along the foot and a vine of
+   tomatoes tucked into the bottom-right corner. Colour comes from the art;
+   the type stays in olive and sage so it sits with it, with tomato bullets.
+
+   The art owns the bottom of the card, so the card's bottom padding is raised
+   to clear the top of the tomatoes. That padding is what the face measurer
+   treats as the end of the page (lib/faceMeasure.ts), so a long recipe moves
+   on to the next face instead of running over the fruit. Set on the card
+   itself so it also beats the smaller padding a continued face asks for. */
+.recipe-template--garden {
+  --recipe-bg: #e7ebdb;
+  --recipe-ink: #33392a;
+  --recipe-muted: #6f745f;
+  --recipe-accent: #5f6b45;
+  --recipe-accent-2: #5f6b45;
+  --recipe-bullet: #c4643a;
+  --recipe-line: rgba(95, 107, 69, 0.28);
+  --recipe-step-bg: #d6dcc4;
+  --recipe-footer: #6f745f;
+  --recipe-radius: 0;
+  --recipe-title-font: var(--font-cormorant), Georgia, serif;
+  font-family: var(--font-nunito-sans), system-ui, sans-serif;
+}
+
+/* Softened corners, like everything else the art draws. */
+.recipe-template--garden .recipe-card__photo-img {
+  border-radius: 6px;
+}
+
+.recipe-print-preview--card-6x4 .recipe-template--garden .recipe-card {
+  --recipe-card-padding-bottom: 0.78in;
+}
+
+.recipe-print-preview--letter .recipe-template--garden .recipe-card {
+  --recipe-card-padding-bottom: 1.6in;
+}
+
+/* Hidden unless the card is Garden, like every template decoration (see
+   `.recipe-card__counter-band`). */
+.recipe-card__garden-band,
+.recipe-card__garden-tomatoes {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  user-select: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-template--garden .recipe-card__garden-band,
+.recipe-template--garden .recipe-card__garden-tomatoes {
+  display: block;
+}
+
+.recipe-template--garden .recipe-card__header,
+.recipe-template--quilt .recipe-card__header,
+.recipe-template--market .recipe-card__header {
+  border-bottom: 0;
+}
+
+/* The whole band, at its own proportions across the card's width: nothing
+   cropped from its ends or its ragged top. On 4x6 it sits lower: the box is
+   shorter than the art, and `cover` at the card's width trims only the solid
+   fill at the bottom. */
+.recipe-card__garden-band {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: auto;
+}
+
+.recipe-print-preview--card-6x4 .recipe-card__garden-band {
+  height: 0.66in;
+  object-fit: cover;
+  object-position: top;
+}
+
+.recipe-card__garden-tomatoes {
+  right: 0;
+  bottom: 0;
+  width: 1.3in;
+  height: auto;
+}
+
+.recipe-print-preview--letter .recipe-card__garden-tomatoes {
+  width: 2.7in;
+}
+
+/* ── Quilt ─────────────────────────────────────────────────────────────────
+   Warm cream stock with a strip of the artist's quilt tiles down the left edge
+   (`QuiltStrip`), green and rust diamonds in gold frames. The type picks up the
+   tiles: a rust title, green headings and bullets, on a dark brown ink.
+
+   `--quilt-strip` is the strip's width; the content, and the footer, which is
+   positioned off the card edge rather than its padding, both start a gutter
+   past it. */
+.recipe-template--quilt {
+  --recipe-bg: #fbf1d7;
+  --recipe-ink: #3a2a1c;
+  --recipe-muted: #7a6446;
+  --recipe-accent: #8c370d;
+  --recipe-accent-2: #668031;
+  --recipe-bullet: #668031;
+  --recipe-line: rgba(197, 163, 75, 0.45);
+  --recipe-step-bg: #f4dda2;
+  --recipe-footer: #7a6446;
+  --recipe-radius: 0;
+  --quilt-strip: 0.58in;
+  --quilt-gutter: 0.2in;
+  --recipe-title-font: var(--font-jost), system-ui, sans-serif;
+  font-family: var(--font-jost), system-ui, sans-serif;
+}
+
+.recipe-template--quilt .recipe-card__title {
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+
+.recipe-print-preview--letter .recipe-template--quilt {
+  --quilt-strip: 0.782in;
+  --quilt-gutter: 0.36in;
+}
+
+/* A whole number of tiles fills the card's height exactly, so none is cut
+   off at the bottom. Each size gets its own strip (see `QuiltStrip`): 7 tiles
+   down a 3.75in card, 15 down a 10.75in page, and the widths above are the
+   ones at which those counts are square. The SVG is told to fill its box
+   exactly, so what little rounding is left is absorbed without a crop. */
+.recipe-card__quilt-tiles {
+  display: none;
+}
+
+.recipe-print-preview--card-6x4 .recipe-card__quilt-tiles--card,
+.recipe-print-preview--letter .recipe-card__quilt-tiles--letter {
+  display: block;
+}
+
+.recipe-template--quilt .recipe-card {
+  padding-left: calc(var(--quilt-strip) + var(--quilt-gutter));
+}
+
+.recipe-template--quilt .recipe-card__footer {
+  left: calc(var(--quilt-strip) + var(--quilt-gutter));
+}
+
+.recipe-template--quilt .recipe-card__title,
+.recipe-template--quilt .recipe-card__divider-title,
+.recipe-template--quilt .recipe-card__cover-title {
+  color: var(--recipe-accent);
+}
+
+.recipe-template--quilt .recipe-card__label,
+.recipe-template--quilt .recipe-card__section-title {
+  color: var(--recipe-accent-2);
+}
+
+.recipe-template--quilt .recipe-card__step-number {
+  color: var(--recipe-accent);
+}
+
+/* Hidden unless the card is Quilt, like every template decoration (see
+   `.recipe-card__counter-band`). */
+.recipe-card__quilt {
+  position: absolute;
+  display: none;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--quilt-strip);
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-template--quilt .recipe-card__quilt {
+  display: block;
+}
+
+/* ── Market ────────────────────────────────────────────────────────────────
+   Warm off-white stock, a thin teal bar across the top, and the artist's row
+   of cut-paper groceries along the foot. Sizes are fractions of the card's
+   width, taken off a 2000px-wide mockup, so both card sizes keep the same
+   proportions: the grocery row (two runs of the eight groceries, evenly
+   spaced) is 130/2000 tall and 30/2000 off the bottom edge; the bar is 22/2000, a third of the mockup's, and thin enough that the
+   card's own top padding already clears it.
+
+   The card's bottom padding clears the art, and that padding is
+   what the face measurer treats as the end of the page (lib/faceMeasure.ts),
+   so a long recipe moves on to the next face instead of into the groceries. */
+.recipe-template--market {
+  --recipe-bg: #f9f3ee;
+  --recipe-ink: #2e2a26;
+  --recipe-muted: #7a716a;
+  --recipe-accent: #498988;
+  --recipe-accent-2: #498988;
+  --recipe-bullet: #498988;
+  --recipe-line: rgba(73, 137, 136, 0.3);
+  --recipe-step-bg: #dcebea;
+  --recipe-footer: #7a716a;
+  --recipe-radius: 0;
+  --recipe-title-font: var(--font-dm-serif-display), Georgia, serif;
+  --market-bar: calc(var(--recipe-card-width) * 0.011);
+  --market-band-top: calc(var(--recipe-card-width) * 0.08);
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+}
+
+.recipe-template--market .recipe-card {
+  --recipe-card-padding-bottom: calc(var(--market-band-top) + 0.06in);
+}
+
+.recipe-print-preview--letter .recipe-template--market .recipe-card {
+  --recipe-card-padding-bottom: calc(var(--market-band-top) + 0.2in);
+}
+
+/* DM Serif Display has one weight; don't let the browser fake a bolder one. */
+.recipe-template--market .recipe-card__title {
+  font-weight: 400;
+  font-synthesis: none;
+}
+
+.recipe-template--market .recipe-card__step-number {
+  color: #2f6463;
+}
+
+.recipe-template--market .recipe-card__photo-img {
+  border-radius: 6px;
+}
+
+/* Hidden unless the card is Market, like every template decoration (see
+   `.recipe-card__counter-band`). */
+.recipe-card__market-bar,
+.recipe-card__market-band {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  user-select: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-template--market .recipe-card__market-bar,
+.recipe-template--market .recipe-card__market-band {
+  display: block;
+}
+
+.recipe-card__market-bar {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--market-bar);
+  background: #498988;
+}
+
+.recipe-card__market-band {
+  left: 0;
+  right: 0;
+  bottom: calc(var(--recipe-card-width) * 0.015);
+  width: 100%;
+  height: auto;
 }

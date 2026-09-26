@@ -26,7 +26,10 @@ export type RecipePrintTemplate =
   | "pantry"
   | "counter"
   | "keepsake"
-  | "typewriter";
+  | "typewriter"
+  | "garden"
+  | "quilt"
+  | "market";
 
 export type CardSectionLayout = "standard" | "stacked";
 

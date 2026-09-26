@@ -118,6 +118,8 @@ const TEMPLATE_STACKED_FRONT_GUTTER_RESERVE: Partial<
 > = {
   bistro: { "card-6x4": 25 },
   pantry: { "card-6x4": 35 },
+  // Quilt's tile strip is much wider than either spine above.
+  quilt: { "card-6x4": 60 },
 };
 
 interface SplitOptions {
