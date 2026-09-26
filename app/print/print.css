@@ -8497,58 +8497,17 @@ textarea.recipe-card__toc-title {
   --recipe-radius: 0;
   --recipe-bullet: var(--recipe-ink);
   --recipe-title-font: var(--font-courier-prime), "Courier New", monospace;
-  --typewriter-ink: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='i'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.07' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -0.55 1.17'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23i)'/%3E%3C/svg%3E");
   font-family: var(--font-courier-prime), "Courier New", monospace;
 }
 
-/* Uneven ribbon ink. A real key strikes a little harder or softer each time;
-   one font can't vary letter to letter, so a mask of letter-sized noise
-   (between about four fifths and full strength, so it reads
-   as a ribbon, not as smudging) is laid over the typed text instead,
-   and a hair of stroke first makes the dark end of that range as heavy as a
-   firm strike. The mask only fades what is there, so the text stays real
-   vector type in print.
+/* A hair of stroke in the text's own colour, so the type strikes as heavy as
+   a real ribbon. It stays vector text in print.
 
-   Each list row starts the pattern from its own corner, so rows are offset
-   by nth-child or every line would open with the same pale letter. */
+   There used to be an "uneven ink" noise mask over the text as well. It came
+   out: on a cook's printed card (2026-09-26) it erased vertical strips of
+   letters through every line, and the preview must show what prints. */
 .recipe-template--typewriter .recipe-card {
   -webkit-text-stroke: 0.02em currentColor;
-}
-
-.recipe-template--typewriter .recipe-card__title,
-.recipe-template--typewriter .recipe-card__meta,
-.recipe-template--typewriter .recipe-card__label,
-.recipe-template--typewriter .recipe-card__section-title,
-.recipe-template--typewriter .recipe-card__ingredients li,
-.recipe-template--typewriter .recipe-card__method li {
-  -webkit-mask-image: var(--typewriter-ink);
-  mask-image: var(--typewriter-ink);
-  -webkit-mask-size: 1.1in 1.1in;
-  mask-size: 1.1in 1.1in;
-}
-
-/* A mask also clips everything outside the box it sits on, and a row's
-   "+ Add below" (`.recipe-card__add-line`) hangs off the row's bottom edge, so
-   the ink would cut it in half. Section titles carry one too. It only shows
-   on hover or focus, so the ink steps aside then. Print never hovers, so paper keeps it. */
-.recipe-template--typewriter :is(.recipe-card__ingredients li, .recipe-card__method li, .recipe-card__label, .recipe-card__section-title):is(:hover, :focus-within) {
-  -webkit-mask-image: none;
-  mask-image: none;
-}
-
-.recipe-template--typewriter :is(.recipe-card__ingredients, .recipe-card__method) li:nth-child(3n + 2) {
-  -webkit-mask-position: 0.37in 0.21in;
-  mask-position: 0.37in 0.21in;
-}
-
-.recipe-template--typewriter :is(.recipe-card__ingredients, .recipe-card__method) li:nth-child(3n + 3) {
-  -webkit-mask-position: 0.71in 0.53in;
-  mask-position: 0.71in 0.53in;
-}
-
-.recipe-template--typewriter .recipe-card__meta {
-  -webkit-mask-position: 0.52in 0.8in;
-  mask-position: 0.52in 0.8in;
 }
 
 .recipe-template--typewriter .recipe-card__title {
