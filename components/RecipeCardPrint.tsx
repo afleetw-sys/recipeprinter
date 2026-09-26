@@ -1081,6 +1081,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       data-has-back={hasBackFace ? "true" : undefined}
       data-preview-hidden={previewHidden ? "true" : undefined}
       data-poster-color={template === "poster" ? posterColor(recipeIndex) : undefined}
+      /* A cookbook page carries a page number and chapter name in its foot.
+         Themes with art there hold the recipe higher to make room for them,
+         and the measurer renders with the same flag, so it measures the same
+         page the book prints. */
+      data-in-book={cookbookMode ? "true" : undefined}
     >
       <div className="recipe-card__accent" aria-hidden />
       <TemplateDecoration
