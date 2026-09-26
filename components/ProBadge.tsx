@@ -11,6 +11,9 @@ interface ProBadgeProps {
    *  and other pills nearby); overlay badges default to icon-only since a
    *  tile corner is tight. */
   label?: boolean;
+  /** What is Pro, shown on hover and read by screen readers ("This theme is
+   *  Pro"). A crown alone says "Pro" but not what it's attached to. */
+  tooltip?: string;
   className?: string;
 }
 
@@ -27,10 +30,14 @@ interface ProBadgeProps {
  * bare (no backing at all) for "inline," which already sits in a plain text
  * row next to its own label.
  */
-export function ProBadge({ variant = "overlay", label, className = "" }: ProBadgeProps) {
+export function ProBadge({ variant = "overlay", label, tooltip, className = "" }: ProBadgeProps) {
   const showLabel = label ?? variant === "inline";
   return (
-    <span className={`pro-badge pro-badge--${variant} ${className}`.trim()} aria-label="Pro">
+    <span
+      className={`pro-badge pro-badge--${variant} ${className}`.trim()}
+      aria-label={tooltip ?? "Pro"}
+      title={tooltip}
+    >
       <CrownIcon size={ICON_SIZE.sm} />
       {showLabel && <span className="pro-badge__label">Pro</span>}
     </span>

@@ -491,7 +491,9 @@ export function PageRail(props: PageRailProps) {
                     whole button read as smaller than the ones in the header. */}
                 <PlusIcon size={ICON_SIZE.md} />
                 {projectMeta.meta.cookbookMode ? "Add recipes" : hasRecipes ? "Add more recipes" : "Add recipe"}
-                {multiRecipeAddLocked && <ProBadge variant="inline" label={false} />}
+                {multiRecipeAddLocked && (
+                  <ProBadge variant="inline" label={false} tooltip="Adding more recipes is Pro" />
+                )}
               </button>
               {/* "Add chapter" is NOT here. This whole header only renders when
                   `!organizeMode`, so the copy that used to sit at this spot was

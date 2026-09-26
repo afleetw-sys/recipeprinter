@@ -7591,8 +7591,8 @@ textarea.recipe-card__toc-title {
      This was `nowrap` plus buttons free to shrink below their own content,
      which kept them side by side by letting the LABELS out of the boxes: a
      `.btn` is `white-space: nowrap`, so a narrowed button does not reflow its
-     text, it spills it past its own rounded edge. "Support RecipePrinter" on a
-     phone was sitting outside the button it belongs to. Wrapping is the part
+     text, it spills it past its own rounded edge. A long label on a phone was
+     sitting outside the button it belongs to. Wrapping is the part
      worth giving up. */
   flex-wrap: wrap;
 }
