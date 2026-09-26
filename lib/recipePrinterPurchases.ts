@@ -199,7 +199,8 @@ export function hasTemplateEntitlement(
   customerInfo: CustomerInfo | null,
   template: PremiumRecipePrintTemplate,
 ): boolean {
-  return Boolean(customerInfo?.entitlements.active[entitlementForTemplate(template)]);
+  const entitlement = entitlementForTemplate(template);
+  return entitlement !== null && Boolean(customerInfo?.entitlements.active[entitlement]);
 }
 
 /**

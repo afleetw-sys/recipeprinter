@@ -15,12 +15,24 @@ export const PREMIUM_TEMPLATE_ENTITLEMENTS = {
   keepsake: "template_keepsake",
 } as const satisfies Partial<Record<RecipePrintTemplate, string>>;
 
-export type PremiumRecipePrintTemplate = keyof typeof PREMIUM_TEMPLATE_ENTITLEMENTS;
+// Premium themes added after single-theme sales were retired. They were never
+// sold on their own, so they have no entitlement of their own: RecipePrinter
+// Pro (or a cookbook's own unlock) is the only way in. Kept out of the map
+// above on purpose, because every id in it is mirrored from RevenueCat and
+// treated as a lifetime grant (lib/proAccessFallback.ts).
+const PRO_ONLY_TEMPLATES = ["typewriter"] as const satisfies readonly RecipePrintTemplate[];
+
+export type PremiumRecipePrintTemplate =
+  | keyof typeof PREMIUM_TEMPLATE_ENTITLEMENTS
+  | (typeof PRO_ONLY_TEMPLATES)[number];
 
 export function isPremiumTemplate(
   template: RecipePrintTemplate,
 ): template is PremiumRecipePrintTemplate {
-  return template in PREMIUM_TEMPLATE_ENTITLEMENTS;
+  return (
+    template in PREMIUM_TEMPLATE_ENTITLEMENTS ||
+    (PRO_ONLY_TEMPLATES as readonly RecipePrintTemplate[]).includes(template)
+  );
 }
 
 // A fresh cookbook opens on a premium theme (unlocked inside the book, so no
@@ -35,6 +47,9 @@ export function cookbookTemplateFor(current: RecipePrintTemplate): PremiumRecipe
   return isPremiumTemplate(current) ? current : DEFAULT_COOKBOOK_TEMPLATE;
 }
 
-export function entitlementForTemplate(template: PremiumRecipePrintTemplate): string {
-  return PREMIUM_TEMPLATE_ENTITLEMENTS[template];
+/** The legacy single-theme entitlement, or null for a Pro-only theme that never had one. */
+export function entitlementForTemplate(template: PremiumRecipePrintTemplate): string | null {
+  return template in PREMIUM_TEMPLATE_ENTITLEMENTS
+    ? PREMIUM_TEMPLATE_ENTITLEMENTS[template as keyof typeof PREMIUM_TEMPLATE_ENTITLEMENTS]
+    : null;
 }
