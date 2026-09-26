@@ -6189,7 +6189,6 @@ textarea.recipe-card__toc-title {
 .recipe-print-preview--card-6x4 .recipe-template--heirloom .recipe-card__header--with-photo .recipe-card__photo {
   width: 0.78in;
   height: 0.78in;
-  padding: 4px 4px 10px;
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--keepsake .recipe-card__header--with-photo .recipe-card__photo {
@@ -6304,12 +6303,7 @@ textarea.recipe-card__toc-title {
 
 /* ── Heirloom: a sepia keepsake snapshot tipped into the page, Polaroid mat ── */
 .recipe-template--heirloom .recipe-card__photo {
-  padding: 5px 5px 15px;
-  background: #fffdf7;
-  border: 1px solid rgba(92, 64, 55, 0.22);
   border-radius: 1px;
-  transform: rotate(2.4deg);
-  box-shadow: 2px 3px 0 rgba(92, 64, 55, 0.13);
 }
 .recipe-template--heirloom .recipe-card__photo-img {
   border-radius: 0;
@@ -7338,7 +7332,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--heirloom,
   .recipe-template--bistro,
   .recipe-template--counter,
-  .recipe-template--keepsake
+  .recipe-template--keepsake,
+  .recipe-template--typewriter
 ) .recipe-card__footer {
   display: none;
 }
@@ -7347,7 +7342,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--heirloom,
   .recipe-template--bistro,
   .recipe-template--counter,
-  .recipe-template--keepsake
+  .recipe-template--keepsake,
+  .recipe-template--typewriter
 ) .recipe-card__footer:has(.recipe-card__footer-source) {
   display: flex;
 }
@@ -7356,7 +7352,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--heirloom,
   .recipe-template--bistro,
   .recipe-template--counter,
-  .recipe-template--keepsake
+  .recipe-template--keepsake,
+  .recipe-template--typewriter
 ) .recipe-card__footer-brand {
   display: none;
 }
@@ -8455,4 +8452,149 @@ textarea.recipe-card__toc-title {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+}
+
+/* ── Typewriter ────────────────────────────────────────────────────────────
+   An index card run through a typewriter: one typed face for everything, in
+   black and off-black only. Courier Prime is a true
+   monospace (an "i" gets the same slot as an "m", as on a real machine),
+   which is where the uneven, typed spacing comes from. */
+.recipe-template--typewriter {
+  --recipe-bg: #fbf7ec;
+  --recipe-ink: #1f1d1a;
+  --recipe-muted: #45413b;
+  --recipe-accent: #45413b;
+  --recipe-accent-2: #1f1d1a;
+  --recipe-line: rgba(31, 29, 26, 0.2);
+  --recipe-step-bg: #fbf7ec;
+  --recipe-footer: #6f685e;
+  --recipe-radius: 0;
+  --recipe-bullet: var(--recipe-ink);
+  --recipe-title-font: var(--font-courier-prime), "Courier New", monospace;
+  --typewriter-ink: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='i'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.07' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -0.55 1.17'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23i)'/%3E%3C/svg%3E");
+  font-family: var(--font-courier-prime), "Courier New", monospace;
+}
+
+/* Uneven ribbon ink. A real key strikes a little harder or softer each time;
+   one font can't vary letter to letter, so a mask of letter-sized noise
+   (between about four fifths and full strength, so it reads
+   as a ribbon, not as smudging) is laid over the typed text instead,
+   and a hair of stroke first makes the dark end of that range as heavy as a
+   firm strike. The mask only fades what is there, so the text stays real
+   vector type in print.
+
+   Each list row starts the pattern from its own corner, so rows are offset
+   by nth-child or every line would open with the same pale letter. */
+.recipe-template--typewriter .recipe-card {
+  -webkit-text-stroke: 0.02em currentColor;
+}
+
+.recipe-template--typewriter .recipe-card__title,
+.recipe-template--typewriter .recipe-card__meta,
+.recipe-template--typewriter .recipe-card__label,
+.recipe-template--typewriter .recipe-card__section-title,
+.recipe-template--typewriter .recipe-card__ingredients li,
+.recipe-template--typewriter .recipe-card__method li {
+  -webkit-mask-image: var(--typewriter-ink);
+  mask-image: var(--typewriter-ink);
+  -webkit-mask-size: 1.1in 1.1in;
+  mask-size: 1.1in 1.1in;
+}
+
+/* A mask also clips everything outside the box it sits on, and a row's
+   "+ Add below" (`.recipe-card__add-line`) hangs off the row's bottom edge, so
+   the ink would cut it in half. It only shows on hover or focus, so the ink
+   steps aside then. Print never hovers, so paper keeps it. */
+.recipe-template--typewriter :is(.recipe-card__ingredients li, .recipe-card__method li, .recipe-card__label):is(:hover, :focus-within) {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.recipe-template--typewriter :is(.recipe-card__ingredients, .recipe-card__method) li:nth-child(3n + 2) {
+  -webkit-mask-position: 0.37in 0.21in;
+  mask-position: 0.37in 0.21in;
+}
+
+.recipe-template--typewriter :is(.recipe-card__ingredients, .recipe-card__method) li:nth-child(3n + 3) {
+  -webkit-mask-position: 0.71in 0.53in;
+  mask-position: 0.71in 0.53in;
+}
+
+.recipe-template--typewriter .recipe-card__meta {
+  -webkit-mask-position: 0.52in 0.8in;
+  mask-position: 0.52in 0.8in;
+}
+
+.recipe-template--typewriter .recipe-card__title {
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.recipe-template--typewriter .recipe-card__header {
+  border-bottom: 0;
+}
+
+.recipe-template--typewriter .recipe-card__meta,
+.recipe-template--typewriter .recipe-card__section-title,
+.recipe-template--typewriter .recipe-card__step-number,
+.recipe-template--typewriter .recipe-card__continued-inline {
+  font-weight: 400;
+}
+
+.recipe-template--typewriter .recipe-card__meta {
+  letter-spacing: 0.04em;
+}
+
+.recipe-template--typewriter .recipe-card__section-title {
+  letter-spacing: 0.06em;
+}
+
+/* Typed headings, with the colon a typist would have put after them. */
+.recipe-template--typewriter .recipe-card__label {
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+
+.recipe-template--typewriter .recipe-card__label::after {
+  content: ":";
+}
+
+.recipe-template--typewriter .recipe-card__ingredients li::before {
+  content: "-";
+  top: 0;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  color: var(--recipe-ink);
+  line-height: inherit;
+}
+
+/* A smaller photo than the default: on a typed card the words are the point. */
+.recipe-print-preview--card-6x4 .recipe-template--typewriter .recipe-card__header--with-photo .recipe-card__photo {
+  width: 0.8in;
+  height: 0.8in;
+}
+
+.recipe-print-preview--letter .recipe-template--typewriter .recipe-card__header--with-photo .recipe-card__photo {
+  width: 1.4in;
+  height: 1.4in;
+}
+
+/* "1." typed in line with the step, not a badge. */
+.recipe-template--typewriter .recipe-card__step-number {
+  display: inline;
+  width: auto;
+  height: auto;
+  margin-top: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--recipe-ink);
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.recipe-template--typewriter .recipe-card__step-number::after {
+  content: ".";
 }

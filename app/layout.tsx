@@ -1,5 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Birthstone, Gochi_Hand, Karla, Manrope, Playfair_Display } from "next/font/google";
+import {
+  Birthstone,
+  Courier_Prime,
+  Gochi_Hand,
+  Karla,
+  Manrope,
+  Playfair_Display,
+} from "next/font/google";
 import "./globals.css";
 import { NoFocusZoom } from "@/components/NoFocusZoom";
 import { KeyboardInsetWatcher } from "@/components/KeyboardInsetWatcher";
@@ -57,6 +64,16 @@ const gochiHand = Gochi_Hand({
   subsets: ["latin"],
   weight: "400",
   variable: "--font-gochi-hand",
+  display: "swap",
+  preload: false,
+});
+
+// The Typewriter theme's face. Card-only, so preload: false for the same
+// reason as the decorative faces above.
+const courierPrime = Courier_Prime({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-courier-prime",
   display: "swap",
   preload: false,
 });
@@ -158,7 +175,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${karla.variable}`}
+      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${karla.variable}`}
     >
       <body>
         <KeyboardInsetWatcher />

@@ -51,8 +51,9 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
 }> = [
   { id: "classic", label: "Classic", detail: "Cornflower and slate, clean cookbook card" },
   { id: "pantry", label: "Pantry", detail: "Fine ruled lines with small ingredient sketches" },
-  { id: "counter", label: "Counter", detail: "Black-and-white notes with tiny counter details" },
-  { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },
-  { id: "keepsake", label: "Keepsake", detail: "Cream recipe-box card with classic family style" },
+  { id: "typewriter", label: "Typewriter", detail: "Black and white, typed on an index card" },
   { id: "bistro", label: "Bistro", detail: "Blue checks, tomato red, playful kitchen card" },
+  { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },
+  { id: "counter", label: "Counter", detail: "Black-and-white notes with tiny counter details" },
+  { id: "keepsake", label: "Keepsake", detail: "Cream recipe-box card with classic family style" },
 ];
