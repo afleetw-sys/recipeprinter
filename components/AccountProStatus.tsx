@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
-import { CheckIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
+import { CheckIcon, ClockIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
 import { ProBadge } from "@/components/ProBadge";
 import { SegmentedControl } from "@/components/Controls";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
@@ -223,15 +223,24 @@ export function AccountProStatus({ user }: { user: User }) {
                 <p className="mt-1 text-cp-body font-bold text-ink-soft">
                   {proDetails.cycle ? PRO_PRICE_FALLBACKS[proDetails.cycle] : "Your plan"}
                 </p>
-                <p className="mt-1 text-cp-small font-bold text-ink">
-                  {proDetails.willRenew
-                    ? `Renews ${formatDate(proDetails.expiresAtMs) ?? "soon"}`
-                    : `Ends ${formatDate(proDetails.expiresAtMs) ?? "at the end of your paid period"}`}
-                </p>
-                {!proDetails.willRenew && (
-                  <p className="text-cp-small text-ink-soft">
-                    You canceled, but you can pick Pro back up any time before then.
+                {proDetails.willRenew ? (
+                  <p className="mt-1 text-cp-small font-bold text-ink">
+                    Renews {formatDate(proDetails.expiresAtMs) ?? "soon"}
                   </p>
+                ) : (
+                  // Its own bordered notice rather than one more line in the
+                  // card: Pro ending is the one thing here that needs noticing.
+                  <div className="mt-cp-2 flex items-start gap-cp-2 rounded-lg border border-[var(--cp-premium-bright)] bg-[var(--cp-card)] px-cp-3 py-cp-2">
+                    <ClockIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0 text-[var(--cp-premium)]" />
+                    <div>
+                      <p className="text-cp-small font-bold text-ink">
+                        Ends {formatDate(proDetails.expiresAtMs) ?? "at the end of your paid period"}
+                      </p>
+                      <p className="text-cp-small text-ink-soft">
+                        You canceled, but you can pick Pro back up any time before then.
+                      </p>
+                    </div>
+                  </div>
                 )}
                 <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
                   <li className="flex items-start gap-cp-2 text-cp-small font-semibold text-ink">

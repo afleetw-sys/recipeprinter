@@ -87,3 +87,43 @@ jobs:
       # top of this file describes.
       - name: Auth flows
         run: npm run test:auth
+
+  # The app in a real browser (Playwright), against a production build on
+  # localhost, with Firebase emulators and a CookPilot stand-in. Its own job
+  # because it builds the app and downloads Chromium. Nothing here can reach
+  # production: analytics only starts on the production hostnames, and every
+  # test fails if the browser contacts anything but localhost (e2e/guarded.ts).
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # The Firestore and Storage emulators are JVM programs.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser tests
+        run: npm run test:e2e
+
+      # Screenshots and a step-by-step trace of whatever failed. Fixture data
+      # only, never a real customer's.
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
