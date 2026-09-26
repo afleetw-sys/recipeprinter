@@ -60,6 +60,7 @@ function ProjectCover({ project }: { project: PrintProjectSummary }) {
       {images.map((url, index) => (
         // eslint-disable-next-line @next/next/no-img-element
         <img
+          referrerPolicy="no-referrer"
           key={`${url}-${index}`}
           src={url}
           alt=""

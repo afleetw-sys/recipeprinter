@@ -445,7 +445,7 @@ export function ImagePicker({
                     aria-pressed={inGrid}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={image} alt="" onError={() => markImageFailed(image)} />
+                    <img referrerPolicy="no-referrer" src={image} alt="" onError={() => markImageFailed(image)} />
                     {inGrid && <span className="image-picker__order">{order + 1}</span>}
                   </button>
                 );
@@ -460,7 +460,7 @@ export function ImagePicker({
                   aria-pressed={current === image}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={image} alt="" onError={() => markImageFailed(image)} />
+                  <img referrerPolicy="no-referrer" src={image} alt="" onError={() => markImageFailed(image)} />
                   {current === image && (
                     <span className="image-picker__check"><CheckIcon size={ICON_SIZE.sm} /></span>
                   )}

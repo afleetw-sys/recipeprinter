@@ -259,6 +259,7 @@ export const ScaledPage = memo(function ScaledPage({
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
+                  referrerPolicy="no-referrer"
                   className={`recipe-image-spread__photo ${
                     repositionable ? "recipe-image-spread__photo--draggable" : ""
                   }`}
@@ -388,6 +389,7 @@ export const ScaledPage = memo(function ScaledPage({
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
+                      referrerPolicy="no-referrer"
                       className="recipe-image-spread__photo"
                       src={anySlot.photoUrl}
                       alt=""
@@ -413,7 +415,7 @@ export const ScaledPage = memo(function ScaledPage({
                         }`}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={url} alt="" draggable={false} className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+                        <img referrerPolicy="no-referrer" src={url} alt="" draggable={false} className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
                         <span className="photo-unavailable-message">Photo unavailable</span>
                       </span>
                     ))}

@@ -96,6 +96,7 @@ function RecipeRow({
         {summary.imageURL ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
+            referrerPolicy="no-referrer"
             src={summary.imageURL}
             alt=""
             loading="lazy"

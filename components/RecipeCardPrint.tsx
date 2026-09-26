@@ -1073,8 +1073,12 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           </div>
           {showPhoto && (
             <span className={`recipe-card__photo ${canEdit ? "recipe-card__photo--editable" : ""}`}>
+              {/* No referrer on any recipe photo: sites with hotlink protection
+                  (Cloudflare/BigScoots and friends) serve the image to a request with
+                  no Referer but redirect one from our origin to a blocked placeholder. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
+                referrerPolicy="no-referrer"
                 className="recipe-card__photo-img"
                 src={recipe.image}
                 alt={recipe.title ? `Photo of ${recipe.title}` : "Recipe photo"}
@@ -1544,7 +1548,7 @@ export const DividerFace = memo(function DividerFace({
       <div className="recipe-card__chapter-photo" aria-hidden>
         {cardPhotoMode === "photo" && cardPhotoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={cardPhotoUrl} alt="" className="recipe-card__chapter-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+          <img referrerPolicy="no-referrer" src={cardPhotoUrl} alt="" className="recipe-card__chapter-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
         ) : cardPhotoMode === "grid" && cardGridLayout ? (
           <div
             className="recipe-card__cover-photo recipe-card__cover-photo--grid recipe-card__chapter-photo--grid"
@@ -1558,7 +1562,7 @@ export const DividerFace = memo(function DividerFace({
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+                <img referrerPolicy="no-referrer" src={url} alt="" className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
                 <span className="photo-unavailable-message">Photo unavailable</span>
               </span>
             ))}
@@ -1890,13 +1894,13 @@ export const CoverFace = memo(function CoverFace({
                   }`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={image} alt="" className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+                  <img referrerPolicy="no-referrer" src={image} alt="" className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
                   <span className="photo-unavailable-message">Photo unavailable</span>
                 </span>
               ))}
             {dedicationMode === "photo" && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={draft.imageUrl} alt="" className="recipe-card__cover-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+              <img referrerPolicy="no-referrer" src={draft.imageUrl} alt="" className="recipe-card__cover-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
             )}
             {dedicationMode === "photo" && <span className="photo-unavailable-message">Photo unavailable</span>}
           </div>
@@ -1991,13 +1995,13 @@ export const CoverFace = memo(function CoverFace({
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={image} alt="" className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+                <img referrerPolicy="no-referrer" src={image} alt="" className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
                 <span className="photo-unavailable-message">Photo unavailable</span>
               </span>
             ))}
           {backCoverMode === "photo" && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={draft.imageUrl} alt="" className="recipe-card__cover-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+            <img referrerPolicy="no-referrer" src={draft.imageUrl} alt="" className="recipe-card__cover-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
           )}
           {backCoverMode === "photo" && <span className="photo-unavailable-message">Photo unavailable</span>}
         </div>
@@ -2084,13 +2088,13 @@ export const CoverFace = memo(function CoverFace({
               }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={image} alt="" className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+              <img referrerPolicy="no-referrer" src={image} alt="" className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
               <span className="photo-unavailable-message">Photo unavailable</span>
             </span>
           ))}
         {coverMode === "photo" && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={draft.imageUrl} alt="" className="recipe-card__cover-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+          <img referrerPolicy="no-referrer" src={draft.imageUrl} alt="" className="recipe-card__cover-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
         )}
         {coverMode === "photo" && <span className="photo-unavailable-message">Photo unavailable</span>}
       </div>
