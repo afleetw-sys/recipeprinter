@@ -3,7 +3,8 @@ import {
   Birthstone,
   Cormorant_Garamond,
   Courier_Prime,
-  Fraunces,
+  DM_Sans,
+  DM_Serif_Display,
   Gochi_Hand,
   Jost,
   Karla,
@@ -98,10 +99,18 @@ const nunitoSans = Nunito_Sans({
   preload: false,
 });
 
-// Market's title face, soft and a little playful, over Garden's Nunito Sans.
-const fraunces = Fraunces({
+// Market's faces: a chunky, friendly display serif over DM Sans.
+const dmSerifDisplay = DM_Serif_Display({
   subsets: ["latin"],
-  variable: "--font-fraunces",
+  weight: "400",
+  variable: "--font-dm-serif-display",
+  display: "swap",
+  preload: false,
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
   display: "swap",
   preload: false,
 });
@@ -212,7 +221,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${fraunces.variable} ${karla.variable}`}
+      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${karla.variable}`}
     >
       <body>
         <KeyboardInsetWatcher />

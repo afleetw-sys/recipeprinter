@@ -8801,13 +8801,14 @@ textarea.recipe-card__toc-title {
 }
 
 /* ── Market ────────────────────────────────────────────────────────────────
-   Warm off-white stock, a teal bar across the top, and the artist's row of
-   cut-paper groceries along the foot. Every size here is a fraction of the
-   card's width, taken off a 2000px-wide mockup, so both card sizes keep the
-   mockup's proportions: the bar is 66/2000 of the width, the grocery row
-   130/2000 tall and 30/2000 off the bottom edge.
+   Warm off-white stock, a thin teal bar across the top, and the artist's row
+   of cut-paper groceries along the foot. Sizes are fractions of the card's
+   width, taken off a 2000px-wide mockup, so both card sizes keep the same
+   proportions: the grocery row is 130/2000 tall and 30/2000 off the bottom
+   edge; the bar is 22/2000, a third of the mockup's, and thin enough that the
+   card's own top padding already clears it.
 
-   The card's top and bottom padding clear the art, and the bottom padding is
+   The card's bottom padding clears the art, and that padding is
    what the face measurer treats as the end of the page (lib/faceMeasure.ts),
    so a long recipe moves on to the next face instead of into the groceries. */
 .recipe-template--market {
@@ -8821,25 +8822,24 @@ textarea.recipe-card__toc-title {
   --recipe-step-bg: #dcebea;
   --recipe-footer: #7a716a;
   --recipe-radius: 0;
-  --recipe-title-font: var(--font-fraunces), Georgia, serif;
-  --market-bar: calc(var(--recipe-card-width) * 0.033);
+  --recipe-title-font: var(--font-dm-serif-display), Georgia, serif;
+  --market-bar: calc(var(--recipe-card-width) * 0.011);
   --market-band-top: calc(var(--recipe-card-width) * 0.08);
-  font-family: var(--font-nunito-sans), system-ui, sans-serif;
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
 }
 
 .recipe-template--market .recipe-card {
-  --recipe-card-padding-top: calc(var(--market-bar) + 0.2in);
   --recipe-card-padding-bottom: calc(var(--market-band-top) + 0.06in);
 }
 
 .recipe-print-preview--letter .recipe-template--market .recipe-card {
-  --recipe-card-padding-top: calc(var(--market-bar) + 0.42in);
   --recipe-card-padding-bottom: calc(var(--market-band-top) + 0.2in);
 }
 
+/* DM Serif Display has one weight; don't let the browser fake a bolder one. */
 .recipe-template--market .recipe-card__title {
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 400;
+  font-synthesis: none;
 }
 
 .recipe-template--market .recipe-card__step-number {
