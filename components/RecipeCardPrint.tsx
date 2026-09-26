@@ -1216,6 +1216,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         } ${stackedLayout ? "recipe-card__cols--stacked" : ""}`}
         style={shrinkStyle}
       >
+        {/* Diner's dashed box is the content area itself, drawn behind it —
+            see `.recipe-card__diner-box` in print.css. */}
+        {template === "diner" && (
+          <svg className="recipe-card__diner-box" aria-hidden focusable="false">
+            <rect />
+          </svg>
+        )}
         {hasIngredientsSection && (
           <section
             className={`recipe-card__ingredients ${ingredientsWide ? "recipe-card__ingredients--wide" : ""}`}

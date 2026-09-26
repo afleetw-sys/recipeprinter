@@ -7345,7 +7345,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--garden,
   .recipe-template--quilt,
   .recipe-template--market,
-  .recipe-template--supper
+  .recipe-template--supper,
+  .recipe-template--diner
 ) .recipe-card__footer {
   display: none;
 }
@@ -7359,7 +7360,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--garden,
   .recipe-template--quilt,
   .recipe-template--market,
-  .recipe-template--supper
+  .recipe-template--supper,
+  .recipe-template--diner
 ) .recipe-card__footer:has(.recipe-card__footer-source) {
   display: flex;
 }
@@ -7373,7 +7375,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--garden,
   .recipe-template--quilt,
   .recipe-template--market,
-  .recipe-template--supper
+  .recipe-template--supper,
+  .recipe-template--diner
 ) .recipe-card__footer-brand {
   display: none;
 }
@@ -8594,12 +8597,12 @@ textarea.recipe-card__toc-title {
 /* A smaller photo than the default on the newer themes, whose art already
    gives the card its picture: 0.72in on a 6x4 (Keepsake's size) and 1.3in on
    Full Page, against the default 0.92in / 1.7in. */
-.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper) .recipe-card__header--with-photo .recipe-card__photo {
+.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner) .recipe-card__header--with-photo .recipe-card__photo {
   width: 0.72in;
   height: 0.72in;
 }
 
-.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper) .recipe-card__header--with-photo .recipe-card__photo {
+.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner) .recipe-card__header--with-photo .recipe-card__photo {
   width: 1.3in;
   height: 1.3in;
 }
@@ -8686,7 +8689,8 @@ textarea.recipe-card__toc-title {
 .recipe-template--garden .recipe-card__header,
 .recipe-template--quilt .recipe-card__header,
 .recipe-template--market .recipe-card__header,
-.recipe-template--supper .recipe-card__header {
+.recipe-template--supper .recipe-card__header,
+.recipe-template--diner .recipe-card__header {
   border-bottom: 0;
 }
 
@@ -8968,4 +8972,130 @@ textarea.recipe-card__toc-title {
   width: calc(100% - 2 * var(--supper-inset));
   height: auto;
   bottom: calc(var(--supper-inset) - 28 * var(--supper-u));
+}
+
+/* ── Diner ─────────────────────────────────────────────────────────────────
+   Peach stock, a heavy red Caprasimo title with a black outline and a hard
+   black offset shadow, and the recipe in a sky-blue box with a dashed black
+   edge. Measured off the artist's frame, which is about 1500 units wide:
+   `--diner-u` is one of those units at this card's width, so both sizes keep
+   the design's proportions.
+
+   - Title: 96 units, #DB3937, a 2-unit black outline outside the letters
+     (a 4-unit stroke painted under the fill), shadow -5, 4, no blur.
+   - Box: #A5DAEA, 30-unit corners, a 6-unit black stroke inside the edge,
+     dashed 45 on 48 off. Inset 24 units from the card's sides and 26 from
+     its bottom.
+
+   The box is the content area (`.recipe-card__cols`), which already stretches
+   to the bottom of the card on screen; print keeps that stretch too (see the
+   print rule at the end of this block), so the box always reaches the bottom.
+   Its outline is an SVG (`.recipe-card__diner-box`), since a CSS dashed
+   border can't be told how long to make its dashes.
+
+   The card's bottom padding sits above the box's inner padding, and it is
+   what the face measurer treats as the end of the page, so text never runs
+   onto the dashed edge. */
+.recipe-template--diner {
+  --recipe-bg: #fde6d2;
+  --recipe-ink: #1f1a17;
+  --recipe-muted: #5c4b40;
+  --recipe-accent: #db3937;
+  --recipe-accent-2: #db3937;
+  --recipe-bullet: #db3937;
+  --recipe-line: rgba(31, 26, 23, 0.2);
+  --recipe-step-bg: #fde6d2;
+  --recipe-footer: #3d4a52;
+  --recipe-radius: 0;
+  --recipe-title-font: var(--font-caprasimo), Georgia, serif;
+  --diner-u: calc(var(--recipe-card-width) / 1500);
+  --diner-inner: calc(42 * var(--diner-u));
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+}
+
+.recipe-template--diner .recipe-card {
+  --recipe-card-padding-x: calc(24 * var(--diner-u));
+  --recipe-card-padding-top: calc(24 * var(--diner-u));
+  --recipe-card-padding-bottom: calc(26 * var(--diner-u) + var(--diner-inner));
+}
+
+.recipe-template--diner .recipe-card__title {
+  font-size: calc(96 * var(--diner-u));
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: #db3937;
+  -webkit-text-stroke: calc(4 * var(--diner-u)) #000;
+  paint-order: stroke fill;
+  text-shadow: calc(-5 * var(--diner-u)) calc(4 * var(--diner-u)) 0 #000;
+  font-synthesis: none;
+}
+
+.recipe-template--diner .recipe-card__header {
+  margin-bottom: calc(22 * var(--diner-u));
+}
+
+.recipe-template--diner .recipe-card__cols {
+  position: relative;
+  padding: var(--diner-inner);
+  /* Down to the box's bottom edge, past the card padding that the measurer
+     reads as the end of the page. */
+  margin-bottom: calc(var(--diner-inner) * -1);
+  background: #a5daea;
+  border-radius: calc(30 * var(--diner-u));
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-template--diner .recipe-card__footer {
+  left: calc(24 * var(--diner-u) + var(--diner-inner));
+  right: calc(24 * var(--diner-u) + var(--diner-inner));
+}
+
+.recipe-template--diner .recipe-card__label,
+.recipe-template--diner .recipe-card__section-title {
+  color: #1f1a17;
+}
+
+.recipe-template--diner .recipe-card__step-number {
+  color: #1f1a17;
+}
+
+.recipe-template--diner .recipe-card__photo-img {
+  border-radius: calc(20 * var(--diner-u));
+}
+
+/* The dashed outline. Stroke centred on a rect inset by half its width, so
+   the whole 6-unit line lies inside the box, as the design's "inside"
+   stroke does. Only rendered for Diner (see RecipeCardFace). */
+.recipe-card__diner-box {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.recipe-card__diner-box rect {
+  x: calc(3 * var(--diner-u));
+  y: calc(3 * var(--diner-u));
+  width: calc(100% - 6 * var(--diner-u));
+  height: calc(100% - 6 * var(--diner-u));
+  rx: calc(27 * var(--diner-u));
+  fill: none;
+  stroke: #000;
+  stroke-width: calc(6 * var(--diner-u));
+  stroke-dasharray: calc(45 * var(--diner-u)) calc(48 * var(--diner-u));
+}
+
+/* Print lays recipe faces out as blocks (see the @media print `.recipe-card`
+   rule), which would shrink the box to its text. A face is one fixed-height,
+   unbreakable page, the same reason chapter openers keep their grid there, so
+   Diner keeps the on-screen column and the box still reaches the bottom. */
+@media print {
+  .recipe-template--diner .recipe-card:not(.recipe-card--cover):not(.recipe-card--chapter) {
+    display: flex !important;
+    flex-direction: column;
+  }
 }
