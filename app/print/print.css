@@ -8606,7 +8606,7 @@ textarea.recipe-card__toc-title {
 }
 
 /* ── Garden ────────────────────────────────────────────────────────────────
-   Soft grey stock with the artist's sage hills along the foot and a vine of
+   Pale sage stock with the artist's sage hills along the foot and a vine of
    tomatoes tucked into the bottom-right corner. Colour comes from the art;
    the type stays in olive and sage so it sits with it, with tomato bullets.
 
@@ -8616,7 +8616,7 @@ textarea.recipe-card__toc-title {
    on to the next face instead of running over the fruit. Set on the card
    itself so it also beats the smaller padding a continued face asks for. */
 .recipe-template--garden {
-  --recipe-bg: #e8e8e8;
+  --recipe-bg: #e6ebdc;
   --recipe-ink: #33392a;
   --recipe-muted: #6f745f;
   --recipe-accent: #5f6b45;
@@ -8629,7 +8629,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--garden .recipe-card {
-  --recipe-card-padding-bottom: 0.76in;
+  --recipe-card-padding-bottom: 0.86in;
 }
 
 .recipe-print-preview--letter .recipe-template--garden .recipe-card {
@@ -8653,18 +8653,19 @@ textarea.recipe-card__toc-title {
   display: block;
 }
 
-/* The band's lower part is a solid fill, so it is cropped from the bottom:
-   only its ragged top edge needs to show in full. Set taller than the art's
-   own proportion at card width, so `cover` scales it up and trims the sides,
-   which gives the hills more body without distorting them. */
+.recipe-template--garden .recipe-card__header,
+.recipe-template--quilt .recipe-card__header {
+  border-bottom: 0;
+}
+
+/* The whole band, at its own proportions across the card's width: nothing
+   cropped from its ends or its ragged top. */
 .recipe-card__garden-band {
   left: 0;
   right: 0;
   bottom: 0;
   width: 100%;
-  height: 0.62in;
-  object-fit: cover;
-  object-position: top;
+  height: auto;
 }
 
 .recipe-card__garden-tomatoes {
@@ -8672,10 +8673,6 @@ textarea.recipe-card__toc-title {
   bottom: 0;
   width: 1.3in;
   height: auto;
-}
-
-.recipe-print-preview--letter .recipe-card__garden-band {
-  height: 1.15in;
 }
 
 .recipe-print-preview--letter .recipe-card__garden-tomatoes {

@@ -56,6 +56,6 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },
   { id: "counter", label: "Counter", detail: "Black-and-white notes with tiny counter details" },
   { id: "keepsake", label: "Keepsake", detail: "Cream recipe-box card with classic family style" },
-  { id: "garden", label: "Garden", detail: "Soft grey stock, sage hills and a vine of tomatoes" },
+  { id: "garden", label: "Garden", detail: "Pale sage stock, rolling hills and a vine of tomatoes" },
   { id: "quilt", label: "Quilt", detail: "Warm cream with a quilted strip of green and rust tiles" },
 ];
