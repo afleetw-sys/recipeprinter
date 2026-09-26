@@ -54,9 +54,9 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   { id: "typewriter", label: "Typewriter", detail: "Black and white, typed on an index card" },
   { id: "bistro", label: "Bistro", detail: "Blue checks, tomato red, playful kitchen card" },
   { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },
+  { id: "market", label: "Market", detail: "A thin teal bar up top and a row of cut-paper groceries below" },
   { id: "counter", label: "Counter", detail: "Black-and-white notes with tiny counter details" },
   { id: "keepsake", label: "Keepsake", detail: "Cream recipe-box card with classic family style" },
   { id: "garden", label: "Garden", detail: "Pale sage stock, rolling hills and a vine of tomatoes" },
   { id: "quilt", label: "Quilt", detail: "Warm cream with a quilted strip of green and rust tiles" },
-  { id: "market", label: "Market", detail: "A thin teal bar up top and a row of cut-paper groceries below" },
 ];
