@@ -9086,7 +9086,21 @@ textarea.recipe-card__toc-title {
   --recipe-title-font: var(--font-anton), Impact, sans-serif;
   --poster-u: calc(var(--recipe-card-width) / 1500);
   --poster-color: #bbf55b;
+  /* The frame's inset from the card's top and sides (its bottom is always
+     24), and the content padding that follows from it. */
+  --poster-inset: calc(24 * var(--poster-u));
+  --poster-pad-x: calc(76 * var(--poster-u));
+  --poster-pad-top: calc(70 * var(--poster-u));
   font-family: var(--font-dm-sans), system-ui, sans-serif;
+}
+
+/* On Full Page the band would otherwise show as a thin sliver around a tall
+   sheet, so the frame comes in further on the top and sides to show more of
+   the colour, closer to how much a 4x6 shows. */
+.recipe-print-preview--letter .recipe-template--poster {
+  --poster-inset: calc(48 * var(--poster-u));
+  --poster-pad-x: calc(100 * var(--poster-u));
+  --poster-pad-top: calc(94 * var(--poster-u));
 }
 
 /* The colours, in the order recipes take them (the first is the default
@@ -9133,8 +9147,8 @@ textarea.recipe-card__toc-title {
 
 .recipe-template--poster .recipe-card {
   isolation: isolate;
-  --recipe-card-padding-x: calc(76 * var(--poster-u));
-  --recipe-card-padding-top: calc(70 * var(--poster-u));
+  --recipe-card-padding-x: var(--poster-pad-x);
+  --recipe-card-padding-top: var(--poster-pad-top);
   --recipe-card-padding-bottom: calc(70 * var(--poster-u));
 }
 
@@ -9159,8 +9173,8 @@ textarea.recipe-card__toc-title {
 .recipe-template--poster .recipe-card__headline {
   flex: 0 1 auto;
   width: fit-content;
-  max-width: calc(100% + 76 * var(--poster-u));
-  margin: calc(-70 * var(--poster-u)) 0 0 calc(-76 * var(--poster-u));
+  max-width: calc(100% + var(--poster-pad-x));
+  margin: calc(var(--poster-pad-top) * -1) 0 0 calc(var(--poster-pad-x) * -1);
   padding: calc(32 * var(--poster-u));
   background: var(--poster-color);
   -webkit-print-color-adjust: exact;
@@ -9224,7 +9238,10 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-card__poster-frame {
-  inset: calc(24 * var(--poster-u));
+  top: var(--poster-inset);
+  left: var(--poster-inset);
+  right: var(--poster-inset);
+  bottom: calc(24 * var(--poster-u));
   box-sizing: border-box;
   border: calc(16 * var(--poster-u)) solid #1f1f1f;
   background: #ffffff;
