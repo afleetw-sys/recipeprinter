@@ -8976,15 +8976,15 @@ textarea.recipe-card__toc-title {
 
 /* ── Diner ─────────────────────────────────────────────────────────────────
    Peach stock and a heavy red Caprasimo title with a black outline and a hard
-   black offset shadow, with the photo framed in a sky-blue box with a dashed
-   black edge. Measured off the artist's frame, which is about 1500 units
+   black offset shadow, with the photo framed by a dashed black edge on the
+   card's own peach. Measured off the artist's frame, which is about 1500 units
    wide: `--diner-u` is one of those units at this card's width, so both sizes
    keep the design's proportions.
 
    - Title: 96 units, #DB3937, a 2-unit black outline outside the letters
      (a 4-unit stroke painted under the fill), shadow -5, 4, no blur.
-   - Photo frame: #A5DAEA, 30-unit corners, a 6-unit black stroke inside the
-     edge dashed 18 on 14 off (shorter than the mockup's 45/48, which left
+   - Photo frame: #FDE6D2 (the card colour), 30-unit corners, a 6-unit black stroke inside the
+     edge dashed 24 on 18 off (shorter than the mockup's 45/48, which left
      only a few dashes around a photo this small), drawn as SVG (`.recipe-card__diner-box`) since a
      CSS dashed border can't be told how long to make its dashes. */
 .recipe-template--diner {
@@ -9017,7 +9017,7 @@ textarea.recipe-card__toc-title {
 
 .recipe-template--diner .recipe-card__photo {
   padding: calc(18 * var(--diner-u));
-  background: #a5daea;
+  background: #fde6d2;
   border-radius: calc(30 * var(--diner-u));
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
@@ -9048,5 +9048,5 @@ textarea.recipe-card__toc-title {
   fill: none;
   stroke: #000;
   stroke-width: calc(6 * var(--diner-u));
-  stroke-dasharray: calc(18 * var(--diner-u)) calc(14 * var(--diner-u));
+  stroke-dasharray: calc(24 * var(--diner-u)) calc(18 * var(--diner-u));
 }

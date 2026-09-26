@@ -60,5 +60,5 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   { id: "garden", label: "Garden", detail: "Soft green stock, rolling hills and a vine of tomatoes" },
   { id: "quilt", label: "Quilt", detail: "Warm cream with a quilted strip of green and rust tiles" },
   { id: "supper", label: "Supper", detail: "A deep red frame set with a fork, spoon or knife" },
-  { id: "diner", label: "Diner", detail: "A bold red title over a dashed sky-blue box" },
+  { id: "diner", label: "Diner", detail: "A bold outlined red title and a dashed photo frame" },
 ];

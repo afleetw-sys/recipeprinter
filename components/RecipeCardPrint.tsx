@@ -1203,7 +1203,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 onError={(event) => markImageUnavailable(event.currentTarget)}
               />
               <span className="photo-unavailable-message">Photo unavailable</span>
-              {/* Diner frames the photo in a dashed sky-blue box — see
+              {/* Diner frames the photo with a dashed edge — see
                   `.recipe-card__diner-box` in print.css. */}
               {template === "diner" && (
                 <svg className="recipe-card__diner-box" aria-hidden focusable="false">
