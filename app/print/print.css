@@ -8629,11 +8629,14 @@ textarea.recipe-card__toc-title {
    tomatoes tucked into the bottom-right corner. Colour comes from the art;
    the type stays in olive and sage so it sits with it, with tomato bullets.
 
-   The art owns the bottom of the card, so the card's bottom padding is raised
-   to clear the top of the tomatoes. That padding is what the face measurer
-   treats as the end of the page (lib/faceMeasure.ts), so a long recipe moves
-   on to the next face instead of running over the fruit. Set on the card
-   itself so it also beats the smaller padding a continued face asks for. */
+   The art owns the bottom of the card, but not evenly: the hills are low
+   across the whole width and the tomatoes stand much taller in one corner.
+   So the card's bottom padding only clears the hills, and the tomatoes are a
+   keep-out corner (`--recipe-card-keepout-w/-h`): the face measurer
+   (lib/faceMeasure.ts) stops lines over that corner above the tomatoes and
+   lets the rest run down to the hills. The art itself never moves to make
+   room. Set on the card itself so it also beats the smaller padding a
+   continued face asks for. */
 .recipe-template--garden {
   --recipe-bg: #eceee5;
   --garden-tomatoes: 1.5in;
@@ -8662,11 +8665,21 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--garden .recipe-card {
-  --recipe-card-padding-bottom: 0.9in;
+  --recipe-card-padding-bottom: 0.7in;
+  --recipe-card-keepout-w: 1.55in;
+  --recipe-card-keepout-h: 0.9in;
 }
 
 .recipe-print-preview--letter .recipe-template--garden .recipe-card {
-  --recipe-card-padding-bottom: 1.85in;
+  --recipe-card-padding-bottom: 1.22in;
+  --recipe-card-keepout-w: 3.2in;
+  --recipe-card-keepout-h: 1.85in;
+}
+
+/* The source link sits on the bottom padding line, so it stops short of the
+   tomatoes too. */
+.recipe-template--garden .recipe-card__footer {
+  right: calc(var(--recipe-card-padding-x) + var(--recipe-card-keepout-w, 0in));
 }
 
 /* Hidden unless the card is Garden, like every template decoration (see
