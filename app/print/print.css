@@ -8929,14 +8929,19 @@ textarea.recipe-card__toc-title {
   --supper-u: calc((var(--recipe-card-width) - 2 * var(--supper-inset)) / 1452);
 }
 
+/* The frame takes the card's usual margin, so the text gets its own:
+   about 0.3in clear of the frame's inner edge on 4x6, half an inch on Full
+   Page. The default padding left it 0.15in from the line on 4x6. */
 .recipe-template--supper .recipe-card {
-  --recipe-card-padding-top: 0.34in;
-  --recipe-card-padding-bottom: 0.46in;
+  --recipe-card-padding-x: 0.46in;
+  --recipe-card-padding-top: 0.46in;
+  --recipe-card-padding-bottom: 0.5in;
 }
 
 .recipe-print-preview--letter .recipe-template--supper .recipe-card {
-  --recipe-card-padding-top: 0.72in;
-  --recipe-card-padding-bottom: 0.78in;
+  --recipe-card-padding-x: 0.76in;
+  --recipe-card-padding-top: 0.76in;
+  --recipe-card-padding-bottom: 0.82in;
 }
 
 .recipe-template--supper .recipe-card__title {
