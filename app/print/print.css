@@ -6303,10 +6303,11 @@ textarea.recipe-card__toc-title {
 
 /* ── Heirloom: a sepia keepsake snapshot tipped into the page, Polaroid mat ── */
 .recipe-template--heirloom .recipe-card__photo {
-  border-radius: 1px;
+  border-radius: 3px;
 }
 .recipe-template--heirloom .recipe-card__photo-img {
-  border-radius: 0;
+  /* Just softened: with its mat gone, a hard corner read as a raw paste-in. */
+  border-radius: 3px;
 }
 
 /* ── Keepsake: a small inset photo window built into the recipe card ─────── */
@@ -8626,6 +8627,13 @@ textarea.recipe-card__toc-title {
   --recipe-step-bg: #d6dcc4;
   --recipe-footer: #6f745f;
   --recipe-radius: 0;
+  --recipe-title-font: var(--font-cormorant), Georgia, serif;
+  font-family: var(--font-nunito-sans), system-ui, sans-serif;
+}
+
+/* Softened corners, like everything else the art draws. */
+.recipe-template--garden .recipe-card__photo-img {
+  border-radius: 6px;
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--garden .recipe-card {
@@ -8708,6 +8716,18 @@ textarea.recipe-card__toc-title {
   --recipe-radius: 0;
   --quilt-strip: 0.58in;
   --quilt-gutter: 0.2in;
+  --recipe-title-font: var(--font-jost), system-ui, sans-serif;
+  font-family: var(--font-jost), system-ui, sans-serif;
+}
+
+.recipe-template--quilt .recipe-card__title {
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* A rounded rectangle, the mid-century shape the tiles and Jost both lean on. */
+.recipe-template--quilt .recipe-card__photo-img {
+  border-radius: 8px;
 }
 
 .recipe-print-preview--letter .recipe-template--quilt {

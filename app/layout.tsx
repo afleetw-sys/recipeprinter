@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import {
   Birthstone,
+  Cormorant_Garamond,
   Courier_Prime,
   Gochi_Hand,
+  Jost,
   Karla,
   Manrope,
+  Nunito_Sans,
   Playfair_Display,
 } from "next/font/google";
 import "./globals.css";
@@ -74,6 +77,31 @@ const courierPrime = Courier_Prime({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-courier-prime",
+  display: "swap",
+  preload: false,
+});
+
+// Garden's faces: a Garamond title over a soft rounded sans.
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["700"],
+  variable: "--font-cormorant",
+  display: "swap",
+  preload: false,
+});
+
+const nunitoSans = Nunito_Sans({
+  subsets: ["latin"],
+  variable: "--font-nunito-sans",
+  display: "swap",
+  preload: false,
+});
+
+// Quilt's face, title and body: Jost, a Futura-style geometric sans, for the
+// tiles' mid-century look.
+const jost = Jost({
+  subsets: ["latin"],
+  variable: "--font-jost",
   display: "swap",
   preload: false,
 });
@@ -175,7 +203,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${karla.variable}`}
+      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${karla.variable}`}
     >
       <body>
         <KeyboardInsetWatcher />
