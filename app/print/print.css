@@ -7344,7 +7344,10 @@ textarea.recipe-card__toc-title {
   .recipe-template--typewriter,
   .recipe-template--garden,
   .recipe-template--quilt,
-  .recipe-template--market
+  .recipe-template--market,
+  .recipe-template--supper,
+  .recipe-template--diner,
+  .recipe-template--poster
 ) .recipe-card__footer {
   display: none;
 }
@@ -7357,7 +7360,10 @@ textarea.recipe-card__toc-title {
   .recipe-template--typewriter,
   .recipe-template--garden,
   .recipe-template--quilt,
-  .recipe-template--market
+  .recipe-template--market,
+  .recipe-template--supper,
+  .recipe-template--diner,
+  .recipe-template--poster
 ) .recipe-card__footer:has(.recipe-card__footer-source) {
   display: flex;
 }
@@ -7370,7 +7376,10 @@ textarea.recipe-card__toc-title {
   .recipe-template--typewriter,
   .recipe-template--garden,
   .recipe-template--quilt,
-  .recipe-template--market
+  .recipe-template--market,
+  .recipe-template--supper,
+  .recipe-template--diner,
+  .recipe-template--poster
 ) .recipe-card__footer-brand {
   display: none;
 }
@@ -8488,58 +8497,17 @@ textarea.recipe-card__toc-title {
   --recipe-radius: 0;
   --recipe-bullet: var(--recipe-ink);
   --recipe-title-font: var(--font-courier-prime), "Courier New", monospace;
-  --typewriter-ink: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='i'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.07' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -0.55 1.17'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23i)'/%3E%3C/svg%3E");
   font-family: var(--font-courier-prime), "Courier New", monospace;
 }
 
-/* Uneven ribbon ink. A real key strikes a little harder or softer each time;
-   one font can't vary letter to letter, so a mask of letter-sized noise
-   (between about four fifths and full strength, so it reads
-   as a ribbon, not as smudging) is laid over the typed text instead,
-   and a hair of stroke first makes the dark end of that range as heavy as a
-   firm strike. The mask only fades what is there, so the text stays real
-   vector type in print.
+/* A hair of stroke in the text's own colour, so the type strikes as heavy as
+   a real ribbon. It stays vector text in print.
 
-   Each list row starts the pattern from its own corner, so rows are offset
-   by nth-child or every line would open with the same pale letter. */
+   There used to be an "uneven ink" noise mask over the text as well. It came
+   out: on a cook's printed card (2026-09-26) it erased vertical strips of
+   letters through every line, and the preview must show what prints. */
 .recipe-template--typewriter .recipe-card {
   -webkit-text-stroke: 0.02em currentColor;
-}
-
-.recipe-template--typewriter .recipe-card__title,
-.recipe-template--typewriter .recipe-card__meta,
-.recipe-template--typewriter .recipe-card__label,
-.recipe-template--typewriter .recipe-card__section-title,
-.recipe-template--typewriter .recipe-card__ingredients li,
-.recipe-template--typewriter .recipe-card__method li {
-  -webkit-mask-image: var(--typewriter-ink);
-  mask-image: var(--typewriter-ink);
-  -webkit-mask-size: 1.1in 1.1in;
-  mask-size: 1.1in 1.1in;
-}
-
-/* A mask also clips everything outside the box it sits on, and a row's
-   "+ Add below" (`.recipe-card__add-line`) hangs off the row's bottom edge, so
-   the ink would cut it in half. Section titles carry one too. It only shows
-   on hover or focus, so the ink steps aside then. Print never hovers, so paper keeps it. */
-.recipe-template--typewriter :is(.recipe-card__ingredients li, .recipe-card__method li, .recipe-card__label, .recipe-card__section-title):is(:hover, :focus-within) {
-  -webkit-mask-image: none;
-  mask-image: none;
-}
-
-.recipe-template--typewriter :is(.recipe-card__ingredients, .recipe-card__method) li:nth-child(3n + 2) {
-  -webkit-mask-position: 0.37in 0.21in;
-  mask-position: 0.37in 0.21in;
-}
-
-.recipe-template--typewriter :is(.recipe-card__ingredients, .recipe-card__method) li:nth-child(3n + 3) {
-  -webkit-mask-position: 0.71in 0.53in;
-  mask-position: 0.71in 0.53in;
-}
-
-.recipe-template--typewriter .recipe-card__meta {
-  -webkit-mask-position: 0.52in 0.8in;
-  mask-position: 0.52in 0.8in;
 }
 
 .recipe-template--typewriter .recipe-card__title {
@@ -8591,12 +8559,12 @@ textarea.recipe-card__toc-title {
 /* A smaller photo than the default on the newer themes, whose art already
    gives the card its picture: 0.72in on a 6x4 (Keepsake's size) and 1.3in on
    Full Page, against the default 0.92in / 1.7in. */
-.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market) .recipe-card__header--with-photo .recipe-card__photo {
+.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster) .recipe-card__header--with-photo .recipe-card__photo {
   width: 0.72in;
   height: 0.72in;
 }
 
-.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market) .recipe-card__header--with-photo .recipe-card__photo {
+.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster) .recipe-card__header--with-photo .recipe-card__photo {
   width: 1.3in;
   height: 1.3in;
 }
@@ -8623,11 +8591,14 @@ textarea.recipe-card__toc-title {
    tomatoes tucked into the bottom-right corner. Colour comes from the art;
    the type stays in olive and sage so it sits with it, with tomato bullets.
 
-   The art owns the bottom of the card, so the card's bottom padding is raised
-   to clear the top of the tomatoes. That padding is what the face measurer
-   treats as the end of the page (lib/faceMeasure.ts), so a long recipe moves
-   on to the next face instead of running over the fruit. Set on the card
-   itself so it also beats the smaller padding a continued face asks for. */
+   The art owns the bottom of the card, but not evenly: the hills are low
+   across the whole width and the tomatoes stand much taller in one corner.
+   So the card's bottom padding only clears the hills, and the tomatoes are a
+   keep-out corner (`--recipe-card-keepout-w/-h`): the face measurer
+   (lib/faceMeasure.ts) stops lines over that corner above the tomatoes and
+   lets the rest run down to the hills. The art itself never moves to make
+   room. Set on the card itself so it also beats the smaller padding a
+   continued face asks for. */
 .recipe-template--garden {
   --recipe-bg: #eceee5;
   --garden-tomatoes: 1.5in;
@@ -8656,11 +8627,21 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--garden .recipe-card {
-  --recipe-card-padding-bottom: 0.9in;
+  --recipe-card-padding-bottom: 0.7in;
+  --recipe-card-keepout-w: 1.55in;
+  --recipe-card-keepout-h: 0.9in;
 }
 
 .recipe-print-preview--letter .recipe-template--garden .recipe-card {
-  --recipe-card-padding-bottom: 1.85in;
+  --recipe-card-padding-bottom: 1.22in;
+  --recipe-card-keepout-w: 3.2in;
+  --recipe-card-keepout-h: 1.85in;
+}
+
+/* The source link sits on the bottom padding line, so it stops short of the
+   tomatoes too. */
+.recipe-template--garden .recipe-card__footer {
+  right: calc(var(--recipe-card-padding-x) + var(--recipe-card-keepout-w, 0in));
 }
 
 /* Hidden unless the card is Garden, like every template decoration (see
@@ -8682,7 +8663,10 @@ textarea.recipe-card__toc-title {
 
 .recipe-template--garden .recipe-card__header,
 .recipe-template--quilt .recipe-card__header,
-.recipe-template--market .recipe-card__header {
+.recipe-template--market .recipe-card__header,
+.recipe-template--supper .recipe-card__header,
+.recipe-template--diner .recipe-card__header,
+.recipe-template--poster .recipe-card__header {
   border-bottom: 0;
 }
 
@@ -8891,4 +8875,374 @@ textarea.recipe-card__toc-title {
   bottom: calc(var(--recipe-card-width) * 0.015);
   width: 100%;
   height: auto;
+}
+
+/* ── Supper ────────────────────────────────────────────────────────────────
+   Warm cream stock inside a deep red rounded frame, with a utensil set into
+   the frame's bottom edge that takes turns by recipe (`SupperFrame`).
+
+   Everything is in the artwork's own units, scaled to the card: the artist's
+   frame is 1452 wide with a 16-unit line and a 48-unit outer corner, and
+   `--supper-u` is one of those units at this card's width. The frame is inset
+   2% of the card's width, as in the mockup. Each utensil image is the art's
+   strip from y 770 to 880; its bottom sits 28 units below the frame's outer
+   bottom edge (852), which is what puts the utensil on the line.
+
+   The bottom padding clears the tallest utensil (the spoon's bowl), and it is
+   what the face measurer treats as the end of the page. */
+.recipe-template--supper {
+  --recipe-bg: #eedfc4;
+  --recipe-ink: #2f1f1a;
+  --recipe-muted: #7d6353;
+  --recipe-accent: #7a151b;
+  --recipe-accent-2: #7a151b;
+  --recipe-bullet: #7a151b;
+  --recipe-line: rgba(122, 21, 27, 0.25);
+  --recipe-step-bg: #e3cfae;
+  --recipe-footer: #7d6353;
+  --recipe-radius: 0;
+  --supper-inset: calc(var(--recipe-card-width) * 0.02);
+  --supper-u: calc((var(--recipe-card-width) - 2 * var(--supper-inset)) / 1452);
+}
+
+/* The frame takes the card's usual margin, so the text gets its own: about
+   0.22in clear of the frame's inner edge on 4x6 and 0.4in on Full Page. The
+   default padding left it 0.15in from the line on 4x6. */
+.recipe-template--supper .recipe-card {
+  --recipe-card-padding-x: 0.39in;
+  --recipe-card-padding-top: 0.4in;
+  --recipe-card-padding-bottom: 0.48in;
+}
+
+.recipe-print-preview--letter .recipe-template--supper .recipe-card {
+  --recipe-card-padding-x: 0.66in;
+  --recipe-card-padding-top: 0.68in;
+  --recipe-card-padding-bottom: 0.8in;
+}
+
+/* A back or continued face has no title, and its first line ("Steps
+   continued") already sits a little below the padding edge, so it takes much
+   less top padding than the front: about the side gap again, not twice it. */
+.recipe-template--supper .recipe-card--continued {
+  --recipe-card-padding-top: 0.2in;
+}
+
+.recipe-print-preview--letter .recipe-template--supper .recipe-card--continued {
+  --recipe-card-padding-top: 0.36in;
+}
+
+.recipe-template--supper .recipe-card__title {
+  color: var(--recipe-accent);
+}
+
+/* Hidden unless the card is Supper, like every template decoration (see
+   `.recipe-card__counter-band`). */
+.recipe-card__supper-frame,
+.recipe-card__supper-utensil {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  user-select: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-template--supper .recipe-card__supper-frame,
+.recipe-template--supper .recipe-card__supper-utensil {
+  display: block;
+}
+
+.recipe-card__supper-frame {
+  inset: var(--supper-inset);
+  box-sizing: border-box;
+  border: calc(16 * var(--supper-u)) solid #7a151b;
+  border-radius: calc(48 * var(--supper-u));
+}
+
+.recipe-card__supper-utensil {
+  left: var(--supper-inset);
+  width: calc(100% - 2 * var(--supper-inset));
+  height: auto;
+  bottom: calc(var(--supper-inset) - 28 * var(--supper-u));
+}
+
+/* ── Diner ─────────────────────────────────────────────────────────────────
+   Pale peach stock (#FFF1E5) and a heavy red Caprasimo title with a black
+   outline and a hard black offset shadow, with the photo framed in a sky-blue
+   box with a dashed black edge. Measured off the artist's frame, which is about 1500 units
+   wide: `--diner-u` is one of those units at this card's width, so both sizes
+   keep the design's proportions.
+
+   - Title: 96 units, #DB3937, a 2-unit black outline outside the letters
+     (a 4-unit stroke painted under the fill), shadow -5, 4, no blur.
+   - Photo frame: #A5DAEA, 30-unit corners, a 6-unit black stroke inside the
+     edge dashed 24 on 18 off (shorter than the mockup's 45/48, which left
+     only a few dashes around a photo this small), drawn as SVG (`.recipe-card__diner-box`) since a
+     CSS dashed border can't be told how long to make its dashes. */
+.recipe-template--diner {
+  --recipe-bg: #fff1e5;
+  --recipe-ink: #1f1a17;
+  --recipe-muted: #5c4b40;
+  --recipe-accent: #1f1a17;
+  --recipe-accent-2: #db3937;
+  --recipe-bullet: #db3937;
+  --recipe-line: rgba(31, 26, 23, 0.2);
+  --recipe-step-bg: #f6cdb0;
+  --recipe-footer: #5c4b40;
+  --recipe-radius: 0;
+  --recipe-title-font: var(--font-caprasimo), Georgia, serif;
+  --diner-u: calc(var(--recipe-card-width) / 1500);
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+}
+
+.recipe-template--diner .recipe-card__title {
+  font-size: calc(96 * var(--diner-u));
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: #db3937;
+  -webkit-text-stroke: calc(4 * var(--diner-u)) #000;
+  paint-order: stroke fill;
+  text-shadow: calc(-5 * var(--diner-u)) calc(4 * var(--diner-u)) 0 #000;
+  font-synthesis: none;
+}
+
+.recipe-template--diner .recipe-card__photo {
+  padding: calc(18 * var(--diner-u));
+  background: #a5daea;
+  border-radius: calc(30 * var(--diner-u));
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Larger than the other new themes' photos: the frame is the theme's second
+   feature, and its mat takes some of the space. */
+.recipe-print-preview--card-6x4 .recipe-template--diner .recipe-card__header--with-photo .recipe-card__photo {
+  width: 0.9in;
+  height: 0.9in;
+}
+
+.recipe-print-preview--letter .recipe-template--diner .recipe-card__header--with-photo .recipe-card__photo {
+  width: 1.6in;
+  height: 1.6in;
+}
+
+.recipe-template--diner .recipe-card__photo-img {
+  border-radius: calc(14 * var(--diner-u));
+}
+
+/* The dashed outline. Stroke centred on a rect inset by half its width, so
+   the whole 6-unit line lies inside the frame, as the design's "inside"
+   stroke does. Only rendered for Diner (see RecipeCardFace). */
+.recipe-card__diner-box {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.recipe-card__diner-box rect {
+  x: calc(3 * var(--diner-u));
+  y: calc(3 * var(--diner-u));
+  width: calc(100% - 6 * var(--diner-u));
+  height: calc(100% - 6 * var(--diner-u));
+  rx: calc(27 * var(--diner-u));
+  fill: none;
+  stroke: #000;
+  stroke-width: calc(6 * var(--diner-u));
+  stroke-dasharray: calc(24 * var(--diner-u)) calc(18 * var(--diner-u));
+}
+
+/* ── Poster ────────────────────────────────────────────────────────────────
+   A colour band across the top of the card, a white frame with a heavy black
+   border laid over it, and a tab of the band's colour holding the title (in
+   Anton) and the cook time and servings, which reaches up to the card's
+   corner and covers the frame's. Measured off
+   the artist's 1500-unit-wide frame: `--poster-u` is one of those units at
+   this card's width. Band 300 units tall; border 16, inset 24 from the card's
+   edges; title 72 units; the tab padded 32 all round.
+
+   The colour takes turns by recipe: RecipeCardFace marks the card with
+   `data-poster-color`, and the band and the tab both read `--poster-color`
+   from it, so a thumbnail without the band still gets the right tab. Add a
+   colour with another rule below and by bumping POSTER_COLOR_COUNT in
+   RecipeCardPrint.
+
+   The band and frame sit at z-index -1 inside an isolated card, so they paint
+   over the card's background but under its text. */
+.recipe-template--poster {
+  --recipe-bg: #ffffff;
+  --recipe-ink: #1f1f1f;
+  --recipe-muted: #5b5b5b;
+  --recipe-accent: #1f1f1f;
+  --recipe-accent-2: #1f1f1f;
+  --recipe-bullet: #1f1f1f;
+  --recipe-line: rgba(31, 31, 31, 0.2);
+  --recipe-step-bg: #1f1f1f;
+  --recipe-footer: #5b5b5b;
+  --recipe-radius: 0;
+  --recipe-title-font: var(--font-anton), Impact, sans-serif;
+  --poster-u: calc(var(--recipe-card-width) / 1500);
+  --poster-color: #bbf55b;
+  /* The frame's inset from the card's top and sides (its bottom is always
+     24), and the content padding that follows from it. */
+  --poster-inset: calc(24 * var(--poster-u));
+  --poster-pad-x: calc(76 * var(--poster-u));
+  --poster-pad-top: calc(70 * var(--poster-u));
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+}
+
+/* On Full Page the band would otherwise show as a thin sliver around a tall
+   sheet, so the frame comes in further on the top and sides to show more of
+   the colour, closer to how much a 4x6 shows. */
+.recipe-print-preview--letter .recipe-template--poster {
+  --poster-inset: calc(48 * var(--poster-u));
+  --poster-pad-x: calc(100 * var(--poster-u));
+  --poster-pad-top: calc(94 * var(--poster-u));
+}
+
+/* The colours, in the order recipes take them (the first is the default
+   above). Keep POSTER_COLOR_COUNT in RecipeCardPrint in step. */
+.recipe-template--poster .recipe-card[data-poster-color="1"] {
+  --poster-color: #b5aacb;
+}
+
+.recipe-template--poster .recipe-card[data-poster-color="2"] {
+  --poster-color: #64a9a4;
+}
+
+.recipe-template--poster .recipe-card[data-poster-color="3"] {
+  --poster-color: #eca360;
+}
+
+.recipe-template--poster .recipe-card[data-poster-color="4"] {
+  --poster-color: #749dcf;
+}
+
+.recipe-template--poster .recipe-card[data-poster-color="5"] {
+  --poster-color: #f0e999;
+}
+
+.recipe-template--poster .recipe-card[data-poster-color="6"] {
+  --poster-color: #a89666;
+}
+
+.recipe-template--poster .recipe-card[data-poster-color="7"] {
+  --poster-color: #ac5280;
+}
+
+.recipe-template--poster .recipe-card[data-poster-color="8"] {
+  --poster-color: #bfd3e9;
+}
+
+.recipe-template--poster .recipe-card[data-poster-color="9"] {
+  --poster-color: #ac7a63;
+}
+
+.recipe-template--poster .recipe-card[data-poster-color="10"] {
+  --poster-color: #87c39c;
+}
+
+.recipe-template--poster .recipe-card {
+  isolation: isolate;
+  --recipe-card-padding-x: var(--poster-pad-x);
+  --recipe-card-padding-top: var(--poster-pad-top);
+  --recipe-card-padding-bottom: calc(70 * var(--poster-u));
+}
+
+/* The tab hangs from the card's top edge, so the header keeps no top margin
+   of its own, and the title can't be centred against a photo the way other
+   themes do it. */
+.recipe-template--poster .recipe-card__header {
+  margin-top: 0;
+}
+
+.recipe-template--poster .recipe-card__header--with-photo {
+  align-items: flex-start;
+}
+
+.recipe-template--poster .recipe-card__header--with-photo .recipe-card__headline {
+  align-self: flex-start;
+  justify-content: flex-start;
+}
+
+/* The tab: the headline block (title, then cook time and servings), pulled
+   out to the card's left edge and up to its top, padded 32 units all round. */
+.recipe-template--poster .recipe-card__headline {
+  flex: 0 1 auto;
+  width: fit-content;
+  max-width: calc(100% + var(--poster-pad-x));
+  margin: calc(var(--poster-pad-top) * -1) 0 0 calc(var(--poster-pad-x) * -1);
+  padding: calc(32 * var(--poster-u));
+  background: var(--poster-color);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-template--poster .recipe-card__title {
+  font-size: calc(72 * var(--poster-u));
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Scaled with the card's width alone, 72 units read small on a Full Page
+   sheet, which is taller for its width than a 4x6. Letter's title gets 86,
+   and the cook time and servings line under it grows a little with it. */
+.recipe-print-preview--letter .recipe-template--poster .recipe-card__title {
+  font-size: calc(86 * var(--poster-u));
+}
+
+.recipe-print-preview--letter .recipe-template--poster .recipe-card__meta {
+  font-size: calc(var(--recipe-card-meta-size) * 1.15);
+}
+
+.recipe-template--poster .recipe-card__meta {
+  margin-top: calc(10 * var(--poster-u));
+  color: #1f1f1f;
+}
+
+/* Below the tab, before the recipe. */
+.recipe-template--poster .recipe-card__header {
+  margin-bottom: calc(10 * var(--poster-u));
+}
+
+.recipe-template--poster .recipe-card__step-number {
+  color: #ffffff;
+}
+
+.recipe-card__poster-band,
+.recipe-card__poster-frame {
+  position: absolute;
+  display: none;
+  z-index: -1;
+  pointer-events: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-template--poster .recipe-card__poster-band,
+.recipe-template--poster .recipe-card__poster-frame {
+  display: block;
+}
+
+.recipe-card__poster-band {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(300 * var(--poster-u));
+  background: var(--poster-color);
+}
+
+.recipe-card__poster-frame {
+  top: var(--poster-inset);
+  left: var(--poster-inset);
+  right: var(--poster-inset);
+  bottom: calc(24 * var(--poster-u));
+  box-sizing: border-box;
+  border: calc(16 * var(--poster-u)) solid #1f1f1f;
+  background: #ffffff;
 }

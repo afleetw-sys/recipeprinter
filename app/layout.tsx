@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import {
+  Anton,
   Birthstone,
+  Caprasimo,
   Cormorant_Garamond,
   Courier_Prime,
   DM_Sans,
@@ -95,6 +97,24 @@ const cormorant = Cormorant_Garamond({
 const nunitoSans = Nunito_Sans({
   subsets: ["latin"],
   variable: "--font-nunito-sans",
+  display: "swap",
+  preload: false,
+});
+
+// Poster's title face, a tall condensed display sans.
+const anton = Anton({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-anton",
+  display: "swap",
+  preload: false,
+});
+
+// Diner's title face, a soft, heavy retro display serif.
+const caprasimo = Caprasimo({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-caprasimo",
   display: "swap",
   preload: false,
 });
@@ -221,7 +241,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${karla.variable}`}
+      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${karla.variable}`}
     >
       <body>
         <KeyboardInsetWatcher />

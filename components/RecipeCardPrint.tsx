@@ -377,6 +377,47 @@ function GardenArt() {
   );
 }
 
+// Poster: a colour band across the top, a white frame with a heavy black
+// border over it, and the title on a tab of the band's colour. The colour takes
+// turns by recipe, like Supper's utensil. It is chosen on the card itself
+// (`data-poster-color`, set in RecipeCardFace), not by this decoration, so a
+// surface that skips decorations (the page rail's thumbnails) still paints the
+// tab the recipe's colour. The colours live in print.css
+// (`[data-poster-color="N"]`); adding one is a CSS rule plus bumping this count.
+const POSTER_COLOR_COUNT = 11;
+
+function posterColor(recipeIndex: number): number {
+  return ((recipeIndex % POSTER_COLOR_COUNT) + POSTER_COLOR_COUNT) % POSTER_COLOR_COUNT;
+}
+
+function PosterArt() {
+  return (
+    <>
+      <div className="recipe-card__poster-band" aria-hidden />
+      <div className="recipe-card__poster-frame" aria-hidden />
+    </>
+  );
+}
+
+// Supper: a deep red rounded frame with a utensil set into its bottom edge.
+// The utensil takes turns down the list (fork, spoon, knife) by the recipe's
+// place in it, so every face of one recipe carries the same one. Each image is
+// the bottom strip of the artist's frame (public/images/utensil-*.svg): the
+// utensil plus a patch of card colour that opens the gap in the line. The frame
+// itself is CSS, drawn at the artwork's proportions so it fits any card shape.
+const SUPPER_UTENSILS = ["fork", "spoon", "knife"] as const;
+
+function SupperFrame({ index = 0 }: { index?: number }) {
+  const utensil = SUPPER_UTENSILS[((index % 3) + 3) % 3];
+  return (
+    <>
+      <div className="recipe-card__supper-frame" aria-hidden />
+      {/* eslint-disable-next-line @next/next/no-img-element -- fixed decorative vector art, not a photo to optimize */}
+      <img className="recipe-card__supper-utensil" src={`/images/utensil-${utensil}.svg`} alt="" aria-hidden />
+    </>
+  );
+}
+
 /**
  * The template's decorative layer — the one part of a card that is pure
  * ornament, and by far the most expensive: bistro's checker spine is 240 SVG
@@ -400,12 +441,15 @@ function TemplateDecoration({
   show = true,
   continued = false,
   withPhotoGap = false,
+  recipeIndex = 0,
 }: {
   template?: RecipePrintTemplate;
   show?: boolean;
   /** A decorative motif belongs to the front face; continuations go without. */
   continued?: boolean;
   withPhotoGap?: boolean;
+  /** The recipe's place in the list, for decorations that vary by recipe. */
+  recipeIndex?: number;
 }) {
   if (!show) return null;
   if (template === "bistro") return <BistroCheckerSpine />;
@@ -414,6 +458,8 @@ function TemplateDecoration({
   if (template === "garden") return <GardenArt />;
   if (template === "quilt") return <QuiltStrip />;
   if (template === "market") return <MarketArt />;
+  if (template === "supper") return <SupperFrame index={recipeIndex} />;
+  if (template === "poster") return <PosterArt />;
   return null;
 }
 
@@ -436,6 +482,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   inlineEdit,
   template,
   showDecoration = true,
+  recipeIndex = 0,
   cookbookMode = false,
   showEmptyFields = false,
 }: {
@@ -465,6 +512,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   template?: RecipePrintTemplate;
   /** See `TemplateDecoration` — false on surfaces that never show it. */
   showDecoration?: boolean;
+  /** The recipe's place in the list (its queue index), for a decoration that
+      takes turns by recipe, as Supper's utensil does. */
+  recipeIndex?: number;
   /** Cookbook mode: the source link moves up under the title's meta line (so it
       doesn't compete with the page-number folio), and the "Printed with
       RecipePrinter" footer is dropped entirely — even on free templates. */
@@ -1019,6 +1069,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       }`}
       data-has-back={hasBackFace ? "true" : undefined}
       data-preview-hidden={previewHidden ? "true" : undefined}
+      data-poster-color={template === "poster" ? posterColor(recipeIndex) : undefined}
     >
       <div className="recipe-card__accent" aria-hidden />
       <TemplateDecoration
@@ -1026,6 +1077,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         show={showDecoration}
         continued={continued}
         withPhotoGap={showPhoto}
+        recipeIndex={recipeIndex}
       />
       {showHeader ? (
         <header
@@ -1175,6 +1227,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 onError={(event) => markImageUnavailable(event.currentTarget)}
               />
               <span className="photo-unavailable-message">Photo unavailable</span>
+              {/* Diner frames the photo in a dashed sky-blue box — see
+                  `.recipe-card__diner-box` in print.css. */}
+              {template === "diner" && (
+                <svg className="recipe-card__diner-box" aria-hidden focusable="false">
+                  <rect />
+                </svg>
+              )}
             </span>
           )}
         </header>

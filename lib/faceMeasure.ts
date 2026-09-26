@@ -75,14 +75,50 @@ function realContentElements(root: ParentNode, selector: string): HTMLElement[] 
   return Array.from(root.querySelectorAll<HTMLElement>(selector)).filter((el) => !isProbeContent(el));
 }
 
+// A plain CSS length ("1.6in", "150px") read off a custom property, in CSS px.
+// Keep-out values are written as simple lengths for exactly this reason.
+function customLengthPx(el: HTMLElement, name: string): number {
+  const match = getComputedStyle(el).getPropertyValue(name).trim().match(/^(-?[\d.]+)(in|px)$/);
+  if (!match) return 0;
+  const value = parseFloat(match[1]);
+  return match[2] === "in" ? value * 96 : value;
+}
+
+/**
+ * The card's bottom-right keep-out corner, if its template declares one: art
+ * that stands taller than the rest of the card's foot but only across part of
+ * its width (Garden's tomatoes over its low hills). A line of content whose
+ * box reaches into that corner's columns has to stop above the corner's top;
+ * everything else runs down to the card's normal limit. Declared in CSS as
+ * `--recipe-card-keepout-w` / `--recipe-card-keepout-h`, measured from the
+ * card's right and bottom edges. Returns null when there is none, which keeps
+ * every other template measuring exactly as before.
+ */
+function keepOutCorner(cardEl: HTMLElement): { left: number; top: number } | null {
+  const w = customLengthPx(cardEl, "--recipe-card-keepout-w");
+  const h = customLengthPx(cardEl, "--recipe-card-keepout-h");
+  if (w <= 0 || h <= 0) return null;
+  const rect = cardEl.getBoundingClientRect();
+  // Rects are in screen px (a preview card is transform-scaled); the lengths
+  // above are CSS px at the card's own size.
+  const scale = cardEl.offsetWidth > 0 ? rect.width / cardEl.offsetWidth : 1;
+  return { left: rect.right - w * scale, top: rect.bottom - h * scale };
+}
+
 export function colsOverflowPx(cardEl: HTMLElement): number {
   const cols = cardEl.querySelector<HTMLElement>(".recipe-card__cols");
   const footer = cardEl.querySelector<HTMLElement>(".recipe-card__footer");
   if (!cols) return 0;
   const colsTop = cols.getBoundingClientRect().top;
+  const corner = keepOutCorner(cardEl);
   let contentBottom = colsTop;
+  // How far the lowest line reaching into the keep-out corner runs past the
+  // corner's top (it only matters when positive).
+  let cornerOverrun = Number.NEGATIVE_INFINITY;
   for (const leaf of realContentElements(cols, CONTENT_LEAF_SELECTOR)) {
-    contentBottom = Math.max(contentBottom, leaf.getBoundingClientRect().bottom);
+    const rect = leaf.getBoundingClientRect();
+    contentBottom = Math.max(contentBottom, rect.bottom);
+    if (corner && rect.right > corner.left) cornerOverrun = Math.max(cornerOverrun, rect.bottom - corner.top);
   }
   // Several templates (and every 6x4 card, regardless of template) hide the
   // footer entirely via `display: none` when it has no source link to show
@@ -96,7 +132,14 @@ export function colsOverflowPx(cardEl: HTMLElement): number {
     footerRect && (footerRect.width > 0 || footerRect.height > 0)
       ? footerRect.top
       : cardEl.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(cardEl).paddingBottom) || 0);
-  return contentBottom - footerTop;
+  // A line running into the keep-out corner is overflow like any other. But
+  // the corner only counts once something is actually in it: slack is read
+  // against the normal limit, because the next line pulled up lands wherever
+  // the layout puts it (a lone first step goes in the left column, nowhere
+  // near the corner), and one that does land in the corner reads as overflow
+  // here on the next pass and is pushed back.
+  const overflow = contentBottom - footerTop;
+  return cornerOverrun > 0 ? Math.max(overflow, cornerOverrun) : overflow;
 }
 
 // Real, printed items only — never the hidden column-measurement probe (see

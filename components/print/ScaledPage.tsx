@@ -630,6 +630,7 @@ export const ScaledPage = memo(function ScaledPage({
                     continued={slot.isContinuation}
                     template={template}
                     showDecoration={showDecoration}
+                    recipeIndex={slot.queueIndex}
                     cookbookMode={cookbookMode}
                     showEmptyFields={showEmptyFields}
                     previewHidden={
@@ -668,6 +669,7 @@ export const ScaledPage = memo(function ScaledPage({
                       hasBackFace={slot.hasBack}
                       template={template}
                       showDecoration={showDecoration}
+                      recipeIndex={slot.queueIndex}
                       cookbookMode={cookbookMode}
                       showEmptyFields={showEmptyFields}
                       continued

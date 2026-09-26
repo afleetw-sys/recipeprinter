@@ -53,10 +53,13 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   { id: "pantry", label: "Pantry", detail: "Fine ruled lines with small ingredient sketches" },
   { id: "typewriter", label: "Typewriter", detail: "Black and white, typed on an index card" },
   { id: "bistro", label: "Bistro", detail: "Blue checks, tomato red, playful kitchen card" },
+  { id: "diner", label: "Diner", detail: "A bold outlined red title and a dashed sky-blue photo frame" },
   { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },
   { id: "market", label: "Market", detail: "A thin teal bar up top and a row of cut-paper groceries below" },
   { id: "counter", label: "Counter", detail: "Black-and-white notes with tiny counter details" },
   { id: "keepsake", label: "Keepsake", detail: "Cream recipe-box card with classic family style" },
   { id: "garden", label: "Garden", detail: "Soft green stock, rolling hills and a vine of tomatoes" },
   { id: "quilt", label: "Quilt", detail: "Warm cream with a quilted strip of green and rust tiles" },
+  { id: "supper", label: "Supper", detail: "A deep red frame set with a fork, spoon or knife" },
+  { id: "poster", label: "Poster", detail: "A bold title tab and a color band that changes each recipe" },
 ];

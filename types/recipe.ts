@@ -29,7 +29,10 @@ export type RecipePrintTemplate =
   | "typewriter"
   | "garden"
   | "quilt"
-  | "market";
+  | "market"
+  | "supper"
+  | "diner"
+  | "poster";
 
 export type CardSectionLayout = "standard" | "stacked";
 
