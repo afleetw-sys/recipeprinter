@@ -272,7 +272,7 @@ type EventProps = {
   };
   /** The upgrade dialog was dismissed from its plan step without Continue
    *  ever being pressed, and it asked why instead of closing (once per person
-   *  ever, see `lib/proDeclineAsked.ts`). Compare against
+   *  ever, never on the first opening; see `lib/proDeclineAsked.ts`). Compare against
    *  `pro_decline_answered` for the skip rate. */
   pro_decline_asked: Record<string, never>;
   /** One tap on the "Not upgrading today?" question. Closing it without a tap
