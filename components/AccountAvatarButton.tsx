@@ -278,6 +278,10 @@ export default function AccountAvatarButton({
               className="flex w-full items-center gap-2 rounded-lg px-cp-3 py-cp-2 text-left text-cp-small font-semibold text-ink hover:bg-page"
               onClick={() => {
                 closeMenu();
+                // Settings is only a sign-in gate once you are signed out, so
+                // leaving from there goes home rather than straight to a prompt
+                // to sign back in. Anywhere else, you stay where you were.
+                if (window.location.pathname.startsWith("/account")) router.replace("/");
                 void signOut(getFirebaseAuth());
               }}
             >

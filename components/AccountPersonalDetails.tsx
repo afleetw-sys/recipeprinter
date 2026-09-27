@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signOut, updateProfile } from "firebase/auth";
 import type { User } from "firebase/auth";
@@ -28,6 +29,7 @@ import { friendlyAuthError } from "@/lib/friendlyErrors";
  * two to drift apart.
  */
 export function AccountPersonalDetails({ user }: { user: User }) {
+  const router = useRouter();
   /**
    * View by default, editable only after pressing Edit.
    *
@@ -144,7 +146,13 @@ export function AccountPersonalDetails({ user }: { user: User }) {
             <button
               type="button"
               className="btn btn-secondary btn-compact"
-              onClick={() => void signOut(getFirebaseAuth())}
+              onClick={() => {
+                // Home first, then out. Signed out, this page is nothing but a
+                // "Sign in to see your account" gate, so signing out in place
+                // answered "Sign out" with a prompt to sign straight back in.
+                router.replace("/");
+                void signOut(getFirebaseAuth());
+              }}
             >
               Sign out
             </button>
