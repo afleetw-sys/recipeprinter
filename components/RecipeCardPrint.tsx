@@ -12,7 +12,7 @@ import {
 import { formatRecipeTime } from "@/lib/time";
 import { RichText } from "@/components/RichText";
 import { composeNote } from "@/lib/recipeNote";
-import { InlineRichField } from "@/components/InlineRichField";
+import { InlineRichField, type CaretRange } from "@/components/InlineRichField";
 import { photoGridLayout } from "@/lib/photoGrid";
 import { useWideColumns } from "@/lib/measureHeights";
 import {
@@ -633,12 +633,47 @@ export const RecipeCardFace = memo(function RecipeCardFace({
    * A field now appears in response to the click that asks for it, so the
    * click itself can't place a caret in it — it lands at offset 0, and typing
    * after clicking the middle of "2 cups flour" would insert at the front.
-   * So the offset is read off the text node WHILE IT IS STILL TEXT, and
-   * applied once the field exists (see `focusIfEditing`).
+   * So the offset is read off the text WHILE IT IS STILL TEXT, and applied
+   * once the field exists (see `focusIfEditing`).
+   *
+   * A range rather than a point, because the click that opens a field can be
+   * the end of a drag. The text you selected was still text when you selected
+   * it; swapping it for a field threw the selection away and left a caret, so
+   * you had to select it all over again in the field.
    */
-  const pendingCaret = useRef<number | null>(null);
+  const pendingCaret = useRef<{ target: RecipeCardEditTarget; range: CaretRange | null } | null>(null);
 
-  function caretOffsetFromClick(event: ReactMouseEvent): number | null {
+  /** The plain-text offset of a DOM position inside `root`: what the field,
+      which renders the same marked-up text, counts as the same place. */
+  function plainTextOffset(root: Node, node: Node, offset: number): number {
+    const range = document.createRange();
+    range.selectNodeContents(root);
+    range.setEnd(node, offset);
+    return range.toString().length;
+  }
+
+  /** The element whose text the field will hold: a step's number is a sibling
+      of its text, not part of it. */
+  function editTextRoot(event: ReactMouseEvent): HTMLElement {
+    const host = event.currentTarget as HTMLElement;
+    return host.querySelector<HTMLElement>("[data-edit-text]") ?? host;
+  }
+
+  function caretFromClick(event: ReactMouseEvent): CaretRange | null {
+    const root = editTextRoot(event);
+    // A drag that ended here: keep what it selected, when all of it is text of
+    // this one field. A drag across several lines belongs to the line toolbar
+    // (lib/lineSelection), and its click never lands on a single line anyway.
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      if (root.contains(range.startContainer) && root.contains(range.endContainer)) {
+        return {
+          start: plainTextOffset(root, range.startContainer, range.startOffset),
+          end: plainTextOffset(root, range.endContainer, range.endOffset),
+        };
+      }
+    }
     // `caretRangeFromPoint` is the WebKit/Blink spelling; Firefox has
     // `caretPositionFromPoint`. Neither is required for correctness — without
     // one the caret goes to the end of the field, which is still a reasonable
@@ -647,18 +682,28 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       caretRangeFromPoint?: (x: number, y: number) => Range | null;
       caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
     };
+    let node: Node | null = null;
+    let offset = 0;
     if (typeof doc.caretRangeFromPoint === "function") {
       const range = doc.caretRangeFromPoint(event.clientX, event.clientY);
-      if (range?.startContainer.nodeType === Node.TEXT_NODE) return range.startOffset;
-      return null;
+      if (range) {
+        node = range.startContainer;
+        offset = range.startOffset;
+      }
+    } else {
+      const position = doc.caretPositionFromPoint?.(event.clientX, event.clientY);
+      if (position) {
+        node = position.offsetNode;
+        offset = position.offset;
+      }
     }
-    const position = doc.caretPositionFromPoint?.(event.clientX, event.clientY);
-    if (position?.offsetNode.nodeType === Node.TEXT_NODE) return position.offset;
-    return null;
+    if (!node || node.nodeType !== Node.TEXT_NODE || !root.contains(node)) return null;
+    const at = plainTextOffset(root, node, offset);
+    return { start: at, end: at };
   }
 
   function startEdit(target: RecipeCardEditTarget, value: string, event?: ReactMouseEvent) {
-    pendingCaret.current = event ? caretOffsetFromClick(event) : null;
+    pendingCaret.current = { target, range: event ? caretFromClick(event) : null };
     inlineEdit?.onFocusTarget(target, value);
   }
 
@@ -666,13 +711,17 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     inlineEdit?.onCommit();
   }
 
-  /** The caret offset the opening click computed, consumed once. `InlineRichField`
-      focuses and places its own caret, so unlike `focusIfEditing` there is no
-      element here to hand it to. */
-  function takePendingCaret(): number | null {
-    const caret = pendingCaret.current;
-    pendingCaret.current = null;
-    return caret;
+  /** The caret (or selection) the opening click computed for this field.
+      `InlineRichField` focuses and places its own caret, so unlike
+      `focusIfEditing` there is no element here to hand it to.
+      Read, not consumed: this runs during render, and a render can happen
+      twice (dev's StrictMode does it every time) before the field mounts and
+      reads its prop. Clearing it here handed the mounted field nothing. It is
+      keyed to the field it was taken for instead, so a line made by a split
+      never picks up the click that opened the line before it. */
+  function takePendingCaret(target: RecipeCardEditTarget): CaretRange | null {
+    const pending = pendingCaret.current;
+    return pending && sameTarget(pending.target, target) ? pending.range : null;
   }
 
   function renderCookbookDescription() {
@@ -688,7 +737,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           className="recipe-card__inline-textarea recipe-card__headnote recipe-card__inline-rich"
           ariaLabel="Recipe notes"
           value={inlineEdit.value}
-          caret={takePendingCaret()}
+          caret={takePendingCaret(target)}
           onCommit={(next) => inlineEdit.onCommit(next)}
           onCancel={() => inlineEdit.onCancel()}
         />
@@ -827,10 +876,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         // Put the caret where the click was, or at the end when the browser
         // couldn't tell us — never at 0, which is the one place the person
         // was definitely not pointing.
-        const caret = pendingCaret.current ?? el.value.length;
+        const pending = pendingCaret.current;
+        const caret =
+          (pending && sameTarget(pending.target, target) ? pending.range : null) ??
+          { start: el.value.length, end: el.value.length };
         pendingCaret.current = null;
         try {
-          el.setSelectionRange(caret, caret);
+          el.setSelectionRange(caret.start, caret.end);
         } catch {
           // Some input types refuse setSelectionRange; focus alone is enough.
         }
@@ -960,7 +1012,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             className="recipe-card__inline-textarea recipe-card__inline-textarea--line recipe-card__inline-rich"
             ariaLabel="Ingredient"
             value={displayValue}
-            caret={takePendingCaret()}
+            caret={takePendingCaret(target)}
             onCommit={(next) => inlineEdit.onCommit(next)}
             onCancel={() => inlineEdit.onCancel()}
             onSplit={(before, after) => inlineEdit.onSplitLine(target, before, after)}
@@ -1005,13 +1057,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             className="recipe-card__inline-textarea recipe-card__inline-textarea--line recipe-card__inline-rich"
             ariaLabel="Step"
             value={displayValue}
-            caret={takePendingCaret()}
+            caret={takePendingCaret(target)}
             onCommit={(next) => inlineEdit.onCommit(next)}
             onCancel={() => inlineEdit.onCancel()}
             onSplit={(before, after) => inlineEdit.onSplitLine(target, before, after)}
           />
         ) : (
-          <span>
+          <span data-edit-text>
             <RichText text={step.text} />
           </span>
         )}
