@@ -33,10 +33,6 @@ interface PrintSetupControlsProps {
   setShowPhoto: Dispatch<SetStateAction<boolean>>;
   showSourceUrl: boolean;
   setShowSourceUrl: Dispatch<SetStateAction<boolean>>;
-  /** The cookbook book-design settings (table of contents, opening page, …),
-      rendered between the photo control and the include toggles. Passed as a
-      node because it's still owned by the print page. */
-  bookDesignSettings: ReactNode;
   /** Whether there's a card-format setting to offer at all — see
       `hasPrintSettingsFields` in app/print/page.tsx. Gates the "Card
       settings" section so it never shows empty (a cookbook, or a recipe
@@ -68,7 +64,6 @@ export function PrintSetupControls({
   setShowPhoto,
   showSourceUrl,
   setShowSourceUrl,
-  bookDesignSettings,
   hasPrintSettingsFields,
   cardSettingsFields,
 }: PrintSetupControlsProps) {
@@ -124,15 +119,9 @@ export function PrintSetupControls({
         </CheckboxGroup>
       )}
 
-      {/* A cookbook's settings answer two different questions, and they used to
-          be shuffled together: "Photos" sat above an "Include" list holding the
-          table of contents, the opening page AND the recipe link. Two of those
-          three add a PAGE to the book; the third changes every recipe, which is
-          what the photo control above it was already doing. So they are grouped
-          by what they do — pages the book gains, then what each recipe carries.
-          `bookDesignSettings` (the pages half) comes first: it is about the
-          book's shape, which you decide before its finish. */}
-      {bookDesignSettings}
+      {/* The book's optional pages (covers, dedication, contents) are not
+          settings: each has its own Delete on the page, and a deleted one is
+          put back from the "Add …" button the rail shows in its place. */}
 
       {/* Shown whether or not anything has a photo yet. This is where the book
           says how photos are laid out, so gating it on `anyRecipeHasImage`

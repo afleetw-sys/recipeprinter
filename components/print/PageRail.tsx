@@ -119,6 +119,25 @@ function LazyRailThumb({
   );
 }
 
+/** A page a cookbook can go without, and the one control that puts it back:
+    the rail's short "Add …" button standing where it would be. */
+export type BookPageSlot = "cover" | "dedication" | "toc" | "back-cover";
+
+const BOOK_PAGE_ADD_LABEL: Record<BookPageSlot, string> = {
+  cover: "Add cover",
+  dedication: "Add dedication",
+  toc: "Add table of contents",
+  "back-cover": "Add back cover",
+};
+
+/** The front of the book, in the order it prints. A missing one's button sits
+    after the last of these that is still there. */
+const FRONT_PAGES: Array<{ page: BookPageSlot; isPage: (nav: NavItem | null) => boolean }> = [
+  { page: "cover", isPage: (nav) => nav?.recipeId === "cover-front" },
+  { page: "dedication", isPage: (nav) => nav?.recipeId === "cover-dedication" },
+  { page: "toc", isPage: (nav) => nav?.kind === "toc" },
+];
+
 interface PageRailProps {
   /** Whether the queue already holds — or is already fetching — at least one
       recipe. The header's Add action reads "Add more recipes" once it does,
@@ -202,6 +221,11 @@ interface PageRailProps {
   addMenuOpen: boolean;
   setAddMenuOpen: Dispatch<SetStateAction<boolean>>;
   addMenuRef: MutableRefObject<HTMLDivElement | null>;
+  /** The book's optional pages that have been deleted. Each gets a short
+      "Add …" button in the rail where the page would be, in place of a
+      thumbnail. Cookbook view only. */
+  missingBookPages: readonly BookPageSlot[];
+  onAddBookPage: (page: BookPageSlot) => void;
 }
 
 // The left rail: a scrollable page list (reorder / structure) plus the
@@ -246,6 +270,8 @@ export function PageRail(props: PageRailProps) {
     activeImportId,
     settlingIds,
     goToSlide,
+    missingBookPages,
+    onAddBookPage,
     railShake,
     pendingAddAfterRecipeId,
     pendingAddSectionId,
@@ -445,6 +471,20 @@ export function PageRail(props: PageRailProps) {
     next.focus();
     next.click();
   };
+
+  const renderAddPages = (pages: readonly BookPageSlot[]) =>
+    pages.map((page) => (
+      <button
+        key={`add-page-${page}`}
+        type="button"
+        className="recipe-page-rail__add-page"
+        onClick={() => onAddBookPage(page)}
+      >
+        <PlusIcon size={ICON_SIZE.sm} />
+        <span>{BOOK_PAGE_ADD_LABEL[page]}</span>
+      </button>
+    ));
+  const showBookPageAdds = Boolean(projectMeta.meta.cookbookMode) && !organizeMode;
 
   return (
         <nav
@@ -790,12 +830,18 @@ export function PageRail(props: PageRailProps) {
                     const sheet = spread.right ?? spread.left;
                     const isBlankLeaf =
                       sheet != null && sheets[sheet]?.slots.some((slot) => slot?.kind === "blank");
+                    // A blank leaf is a page of the printed book, not one to go
+                    // to: nothing on it to edit, and the preview already says
+                    // why it is there. As a tile it read as a page left behind
+                    // by a deleted one (a missing dedication left exactly that),
+                    // which is what the "Add …" buttons now stand for instead.
+                    if (!nav && isBlankLeaf) return;
                     addUnit({
                       index,
                       focusSheet: sheet,
                       nav,
                       thumbSheets: sheet != null ? [sheet] : [],
-                      label: nav?.label ?? (isBlankLeaf ? "Blank page" : "Page"),
+                      label: nav?.label ?? "Page",
                       soleUnit: true,
                       sectionId: namedSectionIdFor(nav),
                     });
@@ -855,9 +901,31 @@ export function PageRail(props: PageRailProps) {
                     });
                   }
                 });
-                return groups.map((group) => (
+                // Where each deleted front page's "Add …" button goes: after the
+                // group holding the last front page before it that is still
+                // there, or at the top of the rail when none is.
+                const addsAfterGroup = new Map<number, BookPageSlot[]>();
+                const addsAtTop: BookPageSlot[] = [];
+                if (showBookPageAdds) {
+                  FRONT_PAGES.forEach(({ page }, order) => {
+                    if (!missingBookPages.includes(page)) return;
+                    let anchor = -1;
+                    for (let before = order - 1; before >= 0 && anchor === -1; before -= 1) {
+                      const { isPage } = FRONT_PAGES[before];
+                      groups.forEach((group, groupIdx) => {
+                        if (group.units.some((unit) => isPage(unit.nav))) anchor = groupIdx;
+                      });
+                    }
+                    if (anchor === -1) addsAtTop.push(page);
+                    else addsAfterGroup.set(anchor, [...(addsAfterGroup.get(anchor) ?? []), page]);
+                  });
+                }
+                return (
+                  <>
+                  {renderAddPages(addsAtTop)}
+                  {groups.map((group, groupIdx) => (
+                  <Fragment key={group.key}>
                   <div
-                    key={group.key}
                     data-rail-section={group.sectionId ?? undefined}
                     className={`recipe-page-rail__section-group ${
                       group.sectionId ? "recipe-page-rail__section-group--nested" : ""
@@ -1098,7 +1166,11 @@ export function PageRail(props: PageRailProps) {
                     </button>
                   )}
                   </div>
-                ));
+                  {renderAddPages(addsAfterGroup.get(groupIdx) ?? [])}
+                  </Fragment>
+                  ))}
+                  </>
+                );
               })()
             : (() => {
               // `pendingAnchorRowIndex` / `pendingNested` are computed once at
@@ -1206,6 +1278,15 @@ export function PageRail(props: PageRailProps) {
                       activeId={activeImportId}
                     />
           )}
+
+          {/* A book with every page deleted has no spreads, so the rail above
+              drew nothing to anchor the front pages to; they all go here. */}
+          {showBookPageAdds &&
+            !cookbookView &&
+            renderAddPages(missingBookPages.filter((page) => page !== "back-cover"))}
+          {showBookPageAdds &&
+            missingBookPages.includes("back-cover") &&
+            renderAddPages(["back-cover"])}
 
           {/* Add one more, at the end of the list it joins. Not shown on an
               empty project, where the deck and the rail header are both already

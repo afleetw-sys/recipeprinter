@@ -27,7 +27,7 @@ import {
 } from "@/lib/cookbookPdfExport";
 import type { CoverSheetSpec } from "@/types/export";
 import { ImagePicker } from "@/components/ImagePicker";
-import { Checkbox, CheckboxGroup } from "@/components/Controls";
+import { Checkbox } from "@/components/Controls";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { useModalFocus } from "@/lib/useModalFocus";
 import { navigateAfterOverlayHistory, useBackDismiss } from "@/lib/useBackDismiss";
@@ -38,7 +38,7 @@ import { EditTips } from "@/components/print/EditTips";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
-import { PageRail, type RailSortMode } from "@/components/print/PageRail";
+import { PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
 import { deckIndexForPendingSlot } from "@/lib/pendingDeckSlot";
 import {
@@ -1677,36 +1677,51 @@ export default function PrintPage() {
   }
 
   /**
-   * The Pages checkboxes for the two covers, so every optional page in a book
-   * (front cover, dedication, contents, back cover) turns on and off the same
-   * way. Ticking one puts the page back and goes to it. Unticking one asks
-   * first, the same question the page's own delete button asks: a cover holds
-   * the book's title, author and photo, more than a checkbox should drop
-   * without a word. These replaced the page list's "Add cover" and "Add back
-   * cover" buttons, which only existed on desktop, so a phone had no way to
-   * bring a deleted cover back.
+   * Puts back one of the book's optional pages (front cover, dedication,
+   * contents, back cover) and goes to it. Called from the rail's short "Add …"
+   * buttons, which stand where a deleted page used to be. These replaced the
+   * settings panel's Pages checkboxes: a page is taken out with its own Delete,
+   * like every other page, and comes back from the spot it left.
    */
+  const missingBookPages: BookPageSlot[] = [
+    !projectMeta.meta.cover && "cover",
+    !(projectMeta.meta.frontMatter || projectMeta.meta.dedication) && "dedication",
+    !projectMeta.meta.tableOfContents && "toc",
+    !projectMeta.meta.backCover && "back-cover",
+  ].filter((page): page is BookPageSlot => Boolean(page));
+
+  function addBookPage(page: BookPageSlot) {
+    if (page === "cover") addCover();
+    else if (page === "back-cover") addBackCover();
+    else if (page === "toc") {
+      projectMeta.setTableOfContents(true);
+      setPendingFocusNavId("toc");
+    } else {
+      projectMeta.setFrontMatter({ kind: "dedication", heading: "Dedication", body: DEFAULT_DEDICATION_BODY });
+      track("cookbook_front_matter_enabled", { kind: "dedication" });
+      setPendingFocusNavId("cover-dedication");
+    }
+  }
+
+  /** The mobile Pages sheet's checkboxes (phones have no rail to put an Add
+      button in). Unticking a cover asks first, the same question the page's
+      own Delete asks. */
   function toggleCover(side: "front" | "back") {
     const current = side === "front" ? projectMeta.meta.cover : projectMeta.meta.backCover;
     if (current) {
       setPendingDelete({ kind: "cover", side, title: side === "front" ? "the cover" : "the back cover" });
       return;
     }
-    if (side === "front") addCover();
-    else addBackCover();
+    addBookPage(side === "front" ? "cover" : "back-cover");
   }
 
-  /** Toggles the dedication front-matter page. Adding one seeds a quiet,
-      template-skinned page and jumps into editing it; removing clears it. */
   function toggleDedication() {
     if (projectMeta.meta.frontMatter || projectMeta.meta.dedication) {
       projectMeta.setFrontMatter(undefined);
       projectMeta.setDedication(undefined);
       return;
     }
-    projectMeta.setFrontMatter({ kind: "dedication", heading: "Dedication", body: DEFAULT_DEDICATION_BODY });
-    track("cookbook_front_matter_enabled", { kind: "dedication" });
-    setPendingFocusNavId("cover-dedication");
+    addBookPage("dedication");
   }
 
   /**
@@ -1783,13 +1798,22 @@ export default function PrintPage() {
       setArtCaption(navItem.recipeId, undefined);
       return;
     }
+    if (navItem.kind === "toc") {
+      // The contents is generated from the book, so there is nothing of the
+      // cook's to lose: it goes without a confirm and comes back whole from
+      // the rail's "Add table of contents". This used to fall through to the
+      // cover branch below, which read it as the FRONT cover and offered to
+      // delete that instead.
+      projectMeta.setTableOfContents(false);
+      return;
+    }
     const side = coverSideFromNavItem(navItem);
     setPendingDelete({
       kind: "cover",
       side,
       title: navItem.label || (side === "front" ? "cover" : "back cover"),
     });
-  }, [items, itemIdsForSection, sectionTitleForId, setArtPhoto, setArtCaption]);
+  }, [items, itemIdsForSection, sectionTitleForId, setArtPhoto, setArtCaption, projectMeta]);
 
   const requestDeleteSection = useCallback((sectionId: string) => {
     setPendingDelete({
@@ -4142,38 +4166,6 @@ export default function PrintPage() {
     );
   }
 
-  function renderBookDesignSettings() {
-    if (!projectMeta.meta.cookbookMode) return null;
-    /* "Include" said nothing: everything in a settings panel is something you
-       are choosing to include. These two both add a PAGE to the book, and the
-       recipe link that used to sit under them with them did not — it moved to
-       the group that changes every recipe. */
-    return (
-      <CheckboxGroup label="Pages" className="recipe-config-section recipe-config-section--settings">
-        <Checkbox
-            label="Front cover"
-            checked={Boolean(projectMeta.meta.cover)}
-            onChange={() => toggleCover("front")}
-        />
-        <Checkbox
-            label="Dedication"
-            checked={Boolean(projectMeta.meta.frontMatter || projectMeta.meta.dedication)}
-            onChange={toggleDedication}
-        />
-        <Checkbox
-            label="Table of contents"
-            checked={Boolean(projectMeta.meta.tableOfContents)}
-            onChange={(event) => projectMeta.setTableOfContents(event.target.checked)}
-        />
-        <Checkbox
-            label="Back cover"
-            checked={Boolean(projectMeta.meta.backCover)}
-            onChange={() => toggleCover("back")}
-        />
-      </CheckboxGroup>
-    );
-  }
-
   // "New cookbook" was chosen back in the library. Honour it here, on arrival —
   // otherwise the cook lands in recipe cards after explicitly asking for a
   // cookbook and has to go find the switch.
@@ -5568,6 +5560,8 @@ export default function PrintPage() {
           activeImportId={activeImportId}
           settlingIds={settlingIds}
           goToSlide={goToPageSlide}
+          missingBookPages={missingBookPages}
+          onAddBookPage={addBookPage}
           railShake={railShake}
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           pendingAddSectionId={pendingAddSectionId}
@@ -5622,6 +5616,7 @@ export default function PrintPage() {
           deckScale={deckScale}
           deckZoom={deckZoom}
           onRequestDelete={requestDeleteNavItem}
+          onAddDedication={missingBookPages.includes("dedication") ? () => addBookPage("dedication") : undefined}
           onMoveRecipeToSection={moveRecipeToSection}
           onMoveRecipeToNewSection={moveRecipeToNewSection}
           openPhotoDialog={openPhotoDialog}
@@ -5697,7 +5692,6 @@ export default function PrintPage() {
           setShowPhoto={setAllShowPhoto}
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setBookShowSourceUrl}
-          bookDesignSettings={renderBookDesignSettings()}
           template={template}
           setTemplate={setTemplate}
           customerInfo={effectiveCustomerInfo.customerInfo}

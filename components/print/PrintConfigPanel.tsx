@@ -34,7 +34,6 @@ interface PrintConfigPanelProps {
   setShowPhoto: Dispatch<SetStateAction<boolean>>;
   showSourceUrl: boolean;
   setShowSourceUrl: Dispatch<SetStateAction<boolean>>;
-  bookDesignSettings: ReactNode;
   // Theme picker
   template: RecipePrintTemplate;
   setTemplate: Dispatch<SetStateAction<RecipePrintTemplate>>;
@@ -74,7 +73,6 @@ export function PrintConfigPanel({
   setShowPhoto,
   showSourceUrl,
   setShowSourceUrl,
-  bookDesignSettings,
   template,
   setTemplate,
   customerInfo,
@@ -130,7 +128,6 @@ export function PrintConfigPanel({
           setShowPhoto={setShowPhoto}
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setShowSourceUrl}
-          bookDesignSettings={bookDesignSettings}
           hasPrintSettingsFields={hasPrintSettingsFields}
           cardSettingsFields={cardSettingsFields}
         />
