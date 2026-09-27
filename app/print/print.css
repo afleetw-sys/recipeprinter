@@ -9360,6 +9360,29 @@ textarea.recipe-card__toc-title {
   color: #1f1f1f;
 }
 
+/* The photo is the title tab's mirror image: pulled out to the card's right
+   edge and up to its top, on the same colour. Padded 16 units, half the
+   title's 32: a picture needs less of a mat than a line of type. The box
+   grows by that padding so the picture itself stays the size the other
+   themes give it (0.72in on a 6x4, 1.3in on Full Page). */
+.recipe-template--poster .recipe-card__header--with-photo .recipe-card__photo {
+  margin: calc(var(--poster-pad-top) * -1) calc(var(--poster-pad-x) * -1) 0 0;
+  padding: calc(16 * var(--poster-u));
+  background: var(--poster-color);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-print-preview--card-6x4 .recipe-template--poster .recipe-card__header--with-photo .recipe-card__photo {
+  width: calc(0.72in + 32 * var(--poster-u));
+  height: calc(0.72in + 32 * var(--poster-u));
+}
+
+.recipe-print-preview--letter .recipe-template--poster .recipe-card__header--with-photo .recipe-card__photo {
+  width: calc(1.3in + 32 * var(--poster-u));
+  height: calc(1.3in + 32 * var(--poster-u));
+}
+
 /* Below the tab, before the recipe. */
 .recipe-template--poster .recipe-card__header {
   margin-bottom: calc(10 * var(--poster-u));

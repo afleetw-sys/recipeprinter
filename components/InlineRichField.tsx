@@ -24,6 +24,10 @@ import { nodesToRichText, richTextToHtml } from "@/lib/richText";
  * re-implementing bold-a-selection on top of Range would be a large amount of
  * fragile code to do worse.
  */
+/** Plain-text offsets into a field. Equal ends are a caret; unequal ones are
+    a selection carried over from the text the field replaced. */
+export type CaretRange = { start: number; end: number };
+
 export function InlineRichField({
   value,
   className,
@@ -37,8 +41,9 @@ export function InlineRichField({
   value: string;
   className?: string;
   ariaLabel: string;
-  /** Where to put the caret, as an offset into the plain text. */
-  caret?: number | null;
+  /** Where to put the caret, or what to select, as offsets into the plain
+      text. */
+  caret?: CaretRange | null;
   onCommit: (value: string) => void;
   onCancel: () => void;
   /** Enter splits the line here, for ingredients and steps. Absent = Enter
@@ -69,7 +74,8 @@ export function InlineRichField({
     } catch {
       // Not fatal — a browser that refuses this still produces tags.
     }
-    placeCaret(el, caret ?? plainTextLength(el));
+    const end = plainTextLength(el);
+    placeSelection(el, caret?.start ?? end, caret?.end ?? end);
 
     // Return on a phone. Soft keyboards do not send a usable `keydown` for it:
     // Android's arrives as key "Unidentified" (keyCode 229), so `handleKeyDown`
@@ -157,34 +163,33 @@ function plainTextLength(el: HTMLElement): number {
   return el.textContent?.length ?? 0;
 }
 
-/** Puts the caret at a plain-text offset, wherever that lands in the tree. */
-function placeCaret(el: HTMLElement, offset: number): void {
-  const selection = window.getSelection();
-  if (!selection) return;
-  const range = document.createRange();
+/** Where a plain-text offset lands in the tree, as a DOM position. */
+function positionAt(el: HTMLElement, offset: number): { node: Node; offset: number } {
   let remaining = Math.max(0, offset);
   const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
   let node = walker.nextNode();
-  if (!node) {
-    range.selectNodeContents(el);
-    range.collapse(false);
-  } else {
-    while (node) {
-      const length = node.textContent?.length ?? 0;
-      if (remaining <= length) {
-        range.setStart(node, remaining);
-        break;
-      }
-      remaining -= length;
-      const next = walker.nextNode();
-      if (!next) {
-        range.setStart(node, length);
-        break;
-      }
-      node = next;
-    }
-    range.collapse(true);
+  if (!node) return { node: el, offset: el.childNodes.length };
+  while (node) {
+    const length = node.textContent?.length ?? 0;
+    if (remaining <= length) return { node, offset: remaining };
+    remaining -= length;
+    const next = walker.nextNode();
+    if (!next) return { node, offset: length };
+    node = next;
   }
+  return { node: el, offset: el.childNodes.length };
+}
+
+/** Selects from one plain-text offset to another (a caret when they match),
+    wherever those land in the tree. */
+function placeSelection(el: HTMLElement, start: number, end: number): void {
+  const selection = window.getSelection();
+  if (!selection) return;
+  const from = positionAt(el, Math.min(start, end));
+  const to = positionAt(el, Math.max(start, end));
+  const range = document.createRange();
+  range.setStart(from.node, from.offset);
+  range.setEnd(to.node, to.offset);
   selection.removeAllRanges();
   selection.addRange(range);
 }

@@ -19,6 +19,7 @@ import {
   type PhotoStyle,
 } from "@/lib/project";
 import { paginateTocEntries } from "@/lib/tocPagination";
+import { withLiveRecipes } from "@/lib/liveSheetContent";
 import { chapterRecipeTitles } from "@/lib/chapterIntro";
 import { recipeLinkOn } from "@/lib/recipeLink";
 import {
@@ -1354,6 +1355,23 @@ export function usePrintSheets({
     if (layoutSettled) setDisplayedLayout(committedLayout);
   }, [layoutSettled, committedLayout]);
 
+  // The held layout, with each recipe's latest text: an edit shows the moment
+  // its field closes instead of flashing back to the pre-edit words while the
+  // new layout measures (see lib/liveSheetContent).
+  const liveRecipes = useMemo(
+    () =>
+      new Map(
+        allItems
+          .filter((item): item is QueueItem & { recipe: Recipe } => Boolean(item.recipe))
+          .map((item) => [item.id, item.recipe]),
+      ),
+    [allItems],
+  );
+  const shownSheets = useMemo(
+    () => withLiveRecipes(displayedLayout?.sheets ?? NO_SHEETS_YET, liveRecipes),
+    [displayedLayout, liveRecipes],
+  );
+
   return {
     hasRecipeBackSide,
     continueOnBack,
@@ -1361,7 +1379,7 @@ export function usePrintSheets({
     printLayoutReady,
     layoutSettled,
     /** Sheets for the layout currently ON SCREEN (may lag by one measurement). */
-    sheets: displayedLayout?.sheets ?? [],
+    sheets: shownSheets,
     navItems: displayedLayout?.navItems ?? [],
     /** Two-page spreads over the displayed sheets (cookbook book view); empty
         outside cookbook mode. */

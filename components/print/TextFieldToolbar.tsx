@@ -7,6 +7,7 @@ import { TextStyleControl } from "@/components/print/TextStyleControl";
 import { textBarScale } from "@/lib/deckZoom";
 import { readLineSelection } from "@/lib/lineSelection";
 import { readFocusedRichField } from "@/lib/richTextField";
+import { isAllCaps, isTitleCase, toAllCaps, toTitleCase } from "@/lib/titleCase";
 import { useFloatingBarPlacement } from "@/lib/useFloatingBarPlacement";
 import type { RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
 
@@ -175,7 +176,11 @@ export function TextFieldToolbar({
   // plain textarea, where they have nothing to act on.
   const richText = field.isContentEditable;
 
-  if (!lineKind && !richText) return null;
+  // The title's own switch, in the same place and the same shape as a line's
+  // body/heading pair: a lot of titles are imported in capitals.
+  const isTitle = target?.kind === "title";
+
+  if (!lineKind && !richText && !isTitle) return null;
 
   /**
    * Only where there is something to style.
@@ -243,6 +248,44 @@ export function TextFieldToolbar({
             }}
           >
             <BodyTextGlyph />
+          </button>
+        </div>
+      )}
+      {isTitle && inlineEdit && (
+        <div className="recipe-page-toolbar__group" role="group" aria-label="Title case">
+          {/* Rewrites the text rather than styling it: Title Case can't be
+              drawn from capitals (CSS `capitalize` raises "and" and "of" too),
+              and a rewrite prints the way it reads here and saves like any
+              other edit to the title. */}
+          <button
+            type="button"
+            className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
+              isAllCaps(inlineEdit.value) ? "is-active" : ""
+            }`}
+            aria-label="All caps"
+            aria-pressed={isAllCaps(inlineEdit.value)}
+            title="All caps"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              inlineEdit.onValueChange(toAllCaps(inlineEdit.value));
+            }}
+          >
+            <span className="recipe-card__line-kind-glyph" aria-hidden>AA</span>
+          </button>
+          <button
+            type="button"
+            className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
+              isTitleCase(inlineEdit.value) ? "is-active" : ""
+            }`}
+            aria-label="Title case"
+            aria-pressed={isTitleCase(inlineEdit.value)}
+            title="Title case"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              inlineEdit.onValueChange(toTitleCase(inlineEdit.value));
+            }}
+          >
+            <span className="recipe-card__line-kind-glyph" aria-hidden>Aa</span>
           </button>
         </div>
       )}
