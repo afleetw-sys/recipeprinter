@@ -96,15 +96,33 @@ export function PrinterWorkspace({
     if (!root) return;
     function measure() {
       const active = root!.querySelector<HTMLElement>('[aria-selected="true"]');
-      if (active && active.offsetWidth > 0) {
-        setTabFill({ left: active.offsetLeft, width: active.offsetWidth });
-      }
+      if (!active) return;
+      // Read from the rects rather than `offsetLeft`/`offsetWidth`, which round
+      // to whole pixels: at 125% or 150% display scaling (common on Windows)
+      // that rounding alone can leave the bar a pixel off either end.
+      const tab = active.getBoundingClientRect();
+      if (tab.width <= 0) return;
+      const row = root!.getBoundingClientRect();
+      setTabFill({ left: tab.left - row.left, width: tab.width });
     }
     measure();
+    // Every tab, not just the row. The labels are set in Karla, which swaps in
+    // (`display: swap`) after a first visit has already drawn them in the
+    // fallback face, and the fallback is wider on Windows. A bar measured
+    // before the swap overhung "Recipe cards" by most of a word on a Windows
+    // desktop in Chrome, so whatever resizes a tab now moves the bar with it.
     const observer = new ResizeObserver(measure);
     observer.observe(root);
-    if (document.fonts?.ready) document.fonts.ready.then(measure).catch(() => undefined);
-    return () => observer.disconnect();
+    root.querySelectorAll<HTMLElement>('[role="tab"]').forEach((tab) => observer.observe(tab));
+    // And once each font finishes, in case its swap reached the page without
+    // changing any size this observer reports.
+    const fonts = document.fonts;
+    fonts?.ready.then(measure).catch(() => undefined);
+    fonts?.addEventListener?.("loadingdone", measure);
+    return () => {
+      observer.disconnect();
+      fonts?.removeEventListener?.("loadingdone", measure);
+    };
   }, [importKind]);
 
   /**

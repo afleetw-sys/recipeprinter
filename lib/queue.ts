@@ -401,6 +401,21 @@ export function withoutSupersededImports(
   );
 }
 
+/**
+ * The queue a new import joins: for an account that can only hold one recipe,
+ * without the imports that failed.
+ *
+ * A failed import is not a recipe, so it never counted toward the limit and a
+ * second one could be added beside it. But its card offers "Try another way",
+ * and taking it after the new recipe had landed gave a free account two
+ * recipes at once. For one recipe, a new import IS the next attempt, so it
+ * replaces the failure. Pro and cookbooks keep failures where they are: with
+ * room for many recipes, each failed card is its own to-do.
+ */
+export function queueForNewImport(current: QueueItem[], singleRecipeOnly: boolean): QueueItem[] {
+  return singleRecipeOnly ? current.filter((item) => item.status !== "error") : current;
+}
+
 /** Where an extra recipe got refused because the account can only ever carry
     one outside Pro/cookbook mode — see `singleRecipeOnly` below. */
 export interface MultiRecipeBlockedInfo {
@@ -454,6 +469,9 @@ export function useQueue() {
   );
 
   const [items, setItems] = useState<QueueItem[]>([]);
+
+  const withoutFailedIfSingle = (current: QueueItem[]): QueueItem[] =>
+    queueForNewImport(current, singleRecipeOnlyRef.current);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   // Bumped on every `focusItem` call — even when the same id is focused twice in
   // a row (re-importing the same URL). Consumers key their "already added"
@@ -829,7 +847,9 @@ export function useQueue() {
       };
       // An earlier attempt at this same link that never finished is replaced,
       // not kept beside the new one.
-      const rest = key ? withoutSupersededImports(itemsRef.current, key) : itemsRef.current;
+      const rest = withoutFailedIfSingle(
+        key ? withoutSupersededImports(itemsRef.current, key) : itemsRef.current,
+      );
       commit([...rest, item]);
       void runParse(
         id,
@@ -858,7 +878,7 @@ export function useQueue() {
         title: label,
         addedAt: Date.now(),
       };
-      commit([...itemsRef.current, item]);
+      commit([...withoutFailedIfSingle(itemsRef.current), item]);
       return id;
     },
     [commit],
@@ -924,7 +944,7 @@ export function useQueue() {
         title: firstLine.slice(0, 60),
         addedAt: Date.now(),
       };
-      commit([...itemsRef.current, item]);
+      commit([...withoutFailedIfSingle(itemsRef.current), item]);
       void runParse(id, { source: "text" }, () => parseText(trimmed), { failedText: trimmed });
     },
     [commit, runParse],
@@ -945,8 +965,9 @@ export function useQueue() {
       // (see `singleSelect`/`locked` on RecipeSourceList), so this only ever
       // bites if a commit somehow arrives oversized anyway. Never drop
       // silently: whatever this trims, `onMultiRecipeBlocked` says so.
+      const kept = withoutFailedIfSingle(itemsRef.current);
       if (singleRecipeOnlyRef.current) {
-        const allowed = Math.max(0, 1 - itemsRef.current.length);
+        const allowed = Math.max(0, 1 - kept.length);
         if (nextRecipes.length > allowed) {
           onMultiRecipeBlockedRef.current?.({ source: "library", foundCount: nextRecipes.length });
           track("pro_feature_encountered", { feature: "batch_print", source: "library_multi_select" });
@@ -954,7 +975,7 @@ export function useQueue() {
         nextRecipes = nextRecipes.slice(0, allowed);
       }
       if (nextRecipes.length === 0) return 0;
-      commit([...itemsRef.current, ...nextRecipes]);
+      commit([...kept, ...nextRecipes]);
       // These can arrive from ANOTHER document: a Paprika pick made on the home
       // page is handed to /print through lib/pendingImport, and an object URL
       // dies with the document that minted it. A soft navigation keeps the same

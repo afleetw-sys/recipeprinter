@@ -124,7 +124,6 @@ import {
   ICON_SIZE,
   ImageIcon,
   InfoIcon,
-  LinkIcon,
   PlusIcon,
   PrintIcon,
   SizeIcon,
@@ -2788,6 +2787,9 @@ export default function PrintPage() {
   // above, this is NOT recipe-count-dependent: it's what lets an empty
   // project's library picker still offer exactly one pick rather than none.
   const singleRecipeOnly = !cookbookMode && !hasMultiRecipeEntitlement(effectiveCustomerInfo.customerInfo);
+  /** Recipe cards' phone "Every recipe" sheet: offered once there can be more
+      than one recipe and some recipe has a photo or a link to show or hide. */
+  const cardEveryRecipe = !cookbookMode && !singleRecipeOnly && (anyRecipeHasImage || anyRecipeHasSourceUrl);
   function handleMultiRecipeBlocked(info: MultiRecipeBlockedInfo) {
     if (info.source === "library") {
       // The pickers already refuse to let a locked account select more than
@@ -5793,7 +5795,13 @@ export default function PrintPage() {
                 layout, one sheet, as the desktop panel's "Every recipe" group
                 holds them. Cookbook mode only; recipe cards keep their own
                 Show Photo and Links toggles below. */}
-            {cookbookMode && (
+            {/* One button for what applies to every recipe, in cards as in a
+                cookbook. Cards had two loose tiles here, Show Photo and Links,
+                which read as acting on the page in view and crowded the bar;
+                they now sit in this sheet, as they sit under "Every recipe" in
+                the desktop panel. With exactly one recipe possible there is no
+                "every" (`singleRecipeOnly`): that page's own toolbar covers it. */}
+            {(cookbookMode || cardEveryRecipe) && (
               <button
                 type="button"
                 className={`recipe-mobile-toolbar__btn ${bookSheet === "recipes" ? "is-active" : ""}`}
@@ -5809,51 +5817,6 @@ export default function PrintPage() {
                   <ImageIcon size={ICON_SIZE.lg} />
                 </span>
                 Every recipe
-              </button>
-            )}
-            {/* With more than one recipe possible, this is the only place on
-                mobile to show/hide photos across all of them at once — the
-                per-page toolbar's photo control only ever acts on the one
-                recipe it's floating over. `singleRecipeOnly` drops it: with
-                exactly one recipe, that page's own toolbar already covers
-                the same ground (its picker's "None" tile hides the photo),
-                so this became a second control for the same one thing. */}
-            {anyRecipeHasImage && !cookbookMode && !singleRecipeOnly && (
-              <button
-                type="button"
-                className="recipe-mobile-toolbar__btn"
-                aria-pressed={showPhoto}
-                onClick={() => setAllShowPhoto((value) => !value)}
-              >
-                <span
-                  className={`recipe-mobile-toolbar__btn-icon ${
-                    showPhoto ? "" : "recipe-mobile-toolbar__btn-icon--off"
-                  }`}
-                >
-                  <ImageIcon size={ICON_SIZE.lg} />
-                </span>
-                Show Photo
-              </button>
-            )}
-            {/* Same reasoning as Show Photo above. A cookbook has this in its
-                "Every recipe" sheet instead, beside the photo layout. */}
-            {anyRecipeHasSourceUrl && !cookbookMode && !singleRecipeOnly && (
-              <button
-                type="button"
-                className="recipe-mobile-toolbar__btn"
-                aria-pressed={showSourceUrl}
-                onClick={() => setBookShowSourceUrl((value) => !value)}
-              >
-                <span
-                  className={`recipe-mobile-toolbar__btn-icon ${
-                    showSourceUrl ? "" : "recipe-mobile-toolbar__btn-icon--off"
-                  }`}
-                >
-                  <LinkIcon size={ICON_SIZE.lg} />
-                </span>
-                {/* The tile's on/off state already says "shown"; the verb only
-                    made the label longer than its neighbours. */}
-                Links
               </button>
             )}
           </div>
@@ -5920,6 +5883,35 @@ export default function PrintPage() {
           structureSheetOpen={structureSheetOpen}
           setStructureSheetOpen={setStructureSheetOpen}
         />
+
+        {/* Cards' "Every recipe": the same two checkboxes the desktop panel's
+            group holds (see PrintSetupControls). A cookbook's sheet lives in
+            MobileStructureSheet, with its photo layouts. */}
+        {cardEveryRecipe && (
+          <MobileSheet
+            open={bookSheet === "recipes"}
+            onClose={() => setBookSheet(null)}
+            title="Every recipe"
+            className="recipe-structure-sheet"
+          >
+            <div className="recipe-structure-sheet__settings">
+              {anyRecipeHasImage && (
+                <Checkbox
+                    label="Recipe photo"
+                    checked={showPhoto}
+                    onChange={(event) => setAllShowPhoto(event.target.checked)}
+                />
+              )}
+              {anyRecipeHasSourceUrl && (
+                <Checkbox
+                    label="Recipe link"
+                    checked={showSourceUrl}
+                    onChange={(event) => setBookShowSourceUrl(event.target.checked)}
+                />
+              )}
+            </div>
+          </MobileSheet>
+        )}
 
         <MobileSheet
           open={sizeMenuOpen}

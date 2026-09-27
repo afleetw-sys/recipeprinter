@@ -1593,6 +1593,22 @@
   text-align: center;
 }
 
+/* On a phone the page toolbar rarely fits one row, so Front/Back is just its
+   two arrows: the one you can't press says which side you are on. The word
+   stays for screen readers. */
+@media screen and (max-width: 820px) {
+  .recipe-page-toolbar__group--view .recipe-page-toolbar__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
 .recipe-spread__blank--designed {
   overflow: hidden;
   background: var(--recipe-bg, var(--cp-card));
