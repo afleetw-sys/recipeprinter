@@ -215,6 +215,9 @@ interface PrintDeckProps {
   /** Delete whatever page the toolbar belongs to — opens the same confirm the
       Delete key does. */
   onRequestDelete: (navItem: NavItem) => void;
+  /** Puts the dedication back. Set only while the book has none, so a blank
+      page 1 (the book opens on a photo spread) can offer it right there. */
+  onAddDedication?: () => void;
   /** Move one recipe into another chapter. Cookbook only — a deck of loose
       cards has no sections to move between. `undefined` there rather than a
       no-op, so the control is absent rather than present and inert. */
@@ -364,6 +367,7 @@ export function PrintDeck(props: PrintDeckProps) {
     deckScale,
     deckZoom,
     onRequestDelete,
+    onAddDedication,
     onMoveRecipeToSection,
     onMoveRecipeToNewSection,
     openPhotoDialog,
@@ -737,6 +741,10 @@ export function PrintDeck(props: PrintDeckProps) {
         </div>
       ) : null;
 
+    // The book's optional pages are removed, not deleted: each comes back
+    // from the rail's "Add …" button.
+    const removesPage = navItem.kind === "cover" || navItem.kind === "toc";
+
     // The art pages have no text and no reveal, but they DO have a photo — and
     // the toolbar is the only place their photo can be changed from now.
     if (!navItem.flip && !editable && !photoControl && !linkControl && !addImagePageButton) {
@@ -902,8 +910,8 @@ export function PrintDeck(props: PrintDeckProps) {
             <button
               type="button"
               className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon recipe-page-toolbar__btn--danger"
-              aria-label={`Delete ${navItem.label ?? "this page"}`}
-              title="Delete"
+              aria-label={`${removesPage ? "Remove" : "Delete"} ${navItem.label ?? "this page"}`}
+              title={removesPage ? "Remove" : "Delete"}
               onClick={(event) => {
                 event.stopPropagation();
                 onRequestDelete(navItem);
@@ -1426,7 +1434,11 @@ export function PrintDeck(props: PrintDeckProps) {
                       ? spread.left
                       : null;
                   const designedBlank = leftSlot?.kind === "toc";
-                  const renderBlank = (trailing = false, reason?: string) => (
+                  const renderBlank = (
+                    trailing = false,
+                    reason?: string,
+                    addDedication?: () => void,
+                  ) => (
                     <div
                       className={`recipe-spread__blank recipe-template--${previewTemplate} ${
                         designedBlank ? "recipe-spread__blank--designed" : ""
@@ -1449,6 +1461,19 @@ export function PrintDeck(props: PrintDeckProps) {
                         <div className="recipe-spread__blank-note no-print">
                           <p className="recipe-spread__blank-note-title">Blank page</p>
                           <p className="recipe-spread__blank-note-reason">{reason}</p>
+                          {addDedication ? (
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-compact recipe-spread__blank-note-action"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                addDedication();
+                              }}
+                            >
+                              <PlusIcon size={ICON_SIZE.sm} />
+                              Add dedication
+                            </button>
+                          ) : null}
                         </div>
                       ) : null}
                     </div>
@@ -1478,7 +1503,22 @@ export function PrintDeck(props: PrintDeckProps) {
                       // A blank leaf the book prints on purpose: say why, on
                       // screen only, so it isn't mistaken for a missing page.
                       const isBlankLeaf = pageSheet.slots.some((slot) => slot?.kind === "blank");
-                      return renderBlank(false, isBlankLeaf ? blankPageReason(sheets, sheetIndex) : undefined);
+                      // Page 1 is where a dedication goes. When the book has
+                      // none and opens on a pair that cannot start there, page 1
+                      // prints blank, and the dedication is exactly what would
+                      // fill it, so offer it on the page itself.
+                      const isOpeningPage =
+                        isBlankLeaf &&
+                        sheets
+                          .slice(0, sheetIndex)
+                          .every((earlier) =>
+                            earlier.slots.some((slot) => slot?.kind === "cover" && slot.side === "front"),
+                          );
+                      return renderBlank(
+                        false,
+                        isBlankLeaf ? blankPageReason(sheets, sheetIndex) : undefined,
+                        isOpeningPage ? onAddDedication : undefined,
+                      );
                     }
                     // A linked spread (image or TOC) outlines both pages when
                     // either is focused; a normal spread, and a section spread,

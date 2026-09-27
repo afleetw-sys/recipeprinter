@@ -607,6 +607,38 @@
   text-align: left;
 }
 
+/* A deleted optional page (cover, dedication, contents, back cover) keeps its
+   place in the rail as this short button instead of a thumbnail: dashed like
+   the organizer's "Add recipes" card, since it stands for a page that is not
+   there, but one line tall so it does not read as a page of its own. */
+.recipe-page-rail__add-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px dashed var(--cp-line-strong);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+  font-weight: 700;
+  transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.recipe-page-rail__add-page:hover {
+  border-color: var(--cp-accent);
+  background: var(--cp-accent-soft);
+  color: var(--cp-ink);
+}
+
+.recipe-page-rail__add-page:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+
 .recipe-page-rail__num {
   align-self: start;
   color: var(--cp-ink-soft);
@@ -1608,6 +1640,13 @@
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
   line-height: 1.45;
+}
+
+.recipe-spread__blank-note-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 /* The first slide's controls float above the card like every other slide's —

@@ -13,6 +13,7 @@ export function PrintDialogs({
   deleteItemTitle,
   deleteItemDescription,
   deletePrimaryLabel,
+  deleteVerb = "Delete",
   sectionRecipeCount,
   onCancelDeleteRecipe,
   onConfirmDeleteRecipe,
@@ -25,6 +26,9 @@ export function PrintDialogs({
   deleteItemTitle: string;
   deleteItemDescription: string;
   deletePrimaryLabel?: string;
+  /** The title's verb. "Remove" for a book's optional pages, which come back
+      from the page list; everything else is a Delete. */
+  deleteVerb?: "Delete" | "Remove";
   sectionRecipeCount?: number;
   onCancelDeleteRecipe: () => void;
   onConfirmDeleteRecipe: () => void;
@@ -91,7 +95,7 @@ export function PrintDialogs({
       {/* The shared confirm, not a second one built on the panel above. */}
       <ConfirmDialog
         open={showDeleteRecipeDialog}
-        title={`Delete ${deleteItemTitle}?`}
+        title={`${deleteVerb} ${deleteItemTitle}?`}
         description={deleteItemDescription}
         confirmLabel={deletePrimaryLabel ?? "Delete"}
         confirmIcon={<TrashIcon size={ICON_SIZE.md} />}
