@@ -1515,6 +1515,21 @@ export default function PrintPage() {
     [projectMeta.clearItemLinkOverrides],
   );
 
+  // The recipe-card "Include recipe photo" setting works like the cookbook's
+  // book-wide Photos option below: switching it sets every recipe to match,
+  // clearing their own choices, so off means off. A recipe can then be switched
+  // back on by itself from its Photo dialog. Loading a saved project sets the
+  // setting directly and leaves the per-recipe choices alone.
+  const setAllShowPhoto = useCallback(
+    (next: SetStateAction<boolean>) => {
+      setShowPhoto(next);
+      projectMeta.clearItemPhotoOverrides();
+    },
+    // `clearItemPhotoOverrides` is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [projectMeta.clearItemPhotoOverrides],
+  );
+
   // Picking a book-wide Photos option overrides every per-recipe choice: set the
   // default AND clear the individual placement overrides so the whole book snaps
   // to it (custom facing photos / focal points are kept).
@@ -4593,25 +4608,27 @@ export default function PrintPage() {
         // replaced by an upload stays reachable instead of vanishing.
         images={Array.from(new Set([...(own ? [own] : []), ...history]))}
         onSelect={(url) => updateRecipeAndRevealPhoto(recipeId, { ...recipe, image: url ?? "" })}
-        // Placement is a COOKBOOK idea. `photoOnFor` in usePrintSheets only
-        // consults `itemPlacements` for cookbook layouts, so offering None / In
-        // card / Full page on a plain recipe card would be three buttons that
-        // change nothing. In cards mode the dialog is just "which photo", and
-        // whether photos show at all is the one setting in the panel.
-        placement={cookbookMode ? photoModeFor(recipeId) : undefined}
-        placementOptions={
+        // A cookbook page offers None / In page / Full page. A recipe card
+        // has no facing page, so it offers None / In card: whether THIS card
+        // shows its photo, over the "Include recipe photo" setting.
+        placement={
           cookbookMode
-            ? PHOTO_STYLE_OPTIONS.map((option) => ({
-                id: option.id,
-                label: option.short,
-                hint: option.hint,
-              }))
-            : undefined
+            ? photoModeFor(recipeId)
+            : (projectMeta.meta.itemPlacements?.[recipeId]?.showPhoto ?? showPhoto)
+              ? "card"
+              : "none"
         }
-        onPlacementChange={
+        placementOptions={PHOTO_STYLE_OPTIONS.filter((option) => cookbookMode || option.id !== "full").map(
+          (option) => ({
+            id: option.id,
+            label: !cookbookMode && option.id === "card" ? "In card" : option.short,
+            hint: !cookbookMode && option.id === "card" ? "The photo in this card's header" : option.hint,
+          }),
+        )}
+        onPlacementChange={(mode) =>
           cookbookMode
-            ? (mode) => setRecipePhotoMode(recipeId, mode as PhotoStyle)
-            : undefined
+            ? setRecipePhotoMode(recipeId, mode as PhotoStyle)
+            : projectMeta.setItemPlacement(recipeId, { showPhoto: mode === "card" })
         }
         // Says which job it is doing: there is nothing to change yet when the
         // recipe came in without a photo.
@@ -5024,12 +5041,12 @@ export default function PrintPage() {
         if (photoModeFor(id) === "none") projectMeta.setItemPhotoMode(id, "card");
         return;
       }
-      /* Recipe cards have no per-recipe override — `photoOnFor` in
-         usePrintSheets only consults `itemPlacements` for cookbook layouts — so
-         the placement written above was invisible here, and picking a photo
-         with "Include recipe photo" off still showed nothing at all. In cards
-         mode the equivalent of "show this" is the setting itself. */
-      if (!showPhoto) setShowPhoto(true);
+      /* Picking a photo is choosing to show it on THIS card: with "Include
+         recipe photo" off, or this card switched off by itself, it turns on
+         just this card, not every card in the set. */
+      if (!(projectMeta.meta.itemPlacements?.[id]?.showPhoto ?? showPhoto)) {
+        projectMeta.setItemPlacement(id, { showPhoto: true });
+      }
     },
     // `setItemPhotoMode` and `updateRecipe` are stable; the rest is read fresh.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -5677,7 +5694,7 @@ export default function PrintPage() {
           photoStyleTip={photoStyleTip?.surface === "panel" ? photoStyleTip : null}
           onDismissPhotoStyleTip={dismissPhotoStyleTip}
           showPhoto={showPhoto}
-          setShowPhoto={setShowPhoto}
+          setShowPhoto={setAllShowPhoto}
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setBookShowSourceUrl}
           bookDesignSettings={renderBookDesignSettings()}
@@ -5812,7 +5829,7 @@ export default function PrintPage() {
                 type="button"
                 className="recipe-mobile-toolbar__btn"
                 aria-pressed={showPhoto}
-                onClick={() => setShowPhoto((value) => !value)}
+                onClick={() => setAllShowPhoto((value) => !value)}
               >
                 <span
                   className={`recipe-mobile-toolbar__btn-icon ${

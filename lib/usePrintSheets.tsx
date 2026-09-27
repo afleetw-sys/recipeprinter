@@ -524,17 +524,18 @@ export function usePrintSheets({
   const cookbookLayouts = Boolean(cookbookMode) && cardSize === "letter";
 
   // The effective "show this recipe's header photo" decision, per recipe. A
-  // per-page override (cookbook mode only) wins over the book-wide `photosOn`
-  // default; either way there has to actually be a photo. Single source of truth
+  // per-recipe override wins over the book-wide `photosOn` default, in a
+  // cookbook and on recipe cards alike (turning photos off for everything and
+  // then back on for one recipe is the same wish in both); either way there has
+  // to actually be a photo. Single source of truth
   // for BOTH measurement (a header photo changes card height) and what the slot
   // renders, so the two can never disagree and clip.
   const photoOnFor = useCallback(
     (id: string, recipe: Recipe): boolean => {
       if (!recipe.image) return false;
-      const override = cookbookLayouts ? itemPlacements?.[id]?.showPhoto : undefined;
-      return override ?? photosOn;
+      return itemPlacements?.[id]?.showPhoto ?? photosOn;
     },
-    [cookbookLayouts, itemPlacements, photosOn],
+    [itemPlacements, photosOn],
   );
 
   // The same decision for the source link. A link line changes a card's height
