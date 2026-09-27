@@ -131,6 +131,12 @@ export interface RecipeSheetSlot {
   hasBack: boolean;
   isContinuation: boolean;
   queueIndex: number;
+  /** Which turn this recipe takes in a theme that varies by turn (Supper's
+      utensil, Poster's colour). In a cookbook it is the chapter number, so a
+      chapter's recipes all match and the next chapter takes the next turn,
+      the first chapter (and any recipes before it) on turn 0. Absent on plain recipe
+      cards, which take turns recipe by recipe (`queueIndex`). */
+  styleIndex?: number;
   /** The fully-resolved "show this card's header photo" decision (book-wide
       default + per-page override + whether a photo exists + image-spread
       suppression). The renderer uses this directly, so measurement and render
@@ -518,17 +524,18 @@ export function usePrintSheets({
   const cookbookLayouts = Boolean(cookbookMode) && cardSize === "letter";
 
   // The effective "show this recipe's header photo" decision, per recipe. A
-  // per-page override (cookbook mode only) wins over the book-wide `photosOn`
-  // default; either way there has to actually be a photo. Single source of truth
+  // per-recipe override wins over the book-wide `photosOn` default, in a
+  // cookbook and on recipe cards alike (turning photos off for everything and
+  // then back on for one recipe is the same wish in both); either way there has
+  // to actually be a photo. Single source of truth
   // for BOTH measurement (a header photo changes card height) and what the slot
   // renders, so the two can never disagree and clip.
   const photoOnFor = useCallback(
     (id: string, recipe: Recipe): boolean => {
       if (!recipe.image) return false;
-      const override = cookbookLayouts ? itemPlacements?.[id]?.showPhoto : undefined;
-      return override ?? photosOn;
+      return itemPlacements?.[id]?.showPhoto ?? photosOn;
     },
-    [cookbookLayouts, itemPlacements, photosOn],
+    [itemPlacements, photosOn],
   );
 
   // The same decision for the source link. A link line changes a card's height
@@ -703,7 +710,12 @@ export function usePrintSheets({
     // Exactly today's single-list packing algorithm, scoped to one section's
     // items — `queueIndexOffset` keeps the nav-grouping key monotonic across
     // sections so recipe ordering stays correct end-to-end.
-    function buildSectionSheets(sectionItems: QueueItem[], queueIndexOffset: number, idPrefix: string): PageSheet[] {
+    function buildSectionSheets(
+      sectionItems: QueueItem[],
+      queueIndexOffset: number,
+      idPrefix: string,
+      styleIndex?: number,
+    ): PageSheet[] {
       const queue: Column[] = [];
       for (const item of sectionItems) {
         if (!item.recipe) continue;
@@ -767,6 +779,7 @@ export function usePrintSheets({
                 hasBack: take.column.hasBack,
                 isContinuation: take.faceIndex > 0,
                 queueIndex: take.column.queueIndex,
+                styleIndex,
                 showPhoto: photoOnFor(take.column.recipeId, take.column.recipe),
                 showSourceUrl: linkOnFor(take.column.recipeId),
               }
@@ -828,7 +841,7 @@ export function usePrintSheets({
     // `planCookbookSection`; this resolves each planned face index back to a
     // real `RecipeFace` and attaches recipe/label/queueIndex. Only used in
     // cookbook mode — the default one-card path is untouched.
-    function buildCookbookSectionSheets(sectionItems: QueueItem[], idPrefix: string): PageSheet[] {
+    function buildCookbookSectionSheets(sectionItems: QueueItem[], idPrefix: string, styleIndex?: number): PageSheet[] {
       const { layoutOf } = cookbookResolution;
       const planItems: CookbookPlanItem[] = [];
       for (const item of sectionItems) {
@@ -875,6 +888,7 @@ export function usePrintSheets({
             hasBack: planSlot.faceCount > 1,
             isContinuation: planSlot.frontFace > 0,
             queueIndex: entry.queueIndex,
+            styleIndex,
             // Per-page photo decision, minus the image-spread case whose photo
             // lives on the facing page (below), so the card never doubles it.
             showPhoto: photoOnFor(planSlot.itemId, entry.item.recipe) && !isImageSpread,
@@ -987,10 +1001,13 @@ export function usePrintSheets({
           }
         }
       }
+      // A cookbook's take-turns themes turn once per chapter, the first chapter
+      // (and anything before it) on the first turn. See `styleIndex`.
+      const chapterStyleIndex = cookbookMode ? Math.max(chapterNumber - 1, 0) : undefined;
       out.push(
         ...(cookbookLayouts
-          ? buildCookbookSectionSheets(section.items, section.id)
-          : buildSectionSheets(section.items, queueIndexCursor, section.id)),
+          ? buildCookbookSectionSheets(section.items, section.id, chapterStyleIndex)
+          : buildSectionSheets(section.items, queueIndexCursor, section.id, chapterStyleIndex)),
       );
       queueIndexCursor += section.items.filter((item) => item.recipe).length;
     });
@@ -1114,7 +1131,7 @@ export function usePrintSheets({
     if (cookbookLayouts) closeSpreadGaps(out);
 
     return out;
-  }, [layoutSettled, sections, allItems, cover, backCover, dedication, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, linkOnFor, photoStyle, template, measuredFacesFor, cookbookLayouts, cookbookResolution, itemPlacements, bookPreset]);
+  }, [layoutSettled, sections, allItems, cover, backCover, dedication, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, linkOnFor, photoStyle, template, measuredFacesFor, cookbookMode, cookbookLayouts, cookbookResolution, itemPlacements, bookPreset]);
 
   // What the rail and deck actually browse: one face per item, in physical
   // sheet order, except that a recipe's own faces (front + any continuations)
