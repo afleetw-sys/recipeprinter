@@ -300,6 +300,10 @@ export default function PrintPage() {
    */
   const [settlingIds, setSettlingIds] = useState<ReadonlySet<string>>(new Set());
   const [pendingFocusNavId, setPendingFocusNavId] = useState<string | null>(null);
+  // Bumped once a cookbook scaffolded under an incoming import has laid out,
+  // so the deck re-parks on that import (see `beginCookbookBuild`).
+  const [followImportTick, setFollowImportTick] = useState(0);
+  const followImportAfterScaffoldRef = useRef(false);
   // A just-added chapter, so the rail can scroll to its row and select the
   // "New chapter" placeholder title once it actually exists in the DOM.
   const [pendingRailChapterFocusId, setPendingRailChapterFocusId] = useState<string | null>(null);
@@ -1413,15 +1417,28 @@ export default function PrintPage() {
     return patch.template;
   }
 
-  function beginCookbookBuild({ offerAfter = false }: { offerAfter?: boolean } = {}) {
+  function beginCookbookBuild({
+    offerAfter = false,
+    followImport = false,
+  }: { offerAfter?: boolean; followImport?: boolean } = {}) {
     setShowCookbookOfferDialog(false);
     setCookbookBuilding(true);
     window.setTimeout(() => {
       const bookTemplate = scaffoldCookbook();
-      // Always reveal a new cookbook from its cover, regardless of where the
-      // user had scrolled in Recipe Cards.
-      activeNavIndexResetRef.current?.(0);
-      setPendingFocusNavId("cover-front");
+      if (followImport) {
+        // The homepage's Cookbook tab with a recipe on the way: land on that
+        // recipe, not the cover. The scaffold just put the cover, contents and
+        // dividers in FRONT of the placeholder the deck was already parked on,
+        // so the index it held now names a front-matter page. Ask the
+        // follow-the-import effect to park again against the new layout.
+        followImportAfterScaffoldRef.current = true;
+        setFollowImportTick((tick) => tick + 1);
+      } else {
+        // Otherwise reveal a new cookbook from its cover, regardless of where
+        // the user had scrolled in Recipe Cards.
+        activeNavIndexResetRef.current?.(0);
+        setPendingFocusNavId("cover-front");
+      }
       track("cookbook_workspace_entered", {
         recipeCount: items?.length ?? 0,
         template: bookTemplate ?? template,
@@ -3544,7 +3561,7 @@ export default function PrintPage() {
       // article rather than a bare choice of tabs.
       if (projectMeta.meta.cookbookIntent && !projectMeta.meta.cookbookMode) {
         projectMeta.clearCookbookIntent();
-        beginCookbookBuild({ offerAfter: true });
+        beginCookbookBuild({ offerAfter: true, followImport: pending.kind !== "empty" });
       }
       // A cookbook begun with nothing in it: the book is built above, and
       // there is no recipe to add.
@@ -5127,7 +5144,18 @@ export default function PrintPage() {
    * (PrintDeck); this only follows it there.
    */
   useEffect(() => {
-    if (parsingImportCount === 0) return;
+    const afterScaffold = followImportAfterScaffoldRef.current;
+    followImportAfterScaffoldRef.current = false;
+    if (parsingImportCount === 0) {
+      // Already parsed by the time the book was built (a ready-made recipe, or
+      // a fast parse): its page exists, so follow the page instead.
+      if (afterScaffold) {
+        const arrived = (items ?? []).filter((item) => isOursToAwait(item.id));
+        const newest = arrived[arrived.length - 1];
+        if (newest) setPendingFocusRecipeId(newest.id);
+      }
+      return;
+    }
     // The placeholder mounts on the render that raises this count, so it is not
     // in the DOM during this pass. One frame is enough; the retry covers a
     // deck still re-measuring after the insert, which lands a frame or two
@@ -5170,7 +5198,7 @@ export default function PrintPage() {
     // navItems/anchor are read at park time only; re-running on every layout
     // change would re-park a deck the cook has since scrolled away from.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parsingImportCount, goToDeckElement]);
+  }, [parsingImportCount, followImportTick, goToDeckElement]);
 
   // Jump to a just-added recipe once its page actually exists in the deck
   // (mirrors PowerPoint landing on a freshly inserted slide).
