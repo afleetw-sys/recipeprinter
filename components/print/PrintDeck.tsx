@@ -741,6 +741,10 @@ export function PrintDeck(props: PrintDeckProps) {
         </div>
       ) : null;
 
+    // The book's optional pages are removed, not deleted: each comes back
+    // from the rail's "Add …" button.
+    const removesPage = navItem.kind === "cover" || navItem.kind === "toc";
+
     // The art pages have no text and no reveal, but they DO have a photo — and
     // the toolbar is the only place their photo can be changed from now.
     if (!navItem.flip && !editable && !photoControl && !linkControl && !addImagePageButton) {
@@ -906,8 +910,8 @@ export function PrintDeck(props: PrintDeckProps) {
             <button
               type="button"
               className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon recipe-page-toolbar__btn--danger"
-              aria-label={`Delete ${navItem.label ?? "this page"}`}
-              title="Delete"
+              aria-label={`${removesPage ? "Remove" : "Delete"} ${navItem.label ?? "this page"}`}
+              title={removesPage ? "Remove" : "Delete"}
               onClick={(event) => {
                 event.stopPropagation();
                 onRequestDelete(navItem);

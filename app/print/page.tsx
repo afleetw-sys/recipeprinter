@@ -5969,16 +5969,21 @@ export default function PrintPage() {
           pendingDelete?.kind === "section"
             ? "The chapter page and grouping will be removed from this print project."
             : pendingDelete?.kind === "cover"
-              ? "The cover page will be removed from this print project."
+              ? "You can add it back from the page list at any time."
               : "It'll be removed from your print list. This can't be undone."
         }
         deletePrimaryLabel={
           pendingDelete?.kind === "section"
             ? "Delete chapter"
             : pendingDelete?.kind === "cover"
-              ? "Delete cover"
+              ? pendingDelete.side === "dedication"
+                ? "Remove dedication"
+                : pendingDelete.side === "back"
+                  ? "Remove back cover"
+                  : "Remove cover"
               : "Delete recipe"
         }
+        deleteVerb={pendingDelete?.kind === "cover" ? "Remove" : "Delete"}
         sectionRecipeCount={pendingDelete?.kind === "section" ? pendingDelete.recipeIds.length : undefined}
         onCancelDeleteRecipe={() => setPendingDelete(null)}
         onConfirmDeleteRecipe={confirmPendingDelete}
