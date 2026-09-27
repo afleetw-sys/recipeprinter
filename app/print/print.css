@@ -9246,22 +9246,18 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--poster .recipe-card[data-poster-color="6"] {
-  --poster-color: #a89666;
-}
-
-.recipe-template--poster .recipe-card[data-poster-color="7"] {
   --poster-color: #ac5280;
 }
 
-.recipe-template--poster .recipe-card[data-poster-color="8"] {
+.recipe-template--poster .recipe-card[data-poster-color="7"] {
   --poster-color: #bfd3e9;
 }
 
-.recipe-template--poster .recipe-card[data-poster-color="9"] {
+.recipe-template--poster .recipe-card[data-poster-color="8"] {
   --poster-color: #ac7a63;
 }
 
-.recipe-template--poster .recipe-card[data-poster-color="10"] {
+.recipe-template--poster .recipe-card[data-poster-color="9"] {
   --poster-color: #87c39c;
 }
 

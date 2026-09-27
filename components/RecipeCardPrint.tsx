@@ -384,7 +384,7 @@ function GardenArt() {
 // surface that skips decorations (the page rail's thumbnails) still paints the
 // tab the recipe's colour. The colours live in print.css
 // (`[data-poster-color="N"]`); adding one is a CSS rule plus bumping this count.
-const POSTER_COLOR_COUNT = 11;
+const POSTER_COLOR_COUNT = 10;
 
 function posterColor(recipeIndex: number): number {
   return ((recipeIndex % POSTER_COLOR_COUNT) + POSTER_COLOR_COUNT) % POSTER_COLOR_COUNT;
@@ -556,6 +556,17 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   const methodOnly = hasInstructionsSection && !hasIngredientsSection;
   const stackedLayout = layout === "stacked";
   const ingredientGroups = sectionGroups(ingredients);
+  // A back or continued face only continues the steps if some were printed
+  // before it. When the whole method moved to this face (it did not fit under
+  // the ingredients), it starts here, and "Steps continued" would announce a
+  // start the cook never saw.
+  const firstStepHere = instructions[0];
+  const firstStep = recipe.instructions?.[0];
+  const stepsBeganEarlier = Boolean(
+    firstStepHere &&
+      firstStep &&
+      !(firstStepHere === firstStep || (firstStepHere.step === firstStep.step && firstStepHere.text === firstStep.text)),
+  );
   const instructionGroups = sectionGroups(instructions);
   const ingredientsWide = ingredientsOnly || stackedLayout;
   const methodWide = methodOnly || stackedLayout;
@@ -1358,7 +1369,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                   <span className="recipe-card__continued-inline">
                     {cookbookMode ? " (continued on the next page)" : " (continued on back)"}
                   </span>
-                ) : side === "back" || continued ? (
+                ) : (side === "back" || continued) && stepsBeganEarlier ? (
                   " continued"
                 ) : (
                   ""
