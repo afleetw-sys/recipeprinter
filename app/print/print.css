@@ -9364,7 +9364,7 @@ textarea.recipe-card__toc-title {
 }
 
 /* ── Christmas (seasonal) ──────────────────────────────────────────────────
-   Linen stock, a red Harrington title and a row of the artist's Santa hats
+   Linen stock, a red calligraphic title and a row of the artist's Santa hats
    along the foot. Measured off the artist's 1500-unit-wide card:
    `--christmas-u` is one of those units at this card's width.
 
@@ -9386,7 +9386,7 @@ textarea.recipe-card__toc-title {
   --recipe-step-bg: #eceae6;
   --recipe-footer: #6b625d;
   --recipe-radius: 0;
-  --recipe-title-font: var(--font-harrington), Georgia, serif;
+  --recipe-title-font: var(--font-fondamento), Georgia, serif;
   --christmas-u: calc(var(--recipe-card-width) / 1500);
 }
 
