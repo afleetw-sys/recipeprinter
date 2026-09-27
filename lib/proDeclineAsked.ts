@@ -10,9 +10,14 @@ import { localStore } from "@/lib/storage";
  *
  * Every doubt resolves to "already asked": a question we skip costs one
  * answer, a question asked twice costs the promise.
+ *
+ * It is also never asked on a first visit to the paywall. The first time is
+ * mostly someone poking around to see what Pro is; the question waits until
+ * the paywall comes up again on the same browser.
  */
 
 const DEVICE_KEY = "rp:pro-decline-asked-at";
+const PAYWALL_SEEN_KEY = "rp:pro-paywall-seen-at";
 /** Write-once, server clock. firestore.rules allows exactly this key. */
 const ACCOUNT_FIELD = "proDeclineAskedAt";
 
@@ -20,6 +25,16 @@ const ACCOUNT_FIELD = "proDeclineAskedAt";
 export function proDeclineAskedOnDevice(): boolean {
   if (!localStore.available()) return true;
   return localStore.get(DEVICE_KEY) !== null;
+}
+
+/** True when this browser showed the Pro dialog before the current opening. */
+export function proPaywallSeenBefore(): boolean {
+  return localStore.get(PAYWALL_SEEN_KEY) !== null;
+}
+
+/** Idempotent, so a double-mounted effect still counts as one visit. */
+export function markProPaywallSeen(): void {
+  if (localStore.get(PAYWALL_SEEN_KEY) === null) localStore.set(PAYWALL_SEEN_KEY, String(Date.now()));
 }
 
 /** Rejects when the account could not be read; callers treat that as asked. */

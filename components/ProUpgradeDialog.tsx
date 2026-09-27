@@ -10,7 +10,9 @@ import { track, type ProDeclineReason } from "@/lib/analytics";
 import {
   loadProDeclineAskedOnAccount,
   markProDeclineAsked,
+  markProPaywallSeen,
   proDeclineAskedOnDevice,
+  proPaywallSeenBefore,
 } from "@/lib/proDeclineAsked";
 import { PRO_BENEFITS } from "@/lib/proUpgradeCopy";
 import {
@@ -53,8 +55,9 @@ const DECLINE_REASONS: { reason: ProDeclineReason; label: string }[] = [
  * Closing from the plan step, before Continue was ever pressed, turns the
  * dialog into one question: why not upgrade today. A tap on an answer records it
  * and closes; closing again closes for real. It never follows the sign-in
- * step (that is sign-in friction, not a no to the price), and it is asked once
- * per person ever (lib/proDeclineAsked.ts).
+ * step (that is sign-in friction, not a no to the price), it is never asked on
+ * the first opening of this dialog on a browser, and it is asked once per
+ * person ever (lib/proDeclineAsked.ts).
  */
 export function ProUpgradeDialog({
   onClose,
@@ -91,6 +94,12 @@ export function ProUpgradeDialog({
   // Whether this account has been asked on any device. Null until read, and
   // the question waits for the answer: closing before it arrives just closes.
   const [askedOnAccount, setAskedOnAccount] = useState<{ uid: string | null; asked: boolean } | null>(null);
+  // Read before this opening is recorded, so the first ever opening stays quiet.
+  const [seenBefore] = useState(proPaywallSeenBefore);
+
+  useEffect(() => {
+    markProPaywallSeen();
+  }, []);
 
   useEffect(() => {
     if (!uid) {
@@ -134,6 +143,7 @@ export function ProUpgradeDialog({
 
   function handleClose() {
     const mayAsk =
+      seenBefore &&
       askedOnAccount !== null &&
       askedOnAccount.uid === uid &&
       !askedOnAccount.asked &&
