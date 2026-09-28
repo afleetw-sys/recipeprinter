@@ -43,9 +43,9 @@ async function startCookbook(page: Page, request: APIRequestContext): Promise<{ 
   return { uid, projectId };
 }
 
-// "Buy & Print" on a desktop, "Purchase & Print" on a phone, until it's paid for.
+// "Buy & Print" until the book is paid for, on a desktop and a phone alike.
 const printButton = (page: Page) =>
-  page.getByRole("button", { name: /^((Buy|Purchase) & )?Print$/ }).filter({ visible: true });
+  page.getByRole("button", { name: /^(Buy & )?Print$/ }).filter({ visible: true });
 const printDialog = (page: Page) => page.getByRole("heading", { name: "Print your cookbook" });
 
 test("a signed-in cook's new cookbook is saved to their account without pressing Save", async ({ page, request }) => {
@@ -57,7 +57,7 @@ test("a signed-in cook's new cookbook is saved to their account without pressing
 test("a cookbook that hasn't been paid for can't be exported for free", async ({ page, request }) => {
   await startCookbook(page, request);
 
-  await expect(printButton(page)).toHaveText(/& Print$/);
+  await expect(printButton(page)).toHaveText("Buy & Print");
   await printButton(page).click();
 
   // Pressing it starts checkout, which has no RevenueCat to reach here and
