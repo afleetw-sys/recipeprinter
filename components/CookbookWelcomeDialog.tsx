@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Dialog } from "@/components/Dialog";
 import { CheckIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import type { CoverConfig } from "@/types/recipe";
+import { useUsdPriceLabel } from "@/lib/visitorCurrency";
 
 export function CookbookWelcomeDialog({
   open,
@@ -19,6 +20,7 @@ export function CookbookWelcomeDialog({
   /** Dismiss and stay in the book: the X, Escape and the backdrop. */
   onClose: () => void;
 }) {
+  const usd = useUsdPriceLabel();
   return (
     <Dialog
       open={open}
@@ -67,7 +69,7 @@ export function CookbookWelcomeDialog({
           ))}
         </ul>
         <div className="cookbook-welcome__price">
-          <b>{price} one time</b>
+          <b>{usd(price)} one time</b>
           <span>Pay when you export.</span>
         </div>
         <div className="cookbook-welcome__actions">

@@ -26,6 +26,7 @@ import {
   proAnnualSavingsPercent,
   type ProBillingCycle,
 } from "@/lib/proProduct";
+import { useUsdPriceLabel } from "@/lib/visitorCurrency";
 
 // What Basic (the free tier) actually includes — and it's a lot, which the
 // old "Classic & Pantry themes / Full Page printing / one recipe at a time"
@@ -80,6 +81,7 @@ export function AccountProStatus({ user }: { user: User }) {
       anything — `ProUpgradeDialog` still has its own cycle picker once
       you're actually choosing. */
   const [billingCycle, setBillingCycle] = useState<ProBillingCycle>("monthly");
+  const usd = useUsdPriceLabel();
 
   const refreshProCustomerInfo = useCallback(async () => {
     const [liveResult, mirrorResult] = await Promise.allSettled([
@@ -221,7 +223,7 @@ export function AccountProStatus({ user }: { user: User }) {
                   <h3 className="text-cp-body font-extrabold text-ink">Pro</h3>
                 </div>
                 <p className="mt-1 text-cp-body font-bold text-ink-soft">
-                  {proDetails.cycle ? PRO_PRICE_FALLBACKS[proDetails.cycle] : "Your plan"}
+                  {proDetails.cycle ? usd(PRO_PRICE_FALLBACKS[proDetails.cycle]) : "Your plan"}
                 </p>
                 {proDetails.willRenew ? (
                   <p className="mt-1 text-cp-small font-bold text-ink">
@@ -353,11 +355,11 @@ export function AccountProStatus({ user }: { user: User }) {
                 </div>
                 {billingCycle === "annual" ? (
                   <p className="mt-1 text-cp-body font-bold text-ink-soft">
-                    {PRO_ANNUAL_PRICE_FALLBACK}{" "}
+                    {usd(PRO_ANNUAL_PRICE_FALLBACK)}{" "}
                     <span className="pro-plan-card__note">· Save {proAnnualSavingsPercent()}%</span>
                   </p>
                 ) : (
-                  <p className="mt-1 text-cp-body font-bold text-ink-soft">{PRO_MONTHLY_PRICE_FALLBACK}</p>
+                  <p className="mt-1 text-cp-body font-bold text-ink-soft">{usd(PRO_MONTHLY_PRICE_FALLBACK)}</p>
                 )}
                 <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
                   <li className="flex items-start gap-cp-2 text-cp-small font-semibold text-ink">

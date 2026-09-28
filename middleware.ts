@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { VISITOR_COUNTRY_COOKIE } from "@/lib/usdPriceLabel";
 
 /**
  * Send the production deployment's own `*.vercel.app` alias to the real domain.
@@ -27,12 +28,35 @@ import type { NextRequest } from "next/server";
  */
 const CANONICAL_HOST = "www.recipeprinter.com";
 
+/**
+ * Hand the visitor's country to the browser, so prices can say "US$" outside
+ * the US (see lib/visitorCurrency.ts). Vercel geolocates every request into
+ * this header; there is no browser API that answers the same question, and a
+ * locale or timezone is where someone's settings are, not where they are.
+ * Readable by script on purpose, since reading it is the whole job. Only a
+ * country code, and only rewritten when it changes.
+ */
+function withVisitorCountry(request: NextRequest, response: NextResponse): NextResponse {
+  const country = request.headers.get("x-vercel-ip-country")?.toUpperCase();
+  if (!country || !/^[A-Z]{2}$/.test(country)) return response;
+  if (request.cookies.get(VISITOR_COUNTRY_COOKIE)?.value === country) return response;
+  response.cookies.set(VISITOR_COUNTRY_COOKIE, country, {
+    path: "/",
+    maxAge: 60 * 60 * 24,
+    sameSite: "lax",
+    secure: true,
+  });
+  return response;
+}
+
 export function middleware(request: NextRequest) {
-  if (process.env.VERCEL_ENV !== "production") return NextResponse.next();
+  if (process.env.VERCEL_ENV !== "production") {
+    return withVisitorCountry(request, NextResponse.next());
+  }
 
   const host = request.headers.get("host")?.toLowerCase();
   if (!host || host === CANONICAL_HOST || host === "recipeprinter.com") {
-    return NextResponse.next();
+    return withVisitorCountry(request, NextResponse.next());
   }
 
   const url = request.nextUrl.clone();
