@@ -237,7 +237,7 @@ export function AccountProStatus({ user }: { user: User }) {
                         Ends {formatDate(proDetails.expiresAtMs) ?? "at the end of your paid period"}
                       </p>
                       <p className="text-cp-small text-ink-soft">
-                        You canceled, but you can pick Pro back up any time before then.
+                        You can pick Pro back up any time before then.
                       </p>
                     </div>
                   </div>
