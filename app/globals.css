@@ -1018,7 +1018,7 @@
   .cookbook-welcome__copy h2 {
     /* Clear of the close button, which now sits on the copy, not the photo. */
     padding-right: 2rem;
-    font-size: 1.45rem;
+    font-size: var(--cp-fs-h2-lg);
     line-height: 1.15;
     letter-spacing: -.02em;
   }
