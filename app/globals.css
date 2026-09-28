@@ -989,27 +989,60 @@
   text-transform: uppercase;
 }
 
+/* Phones get the offer, not the brochure. The photo is dropped outright: at
+   phone width it was a cropped strip of a book the cook is already looking at
+   behind the scrim, and it pushed the button off a short screen. The lede goes
+   too, since the headline and the three ticks already say it. The panel's width
+   subtracts the root's padding on BOTH sides; `100vw - 24px` inside a 24px-
+   padded grid ran it 24px off the right edge, which is what read as broken. */
 @media (max-width: 720px) {
+  .cookbook-welcome {
+    padding: 16px;
+  }
   .cookbook-welcome__panel {
     grid-template-columns: 1fr;
-    width: calc(100vw - 24px);
-    max-height: calc(100vh - 24px);
+    width: min(440px, 100%);
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
     gap: 0;
     border-radius: var(--cp-radius-card);
   }
-  .cookbook-welcome__visual {
-    min-height: 190px;
-    max-height: 25vh;
+  .cookbook-welcome__visual,
+  .cookbook-welcome__lede p {
+    display: none;
   }
   .cookbook-welcome__copy {
     gap: 1rem;
-    padding: 1.25rem;
+    padding: 1.5rem 1.25rem 1.25rem;
+  }
+  .cookbook-welcome__copy h2 {
+    /* Clear of the close button, which now sits on the copy, not the photo. */
+    padding-right: 2rem;
+    font-size: var(--cp-fs-h2-lg);
+    line-height: 1.15;
+    letter-spacing: -.02em;
   }
   .cookbook-feature-chips {
-    gap: .45rem;
+    gap: .5rem;
   }
   .cookbook-feature-chips li {
+    align-items: flex-start;
     font-size: var(--cp-fs-small);
+    font-weight: 500;
+  }
+  .cookbook-feature-chips li svg {
+    margin-top: .15em;
+  }
+  .cookbook-welcome__price {
+    gap: .15rem;
+    padding-left: .75rem;
+  }
+  .cookbook-welcome__price b {
+    margin-top: 0;
+    font-size: var(--cp-fs-body-lg);
+  }
+  .cookbook-welcome__actions .btn {
+    flex: 1 1 auto;
   }
 }
 

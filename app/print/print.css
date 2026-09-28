@@ -7090,7 +7090,10 @@ textarea.recipe-card__toc-title {
   max-width: 100%;
   max-height: 100%;
   padding: 20px;
-  overflow: auto;
+  /* Vertical only, and only as a last resort: the width now grows to fit the
+     copy (see PrintDeck), so nothing should ever scroll sideways. */
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 1px solid var(--cp-error-border);
   border-radius: 12px;
   background: var(--cp-error-soft);
@@ -7106,6 +7109,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-page-failed__heading {
+  overflow-wrap: anywhere;
   font-weight: var(--cp-fw-display);
   color: var(--cp-error);
 }
