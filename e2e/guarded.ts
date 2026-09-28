@@ -15,13 +15,29 @@ export const test = base.extend<{ guard: void }>({
     async ({ page }, use) => {
       const pageErrors: string[] = [];
       const external = new Set<string>();
-      page.on("pageerror", (error) => pageErrors.push(error.message));
+      page.on("pageerror", (error) => {
+        // WebKit reports Firestore's open listen channel, cancelled by a
+        // reload or navigation, as an uncaught error. It is the page going
+        // away, not a fault in it.
+        if (/Firestore\/Listen\/channel.*due to access control checks/.test(error.message)) return;
+        // A browser warning (WebKit raises it as an error) that a resize
+        // callback changed layout again; nothing failed.
+        if (error.message.startsWith("ResizeObserver loop")) return;
+        pageErrors.push(error.message);
+      });
       page.on("request", (request) => {
         const { hostname, protocol } = new URL(request.url());
         if (protocol.startsWith("http") && hostname !== "127.0.0.1" && hostname !== "localhost") {
           external.add(hostname);
         }
       });
+      // /api/parse allows 30 imports per caller per 10 minutes, and every
+      // test's browser is the same caller. Each test gets its own address, so
+      // the suite can grow without its tests using up one shared budget.
+      const caller = `10.${randomOctet()}.${randomOctet()}.${randomOctet()}`;
+      await page.route("**/api/parse", (route) =>
+        route.continue({ headers: { ...route.request().headers(), "x-forwarded-for": caller } }),
+      );
       await use();
       expect(pageErrors, "uncaught errors on the page").toEqual([]);
       expect(Array.from(external), "requests that left localhost").toEqual([]);
@@ -31,3 +47,5 @@ export const test = base.extend<{ guard: void }>({
 });
 
 export { expect };
+
+const randomOctet = () => Math.floor(Math.random() * 256);

@@ -1,5 +1,5 @@
-import type { APIRequestContext, Page } from "@playwright/test";
 import { expect, test } from "./guarded";
+import { PASSWORD, enterEmail, enterPassword, returningUser, signedIn } from "./account";
 
 /**
  * Email sign-in, end to end in the browser: the real sign-in dialog, the real
@@ -10,36 +10,8 @@ import { expect, test } from "./guarded";
  * are not covered here.
  */
 
-const PASSWORD = "correct-horse-battery-staple";
-
-/** A password account in the Auth emulator, unique per test so tests can run in parallel. */
-async function returningUser(request: APIRequestContext): Promise<string> {
-  const email = `returning-${crypto.randomUUID()}@example.test`;
-  const response = await request.post(
-    "http://127.0.0.1:9199/identitytoolkit.googleapis.com/v1/accounts:signUp?key=e2e-fake-api-key",
-    { data: { email, password: PASSWORD, returnSecureToken: true } },
-  );
-  expect(response.ok()).toBe(true);
-  return email;
-}
-
-async function enterEmail(page: Page, email: string) {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Open account or sign in" }).click();
-  const field = page.locator('input[type="email"]').first();
-  await field.fill(email);
-  await field.press("Enter");
-}
-
-async function enterPassword(page: Page, password: string) {
-  await page.locator('input[type="password"]').fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-}
-
-const signedIn = (page: Page) => page.getByRole("button", { name: "Open account menu" });
-
 test("a returning user signs in with their password", async ({ page, request }) => {
-  const email = await returningUser(request);
+  const { email } = await returningUser(request);
   await enterEmail(page, email);
   await expect(page.getByText(`Password for ${email}`)).toBeVisible();
 
@@ -50,7 +22,7 @@ test("a returning user signs in with their password", async ({ page, request }) 
 });
 
 test("the sign-in survives a reload", async ({ page, request }) => {
-  const email = await returningUser(request);
+  const { email } = await returningUser(request);
   await enterEmail(page, email);
   await enterPassword(page, PASSWORD);
   await expect(signedIn(page)).toBeVisible();
@@ -61,7 +33,7 @@ test("the sign-in survives a reload", async ({ page, request }) => {
 });
 
 test("a wrong password is refused with a message that doesn't blame anyone", async ({ page, request }) => {
-  const email = await returningUser(request);
+  const { email } = await returningUser(request);
   await enterEmail(page, email);
   await enterPassword(page, "not-the-password");
 
