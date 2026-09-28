@@ -48,6 +48,7 @@ import { isPhotoOpenClick, type PhotoPress } from "@/lib/photoOpenGesture";
 import { LineSelectionToolbar } from "@/components/print/LineSelectionToolbar";
 import { TextFieldToolbar } from "@/components/print/TextFieldToolbar";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
+import { PageToolbar } from "@/components/print/PageToolbar";
 import { FailedImportCard } from "@/components/print/FailedImportCard";
 import { importLoadingLabel } from "@/lib/importProgress";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
@@ -758,7 +759,7 @@ export function PrintDeck(props: PrintDeckProps) {
           "--preview-offset": `${horizontalOffset}px`,
         } as CSSProperties}
       >
-        <div className="recipe-page-toolbar">
+        <PageToolbar>
           {/* The contents page is generated, and anyone looking at it needs
               telling why the entries will not take a cursor — more so now that
               the two lines above them will. It used to say so from INSIDE the
@@ -921,7 +922,7 @@ export function PrintDeck(props: PrintDeckProps) {
             </button>
           </div>
           {addImagePageButton}
-        </div>
+        </PageToolbar>
       </div>
     );
   };

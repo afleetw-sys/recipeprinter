@@ -1470,6 +1470,28 @@
   border-left: 1px solid var(--cp-line);
 }
 
+/* ...except where a group opens a wrapped row, which PageToolbar marks. The
+   rule separates two neighbours; at the start of a row it has no neighbour and
+   read as a stray line in front of the first button. Transparent rather than
+   removed so the group keeps its width and the wrap cannot flip back and forth
+   over one pixel. */
+.recipe-page-toolbar__group[data-row-start] {
+  border-left-color: transparent;
+}
+
+/* A hint that wrapped gets the whole top row, ruled off, and the controls line
+   up on the right beneath it: a note over a set of actions, the way a dialog
+   puts its message over its buttons, instead of a sentence and one icon that
+   happen to have fallen onto two lines. */
+.recipe-page-toolbar[data-wrapped]:has(> .recipe-page-toolbar__hint) {
+  justify-content: flex-end;
+  row-gap: 4px;
+}
+.recipe-page-toolbar[data-wrapped] > .recipe-page-toolbar__hint {
+  padding: 4px 8px 8px;
+  border-bottom: 1px solid var(--cp-line);
+}
+
 /* Two zones, not five equal groups.
    
    Front/Back changes WHAT YOU ARE LOOKING AT and costs nothing. Edit, Move and
@@ -3835,6 +3857,15 @@
   right: 9px;
   bottom: 9px;
   z-index: 3;
+}
+/* Not on phones. A thumb-sized photo on a phone-sized page is no place to
+   judge a crop, and the control sat over the picture it was meant to show.
+   A zoom already set elsewhere still renders and prints; only the control
+   goes. Same breakpoint as the phone deck (DECK_MOBILE_QUERY). */
+@media screen and (max-width: 820px) {
+  .recipe-image-spread__zoom {
+    display: none;
+  }
 }
 
 .recipe-template--heirloom {
