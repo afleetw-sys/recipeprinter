@@ -1174,11 +1174,16 @@ export function PrintDeck(props: PrintDeckProps) {
             key={`failed-page-${failedItem.id}`}
             data-failed-import-id={failedItem.id}
           >
+            {/* At LEAST the page's box, so a roomy deck still shows the
+                failure where the page would have been, but never smaller than
+                the words and buttons need. Pinned to the page exactly, a short
+                deck (landscape phone, zoomed window) shrank it to ~120px wide
+                and the answer scrolled out of sight inside it. */}
             <div
               className="recipe-page-failed__sheet"
               style={{
-                width: previewDims.w * deckScale,
-                aspectRatio: `${previewDims.w} / ${previewDims.h}`,
+                width: `max(${previewDims.w * deckScale}px, min(20rem, 100%))`,
+                minHeight: previewDims.h * deckScale,
               }}
             >
               <FailedImportCard
