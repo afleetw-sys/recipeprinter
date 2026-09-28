@@ -73,7 +73,15 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    // Safari, desktop and phone: the engine behind most of the bugs that
+    // reached customers (print sizing, one print per tab, iOS editing). The
+    // export page is left to Chromium, the only browser that ever opens it:
+    // the PDF renderer.
+    { name: "webkit", use: { ...devices["Desktop Safari"] }, testIgnore: /export\.spec/ },
+    { name: "iphone", use: { ...devices["iPhone 15"] }, testIgnore: /export\.spec/ },
+  ],
   webServer: [
     {
       command:
