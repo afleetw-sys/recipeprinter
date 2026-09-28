@@ -4,10 +4,10 @@ import {
   Birthstone,
   Caprasimo,
   Cormorant_Garamond,
+  Courgette,
   Courier_Prime,
   DM_Sans,
   DM_Serif_Display,
-  Fondamento,
   Gochi_Hand,
   Jost,
   Karla,
@@ -102,11 +102,11 @@ const nunitoSans = Nunito_Sans({
   preload: false,
 });
 
-// Christmas's title face, a calligraphic serif with a looped capital.
-const fondamento = Fondamento({
+// Christmas's title face, a rounded brush script.
+const courgette = Courgette({
   subsets: ["latin"],
   weight: "400",
-  variable: "--font-fondamento",
+  variable: "--font-courgette",
   display: "swap",
   preload: false,
 });
@@ -251,7 +251,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${fondamento.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${karla.variable}`}
+      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${courgette.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${karla.variable}`}
     >
       <body>
         <KeyboardInsetWatcher />

@@ -9499,7 +9499,7 @@ textarea.recipe-card__toc-title {
   --recipe-step-bg: #eceae6;
   --recipe-footer: #6b625d;
   --recipe-radius: 0;
-  --recipe-title-font: var(--font-fondamento), Georgia, serif;
+  --recipe-title-font: var(--font-courgette), Georgia, serif;
   --christmas-u: calc(var(--recipe-card-width) / 1500);
 }
 
