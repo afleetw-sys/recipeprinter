@@ -90,9 +90,10 @@ jobs:
 
   # The app in a real browser (Playwright), against a production build on
   # localhost, with Firebase emulators and a CookPilot stand-in. Its own job
-  # because it builds the app and downloads Chromium. Nothing here can reach
-  # production: analytics only starts on the production hostnames, and every
-  # test fails if the browser contacts anything but localhost (e2e/guarded.ts).
+  # because it builds the app and downloads Chromium and WebKit. Nothing here
+  # can reach production: analytics only starts on the production hostnames,
+  # and every test fails if the browser contacts anything but localhost
+  # (e2e/guarded.ts).
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -113,8 +114,8 @@ jobs:
 
       - run: npm ci
 
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Browser tests
         run: npm run test:e2e
