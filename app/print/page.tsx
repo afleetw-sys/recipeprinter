@@ -5863,7 +5863,7 @@ export default function PrintPage() {
             disabled={printBlocked}
           >
             {printSpinner ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
-            {cookbookLocked ? "Purchase & Print" : "Print"}
+            {cookbookLocked ? "Buy & Print" : "Print"}
           </button>
         </div>
 
