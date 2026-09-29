@@ -83,6 +83,7 @@ export function SeoCapture({
   submitLabel = "Start printing",
   fieldLabel,
   placeholder,
+  uploadTitle,
   modes,
 }: {
   initialMode?: ImportTab;
@@ -103,6 +104,7 @@ export function SeoCapture({
    */
   fieldLabel?: string;
   placeholder?: string;
+  uploadTitle?: string;
   /**
    * Which sources this page offers. Defaults to just `initialMode` — the
    * deliberately minimal single field every existing page keeps, since a page
@@ -126,6 +128,7 @@ export function SeoCapture({
         submitLabel={submitLabel}
         fieldLabel={fieldLabel}
         placeholder={placeholder}
+        uploadTitle={uploadTitle}
       />
     );
   }
@@ -223,11 +226,13 @@ function SingleFieldCapture({
   submitLabel,
   fieldLabel,
   placeholder,
+  uploadTitle,
 }: {
   mode: CaptureMode;
   submitLabel: string;
   fieldLabel?: string;
   placeholder?: string;
+  uploadTitle?: string;
 }) {
   const { router, busy, setBusy, handoff } = useHandoff();
   const [url, setUrl] = useState("");
@@ -417,7 +422,7 @@ function SingleFieldCapture({
         <>
           <span className="field-label">{fieldLabel ?? "Recipe photos"}</span>
           <label
-            className={`dropzone ${dragging ? "is-dragging" : ""}`}
+            className={`dropzone mb-cp-2 ${dragging ? "is-dragging" : ""}`}
             onDragOver={(e) => {
               e.preventDefault();
               if (!busy) setDragging(true);
@@ -444,12 +449,14 @@ function SingleFieldCapture({
               }}
             />
             <UploadIcon size={26} />
-            <span className="text-cp-body">{imageLabel(files)}</span>
+            <span className="text-cp-body">
+              {files.length > 0 ? imageLabel(files) : (uploadTitle ?? imageLabel(files))}
+            </span>
             <span className="text-cp-caption font-medium text-ink-soft">
               {placeholder ?? "Snap a cookbook page or screenshot, or drop a photo"}
             </span>
           </label>
-          <FieldError error={error} />
+          <FieldError error={error} reserveSpace={false} />
           {submitButton}
         </>
       )}
@@ -458,13 +465,20 @@ function SingleFieldCapture({
 }
 
 /**
- * Same slot whether or not there's an error to show. Left unreserved, an
- * error appearing or clearing changes this column's height, and the hero
- * grid it sits in (`LandingHero`'s default `items-center`) re-centers the
- * whole row against that — which reads as the product photo beside it
- * jumping for a reason that has nothing to do with the photo.
+ * Usually keeps the same slot whether or not there's an error to show, so an
+ * error appearing does not re-center the hero row. The single-photo capture
+ * opts out: reserving a whole message row between its large dropzone and the
+ * submit button reads as an accidental gap. Its error can move the button on
+ * the uncommon validation path; the compact resting state matters more there.
  */
-function FieldError({ error }: { error: string | null }) {
+function FieldError({
+  error,
+  reserveSpace = true,
+}: {
+  error: string | null;
+  reserveSpace?: boolean;
+}) {
+  if (!error && !reserveSpace) return null;
   return (
     <p className={`field-error ${error ? "" : "invisible"}`} role="alert" aria-hidden={error ? undefined : true}>
       {error || " "}
