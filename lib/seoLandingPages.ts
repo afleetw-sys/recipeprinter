@@ -50,13 +50,19 @@ export type SeoLandingPage = {
    * feeds the sitemap's <lastmod>, so "we reviewed this" and "we told Google it
    * changed" can never drift apart. Leave unset until a page is actually done.
    */
-  lastReviewed?: string;
+  copyReviewed?: string;
+  /**
+   * The date this page's images were checked against the claims they sit
+   * beside (YYYY-MM-DD). Leave unset until every image on the page has had a
+   * deliberate relevance, crop, and alt-text review.
+   */
+  imagesReviewed?: string;
   /**
    * The day this page's rendered content last changed (YYYY-MM-DD), and what
    * <lastmod> is built from.
    *
-   * Separate from `lastReviewed` because the two are different facts and were
-   * drifting apart the moment anything was edited: `lastReviewed` means a human
+   * Separate from `copyReviewed` because the two are different facts and were
+   * drifting apart the moment anything was edited: `copyReviewed` means a human
    * read the page end to end and signed it off, so bumping it to refresh a
    * sitemap date would claim a sign-off that never happened, and leaving it
    * alone told Google a page rewritten today was last touched in July. Edit
@@ -101,6 +107,8 @@ export type SeoLandingPage = {
       one of the printed cards. Without it every utility page opens on the same
       card. */
   heroImage?: string;
+  /** Page-specific alt text for a named hero image. */
+  heroImageAlt?: string;
   heroCardKey?: string;
   /** The little label on the hero photo. Only read when `heroImage` is set —
       the built-in captions describe the printed cards, and a page showing
@@ -199,6 +207,9 @@ export type SeoLandingPage = {
     /** Names a specific visual, overriding the one `proof` would pick. Use when
         two rows would otherwise land on the same image. */
     image?: string;
+    /** Page-specific alt text when the shared image is evidence for a more
+        specific claim on this page. */
+    imageAlt?: string;
   }[];
   /**
    * Head-to-head feature table for a competitor page. Only worth adding when
@@ -210,7 +221,7 @@ export type SeoLandingPage = {
     competitor: string;
     /** When the competitor's site and pricing were last read. Not rendered —
         it records who the claims were checked against and when, the same way
-        `lastReviewed` records a content pass, so a stale table is greppable
+        `copyReviewed` records a content pass, so a stale table is greppable
         rather than invisible. */
     checked: string;
     /** Labelled groups, not a flat list: a run of ten unbroken rows is the
@@ -244,7 +255,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-recipe-from-website",
     contentUpdated: "2026-09-15",
-    lastReviewed: "2026-09-02",
+    copyReviewed: "2026-09-02",
     primaryKeyword: "print recipe from website",
     secondaryKeywords: [
       "print recipe from food blog",
@@ -345,7 +356,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-recipe-without-ads",
     contentUpdated: "2026-09-09",
-    lastReviewed: "2026-09-02",
+    copyReviewed: "2026-09-02",
     primaryKeyword: "print recipe without ads",
     secondaryKeywords: [
       "print recipe without pictures",
@@ -426,7 +437,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "convert-recipe-to-pdf",
     contentUpdated: "2026-09-09",
-    lastReviewed: "2026-09-02",
+    copyReviewed: "2026-09-02",
     primaryKeyword: "convert recipe to PDF",
     secondaryKeywords: [
       "recipe PDF generator",
@@ -522,7 +533,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "recipe-card-printer",
     contentUpdated: "2026-09-09",
-    lastReviewed: "2026-09-09",
+    copyReviewed: "2026-09-09",
     primaryKeyword: "printable recipe card generator",
     secondaryKeywords: [
       "recipe card maker",
@@ -624,7 +635,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-multiple-recipes",
-    contentUpdated: "2026-09-16",
+    contentUpdated: "2026-09-29",
+    copyReviewed: "2026-09-29",
     primaryKeyword: "print multiple recipes",
     secondaryKeywords: [
       "print multiple recipes at once",
@@ -637,52 +649,56 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     initialImportMode: "url",
     importModes: ["url", "apps", "image", "text"],
     importSubmitLabel: "Add your first recipe",
-    captureReassurance: "Printing multiple recipes in one job is a RecipePrinter Pro feature.",
     heroImage: "card",
     heroAnnotation: "Print several recipes together",
-    title: "Print Multiple Recipes | RecipePrinter",
+    title: "Print Multiple Recipes at Once | RecipePrinter",
     description:
-      "Add recipes from links, photos, apps, or text and print them together in one job with RecipePrinter Pro.",
+      "Print multiple recipes at once with RecipePrinter. Combine recipes from websites, screenshots, photos, text, and recipe apps into one matching set.",
     h1: "Print multiple recipes at once",
     lede:
-      "Add the recipes you want to keep, choose a print layout, and send them to the printer together. Batch printing is included with RecipePrinter Pro.",
+      "Add recipes from websites, screenshots, photos, recipe apps, or text to one collection. Choose a full-page or 4x6 recipe card layout, then print multiple recipes at once.",
     howToHeading: "How to print multiple recipes",
     howTo: [
       {
         name: "Add your first recipe",
-        text: "Paste a recipe link, upload a photo, open a recipe app export, or paste the text. Check the ingredients and steps before printing.",
+        text: "Paste a recipe link, upload a screenshot or photo, import from a recipe app, or paste the recipe text. Check it before adding it to your collection.",
       },
       {
         name: "Add the rest of your recipes",
-        text: "With RecipePrinter Pro, add more recipes to the same print job. You can mix sources in one collection.",
+        text: "Keep adding recipes to the same collection. They can come from different websites, screenshots, photos, pasted text, or recipe apps.",
       },
       {
         name: "Choose how they print",
-        text: "Use full letter pages or 4×6 recipe cards, then choose a theme. The print settings apply across the job.",
+        text: "Choose full letter pages or 4x6 recipe cards, then pick a theme. The same size and style apply to every recipe in the collection.",
       },
       {
-        name: "Print them in one job",
-        text: "Send the set to your printer, or choose Save as PDF in the print dialog to keep a digital copy.",
+        name: "Print or save the collection",
+        text: "Print the whole collection together, or save it as a PDF to keep or print later.",
       },
     ],
     featureSections: [
       {
         heading: "One trip to the printer for the whole set",
         image: "cookpilot-export",
+        imageAlt:
+          "A CookPilot recipe library beside a RecipePrinter collection containing several recipes.",
         body:
-          "A week of dinners or a stack for a recipe box is easier to handle as one print job. Add each recipe, check it, and print the set together instead of starting a new print dialog for every page.",
+          "Collect a week of dinners, a stack of recipe cards, or the family favorites you've been meaning to put on paper. Add and check each recipe, then print the entire collection at once instead of printing recipes one by one.",
       },
       {
         heading: "Bring recipes from different places",
         image: "multi-themes",
+        imageAlt:
+          "The same recipe shown in six RecipePrinter themes, with different type, borders, and colors.",
         body:
-          "The recipes do not have to come from the same site. Add a link, a screenshot, a photo of a card, pasted text, or a supported recipe app export, and print them in a consistent layout.",
+          "Your recipes don't have to come from the same website. Add recipe links, screenshots, photos of recipe cards, pasted text, or supported recipe app exports to one collection, then print them together in one consistent layout.",
       },
       {
-        heading: "Batch printing is part of Pro",
+        heading: "A set that looks like it belongs together",
         image: "card-in-box",
+        imageAlt: "A printed Basil Pesto recipe card filed in a tabbed recipe box.",
         body:
-          "Printing one full letter page at a time is free. RecipePrinter Pro lets you add multiple recipes to one print job and includes 4×6 recipe cards and print themes for a matching set.",
+          "Choose one recipe card size or page size and a theme for the collection, and every recipe follows it. Recipes from different websites and sources can still print as one matching set.",
       },
     ],
     faqHeading: "Multiple recipe printing questions",
@@ -690,39 +706,50 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print multiple recipes at once for free?",
         answer:
-          "You can print full letter pages one recipe at a time for free. Printing several recipes in one job requires RecipePrinter Pro.",
+          "Not all at once. You can print one recipe at a time for free, and you can build and preview a collection before deciding. Printing the collection together requires RecipePrinter Pro.",
       },
       {
         question: "Can I mix links, screenshots, and recipe app exports?",
         answer:
-          "Yes. Add recipes from different supported sources to the same print job. Check each one before printing so the ingredients and steps are right.",
+          "Yes. Add recipes from different supported sources to the same collection. Check each one before printing so the ingredients and steps are right.",
       },
       {
         question: "Will all the recipes use the same card size and theme?",
         answer:
-          "Yes. The selected size and theme apply to every recipe in the print job, so the finished pages or cards match.",
+          "Yes. The selected size and theme apply to every recipe in the collection, so the finished pages or cards match. If you want different sizes or themes, start a separate print project for each set.",
       },
       {
-        question: "Can I save the batch as a PDF?",
+        question: "Can I save the collection as a PDF?",
         answer:
-          "Yes. Once the recipes are ready, open the print dialog and choose Save as PDF to keep the set as a file.",
+          "Yes. Once the recipes are ready, save the complete set as a PDF to keep or print later.",
       },
       {
         question: "Do I need to add all the recipes at once?",
         answer:
-          "No. Start with one recipe and add more before you print. If you want to come back to a saved project later, sign in and save it to your account.",
+          "No. Start with one recipe and keep adding to the collection. When it is ready, review the recipes, choose your layout, and print the entire set together with RecipePrinter Pro.",
+      },
+      {
+        question: "Can I print multiple 4x6 recipe cards at once?",
+        answer:
+          "Yes. Choose the 4x6 recipe card size for your collection and RecipePrinter will format every recipe using the same size and theme before you print.",
+      },
+      {
+        question: "Can I print recipes from different websites together?",
+        answer:
+          "Yes. Recipes in the same collection can come from different websites, screenshots, photos, pasted text, or supported recipe apps. RecipePrinter reformats them so they can be printed together.",
       },
     ],
     links: [
       { href: "/recipe-card-printer", label: "Make recipe cards" },
-      { href: "/organize-recipes", label: "Organize recipes" },
+      { href: "/print-recipe-from-website", label: "Print a recipe from a website" },
+      { href: "/family-recipe-book", label: "Build a family recipe book" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
     ],
   },
   {
-    // No lastReviewed: written today, not read through yet.
+    // No copyReviewed: written today, not read through yet.
     slug: "print-recipe-from-photo",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-09-29",
     primaryKeyword: "print a recipe from a photo",
     secondaryKeywords: [
       "print recipe from photo",
@@ -738,77 +765,95 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     initialImportMode: "image",
     importSubmitLabel: "Read the photo",
+    importPlaceholder: "Upload a recipe card, cookbook page, screenshot, or photo",
     // The template's default hero is a card captioned "Printed from a recipe
     // link", which is the one thing this page is not about.
     heroImage: "counter-card",
+    heroImageAlt:
+      "A printed Buffalo Chicken Bake recipe card on a kitchen counter beside its ingredients.",
     heroAnnotation: "Printed from a photograph",
     cookbookPitch: true,
-    title: "Print a Recipe from a Photo",
+    cookbookPitchBody:
+      "Once you've digitized the recipes worth keeping, bring them together in a family recipe book. Organize recipes into chapters, add a cover and table of contents, then print it at home or export the finished cookbook as a PDF.",
+    title: "Print a Recipe From a Photo | RecipePrinter",
     description:
-      "Photograph a handwritten card, a cookbook page, or a screenshot and RecipePrinter reads the recipe out of it and sets it for paper.",
+      "Turn a photo, screenshot, handwritten recipe card, or cookbook page into an editable recipe you can print as a 4x6 card, full page, or PDF.",
     h1: "Print a recipe from a photo",
     anchor: "Print a recipe from a photo",
     lede:
-      "A recipe box full of handwriting, a cookbook page you cannot take to the counter, a screenshot of a Reel. Photograph it and it comes back as a card you can print.",
+      "Turn a photo, screenshot, handwritten recipe card, or cookbook page into an editable recipe you can print as a 4x6 recipe card or full page.",
     howTo: [
       {
         name: "Photograph the recipe",
-        text: "Flat, in good light, close enough that the writing is legible. A phone camera is plenty; you are not scanning it, just letting the words be read.",
+        text: "Take a clear photo of a handwritten recipe card, cookbook page, or printed recipe. A phone camera works great.",
       },
       {
         name: "Upload it",
-        text: "Drop the picture into the box above. Up to four images at a time, so a card with writing on the back goes in as one recipe. Photos straight off an iPhone are converted on the way in.",
+        text: "Upload up to four photos for one recipe. Use multiple images when a card or cookbook recipe has more than one page.",
       },
       {
-        name: "Read it over",
-        text: "The ingredients and the method come back as text you can edit. Handwriting is the hard case, so this is the moment to fix a word rather than after it prints.",
+        name: "Check the recipe",
+        text: "RecipePrinter turns the photo into editable recipe text. Read over the ingredients and instructions and fix anything that needs it.",
       },
       {
-        name: "Print it or keep the PDF",
-        text: "A 4 by 6 card for the recipe box, or a letter page for a binder. Save as PDF instead if you want the typed copy on your phone.",
+        name: "Print or save it",
+        text: "Print the recipe as a 4x6 card or full letter page, or save it as a PDF to keep for later.",
       },
     ],
     featureSections: [
       {
         heading: "The handwriting stays, the fading does not",
         image: "handwritten-card",
+        imageAlt:
+          "A handwritten Peanut Butter Cookies recipe card beside the floral recipe box where it is kept.",
         body:
-          "An index card in someone's hand is the recipe and the person at once, and it is also thirty years of kitchen wear. Photographing it gives you a copy that does not fade, does not tear, and does not live in one box in one house. The original goes back where it was.",
+          "Old handwritten recipe cards fade, tear, and get harder to read over time. Photograph the original and RecipePrinter turns it into an editable recipe you can print again, while the original card stays safely where it belongs.",
       },
       {
         heading: "A typed copy is a copy you can use",
         image: "card-in-box",
+        imageAlt: "A newly printed Basil Pesto recipe card filed in a tabbed recipe box.",
         body:
-          "A photograph of a recipe is a picture. You cannot search it, copy an amount out of it, or scale it. Read into text it becomes a recipe again: editable, printable at the size you want, and ready to go into a binder or a cookbook with the rest.",
+          "A photo of a recipe is still just a picture. Turn it into editable text and you can fix ingredients, search it, change the print size, save it as a PDF, or make a new printable recipe card.",
       },
     ],
+    faqHeading: "Recipe photo questions",
     faqs: [
       {
-        question: "Does it read handwriting?",
+        question: "Does it read handwritten recipes?",
         answer:
-          "It does, and neat writing goes better than a scrawl. Faded pencil and looping cursive are the hard cases, so read the card over before you print and fix any line that came through wrong.",
+          "Yes. RecipePrinter can read handwritten recipe cards as well as printed recipes. Clear handwriting and a well-lit photo give the best results, so check the recipe before printing.",
       },
       {
         question: "What if the recipe runs onto the back of the card?",
         answer:
-          "Photograph both sides and upload them together. Up to four images go in as one recipe, which also covers a cookbook page that spreads across two.",
+          "Photograph both sides and upload them together. You can add up to four photos to one recipe, which also works for cookbook recipes that span multiple pages.",
       },
       {
-        question: "Do I need to scan it properly?",
+        question: "Do I need to scan the recipe?",
         answer:
-          "No. A phone photo taken flat in decent light is enough. A scanner is not going to help much beyond that, and it is a lot more work per card.",
+          "No. A clear phone photo is enough. Place the recipe flat, use good lighting, and make sure the writing is easy to see.",
       },
       {
         question: "What happens to the photo afterwards?",
         answer:
-          "Nothing you did not ask for. The recipe is what gets kept; the picture was only the way in.",
+          "The photo is used to read the recipe and turn it into editable text. The recipe is what you keep and work with afterward.",
+      },
+      {
+        question: "Can I turn a photo into a printable recipe card?",
+        answer:
+          "Yes. Upload a photo or screenshot of the recipe, check the extracted ingredients and instructions, then print it as a 4x6 recipe card or full letter page.",
+      },
+      {
+        question: "Can I turn a screenshot of a recipe into a printable recipe?",
+        answer:
+          "Yes. Upload the screenshot just like a photo. RecipePrinter reads the recipe from the image and turns it into editable text you can format and print.",
       },
     ],
     links: [
-      { href: "/preserve-family-recipes", label: "Preserve family recipes" },
-      { href: "/reciscan-alternative", label: "ReciScan alternative" },
       { href: "/recipe-card-printer", label: "Recipe card printer" },
-      { href: "/family-recipe-book", label: "Build a family cookbook" },
+      { href: "/family-recipe-book", label: "Build a family recipe book" },
+      { href: "/recipe-binder", label: "Build a recipe binder" },
     ],
   },
   {
@@ -912,7 +957,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importFieldLabel: "Pinterest link",
     importPlaceholder: "Paste Pinterest link",
     contentUpdated: "2026-09-10",
-    lastReviewed: "2026-09-07",
+    copyReviewed: "2026-09-07",
     primaryKeyword: "print Pinterest recipes",
     secondaryKeywords: [
       "print recipe from Pinterest",
@@ -1015,7 +1060,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importFieldLabel: "Instagram link",
     importPlaceholder: "Paste Instagram link",
     contentUpdated: "2026-09-10",
-    lastReviewed: "2026-09-09",
+    copyReviewed: "2026-09-09",
     primaryKeyword: "print Instagram recipes",
     secondaryKeywords: [
       "print recipe from Instagram",
@@ -1113,7 +1158,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImage: "buffalo-chicken",
     heroAnnotation: "Printed from Facebook link",
     contentUpdated: "2026-09-16",
-    lastReviewed: "2026-09-16",
+    copyReviewed: "2026-09-16",
     primaryKeyword: "print recipe from Facebook",
     secondaryKeywords: [
       "print recipes from Facebook",
@@ -1310,7 +1355,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
   },
   {
-    // No `lastReviewed` on purpose: this page has not had a read-through yet,
+    // No `copyReviewed` on purpose: this page has not had a read-through yet,
     // which is what that field records. It stays out of the reviewed set until
     // someone has actually gone over the copy.
     slug: "print-paprika-recipes",
@@ -1784,7 +1829,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // hero already carries `handwritten-card` and a page should not show the
     // same photograph twice. Shoot that pair, register it in LandingVisuals,
     // and swap the key below.
-    lastReviewed: "2026-09-03",
+    copyReviewed: "2026-09-03",
     captureHeading: "Start with one card",
     primaryKeyword: "preserve family recipes",
     secondaryKeywords: [
@@ -1878,7 +1923,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // text-only blocks: there is no finished family cookbook to photograph yet.
     // Register those two kinds in LandingVisuals when there is, and this page
     // picks them up with no edit here.
-    lastReviewed: "2026-09-02",
+    copyReviewed: "2026-09-02",
     // Guide intent, but the input belongs at the top like everywhere else: a
     // book starts with one recipe, and asking for it below three sections of
     // explanation buried the only thing there is to do.
@@ -1978,7 +2023,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "just-the-recipe-alternative",
     contentUpdated: "2026-09-09",
-    lastReviewed: "2026-09-02",
+    copyReviewed: "2026-09-02",
     primaryKeyword: "Just the Recipe alternative",
     // Deliberately narrow. This page used to also claim "print recipe without
     // ads" and "print recipe from website", both of which are other pages'
@@ -2096,7 +2141,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "reciscan-alternative",
     contentUpdated: "2026-09-16",
-    lastReviewed: "2026-09-02",
+    copyReviewed: "2026-09-02",
     primaryKeyword: "ReciScan alternative",
     secondaryKeywords: [
       "recipe scanner alternative",
@@ -2225,7 +2270,7 @@ export function seoLandingPageMetadata(page: SeoLandingPage): Metadata {
     description: page.description,
     path: `/${page.slug}`,
   });
-  if (page.slug === "digitize-recipe-cards" || page.slug === "print-recipe-from-screenshot" || page.slug === "print-multiple-recipes" || page.slug === "recipe-binder" || page.slug === "print-paprika-recipes" || page.slug === "print-facebook-recipes" || page.slug === "print-youtube-recipes" || page.slug === "print-tiktok-recipes") {
+  if (page.slug === "digitize-recipe-cards" || page.slug === "print-recipe-from-photo" || page.slug === "print-recipe-from-screenshot" || page.slug === "print-multiple-recipes" || page.slug === "recipe-binder" || page.slug === "print-paprika-recipes" || page.slug === "print-facebook-recipes" || page.slug === "print-youtube-recipes" || page.slug === "print-tiktok-recipes") {
     metadata.title = { absolute: page.title };
     metadata.openGraph = { ...metadata.openGraph, title: page.title };
     metadata.twitter = { ...metadata.twitter, title: page.title };
