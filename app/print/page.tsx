@@ -48,6 +48,7 @@ import {
 import {
   buildSections,
   namedSectionCount,
+  readMeta,
   sectionDisplayTitle,
   useProjectMeta,
   type ProjectMeta,
@@ -236,7 +237,7 @@ export default function PrintPage() {
      dropped the picture silently, and the only clue was a checkbox two panels
      away. A stored preference still wins on the next visit. */
   const [showPhoto, setShowPhoto] = useState(true);
-  const [showSourceUrl, setShowSourceUrl] = useState(false);
+  const [showSourceUrl, setShowSourceUrl] = useState(true);
   /** Whether the WEBSITE's blurb is included in each recipe's note. The cook's
       own words are never affected — see lib/recipeNote.ts. Defaults on, which
       is how books saved before this already read. */
@@ -244,6 +245,26 @@ export default function PrintPage() {
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
   const [cookbookBuilding, setCookbookBuilding] = useState(false);
+  // A cookbook started from the homepage is built HERE, behind the welcome
+  // dialog: the page first renders as recipe cards, then swaps theme and
+  // grows a cover, contents and dedication, then its fonts and photos land.
+  // Watched through the scrim that reads as the book assembling itself piece
+  // by piece. So the workspace stays hidden (still laid out, so measuring
+  // works) until the book is finished, and appears with the dialog in one go.
+  // Known on the first render: the handoff and the intent are both
+  // synchronous storage reads.
+  const [bookHiddenUntilBuilt, setBookHiddenUntilBuilt] = useState(() => {
+    if (!hasPendingImport()) return false;
+    const stored = readMeta();
+    return Boolean(stored.cookbookIntent && !stored.cookbookMode);
+  });
+  // Never stuck hidden: if the build never reaches the reveal (the handoff
+  // failed, the intent was consumed elsewhere), show whatever is there.
+  useEffect(() => {
+    if (!bookHiddenUntilBuilt) return;
+    const timer = window.setTimeout(() => setBookHiddenUntilBuilt(false), 2500);
+    return () => window.clearTimeout(timer);
+  }, [bookHiddenUntilBuilt]);
   // Re-entering an already-built book: a plain loading spinner (not the first-run
   // build animation) while the stashed layout swaps back in.
   const [showCookbookPrintDialog, setShowCookbookPrintDialog] = useState(false);
@@ -1402,8 +1423,8 @@ export default function PrintPage() {
     const patch = buildCookbookScaffoldPatch(projectMeta.meta, items ?? [], template);
     if (patch.template !== template) setTemplate(patch.template);
     // Turn recipe photos on so the scaffolded book looks finished rather than
-    // bare. The source link stays OFF by default — a bound cookbook rarely wants
-    // a URL under every recipe; the cook can turn it on if they do.
+    // bare. The recipe link is on by default here too, the same as on cards:
+    // the book prints someone else's recipe, so it says where it came from.
     if (patch.cookbookPreset) projectMeta.setCookbookPreset(patch.cookbookPreset);
     if (patch.photoStyle) projectMeta.setPhotoStyle(patch.photoStyle);
     if (patch.cover) projectMeta.setCover(patch.cover);
@@ -1415,6 +1436,19 @@ export default function PrintPage() {
     // Every recipe gets its own full page — no auto-pairing. The cook can turn
     // an individual recipe into a full-page photo spread from the page controls.
     return patch.template;
+  }
+
+  /** The scaffolded book's fonts and photos, so it is shown finished rather
+      than filling in. Capped: a slow photo is not worth holding the book for. */
+  function untilBookSettled(): Promise<void> {
+    const images = Array.from(
+      document.querySelectorAll<HTMLImageElement>(".recipe-page-deck img"),
+    ).filter((img) => !img.complete);
+    const settled = Promise.all([
+      document.fonts?.ready,
+      ...images.map((img) => img.decode().catch(() => undefined)),
+    ]).then(() => undefined);
+    return Promise.race([settled, new Promise<void>((resolve) => window.setTimeout(resolve, 700))]);
   }
 
   function beginCookbookBuild({
@@ -1443,15 +1477,24 @@ export default function PrintPage() {
         recipeCount: items?.length ?? 0,
         template: bookTemplate ?? template,
       });
-    }, 180);
-    window.setTimeout(() => {
-      setCookbookBuilding(false);
-      if (!offerAfter) return;
+      if (!offerAfter) {
+        setBookHiddenUntilBuilt(false);
+        return;
+      }
       // The offer lands on top of the finished book, not in front of an idea of
-      // one: someone should see a book before being asked to pay for one.
-      track("cookbook_welcome_shown", { price: cookbookPrice, recipeCount: items?.length ?? 0 });
-      setShowCookbookOfferDialog(true);
-    }, 1650);
+      // one: someone should see a book before being asked to pay for one. A
+      // beat is enough for the scaffold to paint behind the scrim. It used to
+      // wait out the full 1650ms build window below, which read as the page
+      // hanging for a second and a half before anything happened.
+      window.setTimeout(() => {
+        void untilBookSettled().then(() => {
+          track("cookbook_welcome_shown", { price: cookbookPrice, recipeCount: items?.length ?? 0 });
+          setBookHiddenUntilBuilt(false);
+          setShowCookbookOfferDialog(true);
+        });
+      }, 120);
+    }, 180);
+    window.setTimeout(() => setCookbookBuilding(false), 1650);
   }
 
   // The single per-recipe photo axis, matching the book-wide "Photos" control:
@@ -5502,7 +5545,9 @@ export default function PrintPage() {
       <main
         className={`recipe-print-shell px-cp-6 print:p-0 ${
           previewMeasuring ? "recipe-print-shell--measuring" : ""
-        } ${showCookbookOfferDialog ? "recipe-print-shell--entering-cookbook" : ""} ${
+        } ${showCookbookOfferDialog || bookHiddenUntilBuilt ? "recipe-print-shell--entering-cookbook" : ""} ${
+          bookHiddenUntilBuilt ? "recipe-print-shell--building-book" : ""
+        } ${
           organizeMode ? "recipe-print-shell--organizing" : ""
         } ${organizeWide ? "recipe-print-shell--organize-wide" : ""} ${
           organizeAnimating ? "recipe-print-shell--organize-animating" : ""

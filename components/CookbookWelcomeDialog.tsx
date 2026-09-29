@@ -2,9 +2,16 @@
 
 import Image from "next/image";
 import { Dialog } from "@/components/Dialog";
-import { CheckIcon, ICON_SIZE, XIcon } from "@/components/icons";
+import { ICON_SIZE, XIcon } from "@/components/icons";
 import type { CoverConfig } from "@/types/recipe";
 import { useUsdPriceLabel } from "@/lib/visitorCurrency";
+
+const COOKBOOK_STEPS = [
+  "Add your recipes",
+  "Sort them into chapters",
+  "Edit pages and add your photos",
+  "Pick a theme, then download it to print anywhere",
+] as const;
 
 export function CookbookWelcomeDialog({
   open,
@@ -56,21 +63,23 @@ export function CookbookWelcomeDialog({
       </div>
       <div className="cookbook-welcome__copy">
         <div className="cookbook-welcome__lede">
-          <h2 id="cookbook-welcome-title">Your cookbook is ready.</h2>
-          <p>Add recipes and we’ll lay out every page.</p>
+          <h2 id="cookbook-welcome-title">Let’s make your cookbook.</h2>
+          <p>We’ll handle the layout, contents and page numbers.</p>
         </div>
-        <ul className="cookbook-feature-chips">
-          {[
-            "Cover, chapters, and contents page built in",
-            "Your own recipes and photos",
-            "Print-ready PDF for spiral or hardcover",
-          ].map((item) => (
-            <li key={item}><CheckIcon size={ICON_SIZE.sm} />{item}</li>
+        {/* What to do next, not just what's included. The book is empty at
+            this point, so it is an order of work, and the lede says which
+            parts look after themselves. */}
+        <ol className="cookbook-welcome__steps">
+          {COOKBOOK_STEPS.map((step, index) => (
+            <li key={step}>
+              <span className="cookbook-welcome__step-num" aria-hidden>{index + 1}</span>
+              {step}
+            </li>
           ))}
-        </ul>
+        </ol>
         <div className="cookbook-welcome__price">
           <b>{usd(price)} one time</b>
-          <span>Pay when you export.</span>
+          <span>Pay when you download.</span>
         </div>
         <div className="cookbook-welcome__actions">
           <button type="button" className="btn btn-primary" onClick={onStart}>

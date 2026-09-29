@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
+  PRINT_SETTINGS_STORAGE_KEY,
+  readPrintSettings,
+  writePrintSettings,
   initialPrintCardSize,
   initialRecipePrintTemplate,
   isPrintCardSize,
@@ -40,5 +43,42 @@ describe("initialRecipePrintTemplate", () => {
   it("agrees with the guard it is built on", () => {
     expect(isRecipePrintTemplate("classic")).toBe(true);
     expect(isRecipePrintTemplate("not-a-template")).toBe(false);
+  });
+});
+
+// The recipe link default flipped to on. A browser from before that holds a
+// `showSourceUrl: false` written by the old default, not by a choice, so it is
+// ignored; a choice made since is stored under its own name and kept.
+describe("stored recipe link", () => {
+  const memory = new Map<string, string>();
+  beforeEach(() => {
+    memory.clear();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: (key: string) => memory.get(key) ?? null,
+          setItem: (key: string, value: string) => memory.set(key, value),
+          removeItem: (key: string) => memory.delete(key),
+        },
+      },
+    });
+  });
+
+  it("ignores the old off, so the new default applies", () => {
+    memory.set(PRINT_SETTINGS_STORAGE_KEY, JSON.stringify({ cardSize: "letter", showSourceUrl: false }));
+    expect(readPrintSettings()).toEqual({ cardSize: "letter" });
+  });
+
+  it("remembers an off chosen since", () => {
+    writePrintSettings({
+      cardSize: "letter",
+      template: "classic",
+      doubleSided: true,
+      showCutLines: false,
+      showPhoto: true,
+      showSourceUrl: false,
+    });
+    expect(readPrintSettings()?.showSourceUrl).toBe(false);
   });
 });

@@ -300,7 +300,7 @@ export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): strin
     template: (stored.template as RecipePrintTemplate) ?? "classic",
     doubleSided: stored.doubleSided ?? true,
     showPhoto: stored.showPhoto ?? true,
-    showSourceUrl: stored.showSourceUrl ?? false,
+    showSourceUrl: stored.showSourceUrl ?? true,
     showCutLines: stored.showCutLines ?? false,
   });
 
