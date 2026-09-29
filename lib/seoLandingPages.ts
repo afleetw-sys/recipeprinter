@@ -96,6 +96,8 @@ export type SeoLandingPage = {
   /** Placeholder text inside the capture field, for the same reason as
       `importFieldLabel`. Defaults to the generic per-mode copy. */
   importPlaceholder?: string;
+  /** Resting title inside a single-image upload dropzone. */
+  importUploadTitle?: string;
   /** Which sources this page offers. Defaults to just `initialImportMode` —
       the deliberately minimal single field every page keeps by design (see
       the file-level comment on SeoCapture). Name two or more only where the
@@ -858,7 +860,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-recipe-from-screenshot",
-    contentUpdated: "2026-09-16",
+    contentUpdated: "2026-09-29",
     primaryKeyword: "print recipe from screenshot",
     secondaryKeywords: [
       "recipe screenshot to text",
@@ -870,32 +872,34 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     initialImportMode: "image",
     importFieldLabel: "Recipe screenshots",
+    importUploadTitle: "Choose or drop screenshots",
+    importPlaceholder: "Upload one or more screenshots that contain the recipe",
     importSubmitLabel: "Read the screenshot",
     heroImage: "inline-editing",
     heroAnnotation: "Edit the recipe before printing",
-    title: "Recipe Screenshot to Printable Recipe | RecipePrinter",
+    title: "Print a Recipe From a Screenshot | RecipePrinter",
     description:
-      "Upload a recipe screenshot, turn the ingredients and steps into editable text, and print a clean page or save it as a PDF.",
+      "Turn a recipe screenshot into editable ingredients and instructions, then print it as a full page, save it as a PDF, or make a 4x6 recipe card.",
     h1: "Print a recipe from a screenshot",
     lede:
-      "Upload a screenshot of a recipe from a post, message, or website. RecipePrinter pulls the ingredients and steps into an editable layout you can print or save.",
+      "Upload a screenshot of a recipe from a post, message, app, or website. RecipePrinter turns the ingredients and instructions into editable recipe text you can print or save.",
     howToHeading: "How to print a recipe from a screenshot",
     howTo: [
       {
         name: "Save the recipe screenshot",
-        text: "Capture the ingredients and directions. If they are spread across several screens, save each part.",
+        text: "Capture the ingredients and directions. If the recipe spans multiple screens, save each part as a screenshot.",
       },
       {
-        name: "Upload it to RecipePrinter",
-        text: "Add the screenshot images. RecipePrinter reads the recipe text from the images without needing the original post or page link.",
+        name: "Upload the screenshots",
+        text: "Add your screenshots to RecipePrinter. You can upload up to four images together for one recipe.",
       },
       {
         name: "Review the recipe text",
-        text: "The ingredients and steps become editable. Check amounts, line breaks, and anything the screenshot cut off.",
+        text: "RecipePrinter turns the screenshots into editable ingredients and steps. Check the text and fix anything that needs it.",
       },
       {
         name: "Print or save it",
-        text: "Print a full letter page for free or save it as a PDF. Pro adds 4×6 recipe cards.",
+        text: "Print the recipe as a full letter page, save it as a PDF, or use RecipePrinter Pro to make a 4x6 recipe card.",
       },
     ],
     featureSections: [
@@ -903,19 +907,19 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Turn a recipe screenshot into text you can edit",
         image: "steps",
         body:
-          "A screenshot is useful for saving a recipe quickly, but it is still an image. RecipePrinter reads the text and separates ingredients from directions, so you can correct the result before you print.",
+          "A screenshot saves a recipe quickly, but the recipe is still trapped inside an image. RecipePrinter turns the visible text into editable ingredients and instructions so you can clean it up before printing.",
       },
       {
-        heading: "Use the screenshot when the link will not help",
+        heading: "Use screenshots when there is no recipe link",
         image: "instagram",
         body:
-          "The recipe may be in a social post, a private group, or a message you cannot open from a public link. Upload the screenshot you have and work from the visible recipe instead.",
+          "The recipe might be in a social post, private group, message, or app with no useful link. Upload the screenshots instead and RecipePrinter can build the recipe from the text you can see.",
       },
       {
         heading: "Make a clean copy for the kitchen",
         image: "card-in-box",
         body:
-          "Print the recipe without the rest of the phone screen around it. A letter page is free; RecipePrinter Pro adds 4×6 cards that fit a recipe box.",
+          "Turn the screenshot into a clean printable recipe without the rest of the phone screen around it. Print a full letter page for free, or use RecipePrinter Pro to make a 4x6 card for your recipe box.",
       },
     ],
     faqHeading: "Recipe screenshot printing questions",
@@ -923,32 +927,39 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can RecipePrinter convert a recipe screenshot to text?",
         answer:
-          "Yes. Upload the screenshot and RecipePrinter reads the visible recipe into editable ingredients and steps. Check the result before printing.",
+          "Yes. Upload the screenshot and RecipePrinter turns the visible recipe into editable ingredients and instructions. Review the text before you print or save it.",
       },
       {
         question: "What if the recipe takes more than one screenshot?",
         answer:
-          "Upload the screenshots together. RecipePrinter can use up to four images for one recipe, so the ingredients and directions can come from separate captures.",
+          "Upload the screenshots together. RecipePrinter can use up to four images for one recipe, so the ingredients and instructions can span several screenshots.",
       },
       {
         question: "Does the original post or website have to be public?",
         answer:
-          "No. You can upload a screenshot of recipe text you can see, even when RecipePrinter cannot open the original link.",
+          "No. If you can see the recipe in a post, message, app, or website, you can upload a screenshot without needing RecipePrinter to open the original link.",
       },
       {
         question: "Can I fix mistakes after the screenshot is read?",
         answer:
-          "Yes. Edit the title, ingredients, amounts, and steps before you print or save the recipe.",
+          "Yes. You can edit the recipe title, ingredients, amounts, and instructions before printing or saving it.",
       },
       {
         question: "Can I print a recipe screenshot from my phone?",
         answer:
-          "Yes. Open RecipePrinter in your phone browser, upload the screenshot, check the recipe, and print it or save it as a PDF.",
+          "Yes. Open RecipePrinter in your phone browser, upload the screenshot, review the recipe, then print it or save it as a PDF.",
+      },
+      {
+        question: "Can I turn a recipe screenshot into a recipe card?",
+        answer:
+          "Yes. Upload the screenshot, review the extracted recipe, then choose a 4x6 recipe card layout with RecipePrinter Pro.",
       },
     ],
     links: [
-      { href: "/print-recipe-from-photo", label: "Print from a photo" },
-      { href: "/digitize-recipe-cards", label: "Digitize recipe cards" },
+      { href: "/print-recipe-from-photo", label: "Print a recipe from a photo" },
+      { href: "/recipe-card-printer", label: "Make a 4x6 recipe card" },
+      { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
+      { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
       { href: "/print-facebook-recipes", label: "Print Facebook recipes" },
     ],
   },
@@ -1260,8 +1271,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importFieldLabel: "TikTok link",
     importPlaceholder: "Paste TikTok link",
     heroImage: "crunchwrap",
+    heroImageAlt:
+      "A printed Crunchwrap Supreme recipe card beside the finished crunchwrap.",
     heroAnnotation: "Printed from TikTok video",
-    contentUpdated: "2026-09-16",
+    contentUpdated: "2026-09-29",
     primaryKeyword: "print TikTok recipes",
     secondaryKeywords: [
       "print recipe from TikTok",
@@ -1276,47 +1289,52 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     initialImportMode: "url",
     title: "Print TikTok Recipes | RecipePrinter",
     description:
-      "Paste a TikTok recipe link and turn the written recipe into a clean printable page or 4×6 recipe card you can save and keep.",
+      "Turn a TikTok recipe link into editable ingredients and instructions, then print it as a full page, save it as a PDF, or make a 4x6 recipe card.",
     h1: "Print TikTok recipes",
     lede:
-      "Paste a TikTok video link and RecipePrinter turns the written recipe into a clean page or 4×6 card you can print and keep.",
+      "Paste a TikTok recipe link and RecipePrinter turns the written recipe into an editable format you can print as a full page or 4x6 recipe card.",
     howToHeading: "How to print a recipe from TikTok",
     howTo: [
       {
         name: "Copy the TikTok link",
-        text: "Tap Share on the video and choose Copy link. That gives RecipePrinter the video you want to use.",
+        text: "Tap Share on the video and choose Copy link. Use the link for the recipe you want to print.",
       },
       {
         name: "Paste it into RecipePrinter",
-        text: "Paste the TikTok link into RecipePrinter. It looks for the written recipe in the caption or pinned comment.",
+        text: "Paste the link into RecipePrinter. It looks for the written recipe in the caption or pinned comment.",
       },
       {
         name: "Check the recipe",
-        text: "RecipePrinter separates the ingredients and steps into a clean format. You can fix or add anything before printing.",
+        text: "Review the ingredients and instructions, then fix or add anything before printing.",
       },
       {
         name: "Print it your way",
-        text: "Print a full letter page for free or save it as a PDF. Pro adds 4×6 recipe cards and batch printing.",
+        text: "Print a full letter page for free, save it as a PDF, or use Pro for 4x6 recipe cards and batch printing.",
       },
     ],
     featureSections: [
       {
         heading: "A video is a demonstration. A card is a reference.",
         image: "counter-card",
+        imageAlt:
+          "A printed Buffalo Chicken Bake recipe card on a kitchen counter beside its ingredients.",
         body:
-          "TikTok is great for seeing how a recipe comes together, but less useful when you need to check an amount halfway through cooking. A printed recipe keeps the ingredients and steps in front of you without replaying the video.",
+          "A short video is great for seeing how a recipe comes together, but less useful when you need to check an amount while cooking. A printed recipe keeps the ingredients and steps in front of you without replaying it.",
       },
       {
         heading: "The useful part is usually in the caption",
         image: "tiktok-import",
+        imageAlt:
+          "A TikTok recipe imported into RecipePrinter with editable ingredients and instructions.",
         body:
-          "Many TikTok creators put the ingredients and directions in the caption or a pinned comment. RecipePrinter pulls that written recipe out and turns it into a format that is much easier to cook from.",
+          "Many creators put the full recipe in the caption or a pinned comment. RecipePrinter pulls that written recipe into an editable format that is easier to review, print, and cook from.",
       },
       {
         heading: "Get the good ones out of your saved videos",
         image: "card-in-box",
+        imageAlt: "A printed Basil Pesto recipe card filed in a tabbed recipe box.",
         body:
-          "Saving a TikTok is easy. Finding the exact recipe again months later is not. Print the recipes you actually want to keep so they have a permanent place in your recipe box, binder, or cookbook.",
+          "Saving a video is easy. Finding the exact recipe again months later is not. Print the recipes you want to keep so they have a permanent place in your recipe box, binder, or cookbook.",
       },
     ],
     faqHeading: "TikTok recipe printing questions",
@@ -1324,31 +1342,39 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can RecipePrinter print a recipe straight from TikTok?",
         answer:
-          "Yes. Paste the TikTok link and RecipePrinter looks for the written recipe in the caption or pinned comment.",
+          "Yes. Paste the link and RecipePrinter looks for the written recipe in the caption or pinned comment.",
       },
       {
         question: "What if the amounts are only spoken in the video?",
         answer:
-          "If the creator never wrote them down, RecipePrinter does not guess. You can add the amounts you catch from the video before printing.",
+          "If the creator did not write them down, RecipePrinter does not guess. You can add the amounts yourself before printing.",
       },
       {
         question: "What happens if the TikTok is deleted later?",
         answer:
-          "Once you have printed the recipe or saved it as a PDF, your copy no longer depends on the original video staying online.",
+          "Once you have printed the recipe or saved it as a PDF, your copy no longer depends on the original TikTok staying online.",
       },
       {
         question: "Can I save a TikTok recipe as a PDF?",
         answer:
-          "Yes. Once the recipe is formatted, open your browser’s print dialog and choose Save as PDF.",
+          "Yes. Once the recipe is formatted, use your browser's print dialog and choose Save as PDF.",
         answerEmphasis: "Save as PDF",
       },
       {
         question: "Do I need a TikTok account to use RecipePrinter?",
         answer:
-          "No. RecipePrinter works from the TikTok link you provide, so there is nothing to connect or sign into.",
+          "No. RecipePrinter works from the link you provide, so there is nothing to connect or sign into.",
+      },
+      {
+        question: "Can I turn a TikTok recipe into a 4x6 recipe card?",
+        answer:
+          "Yes. Paste the link, review the recipe, then choose a 4x6 recipe card layout with RecipePrinter Pro.",
       },
     ],
     links: [
+      { href: "/recipe-card-printer", label: "Make a 4x6 recipe card" },
+      { href: "/recipe-binder", label: "Build a recipe binder" },
+      { href: "/family-recipe-book", label: "Build a family recipe book" },
       { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
       { href: "/print-youtube-recipes", label: "Print YouTube recipes" },
       { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },

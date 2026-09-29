@@ -90,6 +90,7 @@ function CaptureBlock({ page }: { page: SeoLandingPage }) {
         submitLabel={page.importSubmitLabel ?? "Start printing"}
         fieldLabel={page.importFieldLabel}
         placeholder={page.importPlaceholder}
+        uploadTitle={page.importUploadTitle}
         modes={page.importModes}
       />
       {/* Off by default — see the field's own doc comment. Full-contrast,
