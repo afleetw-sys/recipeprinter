@@ -165,6 +165,7 @@ export default function SeoLandingPage({ params }: PageProps) {
           >
             <HeroProductPhoto
               imageKey={page.heroImage}
+              imageAlt={page.heroImageAlt}
               cardKey={heroCardKey(page)}
               // The two defaults describe the CARD photos, which is what
               // the hero was before a page could name its own. A page that

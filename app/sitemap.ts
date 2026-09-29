@@ -53,7 +53,7 @@ const staticRoutes: {
     changeFrequency: "monthly" as const,
     // A reviewed page's <lastmod> is the date we actually signed it off; the
     // rest keep the site-wide default rather than claiming a fresh edit.
-    lastModified: page.contentUpdated ?? page.lastReviewed,
+    lastModified: page.contentUpdated ?? page.copyReviewed,
   })),
 ];
 

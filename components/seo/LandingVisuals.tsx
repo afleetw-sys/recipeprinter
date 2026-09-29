@@ -40,6 +40,7 @@ const stepCounter = {
 export function HeroProductPhoto({
   cardKey = "korean",
   imageKey,
+  imageAlt,
   annotation,
   priority = false,
   wide = false,
@@ -52,6 +53,7 @@ export function HeroProductPhoto({
       page whose subject is something else (a handwritten card, say) had no way
       to say so. Takes precedence over `cardKey`. */
   imageKey?: string;
+  imageAlt?: string;
   annotation?: string;
   priority?: boolean;
   wide?: boolean;
@@ -83,7 +85,7 @@ export function HeroProductPhoto({
       src={card.src}
       width={card.width}
       height={card.height}
-      alt={card.alt}
+      alt={imageAlt ?? card.alt}
       sizes="(max-width: 1023px) 90vw, 460px"
       priority={priority}
       className={
@@ -227,6 +229,7 @@ export function FeatureRows({
     proof?: SeoProofKind;
     caption?: string;
     image?: string;
+    imageAlt?: string;
   }[];
 }) {
   // Rows sat `cp-7` apart, the same 32px that separates a row's copy from its
@@ -270,7 +273,7 @@ export function FeatureRows({
                   src={image.src}
                   width={image.width}
                   height={image.height}
-                  alt={image.alt}
+                  alt={feature.imageAlt ?? image.alt}
                   sizes="(max-width: 1023px) 92vw, 520px"
                   className="w-full rounded-xl object-cover"
                   style={{ aspectRatio: PROOF_ASPECT, objectPosition: image.objectPosition }}
