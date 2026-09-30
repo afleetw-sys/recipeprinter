@@ -273,7 +273,13 @@ export interface PreparedCookbookPages {
  */
 async function materializeBookPhotos(project: PrintProject): Promise<PrintProject> {
   try {
-    const { collectProjectPhotoUrls, materializeProjectPhotos } = await import("@/lib/photoStorage");
+    const { collectProjectPhotoUrls, hasAccountSession, materializeProjectPhotos } = await import(
+      "@/lib/photoStorage"
+    );
+    // Signed out, the export route answers with its sign-in prompt whatever
+    // the photos are, so nothing is uploaded for a render that will not run:
+    // only an account ever stores a photo.
+    if (!hasAccountSession()) return project;
     // The renderer is on a server and fetches every image by URL, so a chapter
     // collage or a hero's photo history left holding `blob:` strings renders as
     // a hole in the printed book. Same field list as the save — see

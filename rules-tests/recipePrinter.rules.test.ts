@@ -326,6 +326,19 @@ describe("Recipe Printer Storage namespace", () => {
     );
   });
 
+  test("an anonymous Firebase session cannot upload to its own photo prefix", async () => {
+    const anonymousSession = environment
+      .authenticatedContext("anon-uid", { firebase: { sign_in_provider: "anonymous" } })
+      .storage();
+    await assertFails(
+      Promise.resolve(anonymousSession.ref("recipeprinter/photos/users/anon-uid/photo.jpg").putString(
+        "image",
+        "raw",
+        { contentType: "image/jpeg" },
+      )),
+    );
+  });
+
   test("users write only to their own photo prefix", async () => {
     const ownerStorage = environment.authenticatedContext("owner").storage();
     await assertSucceeds(
@@ -393,9 +406,11 @@ describe("Recipe Printer Storage namespace", () => {
     await assertFails(Promise.resolve(legacyDebug.delete()));
   });
 
-  test("anonymous uploads are write-only by capability prefix and debug captures are private", async () => {
+  test("signed-out visitors cannot upload photos, and debug captures are private", async () => {
+    // Signed-out photos stay in the browser now (lib/localPhotos), so the
+    // anonymous prefix is closed: only an account stores a photo.
     const anonymousStorage = environment.unauthenticatedContext().storage();
-    await assertSucceeds(
+    await assertFails(
       Promise.resolve(anonymousStorage.ref("recipeprinter/photos/anonymous/abcdefghijklmnopqrst/photo.jpg").putString(
         "image",
         "raw",

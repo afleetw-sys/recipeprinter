@@ -58,25 +58,26 @@ service firebase.storage {
     }
 
     // ── Recipe Printer owner-isolated storage ──────────────────────────────
+    // Only a real account stores photos: an anonymous Firebase session has a
+    // uid of its own, and its uploads would otherwise land here for books
+    // nobody keeps. Signed-out photos stay in the browser until the book is
+    // saved to an account (RecipePrinter lib/localPhotos).
     match /recipeprinter/photos/users/{uid}/{path=**} {
       allow read: if true;
       allow create, update: if signedIn()
+        && request.auth.token.get("firebase", {}).get("sign_in_provider", "") != "anonymous"
         && request.auth.uid == uid
         && validImage();
       allow delete: if signedIn() && request.auth.uid == uid;
     }
 
-    // A cook who hasn't made an account yet. Create-only, never update or
-    // delete, so one visitor can't touch another's. The owner id is a 20+
-    // character random string, so paths aren't guessable — but as with the debug
-    // drop box, VOLUME is bounded by App Check enforcement, not by anything
-    // expressible here.
+    // Photos uploaded by signed-out visitors, from before those photos stayed
+    // in the browser. Closed to new uploads; still readable, because saved
+    // books and share links can point here, and swept by the daily RecipePrinter
+    // storage job once nothing does.
     match /recipeprinter/photos/anonymous/{anonymousOwnerId}/{path=**} {
       allow read: if true;
-      allow create: if !signedIn()
-        && anonymousOwnerId.matches("[A-Za-z0-9_-]{20,64}")
-        && validImage();
-      allow update, delete: if false;
+      allow write: if false;
     }
 
     // Write-only drop box for the exact input that failed to import.
