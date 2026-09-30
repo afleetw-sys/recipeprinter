@@ -51,6 +51,7 @@ import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { PageToolbar } from "@/components/print/PageToolbar";
 import { FailedImportCard } from "@/components/print/FailedImportCard";
 import { importLoadingLabel } from "@/lib/importProgress";
+import { BACK_COVER_NAV_ID } from "@/lib/railPending";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
 
 type CoverSide = "front" | "back" | "dedication";
@@ -132,6 +133,12 @@ function PagePlaceholder({ width, height, scale }: { width: number; height: numb
 /**
  * The nav item the loading placeholder follows, or null for "goes last".
  *
+ * "Last" means last in the BODY of the book. A recipe added with no anchor
+ * lands at the end of the last section, and sections print before the back
+ * cover, so its placeholder follows whatever comes just before the back cover:
+ * the contents page, in a book with no recipes yet. It used to follow the back
+ * cover itself, and the page then appeared somewhere else once it arrived.
+ *
  * Exported because the print page needs the same answer: it parks the deck on
  * the placeholder while the import runs, and to do that without a second jump
  * when the recipe lands it has to know which slot the recipe is about to take.
@@ -141,7 +148,10 @@ export function pendingAnchorIndexIn(
   navItems: NavItem[],
   pendingAddAfterRecipeId: string | null,
 ): number | null {
-  if (!pendingAddAfterRecipeId) return null;
+  if (!pendingAddAfterRecipeId) {
+    const backCover = navItems.findIndex((navItem) => navItem.recipeId === BACK_COVER_NAV_ID);
+    return backCover > 0 ? backCover - 1 : null;
+  }
   return navItems.reduce<number | null>(
     (last, navItem, index) => (navItem.recipeId === pendingAddAfterRecipeId ? index : last),
     null,
@@ -150,8 +160,8 @@ export function pendingAnchorIndexIn(
 
 /**
  * The nav index the arriving recipe will occupy — the slot the placeholder is
- * standing in. Last when the import has no anchor, which is where an
- * unanchored import lands.
+ * standing in. With no anchor that is the end of the book's body, just ahead
+ * of the back cover, which is where an unanchored import lands.
  */
 export function pendingSlotIndexIn(
   navItems: NavItem[],
@@ -1095,6 +1105,14 @@ export function PrintDeck(props: PrintDeckProps) {
    * nothing about it should reach pagination or measurement.
    */
   const pendingAnchorIndex = pendingAnchorIndexIn(navItems, pendingAddAfterRecipeId);
+  /** In a book the deck is spreads, not pages: the placeholder follows the
+      spread holding the page it is anchored to. */
+  const pendingAnchorSpreadIndex = (() => {
+    if (!cookbookView || pendingAnchorIndex === null) return null;
+    const sheet = navItems[pendingAnchorIndex]?.sheetIndex;
+    const index = spreads.findIndex((spread) => spread.left === sheet || spread.right === sheet);
+    return index === -1 ? null : index;
+  })();
   const pendingPages =
     parsingImports.length > 0 ? (
       <>
@@ -1563,8 +1581,8 @@ export function PrintDeck(props: PrintDeckProps) {
                     );
                   };
                   return (
+                    <Fragment key={`spread-${index}`}>
                     <div
-                      key={`spread-${index}`}
                       ref={(el) => {
                         slideRefs.current[index] = el;
                       }}
@@ -1626,6 +1644,13 @@ export function PrintDeck(props: PrintDeckProps) {
                           )}
                       </div>
                     </div>
+                    {index === pendingAnchorSpreadIndex && (
+                      <>
+                        {failedPages}
+                        {pendingPages}
+                      </>
+                    )}
+                    </Fragment>
                   );
                 })
               : navItems.map((navItem, index) => {
@@ -1777,7 +1802,7 @@ export function PrintDeck(props: PrintDeckProps) {
                 </Fragment>
               );
             })}
-          {pendingAnchorIndex === null && (
+          {(cookbookView ? pendingAnchorSpreadIndex === null : pendingAnchorIndex === null) && (
             <>
               {failedPages}
               {pendingPages}

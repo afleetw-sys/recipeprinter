@@ -330,8 +330,8 @@ export function destinationNote(
  * about print services has nothing to attach to. The number of files is a fact
  * about what we are about to make.
  */
-export function downloadSummary(preset: CookbookPreset): string {
-  return preset.wrapRequired
+export function downloadSummary(preset: CookbookPreset, singleFile = false): string {
+  return preset.wrapRequired && !singleFile
     ? "You’ll get two files: the pages and the cover."
     : "You’ll get one file, with the cover as its first page.";
 }

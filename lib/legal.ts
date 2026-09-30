@@ -61,13 +61,13 @@ export const GOVERNING_LAW = {
  * change on the same day forever.
  */
 export const PRIVACY_LAST_UPDATED = {
-  iso: "2026-09-04",
-  display: "September 4, 2026",
+  iso: "2026-09-30",
+  display: "September 30, 2026",
 } as const;
 
 export const TERMS_LAST_UPDATED = {
-  iso: "2026-09-04",
-  display: "September 4, 2026",
+  iso: "2026-09-30",
+  display: "September 30, 2026",
 } as const;
 
 /**
@@ -96,14 +96,21 @@ export const SUBPROCESSORS: Subprocessor[] = [
   {
     name: "Google (Firebase)",
     purpose:
-      "Accounts, sign-in, saved projects, uploaded photos, and the recipe-reading service behind imports.",
+      "Accounts, sign-in, saved projects, stored photos, cookbook PDF exports, and the recipe-reading service behind imports.",
     data:
-      "Your email address and account identifier, any project you save, photos you upload, and recipe text or links you import.",
+      "Your email address and account identifier, any project you save and its photos, recipe text, links, and images you import, copies of imports that failed, feedback, and gallery submissions.",
     policyUrl: "https://firebase.google.com/support/privacy",
   },
   {
+    name: "ScraperAPI",
+    purpose:
+      "Fetching recipe pages from websites that block automated requests, when you import from a link.",
+    data: "The address of the page being imported, and the page content it returns. No account details.",
+    policyUrl: "https://www.scraperapi.com/privacy-policy/",
+  },
+  {
     name: "PostHog",
-    purpose: "Product analytics: which features are used, and where they fail.",
+    purpose: "Product analytics and session replay: which features are used, and where they fail.",
     data:
       "A random device identifier, page addresses on this site, the events listed above, coarse device and browser details, and your IP address (used to derive an approximate location, then discarded by PostHog).",
     policyUrl: "https://posthog.com/privacy",

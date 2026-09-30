@@ -2,7 +2,7 @@ import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { NextResponse } from "next/server";
 import { adaptCookPilotRecipes, normalizeImportURL } from "@/lib/cookpilot";
-import { BLOCKED_REMEDY, searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
+import { BLOCKED_REMEDY, joinedLinksMessage, searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { isBlockedAddress } from "@/lib/server/publicAddress";
 import { callerKey, rateLimit } from "@/lib/server/rateLimit";
 import { requestDeadline, type Deadline } from "@/lib/server/requestDeadline";
@@ -569,6 +569,8 @@ export async function POST(request: Request) {
     if (typeof body.url !== "string" || !body.url.trim()) {
       return errorResponse("Paste a recipe link first.");
     }
+    const joined = joinedLinksMessage(body.url);
+    if (joined) return errorResponse(joined, { status: 400, failure: "joined_links" });
     url = new URL(unwrapRedirectUrl(normalizeImportURL(body.url)));
   } catch {
     return errorResponse("That doesn't look like a valid URL.");

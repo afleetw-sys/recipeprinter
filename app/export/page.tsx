@@ -383,7 +383,10 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   //
   // The opening page is deliberately NOT dropped. It is an interior page that
   // happens to reuse the cover component, and it belongs in the block.
-  const coversAreSeparate = preset.wrapRequired;
+  //
+  // Unless the export asked for one file (`coversInline`): no print service,
+  // so no wrap is coming, and the covers belong in the only file there is.
+  const coversAreSeparate = preset.wrapRequired && !payload.coversInline;
 
   // Derived, not read straight off `project.dedication` — the page may live in
   // either field, and reading one of them was silently dropping pages written

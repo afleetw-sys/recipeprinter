@@ -229,7 +229,8 @@ describe("the cookbook print dialog", () => {
     fireEvent.click(pill("8 × 10 in"));
     expect(save().disabled).toBe(false);
     fireEvent.click(save());
-    expect(onExport).toHaveBeenCalledWith("hardcover-8x10", "standard");
+    // No printer named, so one file with the covers inside.
+    expect(onExport).toHaveBeenCalledWith("hardcover-8x10", "standard", true);
   });
 
   it("asks a lay-flat book about its photos, and explains the answer chosen", () => {
@@ -391,9 +392,18 @@ describe("the cookbook print dialog", () => {
     fillInFor("home");
     fireEvent.click(pill("Hardcover"));
     fireEvent.click(pill("8 × 10 in"));
+    // A hardcover clears "My own printer" (it cannot make one), leaving no
+    // printer named: one file, covers inside.
+    const line = document.querySelector(".cookbook-ready__downloads")!.textContent!;
+    expect(line).toBe("You’ll get one file, with the cover as its first page.");
+    expect(line).not.toMatch(/service|shop/i);
+  });
+
+  it("keeps the cover separate for a print service that requires it", () => {
+    renderDialog();
+    fillInFor("lulu");
     const line = document.querySelector(".cookbook-ready__downloads")!.textContent!;
     expect(line).toBe("You’ll get two files: the pages and the cover.");
-    expect(line).not.toMatch(/service|shop/i);
   });
 
   it("keeps the answers when the shortcut is cleared", () => {

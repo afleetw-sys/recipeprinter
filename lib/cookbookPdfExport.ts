@@ -109,6 +109,8 @@ interface RenderRequest {
   /** The wrap the printer asked for, passed through so the page can lay its
       panels out against the same numbers the sheet is cut to. */
   coverSheet?: CoverSheetSpec;
+  /** One file with the covers in it — see `ExportPayload.coversInline`. */
+  coversInline?: boolean;
   /** What the cook will actually see in their downloads folder. The renderer
       sets this as the finished file's Content-Disposition — the HTML anchor
       `download` attribute a browser would otherwise use is not reliably
@@ -256,6 +258,8 @@ export interface PreparedCookbookPages {
   preset: CookbookPresetId;
   file: PreparedPdfFile;
   pageCount: number;
+  /** The covers are already in `file`, so there is no wrap to make. */
+  coversInline?: boolean;
 }
 
 /**
@@ -327,6 +331,9 @@ export async function prepareCookbookPages(
       internal layout work, so the UI must not invent finer-grained progress. */
   onProgress?: (progress: CookbookPdfProgress) => void,
   photoFinish: "standard" | "edge" = "standard",
+  /** Bind the covers into the pages: one file, no separate cover. Only
+      meaningful for a preset that would otherwise ship a wrap. */
+  coversInline = false,
 ): Promise<PreparedCookbookPages> {
   onProgress?.("preparing");
   // The renderer is on the server, so every image in the book has to be a URL
@@ -337,12 +344,20 @@ export async function prepareCookbookPages(
   // would otherwise print with holes where its photos are.
   const project = await materializeBookPhotos(book);
   onProgress?.("rendering-pages");
-  const interior = await renderPdf({ project, preset, fileName, photoFinish });
+  const inline = coversInline && getCookbookPreset(preset).wrapRequired;
+  const interior = await renderPdf({
+    project,
+    preset,
+    fileName,
+    photoFinish,
+    ...(inline ? { coversInline: true } : {}),
+  });
   return {
     project,
     preset,
     file: { name: fileName, downloadUrl: interior.downloadUrl, role: "pages" },
     pageCount: interior.pageCount,
+    coversInline: inline,
   };
 }
 
@@ -352,7 +367,7 @@ export async function prepareCookbookCover(
   onProgress?: (progress: CookbookPdfProgress) => void,
 ): Promise<PreparedPdfFile | null> {
   const resolved = getCookbookPreset(pages.preset);
-  if (!COVER_WRAP_ENABLED || !resolved.wrapRequired) return null;
+  if (!COVER_WRAP_ENABLED || !resolved.wrapRequired || pages.coversInline) return null;
   // Page count drives the spine's thickness, and the renderer is what actually
   // knows it. It validates the PDF page tree against the laid-out sheets, then
   // returns that authoritative count beside the file; the browser never has to

@@ -16,99 +16,104 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "Terms of Service",
   description:
-    "The agreement between you and RecipePrinter: what you can do with it, what you own, how purchases and refunds work, and the limits of what we promise.",
+    "The agreement between you and RecipePrinter: how you may use the service, who owns what, how purchases and refunds work, and the limits of our responsibility.",
   path: "/terms",
 });
 
 // Ids are linked from elsewhere on the site (the privacy policy points at
-// #accuracy) and from anywhere a customer has bookmarked a clause. Stable.
+// #accuracy) and from anywhere a customer has bookmarked a clause. Stable:
+// retitle a section freely, but never change its id.
 const SECTIONS: LegalSectionSpec[] = [
-  { id: "agreement", title: "This agreement" },
-  { id: "the-service", title: "What RecipePrinter is" },
-  { id: "eligibility", title: "Who can use it" },
+  { id: "agreement", title: "Agreement to these Terms" },
+  { id: "the-service", title: "The service" },
+  { id: "eligibility", title: "Eligibility" },
   { id: "accounts", title: "Accounts" },
-  { id: "your-content", title: "Your recipes stay yours" },
-  { id: "copyright-in-recipes", title: "Recipes you did not write" },
+  { id: "your-content", title: "Your content" },
+  { id: "copyright-in-recipes", title: "Recipes and photos you did not create" },
   { id: "acceptable-use", title: "Acceptable use" },
-  { id: "limits", title: "Fair use limits" },
+  { id: "limits", title: "Usage limits" },
   { id: "purchases", title: "Purchases and pricing" },
   { id: "refunds", title: "Refunds" },
   { id: "accuracy", title: "Accuracy, cooking, and food safety" },
-  { id: "third-party", title: "Recipe sites and other services" },
-  { id: "our-content", title: "Our side of the intellectual property" },
+  { id: "third-party", title: "Third-party websites and services" },
+  { id: "our-content", title: "Our intellectual property" },
   { id: "availability", title: "Availability and changes" },
-  { id: "termination", title: "Ending this agreement" },
+  { id: "termination", title: "Termination" },
   { id: "disclaimers", title: "Disclaimers" },
   { id: "liability", title: "Limitation of liability" },
-  { id: "indemnity", title: "Your indemnity to us" },
-  { id: "copyright-complaints", title: "Copyright complaints" },
+  { id: "indemnity", title: "Indemnification" },
+  { id: "copyright-complaints", title: "Copyright infringement notices" },
   { id: "disputes", title: "Governing law and disputes" },
   { id: "general", title: "General terms" },
-  { id: "contact", title: "Contact us" },
+  { id: "contact", title: "Contact" },
 ];
+
+const sectionLink = "text-brand-ink hover:underline font-semibold";
 
 export default function TermsPage() {
   return (
     <LegalPage
       title="Terms of Service"
-      lede="The agreement between you and RecipePrinter. It covers what you can do with the product, what stays yours, how purchases work, and the limits of what we can promise."
+      lede="These Terms govern your use of RecipePrinter. They cover how you may use the service, who owns what, how purchases work, and the limits of our responsibility."
       lastUpdated={TERMS_LAST_UPDATED}
       sections={SECTIONS}
     >
-      <LegalSection id="agreement" index={1} title="This agreement">
+      <LegalSection id="agreement" index={1} title="Agreement to these Terms">
         <p>
-          These Terms are an agreement between you and {LEGAL_ENTITY}{" "}
-          (&ldquo;we&rdquo;, &ldquo;us&rdquo;), which operates RecipePrinter at
-          recipeprinter.com. By using RecipePrinter you accept them. If you do not
-          accept them, please do not use it.
+          These Terms of Service (&ldquo;Terms&rdquo;) are an agreement between
+          you and {LEGAL_ENTITY} (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or
+          &ldquo;our&rdquo;), which operates RecipePrinter at recipeprinter.com
+          (the &ldquo;Service&rdquo;). By using the Service, you agree to these
+          Terms. If you do not agree, do not use the Service.
         </p>
         <p>
           Our{" "}
           <LegalInternalLink href="/privacy">Privacy Policy</LegalInternalLink>{" "}
-          explains what happens to your information and forms part of this
-          agreement.
+          explains how we handle your information and is part of these Terms.
         </p>
       </LegalSection>
 
-      <LegalSection id="the-service" index={2} title="What RecipePrinter is">
+      <LegalSection id="the-service" index={2} title="The service">
         <p>
-          RecipePrinter takes a recipe you already have, whether that is a link,
-          a photo, a screenshot, pasted text, or a library exported from another
-          recipe app, and lays it out as a printable recipe card, page, PDF, or
-          bound cookbook. It is a formatting and printing tool. It is not a recipe
-          publisher, a recipe database, or a source of recipes, and it does not
-          give nutritional, dietary, or medical advice.
+          RecipePrinter formats recipes you provide, whether from a link, a
+          photo, a screenshot, pasted text, or a library exported from another
+          recipe app, into printable recipe cards, pages, PDFs, and cookbooks. It
+          is a formatting and printing tool. It is not a recipe publisher or a
+          source of recipes, and it does not provide nutritional, dietary, or
+          medical advice.
         </p>
         <p>
-          Most of it is free to use, with no account required. The recipe-card
-          format — every print theme beyond the free ones, 4 by 6 card
-          printing, and the rest of the card toolkit — is a paid RecipePrinter
-          Pro subscription. The cookbook export is a separate, one-time paid
-          feature.
+          Much of the Service is free and does not require an account. Some
+          features are paid: RecipePrinter Pro is a subscription that includes
+          additional print themes, 4 by 6 card printing, and other recipe-card
+          tools, and a cookbook export is a separate one-time purchase.
         </p>
       </LegalSection>
 
-      <LegalSection id="eligibility" index={3} title="Who can use it">
+      <LegalSection id="eligibility" index={3} title="Eligibility">
         <p>
-          You must be at least 13 years old, or 16 if you are in the EU or UK, to
-          use RecipePrinter. If you are under 18, you may use it only with the
-          involvement of a parent or guardian, and only they may make a purchase.
-          By using it you confirm you meet these requirements and that you are not
-          barred from doing so under the laws that apply to you.
+          You must be at least 13 years old to use the Service, or at least 16
+          if you live in the European Union or the United Kingdom. If you are
+          under 18, you may use the Service only with the involvement of a
+          parent or guardian, and only a parent or guardian may make a purchase.
+          By using the Service, you confirm that you meet these requirements and
+          that you are not prohibited from using it under applicable law.
         </p>
       </LegalSection>
 
       <LegalSection id="accounts" index={4} title="Accounts">
         <p>
-          You do not need an account to print. If you make one, keep your sign-in
-          details to yourself, give us an email address you actually reach, and
-          tell us at <LegalContactLink /> if you think someone else has got into
-          your account. You are responsible for what happens under your account,
-          except to the extent it results from something we did wrong.
+          An account is not required to print. If you create one, you agree to
+          provide an email address you can access, keep your sign-in details
+          confidential, and notify us promptly at <LegalContactLink /> if you
+          believe your account has been accessed without your permission. You
+          are responsible for activity under your account, except to the extent
+          it results from our own failure.
         </p>
         <p>
-          You can close your account at any time by emailing us from the address
-          on it. What happens to your data then is set out in the{" "}
+          You may close your account at any time by contacting us from the email
+          address associated with it. How we handle your data after that is
+          described in the{" "}
           <LegalInternalLink href="/privacy#retention">
             Privacy Policy
           </LegalInternalLink>
@@ -116,200 +121,225 @@ export default function TermsPage() {
         </p>
       </LegalSection>
 
-      <LegalSection id="your-content" index={5} title="Your recipes stay yours">
+      <LegalSection id="your-content" index={5} title="Your content">
         <p>
-          Everything you bring to RecipePrinter stays yours: recipes, photos,
-          notes, and the arrangement of a cookbook you build. We claim no
-          ownership of any of it.
+          You keep ownership of the content you bring to the Service, including
+          recipes, photos, notes, and the arrangement of any cookbook you build
+          (&ldquo;Your Content&rdquo;). We do not claim ownership of Your
+          Content.
         </p>
         <p>
-          To run the product we need your permission to handle it, so you grant us
-          a non-exclusive, worldwide, royalty-free licence to store, copy,
-          transmit, reformat, and display your content strictly for the purpose of
-          providing RecipePrinter to you: reading an import, laying out a card,
-          rendering a PDF, saving a project you asked us to save, and backing it
-          up. This licence exists only to operate the service. It does not let us
-          publish your recipes, sell them, show them to other users, or use them
-          in marketing. It ends when you delete the content or your account,
-          except for backup copies that age out on their normal schedule.
+          You grant us a non-exclusive, worldwide, royalty-free license to store,
+          copy, transmit, reformat, and display Your Content solely to provide
+          the Service to you, for example to read an import, lay out a card,
+          render a PDF, save a project you ask us to save, and keep backups. This
+          license does not allow us to publish, sell, or share Your Content with
+          other users, or to use it in our marketing. It ends when you delete the
+          content or your account, except for backup copies, which are deleted on
+          their normal schedule.
         </p>
         <p>
-          You are responsible for keeping your own copies of anything that matters
-          to you. Print it, or export it as a PDF.
+          You are responsible for keeping your own copies of anything important
+          to you, for example by printing it or exporting it as a PDF.
         </p>
       </LegalSection>
 
       <LegalSection
         id="copyright-in-recipes"
         index={6}
-        title="Recipes you did not write"
+        title="Recipes and photos you did not create"
       >
         <p>
-          Most recipes printed here were written by someone else, so this section
-          matters more than its length suggests.
+          In the United States, a simple list of ingredients is generally not
+          protected by copyright, but the surrounding material usually is,
+          including introductions, written instructions, photographs, and
+          collections of recipes arranged as a book. Other countries draw these
+          lines differently. Nothing in these Terms is legal advice.
         </p>
         <p>
-          In the United States, a bare list of ingredients is generally not
-          protected by copyright. The writing around it usually is: the headnote,
-          the descriptive method, the photographs, and a collection of recipes
-          arranged as a book. Other countries draw the line differently. Nothing
-          here is legal advice about your particular situation.
+          You are responsible for having the right to use everything you import
+          and print. By importing content, you confirm that you own it, have
+          permission to use it, or that your use is otherwise lawful, such as
+          printing a copy of a recipe for your own personal use.
+        </p>
+        <LegalSubheading>Photos from websites</LegalSubheading>
+        <p>
+          Photos on other websites belong to whoever holds the rights to them.
+          Importing a recipe does not give you any right to use its photo. You
+          decide what goes into what you print, and we recommend using your own
+          photos, especially in a cookbook.
         </p>
         <p>
-          You are responsible for having the right to use what you import. By
-          importing something you confirm that you own it, that you have
-          permission, or that your use is otherwise lawful. For most people that
-          means printing a copy of a recipe for your own cooking at home.
+          We do not review what you import, add, or print, and we cannot
+          determine whether you have the right to use it. Everything in a card,
+          PDF, or cookbook you make, including recipes, text, and photos, is
+          there because you added it or chose to keep it.
         </p>
         <LegalCallout title="Personal use, not republication.">
           <p>
-            Do not use RecipePrinter to reproduce or distribute someone
-            else&apos;s recipes, photographs, or cookbook beyond what your own
-            rights or the law allow. Printing a recipe for your kitchen, or
-            binding a family cookbook of recipes you and your family wrote, is the
-            intended use. Producing copies of a published cookbook to sell or hand
-            out is not, and it is not something we can authorise.
+            Do not use the Service to reproduce or distribute another
+            person&apos;s recipes, photographs, or cookbook beyond what your
+            rights or the law allow. The Service is intended for uses such as
+            printing a recipe for your own kitchen or binding a family cookbook
+            of recipes you and your family wrote. Copying a published cookbook to
+            sell or distribute is not permitted, and we cannot authorize it.
           </p>
         </LegalCallout>
+        <LegalSubheading>Selling what you make</LegalSubheading>
         <p>
-          Where a recipe came from a website, the finished card records the source
-          address unless you remove it. We suggest leaving it on. It is a
-          courtesy to the person who wrote the recipe and it tells you where to go
-          when a printed card leaves something out.
+          You may print cards, PDFs, and cookbooks made with the Service for
+          yourself and give copies to family and friends as gifts. You may sell
+          a cookbook only if every recipe, every piece of text, and every photo
+          in it is your own, or you have permission from the person who created
+          it. If anything in it came from someone else without that permission,
+          including a recipe or photo imported from a website, you may not sell
+          it, offer it for sale, or include it in anything you sell, whether as
+          a printed book or as a file.
+        </p>
+        <p>
+          When a recipe is imported from a website, the printed card includes
+          the source address unless you remove it. We recommend keeping it, as a
+          courtesy to the recipe&apos;s author.
         </p>
       </LegalSection>
 
       <LegalSection id="acceptable-use" index={7} title="Acceptable use">
-        <p>Please do not:</p>
+        <p>You agree not to:</p>
         <LegalList>
           <li>
-            upload content that is unlawful, infringing, or that you have no right
-            to use;
+            upload content that is unlawful or infringing, or that you do not
+            have the right to use;
           </li>
           <li>
-            use RecipePrinter to break into, overload, or interfere with the
-            service, our providers, or the websites we fetch recipes from;
+            use the Service to gain unauthorized access to, overload, or
+            interfere with the Service, our providers, or the websites we fetch
+            recipes from;
           </li>
           <li>
-            work around usage limits, entitlement checks, or the paywall, or use
-            an automated system to import in bulk;
+            circumvent usage limits, entitlement checks, or payment
+            requirements, or use automated means to import in bulk;
           </li>
           <li>
-            resell or commercially redistribute access to RecipePrinter, or use it
-            to run a printing service for other people&apos;s recipes;
+            resell or commercially redistribute access to the Service, or use it
+            to operate a printing service for other people&apos;s recipes;
           </li>
           <li>
-            scrape or extract the site&apos;s content or themes for use in
-            another product, or train a machine learning model on them;
+            sell, or offer for sale, a card, PDF, or cookbook made with the
+            Service that contains a recipe, text, or photo that is not your own
+            and that you do not have its creator&apos;s permission to use (see{" "}
+            <a href="#copyright-in-recipes" className={sectionLink}>
+              section 6
+            </a>
+            );
           </li>
           <li>
-            upload malware, or anything designed to damage a device or a printer;
+            scrape or extract the Service&apos;s content or themes for use in
+            another product, or use them to train a machine learning model;
+          </li>
+          <li>
+            upload malware or anything designed to damage a device or printer;
             or
           </li>
-          <li>impersonate anyone, or misrepresent where a recipe came from.</li>
+          <li>impersonate anyone, or misrepresent the source of a recipe.</li>
         </LegalList>
       </LegalSection>
 
-      <LegalSection id="limits" index={8} title="Fair use limits">
+      <LegalSection id="limits" index={8} title="Usage limits">
         <p>
-          Reading a recipe costs us real money per import, so imports and exports
-          are rate limited per visitor. The limits are set well above what
-          ordinary use requires, and if you hit one you will be told, and waiting
-          resolves it. We may change the limits as costs change. We may refuse
-          service to an account or a network that is consuming a shared resource
-          in a way that harms other people&apos;s use of it.
+          Imports and exports are subject to per-visitor limits. The limits are
+          set well above ordinary use. If you reach one, you will be notified,
+          and access resumes after a waiting period. We may adjust these limits
+          over time, and we may restrict use by an account or network that
+          consumes shared resources in a way that affects other users.
         </p>
       </LegalSection>
 
       <LegalSection id="purchases" index={9} title="Purchases and pricing">
         <p>
-          There are two kinds of paid feature. A cookbook export is a one-time
-          purchase: nothing to cancel, nothing that renews. RecipePrinter Pro is a
-          subscription, billed monthly or annually until you cancel it.
+          The Service offers two kinds of paid features. A cookbook export is a
+          one-time purchase that does not renew. RecipePrinter Pro is a
+          subscription, billed monthly or annually until you cancel.
         </p>
         <LegalList>
           <li>
-            <strong>What a cookbook purchase unlocks.</strong> A cookbook purchase
-            unlocks the cookbook export for the specific project you bought it
-            for. It is not an account-wide entitlement, so a second cookbook is a
-            second purchase. This is shown at the point of sale, and it is worth
-            being certain of before you buy.
+            <strong>Cookbook purchases.</strong> A cookbook purchase unlocks the
+            cookbook export for the specific project it was purchased for. It is
+            not an account-wide entitlement, so each additional cookbook is a
+            separate purchase. This is shown at the point of sale.
           </li>
           <li>
-            <strong>What RecipePrinter Pro unlocks.</strong> Pro is
-            account-wide: every print theme, 4 by 6 card printing, and the rest of
-            the recipe-card toolkit, for as long as the subscription is active.
-            It has no effect on a cookbook purchase, which stays a separate,
-            one-time purchase either way.
+            <strong>RecipePrinter Pro.</strong> Pro applies to your whole
+            account and includes every print theme, 4 by 6 card printing, and the
+            other recipe-card tools for as long as the subscription is active.
+            Pro does not include cookbook exports, which remain a separate
+            one-time purchase.
           </li>
           <li>
             <strong>Billing and renewal.</strong> A Pro subscription renews
-            automatically at the end of each billing period — monthly or annual,
-            whichever you chose — until you cancel it. Canceling stops future
-            renewals; access continues through the end of the period you already
-            paid for. If a renewal payment fails, we may suspend Pro access until
-            it is resolved.
+            automatically at the end of each monthly or annual billing period
+            until you cancel. Canceling stops future renewals, and access
+            continues through the end of the period you have already paid for.
+            If a renewal payment fails, we may suspend Pro access until it is
+            resolved.
           </li>
           <li>
-            <strong>Managing or canceling Pro.</strong> Manage or cancel your
-            subscription from your account menu, which opens our payment
-            processor&apos;s own billing page for it. We do not put this behind a
-            support request.
+            <strong>Managing or canceling Pro.</strong> You can manage or cancel
+            your subscription at any time from your account menu, which opens
+            our payment processor&apos;s billing page.
           </li>
           <li>
-            <strong>Price and tax.</strong> Prices are in US dollars and shown
-            before you pay. Tax is added where it applies. We can change prices at
-            any time, but never for something you have already bought or for a
-            billing period you have already paid for.
+            <strong>Prices and taxes.</strong> Prices are in US dollars and are
+            shown before you pay. Applicable taxes are added at checkout. We may
+            change prices at any time, but a change will not affect a purchase
+            you have already made or a billing period you have already paid for.
           </li>
           <li>
-            <strong>Payment.</strong> Payments are processed by Stripe through
-            RevenueCat. We never see your card details. Their terms apply to the
-            payment itself.
+            <strong>Payment processing.</strong> Payments are processed by
+            Stripe through RevenueCat. We do not receive or store your card
+            details. Their terms apply to the payment itself.
           </li>
           <li>
-            <strong>Access.</strong> A cookbook unlock is tied to the account or
-            browser that bought it; sign in before buying if you want it to
-            follow you to another device. RecipePrinter Pro requires a signed-in
-            account (so you have a durable way back to manage or cancel it) and
-            follows that account to any device you sign in on. If a purchase does
-            not appear where you expect, email <LegalContactLink /> with the
-            address you paid from and we will sort it out.
+            <strong>Access to purchases.</strong> A cookbook unlock is tied to
+            the account or browser used to buy it, so sign in before purchasing
+            if you want it available on other devices. RecipePrinter Pro requires
+            a signed-in account and is available on any device where you sign
+            in. If a purchase does not appear where you expect, contact{" "}
+            <LegalContactLink /> with the email address you paid from and we
+            will help.
           </li>
           <li>
-            <strong>What a cookbook export is.</strong> A digital file you
-            generate yourself: a PDF, ready to print. RecipePrinter does not
-            print, bind, or ship anything, and has no relationship with whatever
-            printer or print shop you take the file to.
+            <strong>What a cookbook export is.</strong> A cookbook export is a
+            digital PDF file that you generate and print yourself. We do not
+            print, bind, or ship anything, and we have no relationship with any
+            printer or print shop you choose to use.
           </li>
           <li>
-            <strong>Purchases made before RecipePrinter Pro existed.</strong> If
-            you previously bought an individual print theme, it remains yours —
-            we do not revoke a purchase because the product has since moved to a
-            subscription for new theme access.
+            <strong>Earlier theme purchases.</strong> If you bought an individual
+            print theme before RecipePrinter Pro was introduced, you keep access
+            to it.
           </li>
         </LegalList>
       </LegalSection>
 
       <LegalSection id="refunds" index={10} title="Refunds">
         <p>
-          If a paid feature does not do what we said it would, tell us at{" "}
-          <LegalContactLink /> within 14 days of the purchase or the most recent
-          renewal and we will refund it. We would rather refund you than argue
-          about it.
+          If a paid feature does not work as described, contact us at{" "}
+          <LegalContactLink /> within 14 days of the purchase or most recent
+          renewal, and we will issue a refund.
         </p>
         <p>
           Because a cookbook export is a digital file delivered immediately, we
-          may decline a refund for one where the file was generated and worked
-          as described and you have simply changed your mind. Nothing here
-          limits any refund or cancellation right you have under the consumer
-          law where you live, including the statutory right of withdrawal for
-          consumers in the EU and UK. Where that right applies, asking us to
-          generate the file immediately may end it, and we will say so at the
-          point of sale. For RecipePrinter Pro, canceling stops future charges;
-          it does not itself refund a period already paid for, though we will
-          still make it right under the paragraph above if Pro did not work as
-          described.
+          may decline a refund request where the file was generated and worked as
+          described. Canceling RecipePrinter Pro stops future charges but does
+          not by itself refund a billing period you have already paid for.
+        </p>
+        <p>
+          Nothing in this section limits any refund or cancellation right you
+          have under the consumer protection laws where you live, including the
+          statutory right of withdrawal for consumers in the European Union and
+          the United Kingdom. Where that right applies, requesting immediate
+          delivery of a digital file may end it, and we will tell you so at the
+          point of sale.
         </p>
       </LegalSection>
 
@@ -319,292 +349,282 @@ export default function TermsPage() {
         title="Accuracy, cooking, and food safety"
       >
         <p>
-          RecipePrinter reads recipes automatically, and automated reading makes
-          mistakes. An ingredient can be dropped, a quantity misread, a
-          temperature or time transcribed wrongly, a step put out of order.
+          RecipePrinter reads recipes automatically, and automated reading can
+          make mistakes. An ingredient may be left out, a quantity misread, a
+          temperature or time transcribed incorrectly, or a step placed out of
+          order.
         </p>
         <LegalCallout title="Check the card against the original before you cook.">
           <p>
-            This matters most for anything that can hurt someone: allergens,
-            ingredient substitutions, cooking temperatures for meat and eggs,
-            canning and preserving times, and quantities of anything a person in
-            your kitchen must avoid. Do not rely on a RecipePrinter card as the
-            authoritative source for those. If you or someone you cook for has a
-            food allergy or a medical dietary requirement, verify every ingredient
-            against the original recipe and the actual packaging.
+            This is especially important for allergens, ingredient
+            substitutions, cooking temperatures for meat and eggs, canning and
+            preserving times, and quantities of anything a person in your
+            household must avoid. Do not rely on a RecipePrinter card as the
+            authoritative source for this information. If you or someone you cook
+            for has a food allergy or a medical dietary requirement, verify every
+            ingredient against the original recipe and the product packaging.
           </p>
         </LegalCallout>
         <p>
-          We provide no warranty that an imported recipe is complete, correct, or
-          safe to cook, and we are not the author of any recipe you import. You
-          cook at your own risk, exercising the judgement you would apply to any
-          recipe.
+          We do not warrant that an imported recipe is complete, correct, or safe
+          to prepare, and we are not the author of any recipe you import. You are
+          responsible for how you prepare any recipe.
         </p>
       </LegalSection>
 
       <LegalSection
         id="third-party"
         index={12}
-        title="Recipe sites and other services"
+        title="Third-party websites and services"
       >
         <p>
-          When you import from a link, we fetch that page in order to read it.
-          Those sites are not ours. Their content, their terms, and their own
-          privacy practices are their own, and a link or a successful import is
-          not an endorsement or a partnership.
+          When you import a recipe from a link, we fetch that page in order to
+          read it. Those websites are operated by third parties, and their
+          content, terms, and privacy practices are their own. A link or a
+          successful import is not an endorsement of, or a partnership with, that
+          website.
         </p>
         <p>
-          A site may block automated fetching, sit behind a bot check, or simply
-          not contain a recipe we can read. That is not a fault in RecipePrinter,
-          and when it happens we will tell you and suggest pasting the text or
-          uploading a screenshot instead.
+          Some websites block automated access or do not contain a recipe we can
+          read. When that happens, we will let you know, and you can paste the
+          recipe text or upload a screenshot instead.
         </p>
         <p>
-          Signing in to CookPilot to bring across a library is optional and is
+          Signing in to CookPilot to import a recipe library is optional and is
           governed by CookPilot&apos;s own terms. Google, Apple, Stripe, and
-          RevenueCat each have their own terms for the parts they handle.
+          RevenueCat each have their own terms for the services they provide.
         </p>
       </LegalSection>
 
-      <LegalSection
-        id="our-content"
-        index={13}
-        title="Our side of the intellectual property"
-      >
+      <LegalSection id="our-content" index={13} title="Our intellectual property">
         <p>
-          RecipePrinter itself belongs to {LEGAL_ENTITY} and is protected by
-          copyright and other laws. That covers the software, the page and card
-          themes, the layouts, the artwork, the name, and the look of the
-          site. You may use
-          it to make and print your own recipe cards, books, and PDFs, and those
-          outputs are yours to print and keep, including for the personal purposes
-          described in{" "}
-          <a
-            href="#copyright-in-recipes"
-            className="text-brand-ink hover:underline font-semibold"
-          >
+          The Service, including its software, page and card themes, layouts,
+          artwork, name, and design, belongs to {LEGAL_ENTITY} and is protected
+          by copyright and other laws. You may use the Service to make and print
+          your own recipe cards, cookbooks, and PDFs. Those outputs are yours to
+          print, keep, give as gifts, and, where{" "}
+          <a href="#copyright-in-recipes" className={sectionLink}>
             section 6
-          </a>
-          .
+          </a>{" "}
+          allows, sell. Our themes, layouts, and artwork appear in those outputs
+          under that license only.
         </p>
         <p>
-          You may not copy, adapt, or redistribute the themes or the software
-          themselves, or present them as your own. Feedback you send us is
-          gratefully received, and we may act on it without owing you anything for
-          it.
+          You may not copy, adapt, or redistribute the themes or the software, or
+          present them as your own. If you send us feedback or suggestions, we
+          may use them without any obligation to you.
         </p>
       </LegalSection>
 
       <LegalSection id="availability" index={14} title="Availability and changes">
         <p>
-          RecipePrinter is a small product run by a small team, offered as it is
-          on any given day. We may add, change, or remove features, and we may
-          have to take it down for maintenance or for reasons outside our control.
-          We do not promise uninterrupted availability.
+          We may add, change, or remove features, and the Service may be
+          unavailable at times for maintenance or for reasons outside our
+          control. We do not guarantee uninterrupted availability.
         </p>
         <p>
-          If we ever discontinue the service, we will give reasonable notice on the
-          site so that you can export your saved projects first. If we discontinue
-          a paid feature you bought within the previous twelve months and cannot
-          give you what you paid for, we will refund it.
+          If we discontinue the Service, we will give reasonable notice on the
+          site so that you can export your saved projects first. If we
+          discontinue a paid feature you bought within the previous twelve months
+          and can no longer provide it, we will refund it.
         </p>
         <p>
-          We may update these Terms. The date at the top shows when they last
-          changed, and material changes will be flagged on the site before they
-          take effect. Continuing to use RecipePrinter after that means you accept
-          the updated Terms; if you do not, stop using it and, if you want, ask us
-          to close your account.
+          We may update these Terms from time to time. The date at the top of
+          this page shows when they last changed. By continuing to use the
+          Service after an update, you accept the updated Terms. If you do not
+          accept them, stop using the Service, and you may ask us to close your
+          account.
         </p>
       </LegalSection>
 
-      <LegalSection id="termination" index={15} title="Ending this agreement">
+      <LegalSection id="termination" index={15} title="Termination">
         <p>
-          You can stop using RecipePrinter whenever you like, and ask us to close
-          your account at <LegalContactLink />.
+          You may stop using the Service at any time, and you may ask us to
+          close your account by contacting <LegalContactLink />.
         </p>
         <p>
-          We may suspend or close an account that breaks these Terms, particularly{" "}
-          <a
-            href="#acceptable-use"
-            className="text-brand-ink hover:underline font-semibold"
-          >
+          We may suspend or close an account that violates these Terms,
+          particularly{" "}
+          <a href="#acceptable-use" className={sectionLink}>
             section 7
           </a>
-          , or where we are required to by law. Except where the breach is serious
-          or we are legally prevented, we will tell you why and give you a chance
-          to put it right and to export your projects. The sections that by their
-          nature should survive do survive the end of this agreement: your
-          content licence as it applies to copies already made, disclaimers,
-          limitation of liability, indemnity, and governing law.
+          , or where required by law. Unless the violation is serious or we are
+          legally prevented from doing so, we will tell you the reason and give
+          you an opportunity to resolve it and to export your projects.
+          Provisions that by their nature should survive termination will
+          survive, including the license to Your Content as it applies to copies
+          already made, the disclaimers, the limitation of liability,
+          indemnification, and governing law.
         </p>
       </LegalSection>
 
       <LegalSection id="disclaimers" index={16} title="Disclaimers">
         <p>
-          RecipePrinter is provided &ldquo;as is&rdquo; and &ldquo;as
+          The Service is provided &ldquo;as is&rdquo; and &ldquo;as
           available&rdquo;. To the fullest extent permitted by law, we disclaim
           all warranties, express or implied, including implied warranties of
           merchantability, fitness for a particular purpose, title, and
           non-infringement.
         </p>
         <p>
-          We do not warrant that RecipePrinter will be uninterrupted or
-          error-free, that an import will succeed for any given website, that an
-          extracted recipe will be complete or accurate, that a printed result
-          will match what you saw on screen on every printer, or that any defect
-          will be fixed.
+          We do not warrant that the Service will be uninterrupted or error-free,
+          that an import will succeed for any particular website, that an
+          extracted recipe will be complete or accurate, that printed output will
+          match the on-screen preview on every printer, or that any defect will
+          be corrected.
         </p>
         <p>
-          Some places do not allow the exclusion of certain warranties, so parts
-          of this section may not apply to you. Nothing here excludes or limits
-          any right you have under mandatory consumer protection law, or any
-          liability that cannot lawfully be excluded, including liability for
-          death or personal injury caused by negligence, or for fraud.
+          Some jurisdictions do not allow the exclusion of certain warranties, so
+          some of these exclusions may not apply to you. Nothing in these Terms
+          excludes or limits any right you have under mandatory consumer
+          protection law, or any liability that cannot lawfully be excluded,
+          including liability for death or personal injury caused by negligence,
+          or for fraud.
         </p>
       </LegalSection>
 
       <LegalSection id="liability" index={17} title="Limitation of liability">
         <p>
-          To the fullest extent permitted by law, neither {LEGAL_ENTITY} nor
-          anyone working with us is liable for indirect, incidental, special,
-          consequential, exemplary, or punitive damages, or for lost profits, lost
-          data, lost recipes, or the cost of substitute services, arising out of
-          your use of RecipePrinter, whether the claim is in contract, tort, or
-          anything else, and even if we were told such damages were possible.
+          To the fullest extent permitted by law, neither {LEGAL_ENTITY} nor its
+          owners, employees, or contractors will be liable for any indirect,
+          incidental, special, consequential, exemplary, or punitive damages, or
+          for any loss of profits, data, or content, or the cost of substitute
+          services, arising out of or relating to your use of the Service,
+          whether based on contract, tort, or any other legal theory, even if we
+          have been advised of the possibility of such damages.
         </p>
         <p>
-          Our total liability for all claims relating to RecipePrinter is limited
-          to the greater of the amount you paid us in the twelve months before the
-          claim arose, or fifty US dollars.
+          Our total liability for all claims relating to the Service is limited
+          to the greater of the amount you paid us in the twelve months before
+          the claim arose, or fifty US dollars.
         </p>
         <p>
-          These limits are a fundamental part of the deal: they are what makes it
-          possible to offer this product for free or for a few dollars. As above,
-          nothing here limits liability that cannot lawfully be limited, and if
-          you are a consumer in a place that restricts these exclusions, they
-          apply only as far as that place allows.
+          These limitations do not apply to liability that cannot lawfully be
+          limited. If you are a consumer in a jurisdiction that restricts these
+          limitations, they apply only to the extent permitted there.
         </p>
       </LegalSection>
 
-      <LegalSection id="indemnity" index={18} title="Your indemnity to us">
+      <LegalSection id="indemnity" index={18} title="Indemnification">
         <p>
-          If someone brings a claim against us because of what you uploaded,
-          printed, or distributed using RecipePrinter, for example a copyright
-          claim over a recipe or a photograph you did not have the right to use,
-          you agree to defend, indemnify, and hold us harmless against that claim
-          and its reasonable costs. This does not apply to a claim caused by our
-          own breach of these Terms, and it does not apply to the extent the law
-          where you live does not permit it. We will tell you promptly about any
-          claim and will not settle it without your agreement.
+          You agree to defend, indemnify, and hold harmless {LEGAL_ENTITY} from
+          any claim brought against us arising from content you uploaded,
+          printed, sold, or distributed using the Service, including a copyright
+          claim over a recipe or photograph you did not have the right to use,
+          such as a photo from another website, together with the reasonable
+          costs of that claim. This does not apply to a claim caused by our own
+          breach of these Terms, or to the extent the law where you live does not
+          permit it. We will notify you promptly of any such claim and will not
+          settle it without your consent.
         </p>
       </LegalSection>
 
       <LegalSection
         id="copyright-complaints"
         index={19}
-        title="Copyright complaints"
+        title="Copyright infringement notices"
       >
         <p>
-          If you believe something on RecipePrinter infringes your copyright,
-          write to <LegalContactLink /> with:
+          If you believe material on the Service infringes your copyright, send a
+          notice to <LegalContactLink /> that includes:
         </p>
         <LegalList>
           <li>your name, address, and contact details;</li>
           <li>
-            identification of the work you say is infringed, and of the material
-            you are complaining about, with enough detail for us to find it;
+            identification of the copyrighted work, and of the material you
+            believe infringes it, with enough detail for us to locate it;
           </li>
           <li>
-            a statement that you believe in good faith that the use is not
-            authorised by the copyright owner, its agent, or the law;
+            a statement that you have a good-faith belief that the use is not
+            authorized by the copyright owner, its agent, or the law;
           </li>
           <li>
             a statement, under penalty of perjury, that the information in your
-            notice is accurate and that you are the owner or authorised to act for
-            them; and
+            notice is accurate and that you are the copyright owner or authorized
+            to act on the owner&apos;s behalf; and
           </li>
-          <li>your signature, physical or electronic.</li>
+          <li>your physical or electronic signature.</li>
         </LegalList>
         <p>
           We respond to valid notices under the Digital Millennium Copyright Act
           by removing or disabling access to the material, and we terminate the
           accounts of repeat infringers. If your material was removed and you
-          believe that was a mistake, you can send a counter-notice to the same
+          believe this was a mistake, you may send a counter-notice to the same
           address.
         </p>
         <p>
-          Note that most content on RecipePrinter is private to the person who
-          uploaded it and is not published by us.
+          Most content on the Service is private to the person who uploaded it
+          and is not published by us.
         </p>
       </LegalSection>
 
       <LegalSection id="disputes" index={20} title="Governing law and disputes">
-        <LegalSubheading>Talk to us first</LegalSubheading>
+        <LegalSubheading>Informal resolution</LegalSubheading>
         <p>
-          Before filing anything, please email <LegalContactLink /> describing the
-          problem and what you would like us to do. Most things are fixable that
-          way, and we ask that you give us 30 days to try.
+          Before filing a claim, you agree to contact us at <LegalContactLink />{" "}
+          with a description of the issue and the resolution you are seeking,
+          and to allow us 30 days to resolve it informally.
         </p>
         <LegalSubheading>Governing law</LegalSubheading>
         <p>
           These Terms are governed by the laws of the State of{" "}
           {GOVERNING_LAW.state}, United States, without regard to its conflict of
-          laws rules, and excluding the UN Convention on Contracts for the
-          International Sale of Goods.
+          laws rules. The United Nations Convention on Contracts for the
+          International Sale of Goods does not apply.
         </p>
-        <LegalSubheading>Where disputes are heard</LegalSubheading>
+        <LegalSubheading>Venue</LegalSubheading>
         <p>
-          You and {LEGAL_ENTITY} agree that any dispute that cannot be resolved
-          informally will be brought exclusively in {GOVERNING_LAW.venue}, and we
-          each consent to the jurisdiction of those courts.
+          Any dispute that is not resolved informally will be brought exclusively
+          in {GOVERNING_LAW.venue}, and you and {LEGAL_ENTITY} each consent to
+          the jurisdiction of those courts.
         </p>
         <p>
-          If you are a consumer resident in the EU, the UK, or another place whose
-          law gives you the right to bring proceedings in your own local courts
-          and to the protection of your own local consumer law, that right is
-          unaffected by the two paragraphs above.
+          If you are a consumer in the European Union, the United Kingdom, or
+          another jurisdiction whose law gives you the right to bring proceedings
+          in your local courts and the protection of your local consumer law,
+          those rights are not affected by this section.
         </p>
       </LegalSection>
 
       <LegalSection id="general" index={21} title="General terms">
         <LegalList>
           <li>
-            <strong>Whole agreement.</strong> These Terms and the Privacy Policy
-            are the entire agreement between us about RecipePrinter, replacing
-            anything said before.
+            <strong>Entire agreement.</strong> These Terms and the Privacy Policy
+            are the entire agreement between you and us regarding the Service and
+            replace any prior agreements or communications.
           </li>
           <li>
-            <strong>Severability.</strong> If a court finds part of these Terms
-            unenforceable, the rest stays in force.
+            <strong>Severability.</strong> If any part of these Terms is found to
+            be unenforceable, the remaining parts stay in effect.
           </li>
           <li>
-            <strong>No waiver.</strong> Not enforcing something once does not mean
-            we give up the right to enforce it later.
+            <strong>No waiver.</strong> Our failure to enforce any provision is
+            not a waiver of our right to enforce it later.
           </li>
           <li>
-            <strong>Assignment.</strong> You may not transfer this agreement
-            without our consent. We may transfer it as part of a sale or
-            reorganisation of the business, on notice to you.
+            <strong>Assignment.</strong> You may not transfer these Terms without
+            our consent. We may transfer them as part of a sale or
+            reorganization of our business, with notice to you.
           </li>
           <li>
-            <strong>No third-party rights.</strong> Nobody outside this agreement
-            has the right to enforce it.
+            <strong>No third-party beneficiaries.</strong> No one other than you
+            and us has any right to enforce these Terms.
           </li>
           <li>
-            <strong>Events outside our control.</strong> Neither of us is liable
-            for a failure caused by something genuinely outside our reasonable
+            <strong>Events beyond our control.</strong> Neither party is liable
+            for a failure to perform caused by events beyond its reasonable
             control.
           </li>
         </LegalList>
       </LegalSection>
 
-      <LegalSection id="contact" index={22} title="Contact us">
+      <LegalSection id="contact" index={22} title="Contact">
         <LegalContactDetails entity={LEGAL_ENTITY} />
         <p>
           See also our{" "}
           <LegalInternalLink href="/privacy">Privacy Policy</LegalInternalLink>,
-          which explains what happens to the recipes, photos, and details you
-          bring to RecipePrinter.
+          which explains how we handle the recipes, photos, and details you bring
+          to RecipePrinter.
         </p>
       </LegalSection>
     </LegalPage>

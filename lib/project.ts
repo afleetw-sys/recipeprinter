@@ -21,6 +21,7 @@ import {
   stampRecoveryOwner,
 } from "@/lib/recoveryMirror";
 import { localStore, sessionStore } from "@/lib/storage";
+import { blobUrlsIn, reviveLocalPhotoUrls, withRevivedUrls } from "@/lib/localPhotos";
 
 // The section/cover layer is purely organizational — which section each
 // queued recipe belongs to, plus section/cover metadata — kept separate from
@@ -725,6 +726,24 @@ export function useProjectMeta() {
     [commit],
   );
 
+  // A photo picked while signed out is a `blob:` URL (see `putPickedPhoto`),
+  // and it dies with the document that minted it. Whenever meta arrives
+  // holding one from an earlier document (a reload, a phone sign-in redirect,
+  // a book reopened from the shelf), swap in a fresh URL for the same bytes.
+  useEffect(() => {
+    if (!hydrated) return;
+    const urls = blobUrlsIn(meta);
+    if (urls.length === 0) return;
+    let alive = true;
+    void reviveLocalPhotoUrls(urls).then((revived) => {
+      if (!alive || revived.size === 0) return;
+      update((current) => withRevivedUrls(current, revived));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [hydrated, meta, update]);
+
   /** Call after computing full `Section[]` (via buildSections) so newly
       auto-assigned items and any implicit first section get persisted. */
   const syncSections = useCallback(
@@ -1238,6 +1257,16 @@ export function useProjectMeta() {
   }, [update]);
 
   /** Replaces session metadata after a saved account project is verified. */
+  /** After a save lands: the local photo URLs it uploaded, swapped for their
+      Storage URLs, so the next save has nothing left to upload. */
+  const adoptUploadedPhotoUrls = useCallback(
+    (uploaded: ReadonlyMap<string, string>) => {
+      if (uploaded.size === 0) return;
+      update((current) => withRevivedUrls(current, uploaded));
+    },
+    [update],
+  );
+
   const replaceMeta = useCallback(
     (next: ProjectMeta) => {
       commit(normalizeProjectMeta(next));
@@ -1318,6 +1347,7 @@ export function useProjectMeta() {
     startNewProject,
     clearCookbookIntent,
     replaceMeta,
+    adoptUploadedPhotoUrls,
     setProjectId,
   };
 }

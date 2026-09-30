@@ -48,6 +48,16 @@ export interface ExportPayload {
    */
   mode?: ExportMode;
   /**
+   * Keep the front and back covers in the interior even though the preset
+   * normally ships them as a separate wrap, so the whole book is ONE file.
+   *
+   * For a book with no print service named (printing at home, or "not sure
+   * yet"): nobody is going to upload a wrap, and two files for one book is a
+   * puzzle. A print-service export never sets this; Lulu and Blurb reject a
+   * cover bound into the pages. Interior only.
+   */
+  coversInline?: boolean;
+  /**
    * Interior page count, needed only for `cover-wrap` — the spine's thickness
    * is a function of it (see lib/coverWrap.ts). Passed in rather than derived
    * here because the interior render is what actually knows the final count.

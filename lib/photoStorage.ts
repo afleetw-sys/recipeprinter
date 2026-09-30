@@ -72,6 +72,32 @@ export async function uploadPhotoFile(file: File): Promise<string> {
 }
 
 /**
+ * A photo the cook just picked, as a URL to put in the book.
+ *
+ * Signed in, it uploads now: that book autosaves, so the photo has somewhere
+ * durable to land. Signed out, it stays in this browser (lib/localPhotos) and
+ * uploads only when the book is saved or exported, the same rule Paprika photos
+ * follow. Uploading every signed-out pick filled Storage with photos from books
+ * nobody kept, in a folder nothing cleans up.
+ */
+export async function storePickedPhotoFile(file: File): Promise<string> {
+  let signedIn = false;
+  try {
+    const user = getFirebaseAuth().currentUser;
+    signedIn = Boolean(user && !user.isAnonymous);
+  } catch {
+    signedIn = false;
+  }
+  const blob = await fileToCoverBlob(file);
+  if (!signedIn) {
+    const { putPickedPhoto } = await import("@/lib/localPhotos");
+    const local = await putPickedPhoto(blob);
+    if (local) return local;
+  }
+  return uploadBlob(blob);
+}
+
+/**
  * An image that only exists in this browser: base64 bytes inline (`data:`), or
  * a blob URL pointing at something we are holding locally and haven't uploaded
  * (a Paprika photo — see lib/localPhotos.ts).
@@ -375,6 +401,11 @@ export interface MaterializedPhotos {
       genuinely stopped being browser-local; `materializeOrKeep` hands back the
       original when an upload fails, and that is not an upload. */
   uploadedRecipeImages: Map<string, string>;
+  /** Every browser-local URL this sweep put in Storage → its Storage URL, from
+      any field. Handed back to project meta after a save lands, so a cover or
+      chapter photo picked while signed out (a `blob:` URL, see
+      lib/localPhotos `putPickedPhoto`) is uploaded once, not on every save. */
+  uploadedUrls: Map<string, string>;
 }
 
 /**
@@ -430,9 +461,23 @@ export async function materializeProjectPhotos(
   // Which recipe photos this sweep actually put in Storage, so the caller can
   // stop holding the local copy as the source. See `MaterializedPhotos`.
   const uploadedRecipeImages = new Map<string, string>();
+  const uploadedUrls = new Map<string, string>();
+  // One upload per local URL per sweep: the same photo is often the cover AND
+  // in a recipe's photo history, and each site used to upload its own copy.
+  const inFlight = new Map<string, Promise<string | undefined>>();
+  const materializeOnce = (url: string | undefined) => {
+    if (!url || !isLocalImage(url)) return materialize(url);
+    let pending = inFlight.get(url);
+    if (!pending) {
+      pending = materialize(url);
+      inFlight.set(url, pending);
+    }
+    return pending;
+  };
 
   const photos = await mapProjectPhotoUrls(project, async (url, site) => {
-    const next = await materialize(url);
+    const next = await materializeOnce(url);
+    if (url && isLocalImage(url) && next && !isLocalImage(next)) uploadedUrls.set(url, next);
     // `materializeOrKeep` hands back the original on failure, so only a value
     // that actually stopped being browser-local is an upload. That same test
     // decides which items may safely forget their local copy.
@@ -445,5 +490,6 @@ export async function materializeProjectPhotos(
   return {
     photos: dropLocalPhotoIds(photos, new Set(uploadedRecipeImages.keys())),
     uploadedRecipeImages,
+    uploadedUrls,
   };
 }

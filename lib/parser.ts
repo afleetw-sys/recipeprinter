@@ -7,7 +7,7 @@ import {
   sourceNotesFromResponse,
   sourceUrlFromResponse,
 } from "@/lib/cookpilot";
-import { BLOCKED_REMEDY, searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
+import { BLOCKED_REMEDY, joinedLinksMessage, searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { errorParts } from "@/lib/friendlyErrors";
 import { anonymousOwnerId } from "@/lib/anonymousOwner";
 import type { ImportFailureCode } from "@/lib/analytics";
@@ -297,6 +297,8 @@ export async function parseUrlAll(rawUrl: string): Promise<Recipe[]> {
   // of it, so we step through the doorway rather than sending the parser at
   // the doorway itself. Idempotent, and the queue already did it — this is
   // here so the parser is safe to call from anywhere.
+  const joined = joinedLinksMessage(rawUrl);
+  if (joined) throw new ImportError(joined, "joined_links");
   const url = unwrapRedirectUrl(normalizeImportURL(rawUrl));
 
   // Answered from the URL's own shape, before a single request goes out. The

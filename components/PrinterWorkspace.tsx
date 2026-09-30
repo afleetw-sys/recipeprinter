@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImportPanel } from "@/components/ImportPanel";
+import { HolidayCookbookBanner } from "@/components/HolidayCookbookBanner";
 import { useQueue } from "@/lib/queue";
 import { useProjectMeta } from "@/lib/project";
 import { fileProjectLocally } from "@/lib/localProjects";
@@ -219,7 +220,7 @@ export function PrinterWorkspace({
    * link they just pasted. Staying put, with a sentence saying so, is the
    * better failure.
    */
-  async function handoff(payload: PendingImport) {
+  async function handoff(payload: PendingImport, kind: ImportKind = importKind) {
     setHandoffError(null);
     setOpening(true);
     // Stamps the choice onto the project /print is about to open — the same
@@ -229,7 +230,7 @@ export function PrinterWorkspace({
     // nothing has been added to it yet, so replacing its id costs nothing.
     // Left alone for the Recipe cards tab — the id this page already minted
     // on mount is exactly what a recipe-cards import should land in.
-    if (importKind === "cookbook") startNewProject({ cookbook: true });
+    if (kind === "cookbook") startNewProject({ cookbook: true });
     // Counted here rather than where the parse starts: by then every import in
     // the product looks like it happened on /print. See `recipe_import_submitted`.
     track("recipe_import_submitted", { surface: "home", source: sourceOf(payload) });
@@ -416,6 +417,16 @@ export function PrinterWorkspace({
           </p>
         )}
       </div>
+      {/* Starts an empty book the way the Cookbook tab's empty submit does,
+          whichever tab is showing, so it reaches `handoff` as a cookbook. */}
+      <HolidayCookbookBanner
+        busy={opening}
+        onWarm={warmWorkspace}
+        onStart={() => {
+          if (opening) return;
+          void handoff({ kind: "empty" }, "cookbook");
+        }}
+      />
     </div>
   );
 }

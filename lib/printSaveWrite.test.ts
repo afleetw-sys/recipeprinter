@@ -69,6 +69,7 @@ interface Harness {
   setSavedProjectId: ReturnType<typeof vi.fn>;
   setMetaProjectId: ReturnType<typeof vi.fn>;
   adoptUploadedPhotos: ReturnType<typeof vi.fn>;
+  adoptUploadedMetaPhotos: ReturnType<typeof vi.fn>;
   saveProject: ReturnType<typeof vi.fn>;
   adoptProject: ReturnType<typeof vi.fn>;
 }
@@ -82,6 +83,7 @@ function makeHarness(
   const setSavedProjectId = vi.fn();
   const setMetaProjectId = vi.fn();
   const adoptUploadedPhotos = vi.fn();
+  const adoptUploadedMetaPhotos = vi.fn();
   const saveProject = vi.fn(async (project: { id: string }) => ({ ...project, id: project.id, revision: 7 }));
   const adoptProject = vi.fn(async (_uid: string, project: { id: string }) => ({
     ...project,
@@ -90,7 +92,12 @@ function makeHarness(
   }));
   const ctx = {
     refs,
-    materializePhotos: vi.fn(async () => ({ photos: {}, uploadedRecipeImages: new Map([["q1", "https://x/y.jpg"]]) })),
+    materializePhotos: vi.fn(async () => ({
+      photos: {},
+      uploadedRecipeImages: new Map([["q1", "https://x/y.jpg"]]),
+      uploadedUrls: new Map([["blob:cover", "https://x/cover.jpg"]]),
+    })),
+    adoptUploadedMetaPhotos,
     saveProject,
     adoptProject,
     isConflictError: (error: unknown) => error instanceof Error && error.name === "Conflict",
@@ -103,7 +110,7 @@ function makeHarness(
     setMetaProjectId,
     ...extra,
   } as unknown as SaveWriteContext;
-  return { ctx, refs, statuses, toasts, setSavedProjectId, setMetaProjectId, adoptUploadedPhotos, saveProject, adoptProject };
+  return { ctx, refs, statuses, toasts, setSavedProjectId, setMetaProjectId, adoptUploadedPhotos, adoptUploadedMetaPhotos, saveProject, adoptProject };
 }
 
 beforeEach(() => {
@@ -174,6 +181,12 @@ describe("a write that lands", () => {
     const h = makeHarness();
     await writeProject(makePending(), h.ctx);
     expect(h.adoptUploadedPhotos).toHaveBeenCalledWith(new Map([["q1", "https://x/y.jpg"]]));
+  });
+
+  it("points the cover and chapters at Storage too, so the next save uploads nothing", async () => {
+    const h = makeHarness();
+    await writeProject(makePending(), h.ctx);
+    expect(h.adoptUploadedMetaPhotos).toHaveBeenCalledWith(new Map([["blob:cover", "https://x/cover.jpg"]]));
   });
 
   it("re-points the working copy only when the saved id differs from its own", async () => {

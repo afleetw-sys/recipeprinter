@@ -7,7 +7,7 @@ import { IconButton } from "@/components/Controls";
 import { CheckIcon, ICON_SIZE, ImageIcon, UploadIcon, XIcon } from "@/components/icons";
 import { friendlyPhotoUploadError } from "@/lib/friendlyErrors";
 import { partitionImageFiles } from "@/lib/imageImport";
-import { uploadPhotoFile } from "@/lib/photoStorage";
+import { storePickedPhotoFile } from "@/lib/photoStorage";
 import { DECK_MOBILE_QUERY, isDeckMobile } from "@/lib/useDeckScroller";
 
 /** Same breakpoint the print workspace already switches its own chrome on
@@ -218,10 +218,10 @@ export function ImagePicker({
           return;
         }
         const added: string[] = [];
-        for (const file of files.slice(0, room)) added.push(await uploadPhotoFile(file));
+        for (const file of files.slice(0, room)) added.push(await storePickedPhotoFile(file));
         onGridChange([...selectedGrid, ...added]);
       } else {
-        onSelect(await uploadPhotoFile(files[0]));
+        onSelect(await storePickedPhotoFile(files[0]));
         setOpen(false);
       }
     } catch (uploadError) {

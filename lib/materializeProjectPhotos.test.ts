@@ -188,4 +188,26 @@ describe("sweeping a book's photos before it leaves the browser", () => {
     // save finds nothing left to send.
     expect(asked).toEqual([]);
   });
+
+  it("uploads a photo once however many places hold it, and reports where it went", async () => {
+    // A cover photo picked while signed out is a `blob:` URL until the first
+    // save, and it is often ALSO in the collage and a photo history.
+    const { photos, uploadedUrls } = await materializeProjectPhotos(
+      {
+        sections: [section()],
+        cover: {
+          title: "Our Favorites",
+          template: "heirloom",
+          imageUrl: "blob:cover",
+          gridImages: ["blob:cover", REMOTE],
+        },
+        itemPlacements: { r1: { photoHistory: ["blob:cover"] } },
+      },
+      upload,
+    );
+
+    expect(asked).toEqual(["blob:cover"]);
+    expect(uploadedUrls).toEqual(new Map([["blob:cover", "https://storage.example/cover"]]));
+    expect(photos.cover?.imageUrl).toBe("https://storage.example/cover");
+  });
 });

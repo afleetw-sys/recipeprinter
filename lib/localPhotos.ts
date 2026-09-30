@@ -20,6 +20,7 @@
 
 import { idbStore } from "@/lib/idb";
 import { uid } from "@/lib/ids";
+import { localStore } from "@/lib/storage";
 
 // Its own database, not the one lib/pendingImport.ts opens — see the note at
 // the top of this file. The plumbing is shared (lib/idb.ts); the database is
@@ -117,4 +118,104 @@ export async function deleteLocalPhoto(id: string): Promise<void> {
 /** True for a URL this module minted — i.e. one that dies with the document. */
 export function isBlobUrl(value: string | undefined | null): value is string {
   return typeof value === "string" && value.startsWith("blob:");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Photos picked while signed out.
+//
+// A signed-out cook who adds a cover or chapter photo used to upload it on the
+// spot, into a folder nothing ever cleans up. Most of those books are never
+// saved, so the bucket filled with photos no project points at. Now the photo
+// waits here, like a Paprika photo, and goes to Storage only when the book is
+// saved or exported (`materializeProjectPhotos` already uploads `blob:` URLs).
+//
+// The difference from Paprika is where the URL is kept. A recipe photo carries
+// its id on the queue item (`localPhotoId`), so the queue can mint a fresh URL
+// on load. A cover or chapter photo is a bare URL inside project meta, with no
+// id beside it, and a `blob:` URL dies with the document: a reload, or a phone
+// sign-in (which is a full redirect), would leave meta pointing at nothing. So
+// every URL minted here is also recorded against its id, durably, and
+// `reviveLocalPhotoUrls` turns a dead one back into a live one.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PICKED_URLS_KEY = "recipeprinter:picked-photo-urls:v1";
+// Enough for every photo a signed-out book could hold several times over. The
+// oldest entries go first; a URL that old has long since been saved or dropped.
+const PICKED_URLS_MAX = 400;
+
+function readPickedUrls(): Record<string, string> {
+  const stored = localStore.getJson<Record<string, string>>(PICKED_URLS_KEY);
+  return stored && typeof stored === "object" ? stored : {};
+}
+
+function recordPickedUrl(url: string, id: string): void {
+  const entries = Object.entries(readPickedUrls()).filter(([key]) => key !== url);
+  entries.push([url, id]);
+  localStore.setJson(PICKED_URLS_KEY, Object.fromEntries(entries.slice(-PICKED_URLS_MAX)));
+}
+
+/**
+ * Holds a picked photo in this browser and returns a `blob:` URL for it, or
+ * null if IndexedDB is unusable (the caller then uploads, as it used to).
+ */
+export async function putPickedPhoto(blob: Blob): Promise<string | null> {
+  const id = await putLocalPhoto(blob);
+  if (!id) return null;
+  const url = objectUrls.get(id) as string;
+  recordPickedUrl(url, id);
+  return url;
+}
+
+/** Whether a `blob:` URL is alive in this document. */
+function isLiveBlobUrl(url: string): boolean {
+  let live = false;
+  objectUrls.forEach((value) => {
+    if (value === url) live = true;
+  });
+  return live;
+}
+
+/**
+ * Fresh URLs for picked photos whose URLs died with an earlier document.
+ *
+ * Returns old URL → new URL for every dead one it could bring back. A URL it
+ * does not know, or whose bytes are gone, is simply absent: the caller leaves
+ * it as it is, which renders as the usual missing-photo tile.
+ */
+export async function reviveLocalPhotoUrls(urls: readonly string[]): Promise<Map<string, string>> {
+  const revived = new Map<string, string>();
+  const known = readPickedUrls();
+  const dead = urls.filter((url) => isBlobUrl(url) && !isLiveBlobUrl(url) && known[url]);
+  if (dead.length === 0) return revived;
+  const fresh = await localPhotoUrls(dead.map((url) => known[url]));
+  for (const url of dead) {
+    const id = known[url];
+    const next = fresh.get(id);
+    if (!next) continue;
+    recordPickedUrl(next, id);
+    revived.set(url, next);
+  }
+  return revived;
+}
+
+/** Every `blob:` URL anywhere inside a value, for handing to `reviveLocalPhotoUrls`. */
+export function blobUrlsIn(value: unknown): string[] {
+  let json: string;
+  try {
+    json = JSON.stringify(value) ?? "";
+  } catch {
+    return [];
+  }
+  return Array.from(new Set(json.match(/blob:[^"\\]+/g) ?? []));
+}
+
+/** `value` with every revived URL swapped for its fresh one. Blob URLs are
+    unique strings, so a plain replacement cannot touch anything else. */
+export function withRevivedUrls<T>(value: T, revived: ReadonlyMap<string, string>): T {
+  if (revived.size === 0) return value;
+  let json = JSON.stringify(value);
+  revived.forEach((next, old) => {
+    json = json.split(old).join(next);
+  });
+  return JSON.parse(json) as T;
 }

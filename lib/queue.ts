@@ -11,7 +11,7 @@ import { prepareImageDataUrls } from "@/lib/imageImport";
 import { normalizeImportURL, withoutWebsiteDescription } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
 import { uid } from "@/lib/ids";
-import { deleteLocalPhoto, isBlobUrl, localPhotoUrls } from "@/lib/localPhotos";
+import { deleteLocalPhoto, isBlobUrl, localPhotoUrls, reviveLocalPhotoUrls } from "@/lib/localPhotos";
 import { localProjectPhotoIds } from "@/lib/localProjects";
 import { QUEUE_RECOVERY_OWNER_KEY, stampRecoveryOwner } from "@/lib/recoveryMirror";
 import { localStore, sessionStore } from "@/lib/storage";
@@ -510,6 +510,23 @@ export function useQueue() {
    */
   const rehydrateLocalPhotos = useCallback(
     async (candidates: QueueItem[]) => {
+      // A photo picked in the editor while signed out has no `localPhotoId`:
+      // it is a bare `blob:` URL recorded by lib/localPhotos (`putPickedPhoto`),
+      // and it is brought back through that record instead.
+      const picked = candidates
+        .map((item) => item.recipe?.image)
+        .filter((image): image is string => !!image && isBlobUrl(image));
+      if (picked.length > 0) {
+        const revived = await reviveLocalPhotoUrls(picked);
+        if (revived.size > 0) {
+          commit(
+            itemsRef.current.map((item) => {
+              const url = item.recipe?.image ? revived.get(item.recipe.image) : undefined;
+              return url && item.recipe ? { ...item, recipe: { ...item.recipe, image: url } } : item;
+            }),
+          );
+        }
+      }
       const stale = candidates.filter(
         (item) => item.localPhotoId && (!item.recipe?.image || isBlobUrl(item.recipe.image)),
       );
@@ -778,7 +795,8 @@ export function useQueue() {
         // nothing to reproduce: the parser was never asked, and the URL alone
         // already says everything the row could. PostHog still counts them
         // (`search_page`), which is where "how often does this happen" belongs.
-        const answeredFromTheUrl = Boolean(placeholder) || category === "search_page";
+        const answeredFromTheUrl =
+          Boolean(placeholder) || category === "search_page" || category === "joined_links";
         let debugPath: string | null = null;
         if (!answeredFromTheUrl) {
           // Best-effort: stash the failed input and link the event to it. `await`

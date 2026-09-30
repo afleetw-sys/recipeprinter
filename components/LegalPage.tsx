@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PageShell } from "@/components/PageShell";
+import { LegalOutline } from "@/components/LegalOutline";
 import { GOVERNING_LAW, LEGAL_CONTACT_EMAIL, LEGAL_POSTAL_ADDRESS } from "@/lib/legal";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -32,43 +33,67 @@ export function LegalPage({
   sections: LegalSectionSpec[];
   children: React.ReactNode;
 }) {
+  const list = (
+    <ol className="flex flex-col gap-cp-2">
+      {sections.map((section, index) => (
+        <li key={section.id} className="text-cp-small leading-snug">
+          <a
+            href={`#${section.id}`}
+            className="text-brand-ink hover:underline font-semibold"
+          >
+            <span className="text-ink-soft font-normal tabular-nums">
+              {index + 1}.{" "}
+            </span>
+            {section.title}
+          </a>
+        </li>
+      ))}
+    </ol>
+  );
+  // The outline sits BESIDE the clauses on a wide screen, sticky, so it is
+  // always one click from any section without costing the top of the page.
+  // Narrower, it folds into one line above the text: 22 entries stacked up
+  // front pushed the first clause below the fold.
   return (
-    <PageShell>
-      <header className="mb-cp-6">
-        <h1 className="mt-cp-2 text-cp-hero-sm font-extrabold tracking-[-0.04em] leading-[1.08]">
-          {title}
-        </h1>
-        <p className="mt-cp-4 text-ink-soft text-cp-body-lg leading-relaxed">{lede}</p>
-        <p className="mt-cp-4 text-cp-caption text-ink-soft">
-          Last updated{" "}
-          <time dateTime={lastUpdated.iso} className="font-semibold">
-            {lastUpdated.display}
-          </time>
-        </p>
-      </header>
+    <PageShell wide>
+      <div className="lg:grid lg:grid-cols-[220px_minmax(0,720px)] lg:gap-cp-7">
+        <nav aria-label="On this page" className="hidden lg:block">
+          <div className="sticky top-cp-6 max-h-[calc(100dvh-3rem)] overflow-y-auto pb-cp-4">
+            <h2 className="text-cp-label font-bold uppercase tracking-[0.08em] text-ink-soft">
+              On this page
+            </h2>
+            <div className="mt-cp-3 -ml-cp-3">
+              <LegalOutline sections={sections} />
+            </div>
+          </div>
+        </nav>
 
-      <nav aria-label="On this page" className="card p-cp-5">
-        <h2 className="text-cp-label font-bold uppercase tracking-[0.08em] text-ink-soft">
-          On this page
-        </h2>
-        <ol className="mt-cp-3 flex flex-col gap-cp-2">
-          {sections.map((section, index) => (
-            <li key={section.id} className="text-cp-small leading-relaxed">
-              <a
-                href={`#${section.id}`}
-                className="text-brand-ink hover:underline font-semibold"
-              >
-                <span className="text-ink-soft font-normal tabular-nums">
-                  {index + 1}.{" "}
-                </span>
-                {section.title}
-              </a>
-            </li>
-          ))}
-        </ol>
-      </nav>
+        <div className="min-w-0">
+          <header className="mb-cp-6">
+            <h1 className="mt-cp-2 text-cp-hero-sm font-extrabold tracking-[-0.04em] leading-[1.08]">
+              {title}
+            </h1>
+            <p className="mt-cp-4 text-ink-soft text-cp-body-lg leading-relaxed">{lede}</p>
+            <p className="mt-cp-4 text-cp-caption text-ink-soft">
+              Last updated{" "}
+              <time dateTime={lastUpdated.iso} className="font-semibold">
+                {lastUpdated.display}
+              </time>
+            </p>
+          </header>
 
-      <div className="mt-cp-7 flex flex-col gap-cp-7">{children}</div>
+          <details className="card px-cp-4 py-cp-3 lg:hidden">
+            <summary className="cursor-pointer text-cp-label font-bold uppercase tracking-[0.08em] text-ink-soft">
+              On this page
+            </summary>
+            <nav aria-label="On this page" className="mt-cp-3">
+              {list}
+            </nav>
+          </details>
+
+          <div className="mt-cp-7 flex flex-col gap-cp-7">{children}</div>
+        </div>
+      </div>
     </PageShell>
   );
 }
@@ -194,9 +219,9 @@ export function LegalContactDetails({ entity }: { entity: string }) {
   return (
     <>
       <p>
-        Write to <LegalContactLink /> and a person will read it. We aim to reply
-        within a few days, and within any deadline the law sets for the kind of
-        request you are making.
+        Questions and requests can be sent to <LegalContactLink />. We aim to
+        respond within a few business days, and always within any deadline the
+        law sets for the type of request.
       </p>
       {LEGAL_POSTAL_ADDRESS ? (
         <p>

@@ -78,11 +78,13 @@ export function CommunityGallery({
 
   return (
     <section
-      // No rule above the heading: the space is the separator, and it is
-      // deliberately generous. This is now the ONLY thing setting the distance
-      // between the card and the photographs, since the front door above no
-      // longer reserves any height of its own.
-      className="pt-[5rem] sm:pt-[10rem] flex flex-col gap-cp-3"
+      // No rule above the heading: the space is the separator. This is the
+      // ONLY thing setting the distance between the front door and the
+      // photographs, since the front door reserves no height of its own. Less
+      // than it was (5rem/10rem) once the cookbook panel came to close the
+      // front door: that much air under a second panel read as a gap, and
+      // half of it (3rem/5rem) ran the two together.
+      className="pt-[4rem] sm:pt-[7rem] flex flex-col gap-cp-3"
       aria-labelledby="rp-gallery-heading"
     >
       <div className="flex items-center justify-between gap-cp-3">

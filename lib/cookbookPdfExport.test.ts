@@ -5,6 +5,7 @@ import {
   cookbookPdfFileName,
   coverWrapProject,
   prepareCookbookCover,
+  prepareCookbookPages,
   trimSizeLabel,
 } from "@/lib/cookbookPdfExport";
 import { getCookbookPreset } from "@/lib/cookbookPresets";
@@ -148,6 +149,62 @@ describe("cover-only retry", () => {
     expect((requests[0]?.project as { sections: unknown[] }).sections).toEqual([]);
     expect(cover?.role).toBe("cover");
     expect(cover?.downloadUrl).toBe("https://storage.example/cover.pdf");
+  });
+});
+
+describe("one-file export (no print service)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.doUnmock("@/lib/photoStorage");
+  });
+  // The photo sweep loads Firebase Storage; these books have no photos.
+  vi.doMock("@/lib/photoStorage", () => ({
+    materializeProjectPhotos: async (photos: unknown) => ({ photos }),
+    collectProjectPhotoUrls: async () => [],
+  }));
+
+  it("asks the renderer to keep the covers and makes no separate cover", async () => {
+    const requests: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        requests.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+        return new Response(
+          JSON.stringify({ downloadUrl: "https://storage.example/book.pdf", pageCount: 40 }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }),
+    );
+    const project = {
+      id: "book-1",
+      cover: { title: "Family Table" },
+      sections: [],
+      settings: { template: "classic" },
+    } as unknown as import("@/types/recipe").PrintProject;
+
+    const pages = await prepareCookbookPages(project, "hardcover-8x10", "book.pdf", undefined, "standard", true);
+    expect(requests[0]?.coversInline).toBe(true);
+    expect(pages.coversInline).toBe(true);
+    expect(await prepareCookbookCover(pages)).toBeNull();
+    expect(requests).toHaveLength(1);
+  });
+
+  it("never sends the flag for a format that already has its covers inside", async () => {
+    const requests: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        requests.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+        return new Response(
+          JSON.stringify({ downloadUrl: "https://storage.example/book.pdf", pageCount: 40 }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }),
+    );
+    const project = { id: "b", sections: [], settings: {} } as unknown as import("@/types/recipe").PrintProject;
+    const pages = await prepareCookbookPages(project, "us-letter", "book.pdf", undefined, "standard", true);
+    expect(requests[0]?.coversInline).toBeUndefined();
+    expect(pages.coversInline).toBe(false);
   });
 });
 

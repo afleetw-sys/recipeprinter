@@ -81,6 +81,14 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "A printed Buffalo Chicken Bake card on a kitchen counter beside the ingredients it calls for.",
   },
+  "photo-recipe-card": {
+    src: "/images/peanut-butter-blossoms-card.jpeg",
+    width: 2939,
+    height: 3919,
+    alt:
+      "A printed Peanut Butter Blossoms recipe card lying on a vintage yellow spice chart.",
+    objectPosition: "50% 58%",
+  },
   "pdf-search": {
     src: "/images/pdf-search.png",
     width: 2400,

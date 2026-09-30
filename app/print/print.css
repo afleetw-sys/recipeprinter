@@ -9162,6 +9162,19 @@ textarea.recipe-card__toc-title {
   display: block;
 }
 
+/* The frame and its utensil dress a RECIPE page. A cookbook's decorative
+   pages (the covers, the dedication, the spine, the contents, a chapter
+   opener) go without: they carry their own layout, and a recipe frame around
+   them reads as a card rather than a book. */
+.recipe-template--supper .recipe-card--cover .recipe-card__supper-frame,
+.recipe-template--supper .recipe-card--cover .recipe-card__supper-utensil,
+.recipe-template--supper .recipe-card--toc .recipe-card__supper-frame,
+.recipe-template--supper .recipe-card--toc .recipe-card__supper-utensil,
+.recipe-template--supper .recipe-card--divider .recipe-card__supper-frame,
+.recipe-template--supper .recipe-card--divider .recipe-card__supper-utensil {
+  display: none;
+}
+
 .recipe-card__supper-frame {
   inset: var(--supper-inset);
   box-sizing: border-box;
@@ -9499,7 +9512,7 @@ textarea.recipe-card__toc-title {
   --recipe-step-bg: #eceae6;
   --recipe-footer: #6b625d;
   --recipe-radius: 0;
-  --recipe-title-font: var(--font-courgette), Georgia, serif;
+  --recipe-title-font: var(--font-berkshire-swash), Georgia, serif;
   --christmas-u: calc(var(--recipe-card-width) / 1500);
 }
 
@@ -9545,4 +9558,46 @@ textarea.recipe-card__toc-title {
 
 .recipe-template--christmas .recipe-card__christmas-hats {
   display: block;
+}
+
+/* ── A photo replaces the theme's decoration ──────────────────────────────
+   On a cookbook's decorative pages, a photo IS the decoration: a cover, back
+   cover, or dedication with a photo or collage (`data-cover-mode`), and a
+   chapter opener with a photo. The theme's own motif (Counter's band,
+   Garden's cityscape, Christmas's hats, Poster's frame…) laid over or around
+   a photo just crowds it, so on those pages it goes. Pages without a photo
+   keep it, and so does every recipe page. Bistro is not listed: its covers
+   already go without the checker (see the cover faces' `TemplateDecoration`).
+   Specificity is one class above the themes' own `display: block` rules. */
+.recipe-card--cover:is([data-cover-mode="photo"], [data-cover-mode="grid"])
+  :is(
+    .recipe-card__counter-band,
+    .recipe-card__pantry-rules,
+    .recipe-card__quilt,
+    .recipe-card__market-bar,
+    .recipe-card__market-band,
+    .recipe-card__garden-band,
+    .recipe-card__garden-tomatoes,
+    .recipe-card__poster-band,
+    .recipe-card__poster-frame,
+    .recipe-card__supper-frame,
+    .recipe-card__supper-utensil,
+    .recipe-card__christmas-hats
+  ),
+.recipe-card.recipe-card--chapter-with-photo
+  :is(
+    .recipe-card__counter-band,
+    .recipe-card__pantry-rules,
+    .recipe-card__quilt,
+    .recipe-card__market-bar,
+    .recipe-card__market-band,
+    .recipe-card__garden-band,
+    .recipe-card__garden-tomatoes,
+    .recipe-card__poster-band,
+    .recipe-card__poster-frame,
+    .recipe-card__supper-frame,
+    .recipe-card__supper-utensil,
+    .recipe-card__christmas-hats
+  ) {
+  display: none;
 }

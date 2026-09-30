@@ -71,7 +71,9 @@ export function CookbookReadyDialog({
   open: boolean;
   justPurchased: boolean;
   onClose: () => void;
-  onExport: (presetId: CookbookPresetId, photoFinish: BookPhotos) => void;
+  /** `singleFile`: bind the covers into the pages rather than as a separate
+      wrap — see `exportsAsOneFile`. */
+  onExport: (presetId: CookbookPresetId, photoFinish: BookPhotos, singleFile: boolean) => void;
   /** Recipes going into this export. Unlike the preview sheet count, this is
       safe to show while the renderer decides the final pagination. */
   recipeCount?: number;
@@ -249,6 +251,18 @@ export function CookbookReadyDialog({
       </div>
     </Dialog>
   );
+}
+
+/**
+ * One PDF, covers included, unless the book is going to a named print service.
+ *
+ * Printing at home, or no printer chosen yet, nobody is uploading a cover wrap,
+ * and two files for one book reads as a mistake. Lulu, Blurb and a copy shop
+ * each keep the files they ask for: the services reject a cover bound into
+ * the pages.
+ */
+export function exportsAsOneFile(destination: PrintDestination | null): boolean {
+  return !destination || destination.id === "home";
 }
 
 /** Keep one positive decimal-shaped value while someone types or pastes a
@@ -440,10 +454,11 @@ function ChooseBook({
   choice: BookChoice;
   onChangeChoice: (patch: Partial<BookChoice>) => void;
   exportingPreset: CookbookPresetId | null;
-  onExport: (presetId: CookbookPresetId, photoFinish: BookPhotos) => void;
+  onExport: (presetId: CookbookPresetId, photoFinish: BookPhotos, singleFile: boolean) => void;
   onPrinterClick: (printer: string, url: string) => void;
 }) {
   const preset = presetForChoice(choice, destination ? destinationPresets(destination) : undefined);
+  const singleFile = exportsAsOneFile(destination);
   const busy = exportingPreset !== null;
   const printer = destination ? printerFor(destination) : undefined;
 
@@ -477,7 +492,7 @@ function ChooseBook({
           decision already made three questions ago. */}
       {preset && (
         <p className="cookbook-ready__downloads">
-          {downloadSummary(preset)}
+          {downloadSummary(preset, singleFile)}
         </p>
       )}
 
@@ -533,7 +548,7 @@ function ChooseBook({
         type="button"
         className="btn btn-primary cookbook-ready__save"
         disabled={busy || !preset}
-        onClick={() => preset && choice.photos && onExport(preset.id, choice.photos)}
+        onClick={() => preset && choice.photos && onExport(preset.id, choice.photos, singleFile)}
       >
         {preset && exportingPreset === preset.id ? (
           <>

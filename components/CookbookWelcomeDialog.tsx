@@ -17,12 +17,17 @@ export function CookbookWelcomeDialog({
   open,
   cover,
   price,
+  fullPrice,
   onStart,
   onClose,
 }: {
   open: boolean;
   cover: CoverConfig;
   price: string;
+  /** The regular price, when `price` is the Pro first-cookbook discount. Shown
+      struck through first so $15.99 reads as a perk on this book, not as what
+      a cookbook costs. */
+  fullPrice?: string;
   onStart: () => void;
   /** Dismiss and stay in the book: the X, Escape and the backdrop. */
   onClose: () => void;
@@ -78,8 +83,24 @@ export function CookbookWelcomeDialog({
           ))}
         </ol>
         <div className="cookbook-welcome__price">
-          <b>{usd(price)} one time</b>
-          <span>Pay when you download.</span>
+          {fullPrice && fullPrice !== price ? (
+            <>
+              <b>
+                <s className="cookbook-welcome__was">
+                  <span className="sr-only">Was </span>
+                  {usd(fullPrice)}
+                </s>{" "}
+                <span className="sr-only">now </span>
+                {usd(price)} one time
+              </b>
+              <span>Your Pro membership takes 20% off your first cookbook. Pay when you download.</span>
+            </>
+          ) : (
+            <>
+              <b>{usd(price)} one time</b>
+              <span>Pay when you download.</span>
+            </>
+          )}
         </div>
         <div className="cookbook-welcome__actions">
           <button type="button" className="btn btn-primary" onClick={onStart}>
