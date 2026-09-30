@@ -41,15 +41,34 @@ export interface StoredPrintSettings {
   showSourceUrl?: boolean;
 }
 
+/**
+ * The recipe link is stored as `showRecipeLink`, not `showSourceUrl`.
+ *
+ * The link used to default off, and every change to any setting wrote the
+ * whole object back, so nearly every returning browser holds a
+ * `showSourceUrl: false` it never chose. When the default became on
+ * (2026-09-29) the old field was left unread rather than trusted, so the new
+ * default reaches those browsers too. Anyone who turns the link off from here
+ * on is remembered under the new name.
+ */
+type StoredOnDisk = Omit<StoredPrintSettings, "showSourceUrl"> & {
+  showSourceUrl?: unknown;
+  showRecipeLink?: boolean;
+};
+
 export function readPrintSettings(): StoredPrintSettings | null {
-  const parsed = localStore.getJson<StoredPrintSettings>(PRINT_SETTINGS_STORAGE_KEY);
-  return parsed && typeof parsed === "object" ? parsed : null;
+  const parsed = localStore.getJson<StoredOnDisk>(PRINT_SETTINGS_STORAGE_KEY);
+  if (!parsed || typeof parsed !== "object") return null;
+  const { showSourceUrl: _legacy, showRecipeLink, ...rest } = parsed;
+  return typeof showRecipeLink === "boolean" ? { ...rest, showSourceUrl: showRecipeLink } : rest;
 }
 
 export function writePrintSettings(settings: Required<StoredPrintSettings>) {
+  const { showSourceUrl, ...rest } = settings;
   // Survivable if it fails: settings stay correct for this session, they just
   // won't carry over to the next visit.
-  localStore.setJson(PRINT_SETTINGS_STORAGE_KEY, settings);
+  const onDisk: StoredOnDisk = { ...rest, showRecipeLink: showSourceUrl };
+  localStore.setJson(PRINT_SETTINGS_STORAGE_KEY, onDisk);
 }
 
 export function isPrintCardSize(value: string | null): value is PrintCardSize {

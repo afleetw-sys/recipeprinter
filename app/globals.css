@@ -313,6 +313,13 @@
 .recipe-print-shell--entering-cookbook {
   opacity: .34;
 }
+/* Built behind the welcome dialog, then shown whole (see
+   `bookHiddenUntilBuilt`). Visibility, not display: the book still lays out,
+   so its pages measure and paginate while nobody is watching. Paired with
+   the dimmed class above so the reveal lands already dimmed, with no fade. */
+.recipe-print-shell--building-book {
+  visibility: hidden;
+}
 
 .cookbook-welcome,
 .cookbook-ready {
@@ -460,28 +467,35 @@
   font-size: var(--cp-fs-body);
   line-height: 1.5;
 }
-.cookbook-feature-chips {
+/* Numbered, because it is an order of work: recipes, then chapters, then the
+   finish. Ink numbers on a clay tint: clay is a fill here, never the text. */
+.cookbook-welcome__steps {
   display: grid;
-  gap: .55rem;
+  gap: .6rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.cookbook-feature-chips li {
+.cookbook-welcome__steps li {
   display: flex;
   align-items: center;
-  gap: .55rem;
+  gap: .7rem;
   color: var(--cp-ink);
   font-size: var(--cp-fs-body);
   font-weight: 600;
   line-height: 1.25;
 }
-.cookbook-feature-chips li svg {
-  flex: none;
-  /* The ink sibling, not the base: these ticks carry the meaning "included",
-     so they are read rather than decorative. Raw clay is 3.7:1 on card — over
-     the 3:1 icon bar but under the bar for anything load-bearing. */
-  color: var(--cp-accent-warm);
+.cookbook-welcome__step-num {
+  display: grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cp-accent-warm) 16%, var(--cp-card));
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+  font-weight: 800;
+  line-height: 1;
 }
 .cookbook-welcome__price {
   display: grid;
@@ -991,8 +1005,8 @@
 
 /* Phones get the offer, not the brochure. The photo is dropped outright: at
    phone width it was a cropped strip of a book the cook is already looking at
-   behind the scrim, and it pushed the button off a short screen. The lede goes
-   too, since the headline and the three ticks already say it. The panel's width
+   behind the scrim, and it pushed the button off a short screen. The lede
+   stays: it is the one line saying what we do for them. The panel's width
    subtracts the root's padding on BOTH sides; `100vw - 24px` inside a 24px-
    padded grid ran it 24px off the right edge, which is what read as broken. */
 @media (max-width: 720px) {
@@ -1007,8 +1021,7 @@
     gap: 0;
     border-radius: var(--cp-radius-card);
   }
-  .cookbook-welcome__visual,
-  .cookbook-welcome__lede p {
+  .cookbook-welcome__visual {
     display: none;
   }
   .cookbook-welcome__copy {
@@ -1022,16 +1035,8 @@
     line-height: 1.15;
     letter-spacing: -.02em;
   }
-  .cookbook-feature-chips {
+  .cookbook-welcome__steps {
     gap: .5rem;
-  }
-  .cookbook-feature-chips li {
-    align-items: flex-start;
-    font-size: var(--cp-fs-small);
-    font-weight: 500;
-  }
-  .cookbook-feature-chips li svg {
-    margin-top: .15em;
   }
   .cookbook-welcome__price {
     gap: .15rem;

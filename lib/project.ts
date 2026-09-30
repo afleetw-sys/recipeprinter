@@ -380,6 +380,17 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
  * and still has to file the work somewhere findable.
  */
 export function readMeta(): ProjectMeta {
+  // A write still coalescing in memory (below) is newer than anything in
+  // storage. A client navigation mounts the next page inside that window: the
+  // homepage stamps `cookbookIntent` and pushes to /print in the same tick,
+  // and /print's first render reads it here.
+  if (pendingMetaJson !== null) {
+    try {
+      return normalizeProjectMeta(JSON.parse(pendingMetaJson) as ProjectMeta);
+    } catch {
+      // Fall through to storage.
+    }
+  }
   // Per-tab session copy wins; fall back to the durable mirror to restore a
   // reopened tab, reseeding this tab's session from it (see lib/queue.ts).
   let parsed = sessionStore.getJson<ProjectMeta>(PROJECT_META_STORAGE_KEY);
