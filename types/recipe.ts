@@ -227,6 +227,10 @@ export type ImportFailureCode =
   // the number that measures the parser. A link that never had a recipe on it
   // inflating that number makes the one metric we tune against lie.
   | "search_page"
+  // Two web addresses run together (`https://www.phttps://…`). Answered from
+  // the URL's shape like `search_page`, and kept out of `no_recipe` for the
+  // same reason.
+  | "joined_links"
   | "unknown";
 
 export type QueueItemStatus = "parsing" | "ready" | "error";

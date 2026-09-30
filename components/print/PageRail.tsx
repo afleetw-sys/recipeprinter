@@ -31,7 +31,7 @@ import { IconButton } from "@/components/Controls";
 import { ProBadge } from "@/components/ProBadge";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { PendingImportRows } from "@/components/print/PendingImportRows";
-import { pendingAnchorIndex, sectionDrawsNestingLine } from "@/lib/railPending";
+import { BACK_COVER_NAV_ID, pendingAnchorIndex, sectionDrawsNestingLine } from "@/lib/railPending";
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
@@ -333,6 +333,23 @@ export function PageRail(props: PageRailProps) {
     recipeIdOf: (row) => (row.navItem.kind === "recipe" ? row.navItem.recipeId : null),
     sectionIdOf: (row) => sectionForNavItem(row.navItem)?.id ?? null,
   });
+  /**
+   * With nothing to anchor to, an import lands at the end of the last section,
+   * which prints BEFORE the back cover. So its rows go just above the back
+   * cover, not at the bottom of the rail under it. Same rule as the deck's
+   * `pendingAnchorIndexIn`.
+   */
+  const pendingBeforeBackCover =
+    pendingAnchorRowIndex === -1 &&
+    railRows.some((row) => row.navItem.recipeId === BACK_COVER_NAV_ID);
+  const pendingRows = (
+    <PendingImportRows
+      items={pendingImportItems}
+      nested={pendingNested}
+      onSelect={onSelectImport}
+      activeId={activeImportId}
+    />
+  );
 
   // A drag that started on a selected recipe carries every selected recipe, so
   // every one of them is a source and dims — not just the card under the
@@ -980,6 +997,7 @@ export function PageRail(props: PageRailProps) {
                 const isSpreadThumb = unit.thumbSheets.length === 2;
                 return (
                   <Fragment key={`rail-unit-${unit.key}`}>
+                  {pendingBeforeBackCover && unit.nav?.recipeId === BACK_COVER_NAV_ID && pendingRows}
                   <div
                     data-rail-kind={unit.nav?.kind ?? "page"}
                     className={`recipe-page-rail__row ${
@@ -1186,6 +1204,7 @@ export function PageRail(props: PageRailProps) {
               Boolean(currentSection && sectionTitleForId(currentSection.id) !== "section");
             return (
               <Fragment key={`${sheets[navItem.sheetIndex]?.id}-${navItem.slotIndex}`}>
+              {pendingBeforeBackCover && navItem.recipeId === BACK_COVER_NAV_ID && pendingRows}
               <div
                 className={isSectionChild ? "recipe-page-rail__row recipe-page-rail__row--section-child" : "recipe-page-rail__row"}
               >
@@ -1270,14 +1289,7 @@ export function PageRail(props: PageRailProps) {
 
           {/* Keep pending imports visible without pretending a page or image
               exists yet. The real page appears only once parsing completes. */}
-          {pendingAnchorRowIndex === -1 && (
-            <PendingImportRows
-                      items={pendingImportItems}
-                      nested={pendingNested}
-                      onSelect={onSelectImport}
-                      activeId={activeImportId}
-                    />
-          )}
+          {pendingAnchorRowIndex === -1 && !pendingBeforeBackCover && pendingRows}
 
           {/* A book with every page deleted has no spreads, so the rail above
               drew nothing to anchor the front pages to; they all go here. */}

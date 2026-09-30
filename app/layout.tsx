@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import {
   Anton,
+  Berkshire_Swash,
   Birthstone,
   Caprasimo,
   Cormorant_Garamond,
-  Courgette,
   Courier_Prime,
   DM_Sans,
   DM_Serif_Display,
@@ -102,11 +102,11 @@ const nunitoSans = Nunito_Sans({
   preload: false,
 });
 
-// Christmas's title face, a rounded brush script.
-const courgette = Courgette({
+// Christmas's title face, a swash display serif.
+const berkshireSwash = Berkshire_Swash({
   subsets: ["latin"],
   weight: "400",
-  variable: "--font-courgette",
+  variable: "--font-berkshire-swash",
   display: "swap",
   preload: false,
 });
@@ -251,7 +251,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${courgette.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${karla.variable}`}
+      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${berkshireSwash.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${karla.variable}`}
     >
       <body>
         <KeyboardInsetWatcher />

@@ -183,6 +183,30 @@ export function unwrapRedirectUrl(rawUrl: string): string {
   return current;
 }
 
+export const JOINED_LINKS_MESSAGE =
+  "This link looks like two web addresses run together. Copy the recipe's link again and paste it on its own.";
+
+/**
+ * The reply for two web addresses run together, or null.
+ *
+ * Only when the second `http(s)://` starts inside the first link's HOST, i.e.
+ * before any `/` after its scheme: `https://www.phttps://…` can never be a real
+ * page. A second scheme later in the path is left alone, because real links
+ * carry one there (web.archive.org/web/2020/https://…), and so are redirect
+ * wrappers, which `unwrapRedirectUrl` handles. A link pasted into the middle
+ * of itself never reaches this: `normalizeImportURL` has already put it back
+ * together.
+ */
+export function joinedLinksMessage(rawUrl: string): string | null {
+  const value = normalizeImportURL(rawUrl);
+  const scheme = /^https?:\/\//i.exec(value);
+  if (!scheme) return null;
+  const rest = value.slice(scheme[0].length);
+  const second = rest.search(/https?:\/\//i);
+  if (second < 0) return null;
+  return rest.slice(0, second).includes("/") ? null : JOINED_LINKS_MESSAGE;
+}
+
 /**
  * The reply for a page that lists recipes rather than holding one, or null for
  * a link worth parsing.

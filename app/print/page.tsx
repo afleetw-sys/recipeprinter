@@ -66,6 +66,7 @@ import {
   loadPrintProject,
   loadPrintProjectHead,
   PrintProjectConflictError,
+  deletePrintProject,
 } from "@/lib/printProjects";
 import { adoptAnonymousProject, readAdoptionManifest } from "@/lib/anonymousProjectAdoption";
 import { forgetSaveIntent, rememberSaveIntent, takeSaveIntent } from "@/lib/saveIntent";
@@ -107,7 +108,7 @@ import {
   type ProLockReason,
 } from "@/lib/recipePrinterPurchases";
 import { resolveEffectiveCustomerInfo } from "@/lib/proAccessFallback";
-import { isFirstCookbookDiscountEligible } from "@/lib/cookbookProduct";
+import { COOKBOOK_PRICE_FALLBACK, isFirstCookbookDiscountEligible } from "@/lib/cookbookProduct";
 import {
   DEFAULT_COOKBOOK_PRESET_ID,
   getCookbookPreset,
@@ -244,7 +245,6 @@ export default function PrintPage() {
   const [showDescription, setShowDescription] = useState(true);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
-  const [cookbookBuilding, setCookbookBuilding] = useState(false);
   // A cookbook started from the homepage is built HERE, behind the welcome
   // dialog: the page first renders as recipe cards, then swaps theme and
   // grows a cover, contents and dedication, then its fonts and photos land.
@@ -265,6 +265,7 @@ export default function PrintPage() {
     const timer = window.setTimeout(() => setBookHiddenUntilBuilt(false), 2500);
     return () => window.clearTimeout(timer);
   }, [bookHiddenUntilBuilt]);
+  const [cookbookBuilding, setCookbookBuilding] = useState(false);
   // Re-entering an already-built book: a plain loading spinner (not the first-run
   // build animation) while the stashed layout swaps back in.
   const [showCookbookPrintDialog, setShowCookbookPrintDialog] = useState(false);
@@ -2431,6 +2432,7 @@ export default function PrintPage() {
       setSavedProjectId,
       showToast,
       adoptUploadedPhotos: (uploaded) => queue.adoptUploadedPhotos(uploaded),
+      adoptUploadedMetaPhotos: (uploaded) => projectMeta.adoptUploadedPhotoUrls(uploaded),
       metaProjectId: () => projectMeta.meta.projectId,
       setMetaProjectId: (id) => projectMeta.setProjectId(id),
     });
@@ -3059,6 +3061,7 @@ export default function PrintPage() {
   async function exportCookbookAs(
     presetId: CookbookPresetId,
     photoFinish: "standard" | "edge" = "standard",
+    singleFile = false,
   ) {
     projectMeta.setCookbookPreset(presetId);
     track("cookbook_preset_selected", { preset: presetId });
@@ -3078,6 +3081,7 @@ export default function PrintPage() {
         cookbookPdfFileName(projectMeta.meta.cover?.title, presetId),
         setCookbookExportProgress,
         photoFinish,
+        singleFile,
       );
       // A real, cook-initiated download the instant the interior is ready —
       // not bundled with a cover that doesn't exist yet. Lulu (and every other
@@ -3088,7 +3092,7 @@ export default function PrintPage() {
       setLastCookbookExport({ presetId, files: [pages.file] });
       track("cookbook_export_ready", { preset: presetId, files: 1 });
       track("cookbook_export_download_started", { preset: presetId, role: "pages" });
-      if (getCookbookPreset(presetId).wrapRequired) {
+      if (getCookbookPreset(presetId).wrapRequired && !pages.coversInline) {
         setCookbookCoverPending(pages);
       }
     } catch (error) {
@@ -3854,6 +3858,66 @@ export default function PrintPage() {
     projectAttachChecked,
     autosaveEnabledForCurrentMode,
     saveStatus,
+  ]);
+
+  /**
+   * A kept book that has had every recipe removed leaves the account.
+   *
+   * Nothing writes an empty book (`currentProject` answers null for one, so
+   * neither autosave nor Save can), which left the account holding the LAST
+   * non-empty copy: delete the final recipe, reopen the book, and the recipe
+   * was back. So instead of the empty version being saved, the saved version
+   * goes, and the page is an unsaved draft again. Add a recipe and it is kept
+   * afresh by the effect above, the same way any new book is.
+   *
+   * Narrow on purpose, because this removes a document:
+   *  - `jobIds` empty, not `items`: `jobIds` shrinks only when a recipe is
+   *    removed, while `items` also drops a recipe that is re-importing.
+   *  - A real baseline: a book that OPENED empty never set one past
+   *    `LOADED_BASELINE`, so a bad load can never be taken as a deletion.
+   *  - Never a cookbook that is paid for, or not yet known not to be: the
+   *    purchase is tied to that project.
+   *  - Never over a save in flight or waiting, which would write it back.
+   * Photos are kept (`keepAssets`): the cover may still use them when the book
+   * is kept again.
+   */
+  useEffect(() => {
+    if (!cookPilotUser || !savedToProfile) return;
+    if (projectLoading || !projectAttachChecked || cookbookBuilding) return;
+    if (jobIds === null || jobIds.length > 0) return;
+    const baseline = lastSavedFingerprintRef.current;
+    if (baseline === null || baseline === LOADED_BASELINE) return;
+    if (saveStatus === "conflict" || saveStatus === "saving") return;
+    const projectId = savedProjectIdRef.current;
+    if (!projectId) return;
+    if (cookbookMode && cookbookAccessStatus !== "locked") return;
+    if (isCookbookProjectUnlocked(projectId)) return;
+    const uid = cookPilotUser.uid;
+    const timer = window.setTimeout(() => {
+      if (saveInFlightRef.current || queuedSaveRef.current) return;
+      if (savedProjectIdRef.current !== projectId) return;
+      savedProjectIdRef.current = null;
+      setSavedProjectId(null);
+      projectRevisionRef.current = 0;
+      lastSavedFingerprintRef.current = null;
+      lastAttemptedFingerprintRef.current = null;
+      keptOnItsOwnRef.current = null;
+      setSaveStatus(null);
+      deletePrintProject(uid, projectId, { keepAssets: true }).catch((error) => {
+        console.warn("RecipePrinter: could not remove an emptied project", error);
+      });
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [
+    cookPilotUser,
+    savedToProfile,
+    projectLoading,
+    projectAttachChecked,
+    cookbookBuilding,
+    jobIds,
+    saveStatus,
+    cookbookMode,
+    cookbookAccessStatus,
   ]);
 
   // The effect that used to sit here cleared the save status whenever this
@@ -6058,6 +6122,7 @@ export default function PrintPage() {
         open={showCookbookOfferDialog}
         cover={projectMeta.meta.cover ?? defaultCover()}
         price={cookbookPrice}
+        fullPrice={cookbookDiscountEligible ? COOKBOOK_PRICE_FALLBACK : undefined}
         onClose={() => {
           // The X, Escape and the backdrop only dismiss the panel. The cook
           // just watched this book get built; closing the thing sitting on top
@@ -6096,7 +6161,9 @@ export default function PrintPage() {
           setCookbookCoverPending(null);
           setCookbookExportError(null);
         }}
-        onExport={(presetId, photoFinish) => void exportCookbookAs(presetId, photoFinish)}
+        onExport={(presetId, photoFinish, singleFile) =>
+          void exportCookbookAs(presetId, photoFinish, singleFile)
+        }
         lastExport={lastCookbookExport}
         awaitingCover={cookbookCoverPending}
         onDownloadCover={(coverSheet) => void downloadCookbookCover(coverSheet)}

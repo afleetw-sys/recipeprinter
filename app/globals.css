@@ -90,6 +90,12 @@
   --cp-line-strong: rgba(34, 48, 58, 0.2);
   --cp-page: #f4f7f3;
   --cp-card: #ffffff;
+  /* A warm paper cream, for a surface that should feel homely rather than
+     functional (the homepage's cookbook panel). Used sparingly. */
+  --cp-cream: #fbf6ec;
+  /* A warm true red, for the homepage cookbook panel's blurred ground. Not an
+     error colour and not for text. */
+  --cp-offer-red: #d4382c;
   /* A true red, deliberately not a deepened clay: error must not speak in the
      accent's voice. */
   --cp-error: #a8322a;
@@ -515,6 +521,10 @@
   color: var(--cp-ink);
   font-size: var(--cp-fs-h2);
   line-height: 1.15;
+}
+.cookbook-welcome__was {
+  color: var(--cp-ink-soft);
+  font-weight: 600;
 }
 /* Export failure — a server render can fail in ways a print dialog never
    could (renderer down, timeout), so the dialog has somewhere to say it. */
@@ -2393,6 +2403,140 @@
   }
   .rp-workspace-import {
     min-width: 0;
+  }
+
+  /* The homepage's cookbook panel (HolidayCookbookBanner): the import box's
+     own `.panel`, in cream, so it reads as a permanent part of the page. */
+  /* The homepage's cookbook panel (HolidayCookbookBanner): big enough to
+     draw the eye, flat enough to read as part of the page. A soft warm blur
+     for the ground (a 32 KB WebP), over cream while it loads. Text on it is
+     ink, and the blur is palest where the copy sits. */
+  .rp-cookbook-offer {
+    display: grid;
+    border-radius: var(--cp-radius-card);
+    background: var(--cp-cream);
+    /* Its own stacking context, so the faded layer below sits over the cream
+       and under everything else in the panel. */
+    isolation: isolate;
+  }
+  /* The blur on its own layer, so it can be faded without fading the copy. */
+  .rp-cookbook-offer::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    /* The blurred ground, drawn rather than loaded: soft colour pools in the
+       same places as the original photo blur (deep at the bottom left, lighter
+       along the bottom, a warm patch on the right, pale cream across the top
+       and middle), in red and cream. */
+    background:
+      radial-gradient(ellipse 34% 60% at 2% 102%, color-mix(in srgb, var(--cp-offer-red) 88%, var(--cp-cream)) 0%, transparent 100%),
+      radial-gradient(ellipse 30% 50% at 20% 104%, color-mix(in srgb, var(--cp-offer-red) 62%, var(--cp-cream)) 0%, transparent 100%),
+      radial-gradient(ellipse 26% 45% at 52% 104%, color-mix(in srgb, var(--cp-offer-red) 50%, var(--cp-cream)) 0%, transparent 100%),
+      radial-gradient(ellipse 22% 48% at 100% 58%, color-mix(in srgb, var(--cp-accent-warm) 62%, var(--cp-cream)) 0%, transparent 100%),
+      radial-gradient(ellipse 22% 42% at 90% 104%, color-mix(in srgb, color-mix(in srgb, var(--cp-accent-warm) 70%, var(--cp-ink)) 50%, var(--cp-cream)) 0%, transparent 100%),
+      radial-gradient(ellipse 34% 62% at 0% 30%, color-mix(in srgb, var(--cp-accent-warm) 40%, var(--cp-cream)) 0%, transparent 100%),
+      var(--cp-cream);
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  .rp-cookbook-offer__copy {
+    padding: 1.5rem 1.5rem 1.25rem;
+  }
+  .rp-cookbook-offer__title {
+    font-size: clamp(1.375rem, 2.2vw, 1.75rem);
+    font-weight: 850;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+  }
+  /* Making a flat mockup read as a printed hardcover, with light rather than
+     a new picture:
+     - it turns a few degrees toward the copy and leans a little, so it is not
+       square to the camera;
+     - window light falls across it from the top left (the ::after layer);
+     - a groove near the spine, where a hardcover's board hinges;
+     - its shadow is cast down and to the right, away from that light.
+     The light layer is masked to the book's own shape (the image's alpha), so
+     it never tints the transparent space around it. */
+  .rp-cookbook-offer__peek {
+    transform: perspective(1600px) rotateY(-9deg) rotateZ(1.5deg);
+    transform-origin: 60% 40%;
+    filter: drop-shadow(16px 20px 24px color-mix(in srgb, var(--cp-ink) 24%, transparent))
+      drop-shadow(3px 4px 4px color-mix(in srgb, var(--cp-ink) 16%, transparent));
+  }
+  .rp-cookbook-offer__peek::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    -webkit-mask: url("/images/cookbook-hardcover.webp") top center / 100% auto no-repeat;
+    mask: url("/images/cookbook-hardcover.webp") top center / 100% auto no-repeat;
+    background:
+      /* The hinge groove, just inside the spine edge (the book starts about
+         8% into the image). */
+      linear-gradient(
+        90deg,
+        transparent 7.6%,
+        color-mix(in srgb, var(--cp-ink) 30%, transparent) 8.2%,
+        color-mix(in srgb, var(--cp-card) 30%, transparent) 9.4%,
+        color-mix(in srgb, var(--cp-ink) 14%, transparent) 10.6%,
+        transparent 12.5%
+      ),
+      /* Window light from the top left, falling off to the bottom right. */
+      linear-gradient(
+        118deg,
+        color-mix(in srgb, var(--cp-card) 34%, transparent) 0%,
+        color-mix(in srgb, var(--cp-card) 8%, transparent) 30%,
+        transparent 48%,
+        color-mix(in srgb, var(--cp-ink) 16%, transparent) 100%
+      );
+  }
+  /* The book's placement on a phone; desktop overrides it in the min-width
+     block below. */
+  .rp-cookbook-offer__peek {
+    position: relative;
+    justify-self: center;
+    width: 10.5rem;
+    margin-top: 1.25rem;
+  }
+  /* Phone only (desktop is set in the min-width block below and must not
+     change): above the copy, head-on rather than angled, and cut off at the
+     bottom like the desktop book, with its lower edge fading out into the
+     panel instead of ending in a hard line above the heading. */
+  @media (max-width: 767px) {
+    .rp-cookbook-offer__peek {
+      order: -1;
+      width: 13rem;
+      height: 13rem;
+      overflow: hidden;
+      transform: none;
+      /* No cast shadow here: the crop and fade clip it to the box, which
+         drew a hard-edged rectangle around the book. */
+      filter: none;
+      -webkit-mask-image: linear-gradient(to bottom, var(--cp-ink) 68%, transparent 100%);
+      mask-image: linear-gradient(to bottom, var(--cp-ink) 68%, transparent 100%);
+    }
+  }
+  /* From tablet up it moves beside the copy, into the right-hand corner,
+     still running off the bottom edge. */
+  @media (min-width: 768px) {
+    .rp-cookbook-offer {
+      min-height: 19rem;
+    }
+    .rp-cookbook-offer__copy {
+      max-width: 58%;
+      padding: 2.25rem 2.5rem;
+      align-self: center;
+    }
+    .rp-cookbook-offer__peek {
+      position: absolute;
+      /* Negative: the image has transparent space above the book. */
+      top: -1.25rem;
+      right: 0.75rem;
+      width: 21rem;
+      max-width: 40%;
+      margin: 0;
+    }
   }
 
   /* The homepage front door: hero plus importer, centred in the screen the top

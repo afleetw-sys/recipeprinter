@@ -277,7 +277,11 @@ export default function ProjectsPage() {
     if (!user) return;
     setDeleting(true);
     try {
-      await deletePrintProject(user.uid, pendingDelete.id);
+      // The project's own photos go with it, except any this browser is still
+      // using: the open working copy can hold the same recipes, and a book on
+      // the device shelf can share a cover.
+      const inUseHere = JSON.stringify([meta, items, loadLocalProjects()]).match(/https:\/\/[^"\\\s]+/g) ?? [];
+      await deletePrintProject(user.uid, pendingDelete.id, { keepUrls: inUseHere });
       setAccountProjects((current) => current.filter((project) => project.id !== pendingDelete.id));
       setPendingDelete(null);
     } catch {

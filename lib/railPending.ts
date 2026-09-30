@@ -62,3 +62,7 @@ export function sectionDrawsNestingLine(
   const section = sections.find((entry) => entry.id === sectionId);
   return Boolean(section?.title?.trim()) && titleForId(sectionId) !== "section";
 }
+
+/** The back cover's nav id (see `coverSideFromNavItem` on the print page). An
+    import with no anchor waits just ahead of it, in the rail and the deck. */
+export const BACK_COVER_NAV_ID = "cover-back";

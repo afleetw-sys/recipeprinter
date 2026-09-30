@@ -257,9 +257,32 @@ function parseRecipeJSON(recipeJSON: string | undefined): AnyRecord | null {
   }
 }
 
+/**
+ * A link pasted into the middle of itself, put back together.
+ *
+ * With the cursor still inside a link, pasting the whole link again gives
+ * `prefix + LINK + suffix` where `prefix + suffix` is LINK itself, e.g.
+ * `https://www.p` + `https://www.plainchicken.com/casserole/` + `lainchicken.com/casserole/`.
+ * When the two halves around an inner `http(s)://` rejoin into exactly the inner
+ * link, the intended address is certain, so it is simply used. Pasted twice in
+ * a row (`LINKLINK`) is the same case with an empty suffix. Anything less exact
+ * is left alone; see `joinedLinksMessage` in lib/importUrl.ts.
+ */
+export function undoPastedIntoItself(value: string): string {
+  if (value.length % 2 !== 0) return value;
+  const half = value.length / 2;
+  for (const match of Array.from(value.matchAll(/https?:\/\//gi))) {
+    const start = match.index ?? 0;
+    if (start === 0 || start + half > value.length) continue;
+    const inner = value.slice(start, start + half);
+    if (value.slice(0, start) + value.slice(start + half) === inner) return inner;
+  }
+  return value;
+}
+
 /** Normalizes a user-pasted URL (mirrors CookPilot's normalizeImportURL). */
 export function normalizeImportURL(raw: string): string {
-  const trimmed = raw.trim().replace(/\s+/g, "");
+  const trimmed = undoPastedIntoItself(raw.trim().replace(/\s+/g, ""));
   if (!trimmed) return trimmed;
   const lower = trimmed.toLowerCase();
   if (lower.startsWith("http://") || lower.startsWith("https://")) return trimmed;

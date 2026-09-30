@@ -680,8 +680,20 @@ export async function deletePrintProject(
   // copy still point at that copy's `adopted/<id>/` folder — sweeping it while
   // deleting the older document would blank out the book being kept. Orphaned
   // photo objects are cheap; broken images in a kept cookbook are not.
-  options: { keepAssets?: boolean } = {},
+  //
+  // `keepUrls`: photos something outside the account still uses, such as this
+  // browser's open working copy or a book on its shelf. Never deleted.
+  options: { keepAssets?: boolean; keepUrls?: Iterable<string> } = {},
 ): Promise<void> {
+  // Worked out BEFORE the documents go, because the project's content is what
+  // names its photos. Deleted AFTER, so an interrupted delete leaves a book with
+  // its pictures rather than a book with holes in it.
+  const ownPhotos = options.keepAssets
+    ? []
+    : await photosOnlyThisProjectUses(ownerUid, projectId, options.keepUrls).catch((error) => {
+        console.warn("RecipePrinter: could not work out a deleted project's photos", error);
+        return [] as string[];
+      });
   const [{ doc, deleteDoc }, { getDb }, { deleteObject, listAll, ref }, { getFirebaseStorage }] = await Promise.all([
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
@@ -734,6 +746,71 @@ export async function deletePrintProject(
       ? Promise.resolve()
       : deleteDoc(doc(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId)),
   ]);
+  // Best-effort: the project is gone either way, and a photo that fails to
+  // delete costs a little storage, not a broken book.
+  const storage = getFirebaseStorage();
+  await Promise.all(
+    ownPhotos.map((url) =>
+      deleteObject(ref(storage, url)).catch((error) => {
+        console.warn("RecipePrinter: could not delete a project photo", error);
+      }),
+    ),
+  );
+}
+
+/** Whether a photo URL is one of this account's own uploads, as opposed to a
+    recipe site's image, an adopted copy (swept by folder above), or another
+    account's file. */
+function isAccountUpload(url: string, ownerUid: string): boolean {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(url);
+  } catch {
+    return false;
+  }
+  const root = `/${recipePrinterUserPhotoRoot(ownerUid)}/`;
+  return decoded.includes(root) && !decoded.includes(`${root}adopted/`);
+}
+
+/**
+ * The account photos a project uses that nothing else does.
+ *
+ * Photos live in one folder per account, not per project, and a book copied
+ * from another shares its photos. So a photo is only this project's to delete
+ * if no other saved project in the account uses it, and nothing outside the
+ * account (`keepUrls`) does either.
+ */
+async function photosOnlyThisProjectUses(
+  ownerUid: string,
+  projectId: string,
+  keepUrls: Iterable<string> = [],
+): Promise<string[]> {
+  const { collectProjectPhotoUrls } = await import("@/lib/photoStorage");
+  const project = await loadPrintProject(ownerUid, projectId);
+  if (!project) return [];
+  const projectUrls = await collectProjectPhotoUrls(project);
+  if (!projectUrls.some((url) => isAccountUpload(url, ownerUid))) return [];
+
+  const others = (await loadPrintProjectSummaries(ownerUid)).filter((summary) => summary.id !== projectId);
+  const otherProjects = await Promise.all(others.map((summary) => loadPrintProject(ownerUid, summary.id)));
+  const inUse: string[] = Array.from(keepUrls);
+  for (const other of otherProjects) {
+    if (other) inUse.push(...(await collectProjectPhotoUrls(other)));
+  }
+  return selectPhotosToDelete(ownerUid, projectUrls, inUse);
+}
+
+/** The deletion rule on its own, for testing: this account's own uploads from
+    the project, minus anything still in use elsewhere. */
+export function selectPhotosToDelete(
+  ownerUid: string,
+  projectUrls: readonly string[],
+  inUse: Iterable<string>,
+): string[] {
+  const kept = new Set(inUse);
+  return Array.from(new Set(projectUrls)).filter(
+    (url) => isAccountUpload(url, ownerUid) && !kept.has(url),
+  );
 }
 
 

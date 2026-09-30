@@ -57,6 +57,9 @@ export interface SaveWriteContext {
       tone, or it would show red right after an error toast. */
   showToast: (message: string) => void;
   adoptUploadedPhotos: (uploaded: MaterializedPhotos["uploadedRecipeImages"]) => void;
+  /** Swaps uploaded local URLs for their Storage URLs in project meta (cover,
+      chapters, placements), so the next save has nothing left to upload. */
+  adoptUploadedMetaPhotos?: (uploaded: MaterializedPhotos["uploadedUrls"]) => void;
   /** The working copy's own project id, read when the write lands. A getter so
       it is evaluated at the same moment it always was, after the await. */
   metaProjectId: () => ProjectMeta["projectId"];
@@ -121,7 +124,7 @@ export async function writeProject(pending: PendingSave, ctx: SaveWriteContext):
     // recipe's photo history holds the ones it has worn before, so on a
     // Paprika book both were full of `blob:` URLs going straight into the
     // document. See `materializeProjectPhotos`.
-    const { photos, uploadedRecipeImages } = await ctx.materializePhotos({
+    const { photos, uploadedRecipeImages, uploadedUrls } = await ctx.materializePhotos({
       sections: pending.project.sections,
       cover: pending.project.cover,
       backCover: pending.project.backCover,
@@ -167,6 +170,7 @@ export async function writeProject(pending: PendingSave, ctx: SaveWriteContext):
      * so `savePrintProject` skips that half.
      */
     ctx.adoptUploadedPhotos(uploadedRecipeImages);
+    if (uploadedUrls?.size) ctx.adoptUploadedMetaPhotos?.(uploadedUrls);
     if (saved.id !== ctx.metaProjectId()) {
       ctx.setMetaProjectId(saved.id);
     }

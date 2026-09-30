@@ -770,9 +770,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importPlaceholder: "Upload a recipe card, cookbook page, screenshot, or photo",
     // The template's default hero is a card captioned "Printed from a recipe
     // link", which is the one thing this page is not about.
-    heroImage: "counter-card",
+    heroImage: "photo-recipe-card",
     heroImageAlt:
-      "A printed Buffalo Chicken Bake recipe card on a kitchen counter beside its ingredients.",
+      "A printed Peanut Butter Blossoms recipe card lying on a vintage yellow spice chart.",
     heroAnnotation: "Printed from a photograph",
     cookbookPitch: true,
     cookbookPitchBody:
@@ -804,7 +804,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "The handwriting stays, the fading does not",
+        heading: "Keep the recipe readable for years",
         image: "handwritten-card",
         imageAlt:
           "A handwritten Peanut Butter Cookies recipe card beside the floral recipe box where it is kept.",
