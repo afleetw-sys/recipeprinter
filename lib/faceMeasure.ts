@@ -99,10 +99,19 @@ function keepOutCorner(cardEl: HTMLElement): { left: number; top: number } | nul
   const h = customLengthPx(cardEl, "--recipe-card-keepout-h");
   if (w <= 0 || h <= 0) return null;
   const rect = cardEl.getBoundingClientRect();
-  // Rects are in screen px (a preview card is transform-scaled); the lengths
-  // above are CSS px at the card's own size.
-  const scale = cardEl.offsetWidth > 0 ? rect.width / cardEl.offsetWidth : 1;
+  const scale = screenScale(cardEl);
   return { left: rect.right - w * scale, top: rect.bottom - h * scale };
+}
+
+/**
+ * Screen px per CSS px for this card. Every rect here is in screen px, which a
+ * transformed ancestor (the preview's `.recipe-page-scaler`) scales, while
+ * computed styles (padding, margins, custom lengths) stay in CSS px. Anything
+ * that combines the two has to convert one into the other first, or it is only
+ * right at a scale of 1.
+ */
+function screenScale(el: HTMLElement): number {
+  return el.offsetWidth > 0 ? el.getBoundingClientRect().width / el.offsetWidth : 1;
 }
 
 export function colsOverflowPx(cardEl: HTMLElement): number {
@@ -131,7 +140,8 @@ export function colsOverflowPx(cardEl: HTMLElement): number {
   const footerTop =
     footerRect && (footerRect.width > 0 || footerRect.height > 0)
       ? footerRect.top
-      : cardEl.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(cardEl).paddingBottom) || 0);
+      : cardEl.getBoundingClientRect().bottom -
+        (parseFloat(getComputedStyle(cardEl).paddingBottom) || 0) * screenScale(cardEl);
   // A line running into the keep-out corner is overflow like any other. But
   // the corner only counts once something is actually in it: slack is read
   // against the normal limit, because the next line pulled up lands wherever
@@ -189,8 +199,7 @@ export function labelHeightPx(cardEl: HTMLElement, sectionSelector: string): num
   const style = getComputedStyle(label);
   return (
     label.getBoundingClientRect().height +
-    (parseFloat(style.marginTop) || 0) +
-    (parseFloat(style.marginBottom) || 0)
+    ((parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0)) * screenScale(cardEl)
   );
 }
 
@@ -212,7 +221,7 @@ export function faceMeasureDetail(cardEl: HTMLElement): FaceMeasureDetail {
       footerRect && (footerRect.width > 0 || footerRect.height > 0)
         ? footerRect.top
         : cardEl.getBoundingClientRect().bottom -
-          (parseFloat(getComputedStyle(cardEl).paddingBottom) || 0);
+          (parseFloat(getComputedStyle(cardEl).paddingBottom) || 0) * screenScale(cardEl);
     availableHeightPx = footerTop - colsTop;
   }
   const ingredientHeights = realItemHeights(cardEl, INGREDIENT_ITEM_SELECTOR);

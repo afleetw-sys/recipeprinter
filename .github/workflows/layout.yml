@@ -1,0 +1,69 @@
+name: Layout
+
+# The full card-layout sweep (e2e/layout-harness.spec.ts): every fixture
+# recipe on every theme, at both sizes, with and without a photo and a source
+# link, at three render scales. It is the regression net for the bug that has
+# come back most often (text clipped off a card), and it used to run only when
+# somebody opened /print/harness by hand, so it caught nothing in between.
+#
+# Its own workflow rather than a job in ci.yml because it takes minutes, and
+# almost no change can affect it. A pull request that touches the cards, the
+# themes or the layout engine gets it; everything gets it nightly, which also
+# catches what a path list can't name (a font or browser that shifted).
+on:
+  pull_request:
+    paths:
+      - "app/print/**"
+      - "app/globals.css"
+      - "app/layout.tsx"
+      - "components/RecipeCardPrint.tsx"
+      - "components/RecipeFaceMeasurer.tsx"
+      - "components/print/**"
+      - "lib/recipeCardLayout.ts"
+      - "lib/faceMeasure.ts"
+      - "lib/__fixtures__/harnessRecipes.ts"
+      - "lib/seasonalThemes.ts"
+      - "lib/premiumTemplates.ts"
+      - "types/recipe.ts"
+      - "public/fonts/**"
+      - "package-lock.json"
+      - "e2e/layout-harness.spec.ts"
+      - "playwright.config.ts"
+      - ".github/workflows/layout.yml"
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: layout-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Layout sweep
+        run: npm run test:layout
+
+      # Each scale's full result (every clipped combo and by how much) is
+      # attached to its test in the report, pass or fail.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: layout-report
+          path: playwright-report/
+          retention-days: 14

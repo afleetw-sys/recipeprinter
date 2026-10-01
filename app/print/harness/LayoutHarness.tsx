@@ -120,6 +120,21 @@ function pagesEqual(
   return key(a) === key(b);
 }
 
+// Readings come back in screen px, which a transformed probe scales. Divided
+// back out so every verdict, and the tolerances it is checked against, stays in
+// the card's own CSS px whatever scale it was rendered at.
+function inCardPx(detail: FaceMeasureDetail, scale: number): FaceMeasureDetail {
+  if (scale === 1) return detail;
+  return {
+    ...detail,
+    overflowPx: detail.overflowPx / scale,
+    availableHeightPx: detail.availableHeightPx / scale,
+    tallestItemPx: detail.tallestItemPx / scale,
+    firstItemPx: detail.firstItemPx / scale,
+    firstItemLabelPx: detail.firstItemLabelPx / scale,
+  };
+}
+
 // ── FaceSetProbe ────────────────────────────────────────────────────────────
 // Renders a given list of faces in the exact hidden, fixed-height,
 // overflow-clipped context the live corrector uses (`recipe-face-measurer`),
@@ -133,6 +148,7 @@ function FaceSetProbe({
   hasPhoto,
   showSourceUrl,
   pages,
+  scale,
   onMeasured,
 }: {
   recipe: Recipe;
@@ -141,6 +157,7 @@ function FaceSetProbe({
   hasPhoto: boolean;
   showSourceUrl: boolean;
   pages: RecipeFace[];
+  scale: number;
   onMeasured: (details: FaceMeasureDetail[]) => void;
 }) {
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
@@ -157,7 +174,7 @@ function FaceSetProbe({
       const details = pages.map((_, i) => {
         const el = cardRefs.current[i];
         return el
-          ? faceMeasureDetail(el)
+          ? inCardPx(faceMeasureDetail(el), scale)
           : {
               overflowPx: 0,
               availableHeightPx: 0,
@@ -187,12 +204,20 @@ function FaceSetProbe({
     return () => {
       cancelled = true;
     };
-  }, [pages]);
+  }, [pages, scale]);
 
   return (
     <div
       aria-hidden
-      style={{ position: "fixed", top: 0, left: 0, visibility: "hidden", pointerEvents: "none", zIndex: -1 }}
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        visibility: "hidden",
+        pointerEvents: "none",
+        zIndex: -1,
+        ...(scale === 1 ? {} : { transform: `scale(${scale})`, transformOrigin: "top left" }),
+      }}
       className={`recipe-print-preview recipe-print-preview--${size} recipe-face-measurer`}
     >
       <div className={`recipe-card-set recipe-template--${template}`}>
@@ -231,10 +256,12 @@ function FaceSetProbe({
 function ComboRunner({
   combo,
   recipe,
+  scale,
   onResult,
 }: {
   combo: Combo;
   recipe: Recipe;
+  scale: number;
   onResult: (result: ComboResult) => void;
 }) {
   const guessPages = useMemo(
@@ -367,6 +394,7 @@ function ComboRunner({
           hasPhoto={combo.hasPhoto}
           showSourceUrl={combo.showSourceUrl}
           pages={settledPages}
+          scale={scale}
           onMeasured={(o) => report(settledPages, o)}
         />
       )}
@@ -426,6 +454,20 @@ export function LayoutHarness() {
     );
   }, []);
   const totalCombos = flatCombos.length;
+
+  // `?scale=<n>` renders the settled faces under a transform, the way the live
+  // preview's `.recipe-page-scaler` does (about 0.47 for a letter card at 100%
+  // zoom, above 1 for a 6x4). At 1.0 a card's screen px and CSS px agree, so a
+  // measurement that mixes the two looks right; this is the only way the sweep
+  // can see one that does not (the `useWideColumns` probe-width clip, 0e97724).
+  // The corrector itself still settles unscaled, exactly as it does live.
+  // Read after mount: the server renders at 1, and reading the URL during render
+  // would hand hydration a different page from the one the server sent.
+  const [renderScale, setRenderScale] = useState(1);
+  useEffect(() => {
+    const value = Number(new URLSearchParams(window.location.search).get("scale"));
+    if (Number.isFinite(value) && value > 0) setRenderScale(value);
+  }, []);
 
   // Results accumulate in a ref, not React state: many child callbacks writing
   // to shared state under dev StrictMode's double-invocation dropped commits
@@ -589,6 +631,7 @@ export function LayoutHarness() {
     const baseline = {
       capturedAt: new Date().toISOString(),
       matrix: { sizes: SIZES, templates: TEMPLATES, photo: PHOTO_OPTIONS, sourceUrl: SOURCE_URL_OPTIONS },
+      renderScale,
       totalCombos,
       summary,
       results: resultList
@@ -608,15 +651,27 @@ export function LayoutHarness() {
   if (typeof window !== "undefined") {
     (window as unknown as { __layoutHarness?: unknown }).__layoutHarness = {
       complete,
+      renderScale,
+      envHealthy,
       summary,
       inv1Failures: inv1Failures.map((r) => ({
         id: r.combo.id,
         overflowPx: r.settledMaxOverflow,
       })),
+      // INV-2..4 by combo, so a failing run names what broke, not just how many.
+      structuralFailures: resultList
+        .filter((r) => !r.timedOut && !(r.inv2Complete && r.inv3NoEmptyFace && r.inv4Order))
+        .map((r) => ({
+          id: r.combo.id,
+          incomplete: !r.inv2Complete,
+          emptyFace: !r.inv3NoEmptyFace,
+          outOfOrder: !r.inv4Order,
+        })),
       timedOut: timedOut.map((r) => r.combo.id),
       dump: () => ({
         capturedAt: new Date().toISOString(),
         matrix: { sizes: SIZES, templates: TEMPLATES, photo: PHOTO_OPTIONS, sourceUrl: SOURCE_URL_OPTIONS },
+        renderScale,
         totalCombos,
         summary,
         results: resultList
@@ -646,7 +701,7 @@ export function LayoutHarness() {
       <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Layout measurement harness</h1>
       <p style={{ color: "#555", marginBottom: 16, fontSize: 14 }}>
         {HARNESS_RECIPES.length} recipes × {SIZES.length} sizes × {TEMPLATES.length} templates × photo × source-url ={" "}
-        <strong>{totalCombos}</strong> combos. Each is settled with the current engine, then its real per-face
+        <strong>{totalCombos}</strong> combos{renderScale === 1 ? "" : `, rendered at ${renderScale}×`}. Each is settled with the current engine, then its real per-face
         overflow is measured (after fonts load) to check the invariants.
       </p>
 
@@ -718,7 +773,7 @@ export function LayoutHarness() {
       {/* Mount only the current sliding window of runners so the settle
           cascade stays bounded and probe effects can flush. */}
       {batch.map((f) => (
-        <ComboRunner key={f.combo.id} combo={f.combo} recipe={f.recipe} onResult={handleResult} />
+        <ComboRunner key={f.combo.id} combo={f.combo} recipe={f.recipe} scale={renderScale} onResult={handleResult} />
       ))}
     </div>
   );
