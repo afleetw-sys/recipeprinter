@@ -44,24 +44,6 @@ export interface PrintDestination {
    * numbers are either verified against a real order or not needed at all.
    */
   unknownSpec?: boolean;
-  /**
-   * Rows this destination's own order form asks for that the book cannot state.
-   *
-   * Deliberately short and deliberately incomplete. Size, binding and how many
-   * files to upload are derived from the preset in `destinationSettings`,
-   * because those are facts about the file we just made and must not be allowed
-   * to disagree with it. These are the remaining choices — colour, sides — that
-   * belong to the shop rather than the book. Anything we have not confirmed on
-   * a real order (paper weight, cover finish, turnaround) is left out: a
-   * confidently wrong setting is worse than no setting, because it is followed.
-   */
-  extraSettings?: PrintSetting[];
-}
-
-/** One row of "choose this" on the screen after the download. */
-export interface PrintSetting {
-  label: string;
-  value: string;
 }
 
 export const PRINT_DESTINATIONS: PrintDestination[] = [
@@ -79,24 +61,18 @@ export const PRINT_DESTINATIONS: PrintDestination[] = [
     name: "A copy shop",
     presetIds: ["us-letter"],
     printerId: "staples",
-    extraSettings: [{ label: "Colour", value: "Full colour, printed on both sides" }],
   },
   {
     id: "lulu",
     name: "Lulu",
     presetIds: ["coil-us-letter", "hardcover-us-letter"],
     printerId: "lulu",
-    // Standard or premium: both are full colour and both take the same file,
-    // so this is a price decision rather than a requirement, and it is stated
-    // as an option rather than an instruction.
-    extraSettings: [{ label: "Interior", value: "Standard or premium colour" }],
   },
   {
     id: "blurb",
     name: "Blurb",
     presetIds: ["hardcover-8x10"],
     printerId: "blurb",
-    extraSettings: [{ label: "Interior", value: "Full colour" }],
   },
 ];
 
@@ -132,80 +108,6 @@ export function destinationPrinter(destination: PrintDestination): PrinterOption
  */
 export function destinationPresets(destination: PrintDestination) {
   return destination.presetIds.map((id) => getCookbookPreset(id));
-}
-
-/**
- * Whether this destination takes a file at all.
- *
- * Printing at home is the one that doesn't: there is no order form, no size
- * dropdown and no upload field, so the things worth telling someone are about
- * their own printer driver instead. Everywhere else there is a form, and the
- * file we made has already decided most of its answers.
- */
-export function destinationUploadsAFile(destination: PrintDestination): boolean {
-  return Boolean(destination.printerId) || Boolean(destination.unknownSpec);
-}
-
-/**
- * What to choose, on the screen shown once the files have been saved.
- *
- * This is the half of the export nobody could do for themselves. The file's
- * geometry is only correct against ONE set of order options — a US Letter book
- * with bleed uploaded as an 8 × 10 is rejected, and a two-file coil book handed
- * over as one is the exact failure we watched happen — and none of that is
- * visible by opening the PDF.
- *
- * Size, binding and the file count are read off the preset rather than written
- * down per destination, so they cannot drift away from what was actually
- * rendered. The rest is the shop's own form.
- */
-export function destinationSettings(
-  destination: PrintDestination,
-  preset: CookbookPreset,
-): PrintSetting[] {
-  if (!destinationUploadsAFile(destination)) {
-    // A home printer's defaults are wrong for this file in two specific ways,
-    // and both are silent. "Fit to page" shrinks every sheet a few percent to
-    // clear the printer's unprintable margin, which is how a book laid out to
-    // the edge comes back with a white frame and a slightly smaller everything.
-    // Single-sided doubles the paper and prints every recipe on a right-hand
-    // page. Neither announces itself.
-    return [
-      { label: "Paper", value: preset.trimLabel },
-      { label: "Scale", value: "Actual size (100%)" },
-      { label: "Sides", value: "Double-sided, flip on the long edge" },
-      { label: "Binding", value: "Any coil, comb or 3-ring binder works" },
-    ];
-  }
-
-  return [
-    { label: "Size", value: preset.trimLabel },
-    { label: "Binding", value: bindingSetting(preset) },
-    ...(destination.extraSettings ?? []),
-    {
-      label: "Files",
-      value: preset.wrapRequired
-        ? "Interior and cover upload separately"
-        : "One file, with the cover as page 1",
-    },
-  ];
-}
-
-/** The binding to ask a shop for, as a suggestion that matches the file. */
-function bindingSetting(preset: CookbookPreset): string {
-  if (!preset.coilBound) return "Hardcover, case wrap";
-  return preset.wrapRequired ? "Coil bound" : "Coil, comb or another lay-flat binding";
-}
-
-/**
- * What each saved file is for, in the order they were downloaded.
- *
- * The upload form asks twice and the two fields are not interchangeable; the
- * filenames end in "-Cover" but that is a convention someone has to notice.
- */
-export function exportFileRoles(fileCount: number): string[] {
-  if (fileCount < 2) return ["Your book"];
-  return ["Interior pages", "Cover"];
 }
 
 /**
@@ -280,47 +182,6 @@ export const PHOTOS_HELP: Record<BookPhotos, string> = {
 };
 
 /**
- * The destination the after-download instructions should be written for.
- *
- * The destination is optional now: somebody can pick a format without saying
- * where it is going. Instructions still need a shape to follow, and the file
- * itself says which one — a book with no separate cover is what comes off a
- * desktop printer, and one with a cover wrap goes to a service that states its
- * own numbers.
- */
-export function effectiveDestination(
-  destination: PrintDestination | null,
-  preset: CookbookPreset,
-): PrintDestination {
-  if (destination) return destination;
-  return getPrintDestination(preset.wrapRequired ? "other" : "home");
-}
-
-/**
- * A quiet heads-up when the chosen format is not what a destination is set up
- * for, or null when it is (or when we know nothing about the destination).
- *
- * Only where the consequence is one anybody can picture: photos cut off at the
- * edge of a home printer, or a file a print service turns away. Everywhere else
- * we know too little about the shop to say anything, and saying less is safer
- * than a confidently wrong line. Never a block: the cook can save what they chose.
- */
-export function destinationNote(
-  destination: PrintDestination | null,
-  preset: CookbookPreset,
-): string | null {
-  if (!destination || destination.unknownSpec) return null;
-  if (destination.presetIds.includes(preset.id)) return null;
-  if (destination.id === "home" && preset.bleedIn > 0) {
-    return "Photos run to the edge here, which most home printers can’t print, so the edges may be cut off.";
-  }
-  if ((destination.id === "lulu" || destination.id === "blurb") && preset.bleedIn === 0) {
-    return `${destination.name} usually wants photos that run to the edge and a separate cover, so this file may be turned away.`;
-  }
-  return null;
-}
-
-/**
  * One sentence saying what pressing Save produces.
  *
  * About the file and nothing else. It used to name who asks for it ("Lulu asks
@@ -334,34 +195,4 @@ export function downloadSummary(preset: CookbookPreset, singleFile = false): str
   return preset.wrapRequired && !singleFile
     ? "You’ll get two files: the pages and the cover."
     : "You’ll get one file, with the cover as its first page.";
-}
-
-/**
- * The line introducing the settings list, once the files have been saved.
- *
- * It read "Lulu will ask for:", which lands as a list of things still to be
- * sorted out — and the reader has just been handed two files whose names mean
- * nothing to them, so the natural reading is that something else is required.
- * Nothing is. The files are already built for exactly these options; the list
- * is there so the order form gets set to match them, not so anything gets
- * fixed.
- *
- * So it says that first. "That's everything Lulu needs" is the whole point of
- * the screen, and it was the one thing the screen did not say.
- */
-export function settingsIntro(
-  destination: PrintDestination,
-  preset: CookbookPreset,
-): string {
-  if (!destinationUploadsAFile(destination)) {
-    return "Your book is ready. For the best result at home, use these print settings:";
-  }
-  if (!preset.wrapRequired) {
-    return "That’s everything the shop needs. Ask for:";
-  }
-  const printer = destination.presetIds.includes(preset.id)
-    ? destinationPrinter(destination)
-    : undefined;
-  const who = printer ? printer.name : "your printer";
-  return `That’s everything ${who} needs. When you upload, choose:`;
 }
