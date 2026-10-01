@@ -1309,7 +1309,16 @@ export function usePrintSheets({
         .slice(0, MEASURE_WINDOW_SIZE)
         .map(({ id, recipe, hasPhoto, size }) => (
           <RecipeFaceMeasurer
-            key={`${id}-${size}-${template}-${hasPhoto}-${linkOnFor(id)}-${cookbookLayouts ? "cb" : ""}`}
+            // Everything `faceKey` keys a result on has to be in here too. A
+            // measurer that has settled never measures again for the same
+            // props, so if a keyed input changes under it (Pro's brand line
+            // loading mid-measure, say) without a remount, it reports — or has
+            // already reported — under the old key, the new key never fills,
+            // and the deck waits on it forever: a project opened from the
+            // account page sat loading until a hard refresh.
+            key={`${id}-${size}-${template}-${hasPhoto}-${linkOnFor(id)}-${cookbookLayouts ? "cb" : ""}-${
+              descriptionOn ? "d" : ""
+            }-${brandHidden ? "b" : ""}`}
             recipe={recipe}
             size={size}
             template={template}
