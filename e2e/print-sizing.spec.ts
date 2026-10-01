@@ -103,6 +103,10 @@ for (const size of Object.keys(SHEETS) as (keyof typeof SHEETS)[]) {
       expect(box.height).toBeLessThanOrEqual(sheet.height);
       expect(box.cardTop).toBeGreaterThanOrEqual(0);
       expect(box.cardBottom).toBeLessThanOrEqual(box.height);
+      // Room for the cut line too: its 0.75pt outline sits just OUTSIDE the
+      // card's edge, and a box that ended at that edge printed the bottom dash
+      // half-clipped (Chrome) or not at all (Safari).
+      expect(box.cardBottom + 1).toBeLessThanOrEqual(box.height);
     }
   });
 }

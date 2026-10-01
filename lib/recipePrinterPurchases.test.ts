@@ -1,7 +1,8 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import {
   activeProLockReasons,
+  authenticatedProManagementUrl,
   canUseCardSize,
   computeProLocks,
   hasMultiRecipeEntitlement,
@@ -400,5 +401,49 @@ describe("activeProLockReasons", () => {
         "print_button",
       ),
     ).toEqual(["multi_recipe"]);
+  });
+});
+
+describe("authenticatedProManagementUrl", () => {
+  /**
+   * What the account page's Manage subscription / Resubscribe buttons are told.
+   * Only a 404 may read as "no subscription" — that is what lets Resubscribe
+   * open a fresh checkout past the already-active guard. Every failure has to
+   * read as "unknown", or an outage would sell a second subscription.
+   */
+  async function answer(response: Response | Error) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        if (response instanceof Error) throw response;
+        return response;
+      }),
+    );
+    try {
+      return await authenticatedProManagementUrl("token");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  }
+
+  test("a link is a link", async () => {
+    expect(await answer(Response.json({ url: "https://billing.example/manage" }))).toEqual({
+      kind: "url",
+      url: "https://billing.example/manage",
+    });
+  });
+
+  test("404 means no web subscription", async () => {
+    expect(await answer(new Response(null, { status: 404 }))).toEqual({ kind: "no-subscription" });
+  });
+
+  test.each([
+    ["a server error", new Response(null, { status: 502 })],
+    ["not configured", new Response(null, { status: 503 })],
+    ["signed out", new Response(null, { status: 401 })],
+    ["a 200 with no link", Response.json({})],
+    ["the network failing", new Error("offline")],
+  ])("%s is unknown, never 'no subscription'", async (_, response) => {
+    expect(await answer(response)).toEqual({ kind: "unknown" });
   });
 });
