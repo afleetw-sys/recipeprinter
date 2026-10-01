@@ -25,7 +25,14 @@ export const test = base.extend<{ guard: void }>({
         if (error.message.startsWith("ResizeObserver loop")) return;
         pageErrors.push(error.message);
       });
+      // Firestore's network layer (the WebChannel it reaches the emulator
+      // through) checks whether the internet is up by loading this pixel when
+      // a request to the emulator stumbles. It is the SDK, not the app, and it
+      // is blocked here so a slow runner can't send it out.
+      const FIRESTORE_CONNECTIVITY_PROBE = /^https:\/\/www\.google\.com\/images\/cleardot\.gif/;
+      await page.route(FIRESTORE_CONNECTIVITY_PROBE, (route) => route.abort());
       page.on("request", (request) => {
+        if (FIRESTORE_CONNECTIVITY_PROBE.test(request.url())) return;
         const { hostname, protocol } = new URL(request.url());
         if (protocol.startsWith("http") && hostname !== "127.0.0.1" && hostname !== "localhost") {
           external.add(hostname);

@@ -7,10 +7,7 @@ import type {
   Section,
   StashedCookbook,
 } from "@/types/recipe";
-import {
-  recipePrinterAnonymousPhotoRoot,
-  recipePrinterUserPhotoRoot,
-} from "./firebase/recipePrinterPaths";
+import { recipePrinterUserPhotoRoot } from "./firebase/recipePrinterPaths";
 
 // Cookbook/recipe photos live in Firebase Storage, and only their download URL
 // is ever stored in the queue / project meta / saved Firestore doc — never the
@@ -24,30 +21,37 @@ import {
 // this module's Firebase imports into the bundle of every page that can import
 // a recipe. Re-exported because plenty of code already asks for it here, and
 // this is still where it is used.
-import { anonymousOwnerId } from "@/lib/anonymousOwner";
 export { ANONYMOUS_OWNER_STORAGE_KEY, anonymousOwnerId } from "@/lib/anonymousOwner";
 
-function currentRoot(): string {
+/**
+ * Whether a real account is signed in: not signed out, and not an anonymous
+ * Firebase session. Only an account uploads photos. A signed-out cook's
+ * photos stay in the browser (lib/localPhotos) until the book is saved to an
+ * account, so nothing is ever stored for a book nobody keeps.
+ */
+export function hasAccountSession(): boolean {
   try {
-    const uid = getFirebaseAuth().currentUser?.uid;
-    return uid
-      ? recipePrinterUserPhotoRoot(uid)
-      : recipePrinterAnonymousPhotoRoot(anonymousOwnerId());
+    const user = getFirebaseAuth().currentUser;
+    return Boolean(user && !user.isAnonymous);
   } catch {
-    return recipePrinterAnonymousPhotoRoot(anonymousOwnerId());
+    return false;
   }
 }
 
-function newPhotoPath(): string {
+function newPhotoPath(uid: string): string {
   const stamp = Date.now();
   const rand = Math.random().toString(36).slice(2, 10);
-  return `${currentRoot()}/${stamp}-${rand}.jpg`;
+  return `${recipePrinterUserPhotoRoot(uid)}/${stamp}-${rand}.jpg`;
 }
 
 async function uploadBlob(blob: Blob): Promise<string> {
   if (!firebaseConfigured()) {
     throw new Error("Photo uploads are temporarily unavailable.");
   }
+  // Never for a signed-out or anonymous session: see `hasAccountSession`.
+  // Callers keep the local copy when this throws (`materializeOrKeep`).
+  const uid = hasAccountSession() ? getFirebaseAuth().currentUser?.uid : undefined;
+  if (!uid) throw new Error("Sign in to save photos.");
   // `firebase/storage` reached through `await import` rather than at module
   // scope. This module is imported statically by the print page and the image
   // picker, so a top-level import put the Storage SDK in front of first paint
@@ -60,7 +64,7 @@ async function uploadBlob(blob: Blob): Promise<string> {
     import("./firebase/storage"),
   ]);
   const storage = getFirebaseStorage();
-  const objectRef = ref(storage, newPhotoPath());
+  const objectRef = ref(storage, newPhotoPath(uid));
   await uploadBytes(objectRef, blob, { contentType: blob.type || "image/jpeg" });
   return getDownloadURL(objectRef);
 }
@@ -76,23 +80,17 @@ export async function uploadPhotoFile(file: File): Promise<string> {
  *
  * Signed in, it uploads now: that book autosaves, so the photo has somewhere
  * durable to land. Signed out, it stays in this browser (lib/localPhotos) and
- * uploads only when the book is saved or exported, the same rule Paprika photos
- * follow. Uploading every signed-out pick filled Storage with photos from books
- * nobody kept, in a folder nothing cleans up.
+ * uploads only once the book is saved to an account, the same rule Paprika
+ * photos follow. Uploading every signed-out pick filled Storage with photos
+ * from books nobody kept, in a folder nothing cleans up.
  */
 export async function storePickedPhotoFile(file: File): Promise<string> {
-  let signedIn = false;
-  try {
-    const user = getFirebaseAuth().currentUser;
-    signedIn = Boolean(user && !user.isAnonymous);
-  } catch {
-    signedIn = false;
-  }
   const blob = await fileToCoverBlob(file);
-  if (!signedIn) {
+  if (!hasAccountSession()) {
     const { putPickedPhoto } = await import("@/lib/localPhotos");
-    const local = await putPickedPhoto(blob);
-    if (local) return local;
+    // Where this browser cannot hold it (Safari private mode, a full quota),
+    // the photo lives for this visit only rather than being uploaded.
+    return (await putPickedPhoto(blob)) ?? URL.createObjectURL(blob);
   }
   return uploadBlob(blob);
 }

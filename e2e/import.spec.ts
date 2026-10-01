@@ -16,9 +16,15 @@ const steps = reply.recipe.instructionSections.flatMap((section) => section.inst
 async function importLink(page: import("@playwright/test").Page, link: string) {
   await page.goto("/");
   const field = page.getByPlaceholder("Paste a recipe link");
-  await field.fill(link);
-  await field.press("Enter");
-  await expect(page).toHaveURL(/\/print$/);
+  // Typed before the page has hydrated, the link is wiped when React takes
+  // over the field, and Enter then submits an empty box ("Paste a recipe link
+  // first."). On a slow runner (the iPhone project) that happens. So type and
+  // submit until the page moves; once it has, there is nothing left to retry.
+  await expect(async () => {
+    await field.fill(link);
+    await field.press("Enter");
+    await expect(page).toHaveURL(/\/print$/, { timeout: 5_000 });
+  }).toPass({ timeout: 30_000 });
 }
 
 test("a pasted link becomes a printable recipe with every ingredient and step", async ({ page }) => {

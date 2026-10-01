@@ -161,6 +161,7 @@ describe("one-file export (no print service)", () => {
   vi.doMock("@/lib/photoStorage", () => ({
     materializeProjectPhotos: async (photos: unknown) => ({ photos }),
     collectProjectPhotoUrls: async () => [],
+    hasAccountSession: () => true,
   }));
 
   it("asks the renderer to keep the covers and makes no separate cover", async () => {
