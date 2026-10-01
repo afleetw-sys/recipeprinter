@@ -8309,6 +8309,10 @@ textarea.recipe-card__toc-title {
     top: auto !important;
     height: auto !important;
     overflow: visible !important;
+    /* The on-screen canvas tint is not paper. A card's page box is shorter
+       than the sheet (see the recipe-card page box below), so this would print
+       as a grey strip along the bottom edge. */
+    background: transparent !important;
   }
 
   .recipe-page-deck {
@@ -8507,14 +8511,57 @@ textarea.recipe-card__toc-title {
     page-break-after: always;
   }
 
+  /* Recipe CARDS (6x4 and Letter): size the page box from the card itself, in
+     inches, never from `100vh`.
+
+     Safari/WebKit resolves print `vh` against the on-screen window, not the
+     sheet. A 6x4 card in a ~8in-tall box was centered across the break between
+     two sheets: the title and photo printed at the bottom of one sheet and the
+     ingredients on the next, with every recipe taking two sheets plus a third
+     for the overflow (reported 2026-10-01 on a Canon and a Brother, 4x6
+     landscape). Chrome resolves `vh` against the sheet, which is why it never
+     showed there.
+
+     The box is the card plus 0.125in above it, so on the nominal sheet (4in /
+     11in) the card sits exactly where Chrome's centered `100vh` box put it.
+     The bottom 0.125in is deliberately left off: if the sheet's printable
+     height comes up a little short (printer margins, Safari's own headers and
+     footers), a box taller than the sheet would split the card again, so the
+     slack is on the side where nothing is drawn.
+
+     The WIDTH matters as much, for a second WebKit quirk: Safari does not print
+     CSS inches as inches. It lays the document out at the wider of the widest
+     content and 1.25x the paper width in points (as px), then scales that to
+     the paper. With the 5.75in card as the widest thing on the page, a 6x4
+     printed ~4% large, edge to edge, and the overflow became a blank sheet
+     after every card. Making the box exactly the nominal sheet's width (the
+     card's 0.125in-per-side shrink, put back) makes the layout width equal the
+     paper's, which is the one case where WebKit's scale comes out at exactly
+     1in per inch. Chrome's page is that wide anyway, so this is a no-op there;
+     `margin-inline: auto` keeps it centered when the paper is wider.
+
+     Scoped away from books: a cookbook's pages, parity blanks and image pages
+     are sheet-sized, not card-sized, and export through `.rp-exporting` (below).
+     Pinned in both engines by e2e/print-sizing.spec.ts. */
+  .recipe-page-deck:not(.recipe-page-deck--book):not(.rp-exporting)
+    :is(.recipe-print-preview--card-6x4, .recipe-print-preview--letter):not(.recipe-print-preview--book-preset)
+    .recipe-card-page:not(.recipe-card-page--image) {
+    box-sizing: border-box !important;
+    width: calc(var(--recipe-card-width) + 0.25in) !important;
+    margin-inline: auto !important;
+    height: calc(var(--recipe-card-min-height) + 0.125in) !important;
+    padding-top: 0.125in !important;
+    justify-content: flex-start !important;
+  }
+
   /* Cookbook EXPORT: pin the page box to the preset's exact physical sheet height
      (in inches, set on the deck as `--rp-sheet-h`) instead of `100vh`. Blink
      resolves print `vh` against the `@page` box, so `100vh` happened to equal the
      sheet — but WebKit/Safari resolves it against the on-screen viewport (~7.5in),
      so on the custom 8.25×10.25 hardcover sheet the centered card overflowed a
      too-short box and only its top ~inch printed, the rest blank. An absolute inch
-     height matches `@page size` in every engine. Scoped to `.rp-exporting`, so a
-     plain Ctrl+P and the 6×4 / Letter single-card paths keep their proven `100vh`.
+     height matches `@page size` in every engine. Scoped to `.rp-exporting`, so it
+     only governs book exports; recipe cards have their own inch-sized box above.
      Specificity (0,3,0) beats the base rule above. */
   .recipe-page-deck.rp-exporting .recipe-card-page {
     height: var(--rp-sheet-h, 100vh) !important;
