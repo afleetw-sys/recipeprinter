@@ -209,7 +209,10 @@ const DECK_ZOOM_BOUNDS = { min: DECK_ZOOM_MIN, max: DECK_ZOOM_MAX };
 const PRINT_ACCEPTANCE_GRACE_MS = 1_200;
 
 /** Longest the Print spinner waits for the print sheet to take focus. */
-const PRINT_SHEET_WAIT_CEILING_MS = 30_000;
+const PRINT_SHEET_WAIT_CEILING_MS = 20_000;
+/** Pointer/key input this soon after Print is the click itself settling, not
+    the cook back on the page after the sheet. */
+const PRINT_SHEET_INPUT_GRACE_MS = 600;
 
 export default function PrintPage() {
   useEffect(() => {
@@ -2015,13 +2018,23 @@ export default function PrintPage() {
   /**
    * Keep the Print spinner up until the print sheet is actually on screen.
    *
-   * Safari's `print()` returns at once and builds the sheet afterwards, often
-   * for seconds; no browser fires an event when the dialog appears. What does
-   * happen is that the page loses focus to it — so `blur` is the tell. The
-   * spinner also drops on `afterprint` (Chrome's `print()` only returns once
-   * its preview has closed, so that one has already fired by the time we get
-   * here) and after a long ceiling, so a browser that never blurs can't leave
-   * it spinning.
+   * No browser fires an event when its print dialog appears, and the print
+   * events mislead about it differently per engine:
+   *
+   * - Chrome's `print()` only returns once its preview has CLOSED, so
+   *   `afterprint` has already fired by the time we get here: nothing to wait
+   *   for.
+   * - Safari fires `beforeprint` AND `afterprint` inside `print()` (it takes
+   *   its snapshot synchronously), returns, and only then builds and shows the
+   *   sheet, often for seconds. So `afterprint` says nothing about the dialog
+   *   there, and reading it as "done" dropped the spinner at once.
+   *
+   * On Safari, then, the spinner stays until the page loses focus to the sheet
+   * (`blur`), or the cook is back on the page (a click or key press, which
+   * cannot reach it while the sheet is up; a short grace ignores the input
+   * that started this print), or a ceiling, whichever comes first. Not pointer
+   * MOVES: a hand nudging the mouse while it waits would drop the spinner
+   * early, which is the very thing this exists to stop.
    */
   const sheetWaitCleanupRef = useRef<(() => void) | null>(null);
   function stopSheetWait() {
@@ -2030,21 +2043,31 @@ export default function PrintPage() {
   }
   function holdSpinnerUntilSheetOpens() {
     stopSheetWait();
-    // Chrome: the preview has come and gone inside `print()` already.
-    if (!printRequestedRef.current) {
-      setPrintAwaitingBrowser(false);
-      return;
+    if (!isWebKitPrinter()) {
+      // Chrome: the preview has come and gone inside `print()` already.
+      if (!printRequestedRef.current) {
+        setPrintAwaitingBrowser(false);
+        return;
+      }
     }
+    const startedAt = Date.now();
     const done = () => {
       stopSheetWait();
       setPrintAwaitingBrowser(false);
     };
+    const backOnPage = () => {
+      if (Date.now() - startedAt > PRINT_SHEET_INPUT_GRACE_MS) done();
+    };
     const ceiling = window.setTimeout(done, PRINT_SHEET_WAIT_CEILING_MS);
     window.addEventListener("blur", done);
-    window.addEventListener("afterprint", done);
+    window.addEventListener("pointerdown", backOnPage);
+    window.addEventListener("keydown", backOnPage);
+    if (!isWebKitPrinter()) window.addEventListener("afterprint", done);
     sheetWaitCleanupRef.current = () => {
       window.clearTimeout(ceiling);
       window.removeEventListener("blur", done);
+      window.removeEventListener("pointerdown", backOnPage);
+      window.removeEventListener("keydown", backOnPage);
       window.removeEventListener("afterprint", done);
     };
   }
