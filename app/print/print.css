@@ -8549,7 +8549,11 @@ textarea.recipe-card__toc-title {
     box-sizing: border-box !important;
     width: calc(var(--recipe-card-width) + 0.25in) !important;
     margin-inline: auto !important;
-    height: calc(var(--recipe-card-min-height) + 0.125in) !important;
+    /* + 1pt: the cut-line outline is drawn 0.75pt OUTSIDE the card (flush
+       with its true edge, so edge art like Classic's accent bar is never
+       covered). A box that ended at the card's bottom edge left that outline
+       past it, and the bottom dash printed half-clipped in Chrome. */
+    height: calc(var(--recipe-card-min-height) + 0.125in + 1pt) !important;
     padding-top: 0.125in !important;
     justify-content: flex-start !important;
   }
@@ -8581,7 +8585,9 @@ textarea.recipe-card__toc-title {
     .recipe-print-preview--card-6x4:not(.recipe-print-preview--book-preset)
     .recipe-card-page:not(.recipe-card-page--image) {
     width: calc(var(--recipe-card-width) + 1in) !important;
-    height: var(--recipe-card-min-height) !important;
+    /* + 1pt for the cut line below the card (see the base box above): ending
+       at the card's edge, Safari dropped the bottom dash. */
+    height: calc(var(--recipe-card-min-height) + 1pt) !important;
     padding-top: 0 !important;
   }
 
@@ -8616,17 +8622,6 @@ textarea.recipe-card__toc-title {
   .rp-webkit-print .recipe-page-deck:not(.recipe-page-deck--book):not(.rp-exporting)
     .recipe-card__section-group {
     break-inside: auto !important;
-  }
-
-  /* The printed cut line, just inside the card's edge, in every engine. The
-     page box ends at the card's bottom edge (exactly, on Safari), so the
-     outline's usual 0.75pt outside the card sat below the box: Safari dropped
-     the bottom dash (or, earlier, spilled it onto a sheet of its own) and
-     Chrome printed it half-clipped. Drawn 0.75pt in, it stays inside the box
-     and the card cut along it is a hair smaller, nothing more. */
-  .recipe-print-preview--cut-lines.recipe-print-preview--card-6x4
-    .recipe-card:not(.recipe-card--duplex-spacer) {
-    outline-offset: -0.75pt;
   }
 
   /* Cookbook EXPORT: pin the page box to the preset's exact physical sheet height
