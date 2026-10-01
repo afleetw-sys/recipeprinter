@@ -169,6 +169,17 @@ type EventProps = {
   /** Parsing produced a recipe. */
   recipe_imported: { source: ImportMethod; hostname?: string };
   /**
+   * An import that succeeded but was then substantially rewritten by hand: the
+   * parser read it wrong. Counts only, never text; the text goes to
+   * `debugInbox` (see lib/importCorrections).
+   */
+  recipe_import_corrected: {
+    source: ImportMethod;
+    changedLines: number;
+    readLines: number;
+    minutes: number;
+  };
+  /**
    * Parsing threw. `reason` is the raw parser message, truncated; `category`
    * is the groupable bucket it fell into.
    */

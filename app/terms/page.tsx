@@ -269,8 +269,9 @@ export default function TermsPage() {
           </li>
           <li>
             <strong>RecipePrinter Pro.</strong> Pro applies to your whole
-            account and includes every print theme, 4 by 6 card printing, and the
-            other recipe-card tools for as long as the subscription is active.
+            account and includes every print theme, 4 by 6 card printing, prints
+            without RecipePrinter branding, and the other recipe-card tools for
+            as long as the subscription is active.
             Pro does not include cookbook exports, which remain a separate
             one-time purchase.
           </li>

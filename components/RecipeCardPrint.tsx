@@ -1,5 +1,6 @@
 "use client";
 
+import { cleanSourceUrl } from "@/lib/sourceUrl";
 import {
   memo,
   useMemo,
@@ -1275,11 +1276,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                   value={
                     sameTarget(inlineEdit.editingTarget, { kind: "sourceUrl" })
                       ? inlineEdit.value
-                      : recipe.sourceUrl ?? ""
+                      : source ?? recipe.sourceUrl ?? ""
                   }
                   placeholder="Add link"
                   aria-label="Source link"
-                  onFocus={() => startEdit({ kind: "sourceUrl" }, recipe.sourceUrl ?? "")}
+                  onFocus={() => startEdit({ kind: "sourceUrl" }, cleanSourceUrl(recipe.sourceUrl) ?? "")}
                   onChange={(event) => inlineEdit.onValueChange(event.target.value)}
                   onBlur={commitEdit}
                   onKeyDown={handleEditKeyDown}
@@ -1512,11 +1513,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 value={
                   sameTarget(inlineEdit.editingTarget, { kind: "sourceUrl" })
                     ? inlineEdit.value
-                    : recipe.sourceUrl ?? ""
+                    : source ?? recipe.sourceUrl ?? ""
                 }
                 placeholder="Add link"
                 aria-label="Source link"
-                onFocus={() => startEdit({ kind: "sourceUrl" }, recipe.sourceUrl ?? "")}
+                onFocus={() => startEdit({ kind: "sourceUrl" }, cleanSourceUrl(recipe.sourceUrl) ?? "")}
                 onChange={(event) => inlineEdit.onValueChange(event.target.value)}
                 onBlur={commitEdit}
                 onKeyDown={handleEditKeyDown}
