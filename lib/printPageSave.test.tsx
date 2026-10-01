@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, render } from "@testing-library/react";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { createElement, isValidElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -85,6 +85,19 @@ vi.mock("@/lib/photoStorage", async (importOriginal) => {
   return { ...original, materializeProjectPhotos: io.materializeProjectPhotos };
 });
 
+// ---- Firestore's connection around a print --------------------------------
+
+/** Every pause, resume and print(), in the order they happened. */
+const printNet = vi.hoisted(() => ({ calls: [] as string[] }));
+vi.mock("@/lib/firebase/db", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/firebase/db")>();
+  return {
+    ...original,
+    pauseFirestoreForPrint: () => printNet.calls.push("pause"),
+    resumeFirestoreAfterPrint: () => printNet.calls.push("resume"),
+  };
+});
+
 // ---- Next -----------------------------------------------------------------
 
 const nav = vi.hoisted(() => ({ push: vi.fn(), search: "" }));
@@ -105,13 +118,15 @@ vi.mock("next/link", async () => {
 
 // ---- layout and purchases: too heavy or external for jsdom ----------------
 
+/** Pages the mocked layout reports. Empty disables Print, which the save tests never press. */
+const layout = vi.hoisted(() => ({ navItems: [] as unknown[] }));
 vi.mock("@/lib/usePrintSheets", () => ({
   usePrintSheets: () => ({
     hasRecipeBackSide: false,
     continueOnBack: false,
     printLayoutReady: true,
     sheets: [],
-    navItems: [],
+    navItems: layout.navItems,
     spreads: [],
     previewConfig: {
       cardSize: "letter",
@@ -672,5 +687,100 @@ describe("a different account", () => {
     act(() => authStore.set({ user: null }));
     await settle(50);
     expect(saveControlText()).not.toContain("Saved");
+  });
+});
+
+/* Safari will not open the print dialog while any request is loading, and a
+   signed-in page has Firestore's stream open for up to a minute. These pin the
+   wiring that closes it in time and reopens it after (see lib/firebase/db.ts
+   and e2e/quiet-print.spec.ts). */
+describe("Firestore's connection around a print", () => {
+  afterEach(() => {
+    layout.navItems = [];
+  });
+  beforeEach(() => {
+    layout.navItems = [{ id: "fx-1", label: "Fixture 1" }];
+    printNet.calls = [];
+    // jsdom has no window.focus; afterprint calls it.
+    vi.spyOn(window, "focus").mockImplementation(() => undefined);
+    vi.spyOn(window, "print").mockImplementation(() => {
+      printNet.calls.push("print");
+    });
+  });
+
+  /** jsdom's `fireEvent.pointerDown` drops `button`, which `pressPrint` checks. */
+  const press = (button: HTMLElement) =>
+    act(() => {
+      fireEvent(button, new MouseEvent("pointerdown", { bubbles: true, button: 0 }));
+    });
+
+  const printButton = () => {
+    const button = Array.from(document.querySelectorAll("button")).find((b) =>
+      /^(Buy & )?Print$/.test(b.textContent?.trim() ?? ""),
+    );
+    if (!button) throw new Error("no Print button");
+    return button;
+  };
+
+  it("a press closes it before the click, so print() can stay inside the click", async () => {
+    seedRecipes(1);
+    await renderPrintPage();
+    await settle(100);
+
+    press(printButton());
+    expect(printNet.calls).toEqual(["pause"]);
+  });
+
+  it("the click calls print() with it closed, in the same task: nothing awaited", async () => {
+    seedRecipes(1);
+    await renderPrintPage();
+    await settle(100);
+
+    press(printButton());
+    act(() => {
+      fireEvent.click(printButton());
+    });
+    // No settle: print() must already have run, synchronously, inside the click.
+    expect(printNet.calls.at(-1)).toBe("print");
+    // And the last word on the connection before it was "closed". A resume
+    // queued by letting go of the press must not come after the last pause.
+    const beforePrint = printNet.calls.slice(0, -1);
+    expect(beforePrint.lastIndexOf("pause")).toBeGreaterThan(beforePrint.lastIndexOf("resume"));
+  });
+
+  it("a keyboard press, with no pointerdown, still closes it before print()", async () => {
+    seedRecipes(1);
+    await renderPrintPage();
+    await settle(100);
+
+    act(() => {
+      fireEvent.click(printButton());
+    });
+    expect(printNet.calls.slice(-2)).toEqual(["pause", "print"]);
+  });
+
+  it("beforeprint and afterprint reopen it", async () => {
+    seedRecipes(1);
+    await renderPrintPage();
+    await settle(100);
+
+    act(() => {
+      window.dispatchEvent(new Event("beforeprint"));
+    });
+    expect(printNet.calls).toEqual(["resume"]);
+    act(() => {
+      window.dispatchEvent(new Event("afterprint"));
+    });
+    expect(printNet.calls).toEqual(["resume", "resume"]);
+  });
+
+  it("leaving the page reopens it", async () => {
+    seedRecipes(1);
+    const { unmount } = await renderPrintPage();
+    await settle(100);
+    printNet.calls = [];
+
+    unmount();
+    expect(printNet.calls).toContain("resume");
   });
 });
