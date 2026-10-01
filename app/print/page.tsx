@@ -208,6 +208,10 @@ const DECK_ZOOM_BOUNDS = { min: DECK_ZOOM_MIN, max: DECK_ZOOM_MAX };
  */
 const PRINT_ACCEPTANCE_GRACE_MS = 1_200;
 
+/** Above this many pages a recipe-card deck keeps drawing only the pages near
+    the reader, like a cookbook, instead of the whole deck up front. */
+const FULL_CARD_DECK_MAX_PAGES = 80;
+
 /** Longest the Print spinner waits for the print sheet to take focus. */
 const PRINT_SHEET_WAIT_CEILING_MS = 20_000;
 /** Pointer/key input this soon after Print is the click itself settling, not
@@ -1961,6 +1965,32 @@ export default function PrintPage() {
   // Safari then fetches and decodes them while building the print, and the
   // dialog waits. Switched in place, not by prop, so the dozens of cards on a
   // big deck don't re-render for it; `afterprint` redraws the window anyway.
+  /**
+   * Recipe cards: draw the whole deck once its layout has settled.
+   *
+   * The deck draws only the pages near the reader (DECK_WINDOW in PrintDeck),
+   * so every card further away was drawn for the FIRST time at the moment of
+   * printing, mid-click, and printed off a layout that had never once been on
+   * the page. Printing a large set came out differently the first time than
+   * the second, when those cards had been drawn once already. Drawing them all
+   * in the background, a moment after the layout is ready, makes every print a
+   * "second" print. The window exists for 60-recipe cookbooks being edited, so
+   * cookbooks keep it, and so does an unusually large set of cards.
+   */
+  const [cardDeckDrawn, setCardDeckDrawn] = useState(false);
+  const cardDeckDrawable = !cookbookMode && navItems.length <= FULL_CARD_DECK_MAX_PAGES;
+  useEffect(() => {
+    if (!cardDeckDrawable) {
+      setCardDeckDrawn(false);
+      return;
+    }
+    // Once drawn it stays drawn: a settings change re-measures behind the
+    // double buffer, and unmounting the deck for it would only redo the work.
+    if (!printLayoutReady || cardDeckDrawn) return;
+    const timer = window.setTimeout(() => setCardDeckDrawn(true), 600);
+    return () => window.clearTimeout(timer);
+  }, [cardDeckDrawable, printLayoutReady, cardDeckDrawn]);
+
   function loadDeckPhotosNow() {
     document
       .querySelectorAll<HTMLImageElement>('#recipe-page-deck img[loading="lazy"]')
@@ -5985,7 +6015,7 @@ export default function PrintPage() {
           }
           pendingAddAfterRecipeId={pendingAddAfterRecipeId}
           openAddRecipeBelow={openAddRecipeBelow}
-          renderAllPages={renderAllPages}
+          renderAllPages={renderAllPages || cardDeckDrawn}
         />
 
         {/* Right: print setup */}
