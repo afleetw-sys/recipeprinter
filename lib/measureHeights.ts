@@ -23,6 +23,34 @@ function columnsGapPx(section: HTMLElement): number {
   return parseFloat(getComputedStyle(row ?? section).columnGap) || 0;
 }
 
+/**
+ * Lift the deck's screen-only `[data-preview-hidden]` hide off `el`'s
+ * ancestors so it can be measured, and hand back the function that puts it
+ * back. Both happen inside one synchronous measurement, so nothing paints in
+ * between and the cook never sees the hidden side flash up.
+ *
+ * Waiting to measure until the face is shown is not good enough, because
+ * "shown" can first happen in PRINT. The back of a two-sided card is
+ * `display: none` until the cook flips to it, and `[data-preview-hidden]` is
+ * screen-only, so a print that never flipped draws it for the first time
+ * inside the print snapshot, where no script runs and no `ResizeObserver`
+ * fires. With no split it fell back to one column, while `RecipeFaceMeasurer`
+ * (which has a real box) had paginated that face for two: a back with
+ * ingredients 26-40 and steps 1-6 printed as one tall column, the footer
+ * landed on the steps and the rest ran off the card. Identical in every
+ * browser, because no browser gets a chance to re-measure.
+ */
+function revealPreviewHidden(el: HTMLElement): () => void {
+  if (el.offsetWidth > 0) return () => {};
+  const hidden: Element[] = [];
+  for (let node = el.closest('[data-preview-hidden="true"]'); node; ) {
+    hidden.push(node);
+    node = node.parentElement?.closest('[data-preview-hidden="true"]') ?? null;
+  }
+  hidden.forEach((node) => node.removeAttribute("data-preview-hidden"));
+  return () => hidden.forEach((node) => node.setAttribute("data-preview-hidden", "true"));
+}
+
 export interface WideColumnMeasurement {
   /** Attach to the outer two-column row (its width and gap drive the split). */
   sectionRef: (el: HTMLElement | null) => void;
@@ -50,14 +78,14 @@ export interface WideColumnMeasurement {
  *
  * The section this measures can be `display: none` at mount — the print
  * page keeps every face in the DOM but hides whichever ones aren't the
- * active recipe/side on screen (see `[data-preview-hidden]` in globals.css)
- * — where every chunk reports a 0 height. Feeding all-zero heights into
+ * active side on screen (see `[data-preview-hidden]` in print.css) — where
+ * every chunk reports a 0 height. Feeding all-zero heights into
  * `splitIntoColumns` doesn't fail loudly; it ties out at the first item, so
  * column 1 gets exactly one chunk and everything else piles into column 2.
- * A `ResizeObserver` on the section (which fires once when a `display: none`
- * element gets a real box) re-measures the moment it's actually shown,
- * instead of leaving that degenerate split baked in until the content itself
- * changes.
+ * So a face hidden that way is measured through the hide (see
+ * `revealPreviewHidden`), and a `ResizeObserver` on the section (which fires
+ * once when a `display: none` element gets a real box) re-measures the
+ * moment it's actually shown, for anything else that hid it.
  */
 export function useWideColumns(
   active: boolean,
@@ -74,53 +102,61 @@ export function useWideColumns(
     const probe = probeElRef.current;
     if (!section || !probe) return;
 
-    // Still hidden (e.g. an inactive deck face at `display: none`) — every
-    // chunk would measure 0 and produce a degenerate split. Leave `splitIndex`
-    // as-is and wait for the resize observer to fire once it's shown.
-    if (section.offsetWidth === 0) return;
+    // A face the deck is not showing (the side of a card the cook has not
+    // flipped to) is `display: none` on screen, but it still PRINTS. See
+    // `revealPreviewHidden` for why it has to be measured now, not when shown.
+    const unhide = revealPreviewHidden(section);
+    try {
+      // Still hidden by something else — every chunk would measure 0 and
+      // produce a degenerate split. Leave `splitIndex` as-is and wait for the
+      // resize observer to fire once it's shown.
+      if (section.offsetWidth === 0) return;
 
-    /**
-     * The width a chunk will actually be laid out at — in CSS pixels, which is
-     * the only unit `probe.style.width` can be written in.
-     *
-     * This used to come from `getBoundingClientRect()`, and that is a different
-     * coordinate space: the preview scales the whole page to fit the pane
-     * (`.recipe-page-scaler`), so the rect is POST-transform while the inline
-     * width we set from it is pre-transform. At the 100% preview zoom that
-     * scale is about 0.47, so every chunk was measured in a probe barely half
-     * the width of the column it was destined for — a step that prints on one
-     * line measured as two or three, and a long one measured taller still.
-     *
-     * `splitIntoColumns` then balanced those wrong heights. The visible result
-     * is the two columns ending nowhere near each other: the long steps were
-     * over-weighted, so the first column was handed only a few of them and
-     * stopped an inch short, while the short one-liners were under-weighted
-     * and piled into the second column until it ran through the footer. That
-     * is the "why did step 8 not fit on the left when step 19 fit on the
-     * right" — neither column was measured at the width it renders at.
-     *
-     * Once the split has been made once, the rendered column IS the measure,
-     * exactly, including whatever gap and padding the CSS puts between the
-     * two. Before that — the first pass, where the section is still one flow —
-     * there is nothing to ask, so halve the section and take off the gap the
-     * columns are about to have. That estimate is close but not exact, and
-     * "close" is not good enough at a wrap boundary: six pixels of probe width
-     * is the difference between a step measuring one line and two, which moves
-     * the split by an item. So the pass below re-runs against the real column
-     * as soon as one exists. It converges rather than oscillates because both
-     * columns are `flex: 1 1 0`, so their width does not depend on the split
-     * they are given.
-     */
-    const renderedColumn = section.querySelector<HTMLElement>(`.${COLUMN_CLASS}`);
-    const columnWidth = renderedColumn
-      ? renderedColumn.offsetWidth
-      : (section.offsetWidth - columnsGapPx(section)) / 2;
-    probe.style.width = `${columnWidth}px`;
+      /**
+       * The width a chunk will actually be laid out at — in CSS pixels, which is
+       * the only unit `probe.style.width` can be written in.
+       *
+       * This used to come from `getBoundingClientRect()`, and that is a different
+       * coordinate space: the preview scales the whole page to fit the pane
+       * (`.recipe-page-scaler`), so the rect is POST-transform while the inline
+       * width we set from it is pre-transform. At the 100% preview zoom that
+       * scale is about 0.47, so every chunk was measured in a probe barely half
+       * the width of the column it was destined for — a step that prints on one
+       * line measured as two or three, and a long one measured taller still.
+       *
+       * `splitIntoColumns` then balanced those wrong heights. The visible result
+       * is the two columns ending nowhere near each other: the long steps were
+       * over-weighted, so the first column was handed only a few of them and
+       * stopped an inch short, while the short one-liners were under-weighted
+       * and piled into the second column until it ran through the footer. That
+       * is the "why did step 8 not fit on the left when step 19 fit on the
+       * right" — neither column was measured at the width it renders at.
+       *
+       * Once the split has been made once, the rendered column IS the measure,
+       * exactly, including whatever gap and padding the CSS puts between the
+       * two. Before that — the first pass, where the section is still one flow —
+       * there is nothing to ask, so halve the section and take off the gap the
+       * columns are about to have. That estimate is close but not exact, and
+       * "close" is not good enough at a wrap boundary: six pixels of probe width
+       * is the difference between a step measuring one line and two, which moves
+       * the split by an item. So the pass below re-runs against the real column
+       * as soon as one exists. It converges rather than oscillates because both
+       * columns are `flex: 1 1 0`, so their width does not depend on the split
+       * they are given.
+       */
+      const renderedColumn = section.querySelector<HTMLElement>(`.${COLUMN_CLASS}`);
+      const columnWidth = renderedColumn
+        ? renderedColumn.offsetWidth
+        : (section.offsetWidth - columnsGapPx(section)) / 2;
+      probe.style.width = `${columnWidth}px`;
 
-    const heights = itemElRefs.current
-      .slice(0, chunkCount)
-      .map((el) => el?.getBoundingClientRect().height ?? 0);
-    setSplitIndex(splitIntoColumns(heights));
+      const heights = itemElRefs.current
+        .slice(0, chunkCount)
+        .map((el) => el?.getBoundingClientRect().height ?? 0);
+      setSplitIndex(splitIntoColumns(heights));
+    } finally {
+      unhide();
+    }
   }, [chunkCount]);
 
   // `splitIndex` is a dependency so the first split re-runs this against the
