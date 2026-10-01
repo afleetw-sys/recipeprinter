@@ -169,7 +169,7 @@ import {
   PRINT_PREVIEW_STABILITY_MS,
 } from "@/lib/printErrorRecovery";
 import { hasPendingImport, takePendingImport } from "@/lib/pendingImport";
-import { nextPaint } from "@/lib/nextPaint";
+import { isWebKitPrinter, printNeedsLiveGesture } from "@/lib/printGesture";
 import { markPostPrintDialogShown, shouldShowPostPrintDialog } from "@/lib/postPrintDialog";
 import { useToast } from "@/lib/useToast";
 import { printProjectFingerprint, type PendingSave } from "@/lib/printSave";
@@ -1906,7 +1906,7 @@ export default function PrintPage() {
 
   const [mobileDrawer, setMobileDrawer] = useState<"template" | null>(null);
 
-  async function printNow() {
+  function printNow() {
     printRequestedRef.current = true;
     track("print_started", {
       template,
@@ -1938,28 +1938,21 @@ export default function PrintPage() {
     printAcceptedRef.current = false;
     setPrintAwaitingBrowser(true);
 
-    // ── Let the button say something before the deck is drawn ───────────────
+    // ── `print()` stays inside the click ────────────────────────────────────
     //
-    // `window.print()` does not yield, and `beforeprint` fires inside it and
-    // synchronously renders EVERY page (see the handler). The deck is normally
-    // windowed to five pages, so on a real cookbook that is the whole book
-    // rendered in one unbroken run of the main thread — and all of it used to
-    // happen between this line and the print sheet appearing, with the spinner
-    // above committed but never drawn. The button looked untouched for the
-    // entire wait, which is what a refused print looks like too.
+    // This used to await two frames first so the spinner could paint before
+    // the full deck rendered. That took `print()` out of the click's own task,
+    // and Safari only opens the print sheet straight away from inside a click:
+    // anywhere else it is "automatic printing", answered with its "trying to
+    // print" alert, or after a few of those with nothing at all. That is the
+    // Print button that took three clicks and a reload on Safari (see
+    // lib/printGesture). Nothing may be awaited between the click and here.
     //
-    // So: paint the spinner, then do the expensive render here where the
-    // spinner is up, then ask the browser. `beforeprint` still sets the same
-    // flag for the cook's own Ctrl+P, where there is no click of ours to hang
-    // this off; by then it is already true and React bails out of the update,
-    // so the work is done once either way.
-    await nextPaint();
+    // Only plain cards come through here (a cookbook exports server-side), so
+    // rendering every page synchronously is a short stall, not a book.
+    // `beforeprint` sets the same flag for the cook's own Ctrl+P; by then it is
+    // already true and React bails out, so the work is done once either way.
     flushSync(() => setRenderAllPages(true));
-    await nextPaint();
-
-    // Deferring `print()` past a frame takes it out of the click's own task.
-    // That is not new ground: the `print=1` auto-print path has always called
-    // it from a 350ms `setTimeout` with no gesture at all.
     window.print();
     // `window.print()` returns at once whether or not a sheet opens, so watch
     // for `beforeprint`. iOS Safari lets a tab print once and puts its own
@@ -2957,7 +2950,12 @@ export default function PrintPage() {
     });
   }
 
-  async function handlePrint() {
+  /**
+   * `deferred`: this call is not running inside the cook's click — a print
+   * queued while the layout measured, or the `print=1` auto-print. Must stay
+   * free of `await` before `printNow`, or a real click loses its gesture too.
+   */
+  async function handlePrint({ deferred = false }: { deferred?: boolean } = {}) {
     if (cookbookPurchaseBusy || proBusy) return;
     if (!printLayoutReady) {
       // Remember it and let the effect below fire once the layout settles,
@@ -3019,7 +3017,15 @@ export default function PrintPage() {
       openCookbookPrintDialog();
       return;
     }
-    await printNow();
+    if (deferred && printNeedsLiveGesture()) {
+      // Safari would meet a print fired from here with its "blocked from
+      // automatically printing" alert, or silently drop it. The cards are
+      // ready now, so say so and let the next tap print them for real.
+      setToastTone("info");
+      setToastMessage("Your cards are ready — tap Print.");
+      return;
+    }
+    printNow();
   }
 
   function openCookbookPrintDialog() {
@@ -3216,7 +3222,7 @@ export default function PrintPage() {
   // fires once, not on every subsequent settle.
   useEffect(() => {
     if (printPending && printLayoutReady && !proBusy && !cookbookPurchaseBusy) {
-      void handlePrintRef.current();
+      void handlePrintRef.current({ deferred: true });
     }
   }, [printPending, printLayoutReady, proBusy, cookbookPurchaseBusy]);
 
@@ -4326,7 +4332,7 @@ export default function PrintPage() {
       !autoPrintAttemptedRef.current
     ) {
       autoPrintAttemptedRef.current = true;
-      const t = window.setTimeout(() => void handlePrintRef.current(), 350);
+      const t = window.setTimeout(() => void handlePrintRef.current({ deferred: true }), 350);
       return () => window.clearTimeout(t);
     }
   }, [
@@ -4393,6 +4399,16 @@ export default function PrintPage() {
   useEffect(() => {
     if (!toastMessage?.endsWith("part of Pro.")) setMultiRecipeUpsellPending(false);
   }, [toastMessage]);
+
+  // WebKit fits the page's WIDTH to the printable area, never its height, so a
+  // 6x4 card needs a print box shaped for that (see `.rp-webkit-print` in
+  // print.css). A class rather than a CSS engine hack: there is no reliable one.
+  useEffect(() => {
+    if (!isWebKitPrinter()) return;
+    const root = document.documentElement;
+    root.classList.add("rp-webkit-print");
+    return () => root.classList.remove("rp-webkit-print");
+  }, []);
 
   useEffect(() => {
     function handleBeforePrint() {
