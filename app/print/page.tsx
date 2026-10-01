@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type SetStateAction } from "react";
 import { flushSync } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -207,6 +207,9 @@ const DECK_ZOOM_BOUNDS = { min: DECK_ZOOM_MIN, max: DECK_ZOOM_MAX };
  * short enough that a refused one doesn't sit there looking like a dead button.
  */
 const PRINT_ACCEPTANCE_GRACE_MS = 1_200;
+
+/** Longest the Print spinner waits for the print sheet to take focus. */
+const PRINT_SHEET_WAIT_CEILING_MS = 30_000;
 
 export default function PrintPage() {
   useEffect(() => {
@@ -1966,6 +1969,36 @@ export default function PrintPage() {
     if (renderAllPages) loadDeckPhotosNow();
   }, [renderAllPages]);
 
+  // ── Show the spinner before the click, not with it ───────────────────────
+  //
+  // Safari freezes the page from `print()` until its dialog is up, and no
+  // browser announces "the dialog is now open". The spinner `printNow` turns
+  // on is set in the same task as `print()`, so it is never painted before the
+  // freeze: the button looked untouched for the whole wait. The press itself
+  // (pointerdown) lands a task before the click, with a frame in between, so
+  // turning the spinner on there gets it on screen before the freeze, and it
+  // stays up through it. `handlePrint` hands it straight to `printNow` in the
+  // same task (React batches the off-then-on, so nothing flickers), or drops
+  // it for a click that opens something else. The timer covers a press that
+  // never became a click (dragged off the button).
+  const printPressTimerRef = useRef<number | null>(null);
+  function pressPrint(event: ReactPointerEvent) {
+    if (event.button !== 0 || printBlocked) return;
+    setPrintAwaitingBrowser(true);
+    if (printPressTimerRef.current !== null) window.clearTimeout(printPressTimerRef.current);
+    printPressTimerRef.current = window.setTimeout(() => {
+      printPressTimerRef.current = null;
+      if (printWatchdogRef.current === null) setPrintAwaitingBrowser(false);
+    }, 1_500);
+  }
+  function releasePrintPress() {
+    if (printPressTimerRef.current !== null) {
+      window.clearTimeout(printPressTimerRef.current);
+      printPressTimerRef.current = null;
+    }
+    if (printWatchdogRef.current === null) setPrintAwaitingBrowser(false);
+  }
+
   // Draw the whole deck when the pointer heads for Print, so the click itself
   // finds it already drawn (`flushSync` in `printNow` then has nothing to do).
   // Recipe cards only — a cookbook's Print opens the export screen instead.
@@ -1978,6 +2011,44 @@ export default function PrintPage() {
     if (printRequestedRef.current) return;
     setRenderAllPages(false);
   }
+
+  /**
+   * Keep the Print spinner up until the print sheet is actually on screen.
+   *
+   * Safari's `print()` returns at once and builds the sheet afterwards, often
+   * for seconds; no browser fires an event when the dialog appears. What does
+   * happen is that the page loses focus to it — so `blur` is the tell. The
+   * spinner also drops on `afterprint` (Chrome's `print()` only returns once
+   * its preview has closed, so that one has already fired by the time we get
+   * here) and after a long ceiling, so a browser that never blurs can't leave
+   * it spinning.
+   */
+  const sheetWaitCleanupRef = useRef<(() => void) | null>(null);
+  function stopSheetWait() {
+    sheetWaitCleanupRef.current?.();
+    sheetWaitCleanupRef.current = null;
+  }
+  function holdSpinnerUntilSheetOpens() {
+    stopSheetWait();
+    // Chrome: the preview has come and gone inside `print()` already.
+    if (!printRequestedRef.current) {
+      setPrintAwaitingBrowser(false);
+      return;
+    }
+    const done = () => {
+      stopSheetWait();
+      setPrintAwaitingBrowser(false);
+    };
+    const ceiling = window.setTimeout(done, PRINT_SHEET_WAIT_CEILING_MS);
+    window.addEventListener("blur", done);
+    window.addEventListener("afterprint", done);
+    sheetWaitCleanupRef.current = () => {
+      window.clearTimeout(ceiling);
+      window.removeEventListener("blur", done);
+      window.removeEventListener("afterprint", done);
+    };
+  }
+  useEffect(() => () => stopSheetWait(), []);
 
   function printNow() {
     printRequestedRef.current = true;
@@ -2038,10 +2109,14 @@ export default function PrintPage() {
     // one-print-per-document in memory). The sheet still arrives via
     // `beforeprint`, which re-renders the deck itself.
     if (printWatchdogRef.current !== null) window.clearTimeout(printWatchdogRef.current);
+    holdSpinnerUntilSheetOpens();
     printWatchdogRef.current = window.setTimeout(() => {
       printWatchdogRef.current = null;
-      setPrintAwaitingBrowser(false);
+      // A print the browser took keeps its spinner until the sheet is actually
+      // up (see `holdSpinnerUntilSheetOpens`); only a refusal drops it here.
       if (printAcceptedRef.current) return;
+      stopSheetWait();
+      setPrintAwaitingBrowser(false);
       // No `beforeprint` yet, so nothing is going to fire `afterprint` to put
       // the deck back to its five-page window. Left as it is, a print that is
       // still waiting on Safari's alert (or was dismissed) leaves the entire
@@ -3030,6 +3105,9 @@ export default function PrintPage() {
    * free of `await` before `printNow`, or a real click loses its gesture too.
    */
   async function handlePrint({ deferred = false }: { deferred?: boolean } = {}) {
+    // The press spinner (see `pressPrint`) is for a click that prints;
+    // `printNow` turns it back on in this same task when that is what happens.
+    releasePrintPress();
     if (cookbookPurchaseBusy || proBusy) return;
     if (!printLayoutReady) {
       // Remember it and let the effect below fire once the layout settles,
@@ -5602,6 +5680,7 @@ export default function PrintPage() {
                   type="button"
                   className="btn btn-primary btn-compact"
                   disabled={printBlocked}
+                  onPointerDown={pressPrint}
                   onPointerEnter={warmPrint}
                   onFocus={warmPrint}
                   onPointerLeave={coolPrint}
@@ -6050,6 +6129,7 @@ export default function PrintPage() {
                only carries the full-width shape now; every colour, radius and
                weight comes from `.btn-primary`, so the two can never drift. */
             className="btn btn-primary recipe-mobile-actions__print"
+            onPointerDown={pressPrint}
             onClick={handleMobilePrint}
             disabled={printBlocked}
           >
