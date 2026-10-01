@@ -12,6 +12,7 @@ import { FREE_IMAGE_IMPORT_BENEFIT, PRO_IMAGE_IMPORT_BENEFIT } from "@/lib/image
 import { AccountImageImportUsage } from "@/components/AccountImageImportUsage";
 import { track } from "@/lib/analytics";
 import {
+  authenticatedProManagementUrl,
   loadRecipePrinterCustomerInfo,
   proManagementUrl,
   proSubscriptionDetails,
@@ -135,6 +136,39 @@ export function AccountProStatus({ user }: { user: User }) {
   );
   const proDetails = proSubscriptionDetails(effectiveProInfo.customerInfo);
   const proManagementLink = proManagementUrl(effectiveProInfo.customerInfo);
+  const [openingPortal, setOpeningPortal] = useState(false);
+
+  /**
+   * Straight into the billing portal, already signed in.
+   *
+   * RevenueCat's own `managementURL` asks for an email and mails a sign-in
+   * link; the server can hand back one that skips that (app/api/pro/manage).
+   * The tab is opened HERE, inside the click, and pointed at the link once it
+   * arrives: opened after the `await`, Safari would block it as a popup.
+   */
+  async function openBillingPortal() {
+    track("manage_subscription_clicked", {});
+    const tab = window.open("", "_blank");
+    setOpeningPortal(true);
+    try {
+      const idToken = await user.getIdToken().catch(() => null);
+      const direct = idToken ? await authenticatedProManagementUrl(idToken) : null;
+      const url = direct ?? proManagementLink;
+      if (!url) {
+        tab?.close();
+        setProMessage("Couldn't open billing right now. Please try again in a moment.");
+        return;
+      }
+      if (tab) {
+        tab.opener = null;
+        tab.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+    } finally {
+      setOpeningPortal(false);
+    }
+  }
 
   const { proBusy, purchaseProAndContinue } = useProPurchase({
     revenueCatUserId: uid,
@@ -268,14 +302,10 @@ export function AccountProStatus({ user }: { user: User }) {
                   <button
                     type="button"
                     className="btn btn-secondary btn-compact mt-cp-3 w-full"
-                    disabled={!proManagementLink}
-                    onClick={() => {
-                      if (!proManagementLink) return;
-                      track("manage_subscription_clicked", {});
-                      window.open(proManagementLink, "_blank", "noopener,noreferrer");
-                    }}
+                    disabled={openingPortal}
+                    onClick={() => void openBillingPortal()}
                   >
-                    Manage subscription
+                    {openingPortal ? "Opening…" : "Manage subscription"}
                   </button>
                 ) : (
                   // Reuses the same purchase flow a first-time upgrade uses —

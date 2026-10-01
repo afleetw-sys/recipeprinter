@@ -663,6 +663,24 @@ export function proManagementUrl(customerInfo: CustomerInfo | null): string | nu
   return customerInfo?.managementURL ?? null;
 }
 
+/** A billing-portal link that opens already signed in, for a cook signed in to
+ *  us (see app/api/pro/manage). Null when the server can't produce one — the
+ *  caller then falls back to `proManagementUrl`, RevenueCat's email sign-in. */
+export async function authenticatedProManagementUrl(idToken: string): Promise<string | null> {
+  try {
+    const response = await fetch("/api/pro/manage", {
+      method: "POST",
+      headers: { authorization: `Bearer ${idToken}` },
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const body = (await response.json()) as { url?: unknown };
+    return typeof body.url === "string" ? body.url : null;
+  } catch {
+    return null;
+  }
+}
+
 export interface ProSubscriptionDetails {
   cycle: ProBillingCycle | null;
   /** True even while canceled (`willRenew: false`) — access lasts through
