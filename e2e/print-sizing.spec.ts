@@ -81,10 +81,11 @@ for (const size of Object.keys(SHEETS) as (keyof typeof SHEETS)[]) {
   }, testInfo) => {
     test.skip(testInfo.project.name === "iphone", "phones print through the share sheet, not this layout");
     const sheet = SHEETS[size];
-    // The 6x4 box is 0.5in wider than the card, not sheet-wide, so it still
-    // fits one sheet once a printer's margins shrink it (see the "PRINTABLE
-    // area" rule in print.css).
-    const expectedWidth = size === "card-6x4" ? 6.25 * DPI : sheet.width;
+    // Safari's 6x4 box is 0.5in wider than the card, not sheet-wide, so it
+    // still fits one sheet once a printer's margins shrink it (see
+    // `.rp-webkit-print` in print.css).
+    const expectedWidth =
+      testInfo.project.name === "webkit" && size === "card-6x4" ? 6.25 * DPI : sheet.width;
     const measured = [];
     for (const height of [600, 1400]) {
       await page.setViewportSize({ width: 1280, height });

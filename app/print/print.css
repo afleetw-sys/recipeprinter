@@ -8554,25 +8554,23 @@ textarea.recipe-card__toc-title {
     justify-content: flex-start !important;
   }
 
-  /* …but a 6x4 box shaped for the PRINTABLE area, not the paper.
+  /* …but on Safari, a 6x4 box shaped for the PRINTABLE area, not the paper.
 
-     Browsers fit the page's width to the printable width and do nothing about
-     its height. The sheet-wide box above is exact on borderless paper, but a
-     real 4x6 tray has hardware margins (~0.25in a side on a Canon or Brother):
-     the 6in box is shrunk into ~5.5in, the card comes out ~3.55in tall, the
-     printable height is ~3.5in, and the bottom of every card spills onto a
-     second sheet. A card's two-column grid split across a sheet edge also
-     loses its layout: ingredients land under the steps, steps at the bottom of
-     an empty column. Two sheets per face, four per double-sided card
-     (reported 2026-10-01, 4x6 landscape, Safari and Chrome).
+     WebKit scales the page so its width fits the printable width, and does
+     nothing about height. The sheet-wide box above is exact on borderless paper,
+     but a real 4x6 tray has hardware margins (~0.25in a side on a Canon or
+     Brother): Safari shrinks the 6in box into ~5.5in, the card comes out ~3.55in
+     tall, the printable height is ~3.5in, and the bottom of every card spills
+     onto a second sheet — two sheets per face, four per double-sided card
+     (reported 2026-10-01, 4x6 landscape, after the fix above).
 
      So: no padding above the card, and the box 0.25in wider than the card on
-     each side. The wider box is scaled a little further down, and the shorter
-     one asks for less height, which together fit the card on one sheet with up
-     to 0.5in of margin a side. On borderless paper the card prints ~4% under
-     nominal — a wider white edge on a 4x6, not a split card. Portrait 4x6 and
-     Letter already have the headroom. */
-  .recipe-page-deck:not(.recipe-page-deck--book):not(.rp-exporting)
+     each side. The wider box makes WebKit scale a little further down, and the
+     shorter one asks for less height, which together fit the card on one sheet
+     with up to 0.5in of margin a side. On borderless paper the card prints ~4%
+     under nominal — a wider white edge on a 4x6, not a split card. Portrait
+     4x6 and Letter already have the headroom. Chrome never gets this class. */
+  .rp-webkit-print .recipe-page-deck:not(.recipe-page-deck--book):not(.rp-exporting)
     .recipe-print-preview--card-6x4:not(.recipe-print-preview--book-preset)
     .recipe-card-page:not(.recipe-card-page--image) {
     width: calc(var(--recipe-card-width) + 0.5in) !important;
