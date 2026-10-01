@@ -169,7 +169,7 @@ import {
   PRINT_PREVIEW_STABILITY_MS,
 } from "@/lib/printErrorRecovery";
 import { hasPendingImport, takePendingImport } from "@/lib/pendingImport";
-import { printNeedsLiveGesture } from "@/lib/printGesture";
+import { isWebKitPrinter, printNeedsLiveGesture } from "@/lib/printGesture";
 import { markPostPrintDialogShown, shouldShowPostPrintDialog } from "@/lib/postPrintDialog";
 import { useToast } from "@/lib/useToast";
 import { printProjectFingerprint, type PendingSave } from "@/lib/printSave";
@@ -4399,6 +4399,16 @@ export default function PrintPage() {
   useEffect(() => {
     if (!toastMessage?.endsWith("part of Pro.")) setMultiRecipeUpsellPending(false);
   }, [toastMessage]);
+
+  // WebKit fits the page's WIDTH to the printable area, never its height, so a
+  // 6x4 card needs a print box shaped for that (see `.rp-webkit-print` in
+  // print.css). A class rather than a CSS engine hack: there is no reliable one.
+  useEffect(() => {
+    if (!isWebKitPrinter()) return;
+    const root = document.documentElement;
+    root.classList.add("rp-webkit-print");
+    return () => root.classList.remove("rp-webkit-print");
+  }, []);
 
   useEffect(() => {
     function handleBeforePrint() {

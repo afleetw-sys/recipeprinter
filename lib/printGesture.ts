@@ -23,7 +23,9 @@ export function printNeedsLiveGesture(): boolean {
   return !activation?.isActive;
 }
 
-function isWebKitPrinter(): boolean {
+/** Safari on the Mac, or any browser on iOS — WebKit's print engine. */
+export function isWebKitPrinter(): boolean {
+  if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent;
   const iOS =
     /iPad|iPhone|iPod/.test(ua) ||
