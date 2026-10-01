@@ -8618,6 +8618,16 @@ textarea.recipe-card__toc-title {
     break-inside: auto !important;
   }
 
+  /* The cut line, just inside the card's edge on Safari. The page box above is
+     exactly the card's height, so the outline's usual 0.75pt outside the card
+     sat below the box: Safari dropped the bottom dash (or, earlier, spilled it
+     onto a sheet of its own). Drawn 0.75pt in, it stays inside the box and the
+     card cut along it is a hair smaller, nothing more. */
+  .rp-webkit-print .recipe-print-preview--cut-lines.recipe-print-preview--card-6x4
+    .recipe-card:not(.recipe-card--duplex-spacer) {
+    outline-offset: -0.75pt;
+  }
+
   /* Cookbook EXPORT: pin the page box to the preset's exact physical sheet height
      (in inches, set on the deck as `--rp-sheet-h`) instead of `100vh`. Blink
      resolves print `vh` against the `@page` box, so `100vh` happened to equal the
