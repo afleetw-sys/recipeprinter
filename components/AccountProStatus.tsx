@@ -6,6 +6,7 @@ import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { CheckIcon, ClockIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
 import { ProBadge } from "@/components/ProBadge";
 import { SegmentedControl } from "@/components/Controls";
+import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
 import { PRO_BENEFITS } from "@/lib/proUpgradeCopy";
 import { FREE_IMAGE_IMPORT_BENEFIT, PRO_IMAGE_IMPORT_BENEFIT } from "@/lib/imageImportQuota";
 import { AccountImageImportUsage } from "@/components/AccountImageImportUsage";
@@ -135,6 +136,8 @@ export function AccountProStatus({ user }: { user: User }) {
   const proDetails = proSubscriptionDetails(effectiveProInfo.customerInfo);
   const proManagementLink = proManagementUrl(effectiveProInfo.customerInfo);
   const [openingPortal, setOpeningPortal] = useState(false);
+  /** Resubscribing from Pro with no subscription behind it: pick a cycle. */
+  const [showProUpgradeDialog, setShowProUpgradeDialog] = useState(false);
 
   /**
    * Straight into the billing portal, already signed in.
@@ -144,16 +147,21 @@ export function AccountProStatus({ user }: { user: User }) {
    * The tab is opened HERE, inside the click, and pointed at the link once it
    * arrives: opened after the `await`, Safari would block it as a popup.
    */
-  async function openBillingPortal(unavailableMessage: string) {
+  async function openBillingPortal(onNoSubscription?: () => void) {
     const tab = window.open("", "_blank");
     setOpeningPortal(true);
     try {
       const idToken = await user.getIdToken().catch(() => null);
-      const direct = idToken ? await authenticatedProManagementUrl(idToken) : null;
-      const url = direct ?? proManagementLink;
+      const link = idToken ? await authenticatedProManagementUrl(idToken) : ({ kind: "unknown" } as const);
+      if (link.kind === "no-subscription" && onNoSubscription) {
+        tab?.close();
+        onNoSubscription();
+        return;
+      }
+      const url = link.kind === "url" ? link.url : proManagementLink;
       if (!url) {
         tab?.close();
-        setProMessage(unavailableMessage);
+        setProMessage("Couldn't open billing right now. Please try again in a moment.");
         return;
       }
       if (tab) {
@@ -248,7 +256,7 @@ export function AccountProStatus({ user }: { user: User }) {
                   ))}
                 </ul>
               </div>
-              <div className="flex h-full flex-col border-t border-line py-cp-3 sm:rounded-lg sm:border sm:bg-[var(--cp-premium-soft)] sm:p-cp-3">
+              <div className="flex h-full flex-col border-t border-line py-cp-3 sm:rounded-lg sm:border sm:bg-[color-mix(in_srgb,var(--cp-premium-soft)_30%,transparent)] sm:p-cp-3">
                 <div className="flex items-center gap-2">
                   <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
                   <h3 className="text-cp-body font-extrabold text-ink">Pro</h3>
@@ -302,31 +310,31 @@ export function AccountProStatus({ user }: { user: User }) {
                     disabled={openingPortal}
                     onClick={() => {
                       track("manage_subscription_clicked", {});
-                      void openBillingPortal("Couldn't open billing right now. Please try again in a moment.");
+                      void openBillingPortal();
                     }}
                   >
                     {openingPortal ? "Opening…" : "Manage subscription"}
                   </button>
                 ) : (
-                  // Canceled, but Pro is still running: turning auto-renew
-                  // back on happens in RevenueCat's billing portal, and the
-                  // cook never loses access. This used to start a fresh
-                  // checkout, which `useProPurchase` correctly refuses while
-                  // Pro is active (no second subscription on top of the
-                  // first), so the button did nothing at all. Once Pro has
-                  // actually ended, this card is replaced by the Upgrade one.
+                  // Canceled, but Pro is still running. A canceled web
+                  // subscription is resumed in RevenueCat's billing portal
+                  // (renewal back on, access never lapses). Pro with no
+                  // subscription behind it — a promotional grant — has no
+                  // portal, so it goes straight to checkout instead; the
+                  // server has confirmed there is nothing to double-charge.
+                  // This used to always start a checkout, which
+                  // `useProPurchase` refuses while Pro is active, so the
+                  // button did nothing at all.
                   <button
                     type="button"
                     className="btn btn-primary btn-compact mt-cp-3 w-full"
-                    disabled={openingPortal}
+                    disabled={openingPortal || proBusy}
                     onClick={() => {
                       track("resubscribe_clicked", {});
-                      void openBillingPortal(
-                        `Your Pro runs until ${formatDate(proDetails.expiresAtMs) ?? "the end of your paid period"}. You can resubscribe once it ends.`,
-                      );
+                      void openBillingPortal(() => setShowProUpgradeDialog(true));
                     }}
                   >
-                    {openingPortal ? "Opening…" : "Resubscribe"}
+                    {openingPortal || proBusy ? "Opening…" : "Resubscribe"}
                   </button>
                 )}
               </div>
@@ -427,6 +435,19 @@ export function AccountProStatus({ user }: { user: User }) {
         )}
         {proMessage && <p className="mt-1 text-cp-small text-ink-soft">{proMessage}</p>}
       </div>
+
+      {showProUpgradeDialog && (
+        <ProUpgradeDialog
+          busy={proBusy}
+          cookPilotUser={user}
+          onClose={() => setShowProUpgradeDialog(false)}
+          onChoose={(cycle) =>
+            void purchaseProAndContinue(cycle, () => setShowProUpgradeDialog(false), {
+              allowWhileActive: true,
+            })
+          }
+        />
+      )}
     </section>
   );
 }
