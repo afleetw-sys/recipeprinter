@@ -8624,6 +8624,22 @@ textarea.recipe-card__toc-title {
     break-inside: auto !important;
   }
 
+  /* …and size containment, on the card AND on the sheet box around it, which
+     WebKit also treats as unsplittable — and an unsplittable box switches
+     pagination off for everything inside it. `overflow: auto` alone did not
+     stop it: steps still landed at the bottom of a card in Safari after it
+     shipped (reported 2026-10-01). Both boxes already have explicit inch
+     sizes in print (above), so containing their size changes no geometry;
+     it only tells the engine their contents can't move them. */
+  .rp-webkit-print .recipe-page-deck:not(.recipe-page-deck--book):not(.rp-exporting)
+    :is(.recipe-print-preview--card-6x4, .recipe-print-preview--letter):not(.recipe-print-preview--book-preset)
+    .recipe-card-page:not(.recipe-card-page--image),
+  .rp-webkit-print .recipe-page-deck:not(.recipe-page-deck--book):not(.rp-exporting)
+    :is(.recipe-print-preview--card-6x4, .recipe-print-preview--letter):not(.recipe-print-preview--book-preset)
+    .recipe-card:not(.recipe-card--chapter) {
+    contain: size;
+  }
+
   /* Cookbook EXPORT: pin the page box to the preset's exact physical sheet height
      (in inches, set on the deck as `--rp-sheet-h`) instead of `100vh`. Blink
      resolves print `vh` against the `@page` box, so `100vh` happened to equal the
