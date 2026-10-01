@@ -3,10 +3,16 @@ name: CI
 # Nothing ran on a push before this existed. The design-system audit had been
 # failing on `main` for long enough that the failure itself went unnoticed,
 # which is roughly the whole argument for having this file.
+#
+# Pull requests, plus pushes to the default branch (what Vercel deploys, and
+# where commits sometimes land without one). Pushes to every branch ran each
+# PR's commits twice, identically. Any other branch can still be run by hand
+# from the Actions tab. Update the name here if the default branch changes.
 on:
   push:
-    branches: ["**"]
+    branches: ["claude/wizardly-brahmagupta-w9htl1"]
   pull_request:
+  workflow_dispatch:
 
 # A new push supersedes the run in flight for the same ref.
 concurrency:

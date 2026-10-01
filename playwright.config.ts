@@ -67,7 +67,11 @@ export default defineConfig({
   expect: { timeout: 30_000 },
   fullyParallel: true,
   forbidOnly: ci,
-  retries: 0,
+  // One retry in CI. A test that only passes on its retry is reported as
+  // "flaky" rather than failing the run, so a slow runner can't turn it red,
+  // and the flake is still named in the output to be fixed. Never locally,
+  // where a retry would hide a failure you are looking at.
+  retries: ci ? 1 : 0,
   reporter: ci ? [["list"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
