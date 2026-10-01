@@ -1906,6 +1906,62 @@ export default function PrintPage() {
 
   const [mobileDrawer, setMobileDrawer] = useState<"template" | null>(null);
 
+  // ── Get the print's work done before the click ───────────────────────────
+  //
+  // Safari shows its print dialog only after the whole deck is drawn AND every
+  // image in it has loaded. The deck normally draws five pages, and a photo on
+  // a page nobody has scrolled to was never fetched, so pressing Print kicked
+  // off the full render plus a download of every remaining recipe photo, and
+  // the dialog waited on all of it (the multi-second delay reported
+  // 2026-10-01). Neither can move after the click — `print()` has to stay
+  // inside it (see `printNow`) — so both move before it.
+
+  // Fetch every recipe photo into the HTTP cache once the deck is up, so the
+  // print decodes from cache instead of waiting on the network. Same
+  // `no-referrer` as the card's own <img>, so hotlink-protected hosts answer
+  // this request exactly as they will answer the card's.
+  const printPhotoUrls = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (items ?? [])
+            .map((item) => item.recipe?.image)
+            .filter((src): src is string => Boolean(src) && !src!.startsWith("data:")),
+        ),
+      ),
+    [items],
+  );
+  useEffect(() => {
+    if (printPhotoUrls.length === 0) return;
+    const warmed: HTMLImageElement[] = [];
+    const idle = window.setTimeout(() => {
+      for (const src of printPhotoUrls) {
+        const img = new Image();
+        img.referrerPolicy = "no-referrer";
+        img.decoding = "async";
+        img.src = src;
+        warmed.push(img);
+      }
+    }, 1_500);
+    return () => {
+      window.clearTimeout(idle);
+      warmed.forEach((img) => img.removeAttribute("src"));
+    };
+  }, [printPhotoUrls]);
+
+  // Draw the whole deck when the pointer heads for Print, so the click itself
+  // finds it already drawn (`flushSync` in `printNow` then has nothing to do).
+  // Recipe cards only — a cookbook's Print opens the export screen instead.
+  function warmPrint() {
+    if (cookbookMode || printBlocked) return;
+    setRenderAllPages(true);
+  }
+  function coolPrint() {
+    // Not while a print is under way: `afterprint` and the watchdog own that.
+    if (printRequestedRef.current) return;
+    setRenderAllPages(false);
+  }
+
   function printNow() {
     printRequestedRef.current = true;
     track("print_started", {
@@ -5528,6 +5584,10 @@ export default function PrintPage() {
                   type="button"
                   className="btn btn-primary btn-compact"
                   disabled={printBlocked}
+                  onPointerEnter={warmPrint}
+                  onFocus={warmPrint}
+                  onPointerLeave={coolPrint}
+                  onBlur={coolPrint}
                   onClick={() => void handlePrint()}
                 >
                   {printSpinner ? (
