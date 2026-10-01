@@ -8585,6 +8585,39 @@ textarea.recipe-card__toc-title {
     padding-top: 0 !important;
   }
 
+  /* On Safari, a recipe card is never fragmented — not even in its head.
+
+     WebKit paginates during layout against a page height of its own, which
+     need not match the sheet the print is finally cut into. When that
+     notional page edge falls inside a card, every `break-inside: avoid` block
+     after it (`.recipe-card__section-group` is one per ingredient/step group)
+     is pushed down to the "next page" — which is still inside the same
+     fixed-height card, so the lists land near the bottom under an empty gap
+     and `overflow: hidden` cuts them off, while the card itself prints whole
+     on one sheet (reported 2026-10-01, Chicken Pesto Pasta, 4x6 landscape).
+
+     A box with scrollable overflow is unsplittable in WebKit, so it is laid
+     out in one piece and moved to a page as a whole. `auto` never draws a
+     scrollbar on paper; the card's content is already fitted to the card by
+     the face measurer, exactly as it was under `hidden`. The inner avoid is
+     dropped as well, so if a card ever is split it flows instead of jumping.
+     Scoped to recipe cards on Safari; books export through `.rp-exporting`. */
+  .rp-webkit-print .recipe-page-deck:not(.recipe-page-deck--book):not(.rp-exporting)
+    .recipe-card:not(.recipe-card--chapter) {
+    overflow: auto !important;
+    /* Never a scrollbar, even with "Always show scroll bars" on in macOS and
+       a decoration poking a pixel past the card's edge. */
+    scrollbar-width: none;
+  }
+  .rp-webkit-print .recipe-page-deck:not(.recipe-page-deck--book):not(.rp-exporting)
+    .recipe-card:not(.recipe-card--chapter)::-webkit-scrollbar {
+    display: none;
+  }
+  .rp-webkit-print .recipe-page-deck:not(.recipe-page-deck--book):not(.rp-exporting)
+    .recipe-card__section-group {
+    break-inside: auto !important;
+  }
+
   /* Cookbook EXPORT: pin the page box to the preset's exact physical sheet height
      (in inches, set on the deck as `--rp-sheet-h`) instead of `100vh`. Blink
      resolves print `vh` against the `@page` box, so `100vh` happened to equal the
