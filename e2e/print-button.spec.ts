@@ -48,6 +48,11 @@ test("Print calls window.print() inside the click", async ({ page }) => {
   await expect(page.locator("#recipe-page-deck .recipe-card").first()).toBeVisible();
   await expect(page.locator(".recipe-print-shell--measuring")).toHaveCount(0);
 
-  await page.locator(".recipe-print-topbar").getByRole("button", { name: /^Print$/ }).click();
+  // The top bar's Print on a desktop, the bottom bar's on a phone. Both go
+  // through the same handler, and Safari asks the same of both.
+  await page
+    .locator(".recipe-print-topbar button, button.recipe-mobile-actions__print")
+    .filter({ hasText: /^Print$/, visible: true })
+    .click();
   await expect.poll(() => page.evaluate(() => (window as unknown as { __printCalls: boolean[] }).__printCalls)).toEqual([true]);
 });
