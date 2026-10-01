@@ -8564,16 +8564,23 @@ textarea.recipe-card__toc-title {
      onto a second sheet — two sheets per face, four per double-sided card
      (reported 2026-10-01, 4x6 landscape, after the fix above).
 
-     So: no padding above the card, and the box 0.25in wider than the card on
-     each side. The wider box makes WebKit scale a little further down, and the
-     shorter one asks for less height, which together fit the card on one sheet
-     with up to 0.5in of margin a side. On borderless paper the card prints ~4%
-     under nominal — a wider white edge on a 4x6, not a split card. Portrait
-     4x6 and Letter already have the headroom. Chrome never gets this class. */
+     So: no padding above the card, and the box wider than the card. WebKit
+     sizes each page in CSS px as the document width times the printable
+     area's height/width ratio, so a wider box buys a taller page. The margins
+     are not symmetric, either: a Brother HL-L3220CDW on 4x6 landscape prints
+     only ~5.5in x ~3.2in (~0.57in lost at the bottom), and a box 0.5in wider
+     than the card still left every card ~0.1in over, so each face spilled its
+     bottom edge onto a sheet of its own (reported 2026-10-01).
+
+     1in wider fits the card with ~0.9in of vertical margin in total and ~0.5in
+     a side across. The cost is size: on that printer the card prints ~4.7in
+     wide instead of ~5.1in, and smaller again on borderless paper — a wider
+     white edge on a 4x6, never a card split across sheets. Portrait 4x6 and
+     Letter already have the headroom. Chrome never gets this class. */
   .rp-webkit-print .recipe-page-deck:not(.recipe-page-deck--book):not(.rp-exporting)
     .recipe-print-preview--card-6x4:not(.recipe-print-preview--book-preset)
     .recipe-card-page:not(.recipe-card-page--image) {
-    width: calc(var(--recipe-card-width) + 0.5in) !important;
+    width: calc(var(--recipe-card-width) + 1in) !important;
     height: var(--recipe-card-min-height) !important;
     padding-top: 0 !important;
   }
