@@ -6,7 +6,6 @@ import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { CheckIcon, ClockIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
 import { ProBadge } from "@/components/ProBadge";
 import { SegmentedControl } from "@/components/Controls";
-import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
 import { PRO_BENEFITS } from "@/lib/proUpgradeCopy";
 import { FREE_IMAGE_IMPORT_BENEFIT, PRO_IMAGE_IMPORT_BENEFIT } from "@/lib/imageImportQuota";
 import { AccountImageImportUsage } from "@/components/AccountImageImportUsage";
@@ -77,7 +76,6 @@ export function AccountProStatus({ user }: { user: User }) {
   const [proMirrorSyncedAtMs, setProMirrorSyncedAtMs] = useState<number | null>(null);
   const [proInfoLoading, setProInfoLoading] = useState(false);
   const [proMessage, setProMessage] = useState<string | null>(null);
-  const [showProUpgradeDialog, setShowProUpgradeDialog] = useState(false);
   /** Only changes which price the Pro card quotes before you've bought
       anything — `ProUpgradeDialog` still has its own cycle picker once
       you're actually choosing. */
@@ -146,8 +144,7 @@ export function AccountProStatus({ user }: { user: User }) {
    * The tab is opened HERE, inside the click, and pointed at the link once it
    * arrives: opened after the `await`, Safari would block it as a popup.
    */
-  async function openBillingPortal() {
-    track("manage_subscription_clicked", {});
+  async function openBillingPortal(unavailableMessage: string) {
     const tab = window.open("", "_blank");
     setOpeningPortal(true);
     try {
@@ -156,7 +153,7 @@ export function AccountProStatus({ user }: { user: User }) {
       const url = direct ?? proManagementLink;
       if (!url) {
         tab?.close();
-        setProMessage("Couldn't open billing right now. Please try again in a moment.");
+        setProMessage(unavailableMessage);
         return;
       }
       if (tab) {
@@ -303,24 +300,33 @@ export function AccountProStatus({ user }: { user: User }) {
                     type="button"
                     className="btn btn-secondary btn-compact mt-cp-3 w-full"
                     disabled={openingPortal}
-                    onClick={() => void openBillingPortal()}
+                    onClick={() => {
+                      track("manage_subscription_clicked", {});
+                      void openBillingPortal("Couldn't open billing right now. Please try again in a moment.");
+                    }}
                   >
                     {openingPortal ? "Opening…" : "Manage subscription"}
                   </button>
                 ) : (
-                  // Reuses the same purchase flow a first-time upgrade uses —
-                  // there's no separate "undo cancellation" mechanism to
-                  // build, and this one already knows how to pick a cycle
-                  // and hand the result back here.
+                  // Canceled, but Pro is still running: turning auto-renew
+                  // back on happens in RevenueCat's billing portal, and the
+                  // cook never loses access. This used to start a fresh
+                  // checkout, which `useProPurchase` correctly refuses while
+                  // Pro is active (no second subscription on top of the
+                  // first), so the button did nothing at all. Once Pro has
+                  // actually ended, this card is replaced by the Upgrade one.
                   <button
                     type="button"
                     className="btn btn-primary btn-compact mt-cp-3 w-full"
+                    disabled={openingPortal}
                     onClick={() => {
-                      track("paywall_viewed", { trigger: "account_menu" });
-                      setShowProUpgradeDialog(true);
+                      track("resubscribe_clicked", {});
+                      void openBillingPortal(
+                        `Your Pro runs until ${formatDate(proDetails.expiresAtMs) ?? "the end of your paid period"}. You can resubscribe once it ends.`,
+                      );
                     }}
                   >
-                    Resubscribe
+                    {openingPortal ? "Opening…" : "Resubscribe"}
                   </button>
                 )}
               </div>
@@ -421,15 +427,6 @@ export function AccountProStatus({ user }: { user: User }) {
         )}
         {proMessage && <p className="mt-1 text-cp-small text-ink-soft">{proMessage}</p>}
       </div>
-
-      {showProUpgradeDialog && (
-        <ProUpgradeDialog
-          busy={proBusy}
-          cookPilotUser={user}
-          onClose={() => setShowProUpgradeDialog(false)}
-          onChoose={(cycle) => void purchaseProAndContinue(cycle, () => setShowProUpgradeDialog(false))}
-        />
-      )}
     </section>
   );
 }
