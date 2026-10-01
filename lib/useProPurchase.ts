@@ -72,6 +72,10 @@ export function useProPurchase({
   async function purchaseProAndContinue(
     cycle: ProBillingCycle,
     onSettled: (outcome: ProPurchaseOutcome) => void,
+    /** Skip the already-active check. Only for a cook whose Pro comes from
+     *  something with no subscription behind it (a promotional grant), which
+     *  the server has confirmed — there is nothing to double-charge against. */
+    { allowWhileActive = false }: { allowWhileActive?: boolean } = {},
   ) {
     if (!revenueCatUserId) {
       showToast("Purchases aren't ready yet. Wait a moment, then try again.");
@@ -79,7 +83,7 @@ export function useProPurchase({
       return;
     }
 
-    if (hasProEntitlement(customerInfo)) {
+    if (!allowWhileActive && hasProEntitlement(customerInfo)) {
       onSettled("already-active");
       return;
     }

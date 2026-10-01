@@ -663,21 +663,31 @@ export function proManagementUrl(customerInfo: CustomerInfo | null): string | nu
   return customerInfo?.managementURL ?? null;
 }
 
-/** A billing-portal link that opens already signed in, for a cook signed in to
- *  us (see app/api/pro/manage). Null when the server can't produce one — the
- *  caller then falls back to `proManagementUrl`, RevenueCat's email sign-in. */
-export async function authenticatedProManagementUrl(idToken: string): Promise<string | null> {
+/** What the server could do about opening the billing portal (see
+ *  app/api/pro/manage). */
+export type ProPortalLink =
+  /** A portal link that opens already signed in. */
+  | { kind: "url"; url: string }
+  /** RevenueCat confirms there is no web subscription behind this cook's Pro
+   *  (e.g. a promotional grant): there is no portal, and nothing a new
+   *  checkout could double-charge against. */
+  | { kind: "no-subscription" }
+  /** Couldn't tell — not configured, signed out, or RevenueCat unreachable. */
+  | { kind: "unknown" };
+
+export async function authenticatedProManagementUrl(idToken: string): Promise<ProPortalLink> {
   try {
     const response = await fetch("/api/pro/manage", {
       method: "POST",
       headers: { authorization: `Bearer ${idToken}` },
       cache: "no-store",
     });
-    if (!response.ok) return null;
+    if (response.status === 404) return { kind: "no-subscription" };
+    if (!response.ok) return { kind: "unknown" };
     const body = (await response.json()) as { url?: unknown };
-    return typeof body.url === "string" ? body.url : null;
+    return typeof body.url === "string" ? { kind: "url", url: body.url } : { kind: "unknown" };
   } catch {
-    return null;
+    return { kind: "unknown" };
   }
 }
 
