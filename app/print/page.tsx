@@ -634,19 +634,6 @@ export default function PrintPage() {
   const anyRecipeHasSourceUrl =
     items?.some((item) => Boolean(item.recipe?.sourceUrl)) ?? false;
   const cookbookMode = Boolean(projectMeta.meta.cookbookMode);
-  /**
-   * Does this project hold a book — either on screen, or set aside?
-   *
-   * `stashedCookbook` counts: a book being viewed as recipe cards is still a
-   * book (see `currentProject`), which is what keeps a save from writing the
-   * emptiness left behind over a cookbook someone bought, and what makes a
-   * conflict on this document never resolvable by forking it.
-   *
-   * It deliberately no longer decides whether the project SAVES itself. Holding
-   * a book is not the same as having asked us to keep one — see
-   * `autosaveEnabledForCurrentMode`.
-   */
-  const isCookbookDocument = cookbookMode || Boolean(projectMeta.meta.stashedCookbook);
   // The cookbook's remembered export format (US Letter / 8×10 hardcover). This
   // is purely an EXPORT concern — it never changes how the book previews or how
   // recipes are measured; it just seeds the format the "Print your cookbook"
@@ -729,6 +716,10 @@ export default function PrintPage() {
     template,
   ]);
 
+  // Pro prints without the brand line (and without the space it held), on the
+  // free themes too. Known only once the purchase state loads, further down,
+  // so it is held here for the sheets above it to measure against.
+  const [brandHidden, setBrandHidden] = useState(false);
   const {
     hasRecipeBackSide,
     continueOnBack,
@@ -756,6 +747,7 @@ export default function PrintPage() {
     photosOn,
     sourceUrlOn,
     descriptionOn: showDescription,
+    brandHidden,
     template,
     // The preview page IS the book's real sheet, and so is the card every
     // recipe is measured against (see `presetCardDims`).
@@ -2573,42 +2565,27 @@ export default function PrintPage() {
       void handleSaveProject();
       return;
     }
-    // A cookbook is never forked, purchased or not.
+    // Never forked, cookbook or recipe cards.
     //
     // The fallback here used to be "save your current edits as a copy", which
-    // mints a fresh project id — a second cookbook in the library holding the
-    // same recipes, and, if the book was paid for, an unlocked original left
-    // behind under a name the cook is no longer looking at. Now that a cookbook
-    // autosaves from its first edit AND every mode toggle writes, conflicts are
-    // far easier to hit than they used to be, so this fork is the one path that
-    // can quietly multiply a book. Overwrite instead: re-read the remote
-    // revision, then write the edits in front of the cook on top of it.
-    if (isCookbookDocument) {
-      const loadNewer = window.confirm(
-        `${
-          cookbookMode ? "This cookbook" : "This project"
-        } was updated in another tab. Choose OK to load that version, or Cancel to keep the edits in front of you and overwrite it.`,
-      );
-      if (loadNewer && conflictProjectId) {
-        window.location.assign(`/print?project=${encodeURIComponent(conflictProjectId)}`);
-        return;
-      }
-      void resolveConflictByOverwriting();
-      return;
-    }
+    // mints a fresh project id: a second project in the library holding the
+    // same recipes. Cookbooks stopped doing that first (a paid book could leave
+    // its unlocked original behind under a name nobody was looking at); recipe
+    // cards kept it, and it is how a reopened, reloaded set of cards turned up
+    // twice in the library. A conflict here is almost always this same cook's
+    // own earlier save landing late (a reload, a second tab), so the two honest
+    // choices are the same for both kinds: load that version, or overwrite it
+    // with the edits in front of you.
     const loadNewer = window.confirm(
-      "This project was updated elsewhere. Choose OK to load that newer version, or Cancel to save your current edits as a copy.",
+      `${
+        cookbookMode ? "This cookbook" : "This project"
+      } was updated in another tab. Choose OK to load that version, or Cancel to keep the edits in front of you and overwrite it.`,
     );
     if (loadNewer && conflictProjectId) {
       window.location.assign(`/print?project=${encodeURIComponent(conflictProjectId)}`);
       return;
     }
-    const copyId = createPrintProjectId();
-    projectRevisionRef.current = 0;
-    savedProjectIdRef.current = null;
-    setSavedProjectId(null);
-    projectMeta.setProjectId(copyId);
-    setSaveStatus(null);
+    void resolveConflictByOverwriting();
   }
 
   /**
@@ -2733,6 +2710,10 @@ export default function PrintPage() {
       }),
     [customerInfo, customerInfoStatus, customerInfoLastVerifiedAtMs, mirroredEntitlements, mirrorSyncedAtMs],
   );
+  const hasProBrandless = hasProEntitlement(effectiveCustomerInfo.customerInfo);
+  useEffect(() => {
+    setBrandHidden(hasProBrandless);
+  }, [hasProBrandless]);
 
   // Resumes a print that was waiting on Pro checkout when a reload tore the
   // page down mid-purchase — see `rememberPendingPrintAfterCheckout`'s doc
@@ -5483,7 +5464,14 @@ export default function PrintPage() {
    * recipe read as having broken something.
    */
   return (
-    <div className={`h-dvh recipe-print-page ${printWatermarked ? "rp-print-locked" : ""}`}>
+    <div
+      className={`h-dvh recipe-print-page ${printWatermarked ? "rp-print-locked" : ""} ${
+        // A Pro benefit: no "Printed with RecipePrinter" line, on any theme.
+        // On the page root, not the shell, because the off-screen measurers
+        // (`measurers` below) must lay cards out exactly as the deck does.
+        brandHidden ? "recipe-print-page--pro" : ""
+      }`}
+    >
       {measurers}
       {/* Header + the back-up bar share one grid row so the bar pushes the
           editor down instead of stealing the deck's `1fr` row (which left it

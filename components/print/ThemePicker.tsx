@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import {
   RECIPE_PRINT_TEMPLATE_OPTIONS,
@@ -56,6 +56,22 @@ export function ThemePicker({
   const currentIsOffSeason = offSeason.some((option) => option.id === template);
   const [seasonalOpen, setSeasonalOpen] = useState(currentIsOffSeason);
   const showSeasonal = seasonalOpen || currentIsOffSeason;
+
+  // Opening the seasonal list adds themes below the fold of the settings
+  // panel, so the click looked like it did nothing. Bring the toggle to the top
+  // of whatever is scrolling (the panel, or the phone drawer) so the themes it
+  // just revealed sit right under it. Only for a click, never on load.
+  const seasonalToggleRef = useRef<HTMLButtonElement>(null);
+  const revealSeasonalRef = useRef(false);
+  useEffect(() => {
+    if (!showSeasonal || !revealSeasonalRef.current) return;
+    revealSeasonalRef.current = false;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    seasonalToggleRef.current?.scrollIntoView({
+      block: "start",
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
+  }, [showSeasonal]);
 
   function renderOption(option: (typeof RECIPE_PRINT_TEMPLATE_OPTIONS)[number]) {
     const premiumTemplate = isPremiumTemplate(option.id) ? option.id : null;
@@ -116,10 +132,14 @@ export function ThemePicker({
         <>
           <button
             type="button"
+            ref={seasonalToggleRef}
             className="recipe-template-seasonal-toggle"
             aria-expanded={showSeasonal}
             aria-controls="recipe-template-seasonal"
-            onClick={() => setSeasonalOpen(!showSeasonal)}
+            onClick={() => {
+              revealSeasonalRef.current = !showSeasonal;
+              setSeasonalOpen(!showSeasonal);
+            }}
           >
             Seasonal themes
             <ChevronDownIcon size={ICON_SIZE.sm} />

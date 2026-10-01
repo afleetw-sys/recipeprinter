@@ -1,4 +1,5 @@
 import { formatRecipeTime } from "@/lib/time";
+import { printableSourceUrl } from "@/lib/sourceUrl";
 import { stripRichText } from "@/lib/richText";
 import type {
   CardSectionLayout,
@@ -224,15 +225,10 @@ interface SplitRecipeResult {
   backLayout: CardSectionLayout;
 }
 
+/** The source link as it prints: tracking tags and `https://www.` dropped
+    (see lib/sourceUrl), so an ad-tagged link is one line, not three. */
 export function sourceLabel(recipe: Recipe): string | null {
-  if (!recipe.sourceUrl || !/^https?:\/\//i.test(recipe.sourceUrl)) return null;
-  try {
-    const url = new URL(recipe.sourceUrl);
-    url.hash = "";
-    return url.toString().replace(/\/$/, "");
-  } catch {
-    return recipe.sourceUrl.split("#")[0].replace(/\/$/, "");
-  }
+  return printableSourceUrl(recipe.sourceUrl);
 }
 
 export function metaBits(recipe: Recipe): string[] {

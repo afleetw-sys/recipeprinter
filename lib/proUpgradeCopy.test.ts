@@ -24,6 +24,7 @@ describe("proUpgradeCopy", () => {
       "Print multiple recipes at once",
       "4×6 recipe cards",
       "30 image imports an hour",
+      "No RecipePrinter branding on your prints",
       "20% off your first cookbook",
     ]);
   });
@@ -36,6 +37,7 @@ describe("proUpgradeCopy", () => {
       "4×6 recipe cards",
       "All premium themes",
       "30 image imports an hour",
+      "No RecipePrinter branding on your prints",
       "20% off your first cookbook",
     ]);
   });

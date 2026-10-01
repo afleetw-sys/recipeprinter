@@ -7535,6 +7535,23 @@ textarea.recipe-card__toc-title {
   padding-bottom: var(--recipe-card-footer-reserve);
 }
 
+/* RecipePrinter Pro prints without the "Printed with RecipePrinter" line on
+   the free themes too, and without the space held for it: the content gets
+   the full card. A source link still shows (and keeps its footer and its
+   reserve, from the rule above). Set on the page root, so the off-screen
+   measurers lay the card out the same way the deck does, and part of their
+   cache key (`brandHidden` in lib/usePrintSheets). Placed after the reserve
+   rule it overrides, at the same specificity. */
+.recipe-print-page--pro .recipe-card__footer-brand {
+  display: none;
+}
+.recipe-print-page--pro .recipe-card__footer:not(:has(.recipe-card__footer-source)) {
+  display: none;
+}
+.recipe-print-page--pro :is(.recipe-template--classic, .recipe-template--pantry) .recipe-card:not(:has(.recipe-card__footer-source)) .recipe-card__cols {
+  padding-bottom: 0;
+}
+
 /* The PREMIUM templates skip the "Printed with RecipePrinter" line: it clashes
    with footer treatments they design themselves, and they are paid.
    Card-6x4 used to be in this list too, on the grounds that there was no room —

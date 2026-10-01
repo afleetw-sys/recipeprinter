@@ -5,6 +5,7 @@ import type { ImportMethod, QueueItem, Recipe } from "@/types/recipe";
 import { track, truncateReason } from "@/lib/analytics";
 import { ImportError, parseImages, parseText, parseUrlAll } from "@/lib/parser";
 import { captureFailedImportImages, recordFailedImport } from "@/lib/failedImportCapture";
+import { noteImported, noteRecipeEdited } from "@/lib/importCorrections";
 import { placeholderHostMessage } from "@/lib/friendlyErrors";
 import { unwrapRedirectUrl } from "@/lib/importUrl";
 import { prepareImageDataUrls } from "@/lib/imageImport";
@@ -609,6 +610,7 @@ export function useQueue() {
   const updateRecipe = useCallback(
     (id: string, recipe: Recipe) => {
       const nextRecipe = printableRecipe(recipe);
+      noteRecipeEdited(id, nextRecipe);
       const next = itemsRef.current.map((it) =>
         it.id === id
           ? { ...it, recipe: nextRecipe, title: nextRecipe.title || "Untitled recipe" }
@@ -724,6 +726,10 @@ export function useQueue() {
         const [first, ...allRest] = recipes;
         patch(id, { status: "ready", recipe: first, title: first.title || "Untitled recipe" });
         track("recipe_imported", outcome);
+        // Watch for the cook rewriting it, the sign this "success" read the
+        // recipe wrong (lib/importCorrections). Against the printable form,
+        // the same one their edits arrive in.
+        if (opts?.failedText) noteImported(id, origin.source, opts.failedText, printableRecipe(first));
         if (allRest.length > 0) {
           track("multi_recipe_found", {
             source: origin.source,

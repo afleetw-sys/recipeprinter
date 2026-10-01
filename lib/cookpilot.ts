@@ -1,4 +1,5 @@
 import type { Recipe, RecipeIngredient, RecipeInstruction } from "@/types/recipe";
+import { cleanSourceUrl } from "@/lib/sourceUrl";
 import { asString, type AnyRecord } from "@/lib/jsonCoerce";
 import { bestRecipeImageFrom } from "@/lib/recipeImages";
 import { hostnameOf } from "@/lib/url";
@@ -171,7 +172,7 @@ export function adaptCookPilotRecipe(body: unknown, sourceUrl?: string): Recipe 
       ...flat,
       title: asString(flat.title) ?? "Untitled recipe",
       image: bestRecipeImageFrom(flatNode.imageURL, flatNode.imageUrl, flatNode.image, flatNode.images),
-      sourceUrl: flat.sourceUrl ?? sourceUrl,
+      sourceUrl: cleanSourceUrl(flat.sourceUrl ?? sourceUrl),
       sourceName: flat.sourceName ?? (sourceUrl ? hostnameOf(sourceUrl) : undefined),
       ingredients: Array.isArray(flat.ingredients) ? flat.ingredients : [],
       instructions: Array.isArray(flat.instructions) ? flat.instructions : [],
@@ -191,7 +192,7 @@ export function adaptCookPilotRecipe(body: unknown, sourceUrl?: string): Recipe 
     title: asString(data.title) ?? "Untitled recipe",
     description: asString(data.description),
     image: bestRecipeImageFrom(data.imageURL, data.imageUrl, data.image, data.images),
-    sourceUrl,
+    sourceUrl: cleanSourceUrl(sourceUrl),
     sourceName: sourceUrl ? hostnameOf(sourceUrl) : undefined,
     prepTime: asString(data.prepTime),
     cookTime: asString(data.cookTime),

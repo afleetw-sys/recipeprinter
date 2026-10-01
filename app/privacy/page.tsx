@@ -252,11 +252,14 @@ export default function PrivacyPage() {
             error and the page where it happened.
           </li>
           <li>
-            <strong>Failed imports.</strong> When an import fails, we keep a copy
-            of what was imported, such as the link, the pasted text, or the
-            images, along with the reason it failed and, if you are signed in,
-            your email address. We use these copies only to diagnose and fix the
-            failure.
+            <strong>Failed and corrected imports.</strong> When an import fails,
+            we keep a copy of what was imported, such as the link, the pasted
+            text, or the images, along with the reason it failed and, if you are
+            signed in, your email address. When an import succeeds but you then
+            rewrite much of it by hand shortly afterwards, which usually means
+            we read it incorrectly, we keep a copy of what you pasted, what we
+            read, and your corrected version. We use these copies only to
+            diagnose and improve how recipes are read.
           </li>
         </LegalList>
 
@@ -303,7 +306,8 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>To understand which features are used and diagnose
-            problems</strong>, including failed imports.{" "}
+            problems</strong>, including failed imports and imports that were
+            read incorrectly.{" "}
             <em>Legitimate interests</em>, in maintaining and improving the
             service, balanced by limiting what we collect and using random
             identifiers. You can opt out of analytics; see{" "}
@@ -533,9 +537,9 @@ export default function PrivacyPage() {
             and one year for less frequently used data.
           </li>
           <li>
-            <strong>Failed-import copies</strong> are kept until the failure has
-            been reviewed and resolved. You can ask us to delete them at any
-            time.
+            <strong>Copies of failed and corrected imports</strong> are kept until
+            they have been reviewed and resolved. You can ask us to delete them
+            at any time.
           </li>
           <li>
             <strong>Feedback messages and gallery submissions</strong> are kept

@@ -93,8 +93,12 @@ function faceKey(
   // must never share an entry — that is the stale-height clipping this cache
   // exists to prevent.
   descriptionOn: boolean,
+  // A Pro card on a free theme drops the brand line and the space it held
+  // (`.recipe-print-page--pro` in print.css), so it is a taller canvas for
+  // the same recipe and must not reuse a face measured with the line.
+  brandHidden: boolean,
 ): string {
-  return `${id}::${size}::${template}::${hasPhoto ? 1 : 0}::${sourceUrlOn ? 1 : 0}::${cookbookMode ? 1 : 0}::${descriptionOn ? 1 : 0}`;
+  return `${id}::${size}::${template}::${hasPhoto ? 1 : 0}::${sourceUrlOn ? 1 : 0}::${cookbookMode ? 1 : 0}::${descriptionOn ? 1 : 0}::${brandHidden ? 1 : 0}`;
 }
 
 // Ceiling on retained measurements, evicted oldest-first. Entries are cheap —
@@ -458,6 +462,8 @@ interface UsePrintSheetsOptions {
       can override it -- see `linkOnFor`. */
   sourceUrlOn: boolean;
   descriptionOn: boolean;
+  /** Pro: no "Printed with RecipePrinter" line, and no space held for it. */
+  brandHidden?: boolean;
   template: RecipePrintTemplate;
   /** The book's print format. In cookbook mode the page — and so the card every
       recipe is measured against — IS this preset's sheet (see `presetCardDims`).
@@ -497,6 +503,7 @@ export function usePrintSheets({
   photosOn,
   sourceUrlOn,
   descriptionOn,
+  brandHidden = false,
   template,
   preset,
 }: UsePrintSheetsOptions) {
@@ -569,14 +576,14 @@ export function usePrintSheets({
     (id: string, recipe: Recipe, hasPhoto: boolean, size: PrintCardSize): RecipeFace[] | null => {
       const entry =
         measuredFaces[
-          faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn)
+          faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn, brandHidden)
         ];
       // Recipe CONTENT is the one discriminator a string key can't carry: an
       // inline edit keeps the same id, so a measurement of the pre-edit recipe
       // has to be rejected on identity. Everything else is in the key.
       return entry && entry.recipe === recipe ? entry.pages : null;
     },
-    [measuredFaces, linkOnFor, template, cookbookLayouts, descriptionOn],
+    [measuredFaces, linkOnFor, template, cookbookLayouts, descriptionOn, brandHidden],
   );
 
   // Resolves each recipe's per-page layout: an explicit placement, else the
@@ -1314,7 +1321,7 @@ export function usePrintSheets({
               setMeasuredFaces((current) =>
                 withMeasuredFace(
                   current,
-                  faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn),
+                  faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn, brandHidden),
                   { recipe, pages },
                 ),
               )

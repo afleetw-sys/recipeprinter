@@ -19,6 +19,9 @@ const BENEFIT_BY_REASON: Record<ProLockReason, string> = {
   theme: "All premium themes",
 };
 const COOKBOOK_BENEFIT = "20% off your first cookbook";
+// Not "no watermark": the free line is a quiet footer, not a watermark, and
+// the wording shouldn't talk the free tier down. See `.recipe-print-page--pro`.
+const NO_BRANDING_BENEFIT = "No RecipePrinter branding on your prints";
 
 // Exported so `AccountProStatus` can show the same list to a Free account —
 // one list, so a change here doesn't quietly leave the two surfaces
@@ -28,6 +31,7 @@ const COOKBOOK_BENEFIT = "20% off your first cookbook";
 export const PRO_BENEFITS = [
   ...Object.values(BENEFIT_BY_REASON),
   PRO_IMAGE_IMPORT_BENEFIT,
+  NO_BRANDING_BENEFIT,
   COOKBOOK_BENEFIT,
 ];
 
