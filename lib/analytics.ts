@@ -356,6 +356,9 @@ type EventProps = {
    *  menu to manage or cancel. Confirms cancellation is actually
    *  discoverable, not just theoretically available. */
   manage_subscription_clicked: {};
+  /** A canceled Pro subscriber, still inside their paid period, pressed
+   *  Resubscribe — which opens the billing portal to turn renewal back on. */
+  resubscribe_clicked: {};
   /**
    * `customerId` is the RevenueCat app user id, and it is the whole point of
    * these three carrying it.
