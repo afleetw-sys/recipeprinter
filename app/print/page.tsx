@@ -1949,6 +1949,23 @@ export default function PrintPage() {
     };
   }, [printPhotoUrls]);
 
+  // Every photo in the deck starts loading the moment the whole deck is drawn.
+  // Card photos are `loading="lazy"`, which is right for editing but means a
+  // page just drawn for printing has photos that have not even been requested:
+  // Safari then fetches and decodes them while building the print, and the
+  // dialog waits. Switched in place, not by prop, so the dozens of cards on a
+  // big deck don't re-render for it; `afterprint` redraws the window anyway.
+  function loadDeckPhotosNow() {
+    document
+      .querySelectorAll<HTMLImageElement>('#recipe-page-deck img[loading="lazy"]')
+      .forEach((img) => {
+        img.loading = "eager";
+      });
+  }
+  useEffect(() => {
+    if (renderAllPages) loadDeckPhotosNow();
+  }, [renderAllPages]);
+
   // Draw the whole deck when the pointer heads for Print, so the click itself
   // finds it already drawn (`flushSync` in `printNow` then has nothing to do).
   // Recipe cards only — a cookbook's Print opens the export screen instead.
@@ -2009,6 +2026,7 @@ export default function PrintPage() {
     // `beforeprint` sets the same flag for the cook's own Ctrl+P; by then it is
     // already true and React bails out, so the work is done once either way.
     flushSync(() => setRenderAllPages(true));
+    loadDeckPhotosNow();
     window.print();
     // `window.print()` returns at once whether or not a sheet opens, so watch
     // for `beforeprint`. iOS Safari lets a tab print once and puts its own
