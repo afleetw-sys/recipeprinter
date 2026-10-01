@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type SetStateAction } from "react";
 import { flushSync } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -1966,6 +1966,36 @@ export default function PrintPage() {
     if (renderAllPages) loadDeckPhotosNow();
   }, [renderAllPages]);
 
+  // ── Show the spinner before the click, not with it ───────────────────────
+  //
+  // Safari freezes the page from `print()` until its dialog is up, and no
+  // browser announces "the dialog is now open". The spinner `printNow` turns
+  // on is set in the same task as `print()`, so it is never painted before the
+  // freeze: the button looked untouched for the whole wait. The press itself
+  // (pointerdown) lands a task before the click, with a frame in between, so
+  // turning the spinner on there gets it on screen before the freeze, and it
+  // stays up through it. `handlePrint` hands it straight to `printNow` in the
+  // same task (React batches the off-then-on, so nothing flickers), or drops
+  // it for a click that opens something else. The timer covers a press that
+  // never became a click (dragged off the button).
+  const printPressTimerRef = useRef<number | null>(null);
+  function pressPrint(event: ReactPointerEvent) {
+    if (event.button !== 0 || printBlocked) return;
+    setPrintAwaitingBrowser(true);
+    if (printPressTimerRef.current !== null) window.clearTimeout(printPressTimerRef.current);
+    printPressTimerRef.current = window.setTimeout(() => {
+      printPressTimerRef.current = null;
+      if (printWatchdogRef.current === null) setPrintAwaitingBrowser(false);
+    }, 1_500);
+  }
+  function releasePrintPress() {
+    if (printPressTimerRef.current !== null) {
+      window.clearTimeout(printPressTimerRef.current);
+      printPressTimerRef.current = null;
+    }
+    if (printWatchdogRef.current === null) setPrintAwaitingBrowser(false);
+  }
+
   // Draw the whole deck when the pointer heads for Print, so the click itself
   // finds it already drawn (`flushSync` in `printNow` then has nothing to do).
   // Recipe cards only — a cookbook's Print opens the export screen instead.
@@ -3030,6 +3060,9 @@ export default function PrintPage() {
    * free of `await` before `printNow`, or a real click loses its gesture too.
    */
   async function handlePrint({ deferred = false }: { deferred?: boolean } = {}) {
+    // The press spinner (see `pressPrint`) is for a click that prints;
+    // `printNow` turns it back on in this same task when that is what happens.
+    releasePrintPress();
     if (cookbookPurchaseBusy || proBusy) return;
     if (!printLayoutReady) {
       // Remember it and let the effect below fire once the layout settles,
@@ -5602,6 +5635,7 @@ export default function PrintPage() {
                   type="button"
                   className="btn btn-primary btn-compact"
                   disabled={printBlocked}
+                  onPointerDown={pressPrint}
                   onPointerEnter={warmPrint}
                   onFocus={warmPrint}
                   onPointerLeave={coolPrint}
@@ -6050,6 +6084,7 @@ export default function PrintPage() {
                only carries the full-width shape now; every colour, radius and
                weight comes from `.btn-primary`, so the two can never drift. */
             className="btn btn-primary recipe-mobile-actions__print"
+            onPointerDown={pressPrint}
             onClick={handleMobilePrint}
             disabled={printBlocked}
           >
