@@ -2437,7 +2437,7 @@
       radial-gradient(ellipse 22% 42% at 90% 104%, color-mix(in srgb, color-mix(in srgb, var(--cp-accent-warm) 70%, var(--cp-ink)) 50%, var(--cp-cream)) 0%, transparent 100%),
       radial-gradient(ellipse 34% 62% at 0% 30%, color-mix(in srgb, var(--cp-accent-warm) 40%, var(--cp-cream)) 0%, transparent 100%),
       var(--cp-cream);
-    opacity: 0.3;
+    opacity: 0.2;
     pointer-events: none;
   }
   .rp-cookbook-offer__copy {
