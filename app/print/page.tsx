@@ -208,6 +208,9 @@ const DECK_ZOOM_BOUNDS = { min: DECK_ZOOM_MIN, max: DECK_ZOOM_MAX };
  */
 const PRINT_ACCEPTANCE_GRACE_MS = 1_200;
 
+/** Longest the Print spinner waits for the print sheet to take focus. */
+const PRINT_SHEET_WAIT_CEILING_MS = 30_000;
+
 export default function PrintPage() {
   useEffect(() => {
     const stableTimer = window.setTimeout(markPrintPreviewStable, PRINT_PREVIEW_STABILITY_MS);
@@ -2009,6 +2012,44 @@ export default function PrintPage() {
     setRenderAllPages(false);
   }
 
+  /**
+   * Keep the Print spinner up until the print sheet is actually on screen.
+   *
+   * Safari's `print()` returns at once and builds the sheet afterwards, often
+   * for seconds; no browser fires an event when the dialog appears. What does
+   * happen is that the page loses focus to it — so `blur` is the tell. The
+   * spinner also drops on `afterprint` (Chrome's `print()` only returns once
+   * its preview has closed, so that one has already fired by the time we get
+   * here) and after a long ceiling, so a browser that never blurs can't leave
+   * it spinning.
+   */
+  const sheetWaitCleanupRef = useRef<(() => void) | null>(null);
+  function stopSheetWait() {
+    sheetWaitCleanupRef.current?.();
+    sheetWaitCleanupRef.current = null;
+  }
+  function holdSpinnerUntilSheetOpens() {
+    stopSheetWait();
+    // Chrome: the preview has come and gone inside `print()` already.
+    if (!printRequestedRef.current) {
+      setPrintAwaitingBrowser(false);
+      return;
+    }
+    const done = () => {
+      stopSheetWait();
+      setPrintAwaitingBrowser(false);
+    };
+    const ceiling = window.setTimeout(done, PRINT_SHEET_WAIT_CEILING_MS);
+    window.addEventListener("blur", done);
+    window.addEventListener("afterprint", done);
+    sheetWaitCleanupRef.current = () => {
+      window.clearTimeout(ceiling);
+      window.removeEventListener("blur", done);
+      window.removeEventListener("afterprint", done);
+    };
+  }
+  useEffect(() => () => stopSheetWait(), []);
+
   function printNow() {
     printRequestedRef.current = true;
     track("print_started", {
@@ -2068,10 +2109,14 @@ export default function PrintPage() {
     // one-print-per-document in memory). The sheet still arrives via
     // `beforeprint`, which re-renders the deck itself.
     if (printWatchdogRef.current !== null) window.clearTimeout(printWatchdogRef.current);
+    holdSpinnerUntilSheetOpens();
     printWatchdogRef.current = window.setTimeout(() => {
       printWatchdogRef.current = null;
-      setPrintAwaitingBrowser(false);
+      // A print the browser took keeps its spinner until the sheet is actually
+      // up (see `holdSpinnerUntilSheetOpens`); only a refusal drops it here.
       if (printAcceptedRef.current) return;
+      stopSheetWait();
+      setPrintAwaitingBrowser(false);
       // No `beforeprint` yet, so nothing is going to fire `afterprint` to put
       // the deck back to its five-page window. Left as it is, a print that is
       // still waiting on Safari's alert (or was dismissed) leaves the entire
