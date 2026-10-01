@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SAVE_FAILURES, SAVE_STATUS_LABEL } from "@/components/AccountControl";
 import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
+import { pauseFirestoreForPrint, resumeFirestoreAfterPrint } from "@/lib/firebase/db";
 import { PrintDialogs } from "@/components/PrintDialogs";
 import { AddRecipeDialog } from "@/components/AddRecipeDialog";
 import { sectionOrderChanged, sortSectionsByTitle } from "@/lib/sectionSort";
@@ -584,6 +585,7 @@ export default function PrintPage() {
   useEffect(
     () => () => {
       if (printWatchdogRef.current !== null) window.clearTimeout(printWatchdogRef.current);
+      resumeFirestoreAfterPrint();
     },
     [],
   );
@@ -2018,6 +2020,11 @@ export default function PrintPage() {
   function pressPrint(event: ReactPointerEvent) {
     if (event.button !== 0 || printBlocked) return;
     setPrintAwaitingBrowser(true);
+    // Safari will not open the print dialog while any request is loading, and
+    // a signed-in page has Firestore's idle stream open for up to a minute.
+    // Closing it takes a few ms; doing it here, a task before the click, has it
+    // closed by the time `print()` runs. See `pauseFirestoreForPrint`.
+    pauseFirestoreForPrint();
     if (printPressTimerRef.current !== null) window.clearTimeout(printPressTimerRef.current);
     printPressTimerRef.current = window.setTimeout(() => {
       printPressTimerRef.current = null;
@@ -2025,6 +2032,9 @@ export default function PrintPage() {
     }, 1_500);
   }
   function releasePrintPress() {
+    // Reopens a task later; `printNow` closes it again in this same task if
+    // the click prints, so only a click that opened something else reopens.
+    resumeFirestoreAfterPrint();
     if (printPressTimerRef.current !== null) {
       window.clearTimeout(printPressTimerRef.current);
       printPressTimerRef.current = null;
@@ -2151,6 +2161,9 @@ export default function PrintPage() {
     // already true and React bails out, so the work is done once either way.
     flushSync(() => setRenderAllPages(true));
     loadDeckPhotosNow();
+    // Already closed if this came from a pointer press; a keyboard press or a
+    // deferred print closes it here, and Safari prints the moment it is shut.
+    pauseFirestoreForPrint();
     window.print();
     // `window.print()` returns at once whether or not a sheet opens, so watch
     // for `beforeprint`. iOS Safari lets a tab print once and puts its own
@@ -4632,6 +4645,9 @@ export default function PrintPage() {
       // nobody asked us about: a cook pressing Ctrl+P gives us no click to hang
       // the preparation off, and a windowed deck would print placeholders.
       flushSync(() => setRenderAllPages(true));
+      // Past Safari's wait-for-the-network check, so Firestore can reconnect
+      // and send anything queued while the Print button had it closed.
+      resumeFirestoreAfterPrint();
     }
     window.addEventListener("beforeprint", handleBeforePrint);
     return () => window.removeEventListener("beforeprint", handleBeforePrint);
@@ -4644,6 +4660,7 @@ export default function PrintPage() {
       // refused.
       printAcceptedRef.current = true;
       setRenderAllPages(false);
+      resumeFirestoreAfterPrint();
       // Chrome on macOS sometimes doesn't hand keyboard/mouse focus back to
       // the page once a native panel (the OS "system dialog" print sheet,
       // reached via Print -> Advanced) closes - the tab looks normal but
