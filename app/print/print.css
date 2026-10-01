@@ -8618,12 +8618,13 @@ textarea.recipe-card__toc-title {
     break-inside: auto !important;
   }
 
-  /* The cut line, just inside the card's edge on Safari. The page box above is
-     exactly the card's height, so the outline's usual 0.75pt outside the card
-     sat below the box: Safari dropped the bottom dash (or, earlier, spilled it
-     onto a sheet of its own). Drawn 0.75pt in, it stays inside the box and the
-     card cut along it is a hair smaller, nothing more. */
-  .rp-webkit-print .recipe-print-preview--cut-lines.recipe-print-preview--card-6x4
+  /* The printed cut line, just inside the card's edge, in every engine. The
+     page box ends at the card's bottom edge (exactly, on Safari), so the
+     outline's usual 0.75pt outside the card sat below the box: Safari dropped
+     the bottom dash (or, earlier, spilled it onto a sheet of its own) and
+     Chrome printed it half-clipped. Drawn 0.75pt in, it stays inside the box
+     and the card cut along it is a hair smaller, nothing more. */
+  .recipe-print-preview--cut-lines.recipe-print-preview--card-6x4
     .recipe-card:not(.recipe-card--duplex-spacer) {
     outline-offset: -0.75pt;
   }
