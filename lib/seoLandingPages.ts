@@ -2698,12 +2698,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "recipe-book-gift",
     contentUpdated: "2026-10-02",
+    copyReviewed: "2026-10-02",
     primaryKeyword: "recipe book gift",
     secondaryKeywords: [
       "personalized recipe book gift",
+      "cookbook gift",
+      "personalized cookbook gift",
+      "family recipe book gift",
       "custom recipe book gift",
-      "recipe book gift ideas",
-      "cookbook gift for someone who loves to cook",
     ],
     shortLabel: "A recipe book gift",
     pickerGroup: "output",
@@ -2715,64 +2717,72 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     initialImportMode: "url",
     importModes: ["url", "image", "text"],
     importSubmitLabel: "Start the recipe book",
-    title: "Recipe Book Gift Ideas for Any Occasion | RecipePrinter",
+    title: "Personalized Recipe Book Gift | RecipePrinter",
     description:
-      "Give a personalized recipe book for a wedding, a new home, a birthday, or anyone who loves to cook. Collect the recipes, design the book, and print it yourself.",
-    h1: "Personalized recipe book gifts for any occasion",
-    anchor: "Recipe book gift ideas",
+      "Create a personalized recipe book gift from family recipes, handwritten cards, photos, and favorites, then print it at home or export a finished PDF.",
+    h1: "Make a personalized recipe book gift",
+    anchor: "Personalized recipe book gift",
     lede:
-      "Build a recipe book around one person and the food that matters to them: a wedding collection, a first-apartment cookbook, or the dishes someone is known for. You choose the recipes and the design, then print it yourself or send the PDF to a printer.",
+      "Build a recipe book around one person and the food that matters to them. Combine family recipes, handwritten cards, photos, and favorites into a personalized cookbook you can print or export as a PDF.",
     howToHeading: "How to give a personalized recipe book",
     howTo: [
       {
-        name: "Pick the occasion and the person",
-        text: "A wedding, a new home, a graduation, a birthday, or a retirement each suggests a different book. Decide who it is for and what they will actually cook from it.",
+        name: "Choose who the recipe book is for",
+        text: "Start with the person receiving the gift. Think about the dishes they make, recipes they grew up with, family favorites, and foods connected to people or memories that matter to them.",
       },
       {
-        name: "Gather recipes from one cook or many",
-        text: "Use your own recipes, or ask friends and family to send links, photos of recipe cards, screenshots, or typed recipes. You import each one and review it before it goes in.",
+        name: "Collect recipes from family and friends",
+        text: "Gather handwritten cards, recipe links, screenshots, photos, or typed recipes from one person or several contributors. RecipePrinter turns the different sources into editable recipes you can review.",
       },
       {
-        name: "Design the book",
-        text: "Choose a theme, arrange chapters, and add a cover, dedication, and photos. Every recipe is laid out to match, whatever form it arrived in.",
+        name: "Personalize the recipe book",
+        text: "Organize recipes into chapters, add a cover and dedication, and include photos or notes where supported. Every recipe stays editable while you build the book.",
       },
       {
         name: "Print it or send it to a printer",
-        text: "Export the finished PDF and print it at home, or send the file to a professional printer for binding. RecipePrinter creates the file but does not print or ship the book.",
+        text: "Export the finished recipe book as a PDF and print it at home or send it to a professional printer. RecipePrinter creates the file but does not physically print or ship the book.",
       },
     ],
     featureSections: [
       {
-        heading: "Recipe book gift ideas by occasion",
+        heading: "Recipe book gift ideas for different occasions",
         image: "bound-cookbook",
         body:
-          "A wedding or bridal shower book can collect a favorite recipe from each guest or each side of the family. A first-apartment cookbook gives someone leaving home the dinners they grew up on. A birthday, Mother's Day, or retirement book can gather the recipes one person is known for, so everyone who loves that food can keep making it.",
+          "A personalized recipe book can work as a wedding gift, birthday gift, Mother's Day gift, anniversary gift, housewarming gift, or holiday present. The occasion matters less than choosing recipes that feel connected to the person receiving it.",
         afterBody:
-          "The best recipe book gifts are specific. Twenty recipes someone will cook from are worth more than two hundred they will not.",
+          "The strongest recipe book gifts are usually specific: family recipes, favorite meals, recipes from someone they love, or dishes tied to traditions they want to keep.",
       },
       {
-        heading: "A bound book or a box of recipe cards",
+        heading: "Give a recipe book or a box of recipe cards",
         image: "card-in-box",
         body:
-          "A recipe book gift does not have to be bound. A cookbook with a cover, chapters, and a table of contents suits a keepsake. A set of 4 by 6 recipe cards suits someone who cooks from a recipe box, and full-page recipes can go in a binder they keep adding to.",
+          "A cookbook is useful when you want a cover, chapters, and a finished collection. A recipe box can work better for a smaller set of favorite recipes that someone can keep adding to over time.",
         afterBody:
-          "Cookbook export is $19.99 per cookbook, paid once. Printing 4 by 6 recipe cards takes RecipePrinter Pro, and full-page printing is free.",
+          "Cookbook export costs $19.99 per cookbook. 4x6 recipe cards are available with RecipePrinter Pro.",
       },
       {
-        heading: "Collect recipes from everyone who wants to contribute",
+        heading: "Let family and friends contribute recipes",
         image: "handwritten-card",
         body:
-          "Ask contributors to send whatever they have: a photo of a handwritten card, a link to a recipe they love, a screenshot, or a few lines typed into a message. You bring each one into RecipePrinter, check the ingredients and steps, and add it to the book. There is no shared editing link, so the book stays with you until it is ready to give.",
+          "Ask contributors to send whatever they already have: a photo of a handwritten card, a recipe link, screenshot, scan, or typed recipe. You can import each one into RecipePrinter, review the ingredients and instructions, and add the finished recipe to the book.",
         afterBody:
-          "Read handwritten recipes carefully before printing, since faded ink and shorthand can need correcting.",
+          "This makes it easier to create a group gift without asking everyone to rewrite their recipes in the same format.",
       },
       {
-        heading: "Keep the gift editable after you give it",
+        heading: "Keep updating the recipe book after you give it",
         image: "printed-cookbook",
         body:
-          "After you buy a cookbook, you can keep editing it and export updated PDFs, so a recipe that arrives late or a correction someone sends afterward can still make it into the book.",
+          "After purchasing a cookbook, you can keep editing that cookbook and export updated PDFs later. Add recipes that arrive late, correct mistakes, or make a new version without purchasing the same cookbook again.",
+        afterBody: "RecipePrinter Pro is separate and is not required to buy or update the cookbook.",
+      },
+      {
+        // Text only: no existing photo shows the people this is about, and
+        // the page already carries five.
+        heading: "Who makes a good recipe book gift for?",
+        body:
+          "A personalized recipe book can work for parents, grandparents, newlyweds, adult children, siblings, friends, or anyone who has recipes worth collecting in one place.",
         afterBody:
-          "RecipePrinter Pro is separate and is not required to buy a cookbook. Outside printing and binding costs are not included.",
+          "The book can focus on one person's recipes, one side of a family, a couple starting a household, or a group of relatives contributing together.",
       },
     ],
     faqHeading: "Recipe book gift questions",
@@ -2780,49 +2790,53 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What makes a good recipe book gift?",
         answer:
-          "A book built around the person receiving it: recipes they ask for, dishes from people they love, or a collection for a new stage of life like a wedding or a first home. A short, focused book is usually more useful than a long general one.",
+          "A good recipe book gift is built around the person receiving it. Include recipes they make often, dishes connected to family or traditions, and recipes from people they care about rather than filling the book with generic recipes.",
       },
       {
-        question: "Who would like a personalized recipe book?",
+        question: "Who is a personalized recipe book a good gift for?",
         answer:
-          "Newlyweds, someone moving into their first home, a graduate leaving for school, a parent or grandparent whose recipes the family wants to keep, or a friend who loves to cook. The occasion shapes which recipes belong.",
+          "Recipe books can make meaningful gifts for parents, grandparents, newlyweds, siblings, friends, or anyone with family recipes or favorite dishes they want to keep.",
       },
       {
         question: "Can several people contribute recipes?",
         answer:
-          "Yes. Contributors send you their recipes as photos, links, screenshots, or text, and you add each one to the book. There is no shared editing link, so one person puts the book together.",
+          "Yes. Contributors can send recipe links, screenshots, photos, scans of handwritten cards, or typed recipes. You can import each recipe, review it, and add it to the same cookbook.",
         links: [{ href: "/family-recipe-book", label: "Create a family recipe book" }],
       },
       {
         question: "Can I give recipe cards instead of a book?",
         answer:
-          "Yes. RecipePrinter Pro prints 4 by 6 recipe cards that fit a standard recipe box, and full-page recipes print free for a binder.",
-        links: [
-          { href: "/recipe-card-printer", label: "Make printable recipe cards" },
-          { href: "/recipe-binder", label: "Build a recipe binder" },
-        ],
+          "Yes. Recipe cards can be a good choice for a smaller collection or a recipe box someone can keep adding to. 4x6 recipe cards are available with RecipePrinter Pro.",
+        links: [{ href: "/recipe-card-printer", label: "Make printable recipe cards" }],
       },
       {
         question: "Does RecipePrinter print and ship the recipe book?",
         answer:
-          "No. RecipePrinter creates the finished PDF. You can print it at home or send the file to a professional printing service for binding.",
+          "No. RecipePrinter creates the finished cookbook PDF. You can print it at home or send the file to a professional printing service.",
       },
       {
         question: "How much does a recipe book gift cost?",
         answer:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. RecipePrinter Pro is separate, and outside printing or binding costs are additional.",
+          "Cookbook export costs $19.99 per cookbook as a one-time purchase. RecipePrinter Pro is separate, and any outside printing or binding costs are additional.",
       },
       {
-        question: "Can I make the recipe book from my own family recipes?",
+        question: "Can I make a recipe book from family recipes?",
         answer:
-          "Yes. Handwritten cards, recipes passed down in the family, and favorites saved from websites can all go in the same book.",
-        links: [{ href: "/homemade-cookbook-gift", label: "Make a homemade cookbook gift" }],
+          "Yes. Handwritten recipe cards, recipe links, screenshots, photos, pasted text, and supported recipe imports can all be combined into the same cookbook.",
+        links: [
+          { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
+        ],
       },
       {
         question: "Can I make one for Christmas?",
         answer:
-          "Yes. RecipePrinter makes the PDF, so there is no RecipePrinter shipping cutoff. If you use an outside printer, check its holiday production and delivery schedule.",
+          "Yes. RecipePrinter creates the finished PDF, so there is no RecipePrinter shipping cutoff. If you use an outside printer, check that company's current holiday production schedule.",
         links: [{ href: "/christmas-recipe-book", label: "Make a family recipe book for Christmas" }],
+      },
+      {
+        question: "Can I keep editing the recipe book after I give it?",
+        answer:
+          "Yes. Once that cookbook is purchased, you can continue editing it and export updated versions later.",
       },
     ],
     links: [
