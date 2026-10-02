@@ -46,6 +46,9 @@ export interface PendingSave {
       used to arrive at the adoption path with the answer already gone and meet
       the same refusal the cook had just overruled. */
   overwriteApproved: boolean;
+  /** This is the one extra try a write gets after missing `SAVE_TIMEOUT_MS`.
+      A retry that misses it too is reported as a failure. */
+  retriedAfterTimeout?: boolean;
 }
 
 /**

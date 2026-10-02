@@ -105,6 +105,18 @@ export async function writeProject(pending: PendingSave, ctx: SaveWriteContext):
   };
   const deadline = setTimeout(() => {
     if (!current()) return;
+    // Try once more before saying anything. A write that misses the deadline
+    // has usually landed with its reply lost (a backgrounded Safari tab is the
+    // common way there), and calling that "Couldn't save" told the cook a saved
+    // book had not saved. The second try either lands, or finds the first one
+    // already there and knows it for this tab's own (`savePrintProject`). A
+    // save that was waiting behind this one is newer and goes instead.
+    if (!pending.retriedAfterTimeout) {
+      console.warn("RecipePrinter: a save is taking too long; trying it again");
+      if (!refs.queuedSave.current) refs.queuedSave.current = { ...pending, retriedAfterTimeout: true };
+      release();
+      return;
+    }
     // Stop claiming, and stop blocking. The write is NOT cancelled and the
     // generation is NOT bumped — "we gave up waiting" is not "it did not
     // happen", so if this write does land it is still the current one and still gets

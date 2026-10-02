@@ -397,6 +397,41 @@ function contentSignature(content: unknown): string {
   return `${serialized.length}.${(a >>> 0).toString(36)}.${(b >>> 0).toString(36)}`;
 }
 
+/* Which saves of each project this tab has made, in the order it made them.
+
+   The revision check refuses any document that moved since this tab last heard
+   about it, and it was refusing this tab's own writes along with everyone
+   else's. Two ordinary ways to get there:
+
+     - A commit lands and its reply is lost. Firestore retries the transaction,
+       the retry reads the revision the first attempt just wrote, and the save
+       reports "Newer version found" about itself.
+     - A write the page gave up on (SAVE_TIMEOUT_MS) lands anyway. The page
+       never learns the revision it made, so its next save conflicts with it.
+
+   Each save stamps the document with its own `saveId`. A moved revision whose
+   stamp is one of this tab's earlier saves holds nothing this save lacks, since
+   this save was asked for later, so it writes on top. One whose stamp is THIS
+   save is the lost reply, and is already done. Anything else, including a save
+   of ours newer than this one, is still a conflict.
+
+   Session-scoped like `lastContentWrites`: a reloaded tab knows none of its old
+   stamps and treats them as anyone else's, which is the cautious answer. */
+
+const ownSaves = new Map<string, Map<string, number>>();
+let ownSaveCount = 0;
+/** Plenty for a session: only stamps since the page last heard back matter. */
+const OWN_SAVES_KEPT = 50;
+
+function rememberOwnSave(writeKey: string, saveId: string): number {
+  const saves = ownSaves.get(writeKey) ?? new Map<string, number>();
+  ownSaves.set(writeKey, saves);
+  const order = ++ownSaveCount;
+  saves.set(saveId, order);
+  if (saves.size > OWN_SAVES_KEPT) saves.delete(saves.keys().next().value as string);
+  return order;
+}
+
 /** Forgets what this tab knows about a project's stored content, so the next
     save writes it in full. Called wherever the document stops being ours to
     reason about — chiefly deletion. */
@@ -416,22 +451,29 @@ export async function savePrintProject(project: PrintProject): Promise<PrintProj
   const ref = doc(db, ...recipePrinterProjectPath(project.ownerUid, project.id));
   const contentRef = doc(db, ...recipePrinterProjectPath(project.ownerUid, project.id), ...CONTENT_DOC);
   const writeKey = contentWriteKey(project.ownerUid, project.id);
+  const saveId = uid();
+  const saveOrder = rememberOwnSave(writeKey, saveId);
   const committed = await runTransaction(db, async (transaction) => {
     const existing = await transaction.get(ref);
-    const remoteRevision = existing.exists()
-      ? Number((existing.data() as Partial<PrintProject>).revision ?? 0)
-      : 0;
+    const stored = existing.exists() ? (existing.data() as Partial<PrintProject>) : undefined;
+    const remoteRevision = stored ? Number(stored.revision ?? 0) : 0;
     const expectedRevision = Number(project.revision ?? 0);
-    if (existing.exists() && remoteRevision !== expectedRevision) {
-      throw new PrintProjectConflictError();
+    // See `ownSaves`: a moved revision is only a conflict when it is not ours.
+    const storedOrder = stored?.saveId ? ownSaves.get(writeKey)?.get(stored.saveId) : undefined;
+    if (stored && remoteRevision !== expectedRevision) {
+      if (storedOrder === undefined || storedOrder > saveOrder) {
+        throw new PrintProjectConflictError();
+      }
     }
+    // This very save, retried after its reply was lost: already there, and
+    // described exactly as that attempt wrote it.
+    const alreadyLanded = storedOrder === saveOrder;
     const next = stripUndefined(slimIngredients({
       ...project,
-      revision: remoteRevision + 1,
-      createdAt: existing.exists()
-        ? Number((existing.data() as Partial<PrintProject>).createdAt ?? project.createdAt)
-        : project.createdAt,
-      updatedAt: Date.now(),
+      saveId,
+      revision: alreadyLanded ? remoteRevision : remoteRevision + 1,
+      createdAt: stored ? Number(stored.createdAt ?? project.createdAt) : project.createdAt,
+      updatedAt: alreadyLanded ? Number(stored?.updatedAt ?? Date.now()) : Date.now(),
       contentVersion: 2 as const,
     })) as PrintProject;
     // Two documents, one transaction. The parent is what the projects list
@@ -440,6 +482,7 @@ export async function savePrintProject(project: PrintProject): Promise<PrintProj
     // ever being half-written — a parent claiming 40 recipes with content from
     // an older save would be worse than either document alone.
     const { parent, content } = splitProject(next);
+    if (alreadyLanded) return { project: next, signature: contentSignature(stripUndefined(content)) };
     transaction.set(ref, stripUndefined(parent));
 
     // …and the recipes only when they are not already there. See
