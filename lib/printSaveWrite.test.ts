@@ -245,45 +245,88 @@ describe("the latch", () => {
 });
 
 describe("giving up and being overtaken", () => {
-  it("stops claiming after the deadline: reports an error, frees the latch, records nothing as saved", async () => {
+  it("tries once more before saying a save failed", async () => {
+    // A write that misses the deadline has often landed, its reply lost
+    // (a backgrounded Safari tab). Reporting "Couldn't save" there told the
+    // cook their saved book had not saved. The second try either lands or
+    // finds the first one's write already there (`savePrintProject`).
     const never = new Promise<never>(() => undefined);
-    const h = makeHarness(makeRefs({ lastSavedFingerprint: "before" }), { adoptProject: vi.fn(() => never) as never });
+    const adoptProject = vi.fn(() => never);
+    const h = makeHarness(makeRefs({ lastSavedFingerprint: "before" }), { adoptProject: adoptProject as never });
     void writeProject(makePending(), h.ctx);
+    await vi.advanceTimersByTimeAsync(SAVE_TIMEOUT_MS);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(h.statuses).not.toContain("error");
+    expect(adoptProject).toHaveBeenCalledTimes(2);
+    expect(h.refs.saveGeneration.current).toBe(2);
+  });
+
+  it("reports the second try's success", async () => {
+    const never = new Promise<never>(() => undefined);
+    const adoptProject = vi
+      .fn()
+      .mockImplementationOnce(() => never)
+      .mockImplementationOnce(async (_uid: string, project: { id: string }) => ({ ...project, revision: 2 }));
+    const h = makeHarness(makeRefs(), { adoptProject: adoptProject as never });
+    void writeProject(makePending(), h.ctx);
+    await vi.advanceTimersByTimeAsync(SAVE_TIMEOUT_MS + 1);
+    expect(h.statuses).not.toContain("error");
+    expect(h.statuses.at(-1)).toBe("saved");
+    expect(h.refs.projectRevision.current).toBe(2);
+  });
+
+  it("stops claiming once the second try misses the deadline too: reports an error, frees the latch, records nothing as saved", async () => {
+    const never = new Promise<never>(() => undefined);
+    const adoptProject = vi.fn(() => never);
+    const h = makeHarness(makeRefs({ lastSavedFingerprint: "before" }), { adoptProject: adoptProject as never });
+    void writeProject(makePending(), h.ctx);
+    await vi.advanceTimersByTimeAsync(SAVE_TIMEOUT_MS + 1);
     await vi.advanceTimersByTimeAsync(SAVE_TIMEOUT_MS - 1);
-    expect(h.statuses).toEqual(["saving"]);
+    expect(h.statuses).not.toContain("error");
     expect(h.refs.saveInFlight.current).toBe(true);
 
     await vi.advanceTimersByTimeAsync(1);
-    expect(h.statuses).toEqual(["saving", "error"]);
+    expect(h.statuses.at(-1)).toBe("error");
     expect(h.refs.saveInFlight.current).toBe(false);
     expect(h.refs.lastSavedFingerprint.current).toBe("before");
+    expect(adoptProject).toHaveBeenCalledTimes(2);
   });
 
-  it("starts the save that was waiting behind a write it gave up on", async () => {
+  it("starts the save that was waiting behind a write it gave up on, in place of a second try", async () => {
     const never = new Promise<never>(() => undefined);
-    const h = makeHarness(makeRefs(), { adoptProject: vi.fn(() => never) as never });
+    const adoptProject = vi.fn(() => never);
+    const h = makeHarness(makeRefs(), { adoptProject: adoptProject as never });
     void writeProject(makePending(), h.ctx);
-    h.refs.queuedSave.current = makePending();
+    const newer = makePending({ overwriteApproved: true });
+    h.refs.queuedSave.current = newer;
     await vi.advanceTimersByTimeAsync(SAVE_TIMEOUT_MS);
     // 1ms, not 0: a zero-delay timer set DURING a fake-timer tick is scheduled
     // 1ms out, and the replay is set from inside the deadline's callback.
     await vi.advanceTimersByTimeAsync(1);
     expect(h.refs.queuedSave.current).toBeNull();
     expect(h.refs.saveGeneration.current).toBe(2);
+    expect(adoptProject).toHaveBeenLastCalledWith("user-1", newer.project, { overwriteExisting: true });
+    expect(h.statuses).not.toContain("error");
   });
 
   it("still lets a write that was only given up on report itself if it does land", async () => {
-    // "We gave up waiting" is not "it did not happen": the generation is not
-    // bumped, so a late answer is still the current one, revision and all.
+    // "We gave up waiting" is not "it did not happen": a late answer that is
+    // still the current write reports itself, revision and all.
     const gate = deferred<{ id: string; revision: number }>();
-    const h = makeHarness(makeRefs(), { adoptProject: vi.fn(() => gate.promise) as never });
-    const write = writeProject(makePending(), h.ctx);
+    const never = new Promise<never>(() => undefined);
+    const adoptProject = vi
+      .fn()
+      .mockImplementationOnce(() => never)
+      .mockImplementationOnce(() => gate.promise);
+    const h = makeHarness(makeRefs(), { adoptProject: adoptProject as never });
+    void writeProject(makePending(), h.ctx);
+    await vi.advanceTimersByTimeAsync(SAVE_TIMEOUT_MS + 1);
     await vi.advanceTimersByTimeAsync(SAVE_TIMEOUT_MS);
-    expect(h.statuses).toEqual(["saving", "error"]);
+    expect(h.statuses.at(-1)).toBe("error");
 
     gate.resolve({ id: "proj-1", revision: 9 });
-    await write;
-    expect(h.statuses).toEqual(["saving", "error", "saved"]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(h.statuses.at(-1)).toBe("saved");
     expect(h.refs.projectRevision.current).toBe(9);
   });
 

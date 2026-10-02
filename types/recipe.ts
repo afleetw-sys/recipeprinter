@@ -528,6 +528,9 @@ export interface PrintProject {
   sourceProjectId?: string;
   /** Optimistic-concurrency version. Legacy documents default to 0. */
   revision?: number;
+  /** Which save wrote this revision: a fresh id per `savePrintProject` call,
+      so a tab can tell its own landed write from another tab's. */
+  saveId?: string;
   /** Present only once the project has been saved to Firestore. */
   ownerUid?: string;
   /** What this project is CALLED — the name the library and the workspace bar

@@ -140,7 +140,8 @@ describe("savePrintProject content writes", () => {
 
   it("raises a conflict rather than skipping when the revision is unexpected", async () => {
     const first = await saveAndRecord(book());
-    store.set(PARENT, { ...store.get(PARENT), revision: 9 });
+    // Another writer: a later revision under its own save stamp.
+    store.set(PARENT, { ...store.get(PARENT), revision: 9, saveId: "another-tab" });
     await expect(savePrintProject(book({ revision: first.saved.revision }))).rejects.toThrow(
       /updated somewhere else/i,
     );
