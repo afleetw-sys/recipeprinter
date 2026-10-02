@@ -225,7 +225,7 @@ export function FeatureRows({
         inline link into its own last sentence, which a plain string can't
         carry. */
     body: ReactNode;
-    afterBody?: string;
+    afterBody?: string | string[];
     proof?: SeoProofKind;
     caption?: string;
     image?: string;
@@ -250,9 +250,11 @@ export function FeatureRows({
           <>
             <h3 className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">{feature.heading}</h3>
             <p className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">{feature.body}</p>
-            {feature.afterBody && (
-              <p className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">{feature.afterBody}</p>
-            )}
+            {[feature.afterBody ?? []].flat().map((paragraph) => (
+              <p key={paragraph} className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">
+                {paragraph}
+              </p>
+            ))}
           </>
         );
 
