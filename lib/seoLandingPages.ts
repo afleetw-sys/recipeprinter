@@ -2270,7 +2270,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does it cost?",
         answer:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. RecipePrinter Pro is separate and does not include cookbook export. Printing and binding from an outside printing service cost extra.",
+          "Cookbook export costs $19.99 per cookbook as a one-time purchase. Printing and binding from an outside printing service cost extra.",
       },
       {
         question: "Does RecipePrinter print and ship my cookbook?",
@@ -2371,7 +2371,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         body:
           "Cookbook export costs $19.99 per cookbook. That one-time purchase lets you keep editing that cookbook and export updated PDFs again later.",
         afterBody:
-          "RecipePrinter Pro is separate and is not required to purchase a cookbook. RecipePrinter creates the PDF; you can print it at home or send the finished file to a printing service of your choice. A free RecipePrinter account is required to download the cookbook.",
+          "RecipePrinter creates the PDF; you can print it at home or send the finished file to a printing service of your choice. A free RecipePrinter account is required to download the cookbook.",
       },
     ],
     faqHeading: "Cookbook maker questions",
@@ -2509,8 +2509,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         imageAlt: "A finished family cookbook made from collected recipes.",
         body:
           "Cookbook export costs $19.99 per cookbook as a one-time purchase. After purchasing that cookbook, you can keep editing it, add newly found recipes, correct transcriptions, rearrange chapters, and export updated PDFs later.",
-        afterBody:
-          "RecipePrinter Pro is separate and is not required to purchase or update the cookbook.",
       },
     ],
     faqHeading: "Handwritten recipe cookbook questions",
@@ -2543,7 +2541,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does it cost to make the cookbook?",
         answer:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. RecipePrinter Pro is separate and does not include cookbook export.",
+          "Cookbook export costs $19.99 per cookbook as a one-time purchase.",
       },
       {
         question: "Can I keep editing the cookbook after I buy it?",
@@ -2636,7 +2634,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         image: "printed-cookbook",
         body:
           "Cookbook export costs $19.99 per cookbook as a one-time purchase. After purchasing that cookbook, you can keep editing it, add newly found recipes, correct mistakes, rearrange chapters, and export updated PDFs later.",
-        afterBody: "RecipePrinter Pro is separate and is not required to purchase the cookbook.",
       },
     ],
     faqHeading: "Homemade cookbook gift questions",
@@ -2672,7 +2669,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does a homemade cookbook cost?",
         answer:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. RecipePrinter Pro is separate, and outside printing or binding costs are not included.",
+          "Cookbook export costs $19.99 per cookbook as a one-time purchase. Outside printing or binding costs are not included.",
       },
       {
         question: "Can I make the cookbook as a Christmas or holiday gift?",
@@ -2773,7 +2770,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         image: "printed-cookbook",
         body:
           "After purchasing a cookbook, you can keep editing that cookbook and export updated PDFs later. Add recipes that arrive late, correct mistakes, or make a new version without purchasing the same cookbook again.",
-        afterBody: "RecipePrinter Pro is separate and is not required to buy or update the cookbook.",
       },
       {
         // Text only: no existing photo shows the people this is about, and
@@ -2817,7 +2813,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does a recipe book gift cost?",
         answer:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. RecipePrinter Pro is separate, and any outside printing or binding costs are additional.",
+          "Cookbook export costs $19.99 per cookbook as a one-time purchase. Any outside printing or binding costs are additional.",
       },
       {
         question: "Can I make a recipe book from family recipes?",
@@ -2916,7 +2912,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         afterBody: [
           "You can print the PDF at home or send it to a professional printing service. If you plan to use an outside printer, check that company's current holiday production and delivery schedule.",
           "Cookbook export costs $19.99 per cookbook as a one-time purchase. After purchasing that cookbook, you can keep editing it and export updated PDFs later.",
-          "RecipePrinter Pro is separate and is not required to purchase the cookbook.",
         ],
       },
       {
@@ -2961,7 +2956,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does a Christmas recipe book cost?",
         answer:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. RecipePrinter Pro is separate, and any outside printing or binding costs are additional.",
+          "Cookbook export costs $19.99 per cookbook as a one-time purchase. Any outside printing or binding costs are additional.",
       },
       {
         question: "Can I make more than one copy as Christmas gifts?",
