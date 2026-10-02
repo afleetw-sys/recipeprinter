@@ -85,6 +85,18 @@ const PHOTOS: CommunityPhoto[] = [
       "A printed full-page Creamy Crockpot Sesame Chicken recipe on a wooden board, with a glass pot lid resting across one corner.",
   },
   {
+    // The bound book, and the only photograph of one: a spiral cookbook open
+    // to a recipe page. Early, right after the full page, so the strip shows
+    // all three formats (card, page, book) inside its first few frames.
+    src: "/images/printed-cards/cookbook.jpeg",
+    width: 1333,
+    height: 2000,
+    // Lifted so the window opens on the recipe title rather than the binding.
+    objectPosition: "center 38%",
+    alt:
+      "A printed spiral-bound cookbook open on a dark table to a Greek Chicken Souvlaki page, with a full-page photo of the finished flatbreads beside the recipe.",
+  },
+  {
     src: "/images/card-caprese-pasta-salad.jpeg",
     width: 1333,
     height: 2000,
@@ -122,6 +134,74 @@ const PHOTOS: CommunityPhoto[] = [
     objectPosition: "center 67%",
     alt:
       "A printed Creamy Crockpot Sesame Chicken card on a mustard notebook, with a trailing houseplant above it.",
+  },
+  {
+    src: "/images/printed-cards/bruschetta.jpeg",
+    width: 1333,
+    height: 2000,
+    alt: "A printed Bruschetta Recipe card laid across a magazine spread of appetizers.",
+  },
+  {
+    // The pizza recipe printed as a full page. Its card-and-page shot sits five
+    // further on, far enough apart to read as two formats, not a repeat.
+    src: "/images/printed-cards/pizza-big.jpeg",
+    width: 1333,
+    height: 2000,
+    // Lifted to the title: centred, the window opened mid-method.
+    objectPosition: "center 35%",
+    alt:
+      "A printed full-page Authentic Italian Pizza recipe with an orange title band, on a pizza peel beside a bag of 00 flour.",
+  },
+  {
+    // Landscape, and the same 4/3 as the slot, so it shows whole. Mid-run, to
+    // break up a stretch of portrait shots. The same recipe as the caprese
+    // card near the front, six frames apart.
+    src: "/images/printed-cards/caprese-salad.jpeg",
+    width: 2000,
+    height: 1500,
+    alt:
+      "A printed Caprese Pasta Salad card with a burgundy border on a wooden table, between a steel mixing bowl and two wooden serving spoons.",
+  },
+  {
+    src: "/images/printed-cards/french-dip.jpeg",
+    width: 1333,
+    height: 2000,
+    alt:
+      "A printed Crockpot French Dip Sandwiches card with a lime-green title band, on a blue-and-white striped towel beside a bag of hoagie rolls and a glass of ice.",
+  },
+  {
+    src: "/images/printed-cards/pb-blossoms.jpeg",
+    width: 1500,
+    height: 2000,
+    alt: "A printed Peanut Butter Blossoms card in a typewriter face, on a vintage yellow spice chart.",
+  },
+  {
+    // The pizza again, as a card resting on its own full page.
+    src: "/images/printed-cards/italian-pizza.jpeg",
+    width: 1333,
+    height: 2000,
+    // Lifted to take in the page's title as well as the card below it.
+    objectPosition: "center 35%",
+    alt:
+      "A printed Authentic Italian Pizza card resting on the same recipe printed as a full page, beside a bottle and a bag of 00 flour.",
+  },
+  {
+    // The same Hot Honey Chicken Power Bowl as the card near the front, shot
+    // again in a different setting.
+    src: "/images/printed-cards/hot-honey.jpeg",
+    width: 1333,
+    height: 2000,
+    alt:
+      "A printed Hot Honey Chicken Power Bowl card with a border of painted vegetables, on a blue surface beside a yellow honey dipper.",
+  },
+  {
+    // The same noodles as the second frame, this time beside the dry noodles
+    // and the soy sauce rather than the finished bowl.
+    src: "/images/printed-cards/soy-sauce.jpeg",
+    width: 1333,
+    height: 2000,
+    alt:
+      "A printed Soy Sauce Pan-fried Noodles card with a tiled green and red border, on a green surface beside dry rice noodles and a tablespoon of soy sauce.",
   },
 ];
 
