@@ -90,6 +90,10 @@ export default defineConfig({
       url: "http://127.0.0.1:9199",
       reuseExistingServer: false,
       timeout: 180_000,
+      // Ctrl-C, which the emulators answer by shutting down. The default kill
+      // stopped npx and left the Java emulators running, so the next local run
+      // found port 8180 taken and refused to start.
+      gracefulShutdown: { signal: "SIGINT", timeout: 10_000 },
     },
     {
       command: `node e2e/stubs/cookpilot.mjs`,

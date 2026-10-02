@@ -47,9 +47,16 @@ const recipe = {
 };
 
 /** When each request started and ended, in the browser's epoch ms. An end of
-    `undefined` is a request still open. */
+    `undefined` is a request still open.
+
+    Only the page being printed counts. A request the previous page had in
+    flight when it was navigated away from never reports finishing, so without
+    this it would read as open forever (the sign-in page's account write did). */
 function watchRequests(page: Page) {
   const seen = new Map<Request, { start: number; end?: number }>();
+  page.on("framenavigated", (frame) => {
+    if (frame === page.mainFrame()) seen.clear();
+  });
   const ended = (request: Request) => {
     const entry = seen.get(request);
     if (!entry) return;
@@ -135,8 +142,15 @@ test("nothing is loading when Print calls print()", async ({ page }) => {
 
 test("signed in, Firestore's open stream is closed before print()", async ({ page, request }) => {
   test.skip(!(await firestoreRunning(request)), "needs the Firestore emulator, which needs Java");
-  const { email } = await returningUser(request);
+  const { uid, email } = await returningUser(request);
   await signIn(page, email);
+  // Signing in records the account (a small transaction) and marks it seen on
+  // this device. Let that finish, as it does for anyone who doesn't leave the
+  // page within a fraction of a second: the emulator holds a transaction's lock
+  // after its page is gone, and the next one waits on it.
+  await expect
+    .poll(() => page.evaluate((key) => localStorage.getItem(key), `recipeprinter:account-seen:${uid}`))
+    .not.toBeNull();
 
   const seen = watchRequests(page);
   const { printed, onPrint } = printSignal();
