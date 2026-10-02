@@ -2165,97 +2165,120 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "make-your-own-cookbook",
     contentUpdated: "2026-10-02",
+    copyReviewed: "2026-10-02",
     primaryKeyword: "make your own cookbook",
     secondaryKeywords: [
       "create your own cookbook",
       "how to make a cookbook",
       "make a cookbook from your recipes",
+      "how to make your own cookbook",
+      "homemade cookbook",
+      "custom cookbook from recipes",
+      "family cookbook",
+      "make a recipe book",
     ],
     shortLabel: "Your own cookbook",
     pickerGroup: "output",
     intent: "Organization SEO",
     layout: "capture-first",
     heroImage: "bound-cookbook",
+    heroImageAlt: "A finished cookbook made from personal recipes, open to a full-page photograph and formatted recipe.",
     initialImportMode: "url",
     importModes: ["url", "apps", "image", "text"],
     importSubmitLabel: "Start my cookbook",
-    title: "Make Your Own Cookbook | RecipePrinter",
+    title: "Make Your Own Cookbook From Your Recipes | RecipePrinter",
     description:
-      "Turn recipes from websites, photos, handwritten cards, screenshots, and apps into a cookbook you can organize, edit, print at home, or export as a PDF.",
+      "Turn your own recipes into a cookbook with chapters, a cover, table of contents, and page numbers. Print it at home or export a print-ready PDF.",
     h1: "Make your own cookbook",
     lede:
-      "Bring the recipes you already use into one editable book. RecipePrinter builds the cover, chapters, table of contents, and page numbers, then gives you a PDF to print wherever you choose.",
+      "Turn the recipes you already use into your own cookbook. Import recipes from different places, organize them into chapters, customize the cover, and export a finished PDF you can print at home or send to a printer.",
     howToHeading: "How to make a cookbook from your recipes",
     howTo: [
       {
-        name: "Bring your recipes together",
-        text: "Paste recipe links, upload photos or screenshots, photograph handwritten cards, type a recipe, or choose recipes from a supported app. Review each imported recipe and fix anything that needs attention.",
+        name: "Collect the recipes you want to include",
+        text: "Add recipes from websites, photos, screenshots, handwritten cards, recipe apps, or pasted text. Review each recipe and fix anything that needs attention before it goes into the book.",
       },
       {
-        name: "Arrange the book",
-        text: "Sort recipes into chapters, choose their order, and add chapter openers. RecipePrinter keeps the table of contents and page numbers in step with the book as it changes.",
+        name: "Organize recipes into chapters",
+        text: "Sort recipes into chapters, choose their order, and add chapter opener pages. RecipePrinter keeps the table of contents and page numbers aligned with the book as it changes.",
       },
       {
-        name: "Finish the cover and pages",
-        text: "Add a title, cover image, dedication, recipe notes, and photos. You can keep editing the recipes and structure until the collection feels finished.",
+        name: "Customize the cover and pages",
+        text: "Add a title, cover image, dedication, recipe notes, and photos where supported. Keep editing the cookbook until the collection feels finished.",
       },
       {
-        name: "Download and print",
-        text: "Purchase that cookbook once, create a free account to download its PDF, then print it at home or send the file to a print shop. RecipePrinter does not manufacture or ship a physical book.",
+        name: "Export and print your cookbook",
+        text: "Purchase the cookbook once, download the finished PDF, and print it at home or send the file to a professional printer. RecipePrinter creates the file but does not manufacture or ship the physical book.",
       },
     ],
     featureSections: [
       {
-        heading: "Recipes from different places, in one book",
+        heading: "Make a cookbook from recipes you already have",
         image: "cookpilot-export",
+        imageAlt: "Recipes from different sources collected into one RecipePrinter project.",
         body:
-          "A cookbook rarely begins with a neat folder. It begins with links, phone photos, screenshots, handwritten cards, app libraries, and recipes somebody knows by heart. RecipePrinter turns those sources into editable recipes with a consistent page design, so the collection reads as one book.",
-      },
-      {
-        heading: "Chapters, contents, and page numbers stay organized",
-        proof: "book",
-        body:
-          "Group the recipes into chapters and move them as the book develops. RecipePrinter lays out chapter pages and keeps the table of contents and page numbering aligned with the finished order, instead of asking you to rebuild them by hand after every change.",
-      },
-      {
-        heading: "Print the finished cookbook your way",
-        image: "bound-cookbook",
-        body:
-          "The one-time $19.99 purchase unlocks that cookbook and every available export format. Print a home-friendly version yourself or download a PDF prepared for a professional printer. Printing and binding charges are separate, because RecipePrinter supplies the file rather than printing or shipping books.",
+          "Your recipes do not need to start in the same place. Bring together recipe links, screenshots, photos, handwritten cards, app imports, and recipes shared by family, then turn them into one consistent cookbook.",
         afterBody:
-          "The purchased cookbook remains editable, so you can add recipes, correct a family note, change the order, and download an updated PDF without buying that cookbook again. RecipePrinter Pro is a separate subscription and is not required to purchase a cookbook.",
+          "Each recipe stays editable, so you can correct old notes, clean up formatting, and make the collection feel like one book instead of a stack of unrelated recipes.",
+      },
+      {
+        heading: "Organize your cookbook with chapters and a table of contents",
+        body:
+          "Group recipes into chapters and move them around as the book develops. RecipePrinter keeps the chapter structure, table of contents, and page numbers updated so you do not have to rebuild the layout every time something moves.",
+        afterBody:
+          "Chapter opener pages can also include a custom image and optional text.",
+      },
+      {
+        heading: "Print your cookbook at home or with a professional printer",
+        image: "bound-cookbook",
+        imageAlt: "A finished cookbook ready for home or professional printing.",
+        body:
+          "Cookbook export costs $19.99 per cookbook. That one-time purchase unlocks the cookbook and lets you keep editing it and export updated PDFs again later.",
+        afterBody:
+          "Print the finished PDF at home or send it to a professional printing service for binding or hardcover printing. RecipePrinter provides the finished file rather than printing or shipping physical books. If you change a recipe, reorder a chapter, or add a family note later, you can update the same purchased cookbook and export a new version without buying that cookbook again.",
       },
     ],
+    faqHeading: "Questions about making your own cookbook",
     faqs: [
       {
         question: "How do I make my own cookbook?",
         answer:
-          "Collect your recipes in RecipePrinter, review and edit them, arrange them into chapters, customize the cover, and export the finished book as a PDF. You can print that file at home or take it to a printer.",
+          "Collect the recipes you want to keep, import them into RecipePrinter, review and edit each recipe, organize them into chapters, customize the cover and pages, then export the finished cookbook as a PDF.",
       },
       {
         question: "Can I make a cookbook from recipes I already have?",
         answer:
-          "Yes. Recipes can come from websites, photos, screenshots, handwritten cards, pasted text, CookPilot, or a Paprika export. Imported text is editable, so you can correct it before it goes into the book.",
+          "Yes. Recipes can come from websites, photos, screenshots, handwritten recipe cards, pasted text, supported recipe apps, and other RecipePrinter imports. You can edit imported recipes before adding them to the cookbook.",
       },
       {
         question: "Can I print the cookbook at home?",
         answer:
-          "Yes. Choose the home-print format and print the downloaded PDF on your own printer. RecipePrinter also prepares formats you can take to a professional printer for binding.",
+          "Yes. Export the cookbook as a PDF and print the home-print format on your own printer. You can also take or upload the PDF to a professional printing service.",
       },
       {
         question: "Can I export the cookbook as a PDF?",
         answer:
-          "Yes. The cookbook purchase unlocks PDF export. A free account is required at download time so RecipePrinter can confirm the purchase and keep it with your cookbook.",
+          "Yes. Purchasing the cookbook unlocks PDF export for that cookbook. A free RecipePrinter account is required at download time so the purchase can be confirmed and kept with your cookbook.",
       },
       {
         question: "Can I edit the cookbook after I make it?",
         answer:
-          "Yes. The purchase belongs to that cookbook, so you can keep editing it and download updated versions without purchasing the same cookbook again.",
+          "Yes. The purchase belongs to that cookbook, so you can continue editing it and export updated versions later without purchasing the same cookbook again.",
       },
       {
         question: "How much does it cost?",
         answer:
-          "$19.99 for each cookbook, paid once. RecipePrinter Pro is separate and does not include cookbook export. If you use a print shop, its printing and binding charges are additional.",
+          "Cookbook export costs $19.99 per cookbook as a one-time purchase. RecipePrinter Pro is separate and does not include cookbook export. Printing and binding from an outside printing service cost extra.",
+      },
+      {
+        question: "Does RecipePrinter print and ship my cookbook?",
+        answer:
+          "No. RecipePrinter creates the finished cookbook PDF. You can print it yourself or send the file to a professional printing service.",
+      },
+      {
+        question: "Can I make a family cookbook from handwritten recipes?",
+        answer:
+          "Yes. Photograph or scan handwritten recipe cards, review the extracted recipe text, then add those recipes to the cookbook alongside recipes from other sources.",
       },
     ],
     links: [
@@ -2268,12 +2291,17 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "cookbook-maker",
     contentUpdated: "2026-10-02",
+    copyReviewed: "2026-10-02",
     primaryKeyword: "cookbook maker",
     secondaryKeywords: [
       "online cookbook maker",
       "recipe book creator",
       "recipe book maker",
       "create a cookbook online",
+      "make a cookbook from my recipes",
+      "cookbook creator",
+      "custom cookbook maker",
+      "family cookbook maker",
     ],
     shortLabel: "Cookbook maker",
     pickerGroup: "output",
@@ -2285,79 +2313,106 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importSubmitLabel: "Open the cookbook maker",
     title: "Cookbook Maker for Your Own Recipes | RecipePrinter",
     description:
-      "Build a cookbook from your own recipes, organize them into chapters, add a cover and table of contents, then print it or export a PDF.",
+      "Create a cookbook from your own recipes. Import recipes, organize chapters, edit pages, add a cover and table of contents, then export a print-ready PDF.",
     h1: "Make a cookbook from your own recipes",
     lede:
-      "Use the RecipePrinter cookbook maker to import recipes, edit them on the page, arrange chapters, customize the cover, and export a finished PDF.",
-    howToHeading: "Inside the cookbook maker",
+      "Use the RecipePrinter cookbook maker to import your own recipes, organize them into chapters, edit the pages, customize the cover, and export a finished print-ready PDF.",
+    howToHeading: "How the cookbook maker works",
     howTo: [
       {
-        name: "Import instead of retyping",
-        text: "Add recipe links, photos, screenshots, handwritten cards, pasted text, or recipes from supported apps. RecipePrinter separates the ingredients and instructions into editable fields.",
+        name: "Import your recipes",
+        text: "Add recipe links, photos, screenshots, handwritten cards, pasted text, or recipes from supported apps. RecipePrinter turns them into editable recipes so you do not have to retype everything by hand.",
       },
       {
         name: "Build chapters",
-        text: "Create chapter sections, name them, and move recipes into the order you want. Add chapter introductions and images when they help divide the book.",
+        text: "Create and rename cookbook chapters, reorder them, and move recipes between sections as your book takes shape.",
       },
       {
-        name: "Edit the book on the page",
-        text: "Correct recipe text, add notes and photos, change recipe layouts, and customize the title and cover. The contents and page numbers follow the current structure.",
+        name: "Edit every recipe and page",
+        text: "Correct recipe text, add notes or photos, rearrange recipes, and customize the book while you work. The table of contents and page numbers update with the current structure.",
       },
       {
-        name: "Choose a PDF format",
-        text: "Export a home-print, spiral, or hardcover-ready PDF after purchasing the cookbook. A free account is required for the download; physical printing is handled by you or the printer you choose.",
+        name: "Export a print-ready cookbook PDF",
+        text: "Export a PDF for printing at home or with a professional printer. RecipePrinter creates the finished file but does not physically print or ship the book.",
       },
     ],
     featureSections: [
       {
-        heading: "A recipe book creator that starts with what you have",
+        heading: "Make a cookbook from recipes you already have",
         image: "inline-editing",
+        imageAlt: "A recipe being edited inside the RecipePrinter cookbook maker.",
         body:
-          "The builder does not require a finished manuscript. Start with one recipe and add the rest from the formats they already live in. Each recipe stays editable after import, which is especially useful when a photo is hard to read or an online recipe needs your own notes.",
+          "You do not need to start with a finished manuscript. Import recipes one at a time from websites, photos, handwritten cards, screenshots, apps, or pasted text, then edit them as you build the cookbook.",
+        afterBody:
+          "That makes it easy to combine recipes that currently live in completely different places into one consistent book.",
       },
       {
-        heading: "See the cookbook structure while you work",
+        heading: "Organize recipes into cookbook chapters",
         image: "bound-cookbook",
+        imageAlt: "A finished cookbook open to a full-page photograph and a formatted recipe page.",
         body:
-          "The cover, opening pages, chapters, recipe pages, table of contents, and page numbers are parts of the same project. Reorder recipes or rename a chapter and the exported book is rebuilt from the current version.",
+          "Create chapters, move recipes between sections, and see how the cookbook is organized while you work. The cover, opening pages, recipe pages, table of contents, and page numbers stay part of the same project.",
+        afterBody:
+          "Chapter opener pages can also include custom images and optional text.",
       },
       {
-        heading: "One purchase for one editable cookbook",
-        proof: "pdf",
+        heading: "Customize the cover, table of contents, and page numbers",
         body:
-          "Cookbook export costs $19.99 per cookbook. That one-time purchase lets you keep editing that book and export updated PDFs in the available formats. It is separate from RecipePrinter Pro, which covers the recipe-card and multi-recipe printing toolkit.",
+          "Give the cookbook a finished structure with a custom cover, chapter sections, a table of contents, and page numbers. You can keep editing the book as recipes move or chapters change.",
+        afterBody:
+          "Choose a cover design and image that fits the cookbook.",
+      },
+      {
+        heading: "$19.99 for one editable cookbook",
+        image: "printed-cookbook",
+        imageAlt: "A finished spiral-bound cookbook open to a formatted recipe and food photograph.",
+        body:
+          "Cookbook export costs $19.99 per cookbook. That one-time purchase lets you keep editing that cookbook and export updated PDFs again later.",
+        afterBody:
+          "RecipePrinter Pro is separate and is not required to purchase a cookbook. RecipePrinter creates the PDF; you can print it at home or send the finished file to a printing service of your choice. A free RecipePrinter account is required to download the cookbook.",
       },
     ],
+    faqHeading: "Cookbook maker questions",
     faqs: [
       {
         question: "What can I import into the cookbook maker?",
         answer:
-          "You can use recipe websites, photos, screenshots, handwritten cards, pasted text, CookPilot recipes, and Paprika export files. Always review imported text before printing, especially when the source is handwritten.",
+          "You can import recipes from websites, photos, screenshots, handwritten recipe cards, pasted text, supported recipe apps, and other RecipePrinter imports. Review each recipe before adding it to the cookbook.",
       },
       {
         question: "Can I organize recipes into chapters?",
         answer:
-          "Yes. Add and rename chapters, reorder them, and move recipes between them. Chapter pages can include an introduction and imagery.",
+          "Yes. Add and rename chapters, reorder them, and move recipes between sections as the cookbook changes.",
       },
       {
         question: "Does it create a table of contents and page numbers?",
         answer:
-          "Yes. RecipePrinter lays out the table of contents and page numbers from the book's current recipe and chapter order.",
+          "Yes. RecipePrinter builds the table of contents and page numbers from the cookbook's current recipe and chapter order.",
       },
       {
         question: "Can I customize the cookbook cover?",
         answer:
-          "Yes. You can edit the cover title and choose its design and image. Cover output changes with the print format you select.",
+          "Yes. You can edit the cover title and choose its design and image. Cover options depend on the current cookbook templates.",
       },
       {
         question: "Does RecipePrinter print and ship the book?",
         answer:
-          "No. RecipePrinter creates the cookbook PDF. You can print it at home or upload the file to a professional printing service of your choice.",
+          "No. RecipePrinter creates the cookbook PDF. You can print it at home or upload the finished file to a professional printing service of your choice.",
       },
       {
         question: "Do I need RecipePrinter Pro?",
         answer:
-          "No. Cookbook purchase and RecipePrinter Pro are separate. Pro is for features such as 4x6 recipe cards and multi-recipe card printing; it does not include cookbook export.",
+          "No. Cookbook purchases and RecipePrinter Pro are separate. Pro covers other RecipePrinter features and does not include cookbook export.",
+      },
+      {
+        question: "How much does the cookbook maker cost?",
+        answer:
+          "Cookbook export is $19.99 per cookbook. The purchase lets you keep editing that cookbook and export updated PDFs again later.",
+      },
+      {
+        question: "Can I edit my cookbook after I buy it?",
+        answer:
+          "Yes. After purchasing a cookbook, you can continue editing that cookbook and export updated versions later.",
       },
     ],
     links: [
@@ -2370,92 +2425,133 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "handwritten-recipes-to-cookbook",
     contentUpdated: "2026-10-02",
+    copyReviewed: "2026-10-02",
     primaryKeyword: "turn handwritten recipes into a cookbook",
     secondaryKeywords: [
       "handwritten recipe cookbook",
-      "family recipes cookbook",
-      "digitize recipes for cookbook",
+      "family recipe cookbook",
+      "digitize handwritten recipes for cookbook",
       "old recipe cards into cookbook",
+      "make a cookbook from recipe cards",
+      "preserve family recipes in a cookbook",
+      "handwritten family recipe book",
+      "recipe card cookbook",
+      "family cookbook from handwritten recipes",
     ],
     shortLabel: "Handwritten recipe cookbook",
     pickerGroup: "output",
     intent: "Preservation and Gift SEO",
     layout: "capture-first",
     heroImage: "handwritten-card",
+    heroImageAlt: "A handwritten family recipe card ready to be digitized.",
     initialImportMode: "image",
     importFieldLabel: "Handwritten recipe images",
     importUploadTitle: "Choose or drop photos",
+    importPlaceholder:
+      "Upload a photo or scan of a handwritten recipe card. Add the front and back together if the recipe continues onto both sides.",
     importSubmitLabel: "Start with this recipe",
     title: "Turn Handwritten Recipes Into a Cookbook | RecipePrinter",
     description:
-      "Digitize handwritten recipe cards, clean up the ingredients and instructions, and turn family recipes into a cookbook you can print or save as a PDF.",
+      "Digitize handwritten recipe cards, clean up the recipe text, and turn family recipes into a cookbook you can edit, print, or export as a PDF.",
     h1: "Turn handwritten recipes into a cookbook",
     lede:
-      "Photograph old recipe cards, review the editable text RecipePrinter reads from them, and bring recipes from different generations into one organized family cookbook.",
-    howToHeading: "From old recipe cards to a finished cookbook",
+      "Photograph or scan handwritten recipe cards, review the editable recipe text, and bring recipes from different generations together in one family cookbook.",
+    howToHeading: "How to turn handwritten recipes into a cookbook",
     howTo: [
       {
-        name: "Photograph or scan each card",
-        text: "Keep the card flat, use even light, and capture the whole surface. If a recipe continues on the back, upload both sides together so they can become one recipe.",
+        name: "Photograph or scan the recipe cards",
+        text: "Take a clear photo or scan of each handwritten recipe. Keep the card flat, use good lighting, and include both sides when the recipe continues onto the back.",
       },
       {
-        name: "Review the handwriting",
-        text: "RecipePrinter turns the image into editable ingredients and instructions. Handwriting recognition is not perfect, especially with faded ink or cursive, so compare the result with the original and correct uncertain words.",
+        name: "Review the extracted recipe",
+        text: "RecipePrinter turns the handwriting into editable ingredients and instructions. Review the result carefully and correct any words, amounts, or notes that were difficult to read.",
       },
       {
-        name: "Combine the generations",
-        text: "Add recipes from other cards, links, screenshots, and family messages. Keep names, memories, substitutions, and photos in the recipe notes rather than flattening every recipe into anonymous text.",
+        name: "Bring the family recipes together",
+        text: "Add recipes from different relatives, recipe boxes, websites, screenshots, or other sources. Give each recipe a consistent format while keeping names, notes, and family context where appropriate.",
       },
       {
-        name: "Arrange and export the family cookbook",
-        text: "Organize recipes into chapters, add a cover, and export the finished PDF after purchasing the cookbook. Print it at home or take the file to a professional printer.",
+        name: "Organize and export the cookbook",
+        text: "Arrange recipes into chapters, customize the cover and pages, then export the finished cookbook as a PDF. Print it at home or send the file to a professional printer.",
       },
     ],
     featureSections: [
       {
-        heading: "Preserve the card and make the recipe usable",
+        heading: "Preserve the original recipe card and make a clean copy",
         image: "inline-editing",
+        imageAlt: "A handwritten recipe converted into editable recipe text in RecipePrinter.",
         body:
-          "The photograph keeps a record of the original card; editable text makes the recipe easier to read and cook from. You can correct faded measurements, clarify an abbreviated instruction, and keep the source image with the recipe instead of choosing between history and legibility.",
+          "The original handwritten card is part of the family history, so you do not have to replace it. Keep the original safely stored while RecipePrinter creates an editable version you can correct, print, and cook from.",
+        afterBody:
+          "This is especially useful for faded measurements, hard-to-read handwriting, or cards that are becoming too fragile for everyday use.",
       },
       {
-        heading: "Give every branch of the family a place",
+        heading: "Combine recipes from different generations",
         image: "card-in-box",
+        imageAlt: "Family recipe cards stored behind dividers in a recipe box.",
         body:
-          "A family cookbook can mix cards from grandparents with recipes sent by cousins or saved online. Chapters can follow meals, holidays, households, or generations, and recipe notes can record who each dish came from.",
+          "A family cookbook can include recipes from grandparents, parents, siblings, cousins, or anyone else whose recipes belong in the collection. Organize them by person, meal, holiday, family branch, or recipe type.",
+        afterBody:
+          "Recipes do not have to come from handwritten cards only. You can mix handwritten family recipes with recipes from websites, screenshots, photos, or pasted text.",
       },
       {
-        heading: "Keep editing after the first PDF",
-        image: "bound-cookbook",
+        heading: "Keep the handwriting without cooking from the fragile original",
+        image: "handwritten-card",
+        imageAlt: "An original handwritten recipe card preserved beside its floral recipe box.",
         body:
-          "The cookbook costs $19.99 as a one-time purchase for that book. Once purchased, it remains editable: add a newly found card, correct a transcription, rearrange a chapter, and export an updated PDF without buying the same cookbook again.",
+          "For recipes with meaningful handwriting, notes, stains, or corrections, keep a photo of the original card with the recipe when appropriate. That way the cookbook can preserve the look and history of the recipe while still giving you readable ingredients and instructions.",
+      },
+      {
+        heading: "Keep updating the family cookbook over time",
+        image: "bound-cookbook",
+        imageAlt: "A finished family cookbook made from collected recipes.",
+        body:
+          "Cookbook export costs $19.99 per cookbook as a one-time purchase. After purchasing that cookbook, you can keep editing it, add newly found recipes, correct transcriptions, rearrange chapters, and export updated PDFs later.",
+        afterBody:
+          "RecipePrinter Pro is separate and is not required to purchase or update the cookbook.",
       },
     ],
+    faqHeading: "Handwritten recipe cookbook questions",
     faqs: [
       {
         question: "Can RecipePrinter read cursive handwriting?",
         answer:
-          "It can read many handwritten and cursive cards, but it will not interpret every word perfectly. Review the extracted ingredients and instructions against the original card and correct anything uncertain.",
+          "Yes. RecipePrinter can read many handwritten and cursive recipe cards, but handwriting recognition is not perfect. Review the extracted ingredients and instructions and correct anything that was difficult to read.",
       },
       {
         question: "Should I scan the cards or photograph them?",
         answer:
-          "Either works. A scanner can give you even detail, while a clear phone photo is usually faster. Keep the card flat, avoid shadows, and include every edge.",
+          "Either works. A scanner can capture fine detail, while a clear phone photo is usually faster. Keep the card flat, avoid shadows, and make sure the writing is easy to see.",
       },
       {
-        question: "Can I keep a photo of the original recipe card?",
+        question: "Can I preserve the original handwritten recipe card?",
         answer:
-          "Yes. You can keep source imagery with the recipe while using clean, editable text for the ingredients and instructions.",
+          "Yes. Keep the original card safely stored and use the cleaned RecipePrinter version for everyday cooking. You can also keep the original photo as part of your family archive and, when appropriate, use it as recipe imagery in the cookbook.",
       },
       {
         question: "Can I combine handwritten recipes with online recipes?",
         answer:
-          "Yes. A cookbook can include recipes brought in from cards, websites, screenshots, pasted text, and supported recipe apps.",
+          "Yes. A cookbook can include handwritten recipe cards alongside recipes imported from websites, screenshots, photos, pasted text, and supported recipe apps.",
       },
       {
-        question: "How do I turn the digitized recipes into a book?",
+        question: "How do I make a cookbook from handwritten recipe cards?",
         answer:
-          "Add the reviewed recipes to a cookbook project, organize them into chapters, customize the cover, and purchase the cookbook when you are ready to download its PDF.",
+          "Digitize and review each recipe, add the finished recipes to a cookbook project, organize them into chapters, customize the cover and pages, then export the completed cookbook as a PDF.",
+      },
+      {
+        question: "How much does it cost to make the cookbook?",
+        answer:
+          "Cookbook export costs $19.99 per cookbook as a one-time purchase. RecipePrinter Pro is separate and does not include cookbook export.",
+      },
+      {
+        question: "Can I keep editing the cookbook after I buy it?",
+        answer:
+          "Yes. The purchase belongs to that cookbook, so you can continue editing it and export updated versions later.",
+      },
+      {
+        question: "Does RecipePrinter print and ship the cookbook?",
+        answer:
+          "No. RecipePrinter creates the finished cookbook PDF. You can print it at home or send the file to a professional printing service.",
       },
     ],
     links: [
@@ -2911,7 +3007,7 @@ export function seoLandingPageMetadata(page: SeoLandingPage): Metadata {
     description: page.description,
     path: `/${page.slug}`,
   });
-  if (page.slug === "digitize-recipe-cards" || page.slug === "print-recipe-from-photo" || page.slug === "print-recipe-from-screenshot" || page.slug === "print-multiple-recipes" || page.slug === "recipe-binder" || page.slug === "print-paprika-recipes" || page.slug === "print-facebook-recipes" || page.slug === "print-youtube-recipes" || page.slug === "print-tiktok-recipes" || page.slug === "organize-recipes" || page.slug === "convert-recipe-to-pdf" || page.slug === "reciscan-alternative" || page.slug === "family-recipe-book" || page.slug === "preserve-family-recipes") {
+  if (page.slug === "digitize-recipe-cards" || page.slug === "print-recipe-from-photo" || page.slug === "print-recipe-from-screenshot" || page.slug === "print-multiple-recipes" || page.slug === "recipe-binder" || page.slug === "print-paprika-recipes" || page.slug === "print-facebook-recipes" || page.slug === "print-youtube-recipes" || page.slug === "print-tiktok-recipes" || page.slug === "organize-recipes" || page.slug === "convert-recipe-to-pdf" || page.slug === "reciscan-alternative" || page.slug === "family-recipe-book" || page.slug === "preserve-family-recipes" || page.slug === "cookbook-maker" || page.slug === "make-your-own-cookbook" || page.slug === "handwritten-recipes-to-cookbook") {
     metadata.title = { absolute: page.title };
     metadata.openGraph = { ...metadata.openGraph, title: page.title };
     metadata.twitter = { ...metadata.twitter, title: page.title };

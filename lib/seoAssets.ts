@@ -150,6 +150,14 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "A finished hardcover family cookbook lying open on a counter, a full-page photo facing the typed recipe.",
   },
+  "printed-cookbook": {
+    src: "/images/printed-cards/cookbook.jpeg",
+    width: 1333,
+    height: 2000,
+    alt:
+      "A finished spiral-bound cookbook open to a Greek chicken souvlaki recipe and full-page food photograph.",
+    objectPosition: "50% 62%",
+  },
   "cookpilot-export": {
     src: "/images/cookpilot-export.png",
     width: 1600,
