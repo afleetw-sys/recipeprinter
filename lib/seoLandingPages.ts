@@ -922,12 +922,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         body:
           "Some recipes live in social posts, private groups, messages, or apps where there isn’t a useful recipe link to import. Upload screenshots instead and RecipePrinter can build an editable recipe from the ingredients and instructions visible on your screen.",
       },
-      {
-        heading: "Turn a screenshot into a printable recipe",
-        image: "card-in-box",
-        body:
-          "Turn the screenshot into a clean printable recipe without the rest of the post, app, or phone screen around it. Print a full letter page, save the recipe as a PDF, or use RecipePrinter Pro to make a 4x6 recipe card.",
-      },
     ],
     faqHeading: "Questions about printing recipes from screenshots",
     faqs: [
@@ -1281,14 +1275,18 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImageAlt:
       "A printed Crunchwrap Supreme recipe card beside the finished crunchwrap.",
     heroAnnotation: "Printed from TikTok video",
-    contentUpdated: "2026-09-29",
+    contentUpdated: "2026-10-02",
+    copyReviewed: "2026-10-02",
     primaryKeyword: "print TikTok recipes",
     secondaryKeywords: [
       "print recipe from TikTok",
       "TikTok recipe printer",
+      "TikTok recipe to text",
+      "TikTok recipe to printable recipe",
+      "TikTok recipe to PDF",
+      "TikTok recipe card",
+      "recipe from TikTok video",
       "save TikTok recipes",
-      "print recipe from social media",
-      "print recipe from video",
     ],
     shortLabel: "TikTok",
     pickerGroup: "source",
@@ -1296,86 +1294,98 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     initialImportMode: "url",
     title: "Print TikTok Recipes | RecipePrinter",
     description:
-      "Turn a TikTok recipe link into editable ingredients and instructions, then print it as a full page, save it as a PDF, or make a 4x6 recipe card.",
+      "Paste a TikTok recipe link and turn the caption, available spoken captions, or on-screen recipe text into an editable recipe you can print or save.",
     h1: "Print TikTok recipes",
     lede:
-      "Paste a TikTok recipe link and RecipePrinter turns the written recipe into an editable format you can print as a full page or 4x6 recipe card.",
+      "Paste a TikTok recipe link and RecipePrinter looks for the recipe in the caption, available spoken captions, and text shown in the video. Review the ingredients and instructions, then print it as a full page, save it as a PDF, or make a 4x6 recipe card.",
     howToHeading: "How to print a recipe from TikTok",
     howTo: [
       {
         name: "Copy the TikTok link",
-        text: "Tap Share on the video and choose Copy link. Use the link for the recipe you want to print.",
+        text: "Open the TikTok recipe, tap Share, then choose Copy link. That link is all you need to get started.",
       },
       {
         name: "Paste it into RecipePrinter",
-        text: "Paste the link into RecipePrinter. It looks for the written recipe in the caption or pinned comment.",
+        text: "Paste the TikTok link into RecipePrinter. It first checks the caption, then may use available spoken captions and recipe text shown on screen when needed.",
       },
       {
-        name: "Check the recipe",
-        text: "Review the ingredients and instructions, then fix or add anything before printing.",
+        name: "Review the recipe",
+        text: "RecipePrinter turns the recipe it can find into editable ingredients and instructions. Review the result and fix anything that was missed or read incorrectly.",
       },
       {
         name: "Print it your way",
-        text: "Print a full letter page for free, save it as a PDF, or use Pro for 4x6 recipe cards and batch printing.",
+        text: "Print a full letter page, save the recipe as a PDF, or use RecipePrinter Pro to make a 4x6 recipe card.",
       },
     ],
     featureSections: [
       {
-        heading: "A video is a demonstration. A card is a reference.",
+        heading: "Turn a TikTok recipe into something easier to cook from",
         image: "counter-card",
         imageAlt:
           "A printed Buffalo Chicken Bake recipe card on a kitchen counter beside its ingredients.",
         body:
-          "A short video is great for seeing how a recipe comes together, but less useful when you need to check an amount while cooking. A printed recipe keeps the ingredients and steps in front of you without replaying it.",
+          "TikTok is great for seeing how a recipe comes together, but replaying a video every time you need an ingredient amount or step gets old quickly. RecipePrinter turns the recipe it can read from the video into an editable version you can keep in front of you while you cook.",
       },
       {
-        heading: "The useful part is usually in the caption",
+        heading: "Find the recipe beyond the TikTok caption",
         image: "tiktok-import",
         imageAlt:
           "A TikTok recipe imported into RecipePrinter with editable ingredients and instructions.",
         body:
-          "Many creators put the full recipe in the caption or a pinned comment. RecipePrinter pulls that written recipe into an editable format that is easier to review, print, and cook from.",
+          "Some creators put the full recipe in the caption, while others explain it aloud or show ingredients and amounts on screen. RecipePrinter can use the caption first, then available spoken captions and on-screen recipe text to help build the recipe.",
       },
       {
-        heading: "Get the good ones out of your saved videos",
+        heading: "Keep TikTok recipes from getting lost in your saved videos",
         image: "card-in-box",
         imageAlt: "A printed Basil Pesto recipe card filed in a tabbed recipe box.",
         body:
-          "Saving a video is easy. Finding the exact recipe again months later is not. Print the recipes you want to keep so they have a permanent place in your recipe box, binder, or cookbook.",
+          "Saving a TikTok recipe takes one tap. Finding the exact video again months later can be much harder. Print the recipes you want to keep so they have a permanent place in your recipe box, binder, or cookbook.",
+      },
+      {
+        heading: "Recipe extraction can vary by video",
+        image: "inline-editing",
+        imageAlt: "An imported recipe open for editing before it is printed.",
+        body:
+          "RecipePrinter can use available caption text, spoken captions, and recipe text shown in the video, but not every TikTok exposes the same information. Review the extracted recipe before printing to make sure the ingredients and instructions are complete.",
       },
     ],
     faqHeading: "TikTok recipe printing questions",
     faqs: [
       {
-        question: "Can RecipePrinter print a recipe straight from TikTok?",
+        question: "Can I print a recipe from a TikTok video?",
         answer:
-          "Yes. Paste the link and RecipePrinter looks for the written recipe in the caption or pinned comment.",
+          "Yes. Paste the TikTok link and RecipePrinter looks for the recipe in the caption, available spoken captions, and text displayed in the video. Review the extracted ingredients and instructions before printing.",
       },
       {
-        question: "What if the amounts are only spoken in the video?",
+        question: "Can RecipePrinter read ingredients spoken in a TikTok video?",
         answer:
-          "If the creator did not write them down, RecipePrinter does not guess. You can add the amounts yourself before printing.",
+          "Sometimes. RecipePrinter can use spoken narration when TikTok provides a usable caption or ASR track. Transcript availability varies, so review the extracted recipe and add anything that is missing.",
       },
       {
-        question: "What happens if the TikTok is deleted later?",
+        question: "Can RecipePrinter read recipe text shown on the TikTok video?",
         answer:
-          "Once you have printed the recipe or saved it as a PDF, your copy no longer depends on the original TikTok staying online.",
+          "Yes. RecipePrinter can use recipe text displayed over the video when it is available and readable, along with other recipe information it finds.",
+      },
+      {
+        question: "What happens if the TikTok recipe is deleted later?",
+        answer:
+          "Once you have printed the recipe or saved it as a PDF, your copy no longer depends on the original TikTok video staying online.",
       },
       {
         question: "Can I save a TikTok recipe as a PDF?",
         answer:
-          "Yes. Once the recipe is formatted, use your browser's print dialog and choose Save as PDF.",
+          "Yes. Once the recipe is formatted, print it and choose Save as PDF from your browser's print dialog.",
         answerEmphasis: "Save as PDF",
       },
       {
         question: "Do I need a TikTok account to use RecipePrinter?",
         answer:
-          "No. RecipePrinter works from the link you provide, so there is nothing to connect or sign into.",
+          "No. RecipePrinter works from the TikTok link you provide. You do not need to connect or sign in to a TikTok account.",
       },
       {
         question: "Can I turn a TikTok recipe into a 4x6 recipe card?",
         answer:
-          "Yes. Paste the link, review the recipe, then choose a 4x6 recipe card layout with RecipePrinter Pro.",
+          "Yes. Paste the TikTok link, review the extracted recipe, then choose a 4x6 recipe card layout with RecipePrinter Pro.",
       },
     ],
     links: [
@@ -1486,96 +1496,120 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importPlaceholder: "Paste YouTube link",
     heroImage: "souvlaki",
     heroAnnotation: "Printed from YouTube video",
-    contentUpdated: "2026-09-16",
+    contentUpdated: "2026-10-02",
+    copyReviewed: "2026-10-02",
     primaryKeyword: "print recipe from YouTube",
     secondaryKeywords: [
-      "how to print recipe from YouTube",
-      "can you print recipes from YouTube",
+      "print YouTube recipes",
+      "YouTube recipe printer",
+      "YouTube recipe to text",
+      "YouTube recipe to printable recipe",
       "print recipe from YouTube video",
-      "save YouTube recipe as PDF",
+      "recipe from YouTube transcript",
+      "print recipe from YouTube Short",
+      "YouTube recipe to PDF",
+      "YouTube recipe card",
     ],
     shortLabel: "YouTube",
     pickerGroup: "source",
     intent: "Utility SEO",
     initialImportMode: "url",
-    title: "Print a Recipe from YouTube | RecipePrinter",
+    title: "Print a Recipe From YouTube | RecipePrinter",
     description:
-      "Paste a YouTube cooking video link and turn the written recipe into a clean printable page or 4×6 recipe card you can save and keep.",
+      "Paste a YouTube recipe link and turn the description, linked recipe, or available video captions into an editable recipe you can print or save.",
     h1: "Print a recipe from YouTube",
     lede:
-      "Paste a YouTube video link and RecipePrinter turns the written recipe into a clean page or 4×6 card you can print and keep.",
+      "Paste a YouTube recipe link and RecipePrinter looks for the recipe in the video description, a linked recipe page, or available captions. Review the ingredients and instructions, then print it as a full page, save it as a PDF, or make a 4x6 recipe card.",
     howToHeading: "How to print a recipe from YouTube",
     howTo: [
       {
         name: "Copy the YouTube video link",
-        text: "Tap Share and copy the link, or copy the address from your browser. Either one works.",
+        text: "Open the YouTube recipe video, tap Share, and copy the link. You can also copy the video URL directly from your browser.",
       },
       {
         name: "Paste it into RecipePrinter",
-        text: "Paste the video link into RecipePrinter. It looks for the written recipe in the video description.",
+        text: "Paste the YouTube link into RecipePrinter. It checks the video description and any usable linked recipe page, and may use available captions when more recipe information is needed.",
       },
       {
-        name: "RecipePrinter pulls out the recipe",
-        text: "The ingredients and steps are separated into a clean format you can edit before anything prints.",
+        name: "Review the recipe",
+        text: "RecipePrinter turns the recipe it finds into editable ingredients and instructions. Review the result and fix anything that was missed or read incorrectly.",
       },
       {
         name: "Print it your way",
-        text: "Print a full letter page for free or save it as a PDF. Pro adds 4×6 recipe cards and batch printing.",
+        text: "Print a full letter page, save the recipe as a PDF, or use RecipePrinter Pro to make a 4x6 recipe card.",
       },
     ],
     featureSections: [
       {
-        heading: "Keep the recipe, skip everything around it",
+        heading: "Print the recipe from a YouTube video",
         image: "youtube-import",
         body:
-          "YouTube descriptions often mix the recipe with equipment links, discount codes, timestamps, and channel information. RecipePrinter pulls out the ingredients and steps so you are left with the part you actually need in the kitchen.",
+          "YouTube cooking videos are useful for seeing how a recipe is made, but the actual recipe may be spread across the description, a linked website, or spoken captions. RecipePrinter brings the available ingredients and instructions into one editable recipe you can print.",
       },
       {
-        heading: "Twenty minutes of video, one sheet of paper",
+        heading: "Cook from a printed recipe instead of replaying the video",
         image: "counter-card",
         body:
-          "Cooking videos are great for watching a recipe come together, but not always for checking an ingredient with messy hands. A printed recipe puts the ingredients, amounts, and steps in front of you at once without scrubbing back through the video.",
+          "Cooking videos are great for watching a technique, but less convenient when you need to check an ingredient amount or step while cooking. A printed recipe keeps the ingredients and instructions in front of you without replaying or scrubbing through the video.",
       },
       {
-        heading: "Keep the recipe and the video",
+        heading: "Keep the YouTube video linked to the recipe",
         image: "pdf-search",
         body:
-          "Print the ingredients and steps for everyday cooking, and keep the YouTube link with the recipe so you can jump back to the original video when you need to see a technique again.",
+          "RecipePrinter keeps the original YouTube URL as the recipe source, so you can cook from the written recipe and return to the video whenever you want to watch a technique again.",
+      },
+      {
+        heading: "The recipe may be in the description, website, or captions",
+        image: "before-after",
+        body:
+          "Some creators write the full recipe in the YouTube description. Others link to a recipe on their website or explain the recipe in the video. RecipePrinter checks the available written sources and can use a usable YouTube caption track when needed.",
       },
     ],
     faqHeading: "YouTube recipe printing questions",
     faqs: [
       {
-        question: "Can RecipePrinter get the recipe from any YouTube cooking video?",
+        question: "Can I print a recipe from a YouTube cooking video?",
         answer:
-          "RecipePrinter needs a written recipe to work from, usually in the video description. If the creator did not include one, you can paste your own notes or recipe text instead.",
+          "Yes. Paste the YouTube link and RecipePrinter looks for recipe information in the video description, a linked recipe page, and available captions. Review the extracted recipe before printing.",
+      },
+      {
+        question: "Can RecipePrinter use a recipe that is only explained in the video?",
+        answer:
+          "Sometimes. If YouTube provides a usable caption or transcript track, RecipePrinter can use the spoken narration to help build the recipe. Captions are not available for every video, so review the result for anything missing.",
       },
       {
         question: "Can I print a recipe from a YouTube Short?",
         answer:
-          "Yes, as long as the Short includes enough written recipe information to work from. Paste the Short link the same way you would any other YouTube video.",
+          "Yes. Paste the YouTube Short link the same way you would another video. RecipePrinter can use available transcript information when the Short's description does not contain enough recipe detail.",
+      },
+      {
+        question: "Can RecipePrinter use a recipe linked in the YouTube description?",
+        answer:
+          "Yes. If the description links to a usable recipe page, RecipePrinter can use that written recipe to build the printable version.",
       },
       {
         question: "Can I save a YouTube recipe as a PDF?",
         answer:
-          "Yes. Once the recipe is formatted, open your browser’s print dialog and choose Save as PDF instead of a printer.",
+          "Yes. Once the recipe is formatted, print it and choose Save as PDF from your browser's print dialog.",
         answerEmphasis: "Save as PDF",
-      },
-      {
-        question: "What if the YouTube description links to the creator’s recipe website?",
-        answer:
-          "You can use either link. The YouTube description may have a shorter version, while the creator’s website may include extra notes, substitutions, or details.",
       },
       {
         question: "Will the printed recipe link back to the YouTube video?",
         answer:
-          "You can include the source link so it is easy to return to the video when you want to watch a technique again.",
+          "RecipePrinter keeps the original YouTube URL as the recipe source, so you can return to the video later when you want to watch a technique again.",
+      },
+      {
+        question: "Can I turn a YouTube recipe into a 4x6 recipe card?",
+        answer:
+          "Yes. Paste the YouTube link, review the extracted recipe, then choose a 4x6 recipe card layout with RecipePrinter Pro.",
       },
     ],
     links: [
       { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
       { href: "/print-facebook-recipes", label: "Print Facebook recipes" },
       { href: "/convert-recipe-to-pdf", label: "Convert recipe to PDF" },
+      { href: "/recipe-card-printer", label: "Make a 4x6 recipe card" },
+      { href: "/recipe-binder", label: "Build a recipe binder" },
     ],
   },
   {
