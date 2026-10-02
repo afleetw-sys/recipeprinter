@@ -749,25 +749,26 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
   },
   {
-    // No copyReviewed: written today, not read through yet.
     slug: "print-recipe-from-photo",
-    contentUpdated: "2026-09-29",
+    contentUpdated: "2026-10-02",
+    copyReviewed: "2026-10-02",
     primaryKeyword: "print a recipe from a photo",
     secondaryKeywords: [
       "print recipe from photo",
+      "recipe photo to text",
+      "convert recipe photo to text",
+      "handwritten recipe to text",
       "digitize handwritten recipes",
-      "scan recipe cards",
-      "print recipe from screenshot",
-      "recipe card scanner",
-      "photo of a recipe to printable",
-      "type up handwritten recipes",
+      "recipe card from photo",
+      "screenshot to printable recipe",
+      "cookbook page to editable recipe",
     ],
     shortLabel: "A photo or screenshot",
     pickerGroup: "source",
     intent: "Utility SEO",
     initialImportMode: "image",
     importSubmitLabel: "Read the photo",
-    importPlaceholder: "Upload a recipe card, cookbook page, screenshot, or photo",
+    importPlaceholder: "Upload a recipe card, cookbook page, screenshot, or other recipe photo",
     // The template's default hero is a card captioned "Printed from a recipe
     // link", which is the one thing this page is not about.
     heroImage: "photo-recipe-card",
@@ -775,56 +776,57 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "A printed Peanut Butter Blossoms recipe card lying on a vintage yellow spice chart.",
     heroAnnotation: "Printed from a photograph",
     cookbookPitch: true,
+    cookbookPitchHeading: "Turn family recipe cards into a cookbook",
     cookbookPitchBody:
-      "Once you've digitized the recipes worth keeping, bring them together in a family recipe book. Organize recipes into chapters, add a cover and table of contents, then print it at home or export the finished cookbook as a PDF.",
+      "Once you’ve digitized the family recipes worth keeping, you can bring them together in a cookbook. Organize recipes into chapters, add a cover and table of contents, then print it at home or export the finished cookbook as a PDF.",
     title: "Print a Recipe From a Photo | RecipePrinter",
     description:
-      "Turn a photo, screenshot, handwritten recipe card, or cookbook page into an editable recipe you can print as a 4x6 card, full page, or PDF.",
+      "Upload a photo, screenshot, handwritten recipe card, or cookbook page. RecipePrinter turns it into editable text you can print as a 4x6 card or full page.",
     h1: "Print a recipe from a photo",
     anchor: "Print a recipe from a photo",
     lede:
-      "Turn a photo, screenshot, handwritten recipe card, or cookbook page into an editable recipe you can print as a 4x6 recipe card or full page.",
+      "Upload a photo, screenshot, handwritten recipe card, or cookbook page and turn it into editable recipe text. Check the ingredients and instructions, then print it as a 4x6 recipe card or full page.",
     howTo: [
       {
         name: "Photograph the recipe",
-        text: "Take a clear photo of a handwritten recipe card, cookbook page, or printed recipe. A phone camera works great.",
+        text: "Take a clear photo of a handwritten recipe card, cookbook page, or printed recipe. A phone camera works well, so there’s no need to scan it first.",
       },
       {
         name: "Upload it",
-        text: "Upload up to four photos for one recipe. Use multiple images when a card or cookbook recipe has more than one page.",
+        text: "Upload up to four photos for one recipe. Use multiple images when a recipe is written on both sides of a card or spans more than one cookbook page.",
       },
       {
-        name: "Check the recipe",
-        text: "RecipePrinter turns the photo into editable recipe text. Read over the ingredients and instructions and fix anything that needs it.",
+        name: "Check the extracted recipe",
+        text: "RecipePrinter converts the recipe photo into editable text. Review the ingredients and instructions and fix anything that wasn’t read correctly.",
       },
       {
         name: "Print or save it",
-        text: "Print the recipe as a 4x6 card or full letter page, or save it as a PDF to keep for later.",
+        text: "Print the finished recipe as a 4x6 recipe card or full letter page, or save it as a PDF to keep for later.",
       },
     ],
     featureSections: [
       {
-        heading: "Keep the recipe readable for years",
+        heading: "Digitize old handwritten recipe cards",
         image: "handwritten-card",
         imageAlt:
           "A handwritten Peanut Butter Cookies recipe card beside the floral recipe box where it is kept.",
         body:
-          "Old handwritten recipe cards fade, tear, and get harder to read over time. Photograph the original and RecipePrinter turns it into an editable recipe you can print again, while the original card stays safely where it belongs.",
+          "Old handwritten recipe cards can fade, tear, or become harder to read over time. Photograph the original to turn the handwritten recipe into editable text you can correct, save, and print again while keeping the original card safe.",
       },
       {
-        heading: "A typed copy is a copy you can use",
+        heading: "Turn a recipe photo into editable text",
         image: "card-in-box",
         imageAlt: "A newly printed Basil Pesto recipe card filed in a tabbed recipe box.",
         body:
-          "A photo of a recipe is still just a picture. Turn it into editable text and you can fix ingredients, search it, change the print size, save it as a PDF, or make a new printable recipe card.",
+          "A recipe photo is useful for keeping a copy, but editable text is easier to work with. RecipePrinter reads the ingredients and instructions so you can make corrections, format the recipe, print a recipe card, or save it as a PDF.",
       },
     ],
-    faqHeading: "Recipe photo questions",
+    faqHeading: "Questions about turning recipe photos into printable recipes",
     faqs: [
       {
         question: "Does it read handwritten recipes?",
         answer:
-          "Yes. RecipePrinter can read handwritten recipe cards as well as printed recipes. Clear handwriting and a well-lit photo give the best results, so check the recipe before printing.",
+          "Yes. RecipePrinter can read handwritten recipe cards as well as printed recipes. Clear handwriting and a well-lit photo give the best results, and you can review and edit the extracted recipe before printing.",
       },
       {
         question: "What if the recipe runs onto the back of the card?",
@@ -834,22 +836,22 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Do I need to scan the recipe?",
         answer:
-          "No. A clear phone photo is enough. Place the recipe flat, use good lighting, and make sure the writing is easy to see.",
+          "No. A clear photo from your phone is enough. Place the recipe flat, use good lighting, and make sure the handwriting or printed text is easy to see.",
       },
       {
-        question: "What happens to the photo afterwards?",
+        question: "Can I convert a recipe photo to editable text?",
         answer:
-          "The photo is used to read the recipe and turn it into editable text. The recipe is what you keep and work with afterward.",
+          "Yes. RecipePrinter reads the recipe from the photo and turns the ingredients and instructions into editable text. You can review the result, make corrections, and then format or print the recipe.",
       },
       {
         question: "Can I turn a photo into a printable recipe card?",
         answer:
-          "Yes. Upload a photo or screenshot of the recipe, check the extracted ingredients and instructions, then print it as a 4x6 recipe card or full letter page.",
+          "Yes. Upload a photo of the recipe, check the extracted ingredients and instructions, then print it as a 4x6 recipe card or full letter page.",
       },
       {
         question: "Can I turn a screenshot of a recipe into a printable recipe?",
         answer:
-          "Yes. Upload the screenshot just like a photo. RecipePrinter reads the recipe from the image and turns it into editable text you can format and print.",
+          "Yes. Upload a recipe screenshot just like a photo. RecipePrinter reads the recipe from the image and turns it into editable text you can format and print.",
       },
     ],
     links: [
@@ -860,12 +862,17 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-recipe-from-screenshot",
-    contentUpdated: "2026-09-29",
+    contentUpdated: "2026-10-02",
+    copyReviewed: "2026-10-02",
     primaryKeyword: "print recipe from screenshot",
     secondaryKeywords: [
       "recipe screenshot to text",
-      "convert recipe screenshot",
-      "recipe screenshot converter",
+      "convert recipe screenshot to text",
+      "turn screenshot into recipe",
+      "printable recipe from screenshot",
+      "recipe screenshot printer",
+      "turn recipe screenshot into recipe card",
+      "save recipe screenshot as PDF",
     ],
     shortLabel: "A recipe screenshot",
     pickerGroup: "source",
@@ -873,33 +880,33 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     initialImportMode: "image",
     importFieldLabel: "Recipe screenshots",
     importUploadTitle: "Choose or drop screenshots",
-    importPlaceholder: "Upload one or more screenshots that contain the recipe",
+    importPlaceholder: "Upload one or more screenshots that show the recipe ingredients and instructions",
     importSubmitLabel: "Read the screenshot",
     heroImage: "inline-editing",
     heroAnnotation: "Edit the recipe before printing",
     title: "Print a Recipe From a Screenshot | RecipePrinter",
     description:
-      "Turn a recipe screenshot into editable ingredients and instructions, then print it as a full page, save it as a PDF, or make a 4x6 recipe card.",
+      "Upload a recipe screenshot and turn it into editable ingredients and instructions. Print it as a full page, save it as a PDF, or make a 4x6 recipe card.",
     h1: "Print a recipe from a screenshot",
     lede:
-      "Upload a screenshot of a recipe from a post, message, app, or website. RecipePrinter turns the ingredients and instructions into editable recipe text you can print or save.",
+      "Upload a recipe screenshot from a post, message, app, or website. RecipePrinter turns the visible ingredients and instructions into editable recipe text you can review, print, or save.",
     howToHeading: "How to print a recipe from a screenshot",
     howTo: [
       {
         name: "Save the recipe screenshot",
-        text: "Capture the ingredients and directions. If the recipe spans multiple screens, save each part as a screenshot.",
+        text: "Take a screenshot that clearly shows the recipe ingredients and instructions. If the recipe spans multiple screens, save each part as a separate screenshot.",
       },
       {
-        name: "Upload the screenshots",
-        text: "Add your screenshots to RecipePrinter. You can upload up to four images together for one recipe.",
+        name: "Upload the recipe screenshots",
+        text: "Upload the screenshots to RecipePrinter. You can add up to four images to one recipe when the ingredients and instructions span multiple screens.",
       },
       {
-        name: "Review the recipe text",
-        text: "RecipePrinter turns the screenshots into editable ingredients and steps. Check the text and fix anything that needs it.",
+        name: "Review the extracted recipe",
+        text: "RecipePrinter converts the recipe screenshot into editable ingredients and instructions. Review the text and fix anything that wasn’t read correctly.",
       },
       {
         name: "Print or save it",
-        text: "Print the recipe as a full letter page, save it as a PDF, or use RecipePrinter Pro to make a 4x6 recipe card.",
+        text: "Print the finished recipe as a full letter page, save it as a PDF, or use RecipePrinter Pro to make a 4x6 recipe card.",
       },
     ],
     featureSections: [
@@ -907,47 +914,47 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Turn a recipe screenshot into text you can edit",
         image: "steps",
         body:
-          "A screenshot saves a recipe quickly, but the recipe is still trapped inside an image. RecipePrinter turns the visible text into editable ingredients and instructions so you can clean it up before printing.",
+          "A screenshot is an easy way to save a recipe, but the ingredients and instructions are still trapped inside an image. RecipePrinter converts the visible recipe into editable text so you can correct it, format it, and print it properly.",
       },
       {
-        heading: "Use screenshots when there is no recipe link",
+        heading: "Print recipes from posts, messages, and apps",
         image: "instagram",
         body:
-          "The recipe might be in a social post, private group, message, or app with no useful link. Upload the screenshots instead and RecipePrinter can build the recipe from the text you can see.",
+          "Some recipes live in social posts, private groups, messages, or apps where there isn’t a useful recipe link to import. Upload screenshots instead and RecipePrinter can build an editable recipe from the ingredients and instructions visible on your screen.",
       },
       {
-        heading: "Make a clean copy for the kitchen",
+        heading: "Turn a screenshot into a printable recipe",
         image: "card-in-box",
         body:
-          "Turn the screenshot into a clean printable recipe without the rest of the phone screen around it. Print a full letter page for free, or use RecipePrinter Pro to make a 4x6 card for your recipe box.",
+          "Turn the screenshot into a clean printable recipe without the rest of the post, app, or phone screen around it. Print a full letter page, save the recipe as a PDF, or use RecipePrinter Pro to make a 4x6 recipe card.",
       },
     ],
-    faqHeading: "Recipe screenshot printing questions",
+    faqHeading: "Questions about printing recipes from screenshots",
     faqs: [
       {
         question: "Can RecipePrinter convert a recipe screenshot to text?",
         answer:
-          "Yes. Upload the screenshot and RecipePrinter turns the visible recipe into editable ingredients and instructions. Review the text before you print or save it.",
+          "Yes. Upload the recipe screenshot and RecipePrinter converts the visible ingredients and instructions into editable text. You can review and correct the recipe before printing or saving it.",
       },
       {
         question: "What if the recipe takes more than one screenshot?",
         answer:
-          "Upload the screenshots together. RecipePrinter can use up to four images for one recipe, so the ingredients and instructions can span several screenshots.",
+          "Upload the screenshots together. RecipePrinter can use up to four images for one recipe, so the ingredients and instructions can span multiple screens.",
       },
       {
-        question: "Does the original post or website have to be public?",
+        question: "Can I print a recipe from a private post or message?",
         answer:
-          "No. If you can see the recipe in a post, message, app, or website, you can upload a screenshot without needing RecipePrinter to open the original link.",
+          "Yes, as long as you can take a screenshot of the recipe. RecipePrinter reads the text in the image, so it does not need to open the original post, message, app, or webpage.",
       },
       {
-        question: "Can I fix mistakes after the screenshot is read?",
+        question: "Can I edit the recipe after the screenshot is converted?",
         answer:
-          "Yes. You can edit the recipe title, ingredients, amounts, and instructions before printing or saving it.",
+          "Yes. You can edit the recipe title, ingredients, amounts, and instructions after the screenshot is converted and before you print or save the recipe.",
       },
       {
         question: "Can I print a recipe screenshot from my phone?",
         answer:
-          "Yes. Open RecipePrinter in your phone browser, upload the screenshot, review the recipe, then print it or save it as a PDF.",
+          "Yes. Open RecipePrinter in your phone browser, upload the recipe screenshot, review the extracted ingredients and instructions, then print it or save it as a PDF.",
       },
       {
         question: "Can I turn a recipe screenshot into a recipe card?",
