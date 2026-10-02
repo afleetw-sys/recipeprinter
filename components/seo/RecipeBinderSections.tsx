@@ -3,9 +3,9 @@ import { MoveToSectionIcon, PlusIcon, PrintIcon } from "@/components/icons";
 import { LandingSection } from "@/components/seo/LandingFrame";
 
 const flexiblePoints = [
-  { title: "Start with one", body: "Print a recipe now. Your binder does not need to be finished first.", Icon: PrintIcon },
-  { title: "Add more later", body: "Print new favorites as you find them, and replace recipes you have updated.", Icon: PlusIcon },
-  { title: "Rearrange anytime", body: "Move recipes between sections whenever the way you cook changes.", Icon: MoveToSectionIcon },
+  { title: "Start with one", body: "Start with one recipe you already make often. Print it as a full page and add it to your binder.", Icon: PrintIcon },
+  { title: "Add more later", body: "Print new favorites as you find them and replace older pages when you update a recipe.", Icon: PlusIcon },
+  { title: "Rearrange anytime", body: "Move recipes between sections whenever your categories or cooking habits change.", Icon: MoveToSectionIcon },
 ];
 
 const categories = ["Breakfast", "Main dishes", "Sides", "Soups & salads", "Baking", "Desserts"];
@@ -15,8 +15,8 @@ export function RecipeBinderSections() {
     <div className="flex flex-col gap-[56px] lg:gap-[72px]">
       <LandingSection
         id="binder-flexibility-heading"
-        heading="A recipe collection that can keep growing"
-        lede="Print one recipe now, add another later, and keep changing your binder over time."
+        heading="Build your recipe binder a few recipes at a time"
+        lede="You do not need to finish your whole binder at once. Print the recipes you already use, add new favorites as you find them, and reorganize the binder whenever your collection changes."
       >
         <div className="grid gap-cp-4 sm:grid-cols-3">
           {flexiblePoints.map((point) => (
@@ -33,8 +33,8 @@ export function RecipeBinderSections() {
 
       <LandingSection
         id="binder-organization-heading"
-        heading="Organize it however you like"
-        lede="Use physical tab dividers and simple categories, then move recipes around as your collection grows."
+        heading="Choose simple recipe binder categories"
+        lede="Start with broad categories that match how you cook, then use tab dividers to keep recipes easy to find. You can always split a section later as your binder grows."
       >
         <div className="flex flex-wrap gap-cp-2">
           {categories.map((category) => (
@@ -47,15 +47,15 @@ export function RecipeBinderSections() {
 
       <aside className="rounded-2xl border border-line bg-card p-cp-5" aria-labelledby="binder-cookbook-heading">
         <h2 id="binder-cookbook-heading" className="text-cp-body-lg font-extrabold tracking-[-0.02em]">
-          Make your binder feel more finished
+          Add section pages and a table of contents
         </h2>
         <p className="mt-cp-3 text-cp-body text-ink-soft leading-relaxed">
-          Use the{" "}
+          If you want a more finished binder, the{" "}
           <Link href="/family-recipe-book" className="font-bold text-ink hover:underline">
             cookbook builder
           </Link>{" "}
-          to add section pages, a table of contents, and page numbers, then print the finished
-          collection for your binder.
+          can add section pages, a table of contents, and page numbers before you print the
+          collection. The cookbook builder is a separate one-off purchase.
         </p>
       </aside>
     </div>

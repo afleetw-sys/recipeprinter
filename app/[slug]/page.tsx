@@ -262,15 +262,19 @@ export default function SeoLandingPage({ params }: PageProps) {
       )}
 
       {page.slug === "digitize-recipe-cards" && (
-        <section aria-labelledby="digitize-collection-heading" className="max-w-[46rem]">
-          <div id="digitize-collection-heading">
-            <SectionHeading>One card or a whole recipe box</SectionHeading>
-          </div>
-          <p className="mt-cp-3 text-cp-body-lg text-ink-soft leading-relaxed">
-            Start with a single favorite or work through an inherited recipe box a few cards at a time.
-            Once they’re digitized, the recipes can use the same clean format even if the originals are
-            different sizes, handwriting styles, or ages.
-          </p>
+        <section aria-label="Digitize a family recipe collection">
+          <FeatureRows
+            features={[
+              {
+                heading: "Digitize one recipe card or a whole family collection",
+                image: "card",
+                body:
+                  "Start with a single favorite or work through an inherited recipe box a few cards at a time. Once the recipes are digitized, you can give them a consistent format even when the originals use different card sizes, handwriting styles, or layouts.",
+                afterBody:
+                  "You can print individual recipes as you go, or use RecipePrinter Pro when you want to work with and print multiple recipes together.",
+              },
+            ]}
+          />
         </section>
       )}
 
