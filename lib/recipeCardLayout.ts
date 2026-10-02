@@ -255,6 +255,9 @@ export function ingredientText(ing: Recipe["ingredients"][number]): string {
 // top-to-bottom-then-left-to-right. `heights` must already account for any
 // item that has to stay glued to what precedes it (e.g. a section title glued
 // to its first item) — glue it into one height before calling this.
+/** How close two cuts' balance has to be to count as a tie, in px. */
+const SPLIT_TIE_PX = 0.5;
+
 export function splitIntoColumns(heights: number[]): number {
   const n = heights.length;
   if (n === 0) return 0;
@@ -262,22 +265,29 @@ export function splitIntoColumns(heights: number[]): number {
   const total = heights.reduce((sum, h) => sum + h, 0);
   const target = total / 2;
 
-  let prefix = 0;
-  let bestIndex = 1;
-  let bestDiff = Number.POSITIVE_INFINITY;
   // Column 1 always gets at least one item (k starts at 1) — an empty first
   // column below a full second one isn't a balance CSS's column-fill:balance
   // would ever produce, and isn't better-balanced by any measure once there's
   // real content to place.
+  const diffs: number[] = [];
+  let prefix = 0;
   for (let k = 1; k <= n; k++) {
     prefix += heights[k - 1];
-    const diff = Math.abs(prefix - target);
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      bestIndex = k;
-    }
+    diffs.push(Math.abs(prefix - target));
   }
-  return bestIndex;
+  const best = Math.min(...diffs);
+
+  // Two cuts can balance exactly (a titled chunk, three plain lines, a titled
+  // chunk: the middle line's top and bottom sit equally far from half). Taking
+  // whichever reads a hair smaller handed the choice to sub-pixel noise, which
+  // WebKit changes between one measurement of the same lines and the next, so
+  // a card re-split its columns after a print. Anything within half a pixel of
+  // the best is the same balance to the eye; of those, take the last cut, the
+  // taller first column, as CSS column balancing does.
+  for (let k = n; k >= 1; k--) {
+    if (diffs[k - 1] - best <= SPLIT_TIE_PX) return k;
+  }
+  return 1;
 }
 
 export function sectionGroups<T extends { section?: string }>(items: T[]) {
