@@ -19,7 +19,7 @@ import {
   HowItWorks,
   PhotoGallery,
 } from "@/components/seo/LandingVisuals";
-import { ExternalIcon, ICON_SIZE } from "@/components/icons";
+import { FaqCards } from "@/components/seo/FaqCards";
 import {
   SEO_LANDING_PAGE_MAP,
   SEO_LANDING_PAGES,
@@ -283,53 +283,24 @@ export default function SeoLandingPage({ params }: PageProps) {
         <div id="faq-heading">
           <SectionHeading>{page.faqHeading ?? "Questions people ask"}</SectionHeading>
         </div>
-        <dl className="mt-cp-5 grid gap-cp-4 sm:grid-cols-2">
-          {page.faqs.map((item, index) => (
-            <div
-              key={item.question}
-              className="rounded-2xl border border-line bg-card p-cp-5"
-            >
-              <dt className="flex items-start gap-cp-3 text-cp-body-lg font-extrabold leading-snug tracking-[-0.02em]">
-                <span
-                  className="grid h-8 w-8 flex-none place-items-center rounded-full border border-[var(--cp-accent-warm)] bg-card text-cp-small font-black text-[var(--cp-ink)]"
-                  aria-hidden
-                >
-                  {index + 1}
-                </span>
-                <span className="pt-1">{item.question}</span>
-              </dt>
-              <dd className="mt-cp-3 border-t border-line pt-cp-3 text-ink-soft text-cp-body leading-relaxed">
-                {item.answerEmphasis && item.answer.includes(item.answerEmphasis) ? (
+        <div className="mt-cp-5">
+          <FaqCards
+            items={page.faqs.map((item) => ({
+              question: item.question,
+              answer:
+                item.answerEmphasis && item.answer.includes(item.answerEmphasis) ? (
                   <>
                     {item.answer.slice(0, item.answer.indexOf(item.answerEmphasis))}
                     <strong>{item.answerEmphasis}</strong>
                     {item.answer.slice(item.answer.indexOf(item.answerEmphasis) + item.answerEmphasis.length)}
                   </>
-                ) : item.answer}
-                {item.links && item.links.length > 0 && (
-                  <span className="mt-cp-3 flex flex-wrap gap-cp-2">
-                    {item.links.map((link) => (
-                      <a
-                        key={link.href}
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-secondary btn-compact"
-                      >
-                        {link.label}
-                        {/* These are the only links on the page that leave
-                            the site, and they open in a new tab. The mark
-                            says so before the click rather than after. */}
-                        <ExternalIcon size={ICON_SIZE.sm} aria-hidden />
-                        <span className="sr-only">(opens in a new tab)</span>
-                      </a>
-                    ))}
-                  </span>
-                )}
-              </dd>
-            </div>
-          ))}
-        </dl>
+                ) : (
+                  item.answer
+                ),
+              links: item.links,
+            }))}
+          />
+        </div>
       </section>
 
       {/* ── Related ───────────────────────────────────────────────────── */}
