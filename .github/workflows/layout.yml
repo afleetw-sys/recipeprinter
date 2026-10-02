@@ -42,6 +42,14 @@ jobs:
   sweep:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # Playwright's own image: the browsers and every system library they need
+    # are already in it, at the version package-lock.json pins (checked by
+    # lib/playwrightImage.test.ts; bump both together). Installing them on
+    # each run was ~200 MB from Ubuntu's and Microsoft's servers, and a slow
+    # mirror once took 19 minutes and timed the whole job out (2026-10-02).
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --user 1001
 
     steps:
       - uses: actions/checkout@v4
@@ -52,9 +60,6 @@ jobs:
           cache: npm
 
       - run: npm ci
-
-      - name: Install browser
-        run: npx playwright install --with-deps chromium
 
       - name: Layout sweep
         run: npm run test:layout

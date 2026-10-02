@@ -83,6 +83,11 @@ jobs:
 
       - run: npm ci
 
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-14.27.0
+
       - name: Security rules
         run: npm run test:rules
 
@@ -103,6 +108,14 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Playwright's own image: the browsers and every system library they need
+    # are already in it, at the version package-lock.json pins (checked by
+    # lib/playwrightImage.test.ts; bump both together). Installing them on
+    # each run was ~200 MB from Ubuntu's and Microsoft's servers, and a slow
+    # mirror once took 19 minutes and timed the whole job out (2026-10-02).
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --user 1001
 
     steps:
       - uses: actions/checkout@v4
@@ -120,8 +133,12 @@ jobs:
 
       - run: npm ci
 
-      - name: Install browsers
-        run: npx playwright install --with-deps chromium webkit
+      # The emulators' own jars, which firebase-tools otherwise downloads
+      # from Google on every run. Keyed on the pinned firebase-tools version.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-14.27.0
 
       - name: Browser tests
         run: npm run test:e2e
