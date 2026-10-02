@@ -314,6 +314,36 @@ describe("splitIntoColumns", () => {
       expect(split).toBeLessThanOrEqual(heights.length);
     }
   });
+
+  it("settles an even tie the same way whatever sub-pixel noise the measurement carries", () => {
+    // Two cuts can balance exactly: a titled first chunk, three plain lines and
+    // a titled last chunk put the middle line's top and bottom equally far from
+    // half. Which one won was down to the fourth decimal of each line's
+    // measured height, and WebKit reads the same line a few thousandths of a
+    // pixel differently after a print, so a card's ingredients re-split into
+    // new columns once the print dialog closed (CI run 37052769628).
+    const ties = [
+      [33.321, 13.305, 13.305, 13.305, 33.321], // the Buckeyes card, as measured
+      [10.946, 4.371, 4.371, 4.371, 10.946], // the same card at the preview's scale
+      [10, 10, 10],
+      [20, 10, 10, 10, 10, 20],
+    ];
+    for (const heights of ties) {
+      const splits = new Set<number>();
+      // Nudge each chunk up and down in turn, as a re-measure can.
+      for (let i = 0; i < heights.length; i++) {
+        for (const noise of [-0.001, 0.001]) {
+          splits.add(splitIntoColumns(heights.map((h, j) => (j === i ? h + noise : h))));
+        }
+      }
+      expect(Array.from(splits), `${heights}`).toHaveLength(1);
+    }
+  });
+
+  it("breaks an even tie toward the taller first column, as CSS column balancing does", () => {
+    expect(splitIntoColumns([10, 10, 10])).toBe(2);
+    expect(splitIntoColumns([33.321, 13.305, 13.305, 13.305, 33.321])).toBe(3);
+  });
 });
 
 describe("a contents page that runs long", () => {

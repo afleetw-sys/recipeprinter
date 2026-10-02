@@ -80,8 +80,8 @@ export interface WideColumnMeasurement {
  * page keeps every face in the DOM but hides whichever ones aren't the
  * active side on screen (see `[data-preview-hidden]` in print.css) — where
  * every chunk reports a 0 height. Feeding all-zero heights into
- * `splitIntoColumns` doesn't fail loudly; it ties out at the first item, so
- * column 1 gets exactly one chunk and everything else piles into column 2.
+ * `splitIntoColumns` doesn't fail loudly; every cut ties, so it piles every
+ * chunk into column 1 and leaves column 2 empty.
  * So a face hidden that way is measured through the hide (see
  * `revealPreviewHidden`), and a `ResizeObserver` on the section (which fires
  * once when a `display: none` element gets a real box) re-measures the
