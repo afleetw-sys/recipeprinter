@@ -516,7 +516,7 @@ export async function savePrintProject(project: PrintProject): Promise<PrintProj
  * whole and are summarized here, so nothing regresses while they migrate.
  */
 export async function loadPrintProjectSummaries(ownerUid: string): Promise<PrintProjectSummary[]> {
-  const [{ collection, getDocs, orderBy, query }, { getDb }] = await Promise.all([
+  const [{ collection, getDocsFromServer, orderBy, query }, { getDb }] = await Promise.all([
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
@@ -533,8 +533,12 @@ export async function loadPrintProjectSummaries(ownerUid: string): Promise<Print
    * and the dropdown reports an empty library. Go to /projects and the same
    * read succeeds, which makes it read as a caching quirk rather than a failed
    * read.
+   *
+   * From the server, never the cache. Offline, plain `getDocs` doesn't reject:
+   * it answers from the local cache, which in a fresh session is empty, so a
+   * dropped connection read as "No saved projects yet" instead of failing.
    */
-  const snapshot = await getDocs(
+  const snapshot = await getDocsFromServer(
     query(collection(db, ...recipePrinterProjectsPath(ownerUid)), orderBy("updatedAt", "desc")),
   ).catch(() => null);
   if (!snapshot) {

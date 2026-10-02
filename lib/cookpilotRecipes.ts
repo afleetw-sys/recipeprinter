@@ -6,7 +6,7 @@ import {
   doc,
   getCountFromServer,
   getDoc,
-  getDocs,
+  getDocsFromServer,
   limit,
   orderBy,
   query,
@@ -181,7 +181,9 @@ async function fetchSummaryPage(
   const constraints = cursor
     ? [orderBy("createdAt", "desc"), startAfter(cursor), limit(SUMMARY_PAGE_SIZE)]
     : [orderBy("createdAt", "desc"), limit(SUMMARY_PAGE_SIZE)];
-  const snapshot = await getDocs(query(recipesCollection(userId), ...constraints));
+  // From the server: offline, plain `getDocs` resolves an empty page from the
+  // cache, and the picker cached "no recipes" for the rest of the session.
+  const snapshot = await getDocsFromServer(query(recipesCollection(userId), ...constraints));
   return {
     summaries: snapshot.docs.map(decodeSummary),
     cursor: snapshot.docs[snapshot.docs.length - 1] ?? cursor,

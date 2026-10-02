@@ -26,7 +26,7 @@ vi.mock("firebase/firestore", () => ({
   collection: (_db: unknown, ...segments: string[]) => segments.join("/"),
   query: (path: string) => path,
   orderBy: () => "orderBy",
-  getDocs: (path: string) => {
+  getDocsFromServer: (path: string) => {
     reads.paths.push(path);
     return snapshot(reads.namespaced);
   },

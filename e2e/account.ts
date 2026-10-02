@@ -115,3 +115,14 @@ export async function grantPro(request: APIRequestContext, uid: string) {
   });
   expect(response.ok()).toBe(true);
 }
+
+/** A saved project as the server holds it: the listed document and its
+    recipes (`content/main`), as raw JSON text to search. */
+export async function savedProjectText(request: APIRequestContext, uid: string, projectId: string): Promise<string> {
+  const base = `${FIRESTORE}/${PRODUCT}/${uid}/printProjects/${projectId}`;
+  const [parent, content] = await Promise.all([
+    request.get(base, { headers: AS_OWNER }),
+    request.get(`${base}/content/main`, { headers: AS_OWNER }),
+  ]);
+  return `${await parent.text()}\n${await content.text()}`;
+}

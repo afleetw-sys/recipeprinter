@@ -23,7 +23,7 @@ vi.mock("firebase/firestore", () => ({
   doc: (...path: unknown[]) => ({ path }),
   getCountFromServer: async () => ({ data: () => ({ count: 0 }) }),
   getDoc: async () => ({ exists: () => false }),
-  getDocs: async () => ({
+  getDocsFromServer: async () => ({
     docs: docs.list.map((entry) => ({ id: entry.id, data: () => entry.data })),
   }),
   limit: () => ({}),
