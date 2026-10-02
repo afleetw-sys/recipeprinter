@@ -438,7 +438,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "convert-recipe-to-pdf",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-10-02",
     copyReviewed: "2026-09-02",
     primaryKeyword: "convert recipe to PDF",
     secondaryKeywords: [
@@ -462,9 +462,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // caption describes a printed CARD, and would be wrong here.
     heroImage: "convert-to-pdf",
     heroFrame: "none",
-    title: "Convert Recipe to PDF | Save Recipes as Clean PDFs",
+    title: "Convert a Recipe to PDF | RecipePrinter",
     description:
-      "Turn recipes from websites, photos, screenshots, or text into clean PDFs you can save, share, and print. Free, with no account required.",
+      "Turn an online recipe, screenshot, photo, or pasted text into a clean recipe PDF you can save, print, or keep for later.",
     h1: "Convert a recipe to PDF",
     lede:
       "Turn a recipe from a website, photo, screenshot, or pasted text into a clean PDF you can save, share, or print.",
@@ -1398,21 +1398,21 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
   },
   {
-    // No `copyReviewed` on purpose: this page has not had a read-through yet,
-    // which is what that field records. It stays out of the reviewed set until
-    // someone has actually gone over the copy.
     slug: "print-paprika-recipes",
-    contentUpdated: "2026-09-15",
+    contentUpdated: "2026-10-02",
+    copyReviewed: "2026-10-02",
 
     primaryKeyword: "print Paprika recipes",
     secondaryKeywords: [
       "print recipe from Paprika",
       "Paprika recipe printer",
+      "print Paprika recipe cards",
+      "print Paprika cookbook",
+      "print entire Paprika library",
+      "Paprika recipe export",
+      ".paprikarecipes file",
       "export Paprika recipes",
-      "Paprika recipe cards",
-      "print Paprika recipe manager",
       "Paprika recipes to PDF",
-      "back up Paprika recipes",
     ],
     shortLabel: "Paprika",
     pickerGroup: "source",
@@ -1421,71 +1421,88 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importSubmitLabel: "Open a Paprika file",
     heroImage: "paprika-import",
     heroFrame: "none",
-    title: "Print Recipes from Paprika | RecipePrinter",
+    title: "Print Recipes From Paprika | RecipePrinter",
     description:
-      "Export your Paprika recipe library, open it in RecipePrinter, and choose which recipes to print as clean pages or 4×6 recipe cards.",
+      "Export your Paprika recipes, open the file in RecipePrinter, and print selected recipes as full pages or 4x6 recipe cards.",
     h1: "Print recipes from Paprika",
     anchor: "Print Paprika recipes",
     lede:
-      "Export your Paprika recipe library, open the file in RecipePrinter, and choose the recipes you want to print as pages or 4×6 cards.",
+      "Export your Paprika recipe library, open the Paprika export in RecipePrinter, and choose the recipes you want to print. Make full-page recipes, save them as PDFs, or use RecipePrinter Pro to print 4x6 recipe cards.",
     howToHeading: "How to print recipes from Paprika",
     howTo: [
       {
         name: "Export from Paprika",
-        text: "In Paprika, open Settings → Export Recipes and export your library as a .paprikarecipes file.",
+        text: "In Paprika, open Settings → Export Recipes and export the recipes you want to print. You can export your full library or a smaller set.",
       },
       {
-        name: "Open the Paprika export",
-        text: "Drop the file into RecipePrinter. It is read in your browser, so the library does not need to be uploaded.",
+        name: "Open the export in RecipePrinter",
+        text: "Drop the Paprika export into RecipePrinter. The file is read in your browser so you can browse the recipes it contains.",
       },
       {
         name: "Choose the recipes you want",
-        text: "Browse the imported library and add the recipes you actually want to print to the queue.",
+        text: "Browse the imported recipes and select the ones you actually want to print. You do not have to print the entire library.",
       },
       {
-        name: "Print as cards or pages",
-        text: "Choose a 4×6 recipe card or full letter page. Batch printing is included with RecipePrinter Pro, while individual full-page recipes can still be printed or saved as PDF for free.",
+        name: "Print recipes as pages or cards",
+        text: "Print recipes as full letter pages, save them as PDFs, or use RecipePrinter Pro to make 4x6 recipe cards and print multiple recipes together.",
       },
     ],
     featureSections: [
       {
-        heading: "Your Paprika recipes come with their details",
+        heading: "Keep the recipe details from your Paprika export",
         image: "paste-in-app",
         body:
-          "Ingredients, directions, prep and cook time, servings, source, and categories all come across with the recipe. Notes appear only in a cookbook, not on recipe cards or single pages. Ratings and difficulty do not appear on the printed version.",
+          "Your Paprika export includes more than just the recipe name. RecipePrinter brings over the recipe details it can read from the export, including ingredients, instructions, timing, servings, source, named categories, and notes, so you do not have to rebuild each recipe by hand.",
       },
       {
-        heading: "Turn your Paprika favorites into something you can keep",
+        heading: "Print the Paprika recipes you actually want to keep",
         image: "card-in-box",
         body:
-          "Browse the recipes you’ve already saved in Paprika and choose the ones you actually want to bring into RecipePrinter. From there, turn those favorites into 4×6 cards, binder pages, or a cookbook you can pull off the shelf.",
+          "You do not have to print your entire Paprika library. Choose the recipes you come back to most and turn them into printable pages, 4x6 recipe cards, or a cookbook you can keep on the shelf.",
+      },
+      {
+        heading: "Print your whole Paprika library or just a few recipes",
+        image: "bound-cookbook",
+        body:
+          "Export a large Paprika collection and decide what to print after you open it in RecipePrinter. Choose just a few recipes, or use RecipePrinter Pro to print multiple recipes together for a recipe box or binder. The cookbook builder is a separate purchase for turning an imported collection into a cookbook.",
       },
     ],
-    faqHeading: "Paprika printing questions",
+    faqHeading: "Questions about printing recipes from Paprika",
     faqs: [
       {
         question: "What file does Paprika export?",
         answer:
-          "Paprika exports your library as a single .paprikarecipes file containing your recipes and their saved details.",
+          "Paprika can export recipes in a .paprikarecipes file that contains the recipes and their saved details. Open that export in RecipePrinter to browse and print the recipes inside.",
       },
       {
         question: "Does my Paprika library get uploaded?",
         answer:
-          "No. RecipePrinter reads the file in your browser on your device. Nothing is uploaded to a server.",
+          "No. RecipePrinter reads the Paprika export in your browser on your device, so the file does not need to be uploaded to a server.",
       },
       {
-        question: "Can I print my whole Paprika library at once?",
+        question: "Can I print my entire Paprika recipe library?",
         answer:
-          "Yes, with RecipePrinter Pro. You can also choose only the recipes you actually want and add those to the print queue.",
+          "Yes. You can open a Paprika library export and work with all of the recipes it contains. RecipePrinter Pro lets you add multiple recipes to a print queue, or you can choose only the recipes you want.",
       },
       {
-        question: "Do my categories and cooking times come across?",
+        question: "What recipe details come over from Paprika?",
         answer:
-          "Yes. Prep and cook time, servings, source, and categories are preserved when the export has them. Ratings and difficulty are not printed. Notes appear in a cookbook, not on recipe cards or single pages.",
+          "RecipePrinter can bring over the title, ingredients, instructions, prep and cook time, servings, source, named categories, and notes from the Paprika export. Ratings and difficulty are not preserved.",
+      },
+      {
+        question: "Can I print Paprika recipes as 4x6 recipe cards?",
+        answer:
+          "Yes. Open your Paprika export, choose the recipe you want, then use RecipePrinter Pro to print it as a 4x6 recipe card.",
+      },
+      {
+        question: "Can I save Paprika recipes as PDFs?",
+        answer:
+          "Yes. Open the recipe in RecipePrinter, format it for printing, then choose Save as PDF from your browser’s print dialog.",
       },
     ],
     links: [
       { href: "/organize-recipes", label: "Organize recipes" },
+      { href: "/recipe-card-printer", label: "Make printable recipe cards" },
       { href: "/recipe-binder", label: "Make a recipe binder" },
       { href: "/family-recipe-book", label: "Build a family cookbook" },
     ],
@@ -1614,7 +1631,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "organize-recipes",
-    contentUpdated: "2026-09-16",
+    contentUpdated: "2026-10-02",
+    copyReviewed: "2026-10-02",
     captureHeading: "Start with one recipe",
     importSubmitLabel: "Add your first recipe",
     initialImportMode: "url",
@@ -1622,72 +1640,80 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     layout: "capture-first",
     primaryKeyword: "organize recipes",
     secondaryKeywords: [
+      "how to organize recipes",
+      "organize recipes from different places",
+      "organize online recipes",
+      "organize printed recipes",
       "recipe organization ideas",
-      "organize recipes from Pinterest",
-      "recipe collection ideas",
-      "how to save recipes",
-      "how to organize printed recipes",
-      "recipe binder categories",
-      "recipe organization system",
+      "recipe binder",
+      "recipe box",
+      "organize recipes digitally and on paper",
+      "print saved recipes",
+      "organize family recipes",
     ],
     cookbookPitch: true,
     shortLabel: "An organized collection",
     pickerGroup: "output",
     intent: "Organization SEO",
-    title: "Organize Recipes from the Internet",
+    title: "How to Organize Recipes | RecipePrinter",
     description:
-      "Bring scattered links, screenshots, and saved posts into one collection: print them to match, file them by course or season, and keep a searchable PDF too.",
+      "Organize recipes from websites, social media, screenshots, photos, apps, and handwritten cards into a consistent format for printing.",
     h1: "Organize your recipes",
     lede:
-      "Bring recipe links, app exports, photos, and text into one place. Print matching pages or cards to keep.",
+      "Bring recipes from websites, social media, screenshots, photos, apps, and handwritten cards into one place. Then print matching recipe pages or cards for a binder, recipe box, or cookbook.",
+    howToHeading: "How to organize recipes from different places",
     howTo: [
       {
-        name: "Gather them from wherever they are",
-        text: "Paste a link, drop in a screenshot, or paste the text. A blog, Pinterest, a Paprika library and a handwritten card all go in the same way.",
+        name: "Bring your recipes into one place",
+        text: "Paste a recipe link, upload a screenshot or photo, import from a recipe app, or add recipe text. RecipePrinter helps bring recipes from different sources into the same collection.",
       },
       {
-        name: "Print the ones that stuck",
-        text: "A recipe earns a sheet of paper by being one you make, so the stack builds up as a short list on its own.",
+        name: "Choose the recipes worth keeping",
+        text: "Pick the recipes you actually come back to and turn them into clean printable copies instead of leaving them scattered across bookmarks, apps, and saved posts.",
       },
       {
-        name: "Pick one size and stay with it",
-        text: "4 by 6 cards for a recipe box, or letter pages for a binder. One size across the collection is what lets it file together.",
+        name: "Choose a consistent recipe format",
+        text: "Use 4x6 recipe cards with RecipePrinter Pro for a recipe box, or print full letter pages for a binder. Keeping one format makes the collection easier to browse and add to over time.",
       },
       {
-        name: "Put it away the day it prints",
-        text: "Straight into the box or the binder, behind a divider: by course, by season, or by who it came from. Put away today, findable in a year.",
+        name: "Give every printed recipe a permanent place",
+        text: "Store printed recipes in a recipe box, binder, or cookbook as soon as you print them so the collection stays organized instead of turning into another stack of paper.",
       },
     ],
     featureSections: [
       {
-        heading: "One place for recipes that live in ten places",
+        heading: "Organize recipes saved across websites, apps, and social media",
         image: "cookpilot-export",
         body:
-          "A recipe collection is hardly ever in one app. There's usually a bookmark folder, a camera roll of screenshots, a Pinterest board, a few links in a group chat, and a recipe app or two. RecipePrinter reads all of them, so there's no migrating between apps and no picking a winner. A link and a screenshot print at the same size, in the same layout, ready to go in the same box.",
+          "Recipes tend to end up everywhere: browser bookmarks, Pinterest boards, saved social posts, recipe apps, screenshots, photos, and handwritten cards. RecipePrinter brings those different sources into one workflow so you can turn the recipes you want to keep into a consistent printed collection.",
       },
       {
-        heading: "Cards for a box, pages for a binder",
+        heading: "Organize printed recipes in a recipe box or binder",
         image: "card-in-box",
         body:
-          "A 4 by 6 card drops straight into a recipe box behind tabbed dividers. A letter page goes into a three ring binder, and into a sheet protector if it's something you make often. Both print at home on paper you already have, and both come out the same size every time, so a set built up over months still stacks together.",
+          "4x6 recipe cards from RecipePrinter Pro work well in a recipe box with dividers, while full letter pages fit naturally into a three-ring binder. Choose the format that matches how you cook, then keep new recipes in the same format so the collection stays easy to browse.",
       },
       {
-        heading: "Keep a searchable copy as well",
+        heading: "Keep digital copies of your printed recipes too",
         image: "pdf-search",
         body:
-          "Paper or digital isn't a choice you have to make. Save the same recipe as a PDF and it's on your phone, searchable, and easy to send to whoever asks for it. The printed card stays on the counter where your hands are, and if it gets covered in butter, another one costs a sheet of paper.",
+          "Paper and digital recipes do not have to be an either-or choice. Save a PDF copy of a recipe alongside the printed version so you can search or share it later while still keeping a paper copy in the kitchen.",
       },
     ],
+    cookbookPitchHeading: "Turn an organized recipe collection into a cookbook",
+    cookbookPitchBody:
+      "Once you have a collection of recipes worth keeping, you can bring them together in a cookbook. Organize recipes into chapters, add a cover and table of contents, and export the finished cookbook as a PDF or print it at home.",
+    faqHeading: "Questions about organizing recipes",
     faqs: [
       {
         question: "What is the easiest way to organize online recipes?",
         answer:
-          "Print the ones you cook, at one size, and file them the day they come out. Course, season, and who a recipe came from are the groupings most people settle on. Printing helps with the deciding as well, since a recipe tends to get printed when it's one you're going to make.",
+          "Bring the recipes you actually want to keep into one consistent system instead of trying to organize every saved link. RecipePrinter can turn recipe links, screenshots, photos, app imports, and pasted text into printable recipes for a binder, recipe box, or cookbook.",
       },
       {
         question: "What categories should I use for a recipe binder?",
         answer:
-          "Course is the usual starting point: breakfast, mains, sides, baking, desserts. Season works well if you cook to whatever is around, and plenty of people sort by who a recipe came from instead, so Nana's tab sits next to the weeknight tab. Start with five or six and add one when a tab gets too full.",
+          "Start with broad categories that match how you cook, such as breakfast, mains, sides, baking, desserts, and drinks. Add more sections only when a category becomes large enough to need them.",
         links: [
           { href: "/recipe-binder", label: "Recipe binder ideas" },
         ],
@@ -1695,26 +1721,26 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Is it better to keep recipes digitally or on paper?",
         answer:
-          "Both, for different jobs. Digital is better for finding a recipe and sending it to someone. Paper is better once you're cooking, when your hands are busy and the phone has locked itself again. The same recipe gives you a printed card and a PDF, so it isn't a decision you have to make.",
+          "Both can work well together. A digital or PDF copy is easier to search and share, while a printed recipe is often easier to use in the kitchen. Keeping both gives you a backup without forcing you to cook from a screen.",
       },
       {
-        question: "Can RecipePrinter help with recipe binders?",
+        question: "How do I organize recipes in a binder?",
         answer:
-          "Yes. Print letter pages for a three ring binder or 4 by 6 cards for a box, and every recipe comes out at the same size with the same layout, so a collection built over months still looks like one collection.",
+          "Print recipes in a consistent full-page format, group them into broad sections, and use dividers to make recipes easy to find. RecipePrinter can format recipes as printable pages so new recipes can be added to the same collection over time.",
         links: [
           { href: "/recipe-binder", label: "Recipe binder ideas" },
           { href: "/recipe-card-printer", label: "Printable recipe cards" },
         ],
       },
       {
-        question: "How do I keep printed recipes clean while I cook?",
+        question: "How should I store printed recipes?",
         answer:
-          "A sheet protector is the usual answer for a binder, and a card in a recipe box survives more than you'd expect. If one does get ruined, printing it again costs a sheet of paper.",
+          "Use a recipe box for 4x6 cards or a three-ring binder with sheet protectors for full-page recipes. Keeping each recipe in a permanent place also makes it easier to maintain the collection over time.",
       },
       {
         question: "Do I need an account to keep a collection together?",
         answer:
-          "Not to print one at a time. Without an account your recipes stay in the browser for that session, which is all you need to print single recipes and file them. Printing several in one job needs RecipePrinter Pro. Sign in and the project is saved, so you can come back later and add to the same collection instead of starting again.",
+          "No account is needed to build or print a collection. When browser storage is available, RecipePrinter keeps an on-device recovery copy in that browser. Sign in to save qualifying multi-recipe projects and cookbooks to your account and access them across devices.",
       },
     ],
     links: [
@@ -1722,55 +1748,80 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-paprika-recipes", label: "Print Paprika recipes" },
       { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
       { href: "/recipe-card-printer", label: "Printable recipe cards" },
+      { href: "/family-recipe-book", label: "Build a family cookbook" },
     ],
   },
   {
     slug: "recipe-binder",
-    contentUpdated: "2026-09-16",
+    contentUpdated: "2026-10-02",
+    copyReviewed: "2026-10-02",
     layout: "capture-first",
     initialImportMode: "url",
     importModes: ["url", "apps", "image", "text"],
     primaryKeyword: "how to make a recipe binder",
     secondaryKeywords: [
+      "recipe binder",
+      "recipe binder ideas",
       "how to organize recipes in a binder",
       "organize recipes in a binder",
       "recipe binder organization",
-      "recipe binder ideas",
       "recipe binder categories",
-      "printable recipes for binder",
-      "organize printed recipes",
+      "printable recipe binder",
+      "recipe binder pages",
+      "recipe binder printables",
+      "family recipe binder",
+      "recipe binder from online recipes",
     ],
     shortLabel: "A binder",
     pickerGroup: "output",
     intent: "Organization SEO",
-    title: "How to Make & Organize a Recipe Binder | RecipePrinter",
+    title: "Recipe Binder Ideas & Printable Pages | RecipePrinter",
     description:
-      "Make a recipe binder from recipes you find online, screenshots, photos, and family recipe cards. Print clean pages and organize your favorites in one place.",
-    h1: "Build a recipe binder your way",
+      "Build a recipe binder from recipes you find online, in apps, screenshots, photos, or handwritten cards. Print consistent pages and organize them your way.",
+    h1: "Build a recipe binder from the recipes you actually use",
     breadcrumbLabel: "Recipe binder",
     anchor: "Make a recipe binder",
     lede:
-      "Turn recipes from anywhere into clean full pages or 4×6 cards you can print, organize, and add to over time.",
+      "Turn recipes from websites, social media, screenshots, photos, apps, and handwritten cards into clean printable pages for a recipe binder you can keep adding to over time.",
+    faqHeading: "Recipe binder questions",
     faqs: [
       {
         question: "Should a recipe binder use cards or full pages?",
         answer:
-          "Both can work. Use US Letter pages for longer recipes and 4×6 cards for shorter favorites. Binder sleeves sized for each format let you keep both together.",
+          "Full letter pages are usually the simplest choice for a recipe binder because they fit standard sheet protectors and give longer recipes more room. 4x6 cards work better in a recipe box, though you can still store cards in binder sleeves made for that size. 4x6 recipe cards are available with RecipePrinter Pro.",
       },
       {
         question: "Can I make a binder from recipes I found online?",
         answer:
-          "Yes. RecipePrinter formats recipes from websites, social media, screenshots, photos, and handwritten cards into consistent printable pages or cards for your binder.",
+          "Yes. RecipePrinter can turn recipes from websites, social media, screenshots, photos, recipe apps, and handwritten cards into consistent printable pages you can add to the same binder.",
       },
       {
         question: "What size binder is best for recipes?",
         answer:
-          "A standard US Letter binder is the simplest choice for recipes printed at home. It gives longer recipes enough room and works with inexpensive sheet protectors and dividers.",
+          "A standard US Letter three-ring binder is the simplest choice for recipes printed at home. It works with common sheet protectors and gives longer recipes enough room.",
       },
       {
         question: "How should I organize recipes in a binder?",
         answer:
-          "Start with broad categories you already use when deciding what to cook, such as breakfast, mains, sides, baking, and desserts. You can always split a section later as your collection grows.",
+          "Start with broad categories you already use when deciding what to cook, such as breakfast, main dishes, sides, baking, and desserts. Add or split sections later as your collection grows.",
+        links: [
+          { href: "/organize-recipes", label: "More recipe organization ideas" },
+        ],
+      },
+      {
+        question: "How do I make printable recipe binder pages?",
+        answer:
+          "Paste a recipe link, upload a screenshot or photo, import from a supported recipe app, or add the recipe text. RecipePrinter formats the recipe into a clean printable page you can add to a binder.",
+      },
+      {
+        question: "Can I print multiple recipes for my binder at once?",
+        answer:
+          "Yes, with RecipePrinter Pro. You can also print recipes one at a time for free and add them to your binder manually.",
+      },
+      {
+        question: "Do I need RecipePrinter Pro to make a recipe binder?",
+        answer:
+          "No. You can print individual full-page recipes one at a time and organize them in a binder yourself. RecipePrinter Pro is useful when you want to work with multiple recipes together or use Pro-only formats such as 4x6 recipe cards.",
       },
     ],
     links: [
@@ -1782,7 +1833,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "digitize-recipe-cards",
-    contentUpdated: "2026-09-17",
+    contentUpdated: "2026-10-02",
+    copyReviewed: "2026-10-02",
     primaryKeyword: "digitize recipe cards",
     secondaryKeywords: [
       "scan recipe cards",
@@ -1790,40 +1842,46 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "recipe card scanner",
       "digitize handwritten recipes",
       "convert handwritten recipe to text",
+      "handwritten recipe to text",
+      "preserve handwritten recipes",
+      "preserve family recipes",
+      "old recipe cards",
+      "turn handwritten recipe into printable recipe",
     ],
     shortLabel: "Handwritten recipe cards",
     pickerGroup: "source",
     intent: "Utility SEO",
     initialImportMode: "image",
     importFieldLabel: "Recipe card images",
+    importUploadTitle: "Choose or drop photos",
     importPlaceholder:
-      "Upload a photo or scan of your recipe card. Add the front and back together if the recipe uses both sides.",
+      "Upload a photo or scan of your recipe card. Add the front and back together if the recipe continues onto both sides.",
     importSubmitLabel: "Digitize the card",
     heroImage: "handwritten-card",
     heroAnnotation: "Start with a photo of the card",
     title: "Digitize Recipe Cards & Handwritten Recipes | RecipePrinter",
     description:
-      "Digitize handwritten recipe cards from a photo or scan. RecipePrinter turns them into clean, editable recipes you can print, save as a PDF, or add to a family collection.",
+      "Upload a photo or scan of a handwritten recipe card and turn it into editable recipe text you can print, save as a PDF, or keep for your family collection.",
     h1: "Digitize recipe cards",
     lede:
-      "Turn handwritten recipe cards into clean, editable recipes you can print, save, or keep in a family collection. No retyping required.",
+      "Turn handwritten recipe cards into clean, editable recipe text you can review, print, save as a PDF, or keep for your family collection. No retyping required.",
     howToHeading: "How to digitize a recipe card",
     howTo: [
       {
         name: "Photograph or scan the card",
-        text: "Take a clear photo with the entire card in focus. If the recipe continues on the back, photograph both sides.",
+        text: "Take a clear photo or scan of the entire recipe card. Keep the card flat, use good lighting, and make sure the handwriting is easy to see.",
       },
       {
-        name: "Upload the images",
-        text: "Add the photos or scans together so RecipePrinter can read them as one recipe.",
+        name: "Upload the recipe card images",
+        text: "Upload the photo or scan to RecipePrinter. If the recipe continues onto the back or another card, add those images together as one recipe.",
       },
       {
-        name: "Review the recipe",
-        text: "RecipePrinter separates the ingredients and instructions into editable fields. Fix anything the handwriting made unclear.",
+        name: "Review the extracted recipe",
+        text: "RecipePrinter reads the handwriting and separates the recipe into editable ingredients and instructions. Review the result and correct anything that was hard to read.",
       },
       {
         name: "Print or save it",
-        text: "Print a clean full-page copy, save a PDF, or use a 4×6 recipe card with Pro.",
+        text: "Print the recipe as a full-page copy, save it as a PDF, or use RecipePrinter Pro to make a 4x6 recipe card.",
       },
     ],
     featureSections: [
@@ -1831,64 +1889,76 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Turn handwriting into an editable recipe",
         image: "inline-editing",
         body:
-          "A photo keeps the original handwriting, but it isn’t very easy to cook from or update. RecipePrinter reads the card into separate ingredient and instruction fields, so you can correct a faded word, fix an amount, or clean up an old recipe before printing.",
+          "A photo preserves what the original recipe card looks like, but editable text is easier to use. RecipePrinter reads the handwriting and rebuilds the recipe as editable ingredients and instructions so you can correct faded words, fix amounts, and clean up the recipe before printing.",
         afterBody:
-          "Instead of giving you a block of extracted text, RecipePrinter rebuilds it as a recipe.",
+          "Instead of giving you a block of extracted text, RecipePrinter turns the card into a structured recipe that is easier to review, edit, print, and save.",
       },
       {
-        heading: "Scan both sides as one recipe",
+        heading: "Digitize both sides of a handwritten recipe card",
         body:
-          "Older recipe cards often continue on the back. Upload photos or scans of both sides together and RecipePrinter will treat them as one recipe.",
+          "Older recipe cards often continue onto the back. Upload photos or scans of both sides together and RecipePrinter can treat them as one recipe instead of two separate cards.",
       },
       {
-        heading: "Preserve the original. Use the clean copy.",
+        heading: "Preserve old family recipes without cooking from the original",
         image: "card-in-box",
         body:
-          "Keep the handwritten card safe, then use the clean RecipePrinter version for everyday cooking, a recipe box, binder, or family cookbook.",
+          "Keep the handwritten recipe card somewhere safe and use the clean RecipePrinter version for everyday cooking. You can print a fresh copy for a recipe box or binder while preserving the original handwriting, notes, stains, and history.",
       },
     ],
+    cookbookPitch: true,
+    cookbookPitchHeading: "Turn handwritten family recipes into a cookbook",
+    cookbookPitchBody:
+      "Once you have digitized the recipes worth keeping, you can bring them together into a family cookbook. Organize them into chapters, add a cover and table of contents, then print the finished collection or export it as a PDF. The cookbook builder is a separate one-off purchase.",
     faqHeading: "Recipe card digitizing questions",
     faqs: [
       {
         question: "Do I need a scanner to digitize recipe cards?",
         answer:
-          "No. A clear phone photo works. Lay the card flat, avoid shadows, and make sure every line is in focus.",
+          "No. A clear phone photo works well. Lay the card flat, avoid shadows, and make sure the handwriting is easy to see.",
       },
       {
         question: "Can RecipePrinter read handwritten recipes?",
         answer:
-          "Yes, though handwriting can be hard to read perfectly. Check the result and edit any words or amounts that came through wrong before printing.",
+          "Yes. RecipePrinter can read handwritten recipe cards, including many older or faded cards. Handwriting can still be difficult to interpret perfectly, so review and edit the extracted recipe before printing or saving it.",
       },
       {
         question: "What if the recipe is written on both sides?",
         answer:
-          "Upload photos or scans of the front and back together. RecipePrinter can use up to four images for one recipe.",
+          "Upload photos or scans of the front and back together. RecipePrinter can use multiple images for one recipe so both sides are treated as the same recipe.",
       },
       {
         question: "Can I save a digitized recipe card as a PDF?",
         answer:
-          "Yes. Once the recipe is formatted, choose Save as PDF in your browser’s print dialog.",
+          "Yes. Once the recipe is formatted, print it and choose Save as PDF from your browser’s print dialog.",
       },
       {
         question: "Can I digitize old or faded recipe cards?",
         answer:
-          "Yes. A clear photo is often enough, although faded ink or difficult handwriting may need a little cleanup after the recipe is read. Everything is editable before you print.",
+          "Yes. A clear photo is often enough, even when a card is faded or worn. Difficult handwriting or very faint text may need a little cleanup after the recipe is read.",
       },
       {
         question: "Can I convert a handwritten recipe to text?",
         answer:
-          "Yes. RecipePrinter reads the handwriting and separates the recipe into editable ingredients and instructions, so you can correct the result before printing or saving it.",
+          "Yes. RecipePrinter reads the handwritten recipe and turns the ingredients and instructions into editable text you can review, correct, print, or save.",
+      },
+      {
+        question: "Can I digitize an entire recipe box?",
+        answer:
+          "Yes, a few cards at a time. Digitize each recipe as you work through the box, then print individual recipes or use RecipePrinter Pro when you want to work with multiple recipes together.",
       },
     ],
     links: [
       { href: "/print-recipe-from-photo", label: "Print a recipe from a photo" },
       { href: "/preserve-family-recipes", label: "Preserve family recipes" },
+      { href: "/family-recipe-book", label: "Family recipe book ideas" },
+      { href: "/recipe-binder", label: "Build a recipe binder" },
+      { href: "/organize-recipes", label: "Organize recipes" },
     ],
   },
   {
     slug: "preserve-family-recipes",
     importPlaceholder: "Photograph a handwritten card, or drop a scan",
-    contentUpdated: "2026-09-10",
+    contentUpdated: "2026-10-02",
     // Signed off on the writing. One image is still owed: "Keep the original,
     // cook from the copy" wants a photograph of the printed copy lying beside
     // the handwritten card it came from, which is the whole claim in one frame
@@ -1914,9 +1984,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImage: "handwritten-card",
     initialImportMode: "image",
     importSubmitLabel: "Make a printable copy",
-    title: "Preserve Family Recipes",
+    title: "How to Preserve Family Recipes | RecipePrinter",
     description:
-      "Preserve family recipes by turning old cards, photos, screenshots, and text into printable keepsakes and a bound family cookbook.",
+      "Preserve handwritten family recipes by turning old cards and photos into editable recipes you can print, save, and pass down.",
     h1: "Preserve family recipes",
     lede:
       "Photograph the card and RecipePrinter turns the handwriting into a clean printable recipe. One copy in a drawer becomes one for the kitchen, and one for everyone who asks for it.",
@@ -1984,7 +2054,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "family-recipe-book",
-    contentUpdated: "2026-09-16",
+    contentUpdated: "2026-10-02",
     // Signed off on the writing. The three feature rows still ask for `photo`
     // and `book` proof kinds that have no image behind them, so they render as
     // text-only blocks: there is no finished family cookbook to photograph yet.
@@ -2008,9 +2078,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "A family cookbook",
     pickerGroup: "output",
     intent: "Preservation and Gift SEO",
-    title: "Family Recipe Book Ideas",
+    title: "How to Make a Family Recipe Book | RecipePrinter",
     description:
-      "Create a family recipe book from printed recipes, old cards, online favorites, photos, and kitchen notes.",
+      "Turn handwritten cards, photos, and favorite recipes into a family recipe book with chapters, a cover, table of contents, and printable PDF.",
     h1: "Family recipe book ideas",
     lede:
       "RecipePrinter turns online recipes, old cards, photos, and typed-in notes into clean, matching pages, then binds them into a cookbook with a cover, chapters, and a table of contents.",
@@ -2207,7 +2277,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "reciscan-alternative",
-    contentUpdated: "2026-09-16",
+    contentUpdated: "2026-10-02",
     copyReviewed: "2026-09-02",
     primaryKeyword: "ReciScan alternative",
     secondaryKeywords: [
@@ -2225,10 +2295,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     layout: "capture-first",
     initialImportMode: "image",
     importModes: ["url", "image", "text"],
-    title: "ReciScan Alternative",
+    title: "ReciScan Alternative for Printing Recipes | RecipePrinter",
     description:
-      "Comparing RecipePrinter and ReciScan: both read old recipe cards, and they differ on what comes out, what it costs, and how long it takes.",
-    h1: "A ReciScan alternative that prints today",
+      "Looking for a ReciScan alternative? Turn recipe photos and handwritten cards into editable recipes you can review and print right away.",
+    h1: "Like ReciScan, but it prints today",
     anchor: "ReciScan alternative",
     lede:
       "Both read links, photos and pasted text. ReciScan turns them into a bound cookbook and ships it to you. RecipePrinter gives you the pages: print them now, keep the PDF, or take the file to a print shop.",
@@ -2337,7 +2407,7 @@ export function seoLandingPageMetadata(page: SeoLandingPage): Metadata {
     description: page.description,
     path: `/${page.slug}`,
   });
-  if (page.slug === "digitize-recipe-cards" || page.slug === "print-recipe-from-photo" || page.slug === "print-recipe-from-screenshot" || page.slug === "print-multiple-recipes" || page.slug === "recipe-binder" || page.slug === "print-paprika-recipes" || page.slug === "print-facebook-recipes" || page.slug === "print-youtube-recipes" || page.slug === "print-tiktok-recipes") {
+  if (page.slug === "digitize-recipe-cards" || page.slug === "print-recipe-from-photo" || page.slug === "print-recipe-from-screenshot" || page.slug === "print-multiple-recipes" || page.slug === "recipe-binder" || page.slug === "print-paprika-recipes" || page.slug === "print-facebook-recipes" || page.slug === "print-youtube-recipes" || page.slug === "print-tiktok-recipes" || page.slug === "organize-recipes" || page.slug === "convert-recipe-to-pdf" || page.slug === "reciscan-alternative" || page.slug === "family-recipe-book" || page.slug === "preserve-family-recipes") {
     metadata.title = { absolute: page.title };
     metadata.openGraph = { ...metadata.openGraph, title: page.title };
     metadata.twitter = { ...metadata.twitter, title: page.title };
