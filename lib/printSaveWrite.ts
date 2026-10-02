@@ -5,6 +5,7 @@ import type { materializeProjectPhotos, MaterializedPhotos } from "@/lib/photoSt
 import type { ProjectMeta } from "@/lib/project";
 import { printProjectFingerprint, SAVE_TIMEOUT_MS, type PendingSave } from "@/lib/printSave";
 import type { PrintProject } from "@/types/recipe";
+import { rememberWorkingBase } from "@/lib/workingBase";
 
 /*
  * The write half of the save path, lifted out of app/print/page.tsx with no
@@ -161,6 +162,7 @@ export async function writeProject(pending: PendingSave, ctx: SaveWriteContext):
     if (!current()) return;
     refs.projectRevision.current = Number(saved.revision ?? 0);
     refs.savedProjectId.current = saved.id;
+    rememberWorkingBase(saved.id, Number(saved.revision ?? 0));
     ctx.setSavedProjectId(saved.id);
     // This write just made THIS mode the last-agreed one — see
     // `lastSavedCookbookModeRef`'s own comment.

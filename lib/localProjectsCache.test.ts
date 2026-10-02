@@ -88,7 +88,7 @@ describe("the on-device shelf's parse cache", () => {
 
   it("does not let a prune corrupt what later readers see", () => {
     saveLocalProject(project("book-b", "Second"));
-    pruneLocalProjects(["book-a"]);
+    pruneLocalProjects([{ id: "book-a", revision: 2 }]);
     expect(loadLocalProjects().map((p) => p.id)).toEqual(["book-b"]);
   });
 

@@ -20,6 +20,7 @@ import {
   recoveryMirrorsAgree,
   stampRecoveryOwner,
 } from "@/lib/recoveryMirror";
+import { adoptDurableWorkingBase } from "@/lib/workingBase";
 import { localStore, sessionStore } from "@/lib/storage";
 import { blobUrlsIn, reviveLocalPhotoUrls, withRevivedUrls } from "@/lib/localPhotos";
 
@@ -422,6 +423,9 @@ export function readMeta(): ProjectMeta {
     if (recovered !== null) {
       parsed = recovered;
       sessionStore.setJson(PROJECT_META_STORAGE_KEY, recovered);
+      // The saved version this book structure was edited from travels with it
+      // (lib/workingBase), so a reopen can tell unsaved edits from stale ones.
+      adoptDurableWorkingBase(recovered.projectId);
     }
   }
   return normalizeProjectMeta(parsed);

@@ -43,6 +43,10 @@ async function editRecipe(page: Page, request: APIRequestContext, book: Book) {
   await selectedPage(page).getByText("2 tablespoons olive oil").click();
   const ingredient = selectedPage(page).getByRole("textbox", { name: "Ingredient" });
   await expect(ingredient).toBeFocused();
+  // A line's editor takes a moment to set itself up after the click: typing
+  // within ~100 ms of it is clobbered (measured; from 100 ms on it always
+  // lands). People take longer than that to start typing, so this does too.
+  await page.waitForTimeout(150);
   await ingredient.fill("3 tablespoons olive oil");
   await ingredient.press("Tab");
   await page.getByRole("button", { name: "Garden", exact: true }).click();
@@ -173,6 +177,113 @@ test("an edit made just before leaving is kept", async ({ page, request }) => {
   await deckSettled(page);
   await openRecipePage(page);
   await expect(field(page, "Servings")).toHaveValue("6");
+});
+
+// An edit the tab closed on before autosave could land (Chrome tears a closing
+// tab down without waiting; it lost the last ~1.5 s of edits every time). The
+// device mirrors still hold it, and reopening the book must open that copy and
+// save it, never the older account copy over it.
+const SIX = /"servings":\s*\{\s*"(stringValue|integerValue)":\s*"6"/;
+
+async function editServingsAndCloseTheTab(page: Page, servings: string) {
+  await openRecipePage(page);
+  await field(page, "Servings").fill(servings);
+  await field(page, "Servings").press("Tab");
+  // The account save never lands, deterministically. Chrome tears a closing tab
+  // down before it can, but Safari often lets it finish, sometimes late, and a
+  // late landing would race the steps below. Cut off from Firestore, this tab's
+  // edit exists only on the device, in every browser, which is the case
+  // reopening has to handle.
+  await page.route(/127\.0\.0\.1:8180/, (route) => route.abort());
+  await page.close({ runBeforeUnload: true });
+}
+
+async function openFromProjects(page: Page, projectId: string) {
+  await page.goto("/projects");
+  await page.locator(`a[href="/print?project=${projectId}"]`).click();
+  await deckSettled(page);
+  await openRecipePage(page);
+}
+
+const revisionOf = (text: string) => Number(text.match(/"revision":\s*\{\s*"integerValue":\s*"(\d+)"/)?.[1] ?? NaN);
+
+test("an edit made just before the tab closes is there when the book is reopened", async ({
+  page,
+  request,
+  context,
+}) => {
+  const book = await startCookbook(page, request);
+  await editServingsAndCloseTheTab(page, "6");
+
+  const reopened = await context.newPage();
+  await openFromProjects(reopened, book.projectId);
+  await expect(field(reopened, "Servings")).toHaveValue("6");
+  await onServer(request, book, (text) => SIX.test(text));
+});
+
+test("an edit the tab closed on survives a visit to the home page before reopening", async ({
+  page,
+  request,
+  context,
+}) => {
+  const book = await startCookbook(page, request);
+  await editServingsAndCloseTheTab(page, "6");
+
+  // The home page files the recovered working copy to the device shelf and
+  // clears the workspace, so this reopen finds it there instead.
+  const reopened = await context.newPage();
+  await reopened.goto("/");
+  await expect(reopened.getByPlaceholder("Paste a recipe link")).toBeVisible();
+  await openFromProjects(reopened, book.projectId);
+  await expect(field(reopened, "Servings")).toHaveValue("6");
+  await onServer(request, book, (text) => SIX.test(text));
+});
+
+test("a newer save from another device wins over edits this device never sent", async ({
+  page,
+  request,
+  context,
+  browser,
+}) => {
+  const book = await startCookbook(page, request);
+  await editServingsAndCloseTheTab(page, "6");
+
+  // Meanwhile, on a laptop that never saw that edit, someone changes it to 8.
+  const other = await onAnotherDevice(browser, book.email, book.projectId);
+  await openRecipePage(other.page);
+  await field(other.page, "Servings").fill("8");
+  await field(other.page, "Servings").press("Tab");
+  const EIGHT = /"servings":\s*\{\s*"(stringValue|integerValue)":\s*"8"/;
+  await onServer(request, book, (text) => EIGHT.test(text));
+  await other.close();
+
+  // This device's copy is a branch off an older version, so it must not open,
+  // and must not be written over the laptop's save.
+  const reopened = await context.newPage();
+  await openFromProjects(reopened, book.projectId);
+  await expect(field(reopened, "Servings")).toHaveValue("8");
+  await reopened.waitForTimeout(3_000);
+  expect(await savedProjectText(request, book.uid, book.projectId)).toMatch(EIGHT);
+});
+
+test("opening a book with no unsaved edits doesn't save it again", async ({ page, request }) => {
+  const book = await startCookbook(page, request);
+  await editRecipe(page, request, book);
+  // Settled: no save still on its way from the edits above.
+  let before = NaN;
+  await expect
+    .poll(async () => {
+      const now = revisionOf(await savedProjectText(request, book.uid, book.projectId));
+      const settled = now === before;
+      before = now;
+      return settled;
+    }, { intervals: [2_500] })
+    .toBe(true);
+
+  await leaveAndReopen(page, book.projectId);
+  await openRecipePage(page);
+  await page.waitForTimeout(3_000);
+  expect(revisionOf(await savedProjectText(request, book.uid, book.projectId)), "saved revision").toBe(before);
 });
 
 test("a library that fails to load says so, instead of showing no projects", async ({ page, request }) => {

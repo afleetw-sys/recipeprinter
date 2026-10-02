@@ -112,7 +112,14 @@ export function readQueue(): QueueItem[] {
   if (recovered) {
     const seeded = JSON.stringify(sanitized);
     lastWrittenQueueJson = seeded;
-    writeSerializedQueue(seeded);
+    // This tab's own session only. The durable mirror already holds these
+    // recipes, and rewriting it restamped it with THIS tab, so the meta mirror
+    // beside it (still stamped by the tab that wrote both) read as another
+    // tab's, and `readMeta` threw away the book's cover, chapters and identity.
+    // Whether that happened depended on which store hydrated first: /print got
+    // its book back, the home page filed the recipes under a brand-new id. The
+    // mirror is restamped by the first real edit, as before.
+    sessionStore.set(QUEUE_STORAGE_KEY, seeded);
   }
   return sanitized;
 }
