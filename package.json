@@ -17,6 +17,7 @@
     "test:rules": "npx firebase-tools@14.27.0 --config firebase.rules-test.json emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:layout": "E2E_LAYOUT=1 playwright test --project=layout",
     "pdf:dev": "node scripts/pdf-renderer-dev.mjs",
     "pdf:stress": "node scripts/pdf-export-stress.mjs",
     "logo:build": "node scripts/build-logo-assets.mjs",

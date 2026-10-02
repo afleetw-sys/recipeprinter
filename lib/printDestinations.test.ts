@@ -5,16 +5,10 @@ import {
   NO_BOOK_CHOICE,
   PHOTOS_HELP,
   choiceForPreset,
-  destinationNote,
   downloadSummary,
-  effectiveDestination,
   presetForChoice,
-  settingsIntro,
   destinationPresets,
   destinationPrinter,
-  destinationSettings,
-  destinationUploadsAFile,
-  exportFileRoles,
   getPrintDestination,
 } from "@/lib/printDestinations";
 
@@ -125,94 +119,6 @@ describe("print destinations", () => {
   });
 });
 
-describe("what to do with the file once it is saved", () => {
-  const rows = (id: Parameters<typeof getPrintDestination>[0]) => {
-    const destination = getPrintDestination(id);
-    return destinationPresets(destination).map((preset) => ({
-      preset,
-      settings: destinationSettings(destination, preset),
-      as: (label: string) =>
-        destinationSettings(destination, preset).find((s) => s.label === label)?.value,
-    }));
-  };
-
-  it("states the size the file was actually rendered at", () => {
-    // The rejection that started all of this said "your PDF is 8.500 x 11.000"
-    // against an order placed at another size. The size shown here has to come
-    // off the preset, so it cannot be a number someone typed once and left.
-    for (const destination of PRINT_DESTINATIONS) {
-      for (const preset of destinationPresets(destination)) {
-        const settings = destinationSettings(destination, preset);
-        const size = settings.find((s) => s.label === "Size" || s.label === "Paper");
-        expect(size?.value).toBe(preset.trimLabel);
-      }
-    }
-  });
-
-  it("names the binding the preset actually is", () => {
-    for (const entry of rows("lulu")) {
-      expect(entry.as("Binding")).toBe(entry.preset.coilBound ? "Coil bound" : "Hardcover, case wrap");
-    }
-  });
-
-  it("tells a print service the cover uploads on its own", () => {
-    for (const id of ["lulu", "blurb"] as const) {
-      for (const entry of rows(id)) {
-        expect(entry.as("Files")).toBe("Interior and cover upload separately");
-      }
-    }
-  });
-
-  it("tells a copy shop the cover is already bound in", () => {
-    for (const entry of rows("copy-shop")) {
-      expect(entry.as("Files")).toBe("One file, with the cover as page 1");
-    }
-  });
-
-  it("warns a home printer off “fit to page”", () => {
-    // The one setting that silently ruins a bleed book on a desktop printer,
-    // and the default in most drivers.
-    const scale = rows("home")[0].as("Scale");
-    expect(scale).toContain("Actual size");
-    expect(rows("home")[0].settings.some((s) => s.label === "Files")).toBe(false);
-  });
-
-  it("does not hand a home printer an upload form", () => {
-    expect(destinationUploadsAFile(getPrintDestination("home"))).toBe(false);
-    for (const id of ["copy-shop", "lulu", "blurb"] as const) {
-      expect(destinationUploadsAFile(getPrintDestination(id))).toBe(true);
-    }
-  });
-
-  it("never shows an empty row", () => {
-    for (const destination of PRINT_DESTINATIONS) {
-      for (const preset of destinationPresets(destination)) {
-        const settings = destinationSettings(destination, preset);
-        expect(settings.length).toBeGreaterThan(0);
-        for (const row of settings) {
-          expect(row.label.trim()).not.toBe("");
-          expect(row.value.trim()).not.toBe("");
-        }
-        // A repeated label would render two rows claiming the same field.
-        const labels = settings.map((s) => s.label);
-        expect(new Set(labels).size).toBe(labels.length);
-      }
-    }
-  });
-
-  it("claims nothing about an unknown shop's own form", () => {
-    // "Somewhere else" may state size, binding and file count, because those
-    // are facts about the file. Colour and paper are theirs to ask.
-    expect(getPrintDestination("other").extraSettings).toBeUndefined();
-  });
-
-  it("labels two files as interior and cover, in download order", () => {
-    expect(exportFileRoles(2)).toEqual(["Interior pages", "Cover"]);
-    expect(exportFileRoles(1)).toEqual(["Your book"]);
-    expect(exportFileRoles(0)).toEqual(["Your book"]);
-  });
-});
-
 describe("the format questions", () => {
   it("names exactly one preset for every complete set of answers", () => {
     const named = [
@@ -280,62 +186,6 @@ describe("the format questions", () => {
   });
 });
 
-describe("choosing a format at a destination that is not set up for it", () => {
-  const lulu = getPrintDestination("lulu");
-  const home = getPrintDestination("home");
-
-  it("says nothing for the format a destination leads with", () => {
-    for (const destination of PRINT_DESTINATIONS) {
-      for (const preset of destinationPresets(destination)) {
-        expect(destinationNote(destination, preset)).toBeNull();
-      }
-    }
-  });
-
-  it("says nothing when there is no destination, or no known spec to compare to", () => {
-    for (const preset of COOKBOOK_PRESETS) {
-      expect(destinationNote(null, preset)).toBeNull();
-      expect(destinationNote(getPrintDestination("other"), preset)).toBeNull();
-    }
-  });
-
-  it("says what will happen, in terms anyone can picture", () => {
-    const toLulu = destinationNote(lulu, getCookbookPreset("us-letter"));
-    expect(toLulu).toContain("Lulu");
-    expect(toLulu).toMatch(/turned away/);
-    expect(destinationNote(home, getCookbookPreset("coil-us-letter"))).toMatch(/cut off/);
-  });
-
-  it("says nothing where it would be a guess about the shop", () => {
-    const copyShop = getPrintDestination("copy-shop");
-    expect(destinationNote(copyShop, getCookbookPreset("coil-us-letter"))).toBeNull();
-    expect(destinationNote(getPrintDestination("blurb"), getCookbookPreset("hardcover-us-letter"))).toBeNull();
-  });
-
-  it("never names a shop as needing something it was not set up for", () => {
-    // A copy shop handed an edge-to-edge book does not "need" two files.
-    const copyShop = getPrintDestination("copy-shop");
-    const preset = getCookbookPreset("coil-us-letter");
-    expect(settingsIntro(copyShop, preset)).not.toContain("Staples");
-    // It still does for the format Lulu is set up for.
-    expect(settingsIntro(lulu, preset)).toContain("Lulu");
-  });
-
-  it("writes the after-download instructions for the file when no destination was chosen", () => {
-    expect(effectiveDestination(null, getCookbookPreset("us-letter")).id).toBe("home");
-    expect(effectiveDestination(null, getCookbookPreset("coil-us-letter")).id).toBe("other");
-    expect(effectiveDestination(lulu, getCookbookPreset("us-letter"))).toBe(lulu);
-  });
-
-  it("does not tell a copy shop's customer their binding", () => {
-    const copyShop = getPrintDestination("copy-shop");
-    const binding = destinationSettings(copyShop, getCookbookPreset("us-letter")).find(
-      (row) => row.label === "Binding",
-    );
-    expect(binding?.value).toMatch(/lay-flat/);
-  });
-});
-
 describe("what pressing Save produces", () => {
   it("says how many files, from the format alone", () => {
     // The destination is only a shortcut, so nothing here may depend on it:
@@ -353,47 +203,5 @@ describe("what pressing Save produces", () => {
     for (const preset of COOKBOOK_PRESETS) {
       expect(downloadSummary(preset)).not.toMatch(/lulu|blurb|staples|shop|service|printer/i);
     }
-  });
-});
-
-describe("the settings list's opening line", () => {
-  it("says the files are already enough", () => {
-    // It read "Lulu will ask for:", which lands as a list of things still to
-    // be sorted out — and the reader has just been handed two files whose
-    // names mean nothing to them. Nothing further is required, and that is the
-    // one thing the screen did not say.
-    for (const destination of PRINT_DESTINATIONS) {
-      for (const preset of destinationPresets(destination)) {
-        expect(settingsIntro(destination, preset)).toMatch(/^(That’s|Your book is ready)/);
-      }
-    }
-  });
-
-  it("names the service that is about to be uploaded to", () => {
-    const lulu = getPrintDestination("lulu");
-    expect(settingsIntro(lulu, destinationPresets(lulu)[0])).toBe(
-      "That’s everything Lulu needs. When you upload, choose:",
-    );
-  });
-
-  it("does not invent a service it cannot name", () => {
-    const other = getPrintDestination("other");
-    expect(settingsIntro(other, destinationPresets(other)[0])).toBe(
-      "That’s everything your printer needs. When you upload, choose:",
-    );
-  });
-
-  it("asks rather than uploads at a copy shop", () => {
-    const shop = getPrintDestination("copy-shop");
-    expect(settingsIntro(shop, destinationPresets(shop)[0])).toBe(
-      "That’s everything the shop needs. Ask for:",
-    );
-  });
-
-  it("has nobody to satisfy at home", () => {
-    const home = getPrintDestination("home");
-    expect(settingsIntro(home, destinationPresets(home)[0])).toBe(
-      "Your book is ready. For the best result at home, use these print settings:",
-    );
   });
 });

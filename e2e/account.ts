@@ -1,5 +1,6 @@
 import type { APIRequestContext, Page } from "@playwright/test";
 import { expect } from "./guarded";
+import { untilHydrated } from "./hydrated";
 
 /**
  * Accounts and their server-owned records, made directly in the emulators.
@@ -32,7 +33,9 @@ export async function returningUser(request: APIRequestContext): Promise<{ email
 
 export async function enterEmail(page: Page, email: string) {
   await page.goto("/");
-  await page.getByRole("button", { name: "Open account or sign in" }).click();
+  const account = page.getByRole("button", { name: "Open account or sign in" });
+  await untilHydrated(account);
+  await account.click();
   const field = page.locator('input[type="email"]').first();
   await field.fill(email);
   await field.press("Enter");

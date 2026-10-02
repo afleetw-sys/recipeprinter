@@ -166,12 +166,26 @@ export function ImportPanel({
   const [mode, setMode] = useState<ImportTab>(initialMode);
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
+  const textRef = useRef<HTMLTextAreaElement | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const overflowRef = useRef<HTMLDivElement | null>(null);
   const urlRef = useRef<HTMLInputElement | null>(null);
+
+  // The fields are in the server-rendered HTML, so on a slow phone someone can
+  // paste before React has taken the page over, and React 18 does not replay
+  // that typing. State starts empty, so the next render wiped the link (or Enter
+  // submitted an empty box and asked them to paste what they just pasted).
+  // Whatever the browser already holds at mount is what they typed: adopt it.
+  // Runs before any later render could reset the fields to the empty state.
+  useEffect(() => {
+    const typedUrl = urlRef.current?.value;
+    if (typedUrl) setUrl(typedUrl);
+    const typedText = textRef.current?.value;
+    if (typedText) setText(typedText);
+  }, []);
 
   // Focused from an effect on the next frame rather than by the `autoFocus`
   // attribute, which the Add-recipe dialog was quietly winning: `useModalFocus`
@@ -619,6 +633,7 @@ export function ImportPanel({
             <textarea
               id="rp-text"
               className="field min-h-56"
+              ref={textRef}
               placeholder={"Paste a full recipe with the title, ingredients, and steps.\n\nGrandma's Banana Bread\n\n2 cups flour\n3 ripe bananas\n…\n\nwww.example.com/banana-bread"}
               value={text}
               onChange={(e) => {

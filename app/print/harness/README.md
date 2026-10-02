@@ -21,6 +21,19 @@ timer throttling; `window.__harnessStep()` is a manual pump, and
 `window.__layoutHarness` exposes `{ summary, inv1Failures, timedOut, dump() }`
 for scripted capture.
 
+## Automated
+
+`e2e/layout-harness.spec.ts` runs the whole sweep in Chromium at render scales
+1, 0.47 and 1.4 and fails on any INV-1..4 violation or timeout
+(`npm run test:layout`). The Layout workflow runs it nightly and on pull
+requests that touch the cards, themes or layout engine. INV-6 and INV-7 are
+reported in the attached JSON but do not fail it.
+
+`?scale=<n>` renders the measured faces under a transform, as the live
+preview's `.recipe-page-scaler` does. Without it the sweep only ever measured at
+1.0, where screen px and CSS px agree, and could not see a measurement that
+mixed them (0e97724 shipped past an 816/816 reading that way).
+
 ## The matrix
 
 `SIZES × TEMPLATES × photo × source-url` per recipe. `doubleSided` is

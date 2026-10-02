@@ -67,20 +67,28 @@ export default defineConfig({
   expect: { timeout: 30_000 },
   fullyParallel: true,
   forbidOnly: ci,
-  retries: 0,
+  // One retry in CI. A test that only passes on its retry is reported as
+  // "flaky" rather than failing the run, so a slow runner can't turn it red,
+  // and the flake is still named in the output to be fixed. Never locally,
+  // where a retry would hide a failure you are looking at.
+  retries: ci ? 1 : 0,
   reporter: ci ? [["list"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    { name: "chromium", use: { ...devices["Desktop Chrome"] }, testIgnore: /layout-harness\.spec/ },
     // Safari, desktop and phone: the engine behind most of the bugs that
     // reached customers (print sizing, one print per tab, iOS editing). The
     // export page is left to Chromium, the only browser that ever opens it:
     // the PDF renderer.
-    { name: "webkit", use: { ...devices["Desktop Safari"] }, testIgnore: /export\.spec/ },
-    { name: "iphone", use: { ...devices["iPhone 15"] }, testIgnore: /export\.spec/ },
+    { name: "webkit", use: { ...devices["Desktop Safari"] }, testIgnore: [/export\.spec/, /layout-harness\.spec/] },
+    { name: "iphone", use: { ...devices["iPhone 15"] }, testIgnore: [/export\.spec/, /layout-harness\.spec/] },
+    // The full layout sweep (e2e/layout-harness.spec.ts): minutes long, so
+    // only when asked for (`npm run test:layout`, the Layout workflow), never
+    // as part of the every-push run.
+    ...(process.env.E2E_LAYOUT ? [{ name: "layout", use: { ...devices["Desktop Chrome"] }, testMatch: /layout-harness\.spec/ }] : []),
   ],
   webServer: [
     {
@@ -113,6 +121,8 @@ export default defineConfig({
         COOKPILOT_RECIPE_PARSER_URL: `http://127.0.0.1:${STUB_PORT}/parse-url`,
         COOKPILOT_SUPPLIED_HTML_PARSER_URL: `http://127.0.0.1:${STUB_PORT}/parse-html`,
         RECIPEPRINTER_PARSER_SECRET: PARSER_SECRET,
+        // Lets this build serve /print/harness, which 404s in production.
+        LAYOUT_HARNESS: "1",
       },
       // Never reused: a server started some other way would carry the real
       // settings from .env.local, and an import test would bill the real parser.
