@@ -1,20 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import {
-  Anton,
-  Berkshire_Swash,
-  Birthstone,
-  Caprasimo,
-  Cormorant_Garamond,
-  Courier_Prime,
-  DM_Sans,
-  DM_Serif_Display,
-  Gochi_Hand,
-  Jost,
-  Karla,
-  Manrope,
-  Nunito_Sans,
-  Playfair_Display,
-} from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { NoFocusZoom } from "@/components/NoFocusZoom";
 import { KeyboardInsetWatcher } from "@/components/KeyboardInsetWatcher";
@@ -28,13 +13,21 @@ import {
   PUBLISHER,
 } from "@/lib/seo";
 
+// Every face is served from app/fonts (Latin only, each with its OFL licence),
+// not fetched from Google Fonts at build time. That fetch was 14 families of
+// network on every build, and one hiccup failed a Vercel deploy outright
+// (2026-10-01) or quietly built with fallback faces, which the layout sweep
+// then measured. The files are Fontsource's packaging of the same Google
+// fonts. To add a face, copy its latin woff2 and licence from
+// @fontsource/<name> (or @fontsource-variable/<name>) into app/fonts/<name>.
+//
 // Manrope. No longer the UI face — Karla is (see below) — but still the face
 // of every printed recipe card, which `.recipe-card-set` in print.css pins
 // itself to. A card's typography belongs to its template, not to the app
 // around it, so the two can move independently from here on.
-const manrope = Manrope({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+const manrope = localFont({
+  src: "./fonts/manrope/manrope-latin-wght-normal.woff2",
+  weight: "200 800",
   variable: "--font-manrope",
   display: "swap",
 });
@@ -53,23 +46,25 @@ const manrope = Manrope({
 // LCP. With preload off they still resolve via `display: swap` the instant a
 // card or sample first needs them; the marketing pages just stop paying for
 // them up front.
-const playfair = Playfair_Display({
-  subsets: ["latin"],
+const playfair = localFont({
+  src: "./fonts/playfair-display/playfair-display-latin-wght-normal.woff2",
+  weight: "400 900",
   variable: "--font-playfair",
   display: "swap",
   preload: false,
+  adjustFontFallback: "Times New Roman",
 });
 
-const birthstone = Birthstone({
-  subsets: ["latin"],
+const birthstone = localFont({
+  src: "./fonts/birthstone/birthstone-latin-400-normal.woff2",
   weight: "400",
   variable: "--font-birthstone",
   display: "swap",
   preload: false,
 });
 
-const gochiHand = Gochi_Hand({
-  subsets: ["latin"],
+const gochiHand = localFont({
+  src: "./fonts/gochi-hand/gochi-hand-latin-400-normal.woff2",
   weight: "400",
   variable: "--font-gochi-hand",
   display: "swap",
@@ -78,42 +73,47 @@ const gochiHand = Gochi_Hand({
 
 // The Typewriter theme's face. Card-only, so preload: false for the same
 // reason as the decorative faces above.
-const courierPrime = Courier_Prime({
-  subsets: ["latin"],
-  weight: ["400", "700"],
+const courierPrime = localFont({
+  src: [
+    { path: "./fonts/courier-prime/courier-prime-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/courier-prime/courier-prime-latin-700-normal.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-courier-prime",
   display: "swap",
   preload: false,
 });
 
 // Garden's faces: a Garamond title over a soft rounded sans.
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["700"],
+const cormorant = localFont({
+  src: "./fonts/cormorant-garamond/cormorant-garamond-latin-700-normal.woff2",
+  weight: "700",
   variable: "--font-cormorant",
   display: "swap",
   preload: false,
+  adjustFontFallback: "Times New Roman",
 });
 
-const nunitoSans = Nunito_Sans({
-  subsets: ["latin"],
+const nunitoSans = localFont({
+  src: "./fonts/nunito-sans/nunito-sans-latin-wght-normal.woff2",
+  weight: "200 1000",
   variable: "--font-nunito-sans",
   display: "swap",
   preload: false,
 });
 
 // Christmas's title face, a swash display serif.
-const berkshireSwash = Berkshire_Swash({
-  subsets: ["latin"],
+const berkshireSwash = localFont({
+  src: "./fonts/berkshire-swash/berkshire-swash-latin-400-normal.woff2",
   weight: "400",
   variable: "--font-berkshire-swash",
   display: "swap",
   preload: false,
+  adjustFontFallback: "Times New Roman",
 });
 
 // Poster's title face, a tall condensed display sans.
-const anton = Anton({
-  subsets: ["latin"],
+const anton = localFont({
+  src: "./fonts/anton/anton-latin-400-normal.woff2",
   weight: "400",
   variable: "--font-anton",
   display: "swap",
@@ -121,25 +121,28 @@ const anton = Anton({
 });
 
 // Diner's title face, a soft, heavy retro display serif.
-const caprasimo = Caprasimo({
-  subsets: ["latin"],
+const caprasimo = localFont({
+  src: "./fonts/caprasimo/caprasimo-latin-400-normal.woff2",
   weight: "400",
   variable: "--font-caprasimo",
   display: "swap",
   preload: false,
+  adjustFontFallback: "Times New Roman",
 });
 
 // Market's faces: a chunky, friendly display serif over DM Sans.
-const dmSerifDisplay = DM_Serif_Display({
-  subsets: ["latin"],
+const dmSerifDisplay = localFont({
+  src: "./fonts/dm-serif-display/dm-serif-display-latin-400-normal.woff2",
   weight: "400",
   variable: "--font-dm-serif-display",
   display: "swap",
   preload: false,
+  adjustFontFallback: "Times New Roman",
 });
 
-const dmSans = DM_Sans({
-  subsets: ["latin"],
+const dmSans = localFont({
+  src: "./fonts/dm-sans/dm-sans-latin-wght-normal.woff2",
+  weight: "100 1000",
   variable: "--font-dm-sans",
   display: "swap",
   preload: false,
@@ -147,8 +150,9 @@ const dmSans = DM_Sans({
 
 // Quilt's face, title and body: Jost, a Futura-style geometric sans, for the
 // tiles' mid-century look.
-const jost = Jost({
-  subsets: ["latin"],
+const jost = localFont({
+  src: "./fonts/jost/jost-latin-wght-normal.woff2",
+  weight: "100 900",
   variable: "--font-jost",
   display: "swap",
   preload: false,
@@ -157,8 +161,9 @@ const jost = Jost({
 // Karla, the UI typeface. A grotesque with enough warmth and enough of its own
 // character to sit beside the clay/cornflower palette without reading as a
 // default system font.
-const karla = Karla({
-  subsets: ["latin"],
+const karla = localFont({
+  src: "./fonts/karla/karla-latin-wght-normal.woff2",
+  weight: "200 800",
   variable: "--font-karla",
   display: "swap",
 });
