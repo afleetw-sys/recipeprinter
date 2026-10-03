@@ -665,12 +665,10 @@
 }
 
 @media screen and (max-width: 820px) {
-  /* The two panel-collapse arrows are a DESKTOP control: everything that makes
-     them one — `position: absolute`, the size, riding `--rail-w`/`--panel-w` —
-     lives in the min-width:821px block, and there are no side panels here to
-     collapse. Without this they still rendered, unstyled and static, so both
-     chevrons stacked in normal flow at the very top of the page and read as a
-     stray glyph above the header. */
+  /* The side-panels button is a DESKTOP control: everything that makes it
+     one lives in the min-width:821px block, and there are no side panels here
+     to hide. Without this it would render unstyled, in normal flow at the very
+     top of the page, as a stray glyph above the header. */
   .recipe-panel-toggle {
     display: none;
   }
@@ -2193,39 +2191,46 @@
     pointer-events: none;
   }
 
-  /* Rides the boundary between the panel and the page, low on both —
-     `left`/`right` are the same column variables the grid uses, so folding the
-     column to zero walks the button out to the page edge with it. Floating
-     over the line rather than inside the panel is what lets one control both
-     close and reopen: it is still there when the panel is not. */
+  /* One button for both side panels (see app/print/page.tsx). It sits in
+     the settings panel's top-right corner, over the panel's own padding, and
+     keeps that spot when the panels fold away — floating over the page as
+     the only thing left of them, so it gets the card and the shadow that
+     anything floating does. */
   .recipe-panel-toggle {
     position: absolute;
-    bottom: 24px;
+    top: 8px;
+    right: 10px;
     z-index: 3;
     display: grid;
     place-items: center;
-    width: 20px;
-    height: 40px;
-    border: 1px solid var(--cp-line);
-    background: var(--cp-card);
+    width: 32px;
+    height: 32px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
     color: var(--cp-ink-soft);
     transition:
       color 150ms ease,
+      background 150ms ease,
       border-color 150ms ease;
   }
   .recipe-panel-toggle:hover {
-    border-color: var(--cp-line-strong);
+    background: var(--cp-overlay-hover);
     color: var(--cp-ink);
   }
-  .recipe-panel-toggle--left {
-    left: var(--rail-w);
-    border-left: 0;
-    border-radius: 0 8px 8px 0;
+  .recipe-panel-toggle.is-floating {
+    top: 12px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    border-color: var(--cp-line);
+    border-radius: 12px;
+    background: var(--cp-card);
+    box-shadow: var(--cp-shadow-sm);
   }
-  .recipe-panel-toggle--right {
-    right: var(--panel-w);
-    border-right: 0;
-    border-radius: 8px 0 0 8px;
+  .recipe-panel-toggle.is-floating:hover {
+    border-color: var(--cp-line-strong);
+    background: var(--cp-card);
   }
 
 }

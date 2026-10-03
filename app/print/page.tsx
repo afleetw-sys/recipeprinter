@@ -121,14 +121,13 @@ import {
   PagesIcon,
   PagePlusIcon,
   CheckIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   CrownIcon,
   ICON_SIZE,
   ImageIcon,
   InfoIcon,
   PlusIcon,
   PrintIcon,
+  SidePanelsIcon,
   SizeIcon,
   SpinnerIcon,
   TemplateIcon,
@@ -390,11 +389,10 @@ export default function PrintPage() {
   }, [jobIds]);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionTitle, setEditingSectionTitle] = useState("");
-  // Either side panel can be folded away to give the page more room. Session
-  // state on purpose, not a stored preference: collapsing is something you do
+  // Both side panels fold away together to give the page more room. Session
+  // state on purpose, not a stored preference: hiding them is something you do
   // to look at a page, not how you want the workspace set up from now on.
-  const [railCollapsed, setRailCollapsed] = useState(false);
-  const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [sidePanelsHidden, setSidePanelsHidden] = useState(false);
   // Unlike folding, the width the rail is dragged to IS how the cook wants the
   // workspace, so it is remembered (per browser, per mode). See lib/railWidth.
   const [railWidths, setRailWidths] = useState<RailWidths>({});
@@ -4934,7 +4932,7 @@ export default function PrintPage() {
       setStructureSheetOpen(false);
       setBookSheet("recipes");
     } else {
-      setPanelCollapsed(false);
+      setSidePanelsHidden(false);
     }
     // Everything else here is a stable setter, or declared further down.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -5233,7 +5231,7 @@ export default function PrintPage() {
     singleRecipePrintView,
     pageWidth: cookbookView ? spreadWidth : PAGE_DIMS[previewCardSize].w,
     pageHeight: cookbookView ? previewDims.h : PAGE_DIMS[previewCardSize].h,
-    layoutKey: `${railCollapsed ? "r" : ""}${panelCollapsed ? "p" : ""}`,
+    layoutKey: sidePanelsHidden ? "rp" : "",
     zoom: deckZoom,
     zoomRange: DECK_ZOOM_BOUNDS,
     onZoomChange: setDeckZoom,
@@ -5867,8 +5865,8 @@ export default function PrintPage() {
           organizeMode ? "recipe-print-shell--organizing" : ""
         } ${organizeWide ? "recipe-print-shell--organize-wide" : ""} ${
           organizeAnimating ? "recipe-print-shell--organize-animating" : ""
-        } ${railCollapsed ? "recipe-print-shell--rail-collapsed" : ""} ${
-          panelCollapsed ? "recipe-print-shell--panel-collapsed" : ""
+        } ${
+          sidePanelsHidden ? "recipe-print-shell--rail-collapsed recipe-print-shell--panel-collapsed" : ""
         }`}
         style={
           {
@@ -5883,40 +5881,21 @@ export default function PrintPage() {
           onCommit={commitRailWidth}
           onReset={resetRailWidth}
         />
-        {/* One control per side, and it does not move when the panel does.
-            It rides the panel's own edge — `left: var(--rail-w)` — so folding
-            the column to zero carries it to the page edge without anything
-            having to remember where it was. An arrow INSIDE a panel can only
-            ever be the one that closes it, and then has to be replaced by a
-            different control somewhere else the moment it works; this is the
-            same button throughout, and only the chevron turns round. */}
+        {/* One control for both side panels, in the settings panel's top-right
+            corner. Hiding them leaves this as the only thing on screen from
+            either, floating in the same spot, so the way back is exactly where
+            the way out was. It replaced an arrow on each panel's bottom edge:
+            two small controls far from anything you look at, for what is
+            nearly always one wish (more room for the page). */}
         <button
           type="button"
-          className="recipe-panel-toggle recipe-panel-toggle--left no-print"
-          onClick={() => setRailCollapsed((collapsed) => !collapsed)}
-          aria-expanded={!railCollapsed}
-          aria-label={railCollapsed ? "Show pages" : "Hide pages"}
-          title={railCollapsed ? "Show pages" : "Hide pages"}
+          className={`recipe-panel-toggle no-print ${sidePanelsHidden ? "is-floating" : ""}`}
+          onClick={() => setSidePanelsHidden((hidden) => !hidden)}
+          aria-expanded={!sidePanelsHidden}
+          aria-label={sidePanelsHidden ? "Show side panels" : "Hide side panels"}
+          title={sidePanelsHidden ? "Show side panels" : "Hide side panels"}
         >
-          {railCollapsed ? (
-            <ChevronRightIcon size={ICON_SIZE.md} />
-          ) : (
-            <ChevronLeftIcon size={ICON_SIZE.md} />
-          )}
-        </button>
-        <button
-          type="button"
-          className="recipe-panel-toggle recipe-panel-toggle--right no-print"
-          onClick={() => setPanelCollapsed((collapsed) => !collapsed)}
-          aria-expanded={!panelCollapsed}
-          aria-label={`${panelCollapsed ? "Show" : "Hide"} ${cookbookMode ? "cookbook settings" : "print setup"}`}
-          title={`${panelCollapsed ? "Show" : "Hide"} ${cookbookMode ? "cookbook settings" : "print setup"}`}
-        >
-          {panelCollapsed ? (
-            <ChevronLeftIcon size={ICON_SIZE.md} />
-          ) : (
-            <ChevronRightIcon size={ICON_SIZE.md} />
-          )}
+          <SidePanelsIcon size={ICON_SIZE.md} />
         </button>
         <PageRail
           /* `recipeCount`, not `items?.length`: it already folds in an

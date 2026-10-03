@@ -367,6 +367,15 @@ export const SortIcon = (p: IconProps) => (
   </Base>
 );
 
+// Side panels: a window with its sidebar ruled off, the glyph every desktop
+// app uses for "show or hide the panels".
+export const SidePanelsIcon = (p: IconProps) => (
+  <Base {...p}>
+    <rect x="3" y="5" width="18" height="14" rx="2.5" />
+    <path d="M9 5v14" />
+  </Base>
+);
+
 // Filter: a funnel, so it never reads as Sort's stacked rules beside it.
 export const FilterIcon = (p: IconProps) => (
   <Base {...p}>
