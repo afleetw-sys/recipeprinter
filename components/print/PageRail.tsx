@@ -28,7 +28,6 @@ import {
   ICON_SIZE,
   PlusIcon,
   SearchIcon,
-  SortIcon,
   TrashIcon,
   XIcon,
 } from "@/components/icons";
@@ -376,9 +375,6 @@ export function PageRail(props: PageRailProps) {
     railDrag.draggingKind === "recipe" &&
     (railDrag.draggingId === recipeId || (draggingSelection && effectiveRailSelection.has(recipeId!)));
 
-  const [sortMenuOpen, setSortMenuOpen] = useState(false);
-  const sortMenuRef = useRef<HTMLDivElement | null>(null);
-  const closeSortMenu = useCallback(() => setSortMenuOpen(false), []);
 
   // Search and readiness filter: a VIEW of the organizer, never a change to
   // the book. Both clear on leaving the organizer, so the page rail never
@@ -749,18 +745,21 @@ export function PageRail(props: PageRailProps) {
                 >
                   <SearchIcon size={ICON_SIZE.md} />
                 </IconButton>
-                {/* What is still missing before the book is ready to print. */}
+                {/* Sort and filter share one button and one menu: both are about
+                    how the list is shown, and the toolbar had run out of room
+                    for a button each. The badge counts filters only; an A-Z
+                    sort shows in the button's active state. */}
                 <div className="recipe-organize-bar__sort" ref={filterMenuRef}>
                   <IconButton
                     aria-label={
                       organizeFilters.length > 0
-                        ? `Filter recipes, ${organizeFilters.length} applied`
-                        : "Filter recipes"
+                        ? `Sort and filter recipes, ${organizeFilters.length} filters applied`
+                        : "Sort and filter recipes"
                     }
-                    title="Filter recipes"
+                    title="Sort and filter"
                     aria-haspopup="menu"
                     aria-expanded={filterMenuOpen}
-                    selected={filterMenuOpen || organizeFilters.length > 0}
+                    selected={filterMenuOpen || organizeFilters.length > 0 || railSortMode !== "custom"}
                     onClick={() => setFilterMenuOpen((open) => !open)}
                   >
                     <FilterIcon size={ICON_SIZE.md} />
@@ -774,10 +773,43 @@ export function PageRail(props: PageRailProps) {
                     <AnchoredMenu
                       anchorRef={filterMenuRef}
                       onClose={closeFilterMenu}
-                      label="Filter recipes"
+                      label="Sort and filter recipes"
                       className="recipe-organize-bar__sort-menu"
                     >
-                      <p className="cp-menu__heading">Show recipes with</p>
+                      {/* Sort reorders the book itself, so "Custom order"
+                          restores the order A-Z replaced. The note answers the
+                          fear it raises: "will this shuffle my chapters?" */}
+                      <p className="cp-menu__heading">Sort</p>
+                      {RAIL_SORT_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={railSortMode === option.value}
+                          className={`cp-menu__item ${railSortMode === option.value ? "is-active" : ""}`}
+                          onClick={() => applyRailSort(option.value)}
+                        >
+                          <span className="recipe-organize-bar__sort-check">
+                            {railSortMode === option.value && <CheckIcon size={ICON_SIZE.sm} />}
+                          </span>
+                          {option.label}
+                        </button>
+                      ))}
+                      <p className="recipe-organize-bar__sort-note">
+                        Within each chapter. Your chapters stay in the order you put them.
+                      </p>
+                      <div className="recipe-organize-bar__menu-group">
+                        <p className="cp-menu__heading">Show recipes</p>
+                        {organizeFilters.length > 0 && (
+                          <button
+                            type="button"
+                            className="recipe-organize-bar__filter-clear"
+                            onClick={() => setOrganizeFilters([])}
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
                       {/* Stays open on a tick: several can be on at once. */}
                       {ORGANIZE_FILTER_OPTIONS.map((option) => (
                         <button
@@ -797,22 +829,6 @@ export function PageRail(props: PageRailProps) {
                           </span>
                         </button>
                       ))}
-                      {organizeFilters.length > 0 && (
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className="cp-menu__item recipe-organize-bar__filter-clear"
-                          onClick={() => {
-                            setOrganizeFilters([]);
-                            setFilterMenuOpen(false);
-                          }}
-                        >
-                          <span className="recipe-organize-bar__sort-check">
-                            <XIcon size={ICON_SIZE.sm} />
-                          </span>
-                          Clear filters
-                        </button>
-                      )}
                     </AnchoredMenu>
                   )}
                 </div>
@@ -831,55 +847,6 @@ export function PageRail(props: PageRailProps) {
                     )}
                   </IconButton>
                 )}
-                {/* Sort: the cook's own arrangement, or A–Z inside every
-                    section. It reorders the book itself, so switching back to
-                    "Custom order" restores the order A–Z replaced. The menu
-                    says out loud that this works within sections — the fear it
-                    answers is "will this shuffle my chapters?". */}
-                <div className="recipe-organize-bar__sort" ref={sortMenuRef}>
-                  <IconButton
-                    aria-label="Sort recipes"
-                    title="Sort recipes"
-                    aria-haspopup="menu"
-                    aria-expanded={sortMenuOpen}
-                    selected={sortMenuOpen || railSortMode !== "custom"}
-                    onClick={() => setSortMenuOpen((open) => !open)}
-                  >
-                    <SortIcon size={ICON_SIZE.md} />
-                  </IconButton>
-                  {sortMenuOpen && (
-                    <AnchoredMenu
-                      anchorRef={sortMenuRef}
-                      onClose={closeSortMenu}
-                      label="Sort recipes"
-                      className="recipe-organize-bar__sort-menu"
-                    >
-                      <p className="cp-menu__heading">Sort recipes</p>
-                      {RAIL_SORT_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          role="menuitemradio"
-                          aria-checked={railSortMode === option.value}
-                          className={`cp-menu__item ${railSortMode === option.value ? "is-active" : ""}`}
-                          onClick={() => {
-                            applyRailSort(option.value);
-                            setSortMenuOpen(false);
-                          }}
-                        >
-                          <span className="recipe-organize-bar__sort-check">
-                            {railSortMode === option.value && <CheckIcon size={ICON_SIZE.sm} />}
-                          </span>
-                          {option.label}
-                        </button>
-                      ))}
-                      <p className="recipe-organize-bar__sort-note">
-                        Sorts the recipes inside each section. Your sections stay in the order you
-                        put them.
-                      </p>
-                    </AnchoredMenu>
-                  )}
-                </div>
                 {/* Sections are made in here, so the control to make one is in
                     here too. Two jobs, one button: with recipes selected it
                     wraps THOSE into a new section, and with nothing selected it
@@ -1275,6 +1242,9 @@ export function PageRail(props: PageRailProps) {
                               : `${itemIdsForSection(section.id).length} recipes`}
                           </span>
                         )}
+                        {/* Not on a folded chapter: deleting is rare and final,
+                            and a row of folded headings is for reordering. */}
+                        {!sectionFolded(section.id) && (
                         <IconButton
                           tone="danger"
                           className="recipe-page-rail__section-delete"
@@ -1288,6 +1258,7 @@ export function PageRail(props: PageRailProps) {
                         >
                           <TrashIcon size={ICON_SIZE.sm} />
                         </IconButton>
+                        )}
                       </div>
                     )}
                     <div

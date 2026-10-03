@@ -356,10 +356,26 @@
   line-height: 1;
   pointer-events: none;
 }
-.recipe-organize-bar__filter-clear {
+/* The filter half of the shared Sort and filter menu starts below a rule,
+   its heading sharing a line with Clear. */
+.recipe-organize-bar__menu-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin-top: 4px;
+  padding-top: 4px;
   border-top: 1px solid var(--cp-line);
-  border-radius: 0;
+}
+.recipe-organize-bar__filter-clear {
+  padding: 2px 9px;
+  border-radius: 6px;
+  color: var(--cp-selected-text);
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+}
+.recipe-organize-bar__filter-clear:hover {
+  background: var(--cp-overlay-hover);
 }
 .recipe-organize-bar__filter-label {
   flex: 1;
@@ -378,9 +394,7 @@
 /* The question this control raises is "will this shuffle my chapters?" — so it
    answers it in the menu, where the choice is made. */
 .recipe-organize-bar__sort-note {
-  padding: 6px 9px 4px;
-  margin-top: 4px;
-  border-top: 1px solid var(--cp-line);
+  padding: 2px 9px 4px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-label);
   line-height: 1.45;
@@ -1275,11 +1289,8 @@
      the fit scale nothing: `clientWidth` counts padding, and content width was
      already being treated as 40px less than it. */
   padding-inline: 20px;
-  /* And give the scrollbars back. The deck hides them because browsing a
-     snapped stack never needs them, but a page too big for the window has to
-     be panned — and horizontal panning has no wheel of its own, so without a
-     bar a mouse (as opposed to a trackpad) cannot reach the sides at all. */
-  scrollbar-width: thin;
+  /* No scrollbars even here: they cut a line down the preview for something a
+     trackpad, a drag and Shift + wheel all already do. */
 }
 
 /* A lone card doesn't need the ~44vh centring pad, but the floating controls
@@ -2201,7 +2212,11 @@
     /* Named because the floating zoom cluster has to measure itself against
        the DECK's edge, and this is the whole of the difference between the
        two — see `.recipe-deck-zoom`. */
-    --canvas-inline-pad: clamp(16px, 2.4vw, 30px);
+    /* Zero: the deck runs edge to edge between the panels. The fit already
+       keeps the page itself 20px clear of each side (`clientWidth - 40` in
+       useDeckScroller), so padding here only narrowed the grey and the page
+       with it. */
+    --canvas-inline-pad: 0px;
     padding-inline: var(--canvas-inline-pad);
   }
 
@@ -8362,33 +8377,15 @@ textarea.recipe-card__toc-title {
 
 /* Where each caller puts it. */
 /*
- * Anchored to the DECK's bottom-right corner, which is not the canvas's.
- *
- * Zoomed past the point where a page fits, the deck scrolls freely and gets
- * real scrollbars back (see `[data-free-scroll]` above), drawn just inside its
- * own right and bottom edges. This cluster is absolutely positioned, so it
- * measures from the canvas's padding box — and that reaches
- * `--canvas-inline-pad` further out than the deck does. At `right: 16px` the
- * "+", the rightmost button, came to rest directly over the vertical bar. A
- * native scrollbar wins that hit test whatever the z-index says, so the click
- * reached the scrollbar track instead of the button and jumped the deck to
- * another page: zoom stopped working at exactly the zoom that needed it.
- *
- * The allowance is unconditional rather than scoped to `[data-free-scroll]`,
- * even though that is the only state with bars to avoid. Scoping it means the
- * cluster slides 44px sideways on the first press of "+", out from under the
- * cursor that is still aiming at it — a control that moves when you use it is
- * a worse bug than the one being fixed here.
- *
- * 14px is a `thin` scrollbar at its widest common rendering (macOS draws about
- * 11, Windows about 12). Reserving slightly too much costs a few pixels of
- * gap; reserving too little costs the click.
+ * The deck's bottom-right corner. It used to stand 14px further in, clear of
+ * the scrollbars a zoomed deck drew (a native scrollbar wins the hit test, so
+ * "+" over it jumped the deck instead of zooming). The deck draws none now,
+ * at any zoom, so there is nothing to keep clear of.
  */
 .recipe-deck-zoom {
   position: absolute;
-  --deck-scrollbar: 14px;
-  right: calc(16px + var(--canvas-inline-pad, 0px) + var(--deck-scrollbar));
-  bottom: calc(16px + var(--deck-scrollbar));
+  right: calc(16px + var(--canvas-inline-pad, 0px));
+  bottom: 16px;
 }
 
 @media (max-width: 900px) {

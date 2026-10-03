@@ -58,23 +58,26 @@ async function openOrganizer(page: Page) {
 
 test("an active toolbar button looks active", async ({ page }) => {
   await openOrganizer(page);
-  const filter = page.getByRole("button", { name: /^Filter recipes/ });
-  const sort = page.getByRole("button", { name: "Sort recipes" });
-  const look = (locator: typeof filter) =>
+  const view = page.getByRole("button", { name: /^Sort and filter recipes/ });
+  const search = page.getByRole("button", { name: "Search recipes" });
+  const look = (locator: typeof view) =>
     locator.evaluate((el) => {
       const style = getComputedStyle(el);
       return `${style.borderColor} ${style.backgroundColor}`;
     });
-  const idle = await look(sort);
+  const idle = await look(search);
 
-  await filter.click();
+  // A filter on its own, then an A-Z sort on its own: either has to show.
+  await view.click();
   await page.getByRole("menuitemcheckbox", { name: /No photo/ }).click();
   await page.keyboard.press("Escape");
   await page.mouse.move(0, 0);
-  expect(await look(filter)).not.toBe(idle);
+  expect(await look(view)).not.toBe(idle);
 
-  await sort.click();
+  await view.click();
+  await page.getByRole("button", { name: "Clear" }).click();
   await page.getByRole("menuitemradio", { name: /A–Z/ }).click();
+  await page.keyboard.press("Escape");
   await page.mouse.move(0, 0);
-  expect(await look(sort)).not.toBe(idle);
+  expect(await look(view)).not.toBe(idle);
 });
