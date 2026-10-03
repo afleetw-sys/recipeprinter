@@ -21,8 +21,6 @@ import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  CollapseAllIcon,
-  ExpandAllIcon,
   FilterIcon,
   GripIcon,
   ICON_SIZE,
@@ -747,17 +745,45 @@ export function PageRail(props: PageRailProps) {
                 </div>
               </div>
               <div className="recipe-organize-bar__actions">
-                {/* Search opens into a full-width field under the toolbar
-                    rather than squeezing one into it beside the title. */}
-                <IconButton
-                  aria-label="Search recipes"
-                  title="Search recipes"
-                  aria-expanded={searchOpen}
-                  selected={searchOpen}
-                  onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
-                >
-                  <SearchIcon size={ICON_SIZE.md} />
-                </IconButton>
+                {/* Search grows out of its own button into a field, in place,
+                    rather than adding a bar under the toolbar. */}
+                {searchOpen ? (
+                  <div className="recipe-organize-bar__search">
+                    <SearchIcon size={ICON_SIZE.sm} />
+                    <input
+                      ref={searchInputRef}
+                      type="search"
+                      className="recipe-organize-bar__search-input"
+                      placeholder="Search recipes"
+                      aria-label="Search recipes"
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") {
+                          event.preventDefault();
+                          closeSearch();
+                        }
+                      }}
+                    />
+                    <IconButton
+                      className="icon-button--bare"
+                      aria-label="Close search"
+                      title="Close search"
+                      onClick={closeSearch}
+                    >
+                      <XIcon size={ICON_SIZE.sm} />
+                    </IconButton>
+                  </div>
+                ) : (
+                  <IconButton
+                    aria-label="Search recipes"
+                    title="Search recipes"
+                    aria-expanded={false}
+                    onClick={() => setSearchOpen(true)}
+                  >
+                    <SearchIcon size={ICON_SIZE.md} />
+                  </IconButton>
+                )}
                 {/* Sort and filter share one button and one menu: both are about
                     how the list is shown, and the toolbar had run out of room
                     for a button each. The badge counts filters only; an A-Z
@@ -845,11 +871,6 @@ export function PageRail(props: PageRailProps) {
                     </AnchoredMenu>
                   )}
                 </div>
-              </div>
-              {/* Second row: the two whole-book actions. Search and Sort and
-                  filter stay up on the title's line, where they change what
-                  you see; these change the book. */}
-              <div className="recipe-organize-bar__book-actions">
                 {/* Sections are made in here, so the control to make one is in
                     here too. Two jobs, one button: with recipes selected it
                     wraps THOSE into a new section, and with nothing selected it
@@ -873,52 +894,22 @@ export function PageRail(props: PageRailProps) {
                       recipes, you pressed Add chapter, they are in it. */}
                   <span>Add chapter</span>
                 </button>
-                {/* Spelled out: as a pair of chevrons it read as nothing in
-                    particular. Folding every chapter is how a long book's
-                    chapters fit on screen to be dragged into order. */}
-                {namedSectionIds.length > 0 && (
+              </div>
+              {/* Plain text, not a button: a view toggle for the list below,
+                  set apart from the toolbar's actions. Folding every chapter
+                  is how a long book's chapters fit on screen to be dragged
+                  into order. */}
+              {namedSectionIds.length > 0 && !organizeFiltering && (
+                <div className="recipe-organize-bar__book-actions">
                   <button
                     type="button"
-                    className="btn btn-secondary btn-compact recipe-organize-bar__fold-all"
+                    className="recipe-organize-bar__fold-all"
                     onClick={() =>
                       setCollapsedSections(allSectionsCollapsed ? new Set() : new Set(namedSectionIds))
                     }
                   >
-                    {allSectionsCollapsed ? (
-                      <ExpandAllIcon size={ICON_SIZE.sm} />
-                    ) : (
-                      <CollapseAllIcon size={ICON_SIZE.sm} />
-                    )}
-                    <span>{allSectionsCollapsed ? "Expand all" : "Collapse all"}</span>
+                    {allSectionsCollapsed ? "Expand all" : "Collapse all"}
                   </button>
-                )}
-              </div>
-              {searchOpen && (
-                <div className="recipe-organize-bar__search">
-                  <SearchIcon size={ICON_SIZE.sm} />
-                  <input
-                    ref={searchInputRef}
-                    type="search"
-                    className="recipe-organize-bar__search-input"
-                    placeholder="Search titles, ingredients, steps, notes, chapters"
-                    aria-label="Search recipes"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Escape") {
-                        event.preventDefault();
-                        closeSearch();
-                      }
-                    }}
-                  />
-                  <IconButton
-                    className="icon-button--bare"
-                    aria-label="Close search"
-                    title="Close search"
-                    onClick={closeSearch}
-                  >
-                    <XIcon size={ICON_SIZE.sm} />
-                  </IconButton>
                 </div>
               )}
             </div>

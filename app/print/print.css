@@ -215,13 +215,18 @@
 
 /* In the organizer's toolbar beside Sort: a shared compact button, laid out
    only so it does not wrap or stretch. */
-/* Sized to the longer of its two labels, so switching between them never
-   re-widths the toolbar and wraps "Organize recipes". */
+/* Text, not a button: a quiet toggle for the list beneath it. */
 .recipe-organize-bar__fold-all {
-  flex: 0 0 auto;
-  gap: 4px;
-  min-width: 104px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
   white-space: nowrap;
+}
+.recipe-organize-bar__fold-all:hover {
+  color: var(--cp-ink);
+  text-decoration: underline;
 }
 
 .recipe-organize-bar__add-section {
@@ -265,10 +270,13 @@
    the line about moving recipes stack; Back stays level with the title. */
 .recipe-organize-bar__heading {
   display: flex;
-  flex: 1 1 auto;
+  /* Zero basis: the hint line wraps to make room for the toolbar (an open
+     search field included) before the toolbar is pushed under the title.
+     Only below this floor does it move down. */
+  flex: 1 1 0;
   align-items: flex-start;
   gap: 4px;
-  min-width: 0;
+  min-width: 200px;
 }
 .recipe-organize-bar__titles {
   display: flex;
@@ -329,12 +337,17 @@
 }
 .recipe-organize-bar__search {
   display: flex;
-  flex: 1 0 100%;
   align-items: center;
-  gap: 8px;
-  padding: 0 4px 0 12px;
+  gap: 6px;
+  /* Grows out of the 30px search button it replaces, and holds that width
+     rather than giving it up to the title beside it. */
+  flex: 0 0 auto;
+  width: min(240px, 60vw);
+  height: 30px;
+  padding: 0 0 0 9px;
   border: 1px solid var(--cp-line-strong);
-  border-radius: 10px;
+  border-radius: 8px;
+  animation: organize-search-open 160ms ease-out;
   background: var(--cp-card);
   color: var(--cp-ink-soft);
 }
@@ -345,7 +358,7 @@
 .recipe-organize-bar__search-input {
   flex: 1;
   min-width: 0;
-  height: 38px;
+  height: 28px;
   border: 0;
   background: transparent;
   color: var(--cp-ink);
@@ -354,6 +367,21 @@
 }
 .recipe-organize-bar__search-input:focus {
   outline: none;
+}
+@keyframes organize-search-open {
+  from {
+    width: 30px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .recipe-organize-bar__search {
+    animation: none;
+  }
+}
+/* The close button sits inside the field's own height. */
+.recipe-print-shell--organizing .recipe-organize-bar__search .icon-button {
+  width: 28px;
+  height: 28px;
 }
 /* The field shows its own close button; the browser's clear cross is a second. */
 .recipe-organize-bar__search-input::-webkit-search-cancel-button {
