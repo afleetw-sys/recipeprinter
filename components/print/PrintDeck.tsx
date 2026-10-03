@@ -27,11 +27,10 @@ import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
 import { ZoomControl } from "@/components/print/ZoomControl";
 import { ScaledPage } from "@/components/print/ScaledPage";
-import { formatRecipeTime } from "@/lib/time";
 import { recipeLinkOn } from "@/lib/recipeLink";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { chapterIntroFromRecipes, chapterRecipeTitles } from "@/lib/chapterIntro";
-import { composeNote } from "@/lib/recipeNote";
+import { missingRecipeFields } from "@/lib/recipeMissingFields";
 import {
   RECIPE_PRINT_TEMPLATE_OPTIONS,
   type PrintCardSize,
@@ -503,31 +502,11 @@ export function PrintDeck(props: PrintDeckProps) {
       if (navItem.kind === "recipe") {
         const recipe = items?.find((item) => item.id === navItem.recipeId)?.recipe;
         if (!recipe) return [];
-        const cookbook = Boolean(projectMeta.meta.cookbookMode);
-        const missing: string[] = [];
-        // A cookbook recipe can be given a link by hand whatever the book-wide
-        // setting says (it gets its own override on commit), so a missing link is
-        // always a hidden field there. Elsewhere the field only exists while the
-        // setting is on, so a missing link is only a hidden FIELD when that field
-        // would show.
-        if ((cookbook || showSourceUrl) && !recipe.sourceUrl) missing.push("link");
-        if (!formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime)) missing.push("time");
-        if (!(recipe.servings ?? recipe.yield)) missing.push("servings");
-        // Ask what the note WOULD print, not whether the website blurb
-        // exists. The card shows `composeNote(description, note,
-        // showDescription)`, so a recipe that arrived with a blurb and no
-        // note of its own prints nothing once the website-description
-        // checkbox is off — an empty line with no way to reach it, because
-        // this test read the stored blurb and concluded the field was
-        // filled. Reading the composed line also stops the opposite: a cook's
-        // own note with no blurb behind it printed fine and still offered to
-        // reveal a field that was never missing.
-        if (cookbook && !composeNote(recipe.description, recipe.note, showDescription).trim()) {
-          missing.push("note");
-        }
-        if (recipe.ingredients.length === 0) missing.push("ingredients");
-        if (recipe.instructions.length === 0) missing.push("steps");
-        return missing;
+        return missingRecipeFields(recipe, {
+          cookbook: Boolean(projectMeta.meta.cookbookMode),
+          showSourceUrl,
+          showDescription,
+        });
       }
       if (navItem.kind === "cover") {
         const side = coverSideFromNavItem(navItem);

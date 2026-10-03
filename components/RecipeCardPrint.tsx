@@ -1,6 +1,7 @@
 "use client";
 
 import { cleanSourceUrl } from "@/lib/sourceUrl";
+import { DEFAULT_RECIPE_HEADINGS, recipeHeading, type RecipeHeadingKind } from "@/lib/recipeHeadings";
 import {
   memo,
   useMemo,
@@ -939,6 +940,74 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     );
   }
 
+  /**
+   * The "Ingredients" / "Steps" label over a list, which the cook can rename
+   * or remove on this recipe (see lib/recipeHeadings.ts).
+   *
+   * Removed, it takes no room at all, on the card and in the measurer that
+   * paginates it (which draws this same face), so a removed heading's line
+   * goes back to the list. The one thing that outlives it is `suffix`, the
+   * "(continued on back)" note, because that still has to be said. While the
+   * reveal is on it comes back as a muted copy of the default, and clicking
+   * that opens the default in the field: keep it, or type something else.
+   */
+  function sectionLabel(kind: RecipeHeadingKind, suffix: ReactNode, addButton: ReactNode) {
+    const target: RecipeCardEditTarget = { kind };
+    const heading = recipeHeading(recipe, kind);
+    if (canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, target)) {
+      return (
+        <h2 className="recipe-card__label">
+          <textarea
+            ref={focusIfEditing(target)}
+            className="recipe-card__inline-textarea recipe-card__label-input"
+            rows={1}
+            value={inlineEdit.value}
+            aria-label={`${DEFAULT_RECIPE_HEADINGS[kind]} heading`}
+            onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={handleEditKeyDown}
+          />
+        </h2>
+      );
+    }
+    if (!heading) {
+      if (showEmpty && canEdit) {
+        return (
+          <h2
+            className="recipe-card__label recipe-card__label--empty"
+            onClick={() => startEdit(target, DEFAULT_RECIPE_HEADINGS[kind])}
+          >
+            <span className="recipe-card__label-inline">
+              {DEFAULT_RECIPE_HEADINGS[kind]}
+              {suffix}
+              {addButton}
+            </span>
+          </h2>
+        );
+      }
+      return suffix ? (
+        <h2 className="recipe-card__label">
+          <span className="recipe-card__label-inline">
+            {suffix}
+            {addButton}
+          </span>
+        </h2>
+      ) : null;
+    }
+    return (
+      <h2
+        className={`recipe-card__label ${canEdit ? "recipe-card__label--editable" : ""}`}
+        onClick={canEdit ? () => startEdit(target, heading) : undefined}
+      >
+        <span className="recipe-card__label-inline">
+          {heading}
+          {suffix}
+          {addButton}
+        </span>
+      </h2>
+    );
+  }
+
   function sectionTitle(
     kind: "ingredientSection" | "instructionSection",
     index: number,
@@ -1332,12 +1401,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             className={`recipe-card__ingredients ${ingredientsWide ? "recipe-card__ingredients--wide" : ""}`}
             ref={ingredientsWide ? ingredientColumns.sectionRef : undefined}
           >
-            <h2 className="recipe-card__label">
-              <span className="recipe-card__label-inline">
-                Ingredients
-                {ingredientGroups.length > 0 && addLine("ingredient", 0)}
-              </span>
-            </h2>
+            {sectionLabel("ingredientsHeading", null, ingredientGroups.length > 0 && addLine("ingredient", 0))}
             {ingredientGroups.length === 0 ? (
               showEmptyIngredients && (
                 <div className="recipe-card__section-groups">
@@ -1411,25 +1475,23 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             className={`recipe-card__method ${methodWide ? "recipe-card__method--wide" : ""}`}
             ref={methodWide ? methodColumns.sectionRef : undefined}
           >
-            <h2 className="recipe-card__label">
-              <span className="recipe-card__label-inline">
-                Steps
-                {side === "front" && hasBackFace && !continued ? (
-                  // A cookbook continues on the NEXT LEAF, never on the back of
-                  // this one (see `continueOnBack` in lib/usePrintSheets.tsx —
-                  // duplex is the recipe-card path only), so "on back" sent the
-                  // cook looking at the wrong side of the page.
-                  <span className="recipe-card__continued-inline">
-                    {cookbookMode ? " (continued on the next page)" : " (continued on back)"}
-                  </span>
-                ) : (side === "back" || continued) && stepsBeganEarlier ? (
-                  " continued"
-                ) : (
-                  ""
-                )}
-                {instructionGroups.length > 0 && addLine("step", 0)}
-              </span>
-            </h2>
+            {sectionLabel(
+              "stepsHeading",
+              side === "front" && hasBackFace && !continued ? (
+                // A cookbook continues on the NEXT LEAF, never on the back of
+                // this one (see `continueOnBack` in lib/usePrintSheets.tsx —
+                // duplex is the recipe-card path only), so "on back" sent the
+                // cook looking at the wrong side of the page.
+                <span className="recipe-card__continued-inline">
+                  {cookbookMode ? " (continued on the next page)" : " (continued on back)"}
+                </span>
+              ) : (side === "back" || continued) && stepsBeganEarlier ? (
+                " continued"
+              ) : (
+                ""
+              ),
+              instructionGroups.length > 0 && addLine("step", 0),
+            )}
             {instructionGroups.length === 0 ? (
               showEmptyInstructions && (
                 <div className="recipe-card__section-groups">

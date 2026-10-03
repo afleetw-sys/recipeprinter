@@ -6904,6 +6904,35 @@ textarea.recipe-card__toc-title {
   }
 }
 
+/* "Ingredients" / "Steps" can be renamed or removed per recipe (see
+   lib/recipeHeadings.ts): the same hairline-on-hover as a section title, and
+   while typing, a field that wears the label's own type so nothing jumps. */
+.recipe-card__label--editable {
+  cursor: pointer;
+}
+.recipe-card__label--editable:hover {
+  outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+.recipe-card__label-input {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+/* A removed heading, shown only while the reveal is on: the default, muted,
+   which is what clicking it brings back. */
+.recipe-card__label--empty {
+  opacity: 0.45;
+  cursor: pointer;
+}
+
 .recipe-card__continued-inline {
   color: var(--recipe-muted);
   font-size: calc(var(--recipe-card-label-size) * 0.9);

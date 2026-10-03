@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type MutableRefObject } from "react";
 import { printableRecipe } from "@/lib/queue";
+import { storedRecipeHeading } from "@/lib/recipeHeadings";
 import { ingredientText } from "@/lib/recipeCardLayout";
 import { splitNote } from "@/lib/recipeNote";
 import type {
@@ -258,6 +259,11 @@ export function applyRecipeTargetEdit(
       ...recipe,
       instructions: applySectionTitleEdit(recipe.instructions, target.index, trimmed),
     });
+  }
+  if (target.kind === "ingredientsHeading" || target.kind === "stepsHeading") {
+    // Emptied is removed (`""`), the default typed back follows the default
+    // again: see lib/recipeHeadings.ts.
+    return printableRecipe({ ...recipe, [target.kind]: storedRecipeHeading(target.kind, value) });
   }
   const text = stripStepPrefix(trimmed);
   if (!text) {
