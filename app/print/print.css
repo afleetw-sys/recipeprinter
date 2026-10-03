@@ -174,6 +174,16 @@
   background: var(--cp-overlay-hover);
 }
 
+/* The box above is more specific than the shared selected state, so it wiped
+   it: an applied filter or an A–Z sort looked exactly like one that was off. */
+.recipe-print-shell--organizing .icon-button.is-active,
+.recipe-print-shell--organizing .icon-button.is-active:hover:not(:disabled) {
+  border-color: var(--cp-selected-border);
+  background: var(--cp-selected-fill);
+  box-shadow: var(--cp-selected-ring);
+  color: var(--cp-selected-text);
+}
+
 /* ...except the bare ones, which are bare in here too. The rule above is more
    specific than `.icon-button--bare`, so without this the organizer hands the
    border back to every button it contains. */
@@ -266,6 +276,81 @@
   display: inline-flex;
   justify-content: center;
   flex: 0 0 14px;
+}
+
+/* Search and filter wrap onto their own full-width lines under the toolbar. */
+.recipe-organize-bar {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+.recipe-organize-bar__search {
+  display: flex;
+  flex: 1 0 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px 0 12px;
+  border: 1px solid var(--cp-line-strong);
+  border-radius: 10px;
+  background: var(--cp-card);
+  color: var(--cp-ink-soft);
+}
+.recipe-organize-bar__search:focus-within {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+.recipe-organize-bar__search-input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  border: 0;
+  background: transparent;
+  color: var(--cp-ink);
+  font: inherit;
+  font-size: var(--cp-fs-small);
+}
+.recipe-organize-bar__search-input:focus {
+  outline: none;
+}
+/* The field shows its own close button; the browser's clear cross is a second. */
+.recipe-organize-bar__search-input::-webkit-search-cancel-button {
+  display: none;
+}
+.recipe-organize-bar__results {
+  display: flex;
+  flex: 1 0 100%;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+}
+.recipe-organize-bar__clear {
+  margin-left: auto;
+  padding: 2px 4px;
+  border-radius: 6px;
+  color: var(--cp-selected-text);
+  font-weight: 700;
+}
+.recipe-organize-bar__clear:hover {
+  text-decoration: underline;
+}
+.recipe-organize-bar__clear:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+.recipe-organize-bar__filter-label {
+  flex: 1;
+}
+.recipe-organize-bar__filter-count {
+  color: var(--cp-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.recipe-organize-empty {
+  margin: 24px 0;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+  text-align: center;
 }
 
 /* The question this control raises is "will this shuffle my chapters?" — so it
@@ -380,6 +465,31 @@
 
   .recipe-print-shell--organizing .recipe-page-rail__section-group > .recipe-page-rail__row {
     display: contents;
+  }
+
+  /* Pictures off: each recipe is one line of name, so more of the book fits
+     on screen and long titles get room to be read. */
+  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__section-group {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 6px;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__item-main {
+    grid-template-columns: 24px 1fr;
+    min-height: 40px;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__num {
+    align-self: center;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__section-add-card {
+    flex-direction: row;
+    min-height: 40px;
+    padding: 8px 12px;
   }
 
   .recipe-print-shell--organizing .recipe-page-rail__section-group--ungrouped {

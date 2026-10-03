@@ -21,11 +21,15 @@ import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  FilterIcon,
   GripIcon,
   ICON_SIZE,
+  ImageIcon,
   PlusIcon,
+  SearchIcon,
   SortIcon,
   TrashIcon,
+  XIcon,
 } from "@/components/icons";
 import { IconButton } from "@/components/Controls";
 import { ProBadge } from "@/components/ProBadge";
@@ -42,6 +46,14 @@ import type { useRailSelection } from "@/lib/useRailSelection";
 import type { QueueItem, Section, RailSortMode } from "@/types/recipe";
 import { AnchoredMenu } from "@/components/AnchoredMenu";
 import { ChapterNameInput } from "@/components/print/ChapterNameInput";
+import {
+  ORGANIZE_FILTER_OPTIONS,
+  isOrganizeViewActive,
+  matchesFilter,
+  matchesOrganizeView,
+  type OrganizeFilter,
+  type OrganizeRecipeContext,
+} from "@/lib/organizeFilter";
 
 // Rail thumbnails target a fixed width so they always fit the rail column,
 // regardless of page aspect ratio (letter portrait vs. 6x4 landscape).
@@ -65,6 +77,19 @@ const RAIL_THUMB_OVERSCAN = "600px 0px";
 // Owned by types/recipe.ts now that it is saved with the book; re-exported
 // here so the rail's existing importers are untouched.
 export type { RailSortMode };
+
+/** Whether the organizer shows page thumbnails or a plain list of names. A
+    per-browser preference: it is how this person likes to work, not a fact
+    about the book. */
+const ORGANIZE_THUMBS_KEY = "rp.organize.hideThumbs";
+
+function readHideThumbs(): boolean {
+  try {
+    return window.localStorage.getItem(ORGANIZE_THUMBS_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 const RAIL_SORT_OPTIONS: Array<{ value: RailSortMode; label: string }> = [
   { value: "custom", label: "Custom order" },
@@ -367,6 +392,75 @@ export function PageRail(props: PageRailProps) {
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
   const closeSortMenu = useCallback(() => setSortMenuOpen(false), []);
 
+  // Search and readiness filter: a VIEW of the organizer, never a change to
+  // the book. Both clear on leaving the organizer, so the page rail never
+  // comes back with recipes quietly missing from it.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [organizeFilter, setOrganizeFilter] = useState<OrganizeFilter>("all");
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const filterMenuRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const closeFilterMenu = useCallback(() => setFilterMenuOpen(false), []);
+  const [hideThumbs, setHideThumbs] = useState(false);
+  useEffect(() => setHideThumbs(readHideThumbs()), []);
+  const toggleHideThumbs = () => {
+    setHideThumbs((hidden) => {
+      try {
+        window.localStorage.setItem(ORGANIZE_THUMBS_KEY, hidden ? "0" : "1");
+      } catch {
+        // A blocked store only means the choice is not remembered.
+      }
+      return !hidden;
+    });
+  };
+  useEffect(() => {
+    if (organizeMode) return;
+    setSearchOpen(false);
+    setSearchQuery("");
+    setOrganizeFilter("all");
+    setFilterMenuOpen(false);
+  }, [organizeMode]);
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchQuery("");
+  };
+
+  const organizeView = { query: searchQuery, filter: organizeFilter };
+  const organizeFiltering = organizeMode && cookbookView && isOrganizeViewActive(organizeView);
+  /** Everything the search and filters read about each recipe, by item id. */
+  const organizeContexts = new Map<string, OrganizeRecipeContext>();
+  if (organizeMode && cookbookView) {
+    const pageCounts = new Map<string, number>();
+    navItems.forEach((nav) => {
+      if (nav.kind === "recipe") pageCounts.set(nav.recipeId, (pageCounts.get(nav.recipeId) ?? 0) + 1);
+    });
+    sections.forEach((section) => {
+      section.items.forEach((item) => {
+        organizeContexts.set(item.id, {
+          item,
+          chapterTitle: section.title ?? "",
+          placement: projectMeta.meta.itemPlacements?.[item.id],
+          pageCount: pageCounts.get(item.id) ?? 1,
+        });
+      });
+    });
+  }
+  const recipeShownInOrganizer = (recipeId: string) => {
+    if (!organizeFiltering) return true;
+    const context = organizeContexts.get(recipeId);
+    return context ? matchesOrganizeView(organizeView, context) : false;
+  };
+  const filterCount = (filter: OrganizeFilter) =>
+    Array.from(organizeContexts.values()).filter((context) => matchesFilter(filter, context)).length;
+  const shownRecipeCount = organizeFiltering
+    ? Array.from(organizeContexts.keys()).filter(recipeShownInOrganizer).length
+    : organizeContexts.size;
+  const showThumbs = !(organizeMode && hideThumbs);
+
   // Right-clicking a tile in the organizer offers the drag's destinations as a
   // list — the same moves, for a book too long to drag across. The ids are
   // captured when the menu opens so it acts on what was right-clicked even if
@@ -508,7 +602,7 @@ export function PageRail(props: PageRailProps) {
           ref={railScrollRef}
           className={`recipe-page-rail recipe-page-rail--${previewCardSize} no-print ${
             railDrag.draggingId ? "recipe-page-rail--dragging" : ""
-          }`}
+          } ${showThumbs ? "" : "recipe-page-rail--no-thumbs"}`}
           aria-label="Pages"
           onKeyDown={onRailKeyDown}
         >
@@ -646,6 +740,70 @@ export function PageRail(props: PageRailProps) {
                 </div>
               </div>
               <div className="recipe-organize-bar__actions">
+                {/* Search opens into a full-width field under the toolbar
+                    rather than squeezing one into it beside the title. */}
+                <IconButton
+                  aria-label="Search recipes"
+                  title="Search recipes"
+                  aria-expanded={searchOpen}
+                  selected={searchOpen}
+                  onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
+                >
+                  <SearchIcon size={ICON_SIZE.md} />
+                </IconButton>
+                {/* What is still missing before the book is ready to print. */}
+                <div className="recipe-organize-bar__sort" ref={filterMenuRef}>
+                  <IconButton
+                    aria-label="Filter recipes"
+                    title="Filter recipes"
+                    aria-haspopup="menu"
+                    aria-expanded={filterMenuOpen}
+                    selected={filterMenuOpen || organizeFilter !== "all"}
+                    onClick={() => setFilterMenuOpen((open) => !open)}
+                  >
+                    <FilterIcon size={ICON_SIZE.md} />
+                  </IconButton>
+                  {filterMenuOpen && (
+                    <AnchoredMenu
+                      anchorRef={filterMenuRef}
+                      onClose={closeFilterMenu}
+                      label="Filter recipes"
+                      className="recipe-organize-bar__sort-menu"
+                    >
+                      <p className="cp-menu__heading">Show</p>
+                      {ORGANIZE_FILTER_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={organizeFilter === option.value}
+                          className={`cp-menu__item ${organizeFilter === option.value ? "is-active" : ""}`}
+                          onClick={() => {
+                            setOrganizeFilter(option.value);
+                            setFilterMenuOpen(false);
+                          }}
+                        >
+                          <span className="recipe-organize-bar__sort-check">
+                            {organizeFilter === option.value && <CheckIcon size={ICON_SIZE.sm} />}
+                          </span>
+                          <span className="recipe-organize-bar__filter-label">{option.label}</span>
+                          <span className="recipe-organize-bar__filter-count">
+                            {filterCount(option.value)}
+                          </span>
+                        </button>
+                      ))}
+                    </AnchoredMenu>
+                  )}
+                </div>
+                <IconButton
+                  aria-label="Show page pictures"
+                  title={hideThumbs ? "Show page pictures" : "Hide page pictures"}
+                  aria-pressed={!hideThumbs}
+                  selected={!hideThumbs}
+                  onClick={toggleHideThumbs}
+                >
+                  <ImageIcon size={ICON_SIZE.md} />
+                </IconButton>
                 {/* Sort: the cook's own arrangement, or A–Z inside every
                     section. It reorders the book itself, so switching back to
                     "Custom order" restores the order A–Z replaced. The menu
@@ -719,6 +877,52 @@ export function PageRail(props: PageRailProps) {
                   <span>Add chapter</span>
                 </button>
               </div>
+              {searchOpen && (
+                <div className="recipe-organize-bar__search">
+                  <SearchIcon size={ICON_SIZE.sm} />
+                  <input
+                    ref={searchInputRef}
+                    type="search"
+                    className="recipe-organize-bar__search-input"
+                    placeholder="Search titles, ingredients, steps, notes, chapters"
+                    aria-label="Search recipes"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") {
+                        event.preventDefault();
+                        closeSearch();
+                      }
+                    }}
+                  />
+                  <IconButton
+                    className="icon-button--bare"
+                    aria-label="Close search"
+                    title="Close search"
+                    onClick={closeSearch}
+                  >
+                    <XIcon size={ICON_SIZE.sm} />
+                  </IconButton>
+                </div>
+              )}
+              {organizeFiltering && (
+                <p className="recipe-organize-bar__results" role="status">
+                  {shownRecipeCount === 1 ? "1 recipe" : `${shownRecipeCount} recipes`}
+                  {organizeFilter !== "all" && (
+                    <> · {ORGANIZE_FILTER_OPTIONS.find((option) => option.value === organizeFilter)?.label}</>
+                  )}
+                  <button
+                    type="button"
+                    className="recipe-organize-bar__clear"
+                    onClick={() => {
+                      closeSearch();
+                      setOrganizeFilter("all");
+                    }}
+                  >
+                    Show all
+                  </button>
+                </p>
+              )}
             </div>
           )}
           {cookbookView
@@ -906,7 +1110,9 @@ export function PageRail(props: PageRailProps) {
                   units.push({ ...unit });
                 });
                 const groups: Array<{ key: string; sectionId: string | null; units: RailUnit[] }> = [];
-                units.forEach((unit) => {
+                units
+                  .filter((unit) => unit.nav?.kind !== "recipe" || recipeShownInOrganizer(unit.nav.recipeId))
+                  .forEach((unit) => {
                   const previous = groups[groups.length - 1];
                   if (previous && unit.sectionId && previous.sectionId === unit.sectionId) {
                     previous.units.push(unit);
@@ -918,6 +1124,11 @@ export function PageRail(props: PageRailProps) {
                     });
                   }
                 });
+                // While searching or filtering, a chapter with nothing to show
+                // is noise between the ones that do.
+                const shownGroups = organizeFiltering
+                  ? groups.filter((group) => group.units.some((unit) => unit.nav?.kind === "recipe"))
+                  : groups;
                 // Where each deleted front page's "Add …" button goes: after the
                 // group holding the last front page before it that is still
                 // there, or at the top of the rail when none is.
@@ -940,7 +1151,10 @@ export function PageRail(props: PageRailProps) {
                 return (
                   <>
                   {renderAddPages(addsAtTop)}
-                  {groups.map((group, groupIdx) => (
+                  {organizeFiltering && shownGroups.length === 0 && (
+                    <p className="recipe-organize-empty">No recipes match.</p>
+                  )}
+                  {shownGroups.map((group, groupIdx) => (
                   <Fragment key={group.key}>
                   <div
                     data-rail-section={group.sectionId ?? undefined}
@@ -1101,6 +1315,7 @@ export function PageRail(props: PageRailProps) {
                         }}
                       >
                         <span className="recipe-page-rail__num">{unit.num}</span>
+                        {showThumbs && (
                         <LazyRailThumb
                           scrollRef={railScrollRef}
                           className={`recipe-page-rail__thumb ${
@@ -1138,6 +1353,7 @@ export function PageRail(props: PageRailProps) {
                             ) : null,
                           )}
                         </LazyRailThumb>
+                        )}
                         <span className="recipe-page-rail__label">
                           <span className="recipe-page-rail__title">{unit.label}</span>
                         </span>
@@ -1156,7 +1372,7 @@ export function PageRail(props: PageRailProps) {
                 );
                   });
                   })()}
-                  {organizeMode && group.sectionId && (
+                  {organizeMode && group.sectionId && !organizeFiltering && (
                     <button
                       type="button"
                       className="recipe-page-rail__section-add-card"

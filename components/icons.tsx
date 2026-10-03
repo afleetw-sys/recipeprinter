@@ -367,6 +367,13 @@ export const SortIcon = (p: IconProps) => (
   </Base>
 );
 
+// Filter: a funnel, so it never reads as Sort's stacked rules beside it.
+export const FilterIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M4 5h16l-6 7.5V19l-4-2v-4.5L4 5z" />
+  </Base>
+);
+
 export const GripIcon = (p: IconProps) => (
   <Base {...p} fill="currentColor" stroke="none">
     <circle cx="9" cy="6" r="1.4" />
