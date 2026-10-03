@@ -254,7 +254,7 @@
      Nothing to cancel here as a result: this padding is genuinely all there
      is, and it's covered by this element's own background either way,
      stuck or not. */
-  padding: 8px 2px;
+  padding: 6px 2px 8px;
   /* The bar lives inside the rail's own scroll container (see `.recipe-page-rail`),
      not above it — so without this, scrolling down the chapter list (including the
      auto-scroll a freshly added chapter triggers) carries "Back to pages" and
@@ -303,37 +303,12 @@
   /* Stays right-aligned when a narrow organizer wraps it under the title. */
   margin-left: auto;
 }
-/* The second row: search on the left, Sort and filter on the right. A
-   size container, so the button can drop its label when the row is narrow. */
+/* The second row, the one toolbar: search, the filter icon, Add chapter. */
 .recipe-organize-bar__find {
   display: flex;
   flex: 1 0 100%;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  container-type: inline-size;
-}
-/* The organizer's icon buttons are a fixed 30px square; this one widens to
-   carry its label, and goes back to the square without it. */
-.recipe-print-shell--organizing .recipe-organize-bar__view-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: auto;
   gap: 6px;
-  padding: 0 10px 0 8px;
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  white-space: nowrap;
-}
-@container (max-width: 380px) {
-  .recipe-organize-bar__view-label {
-    display: none;
-  }
-  .recipe-print-shell--organizing .recipe-organize-bar__view-button {
-    width: 30px;
-    padding: 0;
-  }
 }
 
 /* Sort: an icon button at the head of the organizer's actions that opens its
@@ -356,15 +331,15 @@
 /* Search and filter wrap onto their own full-width lines under the toolbar. */
 .recipe-organize-bar {
   flex-wrap: wrap;
-  row-gap: 8px;
+  row-gap: 6px;
 }
 .recipe-organize-bar__search {
   display: flex;
   align-items: center;
   gap: 6px;
-  /* Always open, at a fixed width; it only gives some up when the organizer
-     is too narrow to hold it. */
-  flex: 0 1 240px;
+  /* Takes most of the toolbar row; the filter icon and Add chapter sit at
+     its end. */
+  flex: 1 1 auto;
   min-width: 0;
   height: 30px;
   padding: 0 0 0 9px;
@@ -592,65 +567,94 @@
     padding: 0 20px 18px;
   }
 
+  /* An organizing screen, not a browsing one. A chapter is its name and a
+     plain list under it: no card around the chapter, no box around each
+     recipe. Whitespace separates chapters and a faint hairline separates
+     rows, so the chapter names are what the eye lands on. */
   .recipe-print-shell--organizing .recipe-page-rail__section-group {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
-    gap: 14px;
-    padding: 12px;
-    border: 1px solid var(--cp-line);
-    border-radius: 14px;
-    background: var(--cp-card);
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin-top: 10px;
+    padding: 0;
+    border: 0;
+    background: transparent;
   }
 
   .recipe-print-shell--organizing .recipe-page-rail__section-group > .recipe-page-rail__row {
     display: contents;
   }
 
-  /* No page pictures in the organizer: each recipe is one line of name, so
-     more of the book fits on screen and long titles get room to be read. */
-  /* An organizing screen, not a browsing one: each recipe is one row of page
-     number and title, in a single column, so a whole chapter reads top to
-     bottom and many fit on screen. */
-  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__section-group {
-    grid-template-columns: 1fr;
-    gap: 2px;
-  }
-  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__item {
+  /* Each recipe: one 48px row of page number and title, the same height
+     whether or not it is selected. */
+  .recipe-print-shell--organizing .recipe-page-rail__item {
     padding: 0 10px;
-    border-color: transparent;
-    border-radius: 8px;
+    border: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--cp-line) 55%, transparent);
+    border-radius: 0;
     background: transparent;
   }
-  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__item:hover {
-    border-color: transparent;
+  .recipe-print-shell--organizing .recipe-page-rail__item:hover {
     background: var(--cp-overlay-hover);
     transform: none;
   }
-  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__item.is-active,
-  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__item.is-selected {
-    border-color: var(--cp-selected-border);
+  /* Current or selected: the shared fill and a border drawn INSIDE the row
+     (an inset outline), so it never makes the row taller. */
+  .recipe-print-shell--organizing .recipe-page-rail__item.is-active,
+  .recipe-print-shell--organizing .recipe-page-rail__item.is-selected {
+    border-radius: 6px;
     background: var(--cp-selected-fill);
+    box-shadow: none;
+    outline: 1px solid var(--cp-selected-border);
+    outline-offset: -1px;
   }
-  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__item-main {
-    grid-template-columns: 32px 1fr;
-    min-height: 48px;
+  .recipe-print-shell--organizing .recipe-page-rail__item-main {
+    grid-template-columns: 28px 1fr;
+    column-gap: 6px;
+    min-height: 0;
+    height: 47px;
   }
-  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__num {
+  .recipe-print-shell--organizing .recipe-page-rail__num {
     align-self: center;
   }
-  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__title {
+  .recipe-print-shell--organizing .recipe-page-rail__title {
     font-size: var(--cp-fs-small);
-  }
-  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__section-add-card {
-    flex-direction: row;
-    min-height: 48px;
-    padding: 8px 12px;
+    font-weight: 600;
   }
 
-  .recipe-print-shell--organizing .recipe-page-rail__section-group--ungrouped {
-    padding: 0;
-    border-color: transparent;
-    background: transparent;
+  /* The ungrouped recipes' "Add recipe": a quiet text row, not a card. */
+  .recipe-print-shell--organizing .recipe-page-rail__section-add-card {
+    flex-direction: row;
+    justify-content: flex-start;
+    min-height: 44px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 0;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail__section-add-card:hover {
+    border: 0;
+  }
+
+  /* A chapter's Add recipe and Delete wait until you are on its header, so
+     the chapter name stands alone. Kept in the layout (only faded), so
+     nothing shifts when they appear; shown during a drag, when Add recipe is
+     also a drop target; always shown where there is no hover to reveal them. */
+  .recipe-print-shell--organizing .recipe-page-rail__section-header
+    :is(.recipe-page-rail__section-add, .recipe-page-rail__section-delete) {
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail__section-header:is(:hover, :focus-within)
+    :is(.recipe-page-rail__section-add, .recipe-page-rail__section-delete),
+  .recipe-print-shell--organizing .recipe-page-rail--dragging .recipe-page-rail__section-header
+    :is(.recipe-page-rail__section-add, .recipe-page-rail__section-delete) {
+    opacity: 1;
+  }
+  @media (hover: none) {
+    .recipe-print-shell--organizing .recipe-page-rail__section-header
+      :is(.recipe-page-rail__section-add, .recipe-page-rail__section-delete) {
+      opacity: 1;
+    }
   }
 
   /* Organization is about recipe order and section membership. Keep covers,
@@ -670,7 +674,7 @@
     /* A size container, so its Add recipe can shed its label when narrow. */
     container-type: inline-size;
     grid-column: 1 / -1;
-    padding: 4px 2px 2px;
+    padding: 2px 0 4px;
     color: var(--cp-ink);
     font-size: var(--cp-fs-h2);
     text-transform: none;
@@ -682,9 +686,6 @@
      code still reads them; at zero size they are never a drop target. */
   .recipe-print-shell--organizing .recipe-page-rail__section-group--collapsed .recipe-page-rail__item {
     display: none;
-  }
-  .recipe-print-shell--organizing .recipe-page-rail__section-group--collapsed {
-    padding-block: 8px;
   }
   .recipe-page-rail__section-fold {
     display: grid;
