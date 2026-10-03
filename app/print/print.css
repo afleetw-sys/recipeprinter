@@ -608,26 +608,42 @@
 
   /* No page pictures in the organizer: each recipe is one line of name, so
      more of the book fits on screen and long titles get room to be read. */
+  /* An organizing screen, not a browsing one: each recipe is one row of page
+     number and title, in a single column, so a whole chapter reads top to
+     bottom and many fit on screen. */
   .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__section-group {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 6px;
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__item {
+    padding: 0 10px;
+    border-color: transparent;
+    border-radius: 8px;
+    background: transparent;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__item:hover {
+    border-color: transparent;
+    background: var(--cp-overlay-hover);
+    transform: none;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__item.is-active,
+  .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__item.is-selected {
+    border-color: var(--cp-selected-border);
+    background: var(--cp-selected-fill);
   }
   .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__item-main {
-    grid-template-columns: 24px 1fr;
-    min-height: 40px;
+    grid-template-columns: 32px 1fr;
+    min-height: 48px;
   }
   .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__num {
     align-self: center;
   }
   .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__title {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    white-space: normal;
+    font-size: var(--cp-fs-small);
   }
   .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__section-add-card {
     flex-direction: row;
-    min-height: 40px;
+    min-height: 48px;
     padding: 8px 12px;
   }
 

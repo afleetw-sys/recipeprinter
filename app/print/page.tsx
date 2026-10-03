@@ -1024,23 +1024,16 @@ export default function PrintPage() {
         const target = candidates.reduce((closest, row) =>
           distanceTo(row.rect) < distanceTo(closest.rect) ? row : closest,
         );
-        const useHorizontalEdge = clientY >= target.rect.top && clientY <= target.rect.bottom;
-        const after = useHorizontalEdge
-          ? clientX >= target.rect.left + target.rect.width / 2
-          : clientY >= target.rect.top + target.rect.height / 2;
-        const indicator = useHorizontalEdge
-          ? {
-              top: target.rect.top,
-              left: after ? target.rect.right + 4 : target.rect.left - 7,
-              width: 3,
-              height: target.rect.height,
-            }
-          : {
-              top: after ? target.rect.bottom + 4 : target.rect.top - 7,
-              left: target.rect.left,
-              width: target.rect.width,
-              height: 3,
-            };
+        // The organizer is a single-column list of rows, so a drop lands
+        // above or below the nearest row by which half the pointer is in. (It
+        // was a grid of tiles, placed by their left or right half.)
+        const after = clientY >= target.rect.top + target.rect.height / 2;
+        const indicator = {
+          top: after ? target.rect.bottom - 1 : target.rect.top - 2,
+          left: target.rect.left,
+          width: target.rect.width,
+          height: 3,
+        };
         return {
           indicator,
           commit: () => {

@@ -757,7 +757,7 @@ export function PageRail(props: PageRailProps) {
                     whole-book actions rather than on any single section. */}
                 <button
                   type="button"
-                  className="btn btn-secondary btn-compact recipe-organize-bar__add-section"
+                  className="btn btn-primary btn-compact recipe-organize-bar__add-section"
                   data-rail-new-section
                   onClick={() => {
                     if (effectiveRailSelection.size > 0) makeSectionFromSelection();
