@@ -6,10 +6,18 @@ import { RAIL_KEY_STEP, clampRailWidth, type RailWidthMode } from "@/lib/railWid
 const WIDTH_VAR: Record<RailWidthMode, string> = {
   pages: "--rail-user-w",
   organize: "--organize-rail-user-w",
+  settings: "--panel-user-w",
+};
+
+const LABEL: Record<RailWidthMode, string> = {
+  pages: "Resize pages panel",
+  organize: "Resize organizer",
+  settings: "Resize settings panel",
 };
 
 /**
- * The draggable line between the left rail and the preview.
+ * The draggable line between a side panel and the preview: the left rail's
+ * right edge, or the settings panel's left edge.
  *
  * A drag writes the width straight onto the shell's CSS variable every move,
  * so the print page (thousands of nodes) does not re-render per pixel; the
@@ -28,15 +36,19 @@ export function RailResizer({
   onCommit: (mode: RailWidthMode, width: number) => void;
   onReset: (mode: RailWidthMode) => void;
 }) {
+  const side = mode === "settings" ? "right" : "left";
   const [dragging, setDragging] = useState(false);
-  const drag = useRef<{ shell: HTMLElement; left: number; panel: number; last: number } | null>(null);
+  const drag = useRef<{ shell: HTMLElement; other: number; last: number } | null>(null);
 
+  /** This panel's width and the one across the preview from it. */
   const room = (shell: HTMLElement) => {
     const columns = getComputedStyle(shell).gridTemplateColumns.split(" ").map(parseFloat);
+    const rail = columns[0] ?? 0;
+    const settings = columns[2] ?? 0;
     return {
       shellWidth: shell.getBoundingClientRect().width,
-      railWidth: columns[0] ?? 0,
-      panelWidth: columns[2] ?? 0,
+      ownWidth: side === "left" ? rail : settings,
+      otherWidth: side === "left" ? settings : rail,
     };
   };
 
@@ -46,8 +58,8 @@ export function RailResizer({
     if (!shell) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
-    const { railWidth, panelWidth } = room(shell);
-    drag.current = { shell, left: shell.getBoundingClientRect().left, panel: panelWidth, last: railWidth };
+    const { ownWidth, otherWidth } = room(shell);
+    drag.current = { shell, other: otherWidth, last: ownWidth };
     shell.classList.add("recipe-print-shell--rail-resizing");
     setDragging(true);
   };
@@ -55,9 +67,10 @@ export function RailResizer({
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
     const current = drag.current;
     if (!current) return;
-    const next = clampRailWidth(event.clientX - current.left, mode, {
-      shellWidth: current.shell.getBoundingClientRect().width,
-      panelWidth: current.panel,
+    const rect = current.shell.getBoundingClientRect();
+    const next = clampRailWidth(side === "left" ? event.clientX - rect.left : rect.right - event.clientX, mode, {
+      shellWidth: rect.width,
+      otherWidth: current.other,
     });
     current.last = next;
     current.shell.style.setProperty(WIDTH_VAR[mode], `${next}px`);
@@ -77,20 +90,22 @@ export function RailResizer({
     const shell = event.currentTarget.closest<HTMLElement>(".recipe-print-shell");
     if (!shell) return;
     event.preventDefault();
-    const { shellWidth, railWidth, panelWidth } = room(shell);
-    const step = event.key === "ArrowRight" ? RAIL_KEY_STEP : -RAIL_KEY_STEP;
-    onCommit(mode, clampRailWidth(railWidth + step, mode, { shellWidth, panelWidth }));
+    const { shellWidth, ownWidth, otherWidth } = room(shell);
+    // The arrow moves the LINE, so on the right-hand panel it is reversed.
+    const outward = (event.key === "ArrowRight") === (side === "left");
+    const step = outward ? RAIL_KEY_STEP : -RAIL_KEY_STEP;
+    onCommit(mode, clampRailWidth(ownWidth + step, mode, { shellWidth, otherWidth }));
   };
 
   return (
     <div
       role="separator"
       aria-orientation="vertical"
-      aria-label={mode === "organize" ? "Resize organizer" : "Resize pages panel"}
+      aria-label={LABEL[mode]}
       aria-valuenow={width}
       tabIndex={0}
       title="Drag to resize. Double-click to reset."
-      className={`recipe-rail-resizer no-print ${dragging ? "is-dragging" : ""}`}
+      className={`recipe-rail-resizer recipe-rail-resizer--${side} no-print ${dragging ? "is-dragging" : ""}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={finish}

@@ -101,7 +101,9 @@
       var(--rail-user-w, 220px),
       calc(100% - var(--panel-w) - 320px)
     );
-    --panel-w: 330px;
+    /* Its own clamp may not mention `--rail-w`: the rail's clamp already reads
+       this one, and two variables reading each other are both thrown away. */
+    --panel-w: clamp(260px, var(--panel-user-w, 330px), 40%);
     grid-template-columns:
       var(--rail-w)
       calc(100% - var(--rail-w) - var(--panel-w))
@@ -123,6 +125,13 @@
     align-items: stretch;
     overflow: hidden;
   }
+}
+
+/* The drag preview is a copy of the chapter put on <body>, outside the
+   organizer whose rules fold it, so a folded chapter has to be folded again
+   here or it is dragged around showing every recipe it is hiding. */
+.rail-drag-preview.recipe-page-rail__section-group--collapsed .recipe-page-rail__item {
+  display: none;
 }
 
 /* Desktop only: phones have no side rail to resize (see the media rule). */
@@ -448,7 +457,6 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    left: calc(var(--rail-w) - 4px);
     z-index: 2;
     width: 8px;
     padding: 0;
@@ -477,7 +485,14 @@
   .recipe-rail-resizer:focus-visible::after {
     background: var(--cp-accent);
   }
-  .recipe-print-shell--rail-collapsed > .recipe-rail-resizer {
+  .recipe-rail-resizer--left {
+    left: calc(var(--rail-w) - 4px);
+  }
+  .recipe-rail-resizer--right {
+    right: calc(var(--panel-w) - 4px);
+  }
+  .recipe-print-shell--rail-collapsed > .recipe-rail-resizer--left,
+  .recipe-print-shell--panel-collapsed > .recipe-rail-resizer--right {
     display: none;
   }
   /* While dragging, the page under the pointer must not select text or catch
@@ -566,6 +581,41 @@
     font-size: var(--cp-fs-h2);
     text-transform: none;
     letter-spacing: -0.01em;
+  }
+
+  /* A folded chapter is its heading alone, so a book's chapters fit on screen
+     to be dragged into a new order. The recipes stay in the DOM, so the drag
+     code still reads them; at zero size they are never a drop target. */
+  .recipe-print-shell--organizing .recipe-page-rail__section-group--collapsed .recipe-page-rail__item {
+    display: none;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail__section-group--collapsed {
+    padding-block: 8px;
+  }
+  .recipe-page-rail__section-fold {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    color: var(--cp-ink-soft);
+    transition: transform 150ms ease, background 150ms ease;
+  }
+  .recipe-page-rail__section-fold:hover {
+    background: var(--cp-overlay-hover);
+    color: var(--cp-ink);
+  }
+  .recipe-page-rail__section-fold[aria-expanded="false"] {
+    transform: rotate(-90deg);
+  }
+  .recipe-page-rail__section-count {
+    flex: 0 0 auto;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-caption);
+    font-weight: 700;
+    letter-spacing: normal;
+    white-space: nowrap;
   }
 
   .recipe-page-rail__section-add-card {
@@ -2209,22 +2259,21 @@
     border-radius: 8px;
     background: transparent;
     color: var(--cp-ink-soft);
+    /* Hiding the panels never moves it: same corner, same size, same icon.
+       Only its card fades in underneath, so it reads as the one thing left
+       standing rather than as a new control appearing somewhere else. */
     transition:
-      color 150ms ease,
-      background 150ms ease,
-      border-color 150ms ease;
+      color 120ms ease,
+      background 120ms ease,
+      border-color 120ms ease,
+      box-shadow 120ms ease;
   }
   .recipe-panel-toggle:hover {
     background: var(--cp-overlay-hover);
     color: var(--cp-ink);
   }
   .recipe-panel-toggle.is-floating {
-    top: 12px;
-    right: 16px;
-    width: 40px;
-    height: 40px;
     border-color: var(--cp-line);
-    border-radius: 12px;
     background: var(--cp-card);
     box-shadow: var(--cp-shadow-sm);
   }

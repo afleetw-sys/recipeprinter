@@ -376,6 +376,21 @@ export const SidePanelsIcon = (p: IconProps) => (
   </Base>
 );
 
+// Collapse / expand every chapter: two chevrons meeting, or parting.
+export const CollapseAllIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M8 4l4 4 4-4" />
+    <path d="M8 20l4-4 4 4" />
+  </Base>
+);
+
+export const ExpandAllIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M8 8l4-4 4 4" />
+    <path d="M8 16l4 4 4-4" />
+  </Base>
+);
+
 // Filter: a funnel, so it never reads as Sort's stacked rules beside it.
 export const FilterIcon = (p: IconProps) => (
   <Base {...p}>

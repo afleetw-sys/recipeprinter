@@ -21,6 +21,8 @@ import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  CollapseAllIcon,
+  ExpandAllIcon,
   FilterIcon,
   GripIcon,
   ICON_SIZE,
@@ -388,8 +390,23 @@ export function PageRail(props: PageRailProps) {
   const filterMenuRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const closeFilterMenu = useCallback(() => setFilterMenuOpen(false), []);
+  // Chapters folded down to their headings in the organizer, so a long book's
+  // chapters fit on screen to be dragged into a new order. Opens fresh each
+  // time: folding is for the rearrange in hand, not a setting.
+  const [collapsedSections, setCollapsedSections] = useState<ReadonlySet<string>>(new Set());
+  const namedSectionIds = sections.filter((section) => section.title?.trim()).map((section) => section.id);
+  const allSectionsCollapsed =
+    namedSectionIds.length > 0 && namedSectionIds.every((id) => collapsedSections.has(id));
+  const toggleSectionCollapsed = (sectionId: string) =>
+    setCollapsedSections((current) => {
+      const next = new Set(current);
+      if (next.has(sectionId)) next.delete(sectionId);
+      else next.add(sectionId);
+      return next;
+    });
   useEffect(() => {
     if (organizeMode) return;
+    setCollapsedSections(new Set());
     setSearchOpen(false);
     setSearchQuery("");
     setOrganizeFilters([]);
@@ -427,6 +444,10 @@ export function PageRail(props: PageRailProps) {
       });
     });
   }
+  /** A search or filter opens every chapter: a match inside a folded one
+      would otherwise be found and still not shown. */
+  const sectionFolded = (sectionId: string | null) =>
+    Boolean(organizeMode && sectionId && collapsedSections.has(sectionId) && !organizeFiltering);
   const recipeShownInOrganizer = (recipeId: string) => {
     if (!organizeFiltering) return true;
     const context = organizeContexts.get(recipeId);
@@ -795,6 +816,21 @@ export function PageRail(props: PageRailProps) {
                     </AnchoredMenu>
                   )}
                 </div>
+                {namedSectionIds.length > 0 && (
+                  <IconButton
+                    aria-label={allSectionsCollapsed ? "Expand all chapters" : "Collapse all chapters"}
+                    title={allSectionsCollapsed ? "Expand all chapters" : "Collapse all chapters"}
+                    onClick={() =>
+                      setCollapsedSections(allSectionsCollapsed ? new Set() : new Set(namedSectionIds))
+                    }
+                  >
+                    {allSectionsCollapsed ? (
+                      <ExpandAllIcon size={ICON_SIZE.md} />
+                    ) : (
+                      <CollapseAllIcon size={ICON_SIZE.md} />
+                    )}
+                  </IconButton>
+                )}
                 {/* Sort: the cook's own arrangement, or A–Z inside every
                     section. It reorders the book itself, so switching back to
                     "Custom order" restores the order A–Z replaced. The menu
@@ -1135,7 +1171,9 @@ export function PageRail(props: PageRailProps) {
                       group.sectionId ? "recipe-page-rail__section-group--nested" : ""
                     } ${organizeMode && group.sectionId && !sections.find((entry) => entry.id === group.sectionId)?.title?.trim()
                       ? "recipe-page-rail__section-group--ungrouped"
-                      : ""} ${railDrag.draggingKind === "section" && railDrag.draggingId === group.sectionId ? "is-dragging" : ""}`}
+                      : ""} ${railDrag.draggingKind === "section" && railDrag.draggingId === group.sectionId ? "is-dragging" : ""} ${
+                      sectionFolded(group.sectionId) ? "recipe-page-rail__section-group--collapsed" : ""
+                    }`}
                   >
                   {(() => {
                   // Same rule as the flat rail below: anchor to the LAST unit
@@ -1193,6 +1231,22 @@ export function PageRail(props: PageRailProps) {
                   >
                     {showSectionHeader && section && (
                       <div className="recipe-page-rail__section-header">
+                        {!organizeFiltering && (
+                          <button
+                            type="button"
+                            className="recipe-page-rail__section-fold"
+                            aria-expanded={!collapsedSections.has(section.id)}
+                            aria-label={`${collapsedSections.has(section.id) ? "Expand" : "Collapse"} ${section.title}`}
+                            title={collapsedSections.has(section.id) ? "Expand chapter" : "Collapse chapter"}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              toggleSectionCollapsed(section.id);
+                            }}
+                            onPointerDown={(event) => event.stopPropagation()}
+                          >
+                            <ChevronDownIcon size={ICON_SIZE.sm} />
+                          </button>
+                        )}
                         <button
                           type="button"
                           className="recipe-page-rail__grip recipe-page-rail__grip--section"
@@ -1213,6 +1267,13 @@ export function PageRail(props: PageRailProps) {
                           />
                         ) : (
                           <span>{section.title}</span>
+                        )}
+                        {sectionFolded(section.id) && (
+                          <span className="recipe-page-rail__section-count">
+                            {itemIdsForSection(section.id).length === 1
+                              ? "1 recipe"
+                              : `${itemIdsForSection(section.id).length} recipes`}
+                          </span>
                         )}
                         <IconButton
                           tone="danger"
@@ -1345,7 +1406,7 @@ export function PageRail(props: PageRailProps) {
                 );
                   });
                   })()}
-                  {organizeMode && group.sectionId && !organizeFiltering && (
+                  {organizeMode && group.sectionId && !organizeFiltering && !sectionFolded(group.sectionId) && (
                     <button
                       type="button"
                       className="recipe-page-rail__section-add-card"

@@ -52,6 +52,8 @@ async function openOrganizer(page: Page) {
   await page.goto("/print");
   await page.locator(".recipe-page-rail__organize").click();
   await expect(page.locator(".recipe-organize-bar")).toBeVisible();
+  // Opening animates the panel's width; a menu opened mid-way is closed by it.
+  await expect(page.locator(".recipe-print-shell--organize-animating")).toHaveCount(0);
 }
 
 test("an active toolbar button looks active", async ({ page }) => {

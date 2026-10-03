@@ -5872,12 +5872,19 @@ export default function PrintPage() {
           {
             "--rail-user-w": railWidths.pages ? `${railWidths.pages}px` : undefined,
             "--organize-rail-user-w": railWidths.organize ? `${railWidths.organize}px` : undefined,
+            "--panel-user-w": railWidths.settings ? `${railWidths.settings}px` : undefined,
           } as CSSProperties
         }
       >
         <RailResizer
           mode={organizeWide ? "organize" : "pages"}
           width={organizeWide ? railWidths.organize : railWidths.pages}
+          onCommit={commitRailWidth}
+          onReset={resetRailWidth}
+        />
+        <RailResizer
+          mode="settings"
+          width={railWidths.settings}
           onCommit={commitRailWidth}
           onReset={resetRailWidth}
         />

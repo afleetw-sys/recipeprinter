@@ -1,16 +1,17 @@
 /**
- * How wide the cook has dragged the left rail, kept apart for the page rail
- * and the organizer: one is a column of thumbnails, the other a working
- * surface, and dragging one should not reshape the other.
+ * How wide the cook has dragged the side panels. The left rail keeps a width
+ * for the page rail and another for the organizer: one is a column of
+ * thumbnails, the other a working surface, and dragging one should not reshape
+ * the other. The settings panel on the right has one width throughout.
  *
  * Absent means the layout's own default. The CSS clamps whatever is stored
  * against the window it lands in (see `.recipe-print-page .recipe-print-shell`
  * in app/print/print.css); this only keeps a drag inside sensible bounds.
  */
-export type RailWidthMode = "pages" | "organize";
+export type RailWidthMode = "pages" | "organize" | "settings";
 export type RailWidths = Partial<Record<RailWidthMode, number>>;
 
-export const RAIL_MIN_WIDTH: Record<RailWidthMode, number> = { pages: 180, organize: 320 };
+export const RAIL_MIN_WIDTH: Record<RailWidthMode, number> = { pages: 180, organize: 320, settings: 260 };
 /** The preview never gets narrower than this from a drag. */
 export const PREVIEW_MIN_WIDTH = 320;
 /** One arrow-key press on the divider. */
@@ -21,10 +22,11 @@ const STORAGE_KEY = "rp.railWidths.v1";
 export function clampRailWidth(
   width: number,
   mode: RailWidthMode,
-  room: { shellWidth: number; panelWidth: number },
+  /** `otherWidth` is the panel on the far side of the preview. */
+  room: { shellWidth: number; otherWidth: number },
 ): number {
   const min = RAIL_MIN_WIDTH[mode];
-  const max = Math.max(min, room.shellWidth - room.panelWidth - PREVIEW_MIN_WIDTH);
+  const max = Math.max(min, room.shellWidth - room.otherWidth - PREVIEW_MIN_WIDTH);
   return Math.round(Math.min(max, Math.max(min, width)));
 }
 
@@ -33,7 +35,7 @@ export function readRailWidths(): RailWidths {
     const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "{}") as unknown;
     if (!parsed || typeof parsed !== "object") return {};
     const widths: RailWidths = {};
-    for (const mode of ["pages", "organize"] as const) {
+    for (const mode of ["pages", "organize", "settings"] as const) {
       const value = (parsed as Record<string, unknown>)[mode];
       if (typeof value === "number" && Number.isFinite(value) && value > 0) widths[mode] = value;
     }
