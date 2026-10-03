@@ -92,7 +92,15 @@
      columns` to keep in step with this one. The deck's own ResizeObserver
      re-scales the page as the column settles. */
   .recipe-print-page .recipe-print-shell {
-    --rail-w: 220px;
+    /* `--rail-user-w` is the width the cook dragged the rail to (see
+       `.recipe-rail-resizer`), set inline by app/print/page.tsx. Clamped here
+       rather than only where it is dragged, so a width saved on a big screen
+       never squeezes the preview to nothing on a smaller one. */
+    --rail-w: clamp(
+      180px,
+      var(--rail-user-w, 220px),
+      calc(100% - var(--panel-w) - 320px)
+    );
     --panel-w: 330px;
     grid-template-columns:
       var(--rail-w)
@@ -115,6 +123,11 @@
     align-items: stretch;
     overflow: hidden;
   }
+}
+
+/* Desktop only: phones have no side rail to resize (see the media rule). */
+.recipe-rail-resizer {
+  display: none;
 }
 
 /* ── Page navigator (PowerPoint-style) ─────────────────────────────────── */
@@ -315,29 +328,29 @@
 .recipe-organize-bar__search-input::-webkit-search-cancel-button {
   display: none;
 }
-.recipe-organize-bar__results {
-  display: flex;
-  flex: 1 0 100%;
-  align-items: center;
-  gap: 4px;
-  margin: 0;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
+/* How many filters are on, on the button itself, so a narrowed organizer
+   never passes for the whole book. */
+.recipe-organize-bar__filter-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--cp-selected-text);
+  color: var(--cp-card);
+  font-size: var(--cp-fs-label);
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
 }
-.recipe-organize-bar__clear {
-  margin-left: auto;
-  padding: 2px 4px;
-  border-radius: 6px;
-  color: var(--cp-selected-text);
-  font-weight: 700;
-}
-.recipe-organize-bar__clear:hover {
-  text-decoration: underline;
-}
-.recipe-organize-bar__clear:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: var(--cp-focus-ring-offset);
+.recipe-organize-bar__filter-clear {
+  margin-top: 4px;
+  border-top: 1px solid var(--cp-line);
+  border-radius: 0;
 }
 .recipe-organize-bar__filter-label {
   flex: 1;
@@ -410,33 +423,68 @@
      calc() tracks and these percentages. The per-frame FLIP measures the live
      layout each frame, so the recipe tiles slide into their cells in step with
      the expansion. This class is the end state the JS animates toward. */
+  /* Only the rail's width changes: the base rule's tracks already read
+     `--rail-w`, so the collapse arrow (which rides the same variable) stays on
+     the rail's edge, and `--rail-collapsed` further down still wins and folds
+     the organizer away. The organizer has a width of its own, remembered
+     apart from the page rail's, since the two are dragged for different jobs.
+
+     The preview and settings stay fully usable beside it. They used to dim
+     and stop taking clicks, which meant leaving the organizer to fix the
+     recipe you had just found in it. */
   .recipe-print-page .recipe-print-shell--organize-wide {
-    grid-template-columns: 50% 30% 20%;
-    /* The collapse arrow rides `--rail-w`, so widening the column without
-       moving this variable strands the arrow mid-panel instead of on its edge.
-       It has to be the same number the first track uses. `--rail-collapsed`
-       wins over this further down, which is what keeps folding the rail while
-       the organizer is open walking the arrow out to the page edge. */
-    --rail-w: 50%;
+    --rail-w: clamp(
+      320px,
+      var(--organize-rail-user-w, 50%),
+      calc(100% - var(--panel-w) - 320px)
+    );
   }
 
-  /* While the organizer is open the preview + settings recede to a quiet peek,
-     so their re-scale isn't a distraction and the organizer reads as taking
-     over. Fades across the whole expansion. */
-  .recipe-print-shell--organize-wide > .recipe-page-canvas,
-  .recipe-print-shell--organize-wide > .recipe-config-panel,
-  /* The settings panel's own collapse arrow recedes WITH the panel it opens.
-     It floats on the boundary rather than inside the panel, so it is a sibling
-     here, not a child -- it was the one control left at full strength on a
-     surface that had gone quiet. */
-  .recipe-print-shell--organize-wide > .recipe-panel-toggle--right {
-    opacity: 0.35;
-    pointer-events: none;
+  /* The draggable boundary between the rail and the preview. A strip a few
+     pixels either side of the line, so it is easy to catch, under the collapse
+     arrow that rides the same edge. */
+  .recipe-rail-resizer {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--rail-w) - 4px);
+    z-index: 2;
+    width: 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: col-resize;
+    touch-action: none;
   }
-  .recipe-print-shell > .recipe-page-canvas,
-  .recipe-print-shell > .recipe-config-panel,
-  .recipe-print-shell > .recipe-panel-toggle--right {
-    transition: opacity 460ms ease;
+  .recipe-rail-resizer::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 3px;
+    width: 2px;
+    background: transparent;
+    transition: background 150ms ease;
+  }
+  .recipe-rail-resizer:hover::after,
+  .recipe-rail-resizer.is-dragging::after {
+    background: var(--cp-accent);
+  }
+  .recipe-rail-resizer:focus-visible {
+    outline: none;
+  }
+  .recipe-rail-resizer:focus-visible::after {
+    background: var(--cp-accent);
+  }
+  .recipe-print-shell--rail-collapsed > .recipe-rail-resizer {
+    display: none;
+  }
+  /* While dragging, the page under the pointer must not select text or catch
+     the pointer in an iframe-like child. */
+  .recipe-print-shell--rail-resizing {
+    cursor: col-resize;
+    user-select: none;
   }
 
   /* Keeps the rail's own white. Organizing widens this panel; it does not turn

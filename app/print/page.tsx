@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type SetStateAction } from "react";
 import { flushSync } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -176,6 +176,8 @@ import { useToast } from "@/lib/useToast";
 import { printProjectFingerprint, type PendingSave } from "@/lib/printSave";
 import { writeProject as runSaveWrite } from "@/lib/printSaveWrite";
 import { autosaveVerdict, LOADED_BASELINE, shouldFlushOnHide } from "@/lib/printAutosave";
+import { readRailWidths, writeRailWidths, type RailWidthMode, type RailWidths } from "@/lib/railWidth";
+import { RailResizer } from "@/components/print/RailResizer";
 
 /** This section's own recipe photos, in item order, capped for a collage. Scopes
     the opener picker to the chapter (unlike the whole-book `coverPhotoCandidates`). */
@@ -393,6 +395,25 @@ export default function PrintPage() {
   // to look at a page, not how you want the workspace set up from now on.
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
+  // Unlike folding, the width the rail is dragged to IS how the cook wants the
+  // workspace, so it is remembered (per browser, per mode). See lib/railWidth.
+  const [railWidths, setRailWidths] = useState<RailWidths>({});
+  useEffect(() => setRailWidths(readRailWidths()), []);
+  const commitRailWidth = useCallback((mode: RailWidthMode, width: number) => {
+    setRailWidths((current) => {
+      const next = { ...current, [mode]: width };
+      writeRailWidths(next);
+      return next;
+    });
+  }, []);
+  const resetRailWidth = useCallback((mode: RailWidthMode) => {
+    setRailWidths((current) => {
+      const next = { ...current };
+      delete next[mode];
+      writeRailWidths(next);
+      return next;
+    });
+  }, []);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const addMenuRef = useRef<HTMLDivElement | null>(null);
   const [pendingAddSectionId, setPendingAddSectionId] = useState<string | null>(null);
@@ -5849,7 +5870,19 @@ export default function PrintPage() {
         } ${railCollapsed ? "recipe-print-shell--rail-collapsed" : ""} ${
           panelCollapsed ? "recipe-print-shell--panel-collapsed" : ""
         }`}
+        style={
+          {
+            "--rail-user-w": railWidths.pages ? `${railWidths.pages}px` : undefined,
+            "--organize-rail-user-w": railWidths.organize ? `${railWidths.organize}px` : undefined,
+          } as CSSProperties
+        }
       >
+        <RailResizer
+          mode={organizeWide ? "organize" : "pages"}
+          width={organizeWide ? railWidths.organize : railWidths.pages}
+          onCommit={commitRailWidth}
+          onReset={resetRailWidth}
+        />
         {/* One control per side, and it does not move when the panel does.
             It rides the panel's own edge — `left: var(--rail-w)` — so folding
             the column to zero carries it to the page edge without anything

@@ -124,23 +124,34 @@ describe("matchesFilter", () => {
   // or the filters stop meaning "still needs work".
   it("a complete recipe passes no readiness filter", () => {
     for (const { value } of ORGANIZE_FILTER_OPTIONS) {
-      if (value === "all") continue;
       expect(matchesFilter(value, context())).toBe(false);
     }
   });
 });
 
 describe("matchesOrganizeView", () => {
-  it("needs both the search and the filter to match", () => {
-    const noPhoto = context({ image: undefined });
-    expect(matchesOrganizeView({ query: "lemon", filter: "no-photo" }, noPhoto)).toBe(true);
-    expect(matchesOrganizeView({ query: "tofu", filter: "no-photo" }, noPhoto)).toBe(false);
-    expect(matchesOrganizeView({ query: "lemon", filter: "no-photo" }, context())).toBe(false);
+  const noPhoto = context({ image: undefined });
+  const noSteps = context({ instructions: [] });
+
+  it("shows a recipe with ANY of the ticked problems", () => {
+    const view = { query: "", filters: ["no-photo", "no-steps"] as const };
+    expect(matchesOrganizeView(view, noPhoto)).toBe(true);
+    expect(matchesOrganizeView(view, noSteps)).toBe(true);
+    expect(matchesOrganizeView(view, context())).toBe(false);
+  });
+
+  it("narrows the filtered recipes by the search", () => {
+    expect(matchesOrganizeView({ query: "lemon", filters: ["no-photo"] }, noPhoto)).toBe(true);
+    expect(matchesOrganizeView({ query: "tofu", filters: ["no-photo"] }, noPhoto)).toBe(false);
+  });
+
+  it("shows everything with no filters and no search", () => {
+    expect(matchesOrganizeView({ query: "", filters: [] }, context())).toBe(true);
   });
 
   it("is only active with a filter or a non-blank query", () => {
-    expect(isOrganizeViewActive({ query: " ", filter: "all" })).toBe(false);
-    expect(isOrganizeViewActive({ query: "x", filter: "all" })).toBe(true);
-    expect(isOrganizeViewActive({ query: "", filter: "no-steps" })).toBe(true);
+    expect(isOrganizeViewActive({ query: " ", filters: [] })).toBe(false);
+    expect(isOrganizeViewActive({ query: "x", filters: [] })).toBe(true);
+    expect(isOrganizeViewActive({ query: "", filters: ["no-steps"] })).toBe(true);
   });
 });

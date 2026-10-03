@@ -21,7 +21,6 @@ export interface OrganizeRecipeContext {
 
 /** The things that still stand between a recipe and a finished cookbook. */
 export type OrganizeFilter =
-  | "all"
   | "no-photo"
   | "no-ingredients"
   | "no-steps"
@@ -29,7 +28,6 @@ export type OrganizeFilter =
   | "two-pages";
 
 export const ORGANIZE_FILTER_OPTIONS: Array<{ value: OrganizeFilter; label: string }> = [
-  { value: "all", label: "All recipes" },
   { value: "no-photo", label: "No photo" },
   { value: "no-ingredients", label: "No ingredients" },
   { value: "no-steps", label: "No steps" },
@@ -49,8 +47,6 @@ export function hasPhoto(context: OrganizeRecipeContext): boolean {
 export function matchesFilter(filter: OrganizeFilter, context: OrganizeRecipeContext): boolean {
   const recipe = context.item.recipe;
   switch (filter) {
-    case "all":
-      return true;
     case "no-photo":
       return !hasPhoto(context);
     case "no-ingredients":
@@ -105,13 +101,25 @@ export function matchesSearch(query: string, context: OrganizeRecipeContext): bo
   return words.every((word) => text.includes(word));
 }
 
-export function matchesOrganizeView(
-  view: { query: string; filter: OrganizeFilter },
-  context: OrganizeRecipeContext,
-): boolean {
-  return matchesFilter(view.filter, context) && matchesSearch(view.query, context);
+/** What the organizer is narrowed to: a search, plus any number of
+    readiness filters. */
+export interface OrganizeView {
+  query: string;
+  filters: readonly OrganizeFilter[];
 }
 
-export function isOrganizeViewActive(view: { query: string; filter: OrganizeFilter }): boolean {
-  return view.filter !== "all" || view.query.trim() !== "";
+/**
+ * The filters are all one question, "what still needs work?", so ticking two
+ * shows recipes with EITHER problem: "No photo" plus "No steps" is the list of
+ * recipes to go and fix, not only the ones missing both. The search narrows
+ * whatever that leaves.
+ */
+export function matchesOrganizeView(view: OrganizeView, context: OrganizeRecipeContext): boolean {
+  const passesFilters =
+    view.filters.length === 0 || view.filters.some((filter) => matchesFilter(filter, context));
+  return passesFilters && matchesSearch(view.query, context);
+}
+
+export function isOrganizeViewActive(view: OrganizeView): boolean {
+  return view.filters.length > 0 || view.query.trim() !== "";
 }

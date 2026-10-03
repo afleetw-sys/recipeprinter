@@ -383,7 +383,7 @@ export function PageRail(props: PageRailProps) {
   // comes back with recipes quietly missing from it.
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [organizeFilter, setOrganizeFilter] = useState<OrganizeFilter>("all");
+  const [organizeFilters, setOrganizeFilters] = useState<OrganizeFilter[]>([]);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const filterMenuRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -392,7 +392,7 @@ export function PageRail(props: PageRailProps) {
     if (organizeMode) return;
     setSearchOpen(false);
     setSearchQuery("");
-    setOrganizeFilter("all");
+    setOrganizeFilters([]);
     setFilterMenuOpen(false);
   }, [organizeMode]);
   useEffect(() => {
@@ -403,7 +403,11 @@ export function PageRail(props: PageRailProps) {
     setSearchQuery("");
   };
 
-  const organizeView = { query: searchQuery, filter: organizeFilter };
+  const organizeView = { query: searchQuery, filters: organizeFilters };
+  const toggleOrganizeFilter = (filter: OrganizeFilter) =>
+    setOrganizeFilters((current) =>
+      current.includes(filter) ? current.filter((entry) => entry !== filter) : [...current, filter],
+    );
   const organizeFiltering = organizeMode && cookbookView && isOrganizeViewActive(organizeView);
   /** Everything the search and filters read about each recipe, by item id. */
   const organizeContexts = new Map<string, OrganizeRecipeContext>();
@@ -430,9 +434,6 @@ export function PageRail(props: PageRailProps) {
   };
   const filterCount = (filter: OrganizeFilter) =>
     Array.from(organizeContexts.values()).filter((context) => matchesFilter(filter, context)).length;
-  const shownRecipeCount = organizeFiltering
-    ? Array.from(organizeContexts.keys()).filter(recipeShownInOrganizer).length
-    : organizeContexts.size;
   // The organizer is a list of names: which recipe goes where reads from the
   // title, and a column of page pictures only made the book longer to scroll.
   const showThumbs = !organizeMode;
@@ -730,15 +731,24 @@ export function PageRail(props: PageRailProps) {
                 {/* What is still missing before the book is ready to print. */}
                 <div className="recipe-organize-bar__sort" ref={filterMenuRef}>
                   <IconButton
-                    aria-label="Filter recipes"
+                    aria-label={
+                      organizeFilters.length > 0
+                        ? `Filter recipes, ${organizeFilters.length} applied`
+                        : "Filter recipes"
+                    }
                     title="Filter recipes"
                     aria-haspopup="menu"
                     aria-expanded={filterMenuOpen}
-                    selected={filterMenuOpen || organizeFilter !== "all"}
+                    selected={filterMenuOpen || organizeFilters.length > 0}
                     onClick={() => setFilterMenuOpen((open) => !open)}
                   >
                     <FilterIcon size={ICON_SIZE.md} />
                   </IconButton>
+                  {organizeFilters.length > 0 && (
+                    <span className="recipe-organize-bar__filter-badge" aria-hidden>
+                      {organizeFilters.length}
+                    </span>
+                  )}
                   {filterMenuOpen && (
                     <AnchoredMenu
                       anchorRef={filterMenuRef}
@@ -746,21 +756,19 @@ export function PageRail(props: PageRailProps) {
                       label="Filter recipes"
                       className="recipe-organize-bar__sort-menu"
                     >
-                      <p className="cp-menu__heading">Show</p>
+                      <p className="cp-menu__heading">Show recipes with</p>
+                      {/* Stays open on a tick: several can be on at once. */}
                       {ORGANIZE_FILTER_OPTIONS.map((option) => (
                         <button
                           key={option.value}
                           type="button"
-                          role="menuitemradio"
-                          aria-checked={organizeFilter === option.value}
-                          className={`cp-menu__item ${organizeFilter === option.value ? "is-active" : ""}`}
-                          onClick={() => {
-                            setOrganizeFilter(option.value);
-                            setFilterMenuOpen(false);
-                          }}
+                          role="menuitemcheckbox"
+                          aria-checked={organizeFilters.includes(option.value)}
+                          className={`cp-menu__item ${organizeFilters.includes(option.value) ? "is-active" : ""}`}
+                          onClick={() => toggleOrganizeFilter(option.value)}
                         >
                           <span className="recipe-organize-bar__sort-check">
-                            {organizeFilter === option.value && <CheckIcon size={ICON_SIZE.sm} />}
+                            {organizeFilters.includes(option.value) && <CheckIcon size={ICON_SIZE.sm} />}
                           </span>
                           <span className="recipe-organize-bar__filter-label">{option.label}</span>
                           <span className="recipe-organize-bar__filter-count">
@@ -768,6 +776,22 @@ export function PageRail(props: PageRailProps) {
                           </span>
                         </button>
                       ))}
+                      {organizeFilters.length > 0 && (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="cp-menu__item recipe-organize-bar__filter-clear"
+                          onClick={() => {
+                            setOrganizeFilters([]);
+                            setFilterMenuOpen(false);
+                          }}
+                        >
+                          <span className="recipe-organize-bar__sort-check">
+                            <XIcon size={ICON_SIZE.sm} />
+                          </span>
+                          Clear filters
+                        </button>
+                      )}
                     </AnchoredMenu>
                   )}
                 </div>
@@ -871,24 +895,6 @@ export function PageRail(props: PageRailProps) {
                     <XIcon size={ICON_SIZE.sm} />
                   </IconButton>
                 </div>
-              )}
-              {organizeFiltering && (
-                <p className="recipe-organize-bar__results" role="status">
-                  {shownRecipeCount === 1 ? "1 recipe" : `${shownRecipeCount} recipes`}
-                  {organizeFilter !== "all" && (
-                    <> · {ORGANIZE_FILTER_OPTIONS.find((option) => option.value === organizeFilter)?.label}</>
-                  )}
-                  <button
-                    type="button"
-                    className="recipe-organize-bar__clear"
-                    onClick={() => {
-                      closeSearch();
-                      setOrganizeFilter("all");
-                    }}
-                  >
-                    Show all
-                  </button>
-                </p>
               )}
             </div>
           )}
