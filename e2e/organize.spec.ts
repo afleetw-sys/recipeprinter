@@ -94,17 +94,12 @@ test("the filter shows only what still needs work, and the toolbar shows it is o
   expect(await look(sort)).not.toBe(idle);
 });
 
-test("pictures can be switched off, and the choice is remembered", async ({ page }) => {
+test("the organizer lists recipes by name, without page pictures", async ({ page }) => {
   await openOrganizer(page);
-  const thumbs = tiles(page).locator(".recipe-page-rail__thumb");
-  await expect(thumbs).toHaveCount(3);
-
-  await page.getByRole("button", { name: "Show page pictures" }).click();
-  await expect(thumbs).toHaveCount(0);
   await expect(tiles(page)).toHaveCount(3);
+  await expect(tiles(page).locator(".recipe-page-rail__thumb")).toHaveCount(0);
 
-  await page.reload();
-  await page.locator(".recipe-page-rail__organize").click();
-  await expect(tiles(page)).toHaveCount(3);
-  await expect(thumbs).toHaveCount(0);
+  // The page rail keeps its pictures.
+  await page.getByRole("button", { name: "Back to pages" }).click();
+  await expect(page.locator("[data-rail-recipe] .recipe-page-rail__thumb").first()).toBeVisible();
 });

@@ -24,7 +24,6 @@ import {
   FilterIcon,
   GripIcon,
   ICON_SIZE,
-  ImageIcon,
   PlusIcon,
   SearchIcon,
   SortIcon,
@@ -77,19 +76,6 @@ const RAIL_THUMB_OVERSCAN = "600px 0px";
 // Owned by types/recipe.ts now that it is saved with the book; re-exported
 // here so the rail's existing importers are untouched.
 export type { RailSortMode };
-
-/** Whether the organizer shows page thumbnails or a plain list of names. A
-    per-browser preference: it is how this person likes to work, not a fact
-    about the book. */
-const ORGANIZE_THUMBS_KEY = "rp.organize.hideThumbs";
-
-function readHideThumbs(): boolean {
-  try {
-    return window.localStorage.getItem(ORGANIZE_THUMBS_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
 
 const RAIL_SORT_OPTIONS: Array<{ value: RailSortMode; label: string }> = [
   { value: "custom", label: "Custom order" },
@@ -402,18 +388,6 @@ export function PageRail(props: PageRailProps) {
   const filterMenuRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const closeFilterMenu = useCallback(() => setFilterMenuOpen(false), []);
-  const [hideThumbs, setHideThumbs] = useState(false);
-  useEffect(() => setHideThumbs(readHideThumbs()), []);
-  const toggleHideThumbs = () => {
-    setHideThumbs((hidden) => {
-      try {
-        window.localStorage.setItem(ORGANIZE_THUMBS_KEY, hidden ? "0" : "1");
-      } catch {
-        // A blocked store only means the choice is not remembered.
-      }
-      return !hidden;
-    });
-  };
   useEffect(() => {
     if (organizeMode) return;
     setSearchOpen(false);
@@ -459,7 +433,9 @@ export function PageRail(props: PageRailProps) {
   const shownRecipeCount = organizeFiltering
     ? Array.from(organizeContexts.keys()).filter(recipeShownInOrganizer).length
     : organizeContexts.size;
-  const showThumbs = !(organizeMode && hideThumbs);
+  // The organizer is a list of names: which recipe goes where reads from the
+  // title, and a column of page pictures only made the book longer to scroll.
+  const showThumbs = !organizeMode;
 
   // Right-clicking a tile in the organizer offers the drag's destinations as a
   // list — the same moves, for a book too long to drag across. The ids are
@@ -795,15 +771,6 @@ export function PageRail(props: PageRailProps) {
                     </AnchoredMenu>
                   )}
                 </div>
-                <IconButton
-                  aria-label="Show page pictures"
-                  title={hideThumbs ? "Show page pictures" : "Hide page pictures"}
-                  aria-pressed={!hideThumbs}
-                  selected={!hideThumbs}
-                  onClick={toggleHideThumbs}
-                >
-                  <ImageIcon size={ICON_SIZE.md} />
-                </IconButton>
                 {/* Sort: the cook's own arrangement, or A–Z inside every
                     section. It reorders the book itself, so switching back to
                     "Custom order" restores the order A–Z replaced. The menu

@@ -467,8 +467,8 @@
     display: contents;
   }
 
-  /* Pictures off: each recipe is one line of name, so more of the book fits
-     on screen and long titles get room to be read. */
+  /* No page pictures in the organizer: each recipe is one line of name, so
+     more of the book fits on screen and long titles get room to be read. */
   .recipe-print-shell--organizing .recipe-page-rail--no-thumbs .recipe-page-rail__section-group {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 6px;
