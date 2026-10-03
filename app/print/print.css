@@ -265,8 +265,10 @@
    the line about moving recipes stack; Back stays level with the title. */
 .recipe-organize-bar__heading {
   display: flex;
+  flex: 1 1 auto;
   align-items: flex-start;
   gap: 4px;
+  min-width: 0;
 }
 .recipe-organize-bar__titles {
   display: flex;
@@ -289,6 +291,17 @@
 .recipe-organize-bar__actions {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
+  /* Stays right-aligned when a narrow organizer wraps it under the title. */
+  margin-left: auto;
+}
+/* Its own full-width line under the title row, right-aligned under the
+   buttons above it. */
+.recipe-organize-bar__book-actions {
+  display: flex;
+  flex: 1 0 100%;
+  align-items: center;
+  justify-content: flex-end;
   gap: 8px;
 }
 

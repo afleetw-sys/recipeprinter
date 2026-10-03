@@ -845,25 +845,11 @@ export function PageRail(props: PageRailProps) {
                     </AnchoredMenu>
                   )}
                 </div>
-                {/* Spelled out: as a pair of chevrons it read as nothing in
-                    particular. Folding every chapter is how a long book's
-                    chapters fit on screen to be dragged into order. */}
-                {namedSectionIds.length > 0 && (
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-compact recipe-organize-bar__fold-all"
-                    onClick={() =>
-                      setCollapsedSections(allSectionsCollapsed ? new Set() : new Set(namedSectionIds))
-                    }
-                  >
-                    {allSectionsCollapsed ? (
-                      <ExpandAllIcon size={ICON_SIZE.sm} />
-                    ) : (
-                      <CollapseAllIcon size={ICON_SIZE.sm} />
-                    )}
-                    <span>{allSectionsCollapsed ? "Expand all" : "Collapse all"}</span>
-                  </button>
-                )}
+              </div>
+              {/* Second row: the two whole-book actions. Search and Sort and
+                  filter stay up on the title's line, where they change what
+                  you see; these change the book. */}
+              <div className="recipe-organize-bar__book-actions">
                 {/* Sections are made in here, so the control to make one is in
                     here too. Two jobs, one button: with recipes selected it
                     wraps THOSE into a new section, and with nothing selected it
@@ -887,6 +873,25 @@ export function PageRail(props: PageRailProps) {
                       recipes, you pressed Add chapter, they are in it. */}
                   <span>Add chapter</span>
                 </button>
+                {/* Spelled out: as a pair of chevrons it read as nothing in
+                    particular. Folding every chapter is how a long book's
+                    chapters fit on screen to be dragged into order. */}
+                {namedSectionIds.length > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-compact recipe-organize-bar__fold-all"
+                    onClick={() =>
+                      setCollapsedSections(allSectionsCollapsed ? new Set() : new Set(namedSectionIds))
+                    }
+                  >
+                    {allSectionsCollapsed ? (
+                      <ExpandAllIcon size={ICON_SIZE.sm} />
+                    ) : (
+                      <CollapseAllIcon size={ICON_SIZE.sm} />
+                    )}
+                    <span>{allSectionsCollapsed ? "Expand all" : "Collapse all"}</span>
+                  </button>
+                )}
               </div>
               {searchOpen && (
                 <div className="recipe-organize-bar__search">
@@ -1268,7 +1273,7 @@ export function PageRail(props: PageRailProps) {
                             // Also a drop target: a recipe dropped on it goes to
                             // the end of this chapter.
                             data-rail-section-add={section.id}
-                            aria-label={`Add recipes to ${section.title}`}
+                            aria-label={`Add a recipe to ${section.title}`}
                             onClick={(event) => {
                               event.stopPropagation();
                               openAddToSection(section.id);
@@ -1276,7 +1281,7 @@ export function PageRail(props: PageRailProps) {
                             onPointerDown={(event) => event.stopPropagation()}
                           >
                             <PlusIcon size={ICON_SIZE.sm} />
-                            <span>Add recipes</span>
+                            <span>Add recipe</span>
                           </button>
                         )}
                         {!sectionFolded(section.id) && (
@@ -1412,7 +1417,7 @@ export function PageRail(props: PageRailProps) {
                 );
                   });
                   })()}
-                  {/* A named chapter's Add recipes is in its heading, beside
+                  {/* A named chapter's Add recipe is in its heading, beside
                       Delete. The ungrouped recipes have no heading, so they
                       keep the card. */}
                   {organizeMode &&
@@ -1424,10 +1429,10 @@ export function PageRail(props: PageRailProps) {
                       className="recipe-page-rail__section-add-card"
                       data-rail-section-add={group.sectionId}
                       onClick={() => openAddToSection(group.sectionId!)}
-                      aria-label={`Add recipes to ${sectionTitleForId(group.sectionId)}`}
+                      aria-label={`Add a recipe to ${sectionTitleForId(group.sectionId)}`}
                     >
                       <PlusIcon size={ICON_SIZE.md} />
-                      <span>Add recipes</span>
+                      <span>Add recipe</span>
                     </button>
                   )}
                   </div>
