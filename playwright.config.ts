@@ -85,6 +85,10 @@ export default defineConfig({
     // the PDF renderer.
     { name: "webkit", use: { ...devices["Desktop Safari"] }, testIgnore: [/export\.spec/, /layout-harness\.spec/] },
     { name: "iphone", use: { ...devices["iPhone 15"] }, testIgnore: [/export\.spec/, /layout-harness\.spec/] },
+    // Firefox, for printing only: it is the one other engine a cook prints
+    // from (Edge, Brave, Arc are Chromium; every iPhone browser is WebKit),
+    // and it has print bugs of its own (Christmas printed blank).
+    { name: "firefox", use: { ...devices["Desktop Firefox"] }, testMatch: /print-sizing\.spec/ },
     // The full layout sweep (e2e/layout-harness.spec.ts): minutes long, so
     // only when asked for (`npm run test:layout`, the Layout workflow), never
     // as part of the every-push run.
