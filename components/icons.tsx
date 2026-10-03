@@ -140,6 +140,14 @@ export const MoreVerticalIcon = (p: IconProps) => (
   </Base>
 );
 
+export const MoreHorizontalIcon = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+    <circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none" />
+  </Base>
+);
+
 export const CookPilotLogoIcon = ({
   size = 18,
   className = "",

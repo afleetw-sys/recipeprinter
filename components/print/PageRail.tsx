@@ -22,6 +22,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   FilterIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
   GripIcon,
   ICON_SIZE,
   PlusIcon,
@@ -382,6 +384,10 @@ export function PageRail(props: PageRailProps) {
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const filterMenuRef = useRef<HTMLDivElement | null>(null);
   const closeFilterMenu = useCallback(() => setFilterMenuOpen(false), []);
+  // Which chapter's ••• menu is open, if any; one at a time.
+  const [chapterMenuId, setChapterMenuId] = useState<string | null>(null);
+  const chapterMenuRef = useRef<HTMLDivElement | null>(null);
+  const closeChapterMenu = useCallback(() => setChapterMenuId(null), []);
   // Chapters folded down to their headings in the organizer, so a long book's
   // chapters fit on screen to be dragged into a new order. Opens fresh each
   // time: folding is for the rearrange in hand, not a setting.
@@ -402,6 +408,7 @@ export function PageRail(props: PageRailProps) {
     setSearchQuery("");
     setOrganizeFilters([]);
     setFilterMenuOpen(false);
+    setChapterMenuId(null);
   }, [organizeMode]);
 
   const organizeView = { query: searchQuery, filters: organizeFilters };
@@ -1221,25 +1228,24 @@ export function PageRail(props: PageRailProps) {
                             value={section.title ?? ""}
                             placeholder="Chapter name"
                             aria-label="Chapter name"
+                            data-chapter-name-input={section.id}
                             onRename={(value) => renameSectionEverywhere(section.id, value)}
                             onPointerDown={(event) => event.stopPropagation()}
                           />
                         ) : (
                           <span>{section.title}</span>
                         )}
-                        {sectionFolded(section.id) && (
-                          <span className="recipe-page-rail__section-count">
-                            {itemIdsForSection(section.id).length === 1
-                              ? "1 recipe"
-                              : `${itemIdsForSection(section.id).length} recipes`}
-                          </span>
-                        )}
-                        {/* Not on a folded chapter: deleting is rare and final,
-                            and a row of folded headings is for reordering. */}
+                        <span className="recipe-page-rail__section-count">
+                          {itemIdsForSection(section.id).length === 1
+                            ? "1 recipe"
+                            : `${itemIdsForSection(section.id).length} recipes`}
+                        </span>
+                        {/* A folded chapter is its name and count only: the row
+                            of folded headings is for reordering. */}
                         {!sectionFolded(section.id) && !organizeFiltering && (
                           <button
                             type="button"
-                            className="btn btn-secondary btn-compact recipe-page-rail__section-add"
+                            className="btn btn-ghost btn-compact recipe-page-rail__section-add"
                             // Also a drop target: a recipe dropped on it goes to
                             // the end of this chapter.
                             data-rail-section-add={section.id}
@@ -1256,20 +1262,65 @@ export function PageRail(props: PageRailProps) {
                             <span className="recipe-page-rail__section-add-label">Add recipe</span>
                           </button>
                         )}
+                        {/* The less common actions, rename and delete, wait in
+                            a menu so the chapter name stays the main thing. */}
                         {!sectionFolded(section.id) && (
-                        <IconButton
-                          tone="danger"
-                          className="recipe-page-rail__section-delete"
-                          aria-label={`Delete ${section.title || "chapter"}`}
-                          title="Delete chapter"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            requestDeleteSection(section.id);
-                          }}
-                          onPointerDown={(event) => event.stopPropagation()}
-                        >
-                          <TrashIcon size={ICON_SIZE.sm} />
-                        </IconButton>
+                          <div
+                            className="recipe-page-rail__section-menu"
+                            ref={chapterMenuId === section.id ? chapterMenuRef : undefined}
+                          >
+                            <IconButton
+                              className="icon-button--bare"
+                              aria-label={`More actions for ${section.title}`}
+                              title="More"
+                              aria-haspopup="menu"
+                              aria-expanded={chapterMenuId === section.id}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setChapterMenuId((open) => (open === section.id ? null : section.id));
+                              }}
+                              onPointerDown={(event) => event.stopPropagation()}
+                            >
+                              <MoreHorizontalIcon size={ICON_SIZE.md} />
+                            </IconButton>
+                            {chapterMenuId === section.id && (
+                              <AnchoredMenu
+                                anchorRef={chapterMenuRef}
+                                onClose={closeChapterMenu}
+                                label={`Actions for ${section.title}`}
+                                align="end"
+                              >
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  className="cp-menu__item"
+                                  onClick={() => {
+                                    setChapterMenuId(null);
+                                    const input = railScrollRef.current?.querySelector<HTMLInputElement>(
+                                      `[data-chapter-name-input="${section.id}"]`,
+                                    );
+                                    input?.focus();
+                                    input?.select();
+                                  }}
+                                >
+                                  <PencilIcon size={ICON_SIZE.sm} />
+                                  Rename chapter
+                                </button>
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  className="cp-menu__item cp-menu__item--danger"
+                                  onClick={() => {
+                                    setChapterMenuId(null);
+                                    requestDeleteSection(section.id);
+                                  }}
+                                >
+                                  <TrashIcon size={ICON_SIZE.sm} />
+                                  Delete chapter
+                                </button>
+                              </AnchoredMenu>
+                            )}
+                          </div>
                         )}
                       </div>
                     )}

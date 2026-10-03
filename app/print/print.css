@@ -567,31 +567,41 @@
     padding: 0 20px 18px;
   }
 
-  /* An organizing screen, not a browsing one. A chapter is its name and a
-     plain list under it: no card around the chapter, no box around each
-     recipe. Whitespace separates chapters and a faint hairline separates
-     rows, so the chapter names are what the eye lands on. */
+  /* A compact cookbook organizer: each chapter is a lightly framed section
+     (a faint border and fill, modest padding), and its recipes are a dense
+     two-column list of plain rows inside it. No box around each recipe and
+     no divider lines between them, so it reads as neither a wall of cards
+     nor a spreadsheet. */
   .recipe-print-shell--organizing .recipe-page-rail__section-group {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
-    margin-top: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px 6px;
+    margin-top: 8px;
+    padding: 4px 8px 8px;
+    border: 1px solid color-mix(in srgb, var(--cp-line) 70%, transparent);
+    border-radius: 12px;
+    background: var(--cp-card);
+  }
+  /* Recipes in no chapter have no heading to frame. */
+  .recipe-print-shell--organizing .recipe-page-rail__section-group--ungrouped {
     padding: 0;
-    border: 0;
+    border-color: transparent;
     background: transparent;
+  }
+  /* Folded: the heading line alone. */
+  .recipe-print-shell--organizing .recipe-page-rail__section-group--collapsed {
+    padding-bottom: 4px;
   }
 
   .recipe-print-shell--organizing .recipe-page-rail__section-group > .recipe-page-rail__row {
     display: contents;
   }
 
-  /* Each recipe: one 48px row of page number and title, the same height
-     whether or not it is selected. */
+  /* Each recipe: one 44px row of page number and title. */
   .recipe-print-shell--organizing .recipe-page-rail__item {
-    padding: 0 10px;
+    padding: 0 8px;
     border: 0;
-    border-bottom: 1px solid color-mix(in srgb, var(--cp-line) 55%, transparent);
-    border-radius: 0;
+    border-radius: 6px;
     background: transparent;
   }
   .recipe-print-shell--organizing .recipe-page-rail__item:hover {
@@ -602,17 +612,16 @@
      (an inset outline), so it never makes the row taller. */
   .recipe-print-shell--organizing .recipe-page-rail__item.is-active,
   .recipe-print-shell--organizing .recipe-page-rail__item.is-selected {
-    border-radius: 6px;
     background: var(--cp-selected-fill);
     box-shadow: none;
     outline: 1px solid var(--cp-selected-border);
     outline-offset: -1px;
   }
   .recipe-print-shell--organizing .recipe-page-rail__item-main {
-    grid-template-columns: 28px 1fr;
+    grid-template-columns: 26px 1fr;
     column-gap: 6px;
     min-height: 0;
-    height: 47px;
+    height: 44px;
   }
   .recipe-print-shell--organizing .recipe-page-rail__num {
     align-self: center;
@@ -622,39 +631,24 @@
     font-weight: 600;
   }
 
-  /* The ungrouped recipes' "Add recipe": a quiet text row, not a card. */
+  /* The ungrouped recipes' "Add recipe": a quiet row, not a card. */
   .recipe-print-shell--organizing .recipe-page-rail__section-add-card {
     flex-direction: row;
     justify-content: flex-start;
     min-height: 44px;
-    padding: 0 10px;
+    padding: 0 8px;
     border: 0;
-    border-radius: 0;
+    border-radius: 6px;
   }
   .recipe-print-shell--organizing .recipe-page-rail__section-add-card:hover {
     border: 0;
   }
 
-  /* A chapter's Add recipe and Delete wait until you are on its header, so
-     the chapter name stands alone. Kept in the layout (only faded), so
-     nothing shifts when they appear; shown during a drag, when Add recipe is
-     also a drop target; always shown where there is no hover to reveal them. */
-  .recipe-print-shell--organizing .recipe-page-rail__section-header
-    :is(.recipe-page-rail__section-add, .recipe-page-rail__section-delete) {
-    opacity: 0;
-    transition: opacity 120ms ease;
-  }
-  .recipe-print-shell--organizing .recipe-page-rail__section-header:is(:hover, :focus-within)
-    :is(.recipe-page-rail__section-add, .recipe-page-rail__section-delete),
-  .recipe-print-shell--organizing .recipe-page-rail--dragging .recipe-page-rail__section-header
-    :is(.recipe-page-rail__section-add, .recipe-page-rail__section-delete) {
-    opacity: 1;
-  }
-  @media (hover: none) {
-    .recipe-print-shell--organizing .recipe-page-rail__section-header
-      :is(.recipe-page-rail__section-add, .recipe-page-rail__section-delete) {
-      opacity: 1;
-    }
+  /* The header's ••• menu keeps its own anchor. */
+  .recipe-page-rail__section-menu {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
   }
 
   /* Organization is about recipe order and section membership. Keep covers,
@@ -674,7 +668,7 @@
     /* A size container, so its Add recipe can shed its label when narrow. */
     container-type: inline-size;
     grid-column: 1 / -1;
-    padding: 2px 0 4px;
+    padding: 0 0 2px;
     color: var(--cp-ink);
     font-size: var(--cp-fs-h2);
     text-transform: none;
@@ -1045,15 +1039,6 @@
 .recipe-page-rail__section-title-input {
   min-width: 0;
   flex: 1;
-}
-
-.recipe-page-rail__section-delete {
-  flex: 0 0 auto;
-  color: var(--cp-ink-soft);
-}
-
-.recipe-page-rail__section-delete:hover {
-  color: var(--cp-error);
 }
 
 /* Pointer drag-to-reorder (cookbook rail). The grabbed row/section dims in

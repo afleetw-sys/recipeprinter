@@ -1024,16 +1024,27 @@ export default function PrintPage() {
         const target = candidates.reduce((closest, row) =>
           distanceTo(row.rect) < distanceTo(closest.rect) ? row : closest,
         );
-        // The organizer is a single-column list of rows, so a drop lands
-        // above or below the nearest row by which half the pointer is in. (It
-        // was a grid of tiles, placed by their left or right half.)
-        const after = clientY >= target.rect.top + target.rect.height / 2;
-        const indicator = {
-          top: after ? target.rect.bottom - 1 : target.rect.top - 2,
-          left: target.rect.left,
-          width: target.rect.width,
-          height: 3,
-        };
+        // The organizer lays recipes out in a grid, in reading order. Over a
+        // row, the left or right half of the nearest recipe decides before or
+        // after it (a vertical line); between rows, its top or bottom half
+        // does (a horizontal line).
+        const useHorizontalEdge = clientY >= target.rect.top && clientY <= target.rect.bottom;
+        const after = useHorizontalEdge
+          ? clientX >= target.rect.left + target.rect.width / 2
+          : clientY >= target.rect.top + target.rect.height / 2;
+        const indicator = useHorizontalEdge
+          ? {
+              top: target.rect.top,
+              left: after ? target.rect.right + 1 : target.rect.left - 4,
+              width: 3,
+              height: target.rect.height,
+            }
+          : {
+              top: after ? target.rect.bottom - 1 : target.rect.top - 2,
+              left: target.rect.left,
+              width: target.rect.width,
+              height: 3,
+            };
         return {
           indicator,
           commit: () => {
