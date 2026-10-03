@@ -1267,8 +1267,9 @@ export function PageRail(props: PageRailProps) {
                       <div
                         className="recipe-page-rail__section-header"
                         // The whole heading is a drop target: a recipe dropped
-                        // on it goes to the end of this chapter, folded or not.
-                        data-rail-section-add={section.id}
+                        // on it goes to the top of this chapter, folded or not
+                        // (see `resolveRailDrop`).
+                        data-rail-section-head={section.id}
                       >
                         {!organizeFiltering && (
                           <button

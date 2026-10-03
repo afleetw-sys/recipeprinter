@@ -241,7 +241,7 @@
      Nothing to cancel here as a result: this padding is genuinely all there
      is, and it's covered by this element's own background either way,
      stuck or not. */
-  padding: 6px 2px 8px;
+  padding: 18px 2px 10px;
   /* The bar lives inside the rail's own scroll container (see `.recipe-page-rail`),
      not above it — so without this, scrolling down the chapter list (including the
      auto-scroll a freshly added chapter triggers) carries "Back to pages" and

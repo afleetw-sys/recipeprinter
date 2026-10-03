@@ -912,6 +912,7 @@ export default function PrintPage() {
     sections: Array<{ id: string; rect: DOMRect }>;
     newSection: DOMRect | null;
     sectionAdds: Array<{ id: string; rect: DOMRect }>;
+    sectionHeads: Array<{ id: string; rect: DOMRect }>;
   }
   const railGeometryRef = useRef<RailGeometry | null>(null);
   const railGeometryDirtyRef = useRef(true);
@@ -941,6 +942,7 @@ export default function PrintPage() {
       sections: readAll(scroller, "[data-rail-section]", "railSection"),
       newSection: newSection?.getBoundingClientRect() ?? null,
       sectionAdds: readAll(scroller, "[data-rail-section-add]", "railSectionAdd"),
+      sectionHeads: readAll(scroller, "[data-rail-section-head]", "railSectionHead"),
     };
     railGeometryRef.current = measured;
     // Entering the organizer runs a FLIP that re-projects every tile each frame
@@ -997,6 +999,20 @@ export default function PrintPage() {
               },
             };
           }
+        }
+
+        // A chapter's header puts the recipe at the START of the chapter,
+        // just under the header. Dragging a recipe up past the first one in
+        // its own chapter crosses the header, and that is where it meant to
+        // go; a folded or empty chapter still takes a drop here too.
+        const sectionHead = geometry.sectionHeads.find((entry) => contains(entry.rect));
+        if (sectionHead) {
+          const sectionId = sectionHead.id;
+          const rect = sectionHead.rect;
+          return {
+            indicator: { top: rect.bottom - 1, left: rect.left, width: rect.width, height: 3 },
+            commit: () => projectMeta.moveItems(movingIds, sectionId, 0),
+          };
         }
 
         const sectionAdd = geometry.sectionAdds.find((entry) => contains(entry.rect));
