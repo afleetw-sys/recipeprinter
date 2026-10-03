@@ -59,13 +59,13 @@ async function openOrganizer(page: Page) {
 test("an active toolbar button looks active", async ({ page }) => {
   await openOrganizer(page);
   const view = page.getByRole("button", { name: /^Sort and filter recipes/ });
-  const search = page.getByRole("button", { name: "Search recipes" });
   const look = (locator: typeof view) =>
     locator.evaluate((el) => {
       const style = getComputedStyle(el);
       return `${style.borderColor} ${style.backgroundColor}`;
     });
-  const idle = await look(search);
+  await page.mouse.move(0, 0);
+  const idle = await look(view);
 
   // A filter on its own, then an A-Z sort on its own: either has to show.
   await view.click();

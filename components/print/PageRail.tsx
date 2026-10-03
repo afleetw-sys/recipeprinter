@@ -377,12 +377,10 @@ export function PageRail(props: PageRailProps) {
   // Search and readiness filter: a VIEW of the organizer, never a change to
   // the book. Both clear on leaving the organizer, so the page rail never
   // comes back with recipes quietly missing from it.
-  const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [organizeFilters, setOrganizeFilters] = useState<OrganizeFilter[]>([]);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const filterMenuRef = useRef<HTMLDivElement | null>(null);
-  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const closeFilterMenu = useCallback(() => setFilterMenuOpen(false), []);
   // Chapters folded down to their headings in the organizer, so a long book's
   // chapters fit on screen to be dragged into a new order. Opens fresh each
@@ -401,18 +399,10 @@ export function PageRail(props: PageRailProps) {
   useEffect(() => {
     if (organizeMode) return;
     setCollapsedSections(new Set());
-    setSearchOpen(false);
     setSearchQuery("");
     setOrganizeFilters([]);
     setFilterMenuOpen(false);
   }, [organizeMode]);
-  useEffect(() => {
-    if (searchOpen) searchInputRef.current?.focus();
-  }, [searchOpen]);
-  const closeSearch = () => {
-    setSearchOpen(false);
-    setSearchQuery("");
-  };
 
   const organizeView = { query: searchQuery, filters: organizeFilters };
   const toggleOrganizeFilter = (filter: OrganizeFilter) =>
@@ -745,45 +735,75 @@ export function PageRail(props: PageRailProps) {
                 </div>
               </div>
               <div className="recipe-organize-bar__actions">
-                {/* Search grows out of its own button into a field, in place,
-                    rather than adding a bar under the toolbar. */}
-                {searchOpen ? (
-                  <div className="recipe-organize-bar__search">
-                    <SearchIcon size={ICON_SIZE.sm} />
-                    <input
-                      ref={searchInputRef}
-                      type="search"
-                      className="recipe-organize-bar__search-input"
-                      placeholder="Search recipes"
-                      aria-label="Search recipes"
-                      value={searchQuery}
-                      onChange={(event) => setSearchQuery(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Escape") {
-                          event.preventDefault();
-                          closeSearch();
-                        }
-                      }}
-                    />
+                {/* Plain text, not a button: a quiet toggle for the list
+                    below. Folding every chapter is how a long book's chapters
+                    fit on screen to be dragged into order. Hidden while
+                    searching or filtering, which open every chapter. */}
+                {namedSectionIds.length > 0 && !organizeFiltering && (
+                  <button
+                    type="button"
+                    className="recipe-organize-bar__fold-all"
+                    onClick={() =>
+                      setCollapsedSections(allSectionsCollapsed ? new Set() : new Set(namedSectionIds))
+                    }
+                  >
+                    {allSectionsCollapsed ? "Expand all" : "Collapse all"}
+                  </button>
+                )}
+                {/* Sections are made in here, so the control to make one is in
+                    here too. Two jobs, one button: with recipes selected it
+                    wraps THOSE into a new section, and with nothing selected it
+                    drops an empty one — which is why it sits beside the other
+                    whole-book actions rather than on any single section. */}
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-compact recipe-organize-bar__add-section"
+                  data-rail-new-section
+                  onClick={() => {
+                    if (effectiveRailSelection.size > 0) makeSectionFromSelection();
+                    else addSectionDivider();
+                  }}
+                >
+                  <PlusIcon size={ICON_SIZE.md} />
+                  {/* One label, not one per branch. A label that changes with
+                      the selection re-widths the button, and the toolbar it
+                      shares a row with reflows around it — at which point
+                      "Organize recipes" wraps to two lines every time you tick
+                      a recipe. The behaviour still reads: you selected some
+                      recipes, you pressed Add chapter, they are in it. */}
+                  <span>Add chapter</span>
+                </button>
+              </div>
+              {/* Second row: an always-open search, with Sort and filter
+                  beside it. Both change what you see, never the book. */}
+              <div className="recipe-organize-bar__find">
+                <div className="recipe-organize-bar__search">
+                  <SearchIcon size={ICON_SIZE.sm} />
+                  <input
+                    type="search"
+                    className="recipe-organize-bar__search-input"
+                    placeholder="Search recipes"
+                    aria-label="Search recipes"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape" && searchQuery) {
+                        event.preventDefault();
+                        setSearchQuery("");
+                      }
+                    }}
+                  />
+                  {searchQuery && (
                     <IconButton
                       className="icon-button--bare"
-                      aria-label="Close search"
-                      title="Close search"
-                      onClick={closeSearch}
+                      aria-label="Clear search"
+                      title="Clear search"
+                      onClick={() => setSearchQuery("")}
                     >
                       <XIcon size={ICON_SIZE.sm} />
                     </IconButton>
-                  </div>
-                ) : (
-                  <IconButton
-                    aria-label="Search recipes"
-                    title="Search recipes"
-                    aria-expanded={false}
-                    onClick={() => setSearchOpen(true)}
-                  >
-                    <SearchIcon size={ICON_SIZE.md} />
-                  </IconButton>
-                )}
+                  )}
+                </div>
                 {/* Sort and filter share one button and one menu: both are about
                     how the list is shown, and the toolbar had run out of room
                     for a button each. The badge counts filters only; an A-Z
@@ -871,47 +891,7 @@ export function PageRail(props: PageRailProps) {
                     </AnchoredMenu>
                   )}
                 </div>
-                {/* Sections are made in here, so the control to make one is in
-                    here too. Two jobs, one button: with recipes selected it
-                    wraps THOSE into a new section, and with nothing selected it
-                    drops an empty one — which is why it sits beside the other
-                    whole-book actions rather than on any single section. */}
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-compact recipe-organize-bar__add-section"
-                  data-rail-new-section
-                  onClick={() => {
-                    if (effectiveRailSelection.size > 0) makeSectionFromSelection();
-                    else addSectionDivider();
-                  }}
-                >
-                  <PlusIcon size={ICON_SIZE.md} />
-                  {/* One label, not one per branch. A label that changes with
-                      the selection re-widths the button, and the toolbar it
-                      shares a row with reflows around it — at which point
-                      "Organize recipes" wraps to two lines every time you tick
-                      a recipe. The behaviour still reads: you selected some
-                      recipes, you pressed Add chapter, they are in it. */}
-                  <span>Add chapter</span>
-                </button>
               </div>
-              {/* Plain text, not a button: a view toggle for the list below,
-                  set apart from the toolbar's actions. Folding every chapter
-                  is how a long book's chapters fit on screen to be dragged
-                  into order. */}
-              {namedSectionIds.length > 0 && !organizeFiltering && (
-                <div className="recipe-organize-bar__book-actions">
-                  <button
-                    type="button"
-                    className="recipe-organize-bar__fold-all"
-                    onClick={() =>
-                      setCollapsedSections(allSectionsCollapsed ? new Set() : new Set(namedSectionIds))
-                    }
-                  >
-                    {allSectionsCollapsed ? "Expand all" : "Collapse all"}
-                  </button>
-                </div>
-              )}
             </div>
           )}
           {cookbookView

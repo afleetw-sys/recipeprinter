@@ -303,13 +303,11 @@
   /* Stays right-aligned when a narrow organizer wraps it under the title. */
   margin-left: auto;
 }
-/* Its own full-width line under the title row, right-aligned under the
-   buttons above it. */
-.recipe-organize-bar__book-actions {
+/* The second row: search across, Sort and filter at its end. */
+.recipe-organize-bar__find {
   display: flex;
   flex: 1 0 100%;
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -339,15 +337,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  /* Grows out of the 30px search button it replaces, and holds that width
-     rather than giving it up to the title beside it. */
-  flex: 0 0 auto;
-  width: min(240px, 60vw);
+  /* Always open, and takes whatever its row leaves beside Sort and filter. */
+  flex: 1 1 auto;
+  min-width: 0;
   height: 30px;
   padding: 0 0 0 9px;
   border: 1px solid var(--cp-line-strong);
   border-radius: 8px;
-  animation: organize-search-open 160ms ease-out;
   background: var(--cp-card);
   color: var(--cp-ink-soft);
 }
@@ -367,16 +363,6 @@
 }
 .recipe-organize-bar__search-input:focus {
   outline: none;
-}
-@keyframes organize-search-open {
-  from {
-    width: 30px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .recipe-organize-bar__search {
-    animation: none;
-  }
 }
 /* The close button sits inside the field's own height. */
 .recipe-print-shell--organizing .recipe-organize-bar__search .icon-button {
