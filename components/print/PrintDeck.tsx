@@ -15,9 +15,11 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ICON_SIZE,
+  ImageIcon,
   InfoIcon,
   LinkIcon,
   MoveToSectionIcon,
+  PagePlusIcon,
   PlusIcon,
   TrashIcon,
 } from "@/components/icons";
@@ -48,7 +50,7 @@ import { isPhotoOpenClick, type PhotoPress } from "@/lib/photoOpenGesture";
 import { LineSelectionToolbar } from "@/components/print/LineSelectionToolbar";
 import { TextFieldToolbar } from "@/components/print/TextFieldToolbar";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
-import { PageToolbar } from "@/components/print/PageToolbar";
+import { PageToolbar, PageToolbarItem } from "@/components/print/PageToolbar";
 import { FailedImportCard } from "@/components/print/FailedImportCard";
 import { importLoadingLabel } from "@/lib/importProgress";
 import { BACK_COVER_NAV_ID } from "@/lib/railPending";
@@ -735,7 +737,11 @@ export function PrintDeck(props: PrintDeckProps) {
       : false;
     const addImagePageButton =
       dividerSection && !dividerHasFacing ? (
-        <div className="recipe-page-toolbar__group">
+        <PageToolbarItem
+          menuLabel="Add image page"
+          menuIcon={<PagePlusIcon size={ICON_SIZE.sm} />}
+          priority={4}
+        >
           <button
             type="button"
             className="recipe-page-toolbar__btn"
@@ -749,7 +755,7 @@ export function PrintDeck(props: PrintDeckProps) {
           >
             Add image page
           </button>
-        </div>
+        </PageToolbarItem>
       ) : null;
 
     // The book's optional pages are removed, not deleted: each comes back
@@ -847,8 +853,19 @@ export function PrintDeck(props: PrintDeckProps) {
           {/* After Edit, with Move and Delete: this is an icon among icons, and
               it led the bar only because that is where the placement toggle it
               replaced used to sit. */}
-          {photoControl && <div className="recipe-page-toolbar__group">{photoControl}</div>}
-          {linkControl && <div className="recipe-page-toolbar__group">{linkControl}</div>}
+          {/* Photo, link, Move and Delete can go into the bar's More menu
+              when the screen is too narrow for them (Delete first, the photo
+              last). The reveal button and Front/Back always stay. */}
+          {photoControl && (
+            <PageToolbarItem menuLabel="Photo" menuIcon={<ImageIcon size={ICON_SIZE.sm} />} priority={3}>
+              {photoControl}
+            </PageToolbarItem>
+          )}
+          {linkControl && (
+            <PageToolbarItem menuLabel={linkLabel} menuIcon={<LinkIcon size={ICON_SIZE.sm} />} priority={2}>
+              {linkControl}
+            </PageToolbarItem>
+          )}
           {/* Move this recipe into another chapter.
               
               Until now the only way was the Organize panel: leave the page you
@@ -860,7 +877,11 @@ export function PrintDeck(props: PrintDeckProps) {
               Recipes only. A divider, the cover and the contents page have no
               chapter to be moved between. */}
           {moveSections && (
-            <div className="recipe-page-toolbar__group">
+            <PageToolbarItem
+              menuLabel="Move to another chapter"
+              menuIcon={<MoveToSectionIcon size={ICON_SIZE.sm} />}
+              priority={1}
+            >
               <button
                 type="button"
                 className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
@@ -906,7 +927,7 @@ export function PrintDeck(props: PrintDeckProps) {
                   onClose={() => setMoveMenuAt(null)}
                 />
               )}
-            </div>
+            </PageToolbarItem>
           )}
           {/* Delete, last and on its own: the Delete key already did this, and
               a key is not a control anyone finds. Its own group so it is not
@@ -917,7 +938,12 @@ export function PrintDeck(props: PrintDeckProps) {
               A facing page's Delete just clears that page's art/caption and
               brings back the card's "Add image page" button — no confirm,
               same as clearing any other optional photo. */}
-          <div className="recipe-page-toolbar__group">
+          <PageToolbarItem
+            menuLabel={removesPage ? "Remove" : "Delete"}
+            menuIcon={<TrashIcon size={ICON_SIZE.sm} />}
+            priority={0}
+            danger
+          >
             <button
               type="button"
               className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon recipe-page-toolbar__btn--danger"
@@ -930,7 +956,7 @@ export function PrintDeck(props: PrintDeckProps) {
             >
               <TrashIcon size={ICON_SIZE.md} />
             </button>
-          </div>
+          </PageToolbarItem>
           {addImagePageButton}
         </PageToolbar>
       </div>

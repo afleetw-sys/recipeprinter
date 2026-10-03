@@ -1338,6 +1338,52 @@
   row-gap: 2px;
 }
 
+/* One row, everywhere but the contents page's hint (which is a sentence meant
+   to wrap over its controls). What does not fit goes into the More menu at the
+   end of the bar; PageToolbar decides which from measured widths. A second row
+   of two lonely icons under the first read as broken. */
+.recipe-page-toolbar:not(:has(> .recipe-page-toolbar__hint)) {
+  flex-wrap: nowrap;
+}
+
+/* A control in the More menu stays mounted (its dialog and its menu live in
+   it), parked invisibly where the More button is so anything it places from
+   its own rect opens under More. */
+.recipe-page-toolbar:has(> [data-overflowed]) {
+  position: relative;
+}
+.recipe-page-toolbar > [data-overflowed] {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  visibility: hidden;
+  pointer-events: none;
+}
+.recipe-page-toolbar__more[hidden] {
+  display: none;
+}
+
+/* The measuring pass (PageToolbar): every group at its natural width on one
+   row, More included, for the length of a synchronous read. Never painted. */
+.recipe-page-toolbar[data-measuring] {
+  flex-wrap: nowrap;
+  width: max-content;
+  max-width: none;
+}
+.recipe-page-toolbar[data-measuring] > * {
+  flex: none;
+}
+.recipe-page-toolbar[data-measuring] > [data-overflowed] {
+  position: static;
+}
+.recipe-page-toolbar[data-measuring] > .recipe-page-toolbar__more[hidden] {
+  display: inline-flex;
+}
+.recipe-page-toolbar[data-measuring] .recipe-page-toolbar__btn--fields {
+  white-space: nowrap;
+}
+
+
 /* ── The text toolbar ────────────────────────────────────────────────────────
    The second bar, and the same object as the first: it wears
    `.recipe-page-toolbar` outright and changes only two things about it — where
