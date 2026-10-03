@@ -215,19 +215,6 @@
 
 /* In the organizer's toolbar beside Sort: a shared compact button, laid out
    only so it does not wrap or stretch. */
-/* Text, not a button: a quiet toggle for the list beneath it. */
-.recipe-organize-bar__fold-all {
-  padding: 2px 4px;
-  border-radius: 6px;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-  white-space: nowrap;
-}
-.recipe-organize-bar__fold-all:hover {
-  color: var(--cp-ink);
-  text-decoration: underline;
-}
 
 .recipe-organize-bar__add-section {
   flex: 0 0 auto;
@@ -303,12 +290,14 @@
   /* Stays right-aligned when a narrow organizer wraps it under the title. */
   margin-left: auto;
 }
-/* The second row, the one toolbar: search, the filter icon, Add chapter. */
+/* The second row, the one toolbar: search, the filter icon, the overflow
+   menu, Add chapter. Set well apart from the title and its subtitle. */
 .recipe-organize-bar__find {
   display: flex;
   flex: 1 0 100%;
   align-items: center;
   gap: 6px;
+  margin-top: 8px;
 }
 
 /* Sort: an icon button at the head of the organizer's actions that opens its
@@ -644,6 +633,14 @@
     border: 0;
   }
 
+  /* A chapter mid-fold keeps its recipes shown, so the closing frame clips
+     them away (see `changeCollapsed` in PageRail). */
+  .recipe-print-shell--organizing
+    .recipe-page-rail__section-group--collapsed.recipe-page-rail__section-group--folding
+    .recipe-page-rail__item {
+    display: grid;
+  }
+
   /* The header's ••• menu keeps its own anchor. */
   .recipe-page-rail__section-menu {
     position: relative;
@@ -665,8 +662,6 @@
   }
 
   .recipe-print-shell--organizing .recipe-page-rail__section-header {
-    /* A size container, so its Add recipe can shed its label when narrow. */
-    container-type: inline-size;
     grid-column: 1 / -1;
     padding: 0 0 2px;
     color: var(--cp-ink);
@@ -697,23 +692,6 @@
   }
   .recipe-page-rail__section-fold[aria-expanded="false"] {
     transform: rotate(-90deg);
-  }
-  /* Pushes itself and Delete to the heading's right edge. */
-  .recipe-page-rail__section-add {
-    flex: 0 0 auto;
-    gap: 4px;
-    margin-left: auto;
-    white-space: nowrap;
-    letter-spacing: normal;
-  }
-  @container (max-width: 340px) {
-    .recipe-page-rail__section-add-label {
-      display: none;
-    }
-    .recipe-page-rail__section-add {
-      width: 30px;
-      padding: 0;
-    }
   }
   .recipe-page-rail__section-count {
     flex: 0 0 auto;

@@ -14,7 +14,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
 import {
   CheckIcon,
@@ -384,6 +384,9 @@ export function PageRail(props: PageRailProps) {
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const filterMenuRef = useRef<HTMLDivElement | null>(null);
   const closeFilterMenu = useCallback(() => setFilterMenuOpen(false), []);
+  const [utilityMenuOpen, setUtilityMenuOpen] = useState(false);
+  const utilityMenuRef = useRef<HTMLDivElement | null>(null);
+  const closeUtilityMenu = useCallback(() => setUtilityMenuOpen(false), []);
   // Which chapter's ••• menu is open, if any; one at a time.
   const [chapterMenuId, setChapterMenuId] = useState<string | null>(null);
   const chapterMenuRef = useRef<HTMLDivElement | null>(null);
@@ -395,13 +398,55 @@ export function PageRail(props: PageRailProps) {
   const namedSectionIds = sections.filter((section) => section.title?.trim()).map((section) => section.id);
   const allSectionsCollapsed =
     namedSectionIds.length > 0 && namedSectionIds.every((id) => collapsedSections.has(id));
-  const toggleSectionCollapsed = (sectionId: string) =>
-    setCollapsedSections((current) => {
-      const next = new Set(current);
-      if (next.has(sectionId)) next.delete(sectionId);
-      else next.add(sectionId);
-      return next;
+  /**
+   * Folds or unfolds chapters with their height animating, rather than the
+   * list jumping. Each chapter is measured before and after the change, then
+   * slides between the two. A chapter that is folding keeps its recipes shown
+   * (`--folding`) while it closes over them, so they are clipped away rather
+   * than vanishing first and leaving an empty box to shrink.
+   */
+  const foldAnimations = useRef<Animation[]>([]);
+  const changeCollapsed = (next: ReadonlySet<string>) => {
+    const rail = railScrollRef.current;
+    const still =
+      typeof window === "undefined" ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      typeof Element.prototype.animate !== "function";
+    if (!rail || still) {
+      setCollapsedSections(next);
+      return;
+    }
+    foldAnimations.current.forEach((animation) => animation.finish());
+    foldAnimations.current = [];
+    const groups = () => Array.from(rail.querySelectorAll<HTMLElement>("[data-rail-section]"));
+    const before = new Map(groups().map((group) => [group.dataset.railSection!, group.offsetHeight]));
+    flushSync(() => setCollapsedSections(next));
+    groups().forEach((group) => {
+      const from = before.get(group.dataset.railSection!);
+      const to = group.offsetHeight;
+      if (from === undefined || Math.abs(from - to) < 1) return;
+      const folding = to < from;
+      if (folding) group.classList.add("recipe-page-rail__section-group--folding");
+      group.style.overflow = "hidden";
+      const animation = group.animate([{ height: `${from}px` }, { height: `${to}px` }], {
+        duration: 220,
+        easing: "cubic-bezier(0.2, 0.7, 0.2, 1)",
+      });
+      const done = () => {
+        group.style.overflow = "";
+        group.classList.remove("recipe-page-rail__section-group--folding");
+      };
+      animation.onfinish = done;
+      animation.oncancel = done;
+      foldAnimations.current.push(animation);
     });
+  };
+  const toggleSectionCollapsed = (sectionId: string) => {
+    const next = new Set(collapsedSections);
+    if (next.has(sectionId)) next.delete(sectionId);
+    else next.add(sectionId);
+    changeCollapsed(next);
+  };
   useEffect(() => {
     if (organizeMode) return;
     setCollapsedSections(new Set());
@@ -409,6 +454,7 @@ export function PageRail(props: PageRailProps) {
     setOrganizeFilters([]);
     setFilterMenuOpen(false);
     setChapterMenuId(null);
+    setUtilityMenuOpen(false);
   }, [organizeMode]);
 
   const organizeView = { query: searchQuery, filters: organizeFilters };
@@ -742,7 +788,7 @@ export function PageRail(props: PageRailProps) {
                 </div>
               </div>
               {/* Second row, the one toolbar: search across, then the filter
-                  icon, Collapse all and Add chapter. */}
+                  icon, the overflow menu and Add chapter. */}
               <div className="recipe-organize-bar__find">
                 <div className="recipe-organize-bar__search">
                   <SearchIcon size={ICON_SIZE.sm} />
@@ -858,21 +904,43 @@ export function PageRail(props: PageRailProps) {
                     </AnchoredMenu>
                   )}
                 </div>
-                {/* Quiet text, not a button: a view toggle for the list
-                    below, sitting with the toolbar's other controls. Folding
-                    every chapter is how a long book's chapters fit on screen
-                    to be dragged into order; hidden while searching or
-                    filtering, which open every chapter. */}
+                {/* Overflow: folding every chapter is useful (it fits a long
+                    book's chapters on screen to be dragged into order) but is
+                    not a main action. Hidden while searching or filtering,
+                    which open every chapter. */}
                 {namedSectionIds.length > 0 && !organizeFiltering && (
-                  <button
-                    type="button"
-                    className="recipe-organize-bar__fold-all"
-                    onClick={() =>
-                      setCollapsedSections(allSectionsCollapsed ? new Set() : new Set(namedSectionIds))
-                    }
-                  >
-                    {allSectionsCollapsed ? "Expand all" : "Collapse all"}
-                  </button>
+                  <div className="recipe-organize-bar__sort" ref={utilityMenuRef}>
+                    <IconButton
+                      aria-label="More organize options"
+                      title="More"
+                      aria-haspopup="menu"
+                      aria-expanded={utilityMenuOpen}
+                      selected={utilityMenuOpen}
+                      onClick={() => setUtilityMenuOpen((open) => !open)}
+                    >
+                      <MoreHorizontalIcon size={ICON_SIZE.md} />
+                    </IconButton>
+                    {utilityMenuOpen && (
+                      <AnchoredMenu
+                        anchorRef={utilityMenuRef}
+                        onClose={closeUtilityMenu}
+                        label="More organize options"
+                        align="end"
+                      >
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="cp-menu__item"
+                          onClick={() => {
+                            setUtilityMenuOpen(false);
+                            changeCollapsed(allSectionsCollapsed ? new Set() : new Set(namedSectionIds));
+                          }}
+                        >
+                          {allSectionsCollapsed ? "Expand all chapters" : "Collapse all chapters"}
+                        </button>
+                      </AnchoredMenu>
+                    )}
+                  </div>
                 )}
                 {/* Sections are made in here, so the control to make one is in
                     here too. Two jobs, one button: with recipes selected it
@@ -1196,7 +1264,12 @@ export function PageRail(props: PageRailProps) {
                     } ${isFirstNested ? "recipe-page-rail__row--section-first" : ""}`}
                   >
                     {showSectionHeader && section && (
-                      <div className="recipe-page-rail__section-header">
+                      <div
+                        className="recipe-page-rail__section-header"
+                        // The whole heading is a drop target: a recipe dropped
+                        // on it goes to the end of this chapter, folded or not.
+                        data-rail-section-add={section.id}
+                      >
                         {!organizeFiltering && (
                           <button
                             type="button"
@@ -1240,30 +1313,9 @@ export function PageRail(props: PageRailProps) {
                             ? "1 recipe"
                             : `${itemIdsForSection(section.id).length} recipes`}
                         </span>
-                        {/* A folded chapter is its name and count only: the row
-                            of folded headings is for reordering. */}
-                        {!sectionFolded(section.id) && !organizeFiltering && (
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-compact recipe-page-rail__section-add"
-                            // Also a drop target: a recipe dropped on it goes to
-                            // the end of this chapter.
-                            data-rail-section-add={section.id}
-                            aria-label={`Add a recipe to ${section.title}`}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              openAddToSection(section.id);
-                            }}
-                            onPointerDown={(event) => event.stopPropagation()}
-                          >
-                            <PlusIcon size={ICON_SIZE.sm} />
-                            {/* Dropped in a narrow heading (container query in
-                                print.css) so the chapter name keeps its room. */}
-                            <span className="recipe-page-rail__section-add-label">Add recipe</span>
-                          </button>
-                        )}
-                        {/* The less common actions, rename and delete, wait in
-                            a menu so the chapter name stays the main thing. */}
+                        {/* Add recipe, rename and delete wait in a menu so the
+                            chapter name stays the main thing. A folded chapter
+                            is its name and count only. */}
                         {!sectionFolded(section.id) && (
                           <div
                             className="recipe-page-rail__section-menu"
@@ -1290,6 +1342,20 @@ export function PageRail(props: PageRailProps) {
                                 label={`Actions for ${section.title}`}
                                 align="end"
                               >
+                                {!organizeFiltering && (
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    className="cp-menu__item"
+                                    onClick={() => {
+                                      setChapterMenuId(null);
+                                      openAddToSection(section.id);
+                                    }}
+                                  >
+                                    <PlusIcon size={ICON_SIZE.sm} />
+                                    Add recipe
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   role="menuitem"
