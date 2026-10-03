@@ -303,11 +303,13 @@
   /* Stays right-aligned when a narrow organizer wraps it under the title. */
   margin-left: auto;
 }
-/* The second row: search across, Sort and filter at its end. */
+/* The second row: search, then Sort and filter, right-aligned like the
+   row above. */
 .recipe-organize-bar__find {
   display: flex;
   flex: 1 0 100%;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -337,8 +339,9 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  /* Always open, and takes whatever its row leaves beside Sort and filter. */
-  flex: 1 1 auto;
+  /* Always open, at a fixed width; it only gives some up when the organizer
+     is too narrow to hold it. */
+  flex: 0 1 240px;
   min-width: 0;
   height: 30px;
   padding: 0 0 0 9px;
