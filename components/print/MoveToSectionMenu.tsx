@@ -50,7 +50,7 @@ export function MoveToSectionMenu({
       simply not passed. */
   sections: MoveToSectionOption[];
   onMove: (sectionId: string) => void;
-  /** Omit to hide the "new chapter" row. */
+  /** Omit to hide the "Add chapter" row. */
   onNewSection?: () => void;
   onClose: () => void;
 }) {
@@ -102,7 +102,7 @@ export function MoveToSectionMenu({
           }}
         >
           <PlusIcon size={ICON_SIZE.sm} />
-          New chapter
+          Add chapter
         </button>
       )}
     </div>,

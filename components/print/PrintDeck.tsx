@@ -676,7 +676,7 @@ export function PrintDeck(props: PrintDeckProps) {
      * yet is exactly when you want to divide it, and hiding the control until
      * chapters exist meant the one place you would look for "put this in a
      * chapter" was empty until you had already been somewhere else and made
-     * one. "New chapter" is always the last item.
+     * one. "Add chapter" is always the last item.
      */
     const moveSections =
       onMoveRecipeToSection && projectMeta.meta.cookbookMode && navItem.kind === "recipe"

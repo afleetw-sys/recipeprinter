@@ -623,6 +623,14 @@
   .recipe-page-rail__section-fold[aria-expanded="false"] {
     transform: rotate(-90deg);
   }
+  /* Pushes itself and Delete to the heading's right edge. */
+  .recipe-page-rail__section-add {
+    flex: 0 0 auto;
+    gap: 4px;
+    margin-left: auto;
+    white-space: nowrap;
+    letter-spacing: normal;
+  }
   .recipe-page-rail__section-count {
     flex: 0 0 auto;
     color: var(--cp-ink-soft);

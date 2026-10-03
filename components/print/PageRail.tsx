@@ -440,6 +440,19 @@ export function PageRail(props: PageRailProps) {
       });
     });
   }
+  /** Opens the Add recipe dialog aimed at the end of one chapter. */
+  const openAddToSection = (sectionId: string) => {
+    setPendingAddSectionId(sectionId);
+    setPendingAddIndex(itemIdsForSection(sectionId).length);
+    // Anchor to the LAST recipe already in the chapter, same as everywhere else
+    // a recipe lands — but a chapter with none yet has no recipe to anchor to,
+    // and falling back to `null` reads as "no anchor at all", which drops the
+    // incoming loading/error placeholder at the very end of the book (behind
+    // the back cover) instead of in this chapter. The chapter's own opener is
+    // anchor enough (see `addRecipeTarget`'s divider case, which this mirrors).
+    setPendingAddAfterRecipeId(itemIdsForSection(sectionId).at(-1) ?? sectionId);
+    setShowAddRecipeDialog(true);
+  };
   /** A search or filter opens every chapter: a match inside a folded one
       would otherwise be found and still not shown. */
   const sectionFolded = (sectionId: string | null) =>
@@ -1244,6 +1257,24 @@ export function PageRail(props: PageRailProps) {
                         )}
                         {/* Not on a folded chapter: deleting is rare and final,
                             and a row of folded headings is for reordering. */}
+                        {!sectionFolded(section.id) && !organizeFiltering && (
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-compact recipe-page-rail__section-add"
+                            // Also a drop target: a recipe dropped on it goes to
+                            // the end of this chapter.
+                            data-rail-section-add={section.id}
+                            aria-label={`Add recipes to ${section.title}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openAddToSection(section.id);
+                            }}
+                            onPointerDown={(event) => event.stopPropagation()}
+                          >
+                            <PlusIcon size={ICON_SIZE.sm} />
+                            <span>Add recipes</span>
+                          </button>
+                        )}
                         {!sectionFolded(section.id) && (
                         <IconButton
                           tone="danger"
@@ -1377,27 +1408,18 @@ export function PageRail(props: PageRailProps) {
                 );
                   });
                   })()}
-                  {organizeMode && group.sectionId && !organizeFiltering && !sectionFolded(group.sectionId) && (
+                  {/* A named chapter's Add recipes is in its heading, beside
+                      Delete. The ungrouped recipes have no heading, so they
+                      keep the card. */}
+                  {organizeMode &&
+                    group.sectionId &&
+                    !organizeFiltering &&
+                    !sections.find((entry) => entry.id === group.sectionId)?.title?.trim() && (
                     <button
                       type="button"
                       className="recipe-page-rail__section-add-card"
                       data-rail-section-add={group.sectionId}
-                      onClick={() => {
-                        setPendingAddSectionId(group.sectionId);
-                        setPendingAddIndex(itemIdsForSection(group.sectionId!).length);
-                        // Anchor to the LAST recipe already in the chapter, same as
-                        // everywhere else a recipe lands — but a chapter with none
-                        // yet has no recipe to anchor to, and falling back to `null`
-                        // reads as "no anchor at all", which drops the incoming
-                        // loading/error placeholder at the very end of the book
-                        // (behind the back cover) instead of in this chapter. The
-                        // chapter's own opener is anchor enough (see
-                        // `addRecipeTarget`'s divider case, which this mirrors).
-                        setPendingAddAfterRecipeId(
-                          itemIdsForSection(group.sectionId!).at(-1) ?? group.sectionId,
-                        );
-                        setShowAddRecipeDialog(true);
-                      }}
+                      onClick={() => openAddToSection(group.sectionId!)}
                       aria-label={`Add recipes to ${sectionTitleForId(group.sectionId)}`}
                     >
                       <PlusIcon size={ICON_SIZE.md} />

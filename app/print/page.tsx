@@ -1842,7 +1842,7 @@ export default function PrintPage() {
       projectMeta.moveItems([recipeId], sectionId, 0);
       setEditingSectionId(sectionId);
       setEditingSectionTitle("New chapter");
-      showToast("New chapter added. Give it a name.");
+      showToast("Chapter added. Give it a name.");
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [projectMeta],
