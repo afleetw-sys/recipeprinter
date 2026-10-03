@@ -8,8 +8,6 @@ const render = (intro: string | undefined) =>
       title="Dinner"
       recipeTitles={["Lemon Pasta", "Tomato Soup"]}
       intro={intro}
-      template="classic"
-      showDecoration={false}
     />,
   );
 

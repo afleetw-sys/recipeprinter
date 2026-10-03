@@ -488,9 +488,6 @@ export const ScaledPage = memo(function ScaledPage({
           >
             <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>
               <div className={`recipe-card-page recipe-card-page--front ${isLastSheet ? "recipe-card-page--no-break" : ""}`}>
-                {anySlot.kind === "divider" && template === "bistro" && cookbookMode && (
-                  <BistroCheckerSpine className="recipe-card-page__spine" />
-                )}
                 {anySlot.kind === "divider" ? (
                   <DividerFace
                     title={anySlot.displayTitle}
@@ -502,8 +499,6 @@ export const ScaledPage = memo(function ScaledPage({
                     cardPhotoUrl={anySlot.cardPhotoUrl}
                     cardGridImages={anySlot.cardGridImages}
                     intro={anySlot.intro}
-                    template={template}
-                    showDecoration={showDecoration}
                     showEmptyFields={showEmptyFields}
                     inlineEdit={dividerEdit?.sectionId === anySlot.id ? dividerEdit : undefined}
                   />
@@ -513,8 +508,6 @@ export const ScaledPage = memo(function ScaledPage({
                     kicker={tocKicker}
                     title={tocTitle}
                     continued={anySlot.continued}
-                    template={template}
-                    showDecoration={showDecoration}
                     inlineEdit={tocEdit}
                   />
                 ) : (
@@ -572,6 +565,13 @@ export const ScaledPage = memo(function ScaledPage({
                 lastGroupIsFront ? "recipe-card-page--no-break" : ""
               }`}
               data-preview-hidden={!showAllFaces && activeSide !== "front" ? "true" : undefined}
+              // A page a recipe runs onto: its card draws only the theme's
+              // edge, so the page furniture drops to where the art was.
+              data-edge-only={
+                cookbookMode && sheet.slots.some((slot) => slot?.kind === "recipe" && slot.isContinuation)
+                  ? "true"
+                  : undefined
+              }
             >
               {/* Book furniture, so it prints only in a book. Every sheet is
                   numbered in both modes — the strip below the deck says which

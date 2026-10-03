@@ -70,3 +70,75 @@ test("a recipe too long for one page continues onto the next instead of being cu
     })(),
   );
 });
+
+/** The fixture book in `template`, its chapter opener carrying a photo, and its
+    first recipe long enough to run onto a second page. */
+function themedBook(template: string) {
+  const book = structuredClone(fixture);
+  book.project.settings.template = template;
+  (book.project.sections[0] as { cardPhotoUrl?: string }).cardPhotoUrl = "/images/chapter-photo-fixture.png";
+  const recipe = book.project.sections[0].items[0].recipe;
+  recipe.ingredients = Array.from({ length: 30 }, (_, i) => ({ raw: `${i + 1} cups of ingredient ${i + 1}` }));
+  recipe.instructions = Array.from({ length: 26 }, (_, i) => ({
+    step: i + 1,
+    text: `Step ${i + 1}: stir the pot slowly and keep going until everything is combined.`,
+  }));
+  return book;
+}
+
+/** A 1x1 photo, so the chapter opener has an image without the network. */
+async function servePhoto(page: Page) {
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC",
+    "base64",
+  );
+  await page.route("**/images/chapter-photo-fixture.png", (route) =>
+    route.fulfill({ contentType: "image/png", body: png }),
+  );
+}
+
+// A chapter opener draws none of its theme's decoration, so it must not keep
+// the gutter a theme reserves for one either. Bistro, Pantry and Quilt kept
+// their spine's gutter, and the photo sat off-centre with a grey strip of text
+// scrim beside it. Heirloom and Keepsake frame a small photo on purpose, so
+// they are left out.
+test("a chapter opener's photo sits centred on the page in every band theme", async ({ page }) => {
+  await servePhoto(page);
+  const misplaced: string[] = [];
+  for (const template of [
+    "classic", "pantry", "typewriter", "bistro", "diner", "supper", "poster",
+    "market", "garden", "counter", "quilt", "christmas",
+  ]) {
+    await openExport(page, themedBook(template));
+    const [left, right] = await page.$eval(".recipe-card--chapter-with-photo", (card) => {
+      const photo = card.querySelector(".recipe-card__chapter-photo")!.getBoundingClientRect();
+      const sheet = card.closest(".recipe-card-page")!.getBoundingClientRect();
+      return [photo.left - sheet.left, sheet.right - photo.right];
+    });
+    if (Math.abs(left - right) > 1) misplaced.push(`${template}: ${left.toFixed(1)}px left, ${right.toFixed(1)}px right`);
+  }
+  expect(misplaced).toEqual([]);
+});
+
+// A page a recipe runs onto keeps only its theme's edge; the illustration in
+// the foot stays on the recipe's first page. Where the art is gone, the page
+// number goes back to the plain book foot, the same place a plain theme puts
+// it, rather than floating where the art used to be.
+test("a recipe's later pages put the page number at the plain foot in the illustrated themes", async ({ page }) => {
+  await servePhoto(page);
+  const folioLift = async (template: string) => {
+    await openExport(page, themedBook(template));
+    return page.$eval("[data-edge-only] .recipe-book-folio", (folio) => {
+      const sheet = folio.closest(".recipe-card-page")!.getBoundingClientRect();
+      return Math.round(sheet.bottom - folio.getBoundingClientRect().bottom);
+    });
+  };
+  const plain = await folioLift("classic");
+  const lifted: string[] = [];
+  for (const template of ["garden", "christmas", "market"]) {
+    const lift = await folioLift(template);
+    if (Math.abs(lift - plain) > 1) lifted.push(`${template}: ${lift}px up, plain is ${plain}px`);
+  }
+  expect(lifted).toEqual([]);
+  expect(await overflowingContent(page)).toEqual([]);
+});
