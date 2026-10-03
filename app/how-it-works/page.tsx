@@ -6,7 +6,7 @@ import {
   LandingSection,
 } from "@/components/seo/LandingFrame";
 import { AppsIcon, ImageIcon, LinkIcon, TextIcon } from "@/components/icons";
-import { FaqSection } from "@/components/seo/FaqSection";
+import { FaqCards } from "@/components/seo/FaqCards";
 import { OverviewGrid, type OverviewItem } from "@/components/seo/OverviewGrid";
 import { FeatureCards } from "@/components/seo/FeatureCards";
 import { PickerRow } from "@/components/seo/PickerRow";
@@ -146,7 +146,7 @@ export default function HowItWorksPage() {
       </LandingSection>
 
       <LandingSection id="faq-heading" heading="Questions about the import">
-        <FaqSection items={FAQS} />
+        <FaqCards items={FAQS} />
       </LandingSection>
 
       <LandingClose />
