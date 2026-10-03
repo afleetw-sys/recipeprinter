@@ -6347,10 +6347,12 @@ export default function PrintPage() {
         deleteItemTitle={pendingDelete?.title ?? "this item"}
         deleteItemDescription={
           pendingDelete?.kind === "section"
-            ? "The chapter page and grouping will be removed from this print project."
+            ? "The chapter page and grouping will be removed from this cookbook."
             : pendingDelete?.kind === "cover"
               ? "You can add it back from the page list at any time."
-              : "It'll be removed from your print list. This can't be undone."
+              : cookbookMode
+                ? "It'll be removed from this cookbook. This can't be undone."
+                : "It'll be removed from your print list. This can't be undone."
         }
         deletePrimaryLabel={
           pendingDelete?.kind === "section"

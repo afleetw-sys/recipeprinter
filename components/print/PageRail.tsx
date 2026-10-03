@@ -845,20 +845,24 @@ export function PageRail(props: PageRailProps) {
                     </AnchoredMenu>
                   )}
                 </div>
+                {/* Spelled out: as a pair of chevrons it read as nothing in
+                    particular. Folding every chapter is how a long book's
+                    chapters fit on screen to be dragged into order. */}
                 {namedSectionIds.length > 0 && (
-                  <IconButton
-                    aria-label={allSectionsCollapsed ? "Expand all chapters" : "Collapse all chapters"}
-                    title={allSectionsCollapsed ? "Expand all chapters" : "Collapse all chapters"}
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-compact recipe-organize-bar__fold-all"
                     onClick={() =>
                       setCollapsedSections(allSectionsCollapsed ? new Set() : new Set(namedSectionIds))
                     }
                   >
                     {allSectionsCollapsed ? (
-                      <ExpandAllIcon size={ICON_SIZE.md} />
+                      <ExpandAllIcon size={ICON_SIZE.sm} />
                     ) : (
-                      <CollapseAllIcon size={ICON_SIZE.md} />
+                      <CollapseAllIcon size={ICON_SIZE.sm} />
                     )}
-                  </IconButton>
+                    <span>{allSectionsCollapsed ? "Expand all" : "Collapse all"}</span>
+                  </button>
                 )}
                 {/* Sections are made in here, so the control to make one is in
                     here too. Two jobs, one button: with recipes selected it

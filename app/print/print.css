@@ -215,6 +215,15 @@
 
 /* In the organizer's toolbar beside Sort: a shared compact button, laid out
    only so it does not wrap or stretch. */
+/* Sized to the longer of its two labels, so switching between them never
+   re-widths the toolbar and wraps "Organize recipes". */
+.recipe-organize-bar__fold-all {
+  flex: 0 0 auto;
+  gap: 4px;
+  min-width: 104px;
+  white-space: nowrap;
+}
+
 .recipe-organize-bar__add-section {
   flex: 0 0 auto;
   white-space: nowrap;
