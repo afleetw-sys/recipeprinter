@@ -303,14 +303,37 @@
   /* Stays right-aligned when a narrow organizer wraps it under the title. */
   margin-left: auto;
 }
-/* The second row: search, then Sort and filter, right-aligned like the
-   row above. */
+/* The second row: search on the left, Sort and filter on the right. A
+   size container, so the button can drop its label when the row is narrow. */
 .recipe-organize-bar__find {
   display: flex;
   flex: 1 0 100%;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 8px;
+  container-type: inline-size;
+}
+/* The organizer's icon buttons are a fixed 30px square; this one widens to
+   carry its label, and goes back to the square without it. */
+.recipe-print-shell--organizing .recipe-organize-bar__view-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  gap: 6px;
+  padding: 0 10px 0 8px;
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  white-space: nowrap;
+}
+@container (max-width: 380px) {
+  .recipe-organize-bar__view-label {
+    display: none;
+  }
+  .recipe-print-shell--organizing .recipe-organize-bar__view-button {
+    width: 30px;
+    padding: 0;
+  }
 }
 
 /* Sort: an icon button at the head of the organizer's actions that opens its
@@ -628,6 +651,8 @@
   }
 
   .recipe-print-shell--organizing .recipe-page-rail__section-header {
+    /* A size container, so its Add recipe can shed its label when narrow. */
+    container-type: inline-size;
     grid-column: 1 / -1;
     padding: 4px 2px 2px;
     color: var(--cp-ink);
@@ -669,6 +694,15 @@
     margin-left: auto;
     white-space: nowrap;
     letter-spacing: normal;
+  }
+  @container (max-width: 340px) {
+    .recipe-page-rail__section-add-label {
+      display: none;
+    }
+    .recipe-page-rail__section-add {
+      width: 30px;
+      padding: 0;
+    }
   }
   .recipe-page-rail__section-count {
     flex: 0 0 auto;

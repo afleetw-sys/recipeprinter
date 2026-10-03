@@ -816,12 +816,19 @@ export function PageRail(props: PageRailProps) {
                         : "Sort and filter recipes"
                     }
                     title="Sort and filter"
+                    className="recipe-organize-bar__view-button"
                     aria-haspopup="menu"
                     aria-expanded={filterMenuOpen}
                     selected={filterMenuOpen || organizeFilters.length > 0 || railSortMode !== "custom"}
                     onClick={() => setFilterMenuOpen((open) => !open)}
                   >
                     <FilterIcon size={ICON_SIZE.md} />
+                    {/* Dropped when the organizer is too narrow for it (a
+                        container query in print.css); the icon and the
+                        accessible name carry on alone. */}
+                    <span className="recipe-organize-bar__view-label" aria-hidden>
+                      Sort &amp; filter
+                    </span>
                   </IconButton>
                   {organizeFilters.length > 0 && (
                     <span className="recipe-organize-bar__filter-badge" aria-hidden>
@@ -1252,7 +1259,9 @@ export function PageRail(props: PageRailProps) {
                             onPointerDown={(event) => event.stopPropagation()}
                           >
                             <PlusIcon size={ICON_SIZE.sm} />
-                            <span>Add recipe</span>
+                            {/* Dropped in a narrow heading (container query in
+                                print.css) so the chapter name keeps its room. */}
+                            <span className="recipe-page-rail__section-add-label">Add recipe</span>
                           </button>
                         )}
                         {!sectionFolded(section.id) && (
