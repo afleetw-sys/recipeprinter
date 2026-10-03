@@ -97,6 +97,12 @@ export interface Recipe {
   ingredients: RecipeIngredient[];
   instructions: RecipeInstruction[];
 
+  /** The card's "Ingredients" / "Steps" headings for this recipe: absent is
+      the default, `""` is removed, anything else the cook's own words. See
+      lib/recipeHeadings.ts. */
+  ingredientsHeading?: string;
+  stepsHeading?: string;
+
   tags?: string[];
   cuisine?: string;
   course?: string;

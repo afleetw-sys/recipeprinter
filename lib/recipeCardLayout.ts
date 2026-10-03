@@ -717,7 +717,9 @@ export type RecipeCardEditTarget =
   | { kind: "ingredient"; index: number }
   | { kind: "step"; index: number }
   | { kind: "ingredientSection"; index: number }
-  | { kind: "instructionSection"; index: number };
+  | { kind: "instructionSection"; index: number }
+  | { kind: "ingredientsHeading" }
+  | { kind: "stepsHeading" };
 
 export interface RecipeCardInlineEdit {
   /* No photo fields. A recipe's photo is changed from the page toolbar, which
