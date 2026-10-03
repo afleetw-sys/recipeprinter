@@ -21,6 +21,7 @@ import {
   rememberLegacyEmpty,
 } from "@/lib/legacyCollections";
 import { stripUndefined } from "@/lib/firebase/stripUndefined";
+import { projectLibraryChanged } from "@/lib/projectCount";
 import {
   recipePrinterProjectPath,
   recipePrinterProjectsPath,
@@ -468,6 +469,7 @@ export async function savePrintProject(project: PrintProject): Promise<PrintProj
     // This very save, retried after its reply was lost: already there, and
     // described exactly as that attempt wrote it.
     const alreadyLanded = storedOrder === saveOrder;
+    const created = !stored;
     const next = stripUndefined(slimIngredients({
       ...project,
       saveId,
@@ -482,7 +484,7 @@ export async function savePrintProject(project: PrintProject): Promise<PrintProj
     // ever being half-written — a parent claiming 40 recipes with content from
     // an older save would be worse than either document alone.
     const { parent, content } = splitProject(next);
-    if (alreadyLanded) return { project: next, signature: contentSignature(stripUndefined(content)) };
+    if (alreadyLanded) return { project: next, signature: contentSignature(stripUndefined(content)), created };
     transaction.set(ref, stripUndefined(parent));
 
     // …and the recipes only when they are not already there. See
@@ -498,7 +500,7 @@ export async function savePrintProject(project: PrintProject): Promise<PrintProj
       lastWrite.signature === signature;
     if (!contentAlreadyStored) transaction.set(contentRef, strippedContent);
 
-    return { project: next, signature };
+    return { project: next, signature, created };
   });
 
   // Recorded out here rather than inside the callback: Firestore re-runs a
@@ -508,6 +510,10 @@ export async function savePrintProject(project: PrintProject): Promise<PrintProj
     revision: Number(committed.project.revision ?? 0),
     signature: committed.signature,
   });
+  // A new project: the account menu's count (lib/projectCount) is kept on
+  // this device and re-reads itself on this. A save of one that already
+  // existed changes nothing it counts.
+  if (committed.created) projectLibraryChanged(project.ownerUid);
   return committed.project;
 }
 
@@ -789,6 +795,8 @@ export async function deletePrintProject(
       ? Promise.resolve()
       : deleteDoc(doc(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId)),
   ]);
+  // Gone from the account: the menu's count re-reads (see savePrintProject).
+  projectLibraryChanged(ownerUid);
   // Best-effort: the project is gone either way, and a photo that fails to
   // delete costs a little storage, not a broken book.
   const storage = getFirebaseStorage();

@@ -355,12 +355,14 @@ function QuiltStrip() {
 // assembled from public/images/groceries at the mockup's scale, two runs of
 // the eight evenly spaced, so it prints as vector and keeps its spacing at any
 // card width.
-function MarketArt() {
+function MarketArt({ edgeOnly = false }: { edgeOnly?: boolean }) {
   return (
     <>
       <div className="recipe-card__market-bar" aria-hidden />
-      {/* eslint-disable-next-line @next/next/no-img-element -- fixed decorative vector art, not a photo to optimize */}
-      <img className="recipe-card__market-band" src="/images/market-band.svg" alt="" aria-hidden />
+      {!edgeOnly && (
+        // eslint-disable-next-line @next/next/no-img-element -- fixed decorative vector art, not a photo to optimize
+        <img className="recipe-card__market-band" src="/images/market-band.svg" alt="" aria-hidden />
+      )}
     </>
   );
 }
@@ -445,21 +447,32 @@ function SupperFrame({ index = 0 }: { index?: number }) {
  * Both used to pay full price for a layer neither one shows. Measured on a
  * 60-recipe project in Bistro, that was 36,660 of 55,967 total DOM nodes.
  *
- * Centralized here rather than repeated at each of the three faces below so
+ * Centralized here rather than repeated at each of the faces below so
  * "which templates have a decorative layer" is stated once.
+ *
+ * In a cookbook, which pages carry it follows each page's job, so a book does
+ * not repeat the same art on every page:
+ *   - a recipe's first page carries all of it;
+ *   - a page a recipe runs onto keeps only the theme's EDGE (`edgeOnly`): the
+ *     spine, frame, strip, ruled paper or top bar that holds the recipe
+ *     together as one piece. The illustrations (Garden's hills and tomatoes,
+ *     Christmas's hats, Market's groceries) stay on the first page;
+ *   - the opening page, the contents and the chapter openers carry none, so
+ *     their faces don't render this at all;
+ *   - the back cover carries all of it, as the book's closing page.
+ * Recipe cards are not a book: every face of a card keeps everything.
+ * lib/bookPageDecoration.test.tsx holds the rule for every theme.
  */
 function TemplateDecoration({
   template,
   show = true,
-  continued = false,
-  withPhotoGap = false,
+  edgeOnly = false,
   recipeIndex = 0,
 }: {
   template?: RecipePrintTemplate;
   show?: boolean;
-  /** A decorative motif belongs to the front face; continuations go without. */
-  continued?: boolean;
-  withPhotoGap?: boolean;
+  /** Draw only the theme's edge, not its illustration. See above. */
+  edgeOnly?: boolean;
   /** The recipe's place in the list, for decorations that vary by recipe. */
   recipeIndex?: number;
 }) {
@@ -467,12 +480,12 @@ function TemplateDecoration({
   if (template === "bistro") return <BistroCheckerSpine />;
   if (template === "counter") return <CounterCheckerBand />;
   if (template === "pantry") return <PantryRuleLines />;
-  if (template === "garden") return <GardenArt />;
+  if (template === "garden") return edgeOnly ? null : <GardenArt />;
   if (template === "quilt") return <QuiltStrip />;
-  if (template === "market") return <MarketArt />;
+  if (template === "market") return <MarketArt edgeOnly={edgeOnly} />;
   if (template === "supper") return <SupperFrame index={recipeIndex} />;
   if (template === "poster") return <PosterArt />;
-  if (template === "christmas") return <ChristmasHats />;
+  if (template === "christmas") return edgeOnly ? null : <ChristmasHats />;
   return null;
 }
 
@@ -1224,8 +1237,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       <TemplateDecoration
         template={template}
         show={showDecoration}
-        continued={continued}
-        withPhotoGap={showPhoto}
+        edgeOnly={cookbookMode && continued}
         recipeIndex={recipeIndex}
       />
       {showHeader ? (
@@ -1648,8 +1660,6 @@ export const DividerFace = memo(function DividerFace({
   recipeTitles,
   previewHidden = false,
   inlineEdit,
-  template,
-  showDecoration = true,
   showEmptyFields = false,
 }: {
   title: string;
@@ -1667,9 +1677,6 @@ export const DividerFace = memo(function DividerFace({
   recipeTitles?: string[];
   previewHidden?: boolean;
   inlineEdit?: DividerCardInlineEdit;
-  template?: RecipePrintTemplate;
-  /** See `TemplateDecoration` — false on surfaces that never show it. */
-  showDecoration?: boolean;
   /** Reveal the opener lines nobody has written yet — see RecipeCardPrint. */
   showEmptyFields?: boolean;
 }) {
@@ -1861,7 +1868,7 @@ export const DividerFace = memo(function DividerFace({
       {/* The chapter opener's photo is changed from the page toolbar, like
           every other page's. */}
       <div className="recipe-card__chapter-frame" aria-hidden />
-      <TemplateDecoration template={template} show={showDecoration} />
+      {/* No `TemplateDecoration`: a chapter opener's photo is its decoration. */}
       <div className="recipe-card__chapter-body">
         <span className="recipe-card__chapter-ornament" aria-hidden />
         {showChapterNumber && (
@@ -2193,10 +2200,8 @@ export const CoverFace = memo(function CoverFace({
             {dedicationMode === "photo" && <span className="photo-unavailable-message">Photo unavailable</span>}
           </div>
         )}
-        <TemplateDecoration
-          template={template ?? draft.template}
-          show={showDecoration && (template ?? draft.template) !== "bistro"}
-        />
+        {/* No `TemplateDecoration`: the opening page keeps only the cover
+            band, the quiet accent at its top, like the front of any book. */}
         <div className="recipe-card__cover-band" aria-hidden>
           {(template ?? draft.template) === "bistro" && <BistroCoverBandArt />}
         </div>
@@ -2467,9 +2472,7 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
   kicker,
   title,
   continued = false,
-  template,
   previewHidden = false,
-  showDecoration = true,
   inlineEdit,
 }: {
   entries: TableOfContentsEntry[];
@@ -2478,9 +2481,7 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
   /** A contents page after the first. It repeats neither the heading nor the
       editing affordances — it is the same list, still running. */
   continued?: boolean;
-  template?: RecipePrintTemplate;
   previewHidden?: boolean;
-  showDecoration?: boolean;
   inlineEdit?: TableOfContentsInlineEdit;
 }) {
   const canEdit = Boolean(inlineEdit);
@@ -2509,7 +2510,7 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
       className="recipe-card recipe-card--toc"
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
-      <TemplateDecoration template={template} show={showDecoration} />
+      {/* No `TemplateDecoration`: the contents is type alone. */}
       <div className="recipe-card__toc-content">
         {heading}
         {/* Click the words to change them, as on every other page. Neither

@@ -5261,6 +5261,36 @@
   --recipe-card-keepout-h: 2.21in;
 }
 
+/* A page a recipe runs onto keeps only its theme's edge (see
+   `TemplateDecoration`): Christmas's hats, Market's groceries and Garden's
+   hills and tomatoes stay on the recipe's first page. With the art gone, the
+   page number and chapter name go back to the plain book foot, and the recipe
+   runs down to the same line a plain theme's does, so the room the art held
+   goes to the steps. ScaledPage marks the page (`data-edge-only`); the card's
+   own class covers the measurer, which renders the same faces. */
+.recipe-template--christmas .recipe-card-page[data-edge-only] .recipe-book-runhead,
+.recipe-template--christmas .recipe-card-page[data-edge-only] .recipe-book-folio,
+.recipe-template--market .recipe-card-page[data-edge-only] .recipe-book-runhead,
+.recipe-template--market .recipe-card-page[data-edge-only] .recipe-book-folio,
+.recipe-template--garden .recipe-card-page[data-edge-only] .recipe-book-runhead,
+.recipe-template--garden .recipe-card-page[data-edge-only] .recipe-book-folio {
+  bottom: 0.24in;
+}
+
+.recipe-print-preview .recipe-card-set.recipe-template--christmas .recipe-card.recipe-card--continued[data-in-book],
+.recipe-print-preview .recipe-card-set.recipe-template--market .recipe-card.recipe-card--continued[data-in-book],
+.recipe-print-preview .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--continued[data-in-book] {
+  --recipe-card-padding-bottom: 0.42in;
+  --recipe-card-keepout-w: 0in;
+  --recipe-card-keepout-h: 0in;
+}
+
+.recipe-print-preview--letter .recipe-card-set.recipe-template--christmas .recipe-card.recipe-card--continued[data-in-book],
+.recipe-print-preview--letter .recipe-card-set.recipe-template--market .recipe-card.recipe-card--continued[data-in-book],
+.recipe-print-preview--letter .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--continued[data-in-book] {
+  --recipe-card-padding-bottom: 0.5in;
+}
+
 .recipe-template--supper .recipe-book-runhead,
 .recipe-template--supper .recipe-book-folio {
   bottom: calc(var(--supper-inset) + 16 * var(--supper-u) + 0.12in);
@@ -9191,6 +9221,17 @@ textarea.recipe-card__toc-title {
   padding-left: calc(var(--quilt-strip) + var(--quilt-gutter));
 }
 
+/* Bistro, Pantry and Quilt pad every card's left edge to clear their spine.
+   A chapter opener draws no spine (see `TemplateDecoration`), and an opener
+   lays out without padding, so it gives that gutter back: kept, it pushed the
+   photo off-centre and left a strip of the text scrim beside it. Named with
+   the card set so it outranks each theme's own padding wherever that sits. */
+.recipe-card-set.recipe-template--bistro .recipe-card--chapter,
+.recipe-card-set.recipe-template--pantry .recipe-card--chapter,
+.recipe-card-set.recipe-template--quilt .recipe-card--chapter {
+  padding-left: 0;
+}
+
 .recipe-template--quilt .recipe-card__footer {
   left: calc(var(--quilt-strip) + var(--quilt-gutter));
 }
@@ -9387,16 +9428,12 @@ textarea.recipe-card__toc-title {
   display: block;
 }
 
-/* The frame and its utensil dress a RECIPE page. A cookbook's decorative
-   pages (the covers, the dedication, the spine, the contents, a chapter
-   opener) go without: they carry their own layout, and a recipe frame around
-   them reads as a card rather than a book. */
+/* The frame and its utensil dress a RECIPE page. The covers and the spine go
+   without: they carry their own layout, and a recipe frame around them reads
+   as a card rather than a book. (The opening page, the contents and chapter
+   openers draw no theme decoration at all; see `TemplateDecoration`.) */
 .recipe-template--supper .recipe-card--cover .recipe-card__supper-frame,
-.recipe-template--supper .recipe-card--cover .recipe-card__supper-utensil,
-.recipe-template--supper .recipe-card--toc .recipe-card__supper-frame,
-.recipe-template--supper .recipe-card--toc .recipe-card__supper-utensil,
-.recipe-template--supper .recipe-card--divider .recipe-card__supper-frame,
-.recipe-template--supper .recipe-card--divider .recipe-card__supper-utensil {
+.recipe-template--supper .recipe-card--cover .recipe-card__supper-utensil {
   display: none;
 }
 

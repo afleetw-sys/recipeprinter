@@ -27,6 +27,7 @@ import {
   pruneLocalProjects,
 } from "@/lib/localProjects";
 import { libraryProjects, projectListTitle } from "@/lib/projectLibrary";
+import { storeProjectCount } from "@/lib/projectCount";
 import { photoGridLayout } from "@/lib/photoGrid";
 import type { PrintProjectSummary } from "@/types/recipe";
 
@@ -188,6 +189,14 @@ export default function ProjectsPage() {
     () => libraryProjects({ accountProjects, localProjects }),
     [accountProjects, localProjects],
   );
+
+  // This page holds the whole list, so it is the account menu's count too
+  // (lib/projectCount): kept on the device, it opens with the menu instead of
+  // being read from the account each time. Only from a load that answered.
+  const countUid = user?.uid;
+  useEffect(() => {
+    if (countUid && !loading && !error) storeProjectCount(countUid, projects.length);
+  }, [countUid, loading, error, projects.length]);
 
   const cookbooks = projects.filter((project) => project.kind !== "printProject");
   const recipeCardProjects = projects.filter((project) => project.kind === "printProject");

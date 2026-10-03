@@ -27,8 +27,6 @@ function setup(intro: string | undefined) {
       recipeTitles={TITLES}
       intro={intro}
       inlineEdit={inlineEdit}
-      template="classic"
-      showDecoration={false}
     />,
   );
   const line = container.querySelector(".recipe-card__chapter-intro") as HTMLElement;

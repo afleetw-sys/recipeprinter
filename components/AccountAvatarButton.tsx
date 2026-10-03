@@ -8,7 +8,8 @@ import { AccountIcon, BookIcon, ICON_SIZE, LogoutIcon, SettingsIcon } from "@/co
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadLocalProjects } from "@/lib/localProjects";
-import { loadPrintProjectSummaries, summarizePrintProject } from "@/lib/printProjects";
+import { summarizePrintProject } from "@/lib/printProjects";
+import { useProjectCount } from "@/lib/projectCount";
 import { hasLocalCookbookUnlocks } from "@/lib/cookbookUnlocks";
 import { navigateAfterOverlayHistory } from "@/lib/useBackDismiss";
 import { libraryProjects } from "@/lib/projectLibrary";
@@ -16,13 +17,6 @@ import { useMenuDismiss } from "@/lib/useMenuDismiss";
 import type { PrintProjectSummary } from "@/types/recipe";
 import type { User } from "firebase/auth";
 import { IconButton } from "@/components/Controls";
-
-// Reopening the dropdown moments after closing it re-ran the same Firestore
-// read for a number that had not changed. Same fresh-window idea as the old
-// preview dropdown's own `projectsCache` — a badge is worth a cheap number,
-// not a fresh one on every open.
-const projectCountCache = new Map<string, { count: number; at: number }>();
-const PROJECT_COUNT_FRESH_MS = 10_000;
 
 // Two initials from the signed-in identity — first+last of a display name, else
 // the first letter of the email — so a logged-in avatar shows who's signed in.
@@ -113,38 +107,12 @@ export default function AccountAvatarButton({
   );
 
   /**
-   * The number on the "Projects" row — the same merged (account + on-device)
-   * count `/projects` itself shows, out of the same `libraryProjects` rule.
-   * Read only on open, and cached briefly, exactly the trade-off the old
-   * preview dropdown made for its own project list: a badge doesn't need to
-   * be more current than the last few seconds, and every open of a header
-   * control is not worth a fresh Firestore read.
+   * The number on the "Projects" row: the same merged (account + on-device)
+   * count `/projects` shows, kept on this device so it is there the moment the
+   * menu opens rather than read from the account each time. See
+   * lib/projectCount for when it is re-read.
    */
-  const uid = user?.uid;
-  const [projectCount, setProjectCount] = useState<number | null>(null);
-  useEffect(() => {
-    if (!open || !uid) return;
-    const cached = projectCountCache.get(uid);
-    if (cached && Date.now() - cached.at < PROJECT_COUNT_FRESH_MS) {
-      setProjectCount(cached.count);
-      return;
-    }
-    let cancelled = false;
-    Promise.all([loadPrintProjectSummaries(uid), Promise.resolve(loadLocalProjects().map(summarizePrintProject))])
-      .then(([accountProjects, freshLocalProjects]) => {
-        if (cancelled) return;
-        const count = libraryProjects({ accountProjects, localProjects: freshLocalProjects }).length;
-        projectCountCache.set(uid, { count, at: Date.now() });
-        setProjectCount(count);
-      })
-      .catch(() => {
-        // No badge is a truer answer than a wrong one — leave whatever was
-        // last known (possibly null) rather than showing a count that failed.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, uid]);
+  const projectCount = useProjectCount(user?.uid, open);
 
   /**
    * What pressing the avatar does, in one place.
