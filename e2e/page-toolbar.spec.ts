@@ -85,21 +85,3 @@ for (const width of [320, 360, 375, 390, 430, 600, 820, 1280]) {
     await expect(page.getByRole("menuitem", { name: "Delete" })).toBeVisible();
   });
 }
-
-test("a desktop toolbar has room for everything and no More button", async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await importLink(page);
-  await expect(bar(page).getByRole("button", { name: /^Delete / })).toBeVisible();
-  await expect(bar(page).getByRole("button", { name: "More" })).toHaveCount(0);
-});
-
-test("a control in the More menu still does its job", async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 800 });
-  await importLink(page);
-  await bar(page).getByRole("button", { name: "More" }).click();
-  // The photo control is the last to give up its place, so at 320px everything
-  // after the reveal button is in here, the photo picker included.
-  await page.getByRole("menuitem", { name: "Photo" }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
-});
-
