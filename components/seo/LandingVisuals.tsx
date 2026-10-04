@@ -339,11 +339,13 @@ export function PhotoGallery({ cardKeys }: { cardKeys: string[] }) {
  * thing read as a spreadsheet.
  *
  * One <table> serves two layouts. At `sm` and up it is an ordinary three
- * column table. Below that it restacks into a block per feature, since three
- * columns inside a phone's width wrapped nearly every cell onto its own line.
- * Restacking keeps one DOM, and one copy of the text for a crawler, instead of
- * rendering a mobile duplicate, so the product names move into per-cell labels
- * that only appear once the header row is hidden.
+ * column table. On a phone three columns wrapped nearly every cell onto its own
+ * line, so each feature's name takes the full width and the two answers sit
+ * side by side under it, beneath the product names stated once at the top.
+ * An earlier phone layout stacked the answers and repeated both names in every
+ * row, which made a ten-row table four screens long. Restacking keeps one DOM,
+ * and one copy of the text for a crawler, instead of rendering a mobile
+ * duplicate.
  *
  * The table is worth reading only if the competitor wins the rows it genuinely
  * wins, so those render exactly like ours.
@@ -369,12 +371,14 @@ export function ComparisonTable({
 
   const cell = (v: ComparisonValue, mine: boolean) => (
     <td
-      className={`px-cp-4 py-cp-4 align-middle max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-cp-4 max-sm:py-cp-1 ${
+      className={`px-cp-4 py-cp-4 align-middle max-sm:block max-sm:pb-cp-3 max-sm:pt-cp-1 ${
         mine ? ours : ""
       }`}
     >
-      <span className="hidden text-cp-small font-semibold text-ink-soft max-sm:inline">
-        {mine ? "RecipePrinter" : competitor}
+      {/* The column header says this on screen; a phone's grid layout can
+          drop the table semantics that tie a cell to it, so say it here too. */}
+      <span className="hidden max-sm:sr-only max-sm:inline">
+        {mine ? "RecipePrinter: " : `${competitor}: `}
       </span>
       {v === false ? (
         <span className="inline-flex items-center">
@@ -406,26 +410,26 @@ export function ComparisonTable({
           <col className="w-[26%]" />
           <col className="w-[26%]" />
         </colgroup>
-        <thead className="max-sm:hidden">
-          <tr>
-            <th scope="col" className="border-b border-line-strong px-cp-4 pb-cp-3 pt-cp-4" aria-label="Feature" />
+        <thead className="max-sm:block">
+          <tr className="max-sm:grid max-sm:grid-cols-2">
+            <th scope="col" className="border-b border-line-strong px-cp-4 pb-cp-3 pt-cp-4 max-sm:hidden" aria-label="Feature" />
             <th
               scope="col"
-              className={`${ours} border-b border-line-strong px-cp-4 pb-cp-3 pt-cp-4 text-cp-body font-extrabold tracking-[-0.02em] text-[var(--cp-ink)]`}
+              className={`${ours} border-b border-line-strong px-cp-4 pb-cp-3 pt-cp-4 text-cp-body font-extrabold tracking-[-0.02em] text-[var(--cp-ink)] max-sm:block`}
             >
               RecipePrinter
             </th>
-            <th scope="col" className="border-b border-line-strong px-cp-4 pb-cp-3 pt-cp-4 text-cp-body font-extrabold tracking-[-0.02em] text-ink">
+            <th scope="col" className="border-b border-line-strong px-cp-4 pb-cp-3 pt-cp-4 text-cp-body font-extrabold tracking-[-0.02em] text-ink max-sm:block">
               {competitor}
             </th>
           </tr>
         </thead>
         {groups.map((group, groupIndex) => (
           <tbody key={group.title} className="max-sm:block">
-            <tr className="max-sm:block">
+            <tr className="max-sm:grid max-sm:grid-cols-2">
               <th
                 scope="colgroup"
-                className={`px-cp-4 pb-cp-2 text-cp-caption font-bold uppercase tracking-[0.11em] text-ink-soft max-sm:block ${
+                className={`px-cp-4 pb-cp-2 text-cp-caption font-bold uppercase tracking-[0.11em] text-ink-soft max-sm:col-span-2 max-sm:block ${
                   groupIndex === 0 ? "pt-cp-3" : "pt-cp-6"
                 }`}
               >
@@ -439,11 +443,11 @@ export function ComparisonTable({
             {group.rows.map((row) => (
               <tr
                 key={row.feature}
-                className="border-t border-line max-sm:block max-sm:py-cp-2"
+                className="border-t border-line max-sm:grid max-sm:grid-cols-2"
               >
                 <th
                   scope="row"
-                  className="px-cp-4 py-cp-4 text-cp-body font-medium leading-snug text-ink max-sm:block max-sm:pb-cp-1 max-sm:font-semibold"
+                  className="px-cp-4 py-cp-4 text-cp-body font-medium leading-snug text-ink max-sm:col-span-2 max-sm:block max-sm:pb-cp-1 max-sm:pt-cp-3 max-sm:font-semibold"
                 >
                   {row.feature}
                 </th>
