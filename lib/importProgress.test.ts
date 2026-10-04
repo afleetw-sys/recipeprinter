@@ -25,6 +25,19 @@ describe("importLoadingLabel", () => {
     expect(importLoadingLabel({ method: "image", source: "   " })).toBe("Reading your photo…");
   });
 
+  it("cuts a long source short, whatever the import method", () => {
+    // Recipe text pasted into the link box became a "hostname" of the whole
+    // recipe run together, and the phone's loading sheet printed all of it
+    // off the edge of the screen (PostHog replay, 2026-10-04).
+    const long = "mexicanpicadilloingredients1lbgroundbeef(orgroundturkey)1onion2cloves";
+    const methods = ["url", "image", "text", "cookpilot", "paprika", "shared", "manual"] as const;
+    for (const method of methods) {
+      const label = importLoadingLabel({ method, source: long });
+      expect(label.length, method).toBeLessThanOrEqual(56);
+      expect(label.endsWith("…"), method).toBe(true);
+    }
+  });
+
   it("has a line for every import method, including ones with no dedicated case", () => {
     const methods = ["url", "image", "text", "cookpilot", "paprika", "shared", "manual"] as const;
     for (const method of methods) {

@@ -14,7 +14,7 @@ import type { QueueItem } from "@/types/recipe";
  * from the item's origin and can be empty.
  */
 export function importLoadingLabel(item: Pick<QueueItem, "method" | "source">): string {
-  const source = item.source?.trim();
+  const source = shortSource(item.source?.trim());
 
   switch (item.method) {
     case "url":
@@ -29,4 +29,16 @@ export function importLoadingLabel(item: Pick<QueueItem, "method" | "source">): 
     default:
       return "Getting the recipe…";
   }
+}
+
+/** Longest source the label repeats. A recipe pasted into the link box arrives
+    as one unbroken "hostname" hundreds of characters long, and a phone's
+    loading sheet printed every one of them off the edge of the screen. */
+const MAX_SOURCE_CHARS = 28;
+
+/** The source cut to `MAX_SOURCE_CHARS`. The label's own closing "…" then
+    marks the cut, so a shortened source never ends in two. */
+function shortSource(source: string | undefined): string | undefined {
+  if (!source || source.length <= MAX_SOURCE_CHARS) return source;
+  return source.slice(0, MAX_SOURCE_CHARS).trimEnd();
 }
