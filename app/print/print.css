@@ -92,8 +92,18 @@
      columns` to keep in step with this one. The deck's own ResizeObserver
      re-scales the page as the column settles. */
   .recipe-print-page .recipe-print-shell {
-    --rail-w: 220px;
-    --panel-w: 330px;
+    /* `--rail-user-w` is the width the cook dragged the rail to (see
+       `.recipe-rail-resizer`), set inline by app/print/page.tsx. Clamped here
+       rather than only where it is dragged, so a width saved on a big screen
+       never squeezes the preview to nothing on a smaller one. */
+    --rail-w: clamp(
+      180px,
+      var(--rail-user-w, 220px),
+      calc(100% - var(--panel-w) - 320px)
+    );
+    /* Its own clamp may not mention `--rail-w`: the rail's clamp already reads
+       this one, and two variables reading each other are both thrown away. */
+    --panel-w: clamp(260px, var(--panel-user-w, 330px), 40%);
     grid-template-columns:
       var(--rail-w)
       calc(100% - var(--rail-w) - var(--panel-w))
@@ -115,6 +125,18 @@
     align-items: stretch;
     overflow: hidden;
   }
+}
+
+/* The drag preview is a copy of the chapter put on <body>, outside the
+   organizer whose rules fold it, so a folded chapter has to be folded again
+   here or it is dragged around showing every recipe it is hiding. */
+.rail-drag-preview.recipe-page-rail__section-group--collapsed .recipe-page-rail__item {
+  display: none;
+}
+
+/* Desktop only: phones have no side rail to resize (see the media rule). */
+.recipe-rail-resizer {
+  display: none;
 }
 
 /* ── Page navigator (PowerPoint-style) ─────────────────────────────────── */
@@ -174,6 +196,16 @@
   background: var(--cp-overlay-hover);
 }
 
+/* The box above is more specific than the shared selected state, so it wiped
+   it: an applied filter or an A–Z sort looked exactly like one that was off. */
+.recipe-print-shell--organizing .icon-button.is-active,
+.recipe-print-shell--organizing .icon-button.is-active:hover:not(:disabled) {
+  border-color: var(--cp-selected-border);
+  background: var(--cp-selected-fill);
+  box-shadow: var(--cp-selected-ring);
+  color: var(--cp-selected-text);
+}
+
 /* ...except the bare ones, which are bare in here too. The rule above is more
    specific than `.icon-button--bare`, so without this the organizer hands the
    border back to every button it contains. */
@@ -183,6 +215,7 @@
 
 /* In the organizer's toolbar beside Sort: a shared compact button, laid out
    only so it does not wrap or stretch. */
+
 .recipe-organize-bar__add-section {
   flex: 0 0 auto;
   white-space: nowrap;
@@ -208,7 +241,7 @@
      Nothing to cancel here as a result: this padding is genuinely all there
      is, and it's covered by this element's own background either way,
      stuck or not. */
-  padding: 8px 2px;
+  padding: 18px 2px 10px;
   /* The bar lives inside the rail's own scroll container (see `.recipe-page-rail`),
      not above it — so without this, scrolling down the chapter list (including the
      auto-scroll a freshly added chapter triggers) carries "Back to pages" and
@@ -224,8 +257,13 @@
    the line about moving recipes stack; Back stays level with the title. */
 .recipe-organize-bar__heading {
   display: flex;
+  /* Zero basis: the hint line wraps to make room for the toolbar (an open
+     search field included) before the toolbar is pushed under the title.
+     Only below this floor does it move down. */
+  flex: 1 1 0;
   align-items: flex-start;
   gap: 4px;
+  min-width: 200px;
 }
 .recipe-organize-bar__titles {
   display: flex;
@@ -249,6 +287,17 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  /* Stays right-aligned when a narrow organizer wraps it under the title. */
+  margin-left: auto;
+}
+/* The second row, the one toolbar: search, the filter icon, the overflow
+   menu, Add chapter. Set well apart from the title and its subtitle. */
+.recipe-organize-bar__find {
+  display: flex;
+  flex: 1 0 100%;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 /* Sort: an icon button at the head of the organizer's actions that opens its
@@ -268,12 +317,110 @@
   flex: 0 0 14px;
 }
 
+/* Search and filter wrap onto their own full-width lines under the toolbar. */
+.recipe-organize-bar {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+.recipe-organize-bar__search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /* Takes most of the toolbar row; the filter icon and Add chapter sit at
+     its end. */
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 30px;
+  padding: 0 0 0 9px;
+  border: 1px solid var(--cp-line-strong);
+  border-radius: 8px;
+  background: var(--cp-card);
+  color: var(--cp-ink-soft);
+}
+.recipe-organize-bar__search:focus-within {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+.recipe-organize-bar__search-input {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  color: var(--cp-ink);
+  font: inherit;
+  font-size: var(--cp-fs-small);
+}
+.recipe-organize-bar__search-input:focus {
+  outline: none;
+}
+/* The close button sits inside the field's own height. */
+.recipe-print-shell--organizing .recipe-organize-bar__search .icon-button {
+  width: 28px;
+  height: 28px;
+}
+/* The field shows its own close button; the browser's clear cross is a second. */
+.recipe-organize-bar__search-input::-webkit-search-cancel-button {
+  display: none;
+}
+/* How many filters are on, on the button itself, so a narrowed organizer
+   never passes for the whole book. */
+.recipe-organize-bar__filter-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--cp-selected-text);
+  color: var(--cp-card);
+  font-size: var(--cp-fs-label);
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+/* The filter half of the shared Sort and filter menu starts below a rule,
+   its heading sharing a line with Clear. */
+.recipe-organize-bar__menu-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--cp-line);
+}
+.recipe-organize-bar__filter-clear {
+  padding: 2px 9px;
+  border-radius: 6px;
+  color: var(--cp-selected-text);
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+}
+.recipe-organize-bar__filter-clear:hover {
+  background: var(--cp-overlay-hover);
+}
+.recipe-organize-bar__filter-label {
+  flex: 1;
+}
+.recipe-organize-bar__filter-count {
+  color: var(--cp-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.recipe-organize-empty {
+  margin: 24px 0;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+  text-align: center;
+}
+
 /* The question this control raises is "will this shuffle my chapters?" — so it
    answers it in the menu, where the choice is made. */
 .recipe-organize-bar__sort-note {
-  padding: 6px 9px 4px;
-  margin-top: 4px;
-  border-top: 1px solid var(--cp-line);
+  padding: 2px 9px 4px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-label);
   line-height: 1.45;
@@ -325,33 +472,74 @@
      calc() tracks and these percentages. The per-frame FLIP measures the live
      layout each frame, so the recipe tiles slide into their cells in step with
      the expansion. This class is the end state the JS animates toward. */
+  /* Only the rail's width changes: the base rule's tracks already read
+     `--rail-w`, so the collapse arrow (which rides the same variable) stays on
+     the rail's edge, and `--rail-collapsed` further down still wins and folds
+     the organizer away. The organizer has a width of its own, remembered
+     apart from the page rail's, since the two are dragged for different jobs.
+
+     The preview and settings stay fully usable beside it. They used to dim
+     and stop taking clicks, which meant leaving the organizer to fix the
+     recipe you had just found in it. */
   .recipe-print-page .recipe-print-shell--organize-wide {
-    grid-template-columns: 50% 30% 20%;
-    /* The collapse arrow rides `--rail-w`, so widening the column without
-       moving this variable strands the arrow mid-panel instead of on its edge.
-       It has to be the same number the first track uses. `--rail-collapsed`
-       wins over this further down, which is what keeps folding the rail while
-       the organizer is open walking the arrow out to the page edge. */
-    --rail-w: 50%;
+    --rail-w: clamp(
+      320px,
+      var(--organize-rail-user-w, 50%),
+      calc(100% - var(--panel-w) - 320px)
+    );
   }
 
-  /* While the organizer is open the preview + settings recede to a quiet peek,
-     so their re-scale isn't a distraction and the organizer reads as taking
-     over. Fades across the whole expansion. */
-  .recipe-print-shell--organize-wide > .recipe-page-canvas,
-  .recipe-print-shell--organize-wide > .recipe-config-panel,
-  /* The settings panel's own collapse arrow recedes WITH the panel it opens.
-     It floats on the boundary rather than inside the panel, so it is a sibling
-     here, not a child -- it was the one control left at full strength on a
-     surface that had gone quiet. */
-  .recipe-print-shell--organize-wide > .recipe-panel-toggle--right {
-    opacity: 0.35;
-    pointer-events: none;
+  /* The draggable boundary between the rail and the preview. A strip a few
+     pixels either side of the line, so it is easy to catch, under the collapse
+     arrow that rides the same edge. */
+  .recipe-rail-resizer {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 2;
+    width: 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: col-resize;
+    touch-action: none;
   }
-  .recipe-print-shell > .recipe-page-canvas,
-  .recipe-print-shell > .recipe-config-panel,
-  .recipe-print-shell > .recipe-panel-toggle--right {
-    transition: opacity 460ms ease;
+  .recipe-rail-resizer::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 3px;
+    width: 2px;
+    background: transparent;
+    transition: background 150ms ease;
+  }
+  .recipe-rail-resizer:hover::after,
+  .recipe-rail-resizer.is-dragging::after {
+    background: var(--cp-accent);
+  }
+  .recipe-rail-resizer:focus-visible {
+    outline: none;
+  }
+  .recipe-rail-resizer:focus-visible::after {
+    background: var(--cp-accent);
+  }
+  .recipe-rail-resizer--left {
+    left: calc(var(--rail-w) - 4px);
+  }
+  .recipe-rail-resizer--right {
+    right: calc(var(--panel-w) - 4px);
+  }
+  .recipe-print-shell--rail-collapsed > .recipe-rail-resizer--left,
+  .recipe-print-shell--panel-collapsed > .recipe-rail-resizer--right {
+    display: none;
+  }
+  /* While dragging, the page under the pointer must not select text or catch
+     the pointer in an iframe-like child. */
+  .recipe-print-shell--rail-resizing {
+    cursor: col-resize;
+    user-select: none;
   }
 
   /* Keeps the rail's own white. Organizing widens this panel; it does not turn
@@ -368,24 +556,96 @@
     padding: 0 20px 18px;
   }
 
+  /* A compact cookbook organizer: each chapter is a lightly framed section
+     (a faint border and fill, modest padding), and its recipes are a dense
+     two-column list of plain rows inside it. No box around each recipe and
+     no divider lines between them, so it reads as neither a wall of cards
+     nor a spreadsheet. */
   .recipe-print-shell--organizing .recipe-page-rail__section-group {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
-    gap: 14px;
-    padding: 12px;
-    border: 1px solid var(--cp-line);
-    border-radius: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px 6px;
+    margin-top: 8px;
+    padding: 4px 8px 8px;
+    border: 1px solid color-mix(in srgb, var(--cp-line) 70%, transparent);
+    border-radius: 12px;
     background: var(--cp-card);
+  }
+  /* Recipes in no chapter have no heading to frame. */
+  .recipe-print-shell--organizing .recipe-page-rail__section-group--ungrouped {
+    padding: 0;
+    border-color: transparent;
+    background: transparent;
+  }
+  /* Folded: the heading line alone. */
+  .recipe-print-shell--organizing .recipe-page-rail__section-group--collapsed {
+    padding-bottom: 4px;
   }
 
   .recipe-print-shell--organizing .recipe-page-rail__section-group > .recipe-page-rail__row {
     display: contents;
   }
 
-  .recipe-print-shell--organizing .recipe-page-rail__section-group--ungrouped {
-    padding: 0;
-    border-color: transparent;
+  /* Each recipe: one 44px row of page number and title. */
+  .recipe-print-shell--organizing .recipe-page-rail__item {
+    padding: 0 8px;
+    border: 0;
+    border-radius: 6px;
     background: transparent;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail__item:hover {
+    background: var(--cp-overlay-hover);
+    transform: none;
+  }
+  /* Current or selected: the shared fill and a border drawn INSIDE the row
+     (an inset outline), so it never makes the row taller. */
+  .recipe-print-shell--organizing .recipe-page-rail__item.is-active,
+  .recipe-print-shell--organizing .recipe-page-rail__item.is-selected {
+    background: var(--cp-selected-fill);
+    box-shadow: none;
+    outline: 1px solid var(--cp-selected-border);
+    outline-offset: -1px;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail__item-main {
+    grid-template-columns: 26px 1fr;
+    column-gap: 6px;
+    min-height: 0;
+    height: 44px;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail__num {
+    align-self: center;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail__title {
+    font-size: var(--cp-fs-small);
+    font-weight: 600;
+  }
+
+  /* The ungrouped recipes' "Add recipe": a quiet row, not a card. */
+  .recipe-print-shell--organizing .recipe-page-rail__section-add-card {
+    flex-direction: row;
+    justify-content: flex-start;
+    min-height: 44px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 6px;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail__section-add-card:hover {
+    border: 0;
+  }
+
+  /* A chapter mid-fold keeps its recipes shown, so the closing frame clips
+     them away (see `changeCollapsed` in PageRail). */
+  .recipe-print-shell--organizing
+    .recipe-page-rail__section-group--collapsed.recipe-page-rail__section-group--folding
+    .recipe-page-rail__item {
+    display: grid;
+  }
+
+  /* The header's ••• menu keeps its own anchor. */
+  .recipe-page-rail__section-menu {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
   }
 
   /* Organization is about recipe order and section membership. Keep covers,
@@ -403,11 +663,43 @@
 
   .recipe-print-shell--organizing .recipe-page-rail__section-header {
     grid-column: 1 / -1;
-    padding: 4px 2px 2px;
+    padding: 0 0 2px;
     color: var(--cp-ink);
     font-size: var(--cp-fs-h2);
     text-transform: none;
     letter-spacing: -0.01em;
+  }
+
+  /* A folded chapter is its heading alone, so a book's chapters fit on screen
+     to be dragged into a new order. The recipes stay in the DOM, so the drag
+     code still reads them; at zero size they are never a drop target. */
+  .recipe-print-shell--organizing .recipe-page-rail__section-group--collapsed .recipe-page-rail__item {
+    display: none;
+  }
+  .recipe-page-rail__section-fold {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    color: var(--cp-ink-soft);
+    transition: transform 150ms ease, background 150ms ease;
+  }
+  .recipe-page-rail__section-fold:hover {
+    background: var(--cp-overlay-hover);
+    color: var(--cp-ink);
+  }
+  .recipe-page-rail__section-fold[aria-expanded="false"] {
+    transform: rotate(-90deg);
+  }
+  .recipe-page-rail__section-count {
+    flex: 0 0 auto;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-caption);
+    font-weight: 700;
+    letter-spacing: normal;
+    white-space: nowrap;
   }
 
   .recipe-page-rail__section-add-card {
@@ -507,12 +799,10 @@
 }
 
 @media screen and (max-width: 820px) {
-  /* The two panel-collapse arrows are a DESKTOP control: everything that makes
-     them one — `position: absolute`, the size, riding `--rail-w`/`--panel-w` —
-     lives in the min-width:821px block, and there are no side panels here to
-     collapse. Without this they still rendered, unstyled and static, so both
-     chevrons stacked in normal flow at the very top of the page and read as a
-     stray glyph above the header. */
+  /* The side-panels button is a DESKTOP control: everything that makes it
+     one lives in the min-width:821px block, and there are no side panels here
+     to hide. Without this it would render unstyled, in normal flow at the very
+     top of the page, as a stray glyph above the header. */
   .recipe-panel-toggle {
     display: none;
   }
@@ -727,15 +1017,6 @@
 .recipe-page-rail__section-title-input {
   min-width: 0;
   flex: 1;
-}
-
-.recipe-page-rail__section-delete {
-  flex: 0 0 auto;
-  color: var(--cp-ink-soft);
-}
-
-.recipe-page-rail__section-delete:hover {
-  color: var(--cp-error);
 }
 
 /* Pointer drag-to-reorder (cookbook rail). The grabbed row/section dims in
@@ -1069,11 +1350,8 @@
      the fit scale nothing: `clientWidth` counts padding, and content width was
      already being treated as 40px less than it. */
   padding-inline: 20px;
-  /* And give the scrollbars back. The deck hides them because browsing a
-     snapped stack never needs them, but a page too big for the window has to
-     be panned — and horizontal panning has no wheel of its own, so without a
-     bar a mouse (as opposed to a trackpad) cannot reach the sides at all. */
-  scrollbar-width: thin;
+  /* No scrollbars even here: they cut a line down the preview for something a
+     trackpad, a drag and Shift + wheel all already do. */
 }
 
 /* A lone card doesn't need the ~44vh centring pad, but the floating controls
@@ -1995,7 +2273,11 @@
     /* Named because the floating zoom cluster has to measure itself against
        the DECK's edge, and this is the whole of the difference between the
        two — see `.recipe-deck-zoom`. */
-    --canvas-inline-pad: clamp(16px, 2.4vw, 30px);
+    /* Zero: the deck runs edge to edge between the panels. The fit already
+       keeps the page itself 20px clear of each side (`clientWidth - 40` in
+       useDeckScroller), so padding here only narrowed the grey and the page
+       with it. */
+    --canvas-inline-pad: 0px;
     padding-inline: var(--canvas-inline-pad);
   }
 
@@ -2035,39 +2317,45 @@
     pointer-events: none;
   }
 
-  /* Rides the boundary between the panel and the page, low on both —
-     `left`/`right` are the same column variables the grid uses, so folding the
-     column to zero walks the button out to the page edge with it. Floating
-     over the line rather than inside the panel is what lets one control both
-     close and reopen: it is still there when the panel is not. */
+  /* One button for both side panels (see app/print/page.tsx). It sits in
+     the settings panel's top-right corner, over the panel's own padding, and
+     keeps that spot when the panels fold away — floating over the page as
+     the only thing left of them, so it gets the card and the shadow that
+     anything floating does. */
   .recipe-panel-toggle {
     position: absolute;
-    bottom: 24px;
+    top: 8px;
+    right: 10px;
     z-index: 3;
     display: grid;
     place-items: center;
-    width: 20px;
-    height: 40px;
-    border: 1px solid var(--cp-line);
-    background: var(--cp-card);
+    width: 32px;
+    height: 32px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
     color: var(--cp-ink-soft);
+    /* Hiding the panels never moves it: same corner, same size, same icon.
+       Only its card fades in underneath, so it reads as the one thing left
+       standing rather than as a new control appearing somewhere else. */
     transition:
-      color 150ms ease,
-      border-color 150ms ease;
+      color 120ms ease,
+      background 120ms ease,
+      border-color 120ms ease,
+      box-shadow 120ms ease;
   }
   .recipe-panel-toggle:hover {
-    border-color: var(--cp-line-strong);
+    background: var(--cp-overlay-hover);
     color: var(--cp-ink);
   }
-  .recipe-panel-toggle--left {
-    left: var(--rail-w);
-    border-left: 0;
-    border-radius: 0 8px 8px 0;
+  .recipe-panel-toggle.is-floating {
+    border-color: var(--cp-line);
+    background: var(--cp-card);
+    box-shadow: var(--cp-shadow-sm);
   }
-  .recipe-panel-toggle--right {
-    right: var(--panel-w);
-    border-right: 0;
-    border-radius: 8px 0 0 8px;
+  .recipe-panel-toggle.is-floating:hover {
+    border-color: var(--cp-line-strong);
+    background: var(--cp-card);
   }
 
 }
@@ -8150,33 +8438,15 @@ textarea.recipe-card__toc-title {
 
 /* Where each caller puts it. */
 /*
- * Anchored to the DECK's bottom-right corner, which is not the canvas's.
- *
- * Zoomed past the point where a page fits, the deck scrolls freely and gets
- * real scrollbars back (see `[data-free-scroll]` above), drawn just inside its
- * own right and bottom edges. This cluster is absolutely positioned, so it
- * measures from the canvas's padding box — and that reaches
- * `--canvas-inline-pad` further out than the deck does. At `right: 16px` the
- * "+", the rightmost button, came to rest directly over the vertical bar. A
- * native scrollbar wins that hit test whatever the z-index says, so the click
- * reached the scrollbar track instead of the button and jumped the deck to
- * another page: zoom stopped working at exactly the zoom that needed it.
- *
- * The allowance is unconditional rather than scoped to `[data-free-scroll]`,
- * even though that is the only state with bars to avoid. Scoping it means the
- * cluster slides 44px sideways on the first press of "+", out from under the
- * cursor that is still aiming at it — a control that moves when you use it is
- * a worse bug than the one being fixed here.
- *
- * 14px is a `thin` scrollbar at its widest common rendering (macOS draws about
- * 11, Windows about 12). Reserving slightly too much costs a few pixels of
- * gap; reserving too little costs the click.
+ * The deck's bottom-right corner. It used to stand 14px further in, clear of
+ * the scrollbars a zoomed deck drew (a native scrollbar wins the hit test, so
+ * "+" over it jumped the deck instead of zooming). The deck draws none now,
+ * at any zoom, so there is nothing to keep clear of.
  */
 .recipe-deck-zoom {
   position: absolute;
-  --deck-scrollbar: 14px;
-  right: calc(16px + var(--canvas-inline-pad, 0px) + var(--deck-scrollbar));
-  bottom: calc(16px + var(--deck-scrollbar));
+  right: calc(16px + var(--canvas-inline-pad, 0px));
+  bottom: 16px;
 }
 
 @media (max-width: 900px) {

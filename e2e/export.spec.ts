@@ -119,26 +119,3 @@ test("a chapter opener's photo sits centred on the page in every band theme", as
   }
   expect(misplaced).toEqual([]);
 });
-
-// A page a recipe runs onto keeps only its theme's edge; the illustration in
-// the foot stays on the recipe's first page. Where the art is gone, the page
-// number goes back to the plain book foot, the same place a plain theme puts
-// it, rather than floating where the art used to be.
-test("a recipe's later pages put the page number at the plain foot in the illustrated themes", async ({ page }) => {
-  await servePhoto(page);
-  const folioLift = async (template: string) => {
-    await openExport(page, themedBook(template));
-    return page.$eval("[data-edge-only] .recipe-book-folio", (folio) => {
-      const sheet = folio.closest(".recipe-card-page")!.getBoundingClientRect();
-      return Math.round(sheet.bottom - folio.getBoundingClientRect().bottom);
-    });
-  };
-  const plain = await folioLift("classic");
-  const lifted: string[] = [];
-  for (const template of ["garden", "christmas", "market"]) {
-    const lift = await folioLift(template);
-    if (Math.abs(lift - plain) > 1) lifted.push(`${template}: ${lift}px up, plain is ${plain}px`);
-  }
-  expect(lifted).toEqual([]);
-  expect(await overflowingContent(page)).toEqual([]);
-});

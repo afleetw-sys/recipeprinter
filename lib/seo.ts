@@ -383,7 +383,7 @@ export const FAQ: FaqItem[] = [
     question: "Are my recipes stored on your servers?",
     group: "account",
     answer:
-      "Only if you choose to save them. Used without an account, your print queue lives in your browser for the current session only and is never stored on our servers. If you sign in and save a project or build a cookbook, that project is stored in your account so you can reopen it from any device.",
+      "Only if you choose to save them. Used without an account, your print queue lives in your browser for the current session only and is never stored on our servers. If you sign in and save recipes or build a cookbook, it is stored in your account so you can reopen it from any device.",
   },
   {
     question: "Is RecipePrinter free?",

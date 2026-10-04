@@ -2353,7 +2353,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         image: "bound-cookbook",
         imageAlt: "A finished cookbook open to a full-page photograph and a formatted recipe page.",
         body:
-          "Create chapters, move recipes between sections, and see how the cookbook is organized while you work. The cover, opening pages, recipe pages, table of contents, and page numbers stay part of the same project.",
+          "Create chapters, move recipes between sections, and see how the cookbook is organized while you work. The cover, opening pages, recipe pages, table of contents, and page numbers stay part of the same cookbook.",
         afterBody:
           "Chapter opener pages can also include custom images and optional text.",
       },
@@ -2536,7 +2536,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I make a cookbook from handwritten recipe cards?",
         answer:
-          "Digitize and review each recipe, add the finished recipes to a cookbook project, organize them into chapters, customize the cover and pages, then export the completed cookbook as a PDF.",
+          "Digitize and review each recipe, add the finished recipes to a cookbook, organize them into chapters, customize the cover and pages, then export the completed cookbook as a PDF.",
       },
       {
         question: "How much does it cost to make the cookbook?",
@@ -2654,7 +2654,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I add a cover and dedication?",
         answer:
-          "Yes. Cookbook projects can include a customizable cover and opening dedication, along with chapter pages and recipe notes where supported.",
+          "Yes. Cookbooks can include a customizable cover and opening dedication, along with chapter pages and recipe notes where supported.",
       },
       {
         question: "Can I print the cookbook gift myself?",

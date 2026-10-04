@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type SetStateAction } from "react";
 import { flushSync } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -121,14 +121,13 @@ import {
   PagesIcon,
   PagePlusIcon,
   CheckIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   CrownIcon,
   ICON_SIZE,
   ImageIcon,
   InfoIcon,
   PlusIcon,
   PrintIcon,
+  SidePanelsIcon,
   SizeIcon,
   SpinnerIcon,
   TemplateIcon,
@@ -176,6 +175,8 @@ import { useToast } from "@/lib/useToast";
 import { printProjectFingerprint, type PendingSave } from "@/lib/printSave";
 import { writeProject as runSaveWrite } from "@/lib/printSaveWrite";
 import { autosaveVerdict, LOADED_BASELINE, shouldFlushOnHide } from "@/lib/printAutosave";
+import { readRailWidths, writeRailWidths, type RailWidthMode, type RailWidths } from "@/lib/railWidth";
+import { RailResizer } from "@/components/print/RailResizer";
 
 /** This section's own recipe photos, in item order, capped for a collage. Scopes
     the opener picker to the chapter (unlike the whole-book `coverPhotoCandidates`). */
@@ -388,11 +389,29 @@ export default function PrintPage() {
   }, [jobIds]);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionTitle, setEditingSectionTitle] = useState("");
-  // Either side panel can be folded away to give the page more room. Session
-  // state on purpose, not a stored preference: collapsing is something you do
+  // Both side panels fold away together to give the page more room. Session
+  // state on purpose, not a stored preference: hiding them is something you do
   // to look at a page, not how you want the workspace set up from now on.
-  const [railCollapsed, setRailCollapsed] = useState(false);
-  const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [sidePanelsHidden, setSidePanelsHidden] = useState(false);
+  // Unlike folding, the width the rail is dragged to IS how the cook wants the
+  // workspace, so it is remembered (per browser, per mode). See lib/railWidth.
+  const [railWidths, setRailWidths] = useState<RailWidths>({});
+  useEffect(() => setRailWidths(readRailWidths()), []);
+  const commitRailWidth = useCallback((mode: RailWidthMode, width: number) => {
+    setRailWidths((current) => {
+      const next = { ...current, [mode]: width };
+      writeRailWidths(next);
+      return next;
+    });
+  }, []);
+  const resetRailWidth = useCallback((mode: RailWidthMode) => {
+    setRailWidths((current) => {
+      const next = { ...current };
+      delete next[mode];
+      writeRailWidths(next);
+      return next;
+    });
+  }, []);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const addMenuRef = useRef<HTMLDivElement | null>(null);
   const [pendingAddSectionId, setPendingAddSectionId] = useState<string | null>(null);
@@ -893,6 +912,7 @@ export default function PrintPage() {
     sections: Array<{ id: string; rect: DOMRect }>;
     newSection: DOMRect | null;
     sectionAdds: Array<{ id: string; rect: DOMRect }>;
+    sectionHeads: Array<{ id: string; rect: DOMRect }>;
   }
   const railGeometryRef = useRef<RailGeometry | null>(null);
   const railGeometryDirtyRef = useRef(true);
@@ -922,6 +942,7 @@ export default function PrintPage() {
       sections: readAll(scroller, "[data-rail-section]", "railSection"),
       newSection: newSection?.getBoundingClientRect() ?? null,
       sectionAdds: readAll(scroller, "[data-rail-section-add]", "railSectionAdd"),
+      sectionHeads: readAll(scroller, "[data-rail-section-head]", "railSectionHead"),
     };
     railGeometryRef.current = measured;
     // Entering the organizer runs a FLIP that re-projects every tile each frame
@@ -980,6 +1001,20 @@ export default function PrintPage() {
           }
         }
 
+        // A chapter's header puts the recipe at the START of the chapter,
+        // just under the header. Dragging a recipe up past the first one in
+        // its own chapter crosses the header, and that is where it meant to
+        // go; a folded or empty chapter still takes a drop here too.
+        const sectionHead = geometry.sectionHeads.find((entry) => contains(entry.rect));
+        if (sectionHead) {
+          const sectionId = sectionHead.id;
+          const rect = sectionHead.rect;
+          return {
+            indicator: { top: rect.bottom - 1, left: rect.left, width: rect.width, height: 3 },
+            commit: () => projectMeta.moveItems(movingIds, sectionId, 0),
+          };
+        }
+
         const sectionAdd = geometry.sectionAdds.find((entry) => contains(entry.rect));
         if (sectionAdd) {
           const sectionId = sectionAdd.id;
@@ -1005,6 +1040,10 @@ export default function PrintPage() {
         const target = candidates.reduce((closest, row) =>
           distanceTo(row.rect) < distanceTo(closest.rect) ? row : closest,
         );
+        // The organizer lays recipes out in a grid, in reading order. Over a
+        // row, the left or right half of the nearest recipe decides before or
+        // after it (a vertical line); between rows, its top or bottom half
+        // does (a horizontal line).
         const useHorizontalEdge = clientY >= target.rect.top && clientY <= target.rect.bottom;
         const after = useHorizontalEdge
           ? clientX >= target.rect.left + target.rect.width / 2
@@ -1012,12 +1051,12 @@ export default function PrintPage() {
         const indicator = useHorizontalEdge
           ? {
               top: target.rect.top,
-              left: after ? target.rect.right + 4 : target.rect.left - 7,
+              left: after ? target.rect.right + 1 : target.rect.left - 4,
               width: 3,
               height: target.rect.height,
             }
           : {
-              top: after ? target.rect.bottom + 4 : target.rect.top - 7,
+              top: after ? target.rect.bottom - 1 : target.rect.top - 2,
               left: target.rect.left,
               width: target.rect.width,
               height: 3,
@@ -1823,7 +1862,7 @@ export default function PrintPage() {
       projectMeta.moveItems([recipeId], sectionId, 0);
       setEditingSectionId(sectionId);
       setEditingSectionTitle("New chapter");
-      showToast("New chapter added. Give it a name.");
+      showToast("Chapter added. Give it a name.");
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [projectMeta],
@@ -4913,7 +4952,7 @@ export default function PrintPage() {
       setStructureSheetOpen(false);
       setBookSheet("recipes");
     } else {
-      setPanelCollapsed(false);
+      setSidePanelsHidden(false);
     }
     // Everything else here is a stable setter, or declared further down.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -5212,7 +5251,7 @@ export default function PrintPage() {
     singleRecipePrintView,
     pageWidth: cookbookView ? spreadWidth : PAGE_DIMS[previewCardSize].w,
     pageHeight: cookbookView ? previewDims.h : PAGE_DIMS[previewCardSize].h,
-    layoutKey: `${railCollapsed ? "r" : ""}${panelCollapsed ? "p" : ""}`,
+    layoutKey: sidePanelsHidden ? "rp" : "",
     zoom: deckZoom,
     zoomRange: DECK_ZOOM_BOUNDS,
     onZoomChange: setDeckZoom,
@@ -5846,44 +5885,44 @@ export default function PrintPage() {
           organizeMode ? "recipe-print-shell--organizing" : ""
         } ${organizeWide ? "recipe-print-shell--organize-wide" : ""} ${
           organizeAnimating ? "recipe-print-shell--organize-animating" : ""
-        } ${railCollapsed ? "recipe-print-shell--rail-collapsed" : ""} ${
-          panelCollapsed ? "recipe-print-shell--panel-collapsed" : ""
+        } ${
+          sidePanelsHidden ? "recipe-print-shell--rail-collapsed recipe-print-shell--panel-collapsed" : ""
         }`}
+        style={
+          {
+            "--rail-user-w": railWidths.pages ? `${railWidths.pages}px` : undefined,
+            "--organize-rail-user-w": railWidths.organize ? `${railWidths.organize}px` : undefined,
+            "--panel-user-w": railWidths.settings ? `${railWidths.settings}px` : undefined,
+          } as CSSProperties
+        }
       >
-        {/* One control per side, and it does not move when the panel does.
-            It rides the panel's own edge — `left: var(--rail-w)` — so folding
-            the column to zero carries it to the page edge without anything
-            having to remember where it was. An arrow INSIDE a panel can only
-            ever be the one that closes it, and then has to be replaced by a
-            different control somewhere else the moment it works; this is the
-            same button throughout, and only the chevron turns round. */}
+        <RailResizer
+          mode={organizeWide ? "organize" : "pages"}
+          width={organizeWide ? railWidths.organize : railWidths.pages}
+          onCommit={commitRailWidth}
+          onReset={resetRailWidth}
+        />
+        <RailResizer
+          mode="settings"
+          width={railWidths.settings}
+          onCommit={commitRailWidth}
+          onReset={resetRailWidth}
+        />
+        {/* One control for both side panels, in the settings panel's top-right
+            corner. Hiding them leaves this as the only thing on screen from
+            either, floating in the same spot, so the way back is exactly where
+            the way out was. It replaced an arrow on each panel's bottom edge:
+            two small controls far from anything you look at, for what is
+            nearly always one wish (more room for the page). */}
         <button
           type="button"
-          className="recipe-panel-toggle recipe-panel-toggle--left no-print"
-          onClick={() => setRailCollapsed((collapsed) => !collapsed)}
-          aria-expanded={!railCollapsed}
-          aria-label={railCollapsed ? "Show pages" : "Hide pages"}
-          title={railCollapsed ? "Show pages" : "Hide pages"}
+          className={`recipe-panel-toggle no-print ${sidePanelsHidden ? "is-floating" : ""}`}
+          onClick={() => setSidePanelsHidden((hidden) => !hidden)}
+          aria-expanded={!sidePanelsHidden}
+          aria-label={sidePanelsHidden ? "Show side panels" : "Hide side panels"}
+          title={sidePanelsHidden ? "Show side panels" : "Hide side panels"}
         >
-          {railCollapsed ? (
-            <ChevronRightIcon size={ICON_SIZE.md} />
-          ) : (
-            <ChevronLeftIcon size={ICON_SIZE.md} />
-          )}
-        </button>
-        <button
-          type="button"
-          className="recipe-panel-toggle recipe-panel-toggle--right no-print"
-          onClick={() => setPanelCollapsed((collapsed) => !collapsed)}
-          aria-expanded={!panelCollapsed}
-          aria-label={`${panelCollapsed ? "Show" : "Hide"} ${cookbookMode ? "cookbook settings" : "print setup"}`}
-          title={`${panelCollapsed ? "Show" : "Hide"} ${cookbookMode ? "cookbook settings" : "print setup"}`}
-        >
-          {panelCollapsed ? (
-            <ChevronLeftIcon size={ICON_SIZE.md} />
-          ) : (
-            <ChevronRightIcon size={ICON_SIZE.md} />
-          )}
+          <SidePanelsIcon size={ICON_SIZE.md} />
         </button>
         <PageRail
           /* `recipeCount`, not `items?.length`: it already folds in an
@@ -6328,10 +6367,12 @@ export default function PrintPage() {
         deleteItemTitle={pendingDelete?.title ?? "this item"}
         deleteItemDescription={
           pendingDelete?.kind === "section"
-            ? "The chapter page and grouping will be removed from this print project."
+            ? "The chapter page and grouping will be removed from this cookbook."
             : pendingDelete?.kind === "cover"
               ? "You can add it back from the page list at any time."
-              : "It'll be removed from your print list. This can't be undone."
+              : cookbookMode
+                ? "It'll be removed from this cookbook. This can't be undone."
+                : "It'll be removed from your print list. This can't be undone."
         }
         deletePrimaryLabel={
           pendingDelete?.kind === "section"

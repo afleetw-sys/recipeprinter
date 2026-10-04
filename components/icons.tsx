@@ -140,6 +140,14 @@ export const MoreVerticalIcon = (p: IconProps) => (
   </Base>
 );
 
+export const MoreHorizontalIcon = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+    <circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none" />
+  </Base>
+);
+
 export const CookPilotLogoIcon = ({
   size = 18,
   className = "",
@@ -364,6 +372,22 @@ export const SortIcon = (p: IconProps) => (
     <path d="M5 7h14" />
     <path d="M5 12h9" />
     <path d="M5 17h5" />
+  </Base>
+);
+
+// Side panels: a window with its sidebar ruled off, the glyph every desktop
+// app uses for "show or hide the panels".
+export const SidePanelsIcon = (p: IconProps) => (
+  <Base {...p}>
+    <rect x="3" y="5" width="18" height="14" rx="2.5" />
+    <path d="M9 5v14" />
+  </Base>
+);
+
+// Filter: a funnel, so it never reads as Sort's stacked rules beside it.
+export const FilterIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M4 5h16l-6 7.5V19l-4-2v-4.5L4 5z" />
   </Base>
 );
 
