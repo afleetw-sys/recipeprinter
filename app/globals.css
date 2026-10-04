@@ -1743,6 +1743,8 @@
     font-size: var(--cp-fs-caption);
     font-weight: 600;
     text-align: center;
+    /* Whatever the label holds, it wraps inside the sheet, never past it. */
+    overflow-wrap: anywhere;
   }
 
   /* ── Fields (mirrors .cp-field__control) ──────────────────────────────── */
