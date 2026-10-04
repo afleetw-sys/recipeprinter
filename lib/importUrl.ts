@@ -183,6 +183,33 @@ export function unwrapRedirectUrl(rawUrl: string): string {
   return current;
 }
 
+/**
+ * A scheme, or a host with a real top-level domain ending at a path, port,
+ * query or the end. `1.5` (cups) and `e.g.` are not hosts; `plainchicken.com/`
+ * and `www.plain` (the start of a host cut by a line wrap) are.
+ */
+const LINK_START = /^(?:[a-z][a-z0-9+.-]*:\/\/|www\.|[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}(?:[/:?#]|$))/i;
+
+/**
+ * Whether what was pasted into the LINK field is recipe text rather than a link.
+ *
+ * `normalizeImportURL` strips every space, because links that wrapped across
+ * lines in a message or a PDF arrive with whitespace inside them. That same
+ * strip turns a whole pasted recipe into one long word, and `new URL` will take
+ * `https://mexicanpicadilloingredients1lbgroundbeef(orgroundturkey)…` as a
+ * hostname, so the recipe went off to the URL parser. Text is told apart by
+ * how it starts: a link, wrapped or not, begins with a scheme or a host before
+ * its first break; a recipe begins with words. The one wrap that cuts a bare
+ * host before its dot (`plainchicken` / `.com/…`) is still a link once rejoined,
+ * so that is checked too, for a short paste only.
+ */
+export function isPastedRecipeText(raw: string): boolean {
+  const words = raw.trim().split(/\s+/).filter(Boolean);
+  if (words.length < 2) return false;
+  if (LINK_START.test(words[0])) return false;
+  return !(words.length <= 3 && LINK_START.test(words.join("")));
+}
+
 export const JOINED_LINKS_MESSAGE =
   "This link looks like two web addresses run together. Copy the recipe's link again and paste it on its own.";
 

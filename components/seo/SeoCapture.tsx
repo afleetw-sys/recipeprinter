@@ -8,6 +8,7 @@ import { ImportPanel } from "@/components/ImportPanel";
 import { stashPendingImport } from "@/lib/pendingImport";
 import { imageLabel, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
 import { normalizeImportURL } from "@/lib/cookpilot";
+import { isPastedRecipeText } from "@/lib/importUrl";
 import { track } from "@/lib/analytics";
 import type { ImportTab, QueueItem } from "@/types/recipe";
 
@@ -312,6 +313,12 @@ function SingleFieldCapture({
     if (mode === "url") {
       const trimmed = url.trim();
       if (!trimmed) return openWorkspace();
+      // A whole recipe pasted into the link box goes where text goes; see
+      // `isPastedRecipeText`.
+      if (isPastedRecipeText(trimmed)) {
+        if (trimmed.length < 20) return setError("That doesn't look like a valid URL.");
+        return handoff({ kind: "text", text: trimmed });
+      }
       try {
         // Through the same normalizer the queue and parser use, so this gate
         // can't reject a URL the pipeline would happily import. The hand-rolled
