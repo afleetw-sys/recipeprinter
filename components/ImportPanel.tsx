@@ -15,6 +15,7 @@ import type { ImportTab } from "@/types/recipe";
 import type { QueueItem } from "@/types/recipe";
 import { track, type ImportFailureCode } from "@/lib/analytics";
 import { normalizeImportURL } from "@/lib/cookpilot";
+import { isPastedRecipeText } from "@/lib/importUrl";
 import { imageLabel, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
 import {
   AppsIcon,
@@ -296,6 +297,15 @@ export function ImportPanel({
     if (mode === "url") {
       const trimmed = url.trim();
       if (!trimmed) return onStartEmpty ? startEmpty(onStartEmpty) : fail("Paste a recipe link first.");
+      // A whole recipe pasted into the link box. The normalizer below would
+      // squeeze it into one "hostname" and send it to the URL parser; it is
+      // text, so it goes where text goes. See `isPastedRecipeText`.
+      if (isPastedRecipeText(trimmed)) {
+        if (trimmed.length < 20) return fail("That doesn't look like a valid URL.");
+        onAddText(trimmed);
+        setUrl("");
+        return true;
+      }
       try {
         // Validate through the same normalizer the queue and parser use, so the
         // client gate can't reject a URL the pipeline would happily import (it

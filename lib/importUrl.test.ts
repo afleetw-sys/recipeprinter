@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isPastedRecipeText,
   SEARCH_PAGE_MESSAGE,
   searchPageMessage,
   unwrapRedirectUrl,
@@ -88,5 +89,35 @@ describe("unwrapRedirectUrl", () => {
     const self = "https://loop.example.org/redirect";
     const url = `${self}?url=${encodeURIComponent(`${self}?url=${encodeURIComponent(`${self}?url=${encodeURIComponent(RECIPE)}`)}`)}`;
     expect(unwrapRedirectUrl(url)).toBe(RECIPE);
+  });
+});
+
+describe("isPastedRecipeText", () => {
+  it("tells a recipe pasted into the link field from a link that wrapped across lines", () => {
+    const pastedText = [
+      // The PostHog replay, 2026-10-04: the loading sheet read the recipe run together.
+      "Mexican Picadillo\nIngredients\n1 lb ground beef (or ground turkey)\n1 onion, diced",
+      "Mexican Picadillo Ingredients 1 lb ground beef (or ground turkey) 1 onion, diced",
+      "1. Preheat the oven to 350F.\n2. Mix the flour and sugar.",
+      "1.5 cups flour\n2 eggs",
+      "Ingredients:\n- 2 cups flour",
+      "Recipe from https://www.plainchicken.com/casserole/\nIngredients\n2 cups chicken",
+      "chicken soup",
+    ];
+    for (const value of pastedText) expect(isPastedRecipeText(value), value).toBe(true);
+
+    const links = [
+      RECIPE,
+      "sallysbakingaddiction.com/oatmeal-scotchies/",
+      "  https://sallysbakingaddiction.com/oatmeal-scotchies/  ",
+      // Wrapped on its way through a message or a PDF: still one link.
+      "https://www.plainchicken.com/million-\ndollar-chicken-casserole/",
+      "https://www.plain\nchicken.com/casserole/",
+      "www.plainchicken.com/million-dollar-\nchicken-casserole/",
+      "plainchicken\n.com/casserole/",
+      "https://www.allrecipes.com/recipe/1234/\nbest-ever-\nmeatloaf/",
+      "",
+    ];
+    for (const value of links) expect(isPastedRecipeText(value), value).toBe(false);
   });
 });
