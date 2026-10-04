@@ -1153,6 +1153,16 @@
   .btn-ghost > img {
     flex-shrink: 0;
   }
+  /* A press always lands on the button, never on its icon. Print swaps its
+     icon for a spinner the moment it is pressed, and a press whose target has
+     left the page by the release gets no click in Chrome or Safari: pressing
+     the printer icon did nothing until the second try. */
+  .btn svg,
+  .btn img,
+  .btn-ghost svg,
+  .btn-ghost img {
+    pointer-events: none;
+  }
 
   .btn:hover:not(:disabled) {
     transform: translateY(-1px);

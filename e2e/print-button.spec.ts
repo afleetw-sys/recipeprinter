@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { expect, test } from "./guarded";
 
 /**
@@ -19,7 +20,9 @@ const recipe = {
   instructions: [{ step: 1, text: "Simmer everything for twenty minutes, then blend." }],
 };
 
-test("Print calls window.print() inside the click", async ({ page }) => {
+/** A one-recipe deck on /print, with `window.print()` recording whether it ran
+    inside a click. */
+async function openDeck(page: Page) {
   await page.addInitScript(
     ({ item }) => {
       sessionStorage.setItem("recipeprinter:queue:v1", JSON.stringify([item]));
@@ -50,9 +53,39 @@ test("Print calls window.print() inside the click", async ({ page }) => {
 
   // The top bar's Print on a desktop, the bottom bar's on a phone. Both go
   // through the same handler, and Safari asks the same of both.
-  await page
+  return page
     .locator(".recipe-print-topbar button, button.recipe-mobile-actions__print")
-    .filter({ hasText: /^Print$/, visible: true })
-    .click();
-  await expect.poll(() => page.evaluate(() => (window as unknown as { __printCalls: boolean[] }).__printCalls)).toEqual([true]);
+    .filter({ hasText: /^Print$/, visible: true });
+}
+
+const printCalls = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __printCalls: boolean[] }).__printCalls);
+
+test("Print calls window.print() inside the click", async ({ page }) => {
+  const print = await openDeck(page);
+  await print.click();
+  await expect.poll(() => printCalls(page)).toEqual([true]);
+});
+
+/**
+ * A press on the button's icon prints too.
+ *
+ * Pressing Print swaps its printer icon for a spinner (see `pressPrint`). When
+ * the press landed on the icon, the element under the pointer was gone by the
+ * release, and Chrome and Safari fire no click for a press whose target has
+ * left the page: the first click did nothing and the cook had to click again
+ * (PostHog replay, 2026-10-04). Every `.btn` that swaps its icon is exposed the
+ * same way, so this presses the icon itself rather than the label.
+ */
+test("pressing Print's icon prints on the first click", async ({ page }) => {
+  const print = await openDeck(page);
+  const icon = await print.locator("svg").first().boundingBox();
+  if (!icon) throw new Error("Print has no icon");
+  await page.mouse.move(icon.x + icon.width / 2, icon.y + icon.height / 2);
+  await page.mouse.down();
+  // A real press lasts a moment, long enough for the press to re-render the
+  // button before the release.
+  await page.waitForTimeout(80);
+  await page.mouse.up();
+  await expect.poll(() => printCalls(page)).toEqual([true]);
 });
