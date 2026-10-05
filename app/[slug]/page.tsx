@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import {
   LandingCta,
   LandingFrame,
@@ -9,7 +10,7 @@ import {
 } from "@/components/seo/LandingFrame";
 import { SeoCapture } from "@/components/seo/SeoCapture";
 import { Breadcrumb, type Crumb } from "@/components/seo/Breadcrumb";
-import { CookbookPitch } from "@/components/seo/CookbookPitch";
+import { cookbookPitchFeature } from "@/components/seo/CookbookPitch";
 import { RecipeBinderSections } from "@/components/seo/RecipeBinderSections";
 import { heroCardKey } from "@/lib/seoImages";
 import {
@@ -20,6 +21,7 @@ import {
   PhotoGallery,
 } from "@/components/seo/LandingVisuals";
 import { FaqCards } from "@/components/seo/FaqCards";
+import { PickerRow } from "@/components/seo/PickerRow";
 import {
   SEO_LANDING_PAGE_MAP,
   SEO_LANDING_PAGES,
@@ -113,6 +115,31 @@ function CaptureBlock({ page }: { page: SeoLandingPage }) {
   );
 }
 
+type PhraseLink = { phrase: string; href: string };
+
+/** `text` with the first occurrence of each phrase linked. */
+function withLinks(text: string, links: PhraseLink[] | undefined): ReactNode {
+  const hits = (links ?? [])
+    .map((link) => ({ ...link, at: text.indexOf(link.phrase) }))
+    .filter((link) => link.at >= 0)
+    .sort((a, b) => a.at - b.at);
+  if (hits.length === 0) return text;
+  const parts: ReactNode[] = [];
+  let from = 0;
+  for (const hit of hits) {
+    if (hit.at < from) continue;
+    parts.push(text.slice(from, hit.at));
+    parts.push(
+      <Link key={hit.href} href={hit.href} className="font-bold text-ink hover:underline">
+        {hit.phrase}
+      </Link>,
+    );
+    from = hit.at + hit.phrase.length;
+  }
+  parts.push(text.slice(from));
+  return <>{parts}</>;
+}
+
 export default function SeoLandingPage({ params }: PageProps) {
   const page = SEO_LANDING_PAGE_MAP.get(params.slug);
   if (!page) notFound();
@@ -129,6 +156,24 @@ export default function SeoLandingPage({ params }: PageProps) {
   // as the other hero photos without moving the controls farther down.
   const showsAllImportModes = (page.importModes?.length ?? 0) > 1;
   const usesDecorativePdf = page.slug === "convert-recipe-to-pdf";
+  // The cookbook pitch is the last feature row, so it keeps the left/right
+  // alternation going (see CookbookPitch).
+  const features = [
+    ...(page.featureSections ?? []).map((feature) => ({
+      ...feature,
+      body: withLinks(feature.body, feature.links),
+      afterBody: [feature.afterBody ?? []].flat().map((p) => withLinks(p, feature.links)),
+    })),
+    ...(page.cookbookPitch
+      ? [
+          cookbookPitchFeature({
+            heading: page.cookbookPitchHeading,
+            body: page.cookbookPitchBody,
+            link: page.cookbookPitchLink,
+          }),
+        ]
+      : []),
+  ];
 
   return (
     <LandingFrame headerActions={<LandingCta label="Go to printer" compact />}>
@@ -188,6 +233,13 @@ export default function SeoLandingPage({ params }: PageProps) {
         }
       />
 
+      {page.hub && (
+        <PickerRow
+          label={page.hub.label}
+          pages={page.hub.slugs.flatMap((slug) => SEO_LANDING_PAGE_MAP.get(slug) ?? [])}
+        />
+      )}
+
       {/* Straight after the hero on a comparison page. Someone who searched
           for a competitor's name came to see the two side by side, so the
           table is the answer to their question, not a footnote below three
@@ -222,9 +274,9 @@ export default function SeoLandingPage({ params }: PageProps) {
         </section>
       )}
 
-      {page.featureSections && page.featureSections.length > 0 && (
+      {features.length > 0 && (
         <section aria-label="Features">
-          <FeatureRows features={page.featureSections} />
+          <FeatureRows features={features} />
         </section>
       )}
 
@@ -242,10 +294,6 @@ export default function SeoLandingPage({ params }: PageProps) {
       )}
 
       {page.slug === "recipe-binder" && <RecipeBinderSections />}
-
-      {page.cookbookPitch && (
-        <CookbookPitch heading={page.cookbookPitchHeading} body={page.cookbookPitchBody} />
-      )}
 
       {page.examples && page.examples.length > 0 && (
         <section aria-labelledby="examples-heading">

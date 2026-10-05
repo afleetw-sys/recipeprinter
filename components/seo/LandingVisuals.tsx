@@ -221,11 +221,10 @@ export function FeatureRows({
 }: {
   features: {
     heading: string;
-    /** A plain string on every caller but one — CookbookPitch composes an
-        inline link into its own last sentence, which a plain string can't
-        carry. */
+    /** ReactNode so a row can carry an inline link: CookbookPitch's own,
+        and the `links` a landing page's feature row names. */
     body: ReactNode;
-    afterBody?: string | string[];
+    afterBody?: ReactNode | ReactNode[];
     proof?: SeoProofKind;
     caption?: string;
     image?: string;
@@ -250,8 +249,8 @@ export function FeatureRows({
           <>
             <h3 className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">{feature.heading}</h3>
             <p className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">{feature.body}</p>
-            {[feature.afterBody ?? []].flat().map((paragraph) => (
-              <p key={paragraph} className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">
+            {[feature.afterBody ?? []].flat().map((paragraph, i) => (
+              <p key={i} className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">
                 {paragraph}
               </p>
             ))}

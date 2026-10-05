@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { pageMetadata, SITE_NAME } from "@/lib/seo";
 import type { ImportTab } from "@/types/recipe";
 import { PRINTERS } from "@/lib/cookbookPresets";
+import { PRO_ANNUAL_PRICE_FALLBACK, PRO_MONTHLY_PRICE_FALLBACK } from "@/lib/proProduct";
+import { IMAGE_IMPORTS_PER_HOUR_FREE, IMAGE_IMPORTS_PER_HOUR_PRO } from "@/lib/imageImportQuota";
+import { COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 
 /** Icon slugs a value-prop chip can use, resolved to real icons in the template. */
 export type SeoIconKey =
@@ -168,6 +171,12 @@ export type SeoLandingPage = {
    * have found a recipe.
    */
   pickerGroup?: "source" | "output" | "comparison";
+  /**
+   * The narrower pages this one sits above, shown as a picker straight after
+   * the hero. For a hub like /print-social-media-recipes, whose visitor often
+   * already knows which app the recipe is in and wants that page's specifics.
+   */
+  hub?: { label: string; slugs: string[] };
   lede: string;
   /** One-sentence subtitle under the how-to section's heading. Renders only
       alongside `howTo` — nothing on its own if that's unset. */
@@ -193,6 +202,9 @@ export type SeoLandingPage = {
       The feature image and the link to family-recipe-book stay the shared
       ones. */
   cookbookPitchBody?: string;
+  /** A phrase in `cookbookPitchBody` to link, in place of the shared
+      trailing link to /family-recipe-book. */
+  cookbookPitchLink?: { phrase: string; href: string };
   /** "How to …" steps, renders the section and the HowTo JSON-LD. */
   howTo?: { name: string; text: string }[];
   /** Heading over the how-to section. Defaults to "How it works". */
@@ -214,6 +226,9 @@ export type SeoLandingPage = {
     /** Page-specific alt text when the shared image is evidence for a more
         specific claim on this page. */
     imageAlt?: string;
+    /** Phrases in `body` or `afterBody` to link, first occurrence of each.
+        One or two at most: a paragraph of links reads as navigation. */
+    links?: { phrase: string; href: string }[];
   }[];
   /**
    * Head-to-head feature table for a competitor page. Only worth adding when
@@ -359,7 +374,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-recipe-without-ads",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-02",
     primaryKeyword: "print recipe without ads",
     secondaryKeywords: [
@@ -436,6 +451,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-recipe-from-website", label: "Print from a website" },
       { href: "/just-the-recipe-alternative", label: "Just the Recipe alternative" },
       { href: "/convert-recipe-to-pdf", label: "Save recipe as PDF" },
+      { href: "/screen-free-cooking", label: "Cook without your phone" },
     ],
   },
   {
@@ -536,7 +552,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "recipe-card-printer",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-09",
     primaryKeyword: "printable recipe card generator",
     secondaryKeywords: [
@@ -635,11 +651,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-recipe-from-website", label: "Print from a website" },
       { href: "/print-recipe-without-ads", label: "Print without ads" },
       { href: "/recipe-binder", label: "Make a recipe binder" },
+      { href: "/canva-recipe-card-alternative", label: "Canva alternative for recipe cards" },
     ],
   },
   {
     slug: "print-multiple-recipes",
-    contentUpdated: "2026-09-29",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-29",
     primaryKeyword: "print multiple recipes",
     secondaryKeywords: [
@@ -688,6 +705,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "A CookPilot recipe library beside a RecipePrinter collection containing several recipes.",
         body:
           "Collect a week of dinners, a stack of recipe cards, or the family favorites you've been meaning to put on paper. Add and check each recipe, then print the entire collection at once instead of printing recipes one by one.",
+        links: [{ phrase: "a week of dinners", href: "/print-meal-plan-recipes" }],
       },
       {
         heading: "Bring recipes from different places",
@@ -748,6 +766,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-recipe-from-website", label: "Print a recipe from a website" },
       { href: "/family-recipe-book", label: "Build a family recipe book" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
+      { href: "/print-meal-plan-recipes", label: "Print a week of dinners" },
     ],
   },
   {
@@ -971,7 +990,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "print-pinterest-recipes",
     importFieldLabel: "Pinterest link",
     importPlaceholder: "Paste Pinterest link",
-    contentUpdated: "2026-09-10",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-07",
     primaryKeyword: "print Pinterest recipes",
     secondaryKeywords: [
@@ -1068,13 +1087,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
       { href: "/print-facebook-recipes", label: "Print Facebook recipes" },
       { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
+      { href: "/print-social-media-recipes", label: "Print recipes from social media" },
     ],
   },
   {
     slug: "print-instagram-recipes",
     importFieldLabel: "Instagram link",
     importPlaceholder: "Paste Instagram link",
-    contentUpdated: "2026-09-10",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-09",
     primaryKeyword: "print Instagram recipes",
     secondaryKeywords: [
@@ -1164,6 +1184,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
       { href: "/print-facebook-recipes", label: "Print Facebook recipes" },
       { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
+      { href: "/print-social-media-recipes", label: "Print recipes from social media" },
     ],
   },
   {
@@ -1172,7 +1193,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importPlaceholder: "Paste Facebook link",
     heroImage: "buffalo-chicken",
     heroAnnotation: "Printed from Facebook link",
-    contentUpdated: "2026-09-16",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-16",
     primaryKeyword: "print recipe from Facebook",
     secondaryKeywords: [
@@ -1268,6 +1289,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
       { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
       { href: "/print-youtube-recipes", label: "Print YouTube recipes" },
+      { href: "/print-social-media-recipes", label: "Print recipes from social media" },
     ],
   },
   {
@@ -1278,7 +1300,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImageAlt:
       "A printed Crunchwrap Supreme recipe card beside the finished crunchwrap.",
     heroAnnotation: "Printed from TikTok video",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "print TikTok recipes",
     secondaryKeywords: [
@@ -1398,6 +1420,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
       { href: "/print-youtube-recipes", label: "Print YouTube recipes" },
       { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
+      { href: "/print-social-media-recipes", label: "Print recipes from social media" },
     ],
   },
   {
@@ -1516,7 +1539,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importPlaceholder: "Paste YouTube link",
     heroImage: "souvlaki",
     heroAnnotation: "Printed from YouTube video",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "print recipe from YouTube",
     secondaryKeywords: [
@@ -1630,11 +1653,388 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/convert-recipe-to-pdf", label: "Convert recipe to PDF" },
       { href: "/recipe-card-printer", label: "Make a 4x6 recipe card" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
+      { href: "/print-social-media-recipes", label: "Print recipes from social media" },
+    ],
+  },
+  {
+    slug: "print-social-media-recipes",
+    contentUpdated: "2026-10-05",
+    primaryKeyword: "print recipes from social media",
+    // Not the per-app phrases ("print TikTok recipes" and so on): each is
+    // another page's primary, and this page links to all five instead.
+    secondaryKeywords: [
+      "print social media recipes",
+      "save recipes from social media",
+      "social media recipe printer",
+      "print recipe from a reel",
+      "keep recipes from social media",
+    ],
+    shortLabel: "Social media",
+    pickerGroup: "source",
+    intent: "Utility SEO",
+    heroImage: "instagram",
+    heroAnnotation: "Printed from an Instagram post",
+    initialImportMode: "url",
+    importFieldLabel: "Post or video link",
+    importPlaceholder: "Paste a post or video link",
+    importHint:
+      "If the link doesn't work, you can also paste the recipe text or upload a screenshot.",
+    title: "Print Recipes from Social Media | Instagram, TikTok & More",
+    description:
+      "Print recipes from Instagram, TikTok, Pinterest, Facebook, and YouTube. Paste a social media link and turn it into a clean recipe you can print or save.",
+    h1: "Print recipes from social media",
+    anchor: "Print recipes from social media",
+    lede:
+      "Found a recipe on Instagram, TikTok, Pinterest, Facebook, or YouTube? Paste the post or video link and RecipePrinter turns it into a clean recipe with ingredients and instructions, ready to print or save.",
+    hub: {
+      label: "Guides for each app",
+      slugs: [
+        "print-instagram-recipes",
+        "print-tiktok-recipes",
+        "print-pinterest-recipes",
+        "print-facebook-recipes",
+        "print-youtube-recipes",
+      ],
+    },
+    howToHeading: "How to print a recipe from social media",
+    howTo: [
+      {
+        name: "Copy the post's link",
+        text: "On Instagram, TikTok, Pinterest, Facebook, or YouTube, tap Share and copy the link to the post, Pin, Reel, or video.",
+      },
+      {
+        name: "Paste it into RecipePrinter",
+        text: "RecipePrinter looks for the recipe in the caption, description, linked page, and when available, the video's narration or on-screen text.",
+      },
+      {
+        name: "Check the recipe",
+        text: "Review the ingredients and instructions, then make any edits you want before printing.",
+      },
+      {
+        name: "Print or save it",
+        text: "Print a full-page recipe, save it as a PDF, or create a 4×6 recipe card with RecipePrinter Pro.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "One box for every app",
+        image: "tiktok-import",
+        body:
+          "Recipes are posted differently on every app. Instagram may put the recipe in a caption, TikTok might explain it in the video, and Pinterest may link to a blog.",
+        afterBody:
+          "You don't need to figure out where the recipe is first. Paste the link and RecipePrinter checks the places it could be.",
+      },
+      {
+        heading: "Saved is not the same as kept",
+        image: "card-in-box",
+        body:
+          "Saved posts are easy to lose in a folder full of hundreds of other recipes. A printed recipe is easier to find, cook from, and come back to.",
+        afterBody: "Put it in a recipe box or binder and it's there when you need it.",
+      },
+      {
+        heading: "Cook from paper, not from a paused video",
+        image: "counter-card",
+        body:
+          "Videos are great for discovering recipes, but awkward to cook from. You end up pausing, rewinding, and touching your phone with messy hands.",
+        afterBody:
+          "RecipePrinter turns the recipe into ingredients and instructions you can keep on the counter while you cook. The original link stays with the recipe if you want to go back and watch the video.",
+      },
+    ],
+    cookbookPitch: true,
+    cookbookPitchBody:
+      "Once you've saved enough recipes, you can turn them into a cookbook. Organize recipes into chapters, rearrange them, add section pages, and build the whole book in RecipePrinter. Then print it at home or export the finished PDF to have it printed anywhere.",
+    cookbookPitchLink: { phrase: "turn them into a cookbook", href: "/make-your-own-cookbook" },
+    faqHeading: "Social media recipe questions",
+    faqs: [
+      {
+        question: "Which apps does it work with?",
+        answer:
+          "Instagram, TikTok, Pinterest, Facebook, and YouTube. Copy the link to the post, Pin, Reel, or video and paste it into the same box. Links to recipe websites work too.",
+        links: [
+          { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
+          { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
+          { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
+          { href: "/print-facebook-recipes", label: "Print Facebook recipes" },
+          { href: "/print-youtube-recipes", label: "Print YouTube recipes" },
+        ],
+      },
+      {
+        question: "What if the recipe is only in the video?",
+        answer:
+          "RecipePrinter checks the caption or description first. For TikTok and YouTube, it can also use the video's captions when they're available, and on TikTok, recipe text shown on screen. Not every video has these, so check the amounts before you print and add anything that's missing.",
+      },
+      {
+        question: "Do I need to connect my accounts?",
+        answer:
+          "No. You never sign in to Instagram, TikTok, or any other app through RecipePrinter, and it never sees your saved posts or boards. It only works from the link, screenshot, or text you give it.",
+      },
+      {
+        question: "What if a link won't open?",
+        answer:
+          "Posts from private accounts and members-only Facebook groups usually can't be read from a link. Copy the recipe text and paste it in, or upload a screenshot and RecipePrinter reads the recipe from the image.",
+        links: [{ href: "/print-recipe-from-screenshot", label: "Print a recipe from a screenshot" }],
+      },
+      {
+        question: "Can I print several saved recipes at once?",
+        answer:
+          "Yes, with RecipePrinter Pro. Add recipes one at a time from any app, then print them together in one job, with the same card size and theme on all of them. On the free plan, you print one recipe at a time.",
+        links: [{ href: "/print-multiple-recipes", label: "Print multiple recipes at once" }],
+      },
+      {
+        question: "Is it free?",
+        answer: `Yes, for full-page recipes. Importing from a link, editing, and printing or saving a full-page recipe are free, with no account. RecipePrinter Pro (${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}) adds 4×6 recipe cards, premium themes, and printing several recipes at once.`,
+      },
+    ],
+    links: [
+      { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
+      { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
+      { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
+      { href: "/recipe-card-printer", label: "Make printable recipe cards" },
+    ],
+  },
+  {
+    slug: "screen-free-cooking",
+    contentUpdated: "2026-10-05",
+    primaryKeyword: "screen-free cooking",
+    secondaryKeywords: [
+      "cook without your phone",
+      "cooking without a phone",
+      "print recipes instead of using your phone",
+      "printed recipes",
+      "screen-free kitchen",
+    ],
+    shortLabel: "Cooking without a screen",
+    intent: "Organization SEO",
+    layout: "capture-first",
+    heroImage: "counter-card",
+    initialImportMode: "url",
+    importModes: ["url", "image", "text"],
+    importSubmitLabel: "Put it on paper",
+    // The Link field already lists the apps and recipe sites under itself
+    // (ImportPanel), so this names only what that line leaves out.
+    importHint: "Screenshots, photos, and pasted recipe text work too.",
+    title: "Screen-Free Cooking | Cook Without Your Phone",
+    description:
+      "Turn recipes from websites, social media, screenshots, and photos into printed recipes. Cook without keeping your phone open on the counter.",
+    h1: "Cook without your phone",
+    anchor: "Cook without your phone",
+    lede:
+      "Your phone is where recipes are found. It doesn't have to be where they're cooked. Turn recipes from websites, social media, screenshots, or photos into something you can print and keep in the kitchen.",
+    howToHeading: "How to take your recipes off the screen",
+    howTo: [
+      {
+        name: "Choose the recipes you actually cook",
+        text: "Start with the recipes you come back to. Instead of keeping hundreds of saved posts and screenshots, put the ones you actually use on paper.",
+      },
+      {
+        name: "Bring them in from wherever they are",
+        text: "Paste a recipe link, upload a screenshot or photo, or paste the recipe text. RecipePrinter turns it into ingredients and instructions you can review.",
+      },
+      {
+        name: "Print them",
+        text: "Print a full-page recipe for a binder, save it as a PDF, or make a 4×6 recipe card with RecipePrinter Pro.",
+      },
+      {
+        name: "Leave the phone in the other room",
+        text: "Put the printed recipe where you cook. No notifications, no dimmed screen, and no unlocking your phone with messy hands.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "Open the recipe and nothing else",
+        image: "before-after",
+        body:
+          "Looking up a recipe on your phone also means opening notifications, messages, ads, and everything else fighting for your attention.",
+        afterBody:
+          "A printed recipe does one job. The ingredients and instructions stay open on the counter until you're done.",
+      },
+      {
+        heading: "Paper doesn't sleep, ring, or need charging",
+        image: "photo-recipe-card",
+        body:
+          "A screen dims halfway through a recipe. A phone rings. A clean finger turns into a messy one.",
+        afterBody:
+          "Paper stays open on the counter, takes a splash, and is still on the right step when you come back.",
+      },
+      {
+        heading: "A recipe box instead of a camera roll",
+        image: "card-in-box",
+        body:
+          "Saved recipes pile up out of sight. Screenshots disappear into your camera roll, and saved posts get buried under hundreds of others.",
+        afterBody: [
+          "Printed recipes give the ones you actually cook a place to live. Keep them in a recipe box or a recipe binder, and add to the collection over time.",
+          "When the collection gets bigger, you can turn it into a cookbook.",
+        ],
+        links: [
+          { phrase: "recipe binder", href: "/recipe-binder" },
+          { phrase: "turn it into a cookbook", href: "/make-your-own-cookbook" },
+        ],
+      },
+    ],
+    faqHeading: "Questions about cooking without a screen",
+    faqs: [
+      {
+        question: "Don't I need a phone to get the recipes onto paper?",
+        answer:
+          "Screen-free cooking doesn't mean never using a screen. You may use your phone or computer to bring the recipe into RecipePrinter, but once it's printed, the recipe lives on paper. Print a few at a time and build up a collection.",
+      },
+      {
+        question: "What's the best way to keep printed recipes?",
+        answer:
+          "For full-page recipes, a binder with sheet protectors works well, and the sleeves keep the pages clean. For 4×6 recipe cards, use a recipe box or a card file.",
+        links: [
+          { href: "/recipe-binder", label: "Build a recipe binder" },
+          { href: "/recipe-card-printer", label: "Make 4×6 recipe cards" },
+        ],
+      },
+      {
+        question: "Can I print recipes I've saved on Instagram or TikTok?",
+        answer:
+          "Yes. Paste the post's link into RecipePrinter. On Instagram, it reads the recipe from the caption. On TikTok, it checks the caption and, when the video has them, its spoken captions and on-screen text. Some posts don't include the full recipe, so check it before you print.",
+        links: [
+          { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
+          { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
+        ],
+      },
+      {
+        question: "Can I print a recipe from a screenshot?",
+        answer:
+          "Yes. Upload a screenshot and RecipePrinter turns the recipe in the image into an editable recipe before you print it. Photos of handwritten recipe cards work the same way.",
+        links: [{ href: "/print-recipe-from-screenshot", label: "Print a recipe from a screenshot" }],
+      },
+      {
+        question: "Does it cost anything?",
+        answer: `The basics are free with no account: importing recipes, editing them, and printing or saving full-page recipes, with up to ${IMAGE_IMPORTS_PER_HOUR_FREE} screenshot or photo imports an hour. RecipePrinter Pro (${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}) adds 4×6 recipe cards, premium themes, printing several recipes at once, and ${IMAGE_IMPORTS_PER_HOUR_PRO} image imports an hour.`,
+      },
+    ],
+    links: [
+      { href: "/print-recipe-without-ads", label: "Print recipes without ads" },
+      { href: "/recipe-binder", label: "Build a recipe binder" },
+      { href: "/recipe-card-printer", label: "Make printable recipe cards" },
+      { href: "/print-social-media-recipes", label: "Print recipes from social media" },
+      { href: "/print-meal-plan-recipes", label: "Print a week of dinners" },
+    ],
+  },
+  {
+    slug: "print-meal-plan-recipes",
+    contentUpdated: "2026-10-05",
+    primaryKeyword: "print meal plan recipes",
+    // The step AFTER planning: RecipePrinter is not a meal planner or grocery
+    // app (lib/seo.ts FAQ, llms.txt), so no "meal planner" terms here. And not
+    // "print multiple recipes": /print-multiple-recipes owns the general
+    // feature; this page owns this week's recipes, printed together.
+    secondaryKeywords: [
+      "print recipes for the week",
+      "weekly meal plan recipes",
+      "printable meal plan recipes",
+      "weekly dinner recipes",
+      "print recipes for meal prep",
+    ],
+    shortLabel: "A week of dinners",
+    pickerGroup: "output",
+    intent: "Organization SEO",
+    layout: "capture-first",
+    heroImage: "counter-card",
+    initialImportMode: "url",
+    importModes: ["url", "image", "text"],
+    importSubmitLabel: "Add the first recipe",
+    title: "Print Meal Plan Recipes for the Week | RecipePrinter",
+    description:
+      "Already planned your dinners? Add recipes from websites, social media, screenshots, or text and print the whole week's recipes together.",
+    h1: "Print a week of dinners in one go",
+    anchor: "Print a week of dinners",
+    lede:
+      "Plan the week however you like. Then add each recipe to RecipePrinter and print the whole week's dinners together, so the recipes are already on the counter when you need them.",
+    howToHeading: "How to print your meal plan recipes",
+    howTo: [
+      {
+        name: "Pick the week's recipes",
+        text: "Choose the dinners wherever you normally plan them: a meal-planning app, a notebook, saved posts, recipe sites, or your own recipes.",
+      },
+      {
+        name: "Add each one",
+        text: "Paste a recipe link, upload a screenshot or photo, or paste the recipe text. Review the ingredients and instructions, then add the next recipe.",
+      },
+      {
+        name: "Print them together",
+        text: "With RecipePrinter Pro, print the week's recipes in one batch instead of opening and printing each recipe separately.",
+      },
+      {
+        name: "Keep them where you cook",
+        text: "Clip them to the fridge, leave them on the counter, or file them in a binder. When it's time to cook, the recipe is already there.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "One print job, not five",
+        image: "card",
+        imageAlt:
+          "Five printed recipe cards in different designs fanned across a counter, enough for a week of dinners.",
+        body:
+          "Opening, cleaning up, and printing five recipes one at a time is the part that's easy to put off.",
+        afterBody: [
+          "With RecipePrinter Pro, you add the recipes for the week and print them together in one batch.",
+          "Full-page recipes can still be printed one at a time for free.",
+        ],
+      },
+      {
+        heading: "The week's dinners, on the counter",
+        image: "photo-recipe-card",
+        body:
+          "When dinner is already printed, nobody has to find the right tab, unlock a phone, or scroll past the story to reach the ingredients.",
+        afterBody: "The week's recipes can stay somewhere everyone in the house can see them.",
+      },
+      {
+        heading: "Favorites come back around",
+        image: "card-in-box",
+        body:
+          "Most weeks repeat at least a few favorite dinners. Keep the recipes you use most in a binder or recipe box, and next time they're on the meal plan you won't have to find them again.",
+        links: [{ phrase: "binder", href: "/recipe-binder" }],
+      },
+    ],
+    faqHeading: "Meal plan printing questions",
+    faqs: [
+      {
+        question: "Does RecipePrinter plan my meals or make a grocery list?",
+        answer:
+          "No. RecipePrinter doesn't choose your meals or build a grocery list. Plan the week in whatever app, notebook, or calendar you already use, then bring the recipes into RecipePrinter to print.",
+      },
+      {
+        question: "Can I print the whole week at once?",
+        answer:
+          "Yes. RecipePrinter Pro lets you print multiple recipes at once: add each of the week's recipes, then print them together in one batch, with the same size and theme on all of them.",
+        links: [{ href: "/print-multiple-recipes", label: "Print multiple recipes at once" }],
+      },
+      {
+        question: "Can I mix recipes from websites, social media, and screenshots?",
+        answer:
+          "Yes. The recipes in one batch can come from different places. Paste links from recipe sites or social posts, upload screenshots or photos, or add recipe text, and they all print in the same layout.",
+        links: [{ href: "/print-social-media-recipes", label: "Print recipes from social media" }],
+      },
+      {
+        question: "Should I print full pages or recipe cards?",
+        answer:
+          "Full-page recipes are easier to read from across the kitchen and work well in a binder. 4×6 cards suit recipes you make often and want to keep in a recipe box; they need RecipePrinter Pro.",
+        links: [
+          { href: "/recipe-card-printer", label: "Make printable recipe cards" },
+          { href: "/recipe-binder", label: "Build a recipe binder" },
+        ],
+      },
+      {
+        question: "Is it free?",
+        answer: `Importing recipes and printing a full-page recipe are free, one recipe at a time, with no account. Printing several recipes in one batch, 4×6 cards, and premium themes are RecipePrinter Pro, ${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}.`,
+      },
+    ],
+    links: [
+      { href: "/print-multiple-recipes", label: "Print multiple recipes at once" },
+      { href: "/screen-free-cooking", label: "Cook without your phone" },
+      { href: "/recipe-binder", label: "Build a recipe binder" },
+      { href: "/print-social-media-recipes", label: "Print recipes from social media" },
     ],
   },
   {
     slug: "organize-recipes",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     captureHeading: "Start with one recipe",
     importSubmitLabel: "Add your first recipe",
@@ -1752,11 +2152,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
       { href: "/recipe-card-printer", label: "Printable recipe cards" },
       { href: "/family-recipe-book", label: "Build a family cookbook" },
+      { href: "/print-meal-plan-recipes", label: "Print a week of dinners" },
     ],
   },
   {
     slug: "recipe-binder",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     layout: "capture-first",
     initialImportMode: "url",
@@ -1832,6 +2233,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-paprika-recipes", label: "Print Paprika recipes" },
       { href: "/recipe-card-printer", label: "Printable recipe cards" },
       { href: "/family-recipe-book", label: "Family recipe book ideas" },
+      { href: "/screen-free-cooking", label: "Cook without your phone" },
     ],
   },
   {
@@ -2058,7 +2460,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "family-recipe-book",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     // Signed off on the writing. The three feature rows still ask for `photo`
     // and `book` proof kinds that have no image behind them, so they render as
     // text-only blocks: there is no finished family cookbook to photograph yet.
@@ -2162,11 +2564,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-recipe-from-photo", label: "Print a recipe from a photo" },
       { href: "/recipe-binder", label: "Recipe binder ideas" },
       { href: "/organize-recipes", label: "Organize recipes" },
+      { href: "/how-to-print-a-cookbook", label: "How to print a cookbook" },
     ],
   },
   {
     slug: "make-your-own-cookbook",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "make your own cookbook",
     secondaryKeywords: [
@@ -2288,11 +2691,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/homemade-cookbook-gift", label: "Make a cookbook gift" },
+      { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
+      { href: "/how-to-print-a-cookbook", label: "How to print a cookbook" },
     ],
   },
   {
     slug: "cookbook-maker",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "cookbook maker",
     secondaryKeywords: [
@@ -2422,11 +2827,140 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/organize-recipes", label: "Organize recipes" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
+      { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
+      { href: "/how-to-print-a-cookbook", label: "How to print a cookbook" },
+    ],
+  },
+  {
+    slug: "how-to-print-a-cookbook",
+    contentUpdated: "2026-10-05",
+    primaryKeyword: "how to print a cookbook",
+    // Facts about each destination come from lib/printDestinations.ts and
+    // lib/cookbookPresets.ts (what the export dialog builds) and are phrased
+    // from RecipePrinter's side. No bleed or spine numbers, and no printer
+    // prices: those are the printers' to set and would go stale here.
+    secondaryKeywords: [
+      "print your own cookbook",
+      "cookbook printing",
+      "print a recipe book",
+      "print cookbook PDF",
+      "cookbook printing at home",
+    ],
+    shortLabel: "A printed cookbook",
+    pickerGroup: "output",
+    intent: "Organization SEO",
+    layout: "guide-first",
+    heroImage: "bound-cookbook",
+    initialImportMode: "url",
+    importModes: ["url", "image", "text"],
+    importSubmitLabel: "Start your cookbook",
+    captureHeading: "Start your cookbook",
+    title: "How to Print a Cookbook | At Home, Copy Shop, Lulu or Blurb",
+    description:
+      "Learn how to print your cookbook at home, at a copy shop, or with an online book printer like Lulu or Blurb. Export the print-ready files from RecipePrinter.",
+    h1: "How to print a cookbook",
+    anchor: "How to print a cookbook",
+    lede:
+      "Once your cookbook is finished, you can print it at home, take the PDF to a copy shop, or upload it to an online book printer like Lulu or Blurb. RecipePrinter gives you the files for each option; it doesn't print or ship books itself.",
+    howToHeading: "From finished cookbook to printed book",
+    howTo: [
+      {
+        name: "Finish the cookbook",
+        text: "Build the book in RecipePrinter: organize recipes into chapters, add a cover, and review everything before exporting. The table of contents is built for you.",
+      },
+      {
+        name: "Choose where it will be printed",
+        text: "Print it yourself, take the file to a copy shop, or use an online book printer such as Lulu or Blurb. The right choice depends on the binding and finish you want.",
+      },
+      {
+        name: "Download the files",
+        text: "RecipePrinter prepares a print-ready PDF for the option you choose. Home and copy-shop printing use one file; Lulu and Blurb also take a separate cover file.",
+      },
+      {
+        name: "Print, or upload and order",
+        text: "Print the PDF at home, send it to a local printer, or upload the files to the printing service and order your copies.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "On your own printer",
+        image: "convert-to-pdf",
+        body:
+          "Printing at home is the simplest way to print your own cookbook as a binder or loose pages. RecipePrinter exports one US Letter PDF, with the cover as its first page.",
+        afterBody:
+          "Put the pages in a three-ring binder or sheet protectors, or take the stack to a copy shop later if you decide you want it bound.",
+      },
+      {
+        heading: "At a copy shop",
+        image: "printed-cookbook",
+        body:
+          "A copy shop can print the same US Letter PDF and bind it for you. It's an easy way to get a spiral or coil-bound cookbook that lies flat on the counter.",
+        afterBody:
+          "At a copy shop such as Staples, upload the PDF through the shop's website or bring the file in, then choose the paper and binding. Copy shops bind documents, so ask about the bindings yours offers; hardcovers come from a book printer.",
+      },
+      {
+        heading: "With Lulu",
+        body:
+          "Lulu prints books to order, including coil-bound and hardcover cookbooks. Choose Lulu when you export, and RecipePrinter sizes the pages for the Lulu format you pick.",
+        afterBody: [
+          "Lulu takes the cover as its own file. Upload the pages to Lulu first, copy the cover dimensions and spine width it shows you into RecipePrinter, and download a cover made to those numbers. Then finish the order with Lulu, which prints and ships it.",
+        ],
+      },
+      {
+        heading: "With Blurb",
+        body:
+          "Blurb is another printer for professionally made books. RecipePrinter can prepare an 8 × 10 hardcover export for Blurb's PDF upload.",
+        afterBody:
+          "The cover is a separate file so it can match the dimensions Blurb gives you for that specific book. Enter them in RecipePrinter, download the cover, and finish the order with Blurb.",
+      },
+    ],
+    faqHeading: "Cookbook printing questions",
+    faqs: [
+      {
+        question: "Where should I print my cookbook?",
+        answer:
+          "Print at home if you want the simplest way to print a recipe book, or plan to use a binder. Use a copy shop for an easy spiral or coil-bound book. Use an online book printer such as Lulu or Blurb for a hardcover or a professionally made book to give as a gift.",
+      },
+      {
+        question: "What size will the cookbook be?",
+        answer:
+          "It depends on the printing option you choose at export. Home, copy-shop, and Lulu books are US Letter (8.5 × 11 inches), in coil or hardcover with Lulu. The Blurb hardcover is 8 × 10 inches.",
+      },
+      {
+        question: "Why is the cover a separate file for Lulu and Blurb?",
+        answer:
+          "A bound book's cover wraps around the front, the spine, and the back, and the spine's width depends on the number of pages. Book printers take the cover as its own file for that reason, and RecipePrinter makes it to the measurements the printer gives you.",
+      },
+      {
+        question: "What does edge to edge mean for photos?",
+        answer:
+          "Edge to edge means a photo reaches all the way to the trimmed edge of the page instead of keeping a white border. Printers need the image to run slightly past the trim line so small cutting differences don't leave a white sliver. That extra image area is called bleed. Standard photos keep a border, so any printer can print all of them.",
+      },
+      {
+        question: "Does RecipePrinter print and ship the book?",
+        answer:
+          "No. RecipePrinter builds the cookbook and gives you the files to print it. Print at home, or send the files to a copy shop or an online book printer, which handles the printing and delivery.",
+      },
+      {
+        question: "How much does it cost?",
+        answer: `There are two costs. Exporting the cookbook from RecipePrinter is ${COOKBOOK_PRICE_FALLBACK}, paid once per cookbook. Printing is separate and depends on where you print, the binding, page count, paper, and number of copies.`,
+      },
+      {
+        question: "Can I print more copies later, or fix something first?",
+        answer:
+          "Yes. You can go back to the cookbook, make changes, and export it again, so you can fix a typo or add a recipe before ordering another copy. Keep the files to print more copies whenever you like.",
+      },
+    ],
+    links: [
+      { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
+      { href: "/cookbook-maker", label: "Cookbook maker" },
+      { href: "/family-recipe-book", label: "Create a family recipe book" },
+      { href: "/homemade-cookbook-gift", label: "Make a homemade cookbook gift" },
     ],
   },
   {
     slug: "handwritten-recipes-to-cookbook",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "turn handwritten recipes into a cookbook",
     secondaryKeywords: [
@@ -2559,11 +3093,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/preserve-family-recipes", label: "Preserve family recipes" },
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
+      { href: "/bridal-shower-recipe-book", label: "Bridal shower recipe book" },
     ],
   },
   {
     slug: "homemade-cookbook-gift",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "homemade cookbook gift",
     secondaryKeywords: [
@@ -2690,11 +3225,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
       { href: "/recipe-book-gift", label: "More recipe book gift ideas" },
+      { href: "/bridal-shower-recipe-book", label: "Bridal shower recipe book" },
     ],
   },
   {
     slug: "recipe-book-gift",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "recipe book gift",
     secondaryKeywords: [
@@ -2809,6 +3345,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Does RecipePrinter print and ship the recipe book?",
         answer:
           "No. RecipePrinter creates the finished cookbook PDF. You can print it at home or send the file to a professional printing service.",
+        links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
         question: "How much does a recipe book gift cost?",
@@ -2840,11 +3377,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/recipe-card-printer", label: "Make printable recipe cards" },
       { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
+      { href: "/bridal-shower-recipe-book", label: "Bridal shower recipe book" },
     ],
   },
   {
     slug: "christmas-recipe-book",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "Christmas recipe book",
     secondaryKeywords: [
@@ -2947,6 +3485,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Does RecipePrinter ship the finished cookbook?",
         answer:
           "No. RecipePrinter creates the finished cookbook PDF. You can print it at home or send the file to a professional printing service for binding or hardcover printing.",
+        links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
         question: "Can I update the book after Christmas?",
@@ -2976,6 +3515,134 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
       { href: "/recipe-book-gift", label: "More recipe book gift ideas" },
+    ],
+  },
+  {
+    slug: "bridal-shower-recipe-book",
+    contentUpdated: "2026-10-05",
+    primaryKeyword: "bridal shower recipe book",
+    // Not "turn handwritten recipes into a cookbook": that is
+    // /handwritten-recipes-to-cookbook's primary, linked from here instead.
+    secondaryKeywords: [
+      "bridal shower recipe cards",
+      "recipe card bridal shower",
+      "recipe shower",
+      "wedding recipe book",
+      "recipe book gift for bride",
+    ],
+    shortLabel: "A bridal shower recipe book",
+    pickerGroup: "output",
+    intent: "Preservation and Gift SEO",
+    layout: "capture-first",
+    heroImage: "handwritten-card",
+    heroImageAlt:
+      "A handwritten recipe card in cursive beside an open recipe box, the kind of card guests fill in at a bridal shower.",
+    initialImportMode: "image",
+    importModes: ["image", "url", "text"],
+    importSubmitLabel: "Start the recipe book",
+    // Several photos in one upload are read as ONE recipe (ImportPanel's
+    // "drop multiple for one recipe"), so a host with a stack of cards has to
+    // be told to do them one at a time.
+    importHint:
+      "Upload one card at a time. Photos uploaded together are read as one recipe, like the front and back of a card.",
+    title: "Bridal Shower Recipe Book | Turn Recipe Cards Into a Cookbook",
+    description:
+      "Collect recipe cards from bridal shower guests, turn handwritten recipes into editable text, and create a finished recipe book for the couple.",
+    h1: "Turn bridal shower recipe cards into a recipe book",
+    anchor: "Bridal shower recipe book",
+    lede:
+      "Ask each guest to bring a favorite recipe to the bridal shower. Afterward, photograph the cards and turn them into a finished recipe book for the couple to keep.",
+    howToHeading: "How to make a bridal shower recipe book",
+    howTo: [
+      {
+        name: "Collect a recipe from every guest",
+        text: "Ask guests to bring a favorite recipe on a card, printed sheet, or handwritten note. You can also have blank recipe cards ready at the shower.",
+      },
+      {
+        name: "Photograph the cards",
+        text: "Take a clear photo or scan of each recipe after the shower. RecipePrinter reads the handwriting and turns each card into ingredients and instructions you can review.",
+      },
+      {
+        name: "Build the book",
+        text: "Add each recipe to the cookbook, organize them into chapters, and make any edits you need. Add a cover with the couple's names, wedding date, or a short dedication.",
+      },
+      {
+        name: "Print it and give it",
+        text: "Export the finished cookbook as a PDF and print it at home or with the printer of your choice. You can keep editing the cookbook if more recipes come in later.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "Handwriting becomes a typed recipe",
+        image: "inline-editing",
+        body:
+          "Every guest writes differently. RecipePrinter can turn handwritten recipes into clean, editable text, so you don't have to retype every ingredient and step yourself.",
+        afterBody:
+          "Review anything that was hard to read and fix it on the page, with the original card beside you to check against.",
+        links: [{ phrase: "handwritten recipes", href: "/handwritten-recipes-to-cookbook" }],
+      },
+      {
+        heading: "A cookbook made for the two of them",
+        image: "bound-cookbook",
+        body:
+          "Make the finished book feel like theirs. Add the couple's names and wedding date to the cover, include a note from the hosts, and organize recipes into chapters like breakfasts, dinners, desserts, or family favorites.",
+        afterBody: [
+          "If it fits the shower, give each side of the family its own section of the wedding recipe book.",
+          `Cookbook export costs ${COOKBOOK_PRICE_FALLBACK} per cookbook. You can keep editing it after you buy it, so recipes that arrive late can still go in.`,
+        ],
+      },
+      {
+        heading: "Give the book, the cards, or both",
+        image: "card-in-box",
+        body:
+          "The finished cookbook can be the main gift, while the original recipe cards stay with the couple for the kitchen.",
+        afterBody: [
+          "You can also print matching 4×6 recipe cards and give both: a cookbook for the shelf and cards for everyday cooking.",
+          "4×6 recipe cards need RecipePrinter Pro.",
+        ],
+      },
+    ],
+    faqHeading: "Bridal shower recipe book questions",
+    faqs: [
+      {
+        question: "How do I collect recipes from guests?",
+        answer:
+          "Ask guests to bring a favorite recipe on a recipe card, printed sheet, or handwritten note. You can also include a blank recipe card with the invitation or set cards out at the shower. Guests who can't come can send a photo, a link, or the recipe typed in a message.",
+      },
+      {
+        question: "Can I make the book after the shower is over?",
+        answer:
+          "Yes. Collect the recipe cards at the shower, photograph them afterward, and build the cookbook whenever you're ready. You can also add recipes later if someone sends theirs after the shower.",
+      },
+      {
+        question: "What if I can't read a guest's handwriting?",
+        answer:
+          "RecipePrinter can read many handwritten recipes and turn them into editable text, but handwriting recognition isn't perfect. Review each recipe and correct anything that was hard to read before adding it to the book. For anything still unclear, ask the guest.",
+        links: [
+          { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
+        ],
+      },
+      {
+        question: "Does RecipePrinter print and ship the book?",
+        answer:
+          "No. RecipePrinter helps you build the cookbook and export the finished PDF. You can print it at home or send the PDF to the printing service of your choice.",
+        links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
+      },
+      {
+        question: "How much does it cost?",
+        answer: `Importing recipes and building the cookbook are free. Exporting the finished cookbook costs ${COOKBOOK_PRICE_FALLBACK} per cookbook, paid once, and doesn't need RecipePrinter Pro. The free plan reads ${IMAGE_IMPORTS_PER_HOUR_FREE} photos an hour; Pro (${PRO_MONTHLY_PRICE_FALLBACK}) raises that to ${IMAGE_IMPORTS_PER_HOUR_PRO} and adds 4×6 recipe cards. Printing and binding are paid to your printer.`,
+      },
+      {
+        question: "Can I give everyone at the shower a copy?",
+        answer:
+          "Yes. Once you've exported the cookbook PDF, you can print as many copies as you like to give to family and friends.",
+      },
+    ],
+    links: [
+      { href: "/recipe-book-gift", label: "Personalized recipe book gift" },
+      { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
+      { href: "/family-recipe-book", label: "Create a family recipe book" },
+      { href: "/recipe-card-printer", label: "Make printable recipe cards" },
     ],
   },
   {
@@ -3098,7 +3765,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "reciscan-alternative",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-02",
     primaryKeyword: "ReciScan alternative",
     secondaryKeywords: [
@@ -3187,6 +3854,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Can RecipePrinter send me a printed cookbook?",
         answer:
           "Not directly. It builds the finished cookbook as a print-ready file: run it on a home printer, keep the PDF, or take it to a print shop to have bound. A copy shop works from the same file if you would rather not print it yourself.",
+        links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
         question: "What if I only want a few recipes, not a whole cookbook?",
@@ -3199,6 +3867,246 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/preserve-family-recipes", label: "Preserve family recipes" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
       { href: "/family-recipe-book", label: "Family recipe book ideas" },
+      { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
+    ],
+  },
+  {
+    slug: "canva-recipe-card-alternative",
+    contentUpdated: "2026-10-05",
+    primaryKeyword: "Canva recipe card alternative",
+    // Not "recipe card maker" / "printable recipe card generator" or
+    // "cookbook maker": those are /recipe-card-printer's and /cookbook-maker's,
+    // and this page links to both.
+    secondaryKeywords: [
+      "Canva alternative for recipe cards",
+      "recipe card template alternative",
+      "Canva recipe template alternative",
+      "Canva cookbook alternative",
+      "make recipe cards without Canva",
+    ],
+    shortLabel: "Canva",
+    pickerGroup: "comparison",
+    intent: "Utility SEO",
+    heroImage: "multi-themes",
+    initialImportMode: "url",
+    importModes: ["url", "image", "text"],
+    title: "Canva Alternative for Recipe Cards | RecipePrinter",
+    description:
+      "Looking for a Canva alternative for recipe cards? Paste a recipe link, upload a photo, or add the text, and RecipePrinter turns it into a printable recipe card.",
+    h1: "A Canva alternative for recipe cards",
+    anchor: "Canva alternative for recipe cards",
+    lede:
+      "Canva gives you a blank design and lets you build the recipe card yourself. RecipePrinter starts with the recipe. Paste a link, upload a photo, or add the text, and it turns the recipe into a card that's ready to review and print.",
+    featureSections: [
+      {
+        heading: "No typing, no copying box by box",
+        image: "steps",
+        body:
+          "In a design tool, a recipe card is a layout you fill in yourself: the title in one box, the ingredients in another, the instructions somewhere else.",
+        afterBody:
+          "RecipePrinter is a recipe card maker that starts with the recipe instead. Paste a website link, upload a photo of a handwritten card, or paste the text, and it becomes an editable recipe you can print.",
+        links: [{ phrase: "recipe card maker", href: "/recipe-card-printer" }],
+      },
+      {
+        heading: "Long recipes fit without fiddling",
+        image: "show-photo",
+        body:
+          "Some recipes don't fit on one side of a 4×6 card. Instead of shrinking the type or rearranging everything by hand, RecipePrinter continues the recipe onto the back of the card.",
+        afterBody:
+          "Two-sided printing is on by default. Set your printer to flip on the long edge and the front and back line up.",
+      },
+      {
+        heading: "Where Canva is the better choice",
+        image: "card",
+        body:
+          "If you want full control over every element, Canva is the better tool. You can design from a blank canvas, move elements anywhere, use a huge template library, and make something that doesn't need to behave like a recipe.",
+        afterBody:
+          "RecipePrinter is narrower on purpose. It's built for recipes, so you give up some design freedom in exchange for less setup.",
+      },
+    ],
+    comparison: {
+      competitor: "Canva",
+      checked: "October 2026",
+      groups: [
+        {
+          title: "Getting recipes in",
+          rows: [
+            { feature: "From a recipe link", us: "Reads the recipe for you", them: "You add the recipe yourself" },
+            { feature: "From a photo of a handwritten card", us: "Reads it into editable text", them: "You place the photo or the text in your layout" },
+            { feature: "From text you paste in", us: "Formats the recipe for you", them: "Paste it into your layout" },
+          ],
+        },
+        {
+          title: "Designing",
+          rows: [
+            { feature: "Ready-made recipe card designs", us: "Recipe-specific themes", them: "Large template library" },
+            { feature: "Free-form design with your own elements", us: false, them: "Full layout and design control" },
+            { feature: "A long recipe that doesn't fit", us: "Continues on the back of the card", them: "Resize or rearrange the layout" },
+          ],
+        },
+        {
+          title: "Printing",
+          rows: [
+            { feature: "Printing at home", us: "Full pages free; 4×6 cards with Pro", them: true },
+            { feature: "Printed and delivered to you", us: false, them: "Canva Print, where available" },
+          ],
+        },
+        {
+          title: "Cookbooks",
+          rows: [
+            { feature: "Cookbook with a cover, chapters, and contents", us: "Built from your recipes", them: "Create and arrange each page yourself" },
+          ],
+        },
+      ],
+    },
+    faqs: [
+      {
+        question: "How do I choose between them?",
+        answer:
+          "If you want to design every detail yourself, Canva gives you more freedom. If you already have the recipe and want a clean printable recipe card or cookbook without laying it out by hand, RecipePrinter is built for that.",
+      },
+      {
+        question: "What does each one cost?",
+        answer: `Canva has a free plan and paid Canva Pro plans; current pricing is on Canva's site. RecipePrinter prints full-page recipes free, with no account. 4×6 cards, premium themes, and printing several recipes at once are RecipePrinter Pro, ${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}. A cookbook is ${COOKBOOK_PRICE_FALLBACK}, paid once per cookbook.`,
+      },
+      {
+        question: "Can I make a whole cookbook instead of single cards?",
+        answer:
+          "Yes. RecipePrinter turns your recipes into a cookbook with a cover, chapters, section pages, and a table of contents. Export the finished cookbook as a PDF to print at home or with a printing service.",
+        links: [{ href: "/cookbook-maker", label: "Cookbook maker" }],
+      },
+      {
+        question: "Can I print several recipe cards at once?",
+        answer:
+          "Yes, with RecipePrinter Pro. Add the recipes you want, then print them in one job with the same card size and theme, so the stack matches.",
+        links: [{ href: "/print-multiple-recipes", label: "Print multiple recipes at once" }],
+      },
+    ],
+    links: [
+      { href: "/recipe-card-printer", label: "Make printable recipe cards" },
+      { href: "/print-multiple-recipes", label: "Print multiple recipes at once" },
+      { href: "/cookbook-maker", label: "Cookbook maker" },
+      { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
+    ],
+  },
+  {
+    slug: "createmycookbook-alternative",
+    contentUpdated: "2026-10-05",
+    primaryKeyword: "CreateMyCookbook alternative",
+    // Not "cookbook maker" or "family recipe book": those are other pages'
+    // primaries, linked from here instead.
+    secondaryKeywords: [
+      "Create My Cookbook alternative",
+      "alternative to CreateMyCookbook",
+      "Heritage Cookbook alternative",
+      "family cookbook maker",
+      "cookbook from handwritten recipes",
+    ],
+    shortLabel: "CreateMyCookbook",
+    pickerGroup: "comparison",
+    intent: "Preservation and Gift SEO",
+    // A competitor search wants to try the thing now, like the other
+    // alternative pages.
+    layout: "capture-first",
+    heroImage: "printed-cookbook",
+    initialImportMode: "image",
+    importModes: ["url", "image", "text"],
+    importSubmitLabel: "Start the cookbook",
+    title: "CreateMyCookbook Alternative for Family Cookbooks | RecipePrinter",
+    description:
+      "Compare RecipePrinter with CreateMyCookbook. Import recipes from links, photos, and handwritten cards, build your cookbook, and export a print-ready PDF.",
+    h1: "A CreateMyCookbook alternative that reads your recipes",
+    anchor: "CreateMyCookbook alternative",
+    lede:
+      "CreateMyCookbook helps you build and order a printed cookbook. RecipePrinter starts one step earlier: paste a recipe link, upload a handwritten card or photo, or add recipe text, then organize everything into a cookbook and export the finished file to print wherever you want.",
+    featureSections: [
+      {
+        heading: "Turn recipe cards into editable recipes",
+        image: "handwritten-card",
+        body:
+          "Recipe cards are often the slowest part of making a family cookbook, because someone has to type them in. With RecipePrinter, you upload a photo of a handwritten card and get editable ingredients and instructions.",
+        afterBody:
+          "Review what it read and correct anything that was hard to make out before the recipe goes in the book.",
+        links: [{ phrase: "handwritten card", href: "/handwritten-recipes-to-cookbook" }],
+      },
+      {
+        heading: "One price for the book, not for every copy",
+        image: "convert-to-pdf",
+        body:
+          "RecipePrinter charges once for the cookbook and gives you a print-ready PDF. From there, you decide how many copies to print and where to print them.",
+        afterBody: [
+          "That can make more sense if you want to print at home, use a local copy shop, compare online printing services, or make more copies later.",
+          "You can keep editing the cookbook after you buy it and export an updated version whenever you need one.",
+        ],
+      },
+      {
+        heading: "Where CreateMyCookbook is the better choice",
+        image: "bound-cookbook",
+        body:
+          "If you want one company to handle both the cookbook software and the printing, CreateMyCookbook may be the better fit. You build the book, choose a print option, and finished copies are shipped to you.",
+        afterBody: [
+          "It may also suit you better if you want contributors to enter their own recipes directly.",
+          "RecipePrinter gives you more control over where the book gets printed, but that also means arranging the printing yourself.",
+        ],
+      },
+    ],
+    comparison: {
+      competitor: "CreateMyCookbook",
+      checked: "October 2026",
+      groups: [
+        {
+          title: "Getting recipes in",
+          rows: [
+            { feature: "Pasted recipe text", us: "Formats the recipe for you", them: "Formats it in the recipe form" },
+            { feature: "From a recipe link", us: "Reads the recipe from the link", them: "Copy the text from the page and paste it" },
+            { feature: "From a photo of a handwritten card", us: "Reads it into editable text", them: "WeTypeIt: their team types it, sold as credits" },
+            { feature: "Contributors adding recipes", us: "They send recipes to you to add", them: "Invite contributors to add recipes and photos" },
+          ],
+        },
+        {
+          title: "The book",
+          rows: [
+            { feature: "Cover, chapters, and contents", us: "Built from your recipes, all editable", them: "Built in its online designer" },
+            { feature: "Binding", us: "Print-ready file for spiral or hardcover; your printer binds it", them: "Softcover, wire-o, hardback, and binder options" },
+          ],
+        },
+        {
+          title: "Printing and price",
+          rows: [
+            { feature: "Printed and shipped to you", us: false, them: "Ordered through CreateMyCookbook" },
+            { feature: "Print-ready PDF", us: "Included with cookbook export", them: "eCookbook PDF, sold separately" },
+            { feature: "What you pay", us: `${COOKBOOK_PRICE_FALLBACK} per cookbook, plus your printer`, them: "Depends on format, page count, and quantity" },
+          ],
+        },
+      ],
+    },
+    faqs: [
+      {
+        question: "How do I choose between them?",
+        answer:
+          "Choose CreateMyCookbook if you want the same service to help you build the book and print the finished copies. Choose RecipePrinter if your bigger problem is getting recipes from websites, photos, and handwritten cards into one cookbook, and you want to choose where the final PDF is printed.",
+      },
+      {
+        question: "What does each one cost?",
+        answer: `RecipePrinter charges ${COOKBOOK_PRICE_FALLBACK} once per cookbook, which includes the print-ready PDF. Printing is separate and depends on the printer you choose. CreateMyCookbook's pricing depends on the book format, page count, quantity, and printing options, so check its current pricing before ordering.`,
+      },
+      {
+        question: "What about Heritage Cookbook?",
+        answer:
+          "Heritage Cookbook is a separate company that works in a similar way: you build the book in its online designer, can invite contributors, and order printed copies. RecipePrinter is the better fit when your main job is bringing in recipes from links, photos, or handwritten cards before you build the cookbook.",
+      },
+      {
+        question: "Can RecipePrinter print and ship my cookbook?",
+        answer:
+          "No. RecipePrinter builds the cookbook and exports the finished print-ready file, and you choose where to print it. When you export, it suggests options for each format, such as Lulu for a spiral-bound book or Blurb for a hardcover, as well as your own printer or a local copy shop.",
+        links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
+      },
+    ],
+    links: [
+      { href: "/cookbook-maker", label: "Cookbook maker" },
+      { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
+      { href: "/family-recipe-book", label: "Create a family recipe book" },
+      { href: "/reciscan-alternative", label: "ReciScan alternative" },
     ],
   },
 ];
