@@ -9,7 +9,7 @@ import {
 } from "@/components/seo/LandingFrame";
 import { SeoCapture } from "@/components/seo/SeoCapture";
 import { Breadcrumb, type Crumb } from "@/components/seo/Breadcrumb";
-import { CookbookPitch } from "@/components/seo/CookbookPitch";
+import { cookbookPitchFeature } from "@/components/seo/CookbookPitch";
 import { RecipeBinderSections } from "@/components/seo/RecipeBinderSections";
 import { heroCardKey } from "@/lib/seoImages";
 import {
@@ -130,6 +130,14 @@ export default function SeoLandingPage({ params }: PageProps) {
   // as the other hero photos without moving the controls farther down.
   const showsAllImportModes = (page.importModes?.length ?? 0) > 1;
   const usesDecorativePdf = page.slug === "convert-recipe-to-pdf";
+  // The cookbook pitch is the last feature row, so it keeps the left/right
+  // alternation going (see CookbookPitch).
+  const features = [
+    ...(page.featureSections ?? []),
+    ...(page.cookbookPitch
+      ? [cookbookPitchFeature({ heading: page.cookbookPitchHeading, body: page.cookbookPitchBody })]
+      : []),
+  ];
 
   return (
     <LandingFrame headerActions={<LandingCta label="Go to printer" compact />}>
@@ -230,9 +238,9 @@ export default function SeoLandingPage({ params }: PageProps) {
         </section>
       )}
 
-      {page.featureSections && page.featureSections.length > 0 && (
+      {features.length > 0 && (
         <section aria-label="Features">
-          <FeatureRows features={page.featureSections} />
+          <FeatureRows features={features} />
         </section>
       )}
 
@@ -250,10 +258,6 @@ export default function SeoLandingPage({ params }: PageProps) {
       )}
 
       {page.slug === "recipe-binder" && <RecipeBinderSections />}
-
-      {page.cookbookPitch && (
-        <CookbookPitch heading={page.cookbookPitchHeading} body={page.cookbookPitchBody} />
-      )}
 
       {page.examples && page.examples.length > 0 && (
         <section aria-labelledby="examples-heading">
