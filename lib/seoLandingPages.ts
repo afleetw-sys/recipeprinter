@@ -918,7 +918,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImage: "instagram",
     title: "Print a Recipe From a Screenshot | RecipePrinter",
     description:
-      "Finally cook from that recipe you screenshotted. Upload it and print a clean, full-size recipe, save it as a PDF, or make it a 4x6 recipe card.",
+      "Finally cook from that recipe you screenshotted. Upload it and print it as a clean full page or a 4x6 recipe card, or save it as a PDF.",
     h1: "Print a recipe from a screenshot",
     lede:
       "That recipe you screenshotted deserves better than your camera roll. Upload it from a post, message, app, or website and print it as a clean recipe you can actually cook from.",
@@ -938,7 +938,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print or save it",
-        text: "Print the finished recipe as a full letter page, save it as a PDF, or use RecipePrinter Pro to make a 4x6 recipe card.",
+        text: "Print the finished recipe as a full letter page or, with RecipePrinter Pro, a 4x6 recipe card. Or save it as a PDF.",
       },
     ],
     featureSections: [
@@ -1330,7 +1330,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Paste a TikTok recipe link and turn the caption, available spoken captions, or on-screen recipe text into an editable recipe you can print or save.",
     h1: "Print TikTok recipes",
     lede:
-      "Paste a TikTok recipe link and RecipePrinter looks for the recipe in the caption, available spoken captions, and text shown in the video. Review the ingredients and instructions, then print it as a full page, save it as a PDF, or make a 4x6 recipe card.",
+      "Paste a TikTok recipe link and RecipePrinter looks for the recipe in the caption, available spoken captions, and text shown in the video. Review the ingredients and instructions, then print it as a full page or a 4x6 recipe card, or save it as a PDF.",
     howToHeading: "How to print a recipe from TikTok",
     howTo: [
       {
@@ -1347,7 +1347,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print it your way",
-        text: "Print a full letter page, save the recipe as a PDF, or use RecipePrinter Pro to make a 4x6 recipe card.",
+        text: "Print a full letter page or, with RecipePrinter Pro, a 4x6 recipe card. Or save the recipe as a PDF.",
       },
     ],
     featureSections: [
@@ -1570,7 +1570,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Paste a YouTube recipe link and turn the description, linked recipe, or available video captions into an editable recipe you can print or save.",
     h1: "Print a recipe from YouTube",
     lede:
-      "Paste a YouTube recipe link and RecipePrinter looks for the recipe in the video description, a linked recipe page, or available captions. Review the ingredients and instructions, then print it as a full page, save it as a PDF, or make a 4x6 recipe card.",
+      "Paste a YouTube recipe link and RecipePrinter looks for the recipe in the video description, a linked recipe page, or available captions. Review the ingredients and instructions, then print it as a full page or a 4x6 recipe card, or save it as a PDF.",
     howToHeading: "How to print a recipe from YouTube",
     howTo: [
       {
@@ -1587,7 +1587,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print it your way",
-        text: "Print a full letter page, save the recipe as a PDF, or use RecipePrinter Pro to make a 4x6 recipe card.",
+        text: "Print a full letter page or, with RecipePrinter Pro, a 4x6 recipe card. Or save the recipe as a PDF.",
       },
     ],
     featureSections: [
@@ -1720,7 +1720,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print or save it",
-        text: "Print a full-page recipe, save it as a PDF, or create a 4×6 recipe card with RecipePrinter Pro.",
+        text: "Print a full-page recipe or, with RecipePrinter Pro, a 4×6 recipe card. Or save it as a PDF.",
       },
     ],
     featureSections: [
@@ -1840,7 +1840,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print them",
-        text: "Print a full-page recipe for a binder, save it as a PDF, or make a 4×6 recipe card with RecipePrinter Pro.",
+        text: "Print a full-page recipe for a binder or, with RecipePrinter Pro, a 4×6 recipe card. Or save it as a PDF.",
       },
       {
         name: "Leave the phone in the other room",
@@ -2294,7 +2294,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print or save it",
-        text: "Print the recipe as a full-page copy, save it as a PDF, or use RecipePrinter Pro to make a 4x6 recipe card.",
+        text: "Print the recipe as a full page or, with RecipePrinter Pro, a 4x6 recipe card. Or save it as a PDF.",
       },
     ],
     featureSections: [
