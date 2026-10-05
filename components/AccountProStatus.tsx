@@ -7,7 +7,7 @@ import { CheckIcon, ClockIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
 import { ProBadge } from "@/components/ProBadge";
 import { SegmentedControl } from "@/components/Controls";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
-import { PRO_BENEFITS } from "@/lib/proUpgradeCopy";
+import { BASIC_BENEFITS, PRO_BENEFITS } from "@/lib/proUpgradeCopy";
 import { FREE_IMAGE_IMPORT_BENEFIT, PRO_IMAGE_IMPORT_BENEFIT } from "@/lib/imageImportQuota";
 import { AccountImageImportUsage } from "@/components/AccountImageImportUsage";
 import { track } from "@/lib/analytics";
@@ -29,24 +29,6 @@ import {
 } from "@/lib/proProduct";
 import { useUsdPriceLabel } from "@/lib/visitorCurrency";
 
-// What Basic (the free tier) actually includes — and it's a lot, which the
-// old "Classic & Pantry themes / Full Page printing / one recipe at a time"
-// list undersold by leading with a limitation. "Import from any site" /
-// "Import from Instagram, TikTok..." / "Unlimited imports" were three lines
-// making the same point (importing has no limit); folded into two by saying
-// "Unlimited" on each rather than splitting it out as its own line.
-// "One recipe at a time" is real (see PrintSetupControls.tsx's "This
-// recipe" title) but it's a constraint, not a benefit, so it doesn't belong
-// on a list meant to make the case for staying on Basic being a perfectly
-// good deal. Photo imports are the exception to "unlimited": each one is a
-// paid model call, so they are counted by the hour, and the Pro card names
-// its larger allowance (see lib/imageImportQuota.ts).
-const BASIC_BENEFITS = [
-  "Unlimited imports from any recipe website",
-  "Unlimited imports from Instagram, TikTok, Pinterest & more",
-  FREE_IMAGE_IMPORT_BENEFIT,
-  "Letter-size printing with two free themes",
-];
 
 function formatDate(ms: number | null): string | null {
   if (ms === null) return null;

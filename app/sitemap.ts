@@ -17,6 +17,7 @@ const LAST_MODIFIED: Record<string, string> = {
   "/features": "2026-10-05",
   "/faq": "2026-10-05",
   "/about": "2026-09-09",
+  "/pricing": "2026-10-05",
   "/privacy": "2026-09-04",
   "/terms": "2026-09-04",
 };

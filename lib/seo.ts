@@ -151,6 +151,11 @@ export const NAV_LINKS: NavLink[] = [
     blurb: "Everything RecipePrinter does for printing, saving, and collecting recipes.",
   },
   {
+    href: "/pricing",
+    label: "Pricing",
+    blurb: "What's free, what RecipePrinter Pro adds, and what a cookbook costs.",
+  },
+  {
     href: "/faq",
     label: "FAQ",
     blurb: "Answers about recipe links, PDFs, cookbooks, social recipes, binders, and privacy.",
