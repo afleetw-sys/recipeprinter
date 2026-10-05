@@ -534,7 +534,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Save as PDF",
-        text: "Open your browser's print dialog and choose Save as PDF instead of a printer. No plugin or download is needed.",
+        text: "Click Print, then choose Save as PDF where you'd normally pick your printer. No plugin or download needed.",
       },
       {
         name: "Keep, share, or print it",
@@ -563,7 +563,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Where is the PDF download button?",
         answer:
-          "RecipePrinter uses your browser's built-in print dialog. Choose Save as PDF instead of a printer, then save the file wherever you normally keep downloads.",
+          "There isn't a separate one. Click Print, choose Save as PDF where you'd normally pick your printer, and save the file wherever you keep downloads.",
       },
       {
         question: "Can I save several recipes in one PDF?",
