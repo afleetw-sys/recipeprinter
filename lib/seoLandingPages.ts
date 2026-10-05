@@ -960,7 +960,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What if the recipe takes more than one screenshot?",
         answer:
-          "Upload the screenshots together. RecipePrinter can use up to four images for one recipe, so the ingredients and instructions can span multiple screens.",
+          "No problem. Upload all of them together, up to four, and RecipePrinter puts them back together as one recipe.",
       },
       {
         question: "Can I print a recipe from a private post or message?",
