@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import {
   LandingCta,
   LandingFrame,
@@ -114,6 +115,31 @@ function CaptureBlock({ page }: { page: SeoLandingPage }) {
   );
 }
 
+type PhraseLink = { phrase: string; href: string };
+
+/** `text` with the first occurrence of each phrase linked. */
+function withLinks(text: string, links: PhraseLink[] | undefined): ReactNode {
+  const hits = (links ?? [])
+    .map((link) => ({ ...link, at: text.indexOf(link.phrase) }))
+    .filter((link) => link.at >= 0)
+    .sort((a, b) => a.at - b.at);
+  if (hits.length === 0) return text;
+  const parts: ReactNode[] = [];
+  let from = 0;
+  for (const hit of hits) {
+    if (hit.at < from) continue;
+    parts.push(text.slice(from, hit.at));
+    parts.push(
+      <Link key={hit.href} href={hit.href} className="font-bold text-ink hover:underline">
+        {hit.phrase}
+      </Link>,
+    );
+    from = hit.at + hit.phrase.length;
+  }
+  parts.push(text.slice(from));
+  return <>{parts}</>;
+}
+
 export default function SeoLandingPage({ params }: PageProps) {
   const page = SEO_LANDING_PAGE_MAP.get(params.slug);
   if (!page) notFound();
@@ -133,7 +159,11 @@ export default function SeoLandingPage({ params }: PageProps) {
   // The cookbook pitch is the last feature row, so it keeps the left/right
   // alternation going (see CookbookPitch).
   const features = [
-    ...(page.featureSections ?? []),
+    ...(page.featureSections ?? []).map((feature) => ({
+      ...feature,
+      body: withLinks(feature.body, feature.links),
+      afterBody: [feature.afterBody ?? []].flat().map((p) => withLinks(p, feature.links)),
+    })),
     ...(page.cookbookPitch
       ? [
           cookbookPitchFeature({

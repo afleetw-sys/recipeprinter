@@ -3,6 +3,7 @@ import { pageMetadata, SITE_NAME } from "@/lib/seo";
 import type { ImportTab } from "@/types/recipe";
 import { PRINTERS } from "@/lib/cookbookPresets";
 import { PRO_ANNUAL_PRICE_FALLBACK, PRO_MONTHLY_PRICE_FALLBACK } from "@/lib/proProduct";
+import { IMAGE_IMPORTS_PER_HOUR_FREE, IMAGE_IMPORTS_PER_HOUR_PRO } from "@/lib/imageImportQuota";
 
 /** Icon slugs a value-prop chip can use, resolved to real icons in the template. */
 export type SeoIconKey =
@@ -224,6 +225,9 @@ export type SeoLandingPage = {
     /** Page-specific alt text when the shared image is evidence for a more
         specific claim on this page. */
     imageAlt?: string;
+    /** Phrases in `body` or `afterBody` to link, first occurrence of each.
+        One or two at most: a paragraph of links reads as navigation. */
+    links?: { phrase: string; href: string }[];
   }[];
   /**
    * Head-to-head feature table for a competitor page. Only worth adding when
@@ -1783,10 +1787,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     primaryKeyword: "screen-free cooking",
     secondaryKeywords: [
       "cook without your phone",
-      "less screen time in the kitchen",
-      "analog kitchen",
-      "printed recipes instead of a phone",
-      "digital detox cooking",
+      "cooking without a phone",
+      "print recipes instead of using your phone",
+      "printed recipes",
+      "screen-free kitchen",
     ],
     shortLabel: "Cooking without a screen",
     intent: "Organization SEO",
@@ -1795,30 +1799,33 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     initialImportMode: "url",
     importModes: ["url", "image", "text"],
     importSubmitLabel: "Put it on paper",
-    title: "Cook Without Your Phone: Print Your Recipes",
+    // The Link field already lists the apps and recipe sites under itself
+    // (ImportPanel), so this names only what that line leaves out.
+    importHint: "Screenshots, photos, and pasted recipe text work too.",
+    title: "Screen-Free Cooking | Cook Without Your Phone",
     description:
-      "Take the recipes off your phone and put them on paper. Print clean recipe pages and cards from links, screenshots, and photos, and cook without a screen.",
+      "Turn recipes from websites, social media, screenshots, and photos into printed recipes. Cook without keeping your phone open on the counter.",
     h1: "Cook without your phone",
     anchor: "Cook without your phone",
     lede:
-      "Your phone is where recipes are found. It doesn't have to be where they're cooked. Put the ones you love on paper, and the kitchen becomes one room in the house without a screen in it.",
+      "Your phone is where recipes are found. It doesn't have to be where they're cooked. Turn recipes from websites, social media, screenshots, or photos into something you can print and keep in the kitchen.",
     howToHeading: "How to take your recipes off the screen",
     howTo: [
       {
         name: "Choose the recipes you actually cook",
-        text: "Start small: the ten or twenty dinners you make most. A short stack you use beats a thousand saved posts you scroll past.",
+        text: "Start with the recipes you come back to. Instead of keeping hundreds of saved posts and screenshots, put the ones you actually use on paper.",
       },
       {
         name: "Bring them in from wherever they are",
-        text: "Paste a link from a website or a social post, upload a screenshot, or copy the text from your notes app. RecipePrinter sets each one out as ingredients and steps.",
+        text: "Paste a recipe link, upload a screenshot or photo, or paste the recipe text. RecipePrinter turns it into ingredients and instructions you can review.",
       },
       {
         name: "Print them",
-        text: "Print a full page for a binder, free, or a 4x6 card for a recipe box with RecipePrinter Pro.",
+        text: "Print a full-page recipe for a binder, save it as a PDF, or make a 4×6 recipe card with RecipePrinter Pro.",
       },
       {
         name: "Leave the phone in the other room",
-        text: "File the printed recipes where you cook. Next time, reach for the box instead of the phone.",
+        text: "Put the printed recipe where you cook. No notifications, no dimmed screen, and no unlocking your phone with messy hands.",
       },
     ],
     featureSections: [
@@ -1826,21 +1833,31 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Open the recipe and nothing else",
         image: "before-after",
         body:
-          "Looking up a recipe on your phone means a lock screen with notifications on it, a page full of ads, and a message you answer before you've found the ingredients. Twenty minutes later the onions have burned. A printed recipe has one job and does nothing else.",
+          "Looking up a recipe on your phone also means opening notifications, messages, ads, and everything else fighting for your attention.",
+        afterBody:
+          "A printed recipe does one job. The ingredients and instructions stay open on the counter until you're done.",
       },
       {
         heading: "Paper doesn't sleep, ring, or need charging",
         image: "photo-recipe-card",
         body:
-          "A screen dims halfway through the method and wants a clean finger to wake it. Paper lies flat on the counter, takes a splash, and is still open on the right step when you look back. You can write on it too: less salt, double the garlic, Dad's favorite.",
+          "A screen dims halfway through a recipe. A phone rings. A clean finger turns into a messy one.",
+        afterBody:
+          "Paper stays open on the counter, takes a splash, and is still on the right step when you come back.",
       },
       {
         heading: "A recipe box instead of a camera roll",
         image: "card-in-box",
         body:
-          "Saved recipes pile up out of sight, so you cook the same five things and forget the rest. A recipe box or binder is a collection you can see, flip through on a Sunday, and hand to someone else in the house. It also outlasts your phone and every app on it.",
-        afterBody:
-          "When the box fills up, the same recipes can become a bound cookbook with a cover and chapters.",
+          "Saved recipes pile up out of sight. Screenshots disappear into your camera roll, and saved posts get buried under hundreds of others.",
+        afterBody: [
+          "Printed recipes give the ones you actually cook a place to live. Keep them in a recipe box or a recipe binder, and add to the collection over time.",
+          "When the collection gets bigger, you can turn it into a cookbook.",
+        ],
+        links: [
+          { phrase: "recipe binder", href: "/recipe-binder" },
+          { phrase: "turn it into a cookbook", href: "/make-your-own-cookbook" },
+        ],
       },
     ],
     faqHeading: "Questions about cooking without a screen",
@@ -1848,32 +1865,35 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Don't I need a phone to get the recipes onto paper?",
         answer:
-          "Once per recipe. Find it however you like, print it, and from then on it lives on paper. Print a batch on a Sunday and the phone can stay out of the kitchen all week.",
+          "Screen-free cooking doesn't mean never using a screen. You may use your phone or computer to bring the recipe into RecipePrinter, but once it's printed, the recipe lives on paper. Print a few at a time and build up a collection.",
       },
       {
         question: "What's the best way to keep printed recipes?",
         answer:
-          "A binder with sheet protectors works well for full pages, and a recipe box works well for 4x6 cards. Both let you see your whole collection at once.",
+          "For full-page recipes, a binder with sheet protectors works well, and the sleeves keep the pages clean. For 4×6 recipe cards, use a recipe box or a card file.",
         links: [
           { href: "/recipe-binder", label: "Build a recipe binder" },
-          { href: "/organize-recipes", label: "Organize your recipes" },
+          { href: "/recipe-card-printer", label: "Make 4×6 recipe cards" },
         ],
       },
       {
         question: "Can I print recipes I've saved on Instagram or TikTok?",
         answer:
-          "Yes. Paste the post's link and RecipePrinter reads the recipe from the caption, the video's captions, or a linked recipe page.",
-        links: [{ href: "/print-social-media-recipes", label: "Print recipes from social media" }],
+          "Yes. Paste the post's link into RecipePrinter. On Instagram, it reads the recipe from the caption. On TikTok, it checks the caption and, when the video has them, its spoken captions and on-screen text. Some posts don't include the full recipe, so check it before you print.",
+        links: [
+          { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
+          { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
+        ],
       },
       {
         question: "Can I print a recipe from a screenshot?",
         answer:
-          "Yes. Upload the screenshot and RecipePrinter reads the recipe out of the image, ready to review and print.",
+          "Yes. Upload a screenshot and RecipePrinter turns the recipe in the image into an editable recipe before you print it. Photos of handwritten recipe cards work the same way.",
+        links: [{ href: "/print-recipe-from-screenshot", label: "Print a recipe from a screenshot" }],
       },
       {
         question: "Does it cost anything?",
-        answer:
-          "Importing and printing full-page recipes is free with no account. 4x6 recipe cards and printing several recipes in one job are RecipePrinter Pro, $4.99 a month or $39.99 a year.",
+        answer: `The basics are free with no account: importing recipes, editing them, and printing or saving full-page recipes, with up to ${IMAGE_IMPORTS_PER_HOUR_FREE} screenshot or photo imports an hour. RecipePrinter Pro (${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}) adds 4×6 recipe cards, premium themes, printing several recipes at once, and ${IMAGE_IMPORTS_PER_HOUR_PRO} image imports an hour.`,
       },
     ],
     links: [
