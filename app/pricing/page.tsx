@@ -41,7 +41,6 @@ const COOKBOOK_POINTS = [
   "Your own cover and chapters, with the table of contents built for you",
   "Keep editing after you buy, and export again any time",
   "Print-ready files for home, a copy shop, Lulu, or Blurb",
-  "Doesn't need Pro",
 ];
 
 const FAQS = [
@@ -110,11 +109,14 @@ export default function PricingPage() {
       <LandingHero
         align="centered"
         h1="Pricing"
-        lede="Printing recipes is free. Pro is for recipe cards, themes, and printing in batches. A cookbook is a one-time purchase for each book you make."
+        lede="Printing recipes is free. Pro adds recipe cards, themes, and printing in batches. Cookbooks are a separate, one-time purchase."
         above={<Breadcrumb trail={TRAIL} />}
       />
 
-      <section aria-label="Plans" className="grid gap-cp-5 lg:grid-cols-3">
+      {/* Two plans, side by side. The cookbook is NOT a third column: it is a
+          one-time purchase for one book, not a tier above Pro, and as the
+          right-hand card of three it read as the most expensive plan. */}
+      <section aria-label="Plans" className="mx-auto grid w-full max-w-[56rem] gap-cp-5 md:grid-cols-2">
         <div className="flex flex-col rounded-2xl border border-line bg-card p-cp-6">
           <h2 className="text-cp-h2 font-extrabold text-ink">Free</h2>
           <p className="mt-cp-2 text-cp-body font-bold text-ink-soft">No account needed to print</p>
@@ -140,22 +142,30 @@ export default function PricingPage() {
             <PricingProButton />
           </div>
         </div>
+      </section>
 
-        <div className="flex flex-col rounded-2xl border border-line bg-card p-cp-6">
-          <h2 className="text-cp-h2 font-extrabold text-ink">Cookbook</h2>
-          <p className="mt-cp-2 text-cp-body font-bold text-ink-soft">
-            {COOKBOOK_PRICE_FALLBACK} per cookbook, paid once
-          </p>
-          <PlanList items={COOKBOOK_POINTS} />
-          <Link href="/make-your-own-cookbook" className="btn btn-secondary mt-cp-6 w-full">
+      <p className="-mt-cp-5 text-center text-cp-small text-ink-soft">Prices are in US dollars.</p>
+
+      <LandingSection
+        id="pricing-cookbook-heading"
+        heading="Making a cookbook?"
+        lede="Cookbooks are separate from both plans: a one-time purchase for each book you make, on Free or Pro."
+      >
+        <div className="grid gap-cp-5 rounded-2xl border border-line bg-card p-cp-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+          <div>
+            <p className="text-cp-body font-bold text-ink">
+              {COOKBOOK_PRICE_FALLBACK} per cookbook, paid once
+            </p>
+            <PlanList items={COOKBOOK_POINTS} />
+          </div>
+          <Link href="/make-your-own-cookbook" className="btn btn-secondary">
             How cookbooks work
           </Link>
         </div>
-      </section>
-
-      <p className="-mt-cp-5 text-center text-cp-small text-ink-soft">
-        Prices are in US dollars. Printing a cookbook is paid to the printer you choose.
-      </p>
+        <p className="mt-cp-3 text-cp-small text-ink-soft">
+          Printing the finished book is paid to the printer you choose.
+        </p>
+      </LandingSection>
 
       <LandingSection id="pricing-faq-heading" heading="Questions about pricing">
         <FaqCards items={FAQS} />

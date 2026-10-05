@@ -608,6 +608,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "Recipe cards",
     pickerGroup: "output",
     intent: "Utility SEO",
+    // A 4×6 card on its own, already 4:3, so the hero shows it uncropped.
+    heroImage: "caprese-card-board",
     initialImportMode: "url",
     importSubmitLabel: "Make recipe card",
     importModes: ["url", "apps", "image", "text"],
@@ -618,8 +620,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     anchor: "Recipe card printer",
     lede:
       "Turn recipes from websites, photos, screenshots, or text into clean 4×6 recipe cards ready to print and keep.",
-    intro:
-      "RecipePrinter works as a printable recipe card generator for recipes you already have.",
     cookbookPitchBody:
       "When your recipe card collection grows into something bigger, RecipePrinter can turn it into a cookbook. Organize recipes into chapters, create a cover and table of contents, rearrange pages, then print at home or export the file for professional printing.",
     examplesSubtitle: "Real 4×6 recipe cards printed with RecipePrinter. No mockups.",
@@ -632,7 +632,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Choose 4×6 recipe cards",
-        text: "Switch from a full page to the 4×6 card size. You can preview the finished card free — printing it takes RecipePrinter Pro, $4.99/mo.",
+        text: "Switch from a full page to the 4×6 card size. Preview the finished card for free, and print it with RecipePrinter Pro.",
       },
       {
         name: "Pick a design",
