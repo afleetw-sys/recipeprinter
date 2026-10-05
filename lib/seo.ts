@@ -298,7 +298,7 @@ export const FAQ: FaqItem[] = [
     question: "Can I make a cookbook from my recipes?",
     group: "what-you-get",
     answer:
-      "Yes. RecipePrinter sorts the recipes into chapters, generates the cover, and builds the table of contents. Rearrange anything you want moved, then print it at home on US Letter or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook.",
+      "Yes. Add your recipes to a cookbook, sort them into chapters, and choose a cover. RecipePrinter builds the table of contents and page numbers for you. Then print it at home on US Letter or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook.",
     guides: [
       "family-recipe-book",
       "preserve-family-recipes",

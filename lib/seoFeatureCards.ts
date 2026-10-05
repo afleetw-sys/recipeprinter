@@ -88,7 +88,7 @@ export const PRINT_CARDS: FeatureCard[] = [
     heading: "Cookbook builder",
     image: "bound-cookbook",
     body:
-      `RecipePrinter sorts the recipes into chapters, generates the cover, and builds the table of contents. Rearrange anything, then print it at home or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook. ${COOKBOOK_PRICE_FALLBACK} a cookbook.`,
+      `Sort your recipes into chapters and choose a cover, and RecipePrinter builds the table of contents and page numbers. Then print it at home or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook. ${COOKBOOK_PRICE_FALLBACK} a cookbook.`,
   },
 ];
 

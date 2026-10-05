@@ -14,7 +14,7 @@ import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 const LAST_MODIFIED: Record<string, string> = {
   "/": "2026-09-11",
   "/how-it-works": "2026-09-09",
-  "/features": "2026-09-09",
+  "/features": "2026-10-05",
   "/faq": "2026-10-05",
   "/about": "2026-09-09",
   "/privacy": "2026-09-04",

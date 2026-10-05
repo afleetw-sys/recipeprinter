@@ -462,7 +462,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "convert-recipe-to-pdf",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-02",
     primaryKeyword: "convert recipe to PDF",
     secondaryKeywords: [
@@ -526,7 +526,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     cookbookPitchHeading: "When one recipe becomes a collection",
     cookbookPitchBody:
-      "If you want to combine many recipes into something more permanent, RecipePrinter can also build them into a cookbook with chapters, a cover, and a table of contents. Cookbook exports are purchased separately.",
+      "If you want to combine many recipes into something more permanent, you can also put them in a cookbook: sort them into chapters and choose a cover, and RecipePrinter builds the table of contents. Cookbook exports are purchased separately.",
     faqHeading: "Recipe PDF questions",
     faqs: [
       {
