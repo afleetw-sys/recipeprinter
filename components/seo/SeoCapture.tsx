@@ -427,9 +427,14 @@ function SingleFieldCapture({
 
       {mode === "image" && (
         <>
+          {/* Label and drop area in one block, so the label sits as close to
+              it as the link field's label does to its input. As two of the
+              form's flex children each gap stacked with the label's own
+              margin, and the drop area read as floating between them. */}
+          <div>
           <span className="field-label">{fieldLabel ?? "Recipe photos"}</span>
           <label
-            className={`dropzone mb-cp-2 ${dragging ? "is-dragging" : ""}`}
+            className={`dropzone ${dragging ? "is-dragging" : ""}`}
             onDragOver={(e) => {
               e.preventDefault();
               if (!busy) setDragging(true);
@@ -463,6 +468,7 @@ function SingleFieldCapture({
               {placeholder ?? "Snap a cookbook page or screenshot, or drop a photo"}
             </span>
           </label>
+          </div>
           <FieldError error={error} reserveSpace={false} />
           {submitButton}
         </>

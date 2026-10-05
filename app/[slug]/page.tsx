@@ -148,17 +148,12 @@ export default function SeoLandingPage({ params }: PageProps) {
   if (!page) notFound();
 
   const isGuide = layoutForPage(page) === "guide-first";
-  // The full Link/Recipe apps/Image/Text switch runs taller AND wider than
-  // the single field every other page shows, and its height changes as the
-  // mode does — plain CSS centering (the hero grid's default) re-litigated
-  // the photo's position on every tab. `center-once` (see HeroSplitRow)
-  // measures once after mount instead, so the photo still reads centered but
-  // stops moving when the mode does. The slightly wider copy column keeps the
-  // toggle and field comfortable without reducing the photo to a thumbnail.
-  // Its fixed 4:3 crop gives even very wide source art the same visual weight
-  // as the other hero photos without moving the controls farther down.
-  const showsAllImportModes = (page.importModes?.length ?? 0) > 1;
-  const usesDecorativePdf = page.slug === "convert-recipe-to-pdf";
+  // Every page's hero is the same: an 11/9 split and a 4:3 photo. It used to
+  // vary with how many import modes a page offered (and the PDF page had its
+  // own), so the image changed size and the copy column changed width from
+  // one page to the next. `center-once` (see HeroSplitRow) centres the photo
+  // once after mount, so a mode switch that changes the capture block's
+  // height does not move it.
   // The cookbook pitch is the last feature row, so it keeps the left/right
   // alternation going (see CookbookPitch).
   const features = [
@@ -190,9 +185,8 @@ export default function SeoLandingPage({ params }: PageProps) {
         lede={page.lede}
         above={<Breadcrumb trail={breadcrumbTrail(page)} />}
         note={page.statusNote}
-        asideAlign={usesDecorativePdf ? "start" : showsAllImportModes ? "center-once" : undefined}
-        asideWidth={usesDecorativePdf ? "small-aside" : showsAllImportModes ? "narrow" : undefined}
-        verticalPadding={usesDecorativePdf ? "roomy" : undefined}
+        asideAlign="center-once"
+        asideWidth="narrow"
         actions={
           isGuide ? (
             // No "See how it works" link beside it. On a guide-first page the
@@ -205,13 +199,7 @@ export default function SeoLandingPage({ params }: PageProps) {
           )
         }
         aside={
-          <div
-            className={
-              usesDecorativePdf
-                ? "mx-auto w-full max-w-[280px] -rotate-[3deg] lg:-translate-y-cp-3"
-                : undefined
-            }
-          >
+          <div>
             <HeroProductPhoto
               imageKey={page.heroImage}
               imageAlt={page.heroImageAlt}
@@ -228,8 +216,7 @@ export default function SeoLandingPage({ params }: PageProps) {
                     : "Printed from a recipe link"
               }
               priority
-              wide={usesDecorativePdf || !showsAllImportModes}
-              crop={showsAllImportModes && !usesDecorativePdf}
+              crop
               frame={page.heroFrame}
             />
           </div>

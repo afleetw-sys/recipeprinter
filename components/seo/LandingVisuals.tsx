@@ -58,9 +58,10 @@ export function HeroProductPhoto({
   annotation?: string;
   priority?: boolean;
   wide?: boolean;
-  /** Force an uncropped named image into the shared 4:3 hero footprint. Used
-      by full-import heroes so a very wide source image does not collapse into
-      a banner beside the much taller import panel. */
+  /** Put the image in the shared 4:3 hero footprint. A framed photo is
+      cropped to fill it; an unframed one (`frame: "none"`, a composed
+      screenshot or transparent art) is fitted inside it whole, since
+      cropping would cut off edges it was composed with. */
   crop?: boolean;
   /** `card` (default, unchanged everywhere else) is the light photo-frame
       every printed-card hero uses — a thin border, barely-there padding,
@@ -94,7 +95,9 @@ export function HeroProductPhoto({
           ? "h-auto w-full rounded-sm shadow-cp-xl"
           : isUncropped
             ? "h-auto w-full rounded-xl"
-            : "aspect-[4/3] w-full rounded-xl object-cover"
+            : crop && frame === "none"
+              ? "aspect-[4/3] w-full object-contain"
+              : "aspect-[4/3] w-full rounded-xl object-cover"
       }
       style={isUncropped ? undefined : { objectPosition }}
     />
@@ -106,7 +109,9 @@ export function HeroProductPhoto({
           isDocument
             ? "overflow-hidden rounded-2xl bg-ink p-6 sm:p-10"
             : frame === "none"
-              ? "overflow-visible bg-transparent"
+              ? crop
+                ? "overflow-visible border border-transparent bg-transparent p-1.5"
+                : "overflow-visible bg-transparent"
               : "overflow-hidden rounded-2xl border border-line bg-card p-1.5"
         }
       >
