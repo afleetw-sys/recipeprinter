@@ -494,6 +494,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "convert-recipe-to-pdf",
     contentUpdated: "2026-10-05",
+    imagesReviewed: "2026-10-05",
     copyReviewed: "2026-09-02",
     primaryKeyword: "convert recipe to PDF",
     secondaryKeywords: [
