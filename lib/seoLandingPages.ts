@@ -436,17 +436,18 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Your browser's print button prints the whole page as it is, including the story, the ad spaces, and the comments. RecipePrinter takes just the recipe from the page and sets it out on its own: the ingredients, the steps, and the times.",
       },
       {
-        heading: "Recipe cards don't go dark while you cook",
-        image: "counter-card",
+        heading: "With or without the photo",
+        image: "show-photo",
         body:
-          "A card asks nothing of you: no unlocking, no charging, no signal. It props against the backsplash and stays on the step you're on. Nobody scrolls back up to check whether it was two teaspoons or two tablespoons.",
+          "Keep the finished-dish photo, or turn it off with one switch to save color ink and give the recipe more room.",
+        afterBody: "The ingredients, the steps, and the times stay exactly as they were.",
       },
     ],
     faqs: [
       {
         question: "Is this an ad blocker?",
         answer:
-          "No. An ad blocker hides things on the page in front of you. RecipePrinter never prints that page at all: it reads the recipe out and builds a new one that only ever had the recipe on it.",
+          "No. An ad blocker hides ads on the page you're looking at. RecipePrinter makes a new page with just the recipe, so there are no ads to hide.",
       },
       {
         question: "Can I see it before I print?",
@@ -461,7 +462,17 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much paper does one recipe take?",
         answer:
-          "Usually one sheet. A recipe prints as a single 4 by 6 card or a single letter page, however long the article it came from happened to be.",
+          "Usually one sheet. A long recipe can run onto the back of the card or a second page, but not the 26 pages the browser printed.",
+      },
+      {
+        question: "What if a recipe won't import?",
+        answer:
+          "Some recipes sit behind a login or on a site that blocks importers. Copy the recipe text and paste it in, or upload a screenshot, and you get the same clean printout.",
+        links: [{ href: "/print-recipe-from-screenshot", label: "Print a recipe from a screenshot" }],
+      },
+      {
+        question: "Is it free?",
+        answer: `Yes. Importing and printing full-page recipes is free, with no account. RecipePrinter Pro (${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}) adds 4×6 recipe cards, premium themes, and printing several recipes at once.`,
       },
     ],
     links: [
