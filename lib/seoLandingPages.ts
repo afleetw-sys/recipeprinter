@@ -419,7 +419,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Make any changes",
-        text: "Fix an amount or reword a step right on the page. Choose a full page or a 4×6 card (with Pro), pick a theme, and turn off the photo if you'd rather save color ink.",
+        text: "Fix an amount or reword a step right on the page. Choose a full page or a 4×6 card (with Pro), pick a theme, and keep or drop the photo.",
       },
       {
         name: "Print it or save a PDF",
