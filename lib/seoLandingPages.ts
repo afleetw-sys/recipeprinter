@@ -309,14 +309,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howTo: [
       {
         name: "Copy the recipe link",
-        text: "On the food blog or recipe site, copy the page link from your browser's address bar or the app's share button.",
+        text: "On the food blog, copy the page's link from your browser, or tap Share and choose Copy link.",
       },
       {
         name: "Paste it in",
-        text: "Paste the link into the box above. RecipePrinter reads the page and rebuilds the recipe as a clean, printable layout.",
+        text: "Paste the link above. RecipePrinter reads the page and rebuilds the recipe as a clean, printable layout.",
       },
       {
-        name: "Set the format",
+        name: "Choose how it prints",
         text: "Choose a recipe card or a full page, keep or drop the photo, and make any edits you want before you print.",
       },
       {
@@ -329,7 +329,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "It keeps the recipe and drops everything else",
         image: "caprese-card",
         body:
-          "Printed straight from the browser, that caprese pasta salad runs to 26 sheets. RecipePrinter reads the same page and keeps only what you cook from: the ingredient list with amounts, the numbered steps, the prep and cook times, and the servings. The blogger's backstory, the autoplay video, the comments, and the ads stay behind. You can print the original link on the card too, so the page is easy to find again.",
+          "Print this caprese pasta salad straight from the food blog and it takes 26 sheets of paper. RecipePrinter reads the same page and keeps only what you cook from: the ingredients with amounts, the numbered steps, the prep and cook times, and the servings.",
+        afterBody: [
+          "The blogger's story, the autoplay video, the comments, and the ads stay behind.",
+          "You can print the original link on the card too, so the page is easy to find again.",
+        ],
       },
       {
         heading: "Print it the way your kitchen actually works",
@@ -341,7 +345,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "For the pages that fight back",
         image: "paste-in-app",
         body:
-          "Some recipes hide behind a login, sit on a site that blocks importers, or live only in a video's description. When a link won't import cleanly, paste the recipe text or upload a screenshot, and RecipePrinter structures it into the same clean printout. It works from a phone too, so you can grab a recipe on the couch and print it from the kitchen later.",
+          "Some recipes hide behind a login, sit on a site that blocks importers, or live only in a video's description. When a link won't import cleanly, paste the recipe text or upload a screenshot, and RecipePrinter structures it into the same clean printout.",
       },
     ],
     faqs: [
@@ -363,12 +367,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print several recipes in one go?",
         answer:
-          "Yes, with RecipePrinter Pro. Add as many recipes as you want and print them as one job instead of one trip to the printer per recipe, which is most of the point when you're printing a week of dinners at once. A single recipe prints free, no account needed.",
+          "Yes, with RecipePrinter Pro. Add as many recipes as you want and print them all in one job, instead of printing each recipe separately. That's handy when you're printing a week of dinners. A single recipe prints free, no account needed.",
+        links: [{ href: "/print-meal-plan-recipes", label: "Print a week of dinners" }],
       },
       {
         question: "What happens if the original page disappears?",
         answer:
-          "Nothing, which is the reason to print one in the first place. A recipe page can go behind a paywall, get rewritten around a new story, or go offline entirely, and none of that reaches the card already sitting in your kitchen.",
+          "Your printed copy stays as it is. Recipe pages sometimes move behind a paywall, get rewritten, or go offline, but the card in your kitchen doesn't change. Save it as a PDF too if you'd like a digital copy.",
       },
     ],
     links: [
