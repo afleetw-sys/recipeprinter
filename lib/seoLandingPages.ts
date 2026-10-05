@@ -419,7 +419,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Make any changes",
-        text: "Edit anything you like, and turn off the photo if you'd rather save color ink.",
+        text: "Fix an amount or reword a step right on the page. Choose a full page or a 4×6 card (with Pro), pick a theme, and turn off the photo if you'd rather save color ink.",
       },
       {
         name: "Print it or save a PDF",
@@ -433,7 +433,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         imageAlt:
           "One printed page holding the whole Chicken Tzatziki Bowls recipe, beside the finished bowl.",
         body:
-          "RecipePrinter never prints the article. It reads the recipe out of the page and lays out a new one holding the ingredients, the steps, and the times, and nothing else. The browser's own print button has no way to do that. It prints the document it was handed, headnote, ad slots, comments and all.",
+          "Your browser's print button prints the whole page as it is, including the story, the ad spaces, and the comments. RecipePrinter takes just the recipe from the page and sets it out on its own: the ingredients, the steps, and the times.",
       },
       {
         heading: "Recipe cards don't go dark while you cook",
