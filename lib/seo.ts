@@ -276,6 +276,7 @@ export const FAQ: FaqItem[] = [
     answer:
       "Yes. Paste the link to the post and RecipePrinter reads the recipe out of it. When the recipe lives in a caption or a comment rather than on a page the post links to, paste that text or upload a screenshot.",
     guides: [
+      "print-social-media-recipes",
       "print-pinterest-recipes",
       "print-instagram-recipes",
       "print-tiktok-recipes",
@@ -301,6 +302,7 @@ export const FAQ: FaqItem[] = [
     guides: [
       "family-recipe-book",
       "preserve-family-recipes",
+      "how-to-print-a-cookbook",
     ],
   },
   {
@@ -308,6 +310,7 @@ export const FAQ: FaqItem[] = [
     group: "what-this-is",
     answer:
       "Printed recipes don't lock, dim, run out of battery, disappear under notifications, or make you scroll with messy hands. They're also easier to mark up, and easier to hand on: a copy goes to a friend who asked for it, or into a box your kids take with them, without an account or an app on either end.",
+    guides: ["screen-free-cooking"],
   },
   {
     question: "Can I print recipes without ads?",
@@ -364,6 +367,7 @@ export const FAQ: FaqItem[] = [
       "Yes, with RecipePrinter Pro. Add as many as you like to the print queue and send them all in one job, which is what most people do for a recipe binder, a week of dinners, or a family cookbook. Printing one recipe at a time is free, no account needed.",
     guides: [
       "print-multiple-recipes",
+      "print-meal-plan-recipes",
       "recipe-binder",
     ],
   },

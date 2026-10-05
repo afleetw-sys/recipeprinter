@@ -705,6 +705,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "A CookPilot recipe library beside a RecipePrinter collection containing several recipes.",
         body:
           "Collect a week of dinners, a stack of recipe cards, or the family favorites you've been meaning to put on paper. Add and check each recipe, then print the entire collection at once instead of printing recipes one by one.",
+        links: [{ phrase: "a week of dinners", href: "/print-meal-plan-recipes" }],
       },
       {
         heading: "Bring recipes from different places",
