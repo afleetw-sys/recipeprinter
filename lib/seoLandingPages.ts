@@ -668,7 +668,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What should I print recipe cards on?",
         answer:
-          "Card stock, if you want them to survive a kitchen. Feed 4x6 cards straight through a printer that takes them, or print on a letter sheet and cut the card out. Turn on cut lines and you get a dashed guide to trim along.",
+          "Card stock works best, since it holds up well in the kitchen. If your printer takes 4×6 cards, you can print on them directly. Otherwise, print on a letter sheet and trim the card out; turning on cut lines adds a dashed guide to follow.",
       },
       {
         question: "What happens when a recipe is too long for one card?",
