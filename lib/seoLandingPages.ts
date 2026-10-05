@@ -836,7 +836,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Check the recipe",
-        text: "RecipePrinter converts the recipe photo into editable text. Review the ingredients and instructions and fix anything that wasn’t read correctly.",
+        text: "RecipePrinter types up the ingredients and instructions. Read them against the original and change anything you want different. Every word is editable.",
       },
       {
         name: "Print or save it",
@@ -939,7 +939,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Review the recipe",
-        text: "RecipePrinter converts the recipe screenshot into editable ingredients and instructions. Review the text and fix anything that wasn’t read correctly.",
+        text: "RecipePrinter types up the ingredients and instructions. Read them against the screenshot and change anything you want different. Every word is editable.",
       },
       {
         name: "Print or save it",
@@ -1353,7 +1353,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Review the recipe",
-        text: "RecipePrinter turns the recipe it can find into editable ingredients and instructions. Review the result and fix anything that was missed or read incorrectly.",
+        text: "RecipePrinter lays out the ingredients and instructions it finds. Check them over and change or add anything you want. Every word is editable.",
       },
       {
         name: "Print it your way",
@@ -1593,7 +1593,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Review the recipe",
-        text: "RecipePrinter turns the recipe it finds into editable ingredients and instructions. Review the result and fix anything that was missed or read incorrectly.",
+        text: "RecipePrinter lays out the ingredients and instructions it finds. Check them over and change or add anything you want. Every word is editable.",
       },
       {
         name: "Print it your way",
@@ -2300,7 +2300,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Review the recipe",
-        text: "RecipePrinter reads the handwriting and separates the recipe into editable ingredients and instructions. Review the result and correct anything that was hard to read.",
+        text: "RecipePrinter reads the handwriting and types it up as ingredients and instructions. Read them against the card and change anything you want different.",
       },
       {
         name: "Print or save it",
@@ -2342,7 +2342,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can RecipePrinter read handwritten recipes?",
         answer:
-          "Yes. RecipePrinter can read handwritten recipe cards, including many older or faded cards. Handwriting can still be difficult to interpret perfectly, so review and edit the recipe before printing or saving it.",
+          "Yes. RecipePrinter reads handwritten recipe cards, including older and faded ones. Check the typed recipe against the card before printing or saving it; every word is editable.",
       },
       {
         question: "What if the recipe is written on both sides?",
@@ -2420,7 +2420,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Look it over",
-        text: "Some of it will come through perfectly and some will want a second look. Every line is editable, so you can correct anything before you print.",
+        text: "Read it against the original and change anything you want different. Every line is editable.",
       },
       {
         name: "Print the working copy",
@@ -2621,7 +2621,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howTo: [
       {
         name: "Collect the recipes you want to include",
-        text: "Add recipes from websites, photos, screenshots, handwritten cards, recipe apps, or pasted text. Review each recipe and fix anything that needs attention before it goes into the book.",
+        text: "Add recipes from websites, photos, screenshots, handwritten cards, recipe apps, or pasted text. Check each recipe over and change anything you want before it goes into the book.",
       },
       {
         name: "Organize recipes into chapters",
@@ -3020,7 +3020,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Review the recipe",
-        text: "RecipePrinter turns the handwriting into editable ingredients and instructions. Review the result carefully and correct any words, amounts, or notes that were difficult to read.",
+        text: "RecipePrinter types the handwriting up as ingredients and instructions. Read them against the card and change any words, amounts, or notes you want different.",
       },
       {
         name: "Bring the family recipes together",
@@ -3070,7 +3070,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can RecipePrinter read cursive handwriting?",
         answer:
-          "Yes. RecipePrinter can read many handwritten and cursive recipe cards, but handwriting recognition is not perfect. Review the ingredients and instructions and correct anything that was difficult to read.",
+          "Yes. RecipePrinter reads handwritten and cursive recipe cards. Check the ingredients and instructions against the card and change anything you want before printing.",
       },
       {
         question: "Should I scan the cards or photograph them?",
@@ -3201,7 +3201,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I use handwritten recipe cards?",
         answer:
-          "Yes. Photograph or scan handwritten recipe cards, then review the ingredients and instructions RecipePrinter reads from them. Difficult handwriting may need correction before the recipe is added to the cookbook.",
+          "Yes. Photograph or scan handwritten recipe cards, then check the ingredients and instructions RecipePrinter types up before adding the recipe to the cookbook.",
         links: [
           { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
         ],
@@ -3496,7 +3496,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I include handwritten family recipes?",
         answer:
-          "Yes. Photograph or scan handwritten recipe cards and review the ingredients and instructions before adding them to the cookbook. Difficult handwriting may need correction.",
+          "Yes. Photograph or scan handwritten recipe cards and check the ingredients and instructions RecipePrinter types up before adding them to the cookbook.",
         links: [
           { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
         ],
@@ -3598,7 +3598,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         body:
           "Every guest writes differently. RecipePrinter can turn handwritten recipes into clean, editable text, so you don't have to retype every ingredient and step yourself.",
         afterBody:
-          "Review anything that was hard to read and fix it on the page, with the original card beside you to check against.",
+          "Read it through with the original card beside you, and change anything you want right on the page.",
         links: [{ phrase: "handwritten recipes", href: "/handwritten-recipes-to-cookbook" }],
       },
       {
@@ -3637,7 +3637,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What if I can't read a guest's handwriting?",
         answer:
-          "RecipePrinter can read many handwritten recipes and turn them into editable text, but handwriting recognition isn't perfect. Review each recipe and correct anything that was hard to read before adding it to the book. For anything still unclear, ask the guest.",
+          "RecipePrinter reads handwritten recipes and types them up for you. Check each one against the card and change anything you want before adding it to the book. If a note leaves you wondering, ask the guest.",
         links: [
           { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
         ],
@@ -4049,7 +4049,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         body:
           "Recipe cards are often the slowest part of making a family cookbook, because someone has to type them in. With RecipePrinter, you upload a photo of a handwritten card and get editable ingredients and instructions.",
         afterBody:
-          "Review what it read and correct anything that was hard to make out before the recipe goes in the book.",
+          "Check it against the card and change anything you want before the recipe goes in the book.",
         links: [{ phrase: "handwritten card", href: "/handwritten-recipes-to-cookbook" }],
       },
       {
