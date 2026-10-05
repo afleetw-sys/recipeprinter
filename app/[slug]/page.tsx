@@ -20,6 +20,7 @@ import {
   PhotoGallery,
 } from "@/components/seo/LandingVisuals";
 import { FaqCards } from "@/components/seo/FaqCards";
+import { PickerRow } from "@/components/seo/PickerRow";
 import {
   SEO_LANDING_PAGE_MAP,
   SEO_LANDING_PAGES,
@@ -187,6 +188,13 @@ export default function SeoLandingPage({ params }: PageProps) {
           </div>
         }
       />
+
+      {page.hub && (
+        <PickerRow
+          label={page.hub.label}
+          pages={page.hub.slugs.flatMap((slug) => SEO_LANDING_PAGE_MAP.get(slug) ?? [])}
+        />
+      )}
 
       {/* Straight after the hero on a comparison page. Someone who searched
           for a competitor's name came to see the two side by side, so the
