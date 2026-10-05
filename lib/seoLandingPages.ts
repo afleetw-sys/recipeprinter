@@ -374,7 +374,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-recipe-without-ads",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-02",
     primaryKeyword: "print recipe without ads",
     secondaryKeywords: [
@@ -451,6 +451,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-recipe-from-website", label: "Print from a website" },
       { href: "/just-the-recipe-alternative", label: "Just the Recipe alternative" },
       { href: "/convert-recipe-to-pdf", label: "Save recipe as PDF" },
+      { href: "/screen-free-cooking", label: "Cook without your phone" },
     ],
   },
   {
@@ -551,7 +552,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "recipe-card-printer",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-09",
     primaryKeyword: "printable recipe card generator",
     secondaryKeywords: [
@@ -650,11 +651,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-recipe-from-website", label: "Print from a website" },
       { href: "/print-recipe-without-ads", label: "Print without ads" },
       { href: "/recipe-binder", label: "Make a recipe binder" },
+      { href: "/canva-recipe-card-alternative", label: "Canva alternative for recipe cards" },
     ],
   },
   {
     slug: "print-multiple-recipes",
-    contentUpdated: "2026-09-29",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-29",
     primaryKeyword: "print multiple recipes",
     secondaryKeywords: [
@@ -763,6 +765,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-recipe-from-website", label: "Print a recipe from a website" },
       { href: "/family-recipe-book", label: "Build a family recipe book" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
+      { href: "/print-meal-plan-recipes", label: "Print a week of dinners" },
     ],
   },
   {
@@ -986,7 +989,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "print-pinterest-recipes",
     importFieldLabel: "Pinterest link",
     importPlaceholder: "Paste Pinterest link",
-    contentUpdated: "2026-09-10",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-07",
     primaryKeyword: "print Pinterest recipes",
     secondaryKeywords: [
@@ -1083,13 +1086,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
       { href: "/print-facebook-recipes", label: "Print Facebook recipes" },
       { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
+      { href: "/print-social-media-recipes", label: "Print recipes from social media" },
     ],
   },
   {
     slug: "print-instagram-recipes",
     importFieldLabel: "Instagram link",
     importPlaceholder: "Paste Instagram link",
-    contentUpdated: "2026-09-10",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-09",
     primaryKeyword: "print Instagram recipes",
     secondaryKeywords: [
@@ -1179,6 +1183,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
       { href: "/print-facebook-recipes", label: "Print Facebook recipes" },
       { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
+      { href: "/print-social-media-recipes", label: "Print recipes from social media" },
     ],
   },
   {
@@ -1187,7 +1192,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importPlaceholder: "Paste Facebook link",
     heroImage: "buffalo-chicken",
     heroAnnotation: "Printed from Facebook link",
-    contentUpdated: "2026-09-16",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-16",
     primaryKeyword: "print recipe from Facebook",
     secondaryKeywords: [
@@ -1283,6 +1288,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
       { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
       { href: "/print-youtube-recipes", label: "Print YouTube recipes" },
+      { href: "/print-social-media-recipes", label: "Print recipes from social media" },
     ],
   },
   {
@@ -1293,7 +1299,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImageAlt:
       "A printed Crunchwrap Supreme recipe card beside the finished crunchwrap.",
     heroAnnotation: "Printed from TikTok video",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "print TikTok recipes",
     secondaryKeywords: [
@@ -1413,6 +1419,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
       { href: "/print-youtube-recipes", label: "Print YouTube recipes" },
       { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
+      { href: "/print-social-media-recipes", label: "Print recipes from social media" },
     ],
   },
   {
@@ -1531,7 +1538,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importPlaceholder: "Paste YouTube link",
     heroImage: "souvlaki",
     heroAnnotation: "Printed from YouTube video",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "print recipe from YouTube",
     secondaryKeywords: [
@@ -1645,6 +1652,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/convert-recipe-to-pdf", label: "Convert recipe to PDF" },
       { href: "/recipe-card-printer", label: "Make a 4x6 recipe card" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
+      { href: "/print-social-media-recipes", label: "Print recipes from social media" },
     ],
   },
   {
@@ -1661,6 +1669,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "keep recipes from social media",
     ],
     shortLabel: "Social media",
+    pickerGroup: "source",
     intent: "Utility SEO",
     heroImage: "instagram",
     heroAnnotation: "Printed from an Instagram post",
@@ -1902,11 +1911,122 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/recipe-binder", label: "Build a recipe binder" },
       { href: "/recipe-card-printer", label: "Make printable recipe cards" },
       { href: "/print-social-media-recipes", label: "Print recipes from social media" },
+      { href: "/print-meal-plan-recipes", label: "Print a week of dinners" },
+    ],
+  },
+  {
+    slug: "print-meal-plan-recipes",
+    contentUpdated: "2026-10-05",
+    primaryKeyword: "print meal plan recipes",
+    // Not "print multiple recipes": that is /print-multiple-recipes' primary
+    // and covers the mechanics. This page is the weekly routine around it.
+    secondaryKeywords: [
+      "print a week of recipes",
+      "print recipes for the week",
+      "meal prep recipe cards",
+      "print meal prep recipes",
+      "weekly dinner recipes to print",
+    ],
+    shortLabel: "A week of dinners",
+    pickerGroup: "output",
+    intent: "Organization SEO",
+    layout: "capture-first",
+    heroImage: "counter-card",
+    initialImportMode: "url",
+    importModes: ["url", "image", "text"],
+    importSubmitLabel: "Add the first recipe",
+    title: "Print Your Meal Plan Recipes for the Week",
+    description:
+      "Print the week's dinners in one go. Add recipes from websites, social media, screenshots, or text, then print them together as pages or 4×6 cards.",
+    h1: "Print a week of dinners in one go",
+    anchor: "Print a week of dinners",
+    lede:
+      "Plan the week however you like. Then add each recipe to RecipePrinter and print them together, so the week's dinners are on the counter instead of in your browser tabs.",
+    howToHeading: "How to print your meal plan recipes",
+    howTo: [
+      {
+        name: "Pick the week's recipes",
+        text: "Choose the dinners from wherever they are: recipe sites, Instagram, TikTok, screenshots, or your own notes.",
+      },
+      {
+        name: "Add each one",
+        text: "Paste the link, upload a screenshot or photo, or paste the text. Each recipe comes back as ingredients and steps you can check.",
+      },
+      {
+        name: "Print them together",
+        text: "With RecipePrinter Pro, print the whole week in one job, as full pages or 4×6 cards in the same theme.",
+      },
+      {
+        name: "Keep them where you cook",
+        text: "Clip them to the fridge, stand them on the counter, or file them in a binder. Next week, swap in new ones.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "One print job, not five",
+        image: "card",
+        imageAlt:
+          "Five printed recipe cards in different designs fanned across a counter, enough for a week of dinners.",
+        body:
+          "Opening, cleaning up, and printing five recipes one at a time is the kind of chore that gets skipped. Add the week's recipes, then print them together, with the same card size and theme on all of them.",
+        afterBody:
+          "Printing several recipes in one job is part of RecipePrinter Pro. On the free plan, you print full-page recipes one at a time.",
+      },
+      {
+        heading: "The week's dinners, on the counter",
+        image: "photo-recipe-card",
+        body:
+          "When dinner is a printed page, nobody has to find the tab, unlock a phone, or scroll past the story to reach the ingredients.",
+        afterBody: "Anyone in the house can see what's for dinner and get started.",
+      },
+      {
+        heading: "Favorites come back around",
+        image: "card-in-box",
+        body:
+          "Most weeks repeat a few dinners. Keep the printed ones in a recipe binder or recipe box, and save them to a free account so you can print them again without hunting for the link.",
+        links: [{ phrase: "recipe binder", href: "/recipe-binder" }],
+      },
+    ],
+    faqHeading: "Meal plan printing questions",
+    faqs: [
+      {
+        question: "Does RecipePrinter plan my meals or make a grocery list?",
+        answer:
+          "No. RecipePrinter gets recipes onto paper. Plan the week in whatever app, notebook, or calendar you already use, then bring the recipes here to print.",
+      },
+      {
+        question: "Can I print the whole week at once?",
+        answer:
+          "Yes, with RecipePrinter Pro. Add the recipes one at a time, then print them all in one job. On the free plan, you can print each full-page recipe on its own.",
+        links: [{ href: "/print-multiple-recipes", label: "Print multiple recipes at once" }],
+      },
+      {
+        question: "Can I mix recipes from websites, social media, and screenshots?",
+        answer:
+          "Yes. A recipe from a website, an Instagram post, a TikTok, a screenshot, or pasted text all come out in the same clean layout, so the week's stack looks like a set.",
+        links: [{ href: "/print-social-media-recipes", label: "Print recipes from social media" }],
+      },
+      {
+        question: "Should I print full pages or recipe cards?",
+        answer:
+          "Full pages are easy to read from across the kitchen and fit a binder. 4×6 cards, with RecipePrinter Pro, fit a recipe box or a clip on the fridge.",
+        links: [{ href: "/recipe-card-printer", label: "Make printable recipe cards" }],
+      },
+      {
+        question: "Is it free?",
+        answer: `Importing recipes and printing full-page recipes one at a time is free, with no account. RecipePrinter Pro (${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}) adds printing several recipes in one job, 4×6 cards, and premium themes.`,
+      },
+    ],
+    links: [
+      { href: "/print-multiple-recipes", label: "Print multiple recipes at once" },
+      { href: "/screen-free-cooking", label: "Cook without your phone" },
+      { href: "/recipe-binder", label: "Build a recipe binder" },
+      { href: "/print-social-media-recipes", label: "Print recipes from social media" },
     ],
   },
   {
     slug: "organize-recipes",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     captureHeading: "Start with one recipe",
     importSubmitLabel: "Add your first recipe",
@@ -2024,11 +2144,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
       { href: "/recipe-card-printer", label: "Printable recipe cards" },
       { href: "/family-recipe-book", label: "Build a family cookbook" },
+      { href: "/print-meal-plan-recipes", label: "Print a week of dinners" },
     ],
   },
   {
     slug: "recipe-binder",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     layout: "capture-first",
     initialImportMode: "url",
@@ -2104,6 +2225,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-paprika-recipes", label: "Print Paprika recipes" },
       { href: "/recipe-card-printer", label: "Printable recipe cards" },
       { href: "/family-recipe-book", label: "Family recipe book ideas" },
+      { href: "/screen-free-cooking", label: "Cook without your phone" },
     ],
   },
   {
@@ -2438,7 +2560,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "make-your-own-cookbook",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "make your own cookbook",
     secondaryKeywords: [
@@ -2560,11 +2682,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/homemade-cookbook-gift", label: "Make a cookbook gift" },
+      { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
     ],
   },
   {
     slug: "cookbook-maker",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "cookbook maker",
     secondaryKeywords: [
@@ -2694,11 +2817,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/organize-recipes", label: "Organize recipes" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
+      { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
     ],
   },
   {
     slug: "handwritten-recipes-to-cookbook",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "turn handwritten recipes into a cookbook",
     secondaryKeywords: [
@@ -2831,11 +2955,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/preserve-family-recipes", label: "Preserve family recipes" },
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
+      { href: "/bridal-shower-recipe-book", label: "Bridal shower recipe book" },
     ],
   },
   {
     slug: "homemade-cookbook-gift",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "homemade cookbook gift",
     secondaryKeywords: [
@@ -2962,11 +3087,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
       { href: "/recipe-book-gift", label: "More recipe book gift ideas" },
+      { href: "/bridal-shower-recipe-book", label: "Bridal shower recipe book" },
     ],
   },
   {
     slug: "recipe-book-gift",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "recipe book gift",
     secondaryKeywords: [
@@ -3112,6 +3238,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/recipe-card-printer", label: "Make printable recipe cards" },
       { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
+      { href: "/bridal-shower-recipe-book", label: "Bridal shower recipe book" },
     ],
   },
   {
@@ -3497,7 +3624,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "reciscan-alternative",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-02",
     primaryKeyword: "ReciScan alternative",
     secondaryKeywords: [
@@ -3598,6 +3725,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/preserve-family-recipes", label: "Preserve family recipes" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
       { href: "/family-recipe-book", label: "Family recipe book ideas" },
+      { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
     ],
   },
   {
