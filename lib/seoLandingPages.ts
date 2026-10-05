@@ -1918,14 +1918,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "print-meal-plan-recipes",
     contentUpdated: "2026-10-05",
     primaryKeyword: "print meal plan recipes",
-    // Not "print multiple recipes": that is /print-multiple-recipes' primary
-    // and covers the mechanics. This page is the weekly routine around it.
+    // The step AFTER planning: RecipePrinter is not a meal planner or grocery
+    // app (lib/seo.ts FAQ, llms.txt), so no "meal planner" terms here. And not
+    // "print multiple recipes": /print-multiple-recipes owns the general
+    // feature; this page owns this week's recipes, printed together.
     secondaryKeywords: [
-      "print a week of recipes",
       "print recipes for the week",
-      "meal prep recipe cards",
-      "print meal prep recipes",
-      "weekly dinner recipes to print",
+      "weekly meal plan recipes",
+      "printable meal plan recipes",
+      "weekly dinner recipes",
+      "print recipes for meal prep",
     ],
     shortLabel: "A week of dinners",
     pickerGroup: "output",
@@ -1935,30 +1937,30 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     initialImportMode: "url",
     importModes: ["url", "image", "text"],
     importSubmitLabel: "Add the first recipe",
-    title: "Print Your Meal Plan Recipes for the Week",
+    title: "Print Meal Plan Recipes for the Week | RecipePrinter",
     description:
-      "Print the week's dinners in one go. Add recipes from websites, social media, screenshots, or text, then print them together as pages or 4×6 cards.",
+      "Already planned your dinners? Add recipes from websites, social media, screenshots, or text and print the whole week's recipes together.",
     h1: "Print a week of dinners in one go",
     anchor: "Print a week of dinners",
     lede:
-      "Plan the week however you like. Then add each recipe to RecipePrinter and print them together, so the week's dinners are on the counter instead of in your browser tabs.",
+      "Plan the week however you like. Then add each recipe to RecipePrinter and print the whole week's dinners together, so the recipes are already on the counter when you need them.",
     howToHeading: "How to print your meal plan recipes",
     howTo: [
       {
         name: "Pick the week's recipes",
-        text: "Choose the dinners from wherever they are: recipe sites, Instagram, TikTok, screenshots, or your own notes.",
+        text: "Choose the dinners wherever you normally plan them: a meal-planning app, a notebook, saved posts, recipe sites, or your own recipes.",
       },
       {
         name: "Add each one",
-        text: "Paste the link, upload a screenshot or photo, or paste the text. Each recipe comes back as ingredients and steps you can check.",
+        text: "Paste a recipe link, upload a screenshot or photo, or paste the recipe text. Review the ingredients and instructions, then add the next recipe.",
       },
       {
         name: "Print them together",
-        text: "With RecipePrinter Pro, print the whole week in one job, as full pages or 4×6 cards in the same theme.",
+        text: "With RecipePrinter Pro, print the week's recipes in one batch instead of opening and printing each recipe separately.",
       },
       {
         name: "Keep them where you cook",
-        text: "Clip them to the fridge, stand them on the counter, or file them in a binder. Next week, swap in new ones.",
+        text: "Clip them to the fridge, leave them on the counter, or file them in a binder. When it's time to cook, the recipe is already there.",
       },
     ],
     featureSections: [
@@ -1968,23 +1970,25 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         imageAlt:
           "Five printed recipe cards in different designs fanned across a counter, enough for a week of dinners.",
         body:
-          "Opening, cleaning up, and printing five recipes one at a time is the kind of chore that gets skipped. Add the week's recipes, then print them together, with the same card size and theme on all of them.",
-        afterBody:
-          "Printing several recipes in one job is part of RecipePrinter Pro. On the free plan, you print full-page recipes one at a time.",
+          "Opening, cleaning up, and printing five recipes one at a time is the part that's easy to put off.",
+        afterBody: [
+          "With RecipePrinter Pro, you add the recipes for the week and print them together in one batch.",
+          "Full-page recipes can still be printed one at a time for free.",
+        ],
       },
       {
         heading: "The week's dinners, on the counter",
         image: "photo-recipe-card",
         body:
-          "When dinner is a printed page, nobody has to find the tab, unlock a phone, or scroll past the story to reach the ingredients.",
-        afterBody: "Anyone in the house can see what's for dinner and get started.",
+          "When dinner is already printed, nobody has to find the right tab, unlock a phone, or scroll past the story to reach the ingredients.",
+        afterBody: "The week's recipes can stay somewhere everyone in the house can see them.",
       },
       {
         heading: "Favorites come back around",
         image: "card-in-box",
         body:
-          "Most weeks repeat a few dinners. Keep the printed ones in a recipe binder or recipe box, and save them to a free account so you can print them again without hunting for the link.",
-        links: [{ phrase: "recipe binder", href: "/recipe-binder" }],
+          "Most weeks repeat at least a few favorite dinners. Keep the recipes you use most in a binder or recipe box, and next time they're on the meal plan you won't have to find them again.",
+        links: [{ phrase: "binder", href: "/recipe-binder" }],
       },
     ],
     faqHeading: "Meal plan printing questions",
@@ -1992,29 +1996,32 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter plan my meals or make a grocery list?",
         answer:
-          "No. RecipePrinter gets recipes onto paper. Plan the week in whatever app, notebook, or calendar you already use, then bring the recipes here to print.",
+          "No. RecipePrinter doesn't choose your meals or build a grocery list. Plan the week in whatever app, notebook, or calendar you already use, then bring the recipes into RecipePrinter to print.",
       },
       {
         question: "Can I print the whole week at once?",
         answer:
-          "Yes, with RecipePrinter Pro. Add the recipes one at a time, then print them all in one job. On the free plan, you can print each full-page recipe on its own.",
+          "Yes. RecipePrinter Pro lets you print multiple recipes at once: add each of the week's recipes, then print them together in one batch, with the same size and theme on all of them.",
         links: [{ href: "/print-multiple-recipes", label: "Print multiple recipes at once" }],
       },
       {
         question: "Can I mix recipes from websites, social media, and screenshots?",
         answer:
-          "Yes. A recipe from a website, an Instagram post, a TikTok, a screenshot, or pasted text all come out in the same clean layout, so the week's stack looks like a set.",
+          "Yes. The recipes in one batch can come from different places. Paste links from recipe sites or social posts, upload screenshots or photos, or add recipe text, and they all print in the same layout.",
         links: [{ href: "/print-social-media-recipes", label: "Print recipes from social media" }],
       },
       {
         question: "Should I print full pages or recipe cards?",
         answer:
-          "Full pages are easy to read from across the kitchen and fit a binder. 4×6 cards, with RecipePrinter Pro, fit a recipe box or a clip on the fridge.",
-        links: [{ href: "/recipe-card-printer", label: "Make printable recipe cards" }],
+          "Full-page recipes are easier to read from across the kitchen and work well in a binder. 4×6 cards suit recipes you make often and want to keep in a recipe box; they need RecipePrinter Pro.",
+        links: [
+          { href: "/recipe-card-printer", label: "Make printable recipe cards" },
+          { href: "/recipe-binder", label: "Build a recipe binder" },
+        ],
       },
       {
         question: "Is it free?",
-        answer: `Importing recipes and printing full-page recipes one at a time is free, with no account. RecipePrinter Pro (${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}) adds printing several recipes in one job, 4×6 cards, and premium themes.`,
+        answer: `Importing recipes and printing a full-page recipe are free, one recipe at a time, with no account. Printing several recipes in one batch, 4×6 cards, and premium themes are RecipePrinter Pro, ${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}.`,
       },
     ],
     links: [
