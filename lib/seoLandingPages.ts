@@ -451,7 +451,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I see it before I print?",
         answer:
-          "Yes. The preview is the finished sheet rather than an approximation of it, so the page count you see is the count that comes out of the tray.",
+          "Yes. The preview shows exactly what will print, so you can check the recipe and make changes before anything reaches your printer.",
       },
       {
         question: "What about pop-ups and cookie banners?",
