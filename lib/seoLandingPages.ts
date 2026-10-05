@@ -864,7 +864,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does it read handwritten recipes?",
         answer:
-          "Yes. RecipePrinter can read handwritten recipe cards as well as printed recipes. Clear handwriting and a well-lit photo give the best results, and you can review and edit the recipe before printing.",
+          "Yes. RecipePrinter reads handwritten recipe cards as well as printed recipes. A well-lit photo works best, and you can look the recipe over and change anything before printing.",
       },
       {
         question: "What if the recipe runs onto the back of the card?",
@@ -877,9 +877,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "No. A clear photo from your phone is enough. Place the recipe flat, use good lighting, and make sure the handwriting or printed text is easy to see.",
       },
       {
-        question: "Can I convert a recipe photo to editable text?",
+        question: "Can it type up a recipe from a photo?",
         answer:
-          "Yes. RecipePrinter reads the recipe from the photo and turns the ingredients and instructions into editable text. You can review the result, make corrections, and then format or print the recipe.",
+          "Yes. It turns a recipe photo into text: RecipePrinter types up the ingredients and instructions, and every word can be changed before you print it or save it as a PDF.",
       },
       {
         question: "Can I turn a photo into a printable recipe card?",
@@ -889,7 +889,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I turn a screenshot of a recipe into a printable recipe?",
         answer:
-          "Yes. Upload a recipe screenshot just like a photo. RecipePrinter reads the recipe from the image and turns it into editable text you can format and print.",
+          "Yes. Upload a recipe screenshot just like a photo, and RecipePrinter types up the recipe so you can print it.",
       },
     ],
     links: [
