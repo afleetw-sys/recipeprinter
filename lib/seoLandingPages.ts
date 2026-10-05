@@ -397,13 +397,17 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "Pages without ads",
     pickerGroup: "output",
     intent: "Utility SEO",
+    // The 26-page browser printout beside the one card: what "without ads"
+    // means, in one picture. Uncropped so its captions survive.
+    heroImage: "before-after",
+    heroFrame: "none",
     initialImportMode: "url",
     title: "Print Recipes Without Ads",
     description:
       "Turn cluttered recipe pages into clean printable recipes without ads, pop-ups, comments, or wasted pages. Free, and no account needed to print.",
     h1: "Print a recipe without ads",
     lede:
-      "Send a recipe page to the printer and the ads and the comments come with it. RecipePrinter prints the recipe on its own, on one page you can cook from.",
+      "Paste a recipe link and RecipePrinter prints just the recipe: no ads, no pop-ups, no comments. One clean page you can cook from.",
     howTo: [
       {
         name: "Paste the recipe link",
@@ -425,7 +429,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "One sheet instead of twenty-six",
-        proof: "before-after",
+        image: "souvlaki",
+        imageAlt:
+          "One printed page holding the whole Chicken Tzatziki Bowls recipe, beside the finished bowl.",
         body:
           "RecipePrinter never prints the article. It reads the recipe out of the page and lays out a new one holding the ingredients, the steps, and the times, and nothing else. The browser's own print button has no way to do that. It prints the document it was handed, headnote, ad slots, comments and all.",
       },
