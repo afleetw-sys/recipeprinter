@@ -1,11 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { LEGAL_LINKS, NAV_LINKS, SITE_NAME } from "@/lib/seo";
 
-const COFFEE_URL = "https://buymeacoffee.com/recipeprinter";
 const CONTACT_EMAIL = "recipeprinter@goodproblem.studio";
-const COFFEE_LOGO_SRC = "/images/buy-me-a-coffee-logo.png";
 
 // Shared footer + primary site navigation. Keeping the deeper pages here (rather
 // than in the header) is what lets the homepage stay a clean utility while the
@@ -40,22 +37,6 @@ export function SiteFooter({ isHome = false }: { isHome?: boolean }) {
             className="text-cp-small font-semibold text-ink-soft hover:text-ink transition-colors"
           >
             Contact us
-          </a>
-          <a
-            href={COFFEE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-auto inline-flex min-h-10 items-center gap-2 rounded-full border border-[#ffdd00]/70 bg-white px-cp-3 text-cp-caption font-bold text-ink transition-colors hover:border-[#ffdd00] hover:bg-[#fff9d8]"
-          >
-            <Image
-              src={COFFEE_LOGO_SRC}
-              alt=""
-              aria-hidden="true"
-              width={20}
-              height={20}
-              className="h-5 w-5 rounded-full"
-            />
-            Support RecipePrinter
           </a>
         </nav>
         <div className="flex flex-wrap items-center justify-between gap-cp-3 text-cp-caption text-ink-soft">

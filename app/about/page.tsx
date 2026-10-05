@@ -7,6 +7,7 @@ import {
 } from "@/components/seo/LandingFrame";
 import { LandingClose } from "@/components/seo/LandingClose";
 import { Breadcrumb } from "@/components/seo/Breadcrumb";
+import { SupportRecipePrinterLink } from "@/components/SupportRecipePrinterLink";
 import {
   SITE_ID,
   absoluteUrl,
@@ -138,6 +139,7 @@ export default function AboutPage() {
           , or the Give feedback button in the footer. I read all of it, and I don&apos;t
           brush things off anymore.
         </p>
+        <SupportRecipePrinterLink />
       </LandingClose>
     </LandingFrame>
   );
