@@ -66,7 +66,7 @@ const FAQS = [
   {
     question: "What happens to my recipes if Pro ends?",
     answer:
-      "Anything you've printed or saved as a PDF is yours to keep. You go back to the free plan: full-page printing, one recipe at a time.",
+      "Anything you've printed or saved as a PDF is yours to keep, and your saved recipes stay in your account. You can keep importing and printing recipes for free, and come back to Pro whenever you like.",
   },
 ];
 
