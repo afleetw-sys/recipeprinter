@@ -853,10 +853,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "A handwritten recipe card holds more than the recipe: the handwriting, the notes in the margin, the marks from every time it was made. Digitize it from a photo and you get a typed copy to cook from, print again, and share with family, while the original stays safe in the recipe box.",
       },
       {
-        heading: "Turn a recipe photo into editable text",
+        heading: "Make it yours before it prints",
         image: "inline-editing",
         body:
-          "A recipe photo is useful for keeping a copy, but editable text is easier to work with. RecipePrinter reads the ingredients and instructions so you can make corrections, format the recipe, print a recipe card, or save it as a PDF.",
+          "Once your recipe photo is typed up, every word is yours to change. Add the tip that was always said out loud but never written down, note how your family makes it, or double the batch, then print it as a 4x6 card or save it as a PDF.",
       },
     ],
     faqHeading: "Recipe photo questions",
