@@ -654,7 +654,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Change the look, keep the recipe",
         image: "multi-themes",
         body:
-          "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows, so a stack printed in one go still looks like a set rather than a pile of odds and ends. Two themes are free; the rest come with Pro.",
+          "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows, so a stack printed in one go still looks like a set. Two themes are free; the rest come with Pro.",
       },
     ],
     // Three 4×6 cards in three different themes, all real prints.
@@ -2531,7 +2531,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Turn handwritten cards, photos, and favorite recipes into a family recipe book with chapters, a cover, table of contents, and printable PDF.",
     h1: "Family recipe book ideas",
     lede:
-      "RecipePrinter turns online recipes, old cards, photos, and typed-in notes into clean, matching pages, then binds them into a cookbook with a cover, chapters, and a table of contents.",
+      "RecipePrinter turns online recipes, old cards, photos, and typed-in notes into clean, matching pages. Put them together in a cookbook with your own cover and chapters, and RecipePrinter builds the table of contents.",
     importSubmitLabel: "Start the cookbook",
     howTo: [
       {

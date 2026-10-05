@@ -51,7 +51,7 @@ const FAQS = [
   },
   {
     question: "What's the difference between Pro and a cookbook?",
-    answer: `Pro is a subscription for everyday printing: cards, themes, and printing in batches. A cookbook is a one-time ${COOKBOOK_PRICE_FALLBACK} purchase for one bound book, and you don't need Pro to buy one. Pro members get 20% off their first cookbook.`,
+    answer: `Pro is a subscription for everyday printing: cards, themes, and printing in batches. A cookbook is a one-time ${COOKBOOK_PRICE_FALLBACK} purchase that lets you export one cookbook as print-ready files, and you don't need Pro to buy one. Pro members get 20% off their first cookbook.`,
   },
   {
     question: "Do I need an account?",
@@ -114,7 +114,6 @@ export default function PricingPage() {
           align="centered"
           h1="Pricing"
           lede="Printing recipes is free. Pro adds recipe cards, themes, and printing in batches. Cookbooks are a separate, one-time purchase."
-          note="Prices are in US dollars."
           above={<Breadcrumb trail={TRAIL} />}
         />
 
