@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { FEATURE_IMAGES, PRINTED_CARDS, type ProofImage } from "@/lib/seoAssets";
 import {
@@ -122,11 +123,11 @@ export function HeroProductPhoto({
 }
 
 /** Numbered steps as a clean, connected row, big accent numerals, hairline spine. */
-/** Bolds "RecipePrinter Pro" wherever a step mentions it — the plan name is
-    the one word in these short descriptions worth it standing out, and the
-    JSON-LD (`howToNode`, built from the same plain `step.text`) is
-    unaffected since this only touches how it's drawn, not the string
-    itself. */
+/** Links "RecipePrinter Pro" to /pricing wherever a step mentions it. The
+    plan name is the one phrase in these short descriptions worth standing
+    out, and it used to be bold text that led nowhere. The JSON-LD
+    (`howToNode`, built from the same plain `step.text`) is unaffected, since
+    this only touches how it's drawn, not the string itself. */
 function boldProMentions(text: string) {
   const marker = "RecipePrinter Pro";
   const parts = text.split(marker);
@@ -134,7 +135,11 @@ function boldProMentions(text: string) {
   return parts.map((part, i) => (
     <span key={i}>
       {part}
-      {i < parts.length - 1 && <strong className="font-bold text-ink">{marker}</strong>}
+      {i < parts.length - 1 && (
+        <Link href="/pricing" className="font-bold text-ink hover:underline">
+          {marker}
+        </Link>
+      )}
     </span>
   ));
 }

@@ -58,7 +58,7 @@ export function cookbookPitchFeature({
     body: (
       <>
         {body ??
-          "Once enough recipes have earned a place, RecipePrinter sorts them into chapters, generates the cover, and builds the table of contents. Rearrange anything you want moved, then print it at home on US Letter or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook. Each cookbook is its own one-off purchase."}{" "}
+          "Once enough recipes have earned a place, add them to a cookbook. Sort them into chapters and choose a cover, and RecipePrinter builds the table of contents and page numbers as you go. Then print it at home on US Letter or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook. Each cookbook is its own one-off purchase."}{" "}
         <Link href="/family-recipe-book" className="font-bold text-ink hover:underline">
           Family recipe book ideas
         </Link>{" "}

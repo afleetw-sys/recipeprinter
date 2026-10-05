@@ -256,8 +256,14 @@ export type SeoLandingPage = {
   /** Subtitle under the examples gallery's heading. Defaults to "Actual
       recipe cards printed with RecipePrinter, no mockups." */
   examplesSubtitle?: string;
-  /** Heading over the FAQ section. Defaults to "Questions people ask". */
-  faqHeading?: string;
+  /**
+   * Heading over the FAQ section. Required, and named for the page's topic in
+   * one of two shapes: "[Topic] questions" ("Recipe binder questions") or
+   * "Questions about [topic]" ("Questions about organizing recipes"). There
+   * used to be a generic "Questions people ask" fallback, and ten pages
+   * quietly took it.
+   */
+  faqHeading: string;
   /** `links` hangs outbound chips under an answer, for the questions whose
       real answer is somewhere else. The JSON-LD keeps `answer` alone: the
       structured data is the answer, not the chrome around it. */
@@ -273,7 +279,7 @@ export type SeoLandingPage = {
 export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-recipe-from-website",
-    contentUpdated: "2026-09-15",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-02",
     primaryKeyword: "print recipe from website",
     secondaryKeywords: [
@@ -293,6 +299,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "A website or blog",
     pickerGroup: "source",
     intent: "Utility SEO",
+    // The page's whole promise in one picture: the 26-page browser printout
+    // beside the one card. Row 1 then shows that card up close.
+    heroImage: "before-after",
+    // Composed with its own dark canvas and captions; the 4:3 card crop cut
+    // the "26 pages" caption off its left edge.
+    heroFrame: "none",
     initialImportMode: "url",
     title: "Print a Recipe from Any Website",
     description:
@@ -303,14 +315,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howTo: [
       {
         name: "Copy the recipe link",
-        text: "On the food blog or recipe site, copy the page link from your browser's address bar or the app's share button.",
+        text: "On the food blog, copy the page's link from your browser, or tap Share and choose Copy link.",
       },
       {
         name: "Paste it in",
-        text: "Paste the link into the box above. RecipePrinter reads the page and rebuilds the recipe as a clean, printable layout.",
+        text: "Paste the link above. RecipePrinter reads the page and rebuilds the recipe as a clean, printable layout.",
       },
       {
-        name: "Set the format",
+        name: "Choose how it prints",
         text: "Choose a recipe card or a full page, keep or drop the photo, and make any edits you want before you print.",
       },
       {
@@ -321,9 +333,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "It keeps the recipe and drops everything else",
-        proof: "before-after",
+        image: "caprese-card",
         body:
-          "Printed straight from the browser, that caprese pasta salad runs to 26 sheets. RecipePrinter reads the same page and keeps only what you cook from: the ingredient list with amounts, the numbered steps, the prep and cook times, and the servings. The blogger's backstory, the autoplay video, the comments, and the ads stay behind. You can print the original link on the card too, so the page is easy to find again.",
+          "Print this caprese pasta salad straight from the food blog and it takes 26 sheets of paper. RecipePrinter reads the same page and keeps only what you cook from: the ingredients with amounts, the numbered steps, the prep and cook times, and the servings.",
+        afterBody: [
+          "The blogger's story, the autoplay video, the comments, and the ads stay behind.",
+          "The original link prints on the card too, so the page is easy to find again.",
+        ],
       },
       {
         heading: "Print it the way your kitchen actually works",
@@ -335,9 +351,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "For the pages that fight back",
         image: "paste-in-app",
         body:
-          "Some recipes hide behind a login, sit on a site that blocks importers, or live only in a video's description. When a link won't import cleanly, paste the recipe text or upload a screenshot, and RecipePrinter structures it into the same clean printout. It works from a phone too, so you can grab a recipe on the couch and print it from the kitchen later.",
+          "Some recipes hide behind a login, sit on a site that blocks importers, or live only in a video's description. When a link won't import cleanly, paste the recipe text or upload a screenshot, and RecipePrinter structures it into the same clean printout.",
       },
     ],
+    faqHeading: "Questions about printing from a website",
     faqs: [
       {
         question: "How does it know which part of the page is the recipe?",
@@ -357,12 +374,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print several recipes in one go?",
         answer:
-          "Yes, with RecipePrinter Pro. Add as many recipes as you want and print them as one job instead of one trip to the printer per recipe, which is most of the point when you're printing a week of dinners at once. A single recipe prints free, no account needed.",
+          "Yes, with RecipePrinter Pro. Add as many recipes as you want and print them all in one job, instead of printing each recipe separately. That's handy when you're printing a week of dinners. A single recipe prints free, no account needed.",
+        links: [{ href: "/print-meal-plan-recipes", label: "Print a week of dinners" }],
       },
       {
         question: "What happens if the original page disappears?",
         answer:
-          "Nothing, which is the reason to print one in the first place. A recipe page can go behind a paywall, get rewritten around a new story, or go offline entirely, and none of that reaches the card already sitting in your kitchen.",
+          "Your printed copy stays as it is. Recipe pages sometimes move behind a paywall, get rewritten, or go offline, but the card in your kitchen doesn't change. Save it as a PDF too if you'd like a digital copy.",
       },
     ],
     links: [
@@ -375,6 +393,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-recipe-without-ads",
     contentUpdated: "2026-10-05",
+    imagesReviewed: "2026-10-05",
     copyReviewed: "2026-09-02",
     primaryKeyword: "print recipe without ads",
     secondaryKeywords: [
@@ -386,55 +405,63 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "Pages without ads",
     pickerGroup: "output",
     intent: "Utility SEO",
+    // The 26-page browser printout beside the one card: what "without ads"
+    // means, in one picture. Uncropped so its captions survive.
+    heroImage: "before-after",
+    heroFrame: "none",
     initialImportMode: "url",
     title: "Print Recipes Without Ads",
     description:
       "Turn cluttered recipe pages into clean printable recipes without ads, pop-ups, comments, or wasted pages. Free, and no account needed to print.",
     h1: "Print a recipe without ads",
     lede:
-      "Send a recipe page to the printer and the ads and the comments come with it. RecipePrinter prints the recipe on its own, on one page you can cook from.",
+      "Paste a recipe link and RecipePrinter prints just the recipe: no ads, no pop-ups, no comments. One clean page you can cook from.",
     howTo: [
       {
-        name: "Paste the recipe link",
-        text: "Copy the link from the recipe site and paste it in. RecipePrinter rebuilds the recipe on a page of its own.",
+        name: "Copy the recipe link",
+        text: "On the food blog, copy the page's link from your browser, or tap Share and choose Copy link.",
       },
       {
-        name: "Check the preview",
-        text: "Look at the finished card before anything prints. What you see on screen is what comes out, down to the page count.",
+        name: "Paste it above",
+        text: "RecipePrinter pulls out the ingredients and steps, and leaves the ads, pop-ups, and comments behind.",
       },
       {
-        name: "Take out what you don't need",
-        text: "Turn off Recipe photo to save the color ink, or Recipe link to drop the source line. What is left is the recipe.",
+        name: "Make any changes",
+        text: "Fix an amount or reword a step right on the page. Choose a full page or a 4×6 card (with Pro), pick a theme, and keep or drop the photo.",
       },
       {
-        name: "Print it, or keep the file",
-        text: "Send it to the printer, or choose Save as PDF and keep the clean copy without printing anything at all.",
+        name: "Print it or save a PDF",
+        text: "Send it to your printer, or choose Save as PDF to keep a clean copy.",
       },
     ],
     featureSections: [
       {
         heading: "One sheet instead of twenty-six",
-        proof: "before-after",
+        image: "souvlaki",
+        imageAlt:
+          "One printed page holding the whole Chicken Tzatziki Bowls recipe, beside the finished bowl.",
         body:
-          "RecipePrinter never prints the article. It reads the recipe out of the page and lays out a new one holding the ingredients, the steps, and the times, and nothing else. The browser's own print button has no way to do that. It prints the document it was handed, headnote, ad slots, comments and all.",
+          "Your browser's print button prints the whole page as it is, including the story, the ad spaces, and the comments. RecipePrinter takes just the recipe from the page and sets it out on its own: the ingredients, the steps, and the times.",
       },
       {
-        heading: "Recipe cards don't go dark while you cook",
-        image: "counter-card",
+        heading: "With or without the photo",
+        image: "show-photo",
         body:
-          "A card asks nothing of you: no unlocking, no charging, no signal. It props against the backsplash and stays on the step you're on. Nobody scrolls back up to check whether it was two teaspoons or two tablespoons.",
+          "Keep the finished-dish photo, or turn it off with one switch to save color ink and give the recipe more room.",
+        afterBody: "The ingredients, the steps, and the times stay exactly as they were.",
       },
     ],
+    faqHeading: "Questions about printing without ads",
     faqs: [
       {
         question: "Is this an ad blocker?",
         answer:
-          "No. An ad blocker hides things on the page in front of you. RecipePrinter never prints that page at all: it reads the recipe out and builds a new one that only ever had the recipe on it.",
+          "No. An ad blocker hides ads on the page you're looking at. RecipePrinter makes a new page with just the recipe, so there are no ads to hide.",
       },
       {
         question: "Can I see it before I print?",
         answer:
-          "Yes. The preview is the finished sheet rather than an approximation of it, so the page count you see is the count that comes out of the tray.",
+          "Yes. The preview shows exactly what will print, so you can check the recipe and make changes before anything reaches your printer.",
       },
       {
         question: "What about pop-ups and cookie banners?",
@@ -444,7 +471,17 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much paper does one recipe take?",
         answer:
-          "Usually one sheet. A recipe prints as a single 4 by 6 card or a single letter page, however long the article it came from happened to be.",
+          "Usually one sheet. A long recipe can run onto the back of the card or a second page, but not the 26 pages the browser printed.",
+      },
+      {
+        question: "What if a recipe won't import?",
+        answer:
+          "Some recipes sit behind a login or on a site that blocks importers. Copy the recipe text and paste it in, or upload a screenshot, and you get the same clean printout.",
+        links: [{ href: "/print-recipe-from-screenshot", label: "Print a recipe from a screenshot" }],
+      },
+      {
+        question: "Is it free?",
+        answer: `Yes. Importing and printing full-page recipes is free, with no account. RecipePrinter Pro (${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}) adds 4×6 recipe cards, premium themes, and printing several recipes at once.`,
       },
     ],
     links: [
@@ -456,7 +493,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "convert-recipe-to-pdf",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
+    imagesReviewed: "2026-10-05",
     copyReviewed: "2026-09-02",
     primaryKeyword: "convert recipe to PDF",
     secondaryKeywords: [
@@ -497,7 +535,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Save as PDF",
-        text: "Open your browser's print dialog and choose Save as PDF instead of a printer. No plugin or download is needed.",
+        text: "Click Print, then choose Save as PDF where you'd normally pick your printer. No plugin or download needed.",
       },
       {
         name: "Keep, share, or print it",
@@ -520,13 +558,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     cookbookPitchHeading: "When one recipe becomes a collection",
     cookbookPitchBody:
-      "If you want to combine many recipes into something more permanent, RecipePrinter can also build them into a cookbook with chapters, a cover, and a table of contents. Cookbook exports are purchased separately.",
+      "If you want to combine many recipes into something more permanent, you can also put them in a cookbook: sort them into chapters and choose a cover, and RecipePrinter builds the table of contents. Cookbook exports are purchased separately.",
     faqHeading: "Recipe PDF questions",
     faqs: [
       {
         question: "Where is the PDF download button?",
         answer:
-          "RecipePrinter uses your browser's built-in print dialog. Choose Save as PDF instead of a printer, then save the file wherever you normally keep downloads.",
+          "There isn't a separate one. Click Print, choose Save as PDF where you'd normally pick your printer, and save the file wherever you keep downloads.",
       },
       {
         question: "Can I save several recipes in one PDF?",
@@ -570,6 +608,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "Recipe cards",
     pickerGroup: "output",
     intent: "Utility SEO",
+    // A 4×6 card on its own, already 4:3, so the hero shows it uncropped.
+    heroImage: "caprese-card-board",
     initialImportMode: "url",
     importSubmitLabel: "Make recipe card",
     importModes: ["url", "apps", "image", "text"],
@@ -580,8 +620,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     anchor: "Recipe card printer",
     lede:
       "Turn recipes from websites, photos, screenshots, or text into clean 4×6 recipe cards ready to print and keep.",
-    intro:
-      "RecipePrinter works as a printable recipe card generator for recipes you already have.",
     cookbookPitchBody:
       "When your recipe card collection grows into something bigger, RecipePrinter can turn it into a cookbook. Organize recipes into chapters, create a cover and table of contents, rearrange pages, then print at home or export the file for professional printing.",
     examplesSubtitle: "Real 4×6 recipe cards printed with RecipePrinter. No mockups.",
@@ -594,7 +632,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Choose 4×6 recipe cards",
-        text: "Switch from a full page to the 4×6 card size. You can preview the finished card free — printing it takes RecipePrinter Pro, $4.99/mo.",
+        text: "Switch from a full page to the 4×6 card size. Preview the finished card for free, and print it with RecipePrinter Pro.",
       },
       {
         name: "Pick a design",
@@ -616,10 +654,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Change the look, keep the recipe",
         image: "multi-themes",
         body:
-          "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows, so a stack printed in one go still looks like a set rather than a pile of odds and ends. Two themes are free; the rest come with Pro.",
+          "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows, so a stack printed in one go still looks like a set. Two themes are free; the rest come with Pro.",
       },
     ],
-    examples: ["caprese", "korean", "pesto"],
+    // Three 4×6 cards in three different themes, all real prints.
+    examples: ["hot-honey", "quilt-noodles", "pb-blossoms"],
     faqs: [
       {
         question: "Can I turn an online recipe into a recipe card?",
@@ -629,7 +668,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What should I print recipe cards on?",
         answer:
-          "Card stock, if you want them to survive a kitchen. Feed 4x6 cards straight through a printer that takes them, or print on a letter sheet and cut the card out. Turn on cut lines and you get a dashed guide to trim along.",
+          "Card stock works best, since it holds up well in the kitchen. If your printer takes 4×6 cards, you can print on them directly. Otherwise, print on a letter sheet and trim the card out; turning on cut lines adds a dashed guide to follow.",
       },
       {
         question: "What happens when a recipe is too long for one card?",
@@ -1052,6 +1091,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "A board is a good place to collect recipes and an awkward place to cook from. The screen sleeps, your hands are wet, and you lose your place scrolling back up to the ingredients. A printed card sits on the counter and stays where you left it. Afterwards it goes in a recipe box, a binder, a folder by the stove, or later a bound cookbook.",
       },
     ],
+    faqHeading: "Pinterest recipe printing questions",
     faqs: [
       {
         question: "How do I print Pinterest recipes from an iPhone?",
@@ -1080,7 +1120,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Will the printed card still show where the recipe came from?",
         answer:
-          "It can, and that's your call: print the original link on the card or leave it off. The link kept with the recipe is the recipe page's when the pin leads to one, and the pin's own when it doesn't.",
+          "Yes. The original link prints on the card, so the recipe stays credited to the person who made it and is easy to find again. It's the recipe page's link when the pin leads to one, and the pin's own when it doesn't.",
       },
     ],
     links: [
@@ -1153,6 +1193,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Accounts go private, posts come down, and creators clear out old work, and none of that comes with any warning. A card that's already off the printer doesn't depend on the post it came from, or on you being able to find it again.",
       },
     ],
+    faqHeading: "Instagram recipe printing questions",
     faqs: [
       {
         question: "Can I print a recipe from an Instagram Reel?",
@@ -1167,7 +1208,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Will the card credit the creator?",
         answer:
-          "It can, and that's your call. The post's link can print on the card, so the person whose recipe it is stays attached to it and the Reel is easy to find again.",
+          "Yes. The post's link prints on the card, so the person whose recipe it is stays attached to it and the Reel is easy to find again.",
       },
       {
         question: "Can I print several Instagram recipes at once?",
@@ -2363,7 +2404,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "preserve-family-recipes",
     importPlaceholder: "Photograph a handwritten card, or drop a scan",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     // Signed off on the writing. One image is still owed: "Keep the original,
     // cook from the copy" wants a photograph of the printed copy lying beside
     // the handwritten card it came from, which is the whole claim in one frame
@@ -2427,6 +2468,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Keep the photo of the card on the recipe, beside the typed version. The measurements end up in type you can read from across a kitchen, and the hand they were written in is still on the page, which is usually the part that matters most.",
       },
     ],
+    faqHeading: "Questions about preserving family recipes",
     faqs: [
       {
         question: "Will it read my grandmother's handwriting?",
@@ -2489,7 +2531,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Turn handwritten cards, photos, and favorite recipes into a family recipe book with chapters, a cover, table of contents, and printable PDF.",
     h1: "Family recipe book ideas",
     lede:
-      "RecipePrinter turns online recipes, old cards, photos, and typed-in notes into clean, matching pages, then binds them into a cookbook with a cover, chapters, and a table of contents.",
+      "RecipePrinter turns online recipes, old cards, photos, and typed-in notes into clean, matching pages. Put them together in a cookbook with your own cover and chapters, and RecipePrinter builds the table of contents.",
     importSubmitLabel: "Start the cookbook",
     howTo: [
       {
@@ -2529,6 +2571,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Print a copy on your home printer to flip through and check, then export a print-ready file to order bound books from a professional printer. A finished cookbook makes a keepsake gift for a wedding, a milestone birthday, or the holidays, and everyone who cooks from it gets their own copy in the kitchen.",
       },
     ],
+    faqHeading: "Family recipe book questions",
     faqs: [
       {
         question: "How many recipes make a cookbook?",
@@ -3647,7 +3690,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "just-the-recipe-alternative",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-02",
     primaryKeyword: "Just the Recipe alternative",
     // Deliberately narrow. This page used to also claim "print recipe without
@@ -3735,6 +3778,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         },
       ],
     },
+    faqHeading: "Questions about RecipePrinter and Just the Recipe",
     faqs: [
       {
         question: "How do I choose between them?",
@@ -3839,6 +3883,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         },
       ],
     },
+    faqHeading: "Questions about RecipePrinter and ReciScan",
     faqs: [
       {
         question: "How do I choose between them?",
@@ -3959,6 +4004,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         },
       ],
     },
+    faqHeading: "Questions about RecipePrinter and Canva",
     faqs: [
       {
         question: "How do I choose between them?",
@@ -4080,6 +4126,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         },
       ],
     },
+    faqHeading: "Questions about RecipePrinter and CreateMyCookbook",
     faqs: [
       {
         question: "How do I choose between them?",

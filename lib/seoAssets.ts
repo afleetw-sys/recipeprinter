@@ -184,10 +184,10 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
   },
   "show-photo": {
     src: "/images/show-photo.png",
-    width: 1600,
-    height: 957,
+    width: 2400,
+    height: 1436,
     alt:
-      "The same recipe card printed twice, with and without a photo, set by a single toggle between them.",
+      "The same recipe printed twice, with and without its photo, switched by a single toggle.",
   },
   "card-in-box": {
     src: "/images/recipe-card-in-box.jpg",
@@ -235,9 +235,53 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "The same recipe two ways: a 26-page stack printed from the browser, beside one card printed from RecipePrinter.",
   },
+  "caprese-card-board": {
+    src: "/images/printed-cards/caprese-salad.jpeg",
+    width: 2000,
+    height: 1500,
+    alt: "A printed 4×6 Caprese Pasta Salad recipe card on a wooden board beside two wooden spoons.",
+  },
+  // The "after" of `before-after`, on its own: the card that the 26-page
+  // caprese printout became. The same photo as PRINTED_CARDS.caprese, cropped
+  // for a 3:2 feature row: the card spans about 37-75% of the frame's height,
+  // so 60% centres it (the 86% the card heroes use cuts off its title).
+  "caprese-card": {
+    src: "/images/card-caprese-pasta-salad.jpeg",
+    width: 1200,
+    height: 1600,
+    alt: "The Caprese pasta salad recipe printed with RecipePrinter as a single card, on a wooden board beside basil and cherry tomatoes.",
+    objectPosition: "50% 60%",
+  },
 };
 
 export const PRINTED_CARDS: Record<string, PrintedCard> = {
+  "hot-honey": {
+    src: "/images/printed-cards/hot-honey.jpeg",
+    objectPosition: "50% 59%",
+    width: 1333,
+    height: 2000,
+    recipe: "Hot Honey Chicken Power Bowl",
+    template: "Market",
+    alt: "A printed 4×6 Hot Honey Chicken Power Bowl card in the Market theme, with a row of cut-paper groceries along its foot, on a blue cloth.",
+  },
+  "quilt-noodles": {
+    src: "/images/printed-cards/soy-sauce.jpeg",
+    objectPosition: "50% 70%",
+    width: 1333,
+    height: 2000,
+    recipe: "Soy Sauce Pan-fried Noodles",
+    template: "Quilt",
+    alt: "A printed 4×6 Soy Sauce Pan-fried Noodles card in the Quilt theme, with its strip of green and rust tiles, on a green cloth beside dry noodles.",
+  },
+  "pb-blossoms": {
+    src: "/images/printed-cards/pb-blossoms.jpeg",
+    objectPosition: "50% 90%",
+    width: 1500,
+    height: 2000,
+    recipe: "Peanut Butter Blossoms",
+    template: "Typewriter",
+    alt: "A printed 4×6 Peanut Butter Blossoms card in the Typewriter theme, lying on a vintage yellow spice chart.",
+  },
   caprese: {
     src: "/images/card-caprese-pasta-salad.jpeg",
     width: 1200,

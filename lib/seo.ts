@@ -151,6 +151,11 @@ export const NAV_LINKS: NavLink[] = [
     blurb: "Everything RecipePrinter does for printing, saving, and collecting recipes.",
   },
   {
+    href: "/pricing",
+    label: "Pricing",
+    blurb: "What's free, what RecipePrinter Pro adds, and what a cookbook costs.",
+  },
+  {
     href: "/faq",
     label: "FAQ",
     blurb: "Answers about recipe links, PDFs, cookbooks, social recipes, binders, and privacy.",
@@ -298,7 +303,7 @@ export const FAQ: FaqItem[] = [
     question: "Can I make a cookbook from my recipes?",
     group: "what-you-get",
     answer:
-      "Yes. RecipePrinter sorts the recipes into chapters, generates the cover, and builds the table of contents. Rearrange anything you want moved, then print it at home on US Letter or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook.",
+      "Yes. Add your recipes to a cookbook, sort them into chapters, and choose a cover. RecipePrinter builds the table of contents and page numbers for you. Then print it at home on US Letter or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook.",
     guides: [
       "family-recipe-book",
       "preserve-family-recipes",

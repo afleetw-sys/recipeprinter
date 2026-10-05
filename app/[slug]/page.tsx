@@ -117,6 +117,9 @@ function CaptureBlock({ page }: { page: SeoLandingPage }) {
 
 type PhraseLink = { phrase: string; href: string };
 
+/** Every mention of the plan leads to what it costs and includes. */
+const PRO_LINK: PhraseLink = { phrase: "RecipePrinter Pro", href: "/pricing" };
+
 /** `text` with the first occurrence of each phrase linked. */
 function withLinks(text: string, links: PhraseLink[] | undefined): ReactNode {
   const hits = (links ?? [])
@@ -161,8 +164,8 @@ export default function SeoLandingPage({ params }: PageProps) {
   const features = [
     ...(page.featureSections ?? []).map((feature) => ({
       ...feature,
-      body: withLinks(feature.body, feature.links),
-      afterBody: [feature.afterBody ?? []].flat().map((p) => withLinks(p, feature.links)),
+      body: withLinks(feature.body, [...(feature.links ?? []), PRO_LINK]),
+      afterBody: [feature.afterBody ?? []].flat().map((p) => withLinks(p, [...(feature.links ?? []), PRO_LINK])),
     })),
     ...(page.cookbookPitch
       ? [
@@ -329,7 +332,7 @@ export default function SeoLandingPage({ params }: PageProps) {
       {/* ── FAQ ───────────────────────────────────────────────────────── */}
       <section aria-labelledby="faq-heading">
         <div id="faq-heading">
-          <SectionHeading>{page.faqHeading ?? "Questions people ask"}</SectionHeading>
+          <SectionHeading>{page.faqHeading}</SectionHeading>
         </div>
         <div className="mt-cp-5">
           <FaqCards
@@ -343,7 +346,7 @@ export default function SeoLandingPage({ params }: PageProps) {
                     {item.answer.slice(item.answer.indexOf(item.answerEmphasis) + item.answerEmphasis.length)}
                   </>
                 ) : (
-                  item.answer
+                  withLinks(item.answer, [PRO_LINK])
                 ),
               links: item.links,
             }))}

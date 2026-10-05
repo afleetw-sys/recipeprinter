@@ -1,5 +1,9 @@
 import type { ProLockReason } from "@/lib/recipePrinterPurchases";
-import { IMAGE_IMPORTS_PER_HOUR_PRO, PRO_IMAGE_IMPORT_BENEFIT } from "@/lib/imageImportQuota";
+import {
+  FREE_IMAGE_IMPORT_BENEFIT,
+  IMAGE_IMPORTS_PER_HOUR_PRO,
+  PRO_IMAGE_IMPORT_BENEFIT,
+} from "@/lib/imageImportQuota";
 
 // Every one of these is a real, implemented gate (see computeProLocks in
 // lib/recipePrinterPurchases.ts). A "20% off your first cookbook export"
@@ -22,6 +26,26 @@ const COOKBOOK_BENEFIT = "20% off your first cookbook";
 // Not "no watermark": the free line is a quiet footer, not a watermark, and
 // the wording shouldn't talk the free tier down. See `.recipe-print-page--pro`.
 const NO_BRANDING_BENEFIT = "No RecipePrinter branding on your prints";
+
+// What Basic (the free tier) actually includes. Shared by /account and
+// /pricing, so the two cannot describe the free plan differently — and it's a lot, which the
+// old "Classic & Pantry themes / Full Page printing / one recipe at a time"
+// list undersold by leading with a limitation. "Import from any site" /
+// "Import from Instagram, TikTok..." / "Unlimited imports" were three lines
+// making the same point (importing has no limit); folded into two by saying
+// "Unlimited" on each rather than splitting it out as its own line.
+// "One recipe at a time" is real (see PrintSetupControls.tsx's "This
+// recipe" title) but it's a constraint, not a benefit, so it doesn't belong
+// on a list meant to make the case for staying on Basic being a perfectly
+// good deal. Photo imports are the exception to "unlimited": each one is a
+// paid model call, so they are counted by the hour, and the Pro card names
+// its larger allowance (see lib/imageImportQuota.ts).
+export const BASIC_BENEFITS = [
+  "Unlimited imports from any recipe website",
+  "Unlimited imports from Instagram, TikTok, Pinterest & more",
+  FREE_IMAGE_IMPORT_BENEFIT,
+  "Letter-size printing with two free themes",
+];
 
 // Exported so `AccountProStatus` can show the same list to a Free account —
 // one list, so a change here doesn't quietly leave the two surfaces

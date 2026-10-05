@@ -57,7 +57,7 @@ const exemptTsx = new Set([
   "app/opengraph-image.tsx", // generated brand artwork
   "app/print/harness/LayoutHarness.tsx", // internal diagnostic UI
   "components/RecipeCardPrint.tsx", // printable theme artwork
-  "components/SiteFooter.tsx", // externally branded Buy Me a Coffee treatment
+  "components/SupportRecipePrinterLink.tsx", // externally branded Buy Me a Coffee treatment
 ]);
 
 for (const directory of ["app", "components"]) {
