@@ -922,7 +922,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     h1: "Print a recipe from a screenshot",
     lede:
       "That recipe you screenshotted deserves better than your camera roll. Upload it from a post, message, app, or website and print it as a clean recipe you can actually cook from.",
-    howToHeading: "How to print a recipe from a screenshot",
     howTo: [
       {
         name: "Screenshot the recipe",
