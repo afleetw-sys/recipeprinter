@@ -696,7 +696,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-multiple-recipes",
     contentUpdated: "2026-10-05",
-    copyReviewed: "2026-09-29",
+    copyReviewed: "2026-10-05",
     primaryKeyword: "print multiple recipes",
     secondaryKeywords: [
       "print multiple recipes at once",
@@ -710,22 +710,22 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importModes: ["url", "apps", "image", "text"],
     importSubmitLabel: "Add your first recipe",
     heroImage: "card",
-    heroAnnotation: "Print several recipes together",
+    cookbookPitch: true,
     title: "Print Multiple Recipes at Once | RecipePrinter",
     description:
       "Print multiple recipes at once with RecipePrinter. Combine recipes from websites, screenshots, photos, text, and recipe apps into one matching set.",
     h1: "Print multiple recipes at once",
     lede:
-      "Add recipes from websites, screenshots, photos, recipe apps, or text to one collection. Choose a full-page or 4x6 recipe card layout, then print multiple recipes at once.",
+      "Add recipes from websites, screenshots, photos, recipe apps, and text to one collection. Choose a full-page or 4x6 card layout, then print multiple recipes at once.",
     howToHeading: "How to print multiple recipes",
     howTo: [
       {
         name: "Add your first recipe",
-        text: "Paste a recipe link, upload a screenshot or photo, import from a recipe app, or paste the recipe text. Check it before adding it to your collection.",
+        text: "Paste the link to a recipe. You can also upload a screenshot or photo of it, bring it in from a recipe app, or paste in the text. Look it over, then add it to your collection.",
       },
       {
         name: "Add the rest of your recipes",
-        text: "Keep adding recipes to the same collection. They can come from different websites, screenshots, photos, pasted text, or recipe apps.",
+        text: "Keep adding recipes to the same collection, from any source. You'll need RecipePrinter Pro ($4.99/mo) to add a second recipe.",
       },
       {
         name: "Choose how they print",
@@ -733,33 +733,22 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print or save the collection",
-        text: "Print the whole collection together, or save it as a PDF to keep or print later.",
+        text: "Print the whole collection together, or save it as one PDF to keep or print later.",
       },
     ],
     featureSections: [
       {
         heading: "One trip to the printer for the whole set",
-        image: "cookpilot-export",
-        imageAlt:
-          "A CookPilot recipe library beside a RecipePrinter collection containing several recipes.",
+        image: "multi-recipes",
         body:
           "Collect a week of dinners, a stack of recipe cards, or the family favorites you've been meaning to put on paper. Add and check each recipe, then print the entire collection at once instead of printing recipes one by one.",
         links: [{ phrase: "a week of dinners", href: "/print-meal-plan-recipes" }],
       },
       {
         heading: "Bring recipes from different places",
-        image: "multi-themes",
-        imageAlt:
-          "The same recipe shown in six RecipePrinter themes, with different type, borders, and colors.",
+        image: "sources",
         body:
-          "Your recipes don't have to come from the same website. Add recipe links, screenshots, photos of recipe cards, pasted text, or supported recipe app exports to one collection, then print them together in one consistent layout.",
-      },
-      {
-        heading: "A set that looks like it belongs together",
-        image: "card-in-box",
-        imageAlt: "A printed Basil Pesto recipe card filed in a tabbed recipe box.",
-        body:
-          "Choose one recipe card size or page size and a theme for the collection, and every recipe follows it. Recipes from different websites and sources can still print as one matching set.",
+          "Your recipes don't have to come from the same website. Mix recipe links, screenshots, photos of handwritten cards, pasted text, and exports from supported recipe apps in one collection. Pick one size and one theme, and every recipe follows it, so what comes out of the printer still looks like a set.",
       },
     ],
     faqHeading: "Multiple recipe printing questions",
@@ -767,37 +756,27 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print multiple recipes at once for free?",
         answer:
-          "Not all at once. You can print one recipe at a time for free, and you can build and preview a collection before deciding. Printing the collection together requires RecipePrinter Pro.",
+          "You can import and print recipes one at a time for free, as many as you like. Printing several together as one collection is part of RecipePrinter Pro.",
       },
       {
-        question: "Can I mix links, screenshots, and recipe app exports?",
+        question: "Can I print recipes from different websites, screenshots, and recipe apps together?",
         answer:
-          "Yes. Add recipes from different supported sources to the same collection. Check each one before printing so the ingredients and steps are right.",
+          "Yes. Recipes in the same collection can come from different websites, screenshots, photos, pasted text, or supported recipe apps. RecipePrinter reformats them so they print together. Check each one before printing so the ingredients and steps are right.",
       },
       {
-        question: "Will all the recipes use the same card size and theme?",
+        question: "Will every recipe use the same size and theme, including 4x6 cards?",
         answer:
-          "Yes. The selected size and theme apply to every recipe in the collection, so the finished pages or cards match. If you want different sizes or themes, start a separate print project for each set.",
+          "Yes. Choose full letter pages or 4x6 recipe cards and a theme, and RecipePrinter applies them to every recipe in the collection, so the finished pages or cards match. If you want different sizes or themes, start a separate print project for each set.",
       },
       {
         question: "Can I save the collection as a PDF?",
         answer:
-          "Yes. Once the recipes are ready, save the complete set as a PDF to keep or print later.",
+          "Yes. Once the recipes are ready, save the whole collection as one PDF to keep or print later.",
       },
       {
         question: "Do I need to add all the recipes at once?",
         answer:
-          "No. Start with one recipe and keep adding to the collection. When it is ready, review the recipes, choose your layout, and print the entire set together with RecipePrinter Pro.",
-      },
-      {
-        question: "Can I print multiple 4x6 recipe cards at once?",
-        answer:
-          "Yes. Choose the 4x6 recipe card size for your collection and RecipePrinter will format every recipe using the same size and theme before you print.",
-      },
-      {
-        question: "Can I print recipes from different websites together?",
-        answer:
-          "Yes. Recipes in the same collection can come from different websites, screenshots, photos, pasted text, or supported recipe apps. RecipePrinter reformats them so they can be printed together.",
+          "No. Start with one recipe and keep adding to the collection. When it is ready, review the recipes, choose your layout, and print the entire set together.",
       },
     ],
     links: [
@@ -3735,7 +3714,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Card or page, cut lines, several at once",
         image: "card-in-box",
         body:
-          "Choose a full letter page or a 4 by 6 card sized for a recipe box, pick a theme, turn on cut lines for card stock, and print several recipes in one job. Full-page printing is free and works without an account; the card format, themes, and printing several at once are RecipePrinter Pro, previewable free before you buy.",
+          "Choose a full letter page or a 4 by 6 card sized for a recipe box, pick a theme, turn on cut lines for card stock, and print several recipes in one job. Full-page printing is free and works without an account; the card format and themes are RecipePrinter Pro, previewable free before you buy, and printing several at once is Pro too.",
       },
     ],
     comparison: {
