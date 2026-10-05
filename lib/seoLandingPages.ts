@@ -332,7 +332,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Print this caprese pasta salad straight from the food blog and it takes 26 sheets of paper. RecipePrinter reads the same page and keeps only what you cook from: the ingredients with amounts, the numbered steps, the prep and cook times, and the servings.",
         afterBody: [
           "The blogger's story, the autoplay video, the comments, and the ads stay behind.",
-          "You can print the original link on the card too, so the page is easy to find again.",
+          "The original link prints on the card too, so the page is easy to find again.",
         ],
       },
       {
@@ -419,7 +419,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Make any changes",
-        text: "Edit anything you like. Turn off the photo to save color ink, or the recipe link if you don't want it on the page.",
+        text: "Edit anything you like, and turn off the photo if you'd rather save color ink.",
       },
       {
         name: "Print it or save a PDF",
@@ -1097,7 +1097,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Will the printed card still show where the recipe came from?",
         answer:
-          "It can, and that's your call: print the original link on the card or leave it off. The link kept with the recipe is the recipe page's when the pin leads to one, and the pin's own when it doesn't.",
+          "Yes. The original link prints on the card, so the recipe stays credited to the person who made it and is easy to find again. It's the recipe page's link when the pin leads to one, and the pin's own when it doesn't.",
       },
     ],
     links: [
@@ -1184,7 +1184,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Will the card credit the creator?",
         answer:
-          "It can, and that's your call. The post's link can print on the card, so the person whose recipe it is stays attached to it and the Reel is easy to find again.",
+          "Yes. The post's link prints on the card, so the person whose recipe it is stays attached to it and the Reel is easy to find again.",
       },
       {
         question: "Can I print several Instagram recipes at once?",
