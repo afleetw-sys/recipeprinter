@@ -918,10 +918,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImage: "instagram",
     title: "Print a Recipe From a Screenshot | RecipePrinter",
     description:
-      "Upload a recipe screenshot and turn it into editable ingredients and instructions. Print it as a full page, save it as a PDF, or make a 4x6 recipe card.",
+      "Finally cook from that recipe you screenshotted. Upload it and print a clean, full-size recipe, save it as a PDF, or make it a 4x6 recipe card.",
     h1: "Print a recipe from a screenshot",
     lede:
-      "Upload a recipe screenshot from a post, message, app, or website. RecipePrinter turns the visible ingredients and instructions into editable recipe text you can review, print, or save.",
+      "That recipe you screenshotted deserves better than your camera roll. Upload it from a post, message, app, or website and print it as a clean recipe you can actually cook from.",
     howToHeading: "How to print a recipe from a screenshot",
     howTo: [
       {
@@ -943,25 +943,20 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "Turn a recipe screenshot into text you can edit",
+        heading: "Out of the camera roll, onto the counter",
         image: "inline-editing",
         body:
-          "A screenshot is an easy way to save a recipe, but the ingredients and instructions are still trapped inside an image. RecipePrinter converts the visible recipe into editable text so you can correct it, format it, and print it properly.",
+          "Recipe screenshots pile up and get lost between photos of everything else. Print the ones you actually make, full size and easy to read with flour on your hands, and keep them where you cook instead of scrolling for them.",
       },
       {
-        heading: "Print recipes from posts, messages, and apps",
+        heading: "Keep the recipes that never had a link",
         image: "steps",
         body:
-          "Some recipes live in social posts, private groups, messages, or apps where there isn’t a useful recipe link to import. Upload screenshots instead and RecipePrinter can build an editable recipe from the ingredients and instructions visible on your screen.",
+          "The recipe a friend texted you, the one posted in a private group, the one buried in an app: they are easy to lose and hard to find again. A screenshot is all it takes to give them a permanent place in your recipe box or binder.",
       },
     ],
-    faqHeading: "Questions about printing recipes from screenshots",
+    faqHeading: "Recipe screenshot questions",
     faqs: [
-      {
-        question: "Can RecipePrinter convert a recipe screenshot to text?",
-        answer:
-          "Yes. Upload the recipe screenshot and RecipePrinter converts the visible ingredients and instructions into editable text. You can review and correct the recipe before printing or saving it.",
-      },
       {
         question: "What if the recipe takes more than one screenshot?",
         answer:
@@ -973,9 +968,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Yes, as long as you can take a screenshot of the recipe. RecipePrinter reads the text in the image, so it does not need to open the original post, message, app, or webpage.",
       },
       {
-        question: "Can I edit the recipe after the screenshot is converted?",
+        question: "Can I change the recipe before I print it?",
         answer:
-          "Yes. You can edit the recipe title, ingredients, amounts, and instructions after the screenshot is converted and before you print or save the recipe.",
+          "Yes. The title, ingredients, amounts, and instructions are all editable, so you can make it read the way you cook it before you print or save it.",
       },
       {
         question: "Can I print a recipe screenshot from my phone?",
