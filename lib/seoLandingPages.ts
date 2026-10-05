@@ -944,7 +944,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Out of the camera roll, onto the counter",
-        image: "inline-editing",
+        image: "counter-card",
         body:
           "Recipe screenshots pile up and get lost between photos of everything else. Print the ones you actually make, full size and easy to read with flour on your hands, and keep them where you cook instead of scrolling for them.",
       },
