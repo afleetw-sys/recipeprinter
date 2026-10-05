@@ -921,8 +921,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importUploadTitle: "Choose or drop screenshots",
     importPlaceholder: "Upload one or more screenshots that show the recipe ingredients and instructions",
     importSubmitLabel: "Read the screenshot",
-    heroImage: "inline-editing",
-    heroAnnotation: "Edit the recipe before printing",
+    heroImage: "instagram",
     title: "Print a Recipe From a Screenshot | RecipePrinter",
     description:
       "Upload a recipe screenshot and turn it into editable ingredients and instructions. Print it as a full page, save it as a PDF, or make a 4x6 recipe card.",
@@ -951,13 +950,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Turn a recipe screenshot into text you can edit",
-        image: "steps",
+        image: "inline-editing",
         body:
           "A screenshot is an easy way to save a recipe, but the ingredients and instructions are still trapped inside an image. RecipePrinter converts the visible recipe into editable text so you can correct it, format it, and print it properly.",
       },
       {
         heading: "Print recipes from posts, messages, and apps",
-        image: "instagram",
+        image: "steps",
         body:
           "Some recipes live in social posts, private groups, messages, or apps where there isn’t a useful recipe link to import. Upload screenshots instead and RecipePrinter can build an editable recipe from the ingredients and instructions visible on your screen.",
       },
