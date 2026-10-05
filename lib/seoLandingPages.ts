@@ -4,6 +4,7 @@ import type { ImportTab } from "@/types/recipe";
 import { PRINTERS } from "@/lib/cookbookPresets";
 import { PRO_ANNUAL_PRICE_FALLBACK, PRO_MONTHLY_PRICE_FALLBACK } from "@/lib/proProduct";
 import { IMAGE_IMPORTS_PER_HOUR_FREE, IMAGE_IMPORTS_PER_HOUR_PRO } from "@/lib/imageImportQuota";
+import { COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 
 /** Icon slugs a value-prop chip can use, resolved to real icons in the template. */
 export type SeoIconKey =
@@ -3253,12 +3254,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "bridal-shower-recipe-book",
     contentUpdated: "2026-10-05",
     primaryKeyword: "bridal shower recipe book",
+    // Not "turn handwritten recipes into a cookbook": that is
+    // /handwritten-recipes-to-cookbook's primary, linked from here instead.
     secondaryKeywords: [
       "bridal shower recipe cards",
-      "bridal shower cookbook",
-      "recipe book for the bride",
-      "recipe card bridal shower gift",
-      "bridal shower recipe collection",
+      "recipe card bridal shower",
+      "recipe shower",
+      "wedding recipe book",
+      "recipe book gift for bride",
     ],
     shortLabel: "A bridal shower recipe book",
     pickerGroup: "output",
@@ -3270,30 +3273,35 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     initialImportMode: "image",
     importModes: ["image", "url", "text"],
     importSubmitLabel: "Start the recipe book",
-    title: "Bridal Shower Recipe Book From Guests' Recipe Cards",
+    // Several photos in one upload are read as ONE recipe (ImportPanel's
+    // "drop multiple for one recipe"), so a host with a stack of cards has to
+    // be told to do them one at a time.
+    importHint:
+      "Upload one card at a time. Photos uploaded together are read as one recipe, like the front and back of a card.",
+    title: "Bridal Shower Recipe Book | Turn Recipe Cards Into a Cookbook",
     description:
-      "Turn the recipe cards guests fill in at a bridal shower into a bound recipe book for the couple. Photograph the cards, review the recipes, and print or export the finished cookbook.",
+      "Collect recipe cards from bridal shower guests, turn handwritten recipes into editable text, and create a finished recipe book for the couple.",
     h1: "Turn bridal shower recipe cards into a recipe book",
     anchor: "Bridal shower recipe book",
     lede:
-      "Every guest writes down a favorite recipe. Afterwards, the cards go into a bag and the bag goes into a drawer. Photograph them instead, and give the couple a finished cookbook of recipes from the people who love them.",
+      "Ask each guest to bring a favorite recipe to the bridal shower. Afterward, photograph the cards and turn them into a finished recipe book for the couple to keep.",
     howToHeading: "How to make a bridal shower recipe book",
     howTo: [
       {
         name: "Collect a recipe from every guest",
-        text: "Ask guests to fill in a recipe card at the shower, or to bring or send one ahead. A photo of a handwritten card, a link, or a typed recipe all work.",
+        text: "Ask guests to bring a favorite recipe on a card, printed sheet, or handwritten note. You can also have blank recipe cards ready at the shower.",
       },
       {
         name: "Photograph the cards",
-        text: "Take a photo of each card after the shower. RecipePrinter reads the handwriting and sets out the ingredients and steps, ready for you to check.",
+        text: "Take a clear photo or scan of each recipe after the shower. RecipePrinter reads the handwriting and turns each card into ingredients and instructions you can review.",
       },
       {
         name: "Build the book",
-        text: "Add each recipe to a cookbook, sort them into chapters, and put each guest's name in the title of the recipe they gave. Add a cover with the couple's names and a dedication from the hosts.",
+        text: "Add each recipe to the cookbook, organize them into chapters, and make any edits you need. Add a cover with the couple's names, wedding date, or a short dedication.",
       },
       {
         name: "Print it and give it",
-        text: "Export the finished cookbook and print it at home, or send the file to a print shop for a spiral or hardcover binding.",
+        text: "Export the finished cookbook as a PDF and print it at home or with the printer of your choice. You can keep editing the cookbook if more recipes come in later.",
       },
     ],
     featureSections: [
@@ -3301,22 +3309,30 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Handwriting becomes a typed recipe",
         image: "inline-editing",
         body:
-          "Twenty-five guests means twenty-five handwriting styles, abbreviations, and card sizes. RecipePrinter reads each photo and lays every recipe out the same way, so the book reads as one book. You review each recipe before it goes in, and anything hard to read can be corrected right on the page.",
+          "Every guest writes differently. RecipePrinter can turn handwritten recipes into clean, editable text, so you don't have to retype every ingredient and step yourself.",
+        afterBody:
+          "Review anything that was hard to read and fix it on the page, with the original card beside you to check against.",
+        links: [{ phrase: "handwritten recipes", href: "/handwritten-recipes-to-cookbook" }],
       },
       {
         heading: "A cookbook made for the two of them",
         image: "bound-cookbook",
         body:
-          "Put the couple's names and the wedding date on the cover, write a dedication from the hosts, and sort the recipes into chapters: breakfasts, weeknight dinners, desserts, or one chapter for each side of the family.",
-        afterBody:
-          "Cookbook export costs $19.99 per cookbook, paid once. You can keep editing it after you buy it, so cards that arrive after the shower can still go in.",
+          "Make the finished book feel like theirs. Add the couple's names and wedding date to the cover, include a note from the hosts, and organize recipes into chapters like breakfasts, dinners, desserts, or family favorites.",
+        afterBody: [
+          "If it fits the shower, give each side of the family its own section of the wedding recipe book.",
+          `Cookbook export costs ${COOKBOOK_PRICE_FALLBACK} per cookbook. You can keep editing it after you buy it, so recipes that arrive late can still go in.`,
+        ],
       },
       {
         heading: "Give the book, the cards, or both",
         image: "card-in-box",
         body:
-          "A bound book is the gift that sits on the shelf. A box of matching 4x6 cards is the one that gets cooked from, and the couple can keep adding to it. Print the same recipes both ways if you like: the book for the shelf and the cards for the kitchen.",
-        afterBody: "4x6 recipe cards are available with RecipePrinter Pro.",
+          "The finished cookbook can be the main gift, while the original recipe cards stay with the couple for the kitchen.",
+        afterBody: [
+          "You can also print matching 4×6 recipe cards and give both: a cookbook for the shelf and cards for everyday cooking.",
+          "4×6 recipe cards need RecipePrinter Pro.",
+        ],
       },
     ],
     faqHeading: "Bridal shower recipe book questions",
@@ -3324,17 +3340,17 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I collect recipes from guests?",
         answer:
-          "Put recipe cards and pens out at the shower, or include a card with the invitation and ask guests to bring it. Guests who can't come can send a photo of a recipe card, a link, or the recipe typed in a message.",
+          "Ask guests to bring a favorite recipe on a recipe card, printed sheet, or handwritten note. You can also include a blank recipe card with the invitation or set cards out at the shower. Guests who can't come can send a photo, a link, or the recipe typed in a message.",
       },
       {
         question: "Can I make the book after the shower is over?",
         answer:
-          "Yes. There's no deadline: collect the cards at the shower, make the book afterwards, and give it at the wedding or when the couple gets back from the honeymoon.",
+          "Yes. Collect the recipe cards at the shower, photograph them afterward, and build the cookbook whenever you're ready. You can also add recipes later if someone sends theirs after the shower.",
       },
       {
         question: "What if I can't read a guest's handwriting?",
         answer:
-          "RecipePrinter reads most handwriting, and every recipe is editable before it goes in the book. For anything unclear, the guest is the one to ask.",
+          "RecipePrinter can read many handwritten recipes and turn them into editable text, but handwriting recognition isn't perfect. Review each recipe and correct anything that was hard to read before adding it to the book. For anything still unclear, ask the guest.",
         links: [
           { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
         ],
@@ -3342,17 +3358,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter print and ship the book?",
         answer:
-          "No. RecipePrinter makes the finished, print-ready cookbook file. Print it at home or send it to a print shop for binding.",
+          "No. RecipePrinter helps you build the cookbook and export the finished PDF. You can print it at home or send the PDF to the printing service of your choice.",
       },
       {
         question: "How much does it cost?",
-        answer:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. Outside printing and binding costs are extra.",
+        answer: `Importing recipes and building the cookbook are free. Exporting the finished cookbook costs ${COOKBOOK_PRICE_FALLBACK} per cookbook, paid once, and doesn't need RecipePrinter Pro. The free plan reads ${IMAGE_IMPORTS_PER_HOUR_FREE} photos an hour; Pro (${PRO_MONTHLY_PRICE_FALLBACK}) raises that to ${IMAGE_IMPORTS_PER_HOUR_PRO} and adds 4×6 recipe cards. Printing and binding are paid to your printer.`,
       },
       {
         question: "Can I give everyone at the shower a copy?",
         answer:
-          "Yes. Once you have the cookbook file, print as many copies as you want, at home or through a print shop.",
+          "Yes. Once you've exported the cookbook PDF, you can print as many copies as you like to give to family and friends.",
       },
     ],
     links: [
