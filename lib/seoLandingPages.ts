@@ -410,20 +410,20 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Paste a recipe link and RecipePrinter prints just the recipe: no ads, no pop-ups, no comments. One clean page you can cook from.",
     howTo: [
       {
-        name: "Paste the recipe link",
-        text: "Copy the link from the recipe site and paste it in. RecipePrinter rebuilds the recipe on a page of its own.",
+        name: "Copy the recipe link",
+        text: "On the food blog, copy the page's link from your browser, or tap Share and choose Copy link.",
       },
       {
-        name: "Check the preview",
-        text: "Look at the finished card before anything prints. What you see on screen is what comes out, down to the page count.",
+        name: "Paste it above",
+        text: "RecipePrinter pulls out the ingredients and steps, and leaves the ads, pop-ups, and comments behind.",
       },
       {
-        name: "Take out what you don't need",
-        text: "Turn off Recipe photo to save the color ink, or Recipe link to drop the source line. What is left is the recipe.",
+        name: "Make any changes",
+        text: "Edit anything you like. Turn off the photo to save color ink, or the recipe link if you don't want it on the page.",
       },
       {
-        name: "Print it, or keep the file",
-        text: "Send it to the printer, or choose Save as PDF and keep the clean copy without printing anything at all.",
+        name: "Print it or save a PDF",
+        text: "Send it to your printer, or choose Save as PDF to keep a clean copy.",
       },
     ],
     featureSections: [
