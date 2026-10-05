@@ -184,10 +184,10 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
   },
   "show-photo": {
     src: "/images/show-photo.png",
-    width: 1600,
-    height: 957,
+    width: 2400,
+    height: 1436,
     alt:
-      "The same recipe card printed twice, with and without a photo, set by a single toggle between them.",
+      "The same recipe printed twice, with and without its photo, switched by a single toggle.",
   },
   "card-in-box": {
     src: "/images/recipe-card-in-box.jpg",

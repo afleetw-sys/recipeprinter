@@ -393,6 +393,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-recipe-without-ads",
     contentUpdated: "2026-10-05",
+    imagesReviewed: "2026-10-05",
     copyReviewed: "2026-09-02",
     primaryKeyword: "print recipe without ads",
     secondaryKeywords: [
