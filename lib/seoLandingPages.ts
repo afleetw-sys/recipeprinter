@@ -965,7 +965,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print a recipe from a private post or message?",
         answer:
-          "Yes, as long as you can take a screenshot of the recipe. RecipePrinter reads the text in the image, so it does not need to open the original post, message, app, or webpage.",
+          "Yes. If you can screenshot it, you can print it. RecipePrinter works from the screenshot itself, so a private group, a text from a friend, or a recipe inside an app all work.",
       },
       {
         question: "Can I change the recipe before I print it?",
