@@ -835,7 +835,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Check the recipe",
-        text: "RecipePrinter types up the ingredients and instructions. Read them against the original and change anything you want different. Every word is editable.",
+        text: "RecipePrinter types the recipe up for you. Give it a quick read and change anything you like, from a measurement to a note of your own.",
       },
       {
         name: "Print or save it",
@@ -925,20 +925,20 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howToHeading: "How to print a recipe from a screenshot",
     howTo: [
       {
-        name: "Save the recipe screenshot",
-        text: "Take a screenshot that clearly shows the recipe ingredients and instructions. If the recipe spans multiple screens, save each part as a separate screenshot.",
+        name: "Screenshot the recipe",
+        text: "Grab a screenshot of the ingredients and steps. If the recipe runs across a few screens, take one of each part.",
       },
       {
-        name: "Upload the recipe screenshots",
-        text: "Upload the screenshots to RecipePrinter. You can add up to four images to one recipe when the ingredients and instructions span multiple screens.",
+        name: "Upload your screenshots",
+        text: "Add them to RecipePrinter, up to four screenshots for one recipe.",
       },
       {
-        name: "Review the recipe",
-        text: "RecipePrinter types up the ingredients and instructions. Read them against the screenshot and change anything you want different. Every word is editable.",
+        name: "Look it over",
+        text: "RecipePrinter types the recipe up for you. Give it a quick read and change anything you like, from a measurement to a note of your own.",
       },
       {
         name: "Print or save it",
-        text: "Print the finished recipe as a full letter page or, with RecipePrinter Pro, a 4x6 recipe card. Or save it as a PDF.",
+        text: "Print it on a full page, or as a 4x6 recipe card with RecipePrinter Pro. You can also save it as a PDF.",
       },
     ],
     featureSections: [
@@ -1347,7 +1347,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print it your way",
-        text: "Print a full letter page or, with RecipePrinter Pro, a 4x6 recipe card. Or save the recipe as a PDF.",
+        text: "Print it on a full page, or as a 4x6 recipe card with RecipePrinter Pro. You can also save it as a PDF.",
       },
     ],
     featureSections: [
@@ -1587,7 +1587,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print it your way",
-        text: "Print a full letter page or, with RecipePrinter Pro, a 4x6 recipe card. Or save the recipe as a PDF.",
+        text: "Print it on a full page, or as a 4x6 recipe card with RecipePrinter Pro. You can also save it as a PDF.",
       },
     ],
     featureSections: [
@@ -1720,7 +1720,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print or save it",
-        text: "Print a full-page recipe or, with RecipePrinter Pro, a 4×6 recipe card. Or save it as a PDF.",
+        text: "Print it on a full page, or as a 4×6 recipe card with RecipePrinter Pro. You can also save it as a PDF.",
       },
     ],
     featureSections: [
@@ -1840,7 +1840,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print them",
-        text: "Print a full-page recipe for a binder or, with RecipePrinter Pro, a 4×6 recipe card. Or save it as a PDF.",
+        text: "Print it on a full page for a binder, or as a 4×6 recipe card with RecipePrinter Pro. You can also save it as a PDF.",
       },
       {
         name: "Leave the phone in the other room",
@@ -2294,7 +2294,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print or save it",
-        text: "Print the recipe as a full page or, with RecipePrinter Pro, a 4x6 recipe card. Or save it as a PDF.",
+        text: "Print it on a full page, or as a 4x6 recipe card with RecipePrinter Pro. You can also save it as a PDF.",
       },
     ],
     featureSections: [
