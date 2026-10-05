@@ -2452,7 +2452,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "family-recipe-book",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     // Signed off on the writing. The three feature rows still ask for `photo`
     // and `book` proof kinds that have no image behind them, so they render as
     // text-only blocks: there is no finished family cookbook to photograph yet.
@@ -2556,6 +2556,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-recipe-from-photo", label: "Print a recipe from a photo" },
       { href: "/recipe-binder", label: "Recipe binder ideas" },
       { href: "/organize-recipes", label: "Organize recipes" },
+      { href: "/how-to-print-a-cookbook", label: "How to print a cookbook" },
     ],
   },
   {
@@ -2683,6 +2684,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/homemade-cookbook-gift", label: "Make a cookbook gift" },
       { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
+      { href: "/how-to-print-a-cookbook", label: "How to print a cookbook" },
     ],
   },
   {
@@ -2818,6 +2820,134 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/organize-recipes", label: "Organize recipes" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
       { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
+      { href: "/how-to-print-a-cookbook", label: "How to print a cookbook" },
+    ],
+  },
+  {
+    slug: "how-to-print-a-cookbook",
+    contentUpdated: "2026-10-05",
+    primaryKeyword: "how to print a cookbook",
+    // Every fact about the four destinations below comes from
+    // lib/printDestinations.ts and lib/cookbookPresets.ts, which record what
+    // the export dialog actually builds for each. No printer prices: they are
+    // the printers' to set and would go stale here.
+    secondaryKeywords: [
+      "where to print a cookbook",
+      "print a homemade cookbook",
+      "print a cookbook with Lulu",
+      "print a cookbook with Blurb",
+      "print a cookbook at a copy shop",
+    ],
+    shortLabel: "A printed cookbook",
+    pickerGroup: "output",
+    intent: "Organization SEO",
+    layout: "guide-first",
+    heroImage: "bound-cookbook",
+    initialImportMode: "url",
+    importModes: ["url", "image", "text"],
+    importSubmitLabel: "Start your cookbook",
+    captureHeading: "Start your cookbook",
+    title: "How to Print a Cookbook: Home, Copy Shop, Lulu, or Blurb",
+    description:
+      "How to print a homemade cookbook on your own printer, at a copy shop, or through Lulu or Blurb, with what each option makes and the files each one needs.",
+    h1: "How to print a cookbook",
+    anchor: "How to print a cookbook",
+    lede:
+      "Once your recipes are in a book, there are four good ways to print it: your own printer, a copy shop, Lulu, or Blurb. Here's what each one makes, and the files RecipePrinter gives you for it.",
+    howToHeading: "From finished cookbook to printed book",
+    howTo: [
+      {
+        name: "Finish the cookbook",
+        text: "Build it in RecipePrinter: recipes sorted into chapters, a cover, and a table of contents. Read it through before you export.",
+      },
+      {
+        name: "Choose where it will be printed",
+        text: "When you export, pick your own printer, a copy shop, Lulu, or Blurb. RecipePrinter sets the page size, margins, and photo edges for that choice.",
+      },
+      {
+        name: "Download the files",
+        text: "Home and copy-shop printing use one PDF, with the cover as its first page. Lulu and Blurb take two files: the pages, and the cover on its own.",
+      },
+      {
+        name: "Print, or upload and order",
+        text: "Print at home, or upload the files to the printer and order there. The printer sets the price, the paper options, and the delivery time.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "On your own printer",
+        image: "convert-to-pdf",
+        body:
+          "Printing at home gives you one US Letter PDF with the cover as its first page. Photos keep a small white border, so any home printer can print all of it.",
+        afterBody:
+          "Put the pages in a three-ring binder, or take the stack to a copy shop and have it coil bound. It's the quickest way to a cookbook you can cook from tonight.",
+      },
+      {
+        heading: "At a copy shop",
+        image: "printed-cookbook",
+        body:
+          "A copy shop prints the same US Letter PDF and binds it for you. At Staples, upload the file on its document printing page and choose coil binding with a spiral spine. A spiral book lies flat on the counter while you cook.",
+        afterBody:
+          "Copy shops bind documents, so this is the route for a spiral or comb-bound book, not a hardcover.",
+      },
+      {
+        heading: "With Lulu",
+        body:
+          "Lulu prints US Letter cookbooks either coil bound or as a hardcover. Choose Lulu when you export, and RecipePrinter makes the pages with the extra edge (bleed) Lulu asks for. Pick edge-to-edge photos if you want them to run off the page.",
+        afterBody: [
+          "Lulu takes the cover as a separate file whose size depends on your page count. Upload the pages first, then copy the cover dimensions and spine width Lulu gives you into RecipePrinter, and it builds a cover to match.",
+        ],
+      },
+      {
+        heading: "With Blurb",
+        body:
+          "Blurb prints an 8 × 10 hardcover from a PDF. Choose Blurb when you export and RecipePrinter makes the pages at that size, ready for Blurb's PDF upload.",
+        afterBody:
+          "As with Lulu, the cover is its own file. Enter the cover size and spine width Blurb gives you, and RecipePrinter builds the cover to those numbers.",
+      },
+    ],
+    faqHeading: "Cookbook printing questions",
+    faqs: [
+      {
+        question: "Where should I print my cookbook?",
+        answer:
+          "For a copy to cook from, print at home or at a copy shop: it's quick, and a spiral book lies flat. For a gift or a book for the shelf, a hardcover from Lulu or Blurb looks and lasts more like a bookstore cookbook.",
+      },
+      {
+        question: "What size will the cookbook be?",
+        answer:
+          "US Letter (8.5 × 11 inches) at home, at a copy shop, and with Lulu, in coil or hardcover. Blurb's hardcover is 8 × 10 inches.",
+      },
+      {
+        question: "Why is the cover a separate file for Lulu and Blurb?",
+        answer:
+          "A bound book's cover wraps around the spine, and the spine's width depends on how many pages the book has. The printer works that out from your page count, and RecipePrinter builds the cover from the numbers it gives you.",
+      },
+      {
+        question: "What does edge to edge mean for photos?",
+        answer:
+          "Standard photos keep a small white border, so any printer can print all of them. Edge-to-edge photos run right to the edge of the page, which print services like Lulu and Blurb can trim to.",
+      },
+      {
+        question: "Does RecipePrinter print and ship the book?",
+        answer:
+          "No. RecipePrinter makes the print-ready files. You print them at home or order from the printer you choose, and it handles printing and delivery.",
+      },
+      {
+        question: "How much does it cost?",
+        answer: `Exporting a cookbook from RecipePrinter costs ${COOKBOOK_PRICE_FALLBACK}, paid once per cookbook. Printing is paid to whoever prints it, and depends on the page count, binding, paper, and number of copies, so check the printer's own pricing.`,
+      },
+      {
+        question: "Can I print more copies later, or fix something first?",
+        answer:
+          "Yes. Keep the files to print more copies whenever you like. You can also keep editing the cookbook after you buy it and export an updated version.",
+      },
+    ],
+    links: [
+      { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
+      { href: "/cookbook-maker", label: "Cookbook maker" },
+      { href: "/family-recipe-book", label: "Create a family recipe book" },
+      { href: "/homemade-cookbook-gift", label: "Make a homemade cookbook gift" },
     ],
   },
   {
@@ -3207,6 +3337,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Does RecipePrinter print and ship the recipe book?",
         answer:
           "No. RecipePrinter creates the finished cookbook PDF. You can print it at home or send the file to a professional printing service.",
+        links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
         question: "How much does a recipe book gift cost?",
@@ -3243,7 +3374,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "christmas-recipe-book",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
     primaryKeyword: "Christmas recipe book",
     secondaryKeywords: [
@@ -3346,6 +3477,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Does RecipePrinter ship the finished cookbook?",
         answer:
           "No. RecipePrinter creates the finished cookbook PDF. You can print it at home or send the file to a professional printing service for binding or hardcover printing.",
+        links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
         question: "Can I update the book after Christmas?",
@@ -3486,6 +3618,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Does RecipePrinter print and ship the book?",
         answer:
           "No. RecipePrinter helps you build the cookbook and export the finished PDF. You can print it at home or send the PDF to the printing service of your choice.",
+        links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
         question: "How much does it cost?",
@@ -3713,6 +3846,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Can RecipePrinter send me a printed cookbook?",
         answer:
           "Not directly. It builds the finished cookbook as a print-ready file: run it on a home printer, keep the PDF, or take it to a print shop to have bound. A copy shop works from the same file if you would rather not print it yourself.",
+        links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
         question: "What if I only want a few recipes, not a whole cookbook?",
@@ -3957,6 +4091,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Can RecipePrinter print and ship my cookbook?",
         answer:
           "No. RecipePrinter builds the cookbook and exports the finished print-ready file, and you choose where to print it. When you export, it suggests options for each format, such as Lulu for a spiral-bound book or Blurb for a hardcover, as well as your own printer or a local copy shop.",
+        links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
     ],
     links: [
