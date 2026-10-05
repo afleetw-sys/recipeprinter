@@ -824,7 +824,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     h1: "Print a recipe from a photo",
     anchor: "Print a recipe from a photo",
     lede:
-      "Upload a photo, screenshot, handwritten recipe card, or cookbook page and turn it into editable recipe text. Check the ingredients and instructions, then print it as a 4x6 recipe card or full page.",
+      "Take a photo of a handwritten card, a cookbook page, or a screenshot, and RecipePrinter types the recipe up for you. No retyping, just a clean recipe ready to print as a 4x6 card or a full page.",
     howTo: [
       {
         name: "Photograph the recipe",
