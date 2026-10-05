@@ -3604,8 +3604,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "canva-recipe-card-alternative",
     contentUpdated: "2026-10-05",
     primaryKeyword: "Canva recipe card alternative",
+    // Not "recipe card maker" / "printable recipe card generator" or
+    // "cookbook maker": those are /recipe-card-printer's and /cookbook-maker's,
+    // and this page links to both.
     secondaryKeywords: [
-      "Canva recipe card",
+      "Canva alternative for recipe cards",
+      "recipe card template alternative",
       "Canva recipe template alternative",
       "Canva cookbook alternative",
       "make recipe cards without Canva",
@@ -3616,31 +3620,38 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImage: "multi-themes",
     initialImportMode: "url",
     importModes: ["url", "image", "text"],
-    title: "Canva Recipe Card Alternative for Printing Recipes",
+    title: "Canva Alternative for Recipe Cards | RecipePrinter",
     description:
-      "Comparing RecipePrinter and Canva for recipe cards and cookbooks: Canva gives you a blank design to fill in, RecipePrinter reads the recipe from a link, photo, or text and lays it out.",
+      "Looking for a Canva alternative for recipe cards? Paste a recipe link, upload a photo, or add the text, and RecipePrinter turns it into a printable recipe card.",
     h1: "A Canva alternative for recipe cards",
-    anchor: "Canva recipe card alternative",
+    anchor: "Canva alternative for recipe cards",
     lede:
-      "Canva gives you a beautiful template and a lot of text boxes to fill in. RecipePrinter starts from the recipe: paste a link, a photo, or the text, and it comes back laid out as a card, ready to print.",
+      "Canva gives you a blank design and lets you build the recipe card yourself. RecipePrinter starts with the recipe. Paste a link, upload a photo, or add the text, and it turns the recipe into a card that's ready to review and print.",
     featureSections: [
       {
         heading: "No typing, no copying box by box",
         image: "steps",
         body:
-          "In a design tool, a recipe card is a template you fill in by hand: the title in one box, the ingredients in another, the method in a third. RecipePrinter reads the recipe from a website link, a social post, a photo of a handwritten card, or pasted text, and puts each part where it belongs.",
+          "In a design tool, a recipe card is a layout you fill in yourself: the title in one box, the ingredients in another, the instructions somewhere else.",
+        afterBody:
+          "RecipePrinter is a recipe card maker that starts with the recipe instead. Paste a website link, upload a photo of a handwritten card, or paste the text, and it becomes an editable recipe you can print.",
+        links: [{ phrase: "recipe card maker", href: "/recipe-card-printer" }],
       },
       {
         heading: "Long recipes fit without fiddling",
         image: "show-photo",
         body:
-          "A long method overflows a fixed text box, so you shrink the type or cut the recipe down until it fits. On a RecipePrinter 4x6 card, a recipe that runs long continues on the back of the same card, with cut lines to trim along.",
+          "Some recipes don't fit on one side of a 4×6 card. Instead of shrinking the type or rearranging everything by hand, RecipePrinter continues the recipe onto the back of the card.",
+        afterBody:
+          "Two-sided printing is on by default. Set your printer to flip on the long edge and the front and back line up.",
       },
       {
         heading: "Where Canva is the better choice",
         image: "card",
         body:
-          "If you want to design every detail yourself, place your own artwork, or make one showpiece card from scratch, a general design tool gives you more freedom. Canva can also print and deliver many designs for you. RecipePrinter's themes are made only for recipes, and you print the result yourself or take the file to a print shop.",
+          "If you want full control over every element, Canva is the better tool. You can design from a blank canvas, move elements anywhere, use a huge template library, and make something that doesn't need to behave like a recipe.",
+        afterBody:
+          "RecipePrinter is narrower on purpose. It's built for recipes, so you give up some design freedom in exchange for less setup.",
       },
     ],
     comparison: {
@@ -3650,30 +3661,30 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "Getting recipes in",
           rows: [
-            { feature: "From a recipe link", us: true, them: false },
-            { feature: "From a photo of a handwritten card", us: "Read for you", them: "Type it in yourself" },
-            { feature: "From text you paste in", us: "Read and laid out for you", them: "Pasted into each text box" },
+            { feature: "From a recipe link", us: "Reads the recipe for you", them: "You add the recipe yourself" },
+            { feature: "From a photo of a handwritten card", us: "Reads it into editable text", them: "You place the photo or the text in your layout" },
+            { feature: "From text you paste in", us: "Formats the recipe for you", them: "Paste it into your layout" },
           ],
         },
         {
           title: "Designing",
           rows: [
-            { feature: "Ready-made recipe card designs", us: "Themes made for recipes", them: "Large template library" },
-            { feature: "Free-form design with your own elements", us: false, them: true },
-            { feature: "A long recipe that won't fit", us: "Continues on the back", them: "Resize or trim by hand" },
+            { feature: "Ready-made recipe card designs", us: "Recipe-specific themes", them: "Large template library" },
+            { feature: "Free-form design with your own elements", us: false, them: "Full layout and design control" },
+            { feature: "A long recipe that doesn't fit", us: "Continues on the back of the card", them: "Resize or rearrange the layout" },
           ],
         },
         {
           title: "Printing",
           rows: [
-            { feature: "Printing at home", us: "Free for full pages; Pro for 4x6 cards", them: true },
-            { feature: "Printed and delivered to you", us: false, them: true },
+            { feature: "Printing at home", us: "Full pages free; 4×6 cards with Pro", them: true },
+            { feature: "Printed and delivered to you", us: false, them: "Canva Print, where available" },
           ],
         },
         {
           title: "Cookbooks",
           rows: [
-            { feature: "Cookbook with a cover, chapters, and contents", us: "$19.99 a cookbook, edits included", them: "Lay out each page yourself" },
+            { feature: "Cookbook with a cover, chapters, and contents", us: "Built from your recipes", them: "Create and arrange each page yourself" },
           ],
         },
       ],
@@ -3682,29 +3693,30 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I choose between them?",
         answer:
-          "By what you're starting from. If you want to design a card from a blank canvas, Canva is built for that. If you already have the recipe, on a website, a post, or a handwritten card, RecipePrinter turns it into a finished card without the typing.",
+          "If you want to design every detail yourself, Canva gives you more freedom. If you already have the recipe and want a clean printable recipe card or cookbook without laying it out by hand, RecipePrinter is built for that.",
       },
       {
         question: "What does each one cost?",
-        answer:
-          "Canva has a free plan, with premium templates and elements on its paid plans. RecipePrinter prints full-page recipes free, with no account. 4x6 cards, every theme, and printing several recipes at once are RecipePrinter Pro, $4.99 a month or $39.99 a year. A cookbook is $19.99, paid once.",
+        answer: `Canva has a free plan and paid Canva Pro plans; current pricing is on Canva's site. RecipePrinter prints full-page recipes free, with no account. 4×6 cards, premium themes, and printing several recipes at once are RecipePrinter Pro, ${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}. A cookbook is ${COOKBOOK_PRICE_FALLBACK}, paid once per cookbook.`,
       },
       {
         question: "Can I make a whole cookbook instead of single cards?",
         answer:
-          "Yes. Add the recipes to a cookbook and RecipePrinter lays out the pages, the cover, the chapters, and the table of contents. Change a recipe and the book updates around it.",
+          "Yes. RecipePrinter turns your recipes into a cookbook with a cover, chapters, section pages, and a table of contents. Export the finished cookbook as a PDF to print at home or with a printing service.",
         links: [{ href: "/cookbook-maker", label: "Cookbook maker" }],
       },
       {
         question: "Can I print several recipe cards at once?",
         answer:
-          "Yes, with RecipePrinter Pro. Add the recipes, then print them in one job with the same card size and theme, so the stack matches.",
+          "Yes, with RecipePrinter Pro. Add the recipes you want, then print them in one job with the same card size and theme, so the stack matches.",
+        links: [{ href: "/print-multiple-recipes", label: "Print multiple recipes at once" }],
       },
     ],
     links: [
       { href: "/recipe-card-printer", label: "Make printable recipe cards" },
       { href: "/print-multiple-recipes", label: "Print multiple recipes at once" },
       { href: "/cookbook-maker", label: "Cookbook maker" },
+      { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
     ],
   },
   {
