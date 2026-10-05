@@ -915,7 +915,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importUploadTitle: "Choose or drop screenshots",
     importPlaceholder: "Upload one or more screenshots that show the recipe ingredients and instructions",
     importSubmitLabel: "Read the screenshot",
-    heroImage: "instagram-hero",
+    heroImage: "screenshot-to-card",
     title: "Print a Recipe From a Screenshot | RecipePrinter",
     description:
       "Finally cook from that recipe you screenshotted. Upload it and print it as a clean full page or a 4x6 recipe card, or save it as a PDF.",

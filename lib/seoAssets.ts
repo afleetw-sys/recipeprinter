@@ -235,14 +235,12 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "A recipe pasted as plain lines into RecipePrinter's Text box, ready to add.",
   },
-  // instagram.png with its background extended to 4:3, so it fills the hero's
-  // framed 4:3 box without cutting off the phone or the card.
-  "instagram-hero": {
-    src: "/images/instagram-4x3.png",
-    width: 2400,
-    height: 1800,
+  "screenshot-to-card": {
+    src: "/images/screenshot-to-card.png",
+    width: 6350,
+    height: 4305,
     alt:
-      "An Instagram post with the recipe written out in its caption, beside the printed recipe card it becomes.",
+      "A phone screenshot of a recipe posted in a caption, beside the printed recipe card it becomes.",
   },
   instagram: {
     src: "/images/instagram.png",
