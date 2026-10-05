@@ -854,13 +854,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Turn a recipe photo into editable text",
-        image: "card-in-box",
-        imageAlt: "A newly printed Basil Pesto recipe card filed in a tabbed recipe box.",
+        image: "inline-editing",
         body:
           "A recipe photo is useful for keeping a copy, but editable text is easier to work with. RecipePrinter reads the ingredients and instructions so you can make corrections, format the recipe, print a recipe card, or save it as a PDF.",
       },
     ],
-    faqHeading: "Questions about turning recipe photos into printable recipes",
+    faqHeading: "Recipe photo questions",
     faqs: [
       {
         question: "Does it read handwritten recipes?",
