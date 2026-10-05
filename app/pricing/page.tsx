@@ -106,70 +106,74 @@ export default function PricingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
 
-      <LandingHero
-        align="centered"
-        h1="Pricing"
-        lede="Printing recipes is free. Pro adds recipe cards, themes, and printing in batches. Cookbooks are a separate, one-time purchase."
-        above={<Breadcrumb trail={TRAIL} />}
-      />
+      {/* One wrapper, hero included, with a tighter rhythm than LandingFrame's
+          84-112px section gap: this page is a few short blocks, and at the
+          full gap they read as unrelated pages stacked together. */}
+      <div className="flex flex-col gap-[48px] lg:gap-[64px]">
+        <LandingHero
+          align="centered"
+          h1="Pricing"
+          lede="Printing recipes is free. Pro adds recipe cards, themes, and printing in batches. Cookbooks are a separate, one-time purchase."
+          note="Prices are in US dollars."
+          above={<Breadcrumb trail={TRAIL} />}
+        />
 
-      {/* Two plans, side by side. The cookbook is NOT a third column: it is a
-          one-time purchase for one book, not a tier above Pro, and as the
-          right-hand card of three it read as the most expensive plan. */}
-      <section aria-label="Plans" className="mx-auto grid w-full max-w-[56rem] gap-cp-5 md:grid-cols-2">
-        <div className="flex flex-col rounded-2xl border border-line bg-card p-cp-6">
-          <h2 className="text-cp-h2 font-extrabold text-ink">Free</h2>
-          <p className="mt-cp-2 text-cp-body font-bold text-ink-soft">No account needed to print</p>
-          <PlanList items={BASIC_BENEFITS} />
-          <Link href="/" className="btn btn-secondary mt-cp-6 w-full">
-            Start printing
-          </Link>
-        </div>
-
-        <div className="flex flex-col rounded-2xl border border-line bg-[color-mix(in_srgb,var(--cp-premium-soft)_30%,transparent)] p-cp-6">
-          <div className="flex items-center gap-2">
-            <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-            <h2 className="text-cp-h2 font-extrabold text-ink">RecipePrinter Pro</h2>
+        {/* Two plans, side by side. The cookbook is NOT a third column: it is
+            a one-time purchase for one book, not a tier above Pro, and as the
+            right-hand card of three it read as the most expensive plan. */}
+        <section aria-label="Plans" className="mx-auto grid w-full max-w-[56rem] gap-cp-5 md:grid-cols-2">
+          <div className="flex flex-col rounded-2xl border border-line bg-card p-cp-6">
+            <h2 className="text-cp-h2 font-extrabold text-ink">Free</h2>
+            <p className="mt-cp-2 text-cp-body font-bold text-ink-soft">No account needed to print</p>
+            <PlanList items={BASIC_BENEFITS} />
+            <Link href="/" className="btn btn-secondary mt-cp-6 w-full">
+              Start printing
+            </Link>
           </div>
-          <p className="mt-cp-2 text-cp-body font-bold text-ink">
-            {PRO_MONTHLY_PRICE_FALLBACK} or {PRO_ANNUAL_PRICE_FALLBACK}
-          </p>
-          <p className="text-cp-small text-ink-soft">
-            Annual saves {proAnnualSavingsPercent()}%. Cancel any time.
-          </p>
-          <PlanList items={PRO_BENEFITS} />
-          <div className="mt-cp-6">
-            <PricingProButton />
+
+          <div className="flex flex-col rounded-2xl border border-line bg-[color-mix(in_srgb,var(--cp-premium-soft)_30%,transparent)] p-cp-6">
+            <div className="flex items-center gap-2">
+              <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
+              <h2 className="text-cp-h2 font-extrabold text-ink">RecipePrinter Pro</h2>
+            </div>
+            <p className="mt-cp-2 text-cp-body font-bold text-ink">
+              {PRO_MONTHLY_PRICE_FALLBACK} or {PRO_ANNUAL_PRICE_FALLBACK}
+            </p>
+            <p className="text-cp-small text-ink-soft">
+              Annual saves {proAnnualSavingsPercent()}%. Cancel any time.
+            </p>
+            <PlanList items={PRO_BENEFITS} />
+            <div className="mt-cp-6">
+              <PricingProButton />
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <p className="-mt-cp-5 text-center text-cp-small text-ink-soft">Prices are in US dollars.</p>
-
-      <LandingSection
-        id="pricing-cookbook-heading"
-        heading="Making a cookbook?"
-        lede="Cookbooks are separate from both plans: a one-time purchase for each book you make, on Free or Pro."
-      >
-        <div className="grid gap-cp-5 rounded-2xl border border-line bg-card p-cp-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-          <div>
+        {/* Centred and one card wide, under the two plans: a separate
+            purchase, not a third tier, and no reason to span the page. */}
+        <section aria-labelledby="pricing-cookbook-heading" className="mx-auto w-full max-w-[28rem] text-center">
+          <h2 id="pricing-cookbook-heading" className="text-cp-hero-sm font-extrabold tracking-[-0.03em]">
+            Making a cookbook?
+          </h2>
+          <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
+            Cookbooks are separate from both plans: a one-time purchase for each book you make, on
+            Free or Pro.
+          </p>
+          <div className="mt-cp-6 flex flex-col rounded-2xl border border-line bg-card p-cp-6 text-left">
             <p className="text-cp-body font-bold text-ink">
               {COOKBOOK_PRICE_FALLBACK} per cookbook, paid once
             </p>
             <PlanList items={COOKBOOK_POINTS} />
+            <Link href="/make-your-own-cookbook" className="btn btn-secondary mt-cp-6 w-full">
+              How cookbooks work
+            </Link>
           </div>
-          <Link href="/make-your-own-cookbook" className="btn btn-secondary">
-            How cookbooks work
-          </Link>
-        </div>
-        <p className="mt-cp-3 text-cp-small text-ink-soft">
-          Printing the finished book is paid to the printer you choose.
-        </p>
-      </LandingSection>
+        </section>
 
-      <LandingSection id="pricing-faq-heading" heading="Questions about pricing">
-        <FaqCards items={FAQS} />
-      </LandingSection>
+        <LandingSection id="pricing-faq-heading" heading="Questions about pricing">
+          <FaqCards items={FAQS} />
+        </LandingSection>
+      </div>
     </LandingFrame>
   );
 }

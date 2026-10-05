@@ -255,6 +255,33 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
 };
 
 export const PRINTED_CARDS: Record<string, PrintedCard> = {
+  "hot-honey": {
+    src: "/images/printed-cards/hot-honey.jpeg",
+    objectPosition: "50% 59%",
+    width: 1333,
+    height: 2000,
+    recipe: "Hot Honey Chicken Power Bowl",
+    template: "Market",
+    alt: "A printed 4×6 Hot Honey Chicken Power Bowl card in the Market theme, with a row of cut-paper groceries along its foot, on a blue cloth.",
+  },
+  "quilt-noodles": {
+    src: "/images/printed-cards/soy-sauce.jpeg",
+    objectPosition: "50% 70%",
+    width: 1333,
+    height: 2000,
+    recipe: "Soy Sauce Pan-fried Noodles",
+    template: "Quilt",
+    alt: "A printed 4×6 Soy Sauce Pan-fried Noodles card in the Quilt theme, with its strip of green and rust tiles, on a green cloth beside dry noodles.",
+  },
+  "pb-blossoms": {
+    src: "/images/printed-cards/pb-blossoms.jpeg",
+    objectPosition: "50% 90%",
+    width: 1500,
+    height: 2000,
+    recipe: "Peanut Butter Blossoms",
+    template: "Typewriter",
+    alt: "A printed 4×6 Peanut Butter Blossoms card in the Typewriter theme, lying on a vintage yellow spice chart.",
+  },
   caprese: {
     src: "/images/card-caprese-pasta-salad.jpeg",
     width: 1200,

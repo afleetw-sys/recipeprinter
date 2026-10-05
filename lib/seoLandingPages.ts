@@ -657,7 +657,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "A theme changes a card's type, its border, and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows, so a stack printed in one go still looks like a set rather than a pile of odds and ends. Two themes are free; the rest come with Pro.",
       },
     ],
-    examples: ["caprese", "korean", "pesto"],
+    // Three 4×6 cards in three different themes, all real prints.
+    examples: ["hot-honey", "quilt-noodles", "pb-blossoms"],
     faqs: [
       {
         question: "Can I turn an online recipe into a recipe card?",
