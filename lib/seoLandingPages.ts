@@ -273,7 +273,7 @@ export type SeoLandingPage = {
 export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-recipe-from-website",
-    contentUpdated: "2026-09-15",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-02",
     primaryKeyword: "print recipe from website",
     secondaryKeywords: [
@@ -293,6 +293,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "A website or blog",
     pickerGroup: "source",
     intent: "Utility SEO",
+    // The page's whole promise in one picture: the 26-page browser printout
+    // beside the one card. Row 1 then shows that card up close.
+    heroImage: "before-after",
+    // Composed with its own dark canvas and captions; the 4:3 card crop cut
+    // the "26 pages" caption off its left edge.
+    heroFrame: "none",
     initialImportMode: "url",
     title: "Print a Recipe from Any Website",
     description:
@@ -321,7 +327,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "It keeps the recipe and drops everything else",
-        proof: "before-after",
+        image: "caprese-card",
         body:
           "Printed straight from the browser, that caprese pasta salad runs to 26 sheets. RecipePrinter reads the same page and keeps only what you cook from: the ingredient list with amounts, the numbered steps, the prep and cook times, and the servings. The blogger's backstory, the autoplay video, the comments, and the ads stay behind. You can print the original link on the card too, so the page is easy to find again.",
       },

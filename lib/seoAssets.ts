@@ -235,6 +235,17 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "The same recipe two ways: a 26-page stack printed from the browser, beside one card printed from RecipePrinter.",
   },
+  // The "after" of `before-after`, on its own: the card that the 26-page
+  // caprese printout became. The same photo as PRINTED_CARDS.caprese, cropped
+  // for a 3:2 feature row: the card spans about 37-75% of the frame's height,
+  // so 60% centres it (the 86% the card heroes use cuts off its title).
+  "caprese-card": {
+    src: "/images/card-caprese-pasta-salad.jpeg",
+    width: 1200,
+    height: 1600,
+    alt: "The Caprese pasta salad recipe printed with RecipePrinter as a single card, on a wooden board beside basil and cherry tomatoes.",
+    objectPosition: "50% 60%",
+  },
 };
 
 export const PRINTED_CARDS: Record<string, PrintedCard> = {
