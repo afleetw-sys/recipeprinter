@@ -135,7 +135,13 @@ export default function SeoLandingPage({ params }: PageProps) {
   const features = [
     ...(page.featureSections ?? []),
     ...(page.cookbookPitch
-      ? [cookbookPitchFeature({ heading: page.cookbookPitchHeading, body: page.cookbookPitchBody })]
+      ? [
+          cookbookPitchFeature({
+            heading: page.cookbookPitchHeading,
+            body: page.cookbookPitchBody,
+            link: page.cookbookPitchLink,
+          }),
+        ]
       : []),
   ];
 

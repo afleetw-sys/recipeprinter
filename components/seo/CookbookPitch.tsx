@@ -27,12 +27,33 @@ type FeatureRow = ComponentProps<typeof FeatureRows>["features"][number];
 export function cookbookPitchFeature({
   heading,
   body,
+  link,
 }: {
   heading?: string;
   body?: string;
+  /** Links a phrase inside `body` instead of appending the shared "Family
+      recipe book ideas" sentence. */
+  link?: { phrase: string; href: string };
 }): FeatureRow {
+  const resolvedHeading = heading ?? "When the stack becomes a book";
+  const at = body && link ? body.indexOf(link.phrase) : -1;
+  if (body && link && at >= 0) {
+    return {
+      heading: resolvedHeading,
+      image: "bound-cookbook",
+      body: (
+        <>
+          {body.slice(0, at)}
+          <Link href={link.href} className="font-bold text-ink hover:underline">
+            {link.phrase}
+          </Link>
+          {body.slice(at + link.phrase.length)}
+        </>
+      ),
+    };
+  }
   return {
-    heading: heading ?? "When the stack becomes a book",
+    heading: resolvedHeading,
     image: "bound-cookbook",
     body: (
       <>

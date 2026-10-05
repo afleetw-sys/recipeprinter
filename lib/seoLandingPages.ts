@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { pageMetadata, SITE_NAME } from "@/lib/seo";
 import type { ImportTab } from "@/types/recipe";
 import { PRINTERS } from "@/lib/cookbookPresets";
+import { PRO_ANNUAL_PRICE_FALLBACK, PRO_MONTHLY_PRICE_FALLBACK } from "@/lib/proProduct";
 
 /** Icon slugs a value-prop chip can use, resolved to real icons in the template. */
 export type SeoIconKey =
@@ -199,6 +200,9 @@ export type SeoLandingPage = {
       The feature image and the link to family-recipe-book stay the shared
       ones. */
   cookbookPitchBody?: string;
+  /** A phrase in `cookbookPitchBody` to link, in place of the shared
+      trailing link to /family-recipe-book. */
+  cookbookPitchLink?: { phrase: string; href: string };
   /** "How to …" steps, renders the section and the HowTo JSON-LD. */
   howTo?: { name: string; text: string }[];
   /** Heading over the how-to section. Defaults to "How it works". */
@@ -1642,11 +1646,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "print-social-media-recipes",
     contentUpdated: "2026-10-05",
     primaryKeyword: "print recipes from social media",
+    // Not the per-app phrases ("print TikTok recipes" and so on): each is
+    // another page's primary, and this page links to all five instead.
     secondaryKeywords: [
+      "print social media recipes",
       "save recipes from social media",
       "social media recipe printer",
       "print recipe from a reel",
-      "save recipes from Instagram and TikTok",
       "keep recipes from social media",
     ],
     shortLabel: "Social media",
@@ -1657,14 +1663,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importFieldLabel: "Post or video link",
     importPlaceholder: "Paste a post or video link",
     importHint:
-      "If a post won't open from its link, paste the recipe text or upload a screenshot instead.",
-    title: "Print Recipes From Social Media | RecipePrinter",
+      "If the link doesn't work, you can also paste the recipe text or upload a screenshot.",
+    title: "Print Recipes from Social Media | Instagram, TikTok & More",
     description:
-      "Paste a link from Instagram, TikTok, Pinterest, Facebook, or YouTube and turn the recipe into a printable page, recipe card, or PDF. Free, no account needed.",
+      "Print recipes from Instagram, TikTok, Pinterest, Facebook, and YouTube. Paste a social media link and turn it into a clean recipe you can print or save.",
     h1: "Print recipes from social media",
     anchor: "Print recipes from social media",
     lede:
-      "The recipe is in a caption, a pin, a Reel, or the video itself. Paste the link and RecipePrinter finds it, sets it out as ingredients and steps, and gets it onto paper.",
+      "Found a recipe on Instagram, TikTok, Pinterest, Facebook, or YouTube? Paste the post or video link and RecipePrinter turns it into a clean recipe with ingredients and instructions, ready to print or save.",
     hub: {
       label: "Guides for each app",
       slugs: [
@@ -1679,19 +1685,19 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howTo: [
       {
         name: "Copy the post's link",
-        text: "In Instagram, TikTok, Pinterest, Facebook, or YouTube, tap Share and choose Copy link. On a computer, copy the address from the browser bar.",
+        text: "On Instagram, TikTok, Pinterest, Facebook, or YouTube, tap Share and copy the link to the post, Pin, Reel, or video.",
       },
       {
         name: "Paste it into RecipePrinter",
-        text: "RecipePrinter looks wherever that app keeps the recipe: the caption, the description, a linked recipe page, the video's captions, or text shown in the image.",
+        text: "RecipePrinter looks for the recipe in the caption, description, linked page, and when available, the video's narration or on-screen text.",
       },
       {
         name: "Check the recipe",
-        text: "The ingredients and steps are editable right on the page, so you can add an amount the creator only said out loud or trim a step you don't need.",
+        text: "Review the ingredients and instructions, then make any edits you want before printing.",
       },
       {
-        name: "Print it or save it",
-        text: "Print a full page free, save it as a PDF, or make a 4x6 recipe card with RecipePrinter Pro.",
+        name: "Print or save it",
+        text: "Print a full-page recipe, save it as a PDF, or create a 4×6 recipe card with RecipePrinter Pro.",
       },
     ],
     featureSections: [
@@ -1699,58 +1705,69 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "One box for every app",
         image: "tiktok-import",
         body:
-          "Every app hides the recipe somewhere different. Instagram folds it behind a more link, TikTok says half of it out loud, Pinterest sends you to a blog, and Facebook sometimes puts it in the photo. You don't need to know which is which. Paste the link and RecipePrinter checks each place the recipe could be.",
+          "Recipes are posted differently on every app. Instagram may put the recipe in a caption, TikTok might explain it in the video, and Pinterest may link to a blog.",
+        afterBody:
+          "You don't need to figure out where the recipe is first. Paste the link and RecipePrinter checks the places it could be.",
       },
       {
         heading: "Saved is not the same as kept",
         image: "card-in-box",
         body:
-          "A saved post lives in a folder you rarely open, next to hundreds of others that look just like it. Posts come down, accounts go private, and the video you remember is impossible to search for. A printed card doesn't depend on any of that. It goes in the recipe box or the binder, and it is there next time.",
+          "Saved posts are easy to lose in a folder full of hundreds of other recipes. A printed recipe is easier to find, cook from, and come back to.",
+        afterBody: "Put it in a recipe box or binder and it's there when you need it.",
       },
       {
         heading: "Cook from paper, not from a paused video",
         image: "counter-card",
         body:
-          "Videos are a good way to decide what to cook and an awkward way to cook it. The screen sleeps, your hands are messy, and finding the amount means scrubbing back through the clip. A printed recipe stays open on the counter with every amount in front of you.",
+          "Videos are great for discovering recipes, but awkward to cook from. You end up pausing, rewinding, and touching your phone with messy hands.",
         afterBody:
-          "RecipePrinter keeps the post's link with the recipe, so the video is one tap away when you want to watch a technique again.",
+          "RecipePrinter turns the recipe into ingredients and instructions you can keep on the counter while you cook. The original link stays with the recipe if you want to go back and watch the video.",
       },
     ],
     cookbookPitch: true,
+    cookbookPitchBody:
+      "Once you've saved enough recipes, you can turn them into a cookbook. Organize recipes into chapters, rearrange them, add section pages, and build the whole book in RecipePrinter. Then print it at home or export the finished PDF to have it printed anywhere.",
+    cookbookPitchLink: { phrase: "turn them into a cookbook", href: "/make-your-own-cookbook" },
     faqHeading: "Social media recipe questions",
     faqs: [
       {
         question: "Which apps does it work with?",
         answer:
-          "Instagram, TikTok, Pinterest, Facebook, and YouTube, plus any recipe website. Paste the link from any of them into the same box.",
+          "Instagram, TikTok, Pinterest, Facebook, and YouTube. Copy the link to the post, Pin, Reel, or video and paste it into the same box. Links to recipe websites work too.",
+        links: [
+          { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
+          { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
+          { href: "/print-pinterest-recipes", label: "Print Pinterest recipes" },
+          { href: "/print-facebook-recipes", label: "Print Facebook recipes" },
+          { href: "/print-youtube-recipes", label: "Print YouTube recipes" },
+        ],
       },
       {
         question: "What if the recipe is only in the video?",
         answer:
-          "RecipePrinter can use a video's captions and text shown on screen when the app makes them available. Not every video does, so review the recipe before printing and add anything that was only spoken.",
-        links: [{ href: "/print-tiktok-recipes", label: "Print TikTok recipes" }],
+          "RecipePrinter checks the caption or description first. For TikTok and YouTube, it can also use the video's captions when they're available, and on TikTok, recipe text shown on screen. Not every video has these, so check the amounts before you print and add anything that's missing.",
       },
       {
         question: "Do I need to connect my accounts?",
         answer:
-          "No. RecipePrinter never asks for access to your accounts, saved posts, or boards. It works from a link you paste, a screenshot you upload, or text you copy across.",
+          "No. You never sign in to Instagram, TikTok, or any other app through RecipePrinter, and it never sees your saved posts or boards. It only works from the link, screenshot, or text you give it.",
       },
       {
         question: "What if a link won't open?",
         answer:
-          "Private accounts and members-only groups can't be read from a link. Paste the recipe text instead, or upload a screenshot of it.",
+          "Posts from private accounts and members-only Facebook groups usually can't be read from a link. Copy the recipe text and paste it in, or upload a screenshot and RecipePrinter reads the recipe from the image.",
         links: [{ href: "/print-recipe-from-screenshot", label: "Print a recipe from a screenshot" }],
       },
       {
         question: "Can I print several saved recipes at once?",
         answer:
-          "Yes, with RecipePrinter Pro. Add them one at a time from any app, then print them together in one job with the same card size and theme.",
+          "Yes, with RecipePrinter Pro. Add recipes one at a time from any app, then print them together in one job, with the same card size and theme on all of them. On the free plan, you print one recipe at a time.",
         links: [{ href: "/print-multiple-recipes", label: "Print multiple recipes at once" }],
       },
       {
         question: "Is it free?",
-        answer:
-          "Importing and printing full-page recipes is free with no account. 4x6 recipe cards, every theme, and printing several recipes in one job are RecipePrinter Pro, $4.99 a month or $39.99 a year.",
+        answer: `Yes, for full-page recipes. Importing from a link, editing, and printing or saving a full-page recipe are free, with no account. RecipePrinter Pro (${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}) adds 4×6 recipe cards, premium themes, and printing several recipes at once.`,
       },
     ],
     links: [
