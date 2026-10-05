@@ -29,7 +29,7 @@ import { ZoomControl } from "@/components/print/ZoomControl";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { recipeLinkOn } from "@/lib/recipeLink";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
-import { chapterIntroFromRecipes, chapterRecipeTitles } from "@/lib/chapterIntro";
+import { recipeNamesIntro } from "@/lib/chapterIntro";
 import { missingRecipeFields } from "@/lib/recipeMissingFields";
 import {
   RECIPE_PRINT_TEMPLATE_OPTIONS,
@@ -1255,15 +1255,17 @@ export function PrintDeck(props: PrintDeckProps) {
    * replaces that line for good — nothing overwrites what a cook wrote — so the
    * offer to go back is made where the words are: on the description field's own
    * bar, like bold and italic, and only while that field is the one being edited
-   * and there is something to undo. `undefined` until then, which keeps the bar
+   * and there is something to undo, and recipes to name. `undefined` until then, which keeps the bar
    * off a field that is still following the recipes.
    */
   const activeIntroReset = (() => {
     if (activeNavItem?.kind !== "divider") return undefined;
     const section = sections.find((candidate) => candidate.id === activeNavItem.recipeId);
     if (!section || section.intro === undefined) return undefined;
+    const derived = recipeNamesIntro(section.items);
+    if (derived === undefined) return undefined;
     return {
-      derived: chapterIntroFromRecipes(chapterRecipeTitles(section.items)),
+      derived,
       onReset: () => projectMeta.setSectionIntro(section.id, undefined),
     };
   })();

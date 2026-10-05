@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_CHAPTER_INTRO, chapterIntroFromRecipes } from "./chapterIntro";
+import {
+  DEFAULT_CHAPTER_INTRO,
+  chapterIntroFromRecipes,
+  recipeNamesIntro,
+} from "./chapterIntro";
 
 /** The two-line ceiling the wording rules exist to respect. */
 const LINE_BUDGET = 86;
@@ -102,5 +106,16 @@ describe("chapterIntroFromRecipes", () => {
       );
       expect(chapterIntroFromRecipes(titles).length).toBeLessThanOrEqual(LINE_BUDGET);
     }
+  });
+});
+
+describe("recipeNamesIntro", () => {
+  it("offers recipe names only when the chapter has a recipe with a name", () => {
+    // Nothing to name: an empty chapter, unnamed items, titles that clean to nothing.
+    for (const items of [[], [{}], [{ title: "  " }], [{ recipe: { title: "..." } }]]) {
+      expect(recipeNamesIntro(items)).toBeUndefined();
+    }
+    expect(recipeNamesIntro([{ title: "Pizza" }])).toBe("Pizza");
+    expect(recipeNamesIntro([{ title: "queued", recipe: { title: "Grits" } }])).toBe("Grits");
   });
 });
