@@ -799,7 +799,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "handwritten recipe to text",
       "digitize handwritten recipes",
       "recipe card from photo",
-      "screenshot to printable recipe",
       "cookbook page to editable recipe",
     ],
     shortLabel: "A photo or screenshot",
@@ -877,11 +876,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "No. A clear photo from your phone is enough. Place the recipe flat, use good lighting, and make sure the handwriting or printed text is easy to see.",
       },
       {
-        question: "Can it type up a recipe from a photo?",
-        answer:
-          "Yes. It turns a recipe photo into text: RecipePrinter types up the ingredients and instructions, and every word can be changed before you print it or save it as a PDF.",
-      },
-      {
         question: "Can I turn a photo into a printable recipe card?",
         answer:
           "Yes. Upload a photo of the recipe, check the ingredients and instructions, then print it as a 4x6 recipe card or full letter page.",
@@ -890,6 +884,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Can I turn a screenshot of a recipe into a printable recipe?",
         answer:
           "Yes. Upload a recipe screenshot just like a photo, and RecipePrinter types up the recipe so you can print it.",
+        links: [{ href: "/print-recipe-from-screenshot", label: "Print a recipe from a screenshot" }],
       },
     ],
     links: [
