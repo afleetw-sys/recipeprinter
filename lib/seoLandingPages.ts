@@ -256,8 +256,14 @@ export type SeoLandingPage = {
   /** Subtitle under the examples gallery's heading. Defaults to "Actual
       recipe cards printed with RecipePrinter, no mockups." */
   examplesSubtitle?: string;
-  /** Heading over the FAQ section. Defaults to "Questions people ask". */
-  faqHeading?: string;
+  /**
+   * Heading over the FAQ section. Required, and named for the page's topic in
+   * one of two shapes: "[Topic] questions" ("Recipe binder questions") or
+   * "Questions about [topic]" ("Questions about organizing recipes"). There
+   * used to be a generic "Questions people ask" fallback, and ten pages
+   * quietly took it.
+   */
+  faqHeading: string;
   /** `links` hangs outbound chips under an answer, for the questions whose
       real answer is somewhere else. The JSON-LD keeps `answer` alone: the
       structured data is the answer, not the chrome around it. */
@@ -348,6 +354,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Some recipes hide behind a login, sit on a site that blocks importers, or live only in a video's description. When a link won't import cleanly, paste the recipe text or upload a screenshot, and RecipePrinter structures it into the same clean printout.",
       },
     ],
+    faqHeading: "Questions about printing from a website",
     faqs: [
       {
         question: "How does it know which part of the page is the recipe?",
@@ -443,6 +450,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         afterBody: "The ingredients, the steps, and the times stay exactly as they were.",
       },
     ],
+    faqHeading: "Questions about printing without ads",
     faqs: [
       {
         question: "Is this an ad blocker?",
@@ -1080,6 +1088,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "A board is a good place to collect recipes and an awkward place to cook from. The screen sleeps, your hands are wet, and you lose your place scrolling back up to the ingredients. A printed card sits on the counter and stays where you left it. Afterwards it goes in a recipe box, a binder, a folder by the stove, or later a bound cookbook.",
       },
     ],
+    faqHeading: "Pinterest recipe printing questions",
     faqs: [
       {
         question: "How do I print Pinterest recipes from an iPhone?",
@@ -1181,6 +1190,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Accounts go private, posts come down, and creators clear out old work, and none of that comes with any warning. A card that's already off the printer doesn't depend on the post it came from, or on you being able to find it again.",
       },
     ],
+    faqHeading: "Instagram recipe printing questions",
     faqs: [
       {
         question: "Can I print a recipe from an Instagram Reel?",
@@ -2391,7 +2401,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "preserve-family-recipes",
     importPlaceholder: "Photograph a handwritten card, or drop a scan",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-05",
     // Signed off on the writing. One image is still owed: "Keep the original,
     // cook from the copy" wants a photograph of the printed copy lying beside
     // the handwritten card it came from, which is the whole claim in one frame
@@ -2455,6 +2465,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Keep the photo of the card on the recipe, beside the typed version. The measurements end up in type you can read from across a kitchen, and the hand they were written in is still on the page, which is usually the part that matters most.",
       },
     ],
+    faqHeading: "Questions about preserving family recipes",
     faqs: [
       {
         question: "Will it read my grandmother's handwriting?",
@@ -2557,6 +2568,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Print a copy on your home printer to flip through and check, then export a print-ready file to order bound books from a professional printer. A finished cookbook makes a keepsake gift for a wedding, a milestone birthday, or the holidays, and everyone who cooks from it gets their own copy in the kitchen.",
       },
     ],
+    faqHeading: "Family recipe book questions",
     faqs: [
       {
         question: "How many recipes make a cookbook?",
@@ -3675,7 +3687,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "just-the-recipe-alternative",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-10-05",
     copyReviewed: "2026-09-02",
     primaryKeyword: "Just the Recipe alternative",
     // Deliberately narrow. This page used to also claim "print recipe without
@@ -3763,6 +3775,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         },
       ],
     },
+    faqHeading: "Questions about RecipePrinter and Just the Recipe",
     faqs: [
       {
         question: "How do I choose between them?",
@@ -3867,6 +3880,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         },
       ],
     },
+    faqHeading: "Questions about RecipePrinter and ReciScan",
     faqs: [
       {
         question: "How do I choose between them?",
@@ -3987,6 +4001,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         },
       ],
     },
+    faqHeading: "Questions about RecipePrinter and Canva",
     faqs: [
       {
         question: "How do I choose between them?",
@@ -4108,6 +4123,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         },
       ],
     },
+    faqHeading: "Questions about RecipePrinter and CreateMyCookbook",
     faqs: [
       {
         question: "How do I choose between them?",

@@ -329,7 +329,7 @@ export default function SeoLandingPage({ params }: PageProps) {
       {/* ── FAQ ───────────────────────────────────────────────────────── */}
       <section aria-labelledby="faq-heading">
         <div id="faq-heading">
-          <SectionHeading>{page.faqHeading ?? "Questions people ask"}</SectionHeading>
+          <SectionHeading>{page.faqHeading}</SectionHeading>
         </div>
         <div className="mt-cp-5">
           <FaqCards
