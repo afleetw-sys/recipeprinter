@@ -114,6 +114,20 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "A Paprika recipe export opened in RecipePrinter, showing two imported recipes ready to select and print.",
   },
+  "multi-recipes": {
+    src: "/images/multi-recipes.png",
+    width: 5555,
+    height: 3800,
+    alt:
+      "One saved PDF holding several printed recipes, a page each, open in a document viewer with the page thumbnails down the side.",
+  },
+  sources: {
+    src: "/images/sources.png",
+    width: 6350,
+    height: 3800,
+    alt:
+      "RecipePrinter's add-recipe panel with its four sources circled: a recipe link, a recipe app, an image, or pasted text.",
+  },
   "tiktok-import": {
     src: "/images/tiktok.png",
     width: 6350,
