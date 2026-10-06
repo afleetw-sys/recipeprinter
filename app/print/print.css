@@ -2073,7 +2073,6 @@
 }
 
 @container (max-width: 200px) {
-  .recipe-spread__blank-note-title,
   .recipe-spread__blank-note-reason {
     display: none;
   }
@@ -7646,6 +7645,14 @@ textarea.recipe-card__toc-title {
 .recipe-page-pending {
   display: flex;
   justify-content: center;
+}
+
+/* Loading in place of the empty page beside a chapter opener: a page of the
+   spread, not a slide of its own. */
+.recipe-page-pending--in-spread {
+  flex: none;
+  background: var(--cp-card);
+  border-radius: 8px;
 }
 
 .recipe-page-pending__sheet {

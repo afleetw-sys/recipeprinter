@@ -1134,10 +1134,60 @@ export function PrintDeck(props: PrintDeckProps) {
     const index = spreads.findIndex((spread) => spread.left === sheet || spread.right === sheet);
     return index === -1 ? null : index;
   })();
+  /**
+   * A recipe added to the top of a chapter whose opener faces an empty page
+   * lands ON that page, so it loads there too. Drawn below the spread
+   * instead, the placeholder sat under the empty page and the finished
+   * recipe then jumped up into it, and the cook lost track of it.
+   *
+   * Not when the book puts every recipe on a full-page photo spread: such a
+   * recipe starts on a left-hand page, so it cannot fill the page facing the
+   * opener and does land after it.
+   */
+  const blankHostedImport = (() => {
+    if (pendingAnchorSpreadIndex === null || photoStyle === "full") return null;
+    const spread = spreads[pendingAnchorSpreadIndex];
+    if (!spread || spread.single || spread.left === null) return null;
+    const opener = sheets[spread.left]?.slots.find((slot) => slot?.kind === "divider");
+    if (!opener || opener.id !== pendingAddAfterRecipeId) return null;
+    const facesEmpty =
+      spread.right === null || Boolean(sheets[spread.right]?.slots.some((slot) => slot?.kind === "blank"));
+    return facesEmpty ? (parsingImports[0] ?? null) : null;
+  })();
+  /** The loading page itself: the photo being read, or what is being fetched. */
+  const pendingSheet = (pendingItem: QueueItem) => (
+    <div
+      className="recipe-page-pending__sheet"
+      style={{
+        width: previewDims.w * deckScale,
+        aspectRatio: `${previewDims.w} / ${previewDims.h}`,
+      }}
+    >
+      {importPreview(pendingItem.id) ? (
+        <>
+          {/* The photo being read, not its file name. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="recipe-page-pending__photo"
+            src={importPreview(pendingItem.id)}
+            alt=""
+            onError={(event) => {
+              // A photo this browser cannot draw (HEIC outside Safari).
+              event.currentTarget.hidden = true;
+            }}
+          />
+          <RecipeLoadingState label="Reading your photo…" />
+        </>
+      ) : (
+        <RecipeLoadingState label={importLoadingLabel(pendingItem)} />
+      )}
+    </div>
+  );
+  const listedImports = parsingImports.filter((item) => item !== blankHostedImport);
   const pendingPages =
-    parsingImports.length > 0 ? (
+    listedImports.length > 0 ? (
       <>
-        {parsingImports.map((pendingItem, index) => (
+        {listedImports.map((pendingItem, index) => (
           <div
             className={`recipe-page-slide recipe-page-pending ${
               activeImportId === pendingItem.id ? "is-active" : ""
@@ -1167,34 +1217,9 @@ export function PrintDeck(props: PrintDeckProps) {
             // The deck scrolls itself here while the import parses. Found by
             // attribute rather than a ref because the placeholder is outside
             // the sheets pipeline and has no slot in `slideRefs` to hold one.
-            data-pending-page={index === 0 ? "" : undefined}
+            data-pending-page={index === 0 && !blankHostedImport ? "" : undefined}
           >
-            <div
-              className="recipe-page-pending__sheet"
-              style={{
-                width: previewDims.w * deckScale,
-                aspectRatio: `${previewDims.w} / ${previewDims.h}`,
-              }}
-            >
-              {importPreview(pendingItem.id) ? (
-                <>
-                  {/* The photo being read, not its file name. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    className="recipe-page-pending__photo"
-                    src={importPreview(pendingItem.id)}
-                    alt=""
-                    onError={(event) => {
-                      // A photo this browser cannot draw (HEIC outside Safari).
-                      event.currentTarget.hidden = true;
-                    }}
-                  />
-                  <RecipeLoadingState label="Reading your photo…" />
-                </>
-              ) : (
-                <RecipeLoadingState label={importLoadingLabel(pendingItem)} />
-              )}
-            </div>
+            {pendingSheet(pendingItem)}
           </div>
         ))}
       </>
@@ -1535,6 +1560,18 @@ export function PrintDeck(props: PrintDeckProps) {
                       </button>
                     </div>
                   ) : null;
+                  // The import landing on the empty page beside a chapter
+                  // (`blankHostedImport`), loading in that page's place.
+                  const renderHostedImport = (pendingItem: QueueItem) => (
+                    <div
+                      className="recipe-page-pending recipe-page-pending--in-spread"
+                      aria-label={`Importing ${pendingItem.source}`}
+                      data-pending-import-id={pendingItem.id}
+                      data-pending-page=""
+                    >
+                      {pendingSheet(pendingItem)}
+                    </div>
+                  );
                   const renderBlank = (
                     trailing = false,
                     reason?: string,
@@ -1608,11 +1645,16 @@ export function PrintDeck(props: PrintDeckProps) {
                             earlier.slots.some((slot) => slot?.kind === "cover" && slot.side === "front"),
                           );
                       const besideChapter = role === "right" && chapterBlankActions !== null;
+                      if (besideChapter && blankHostedImport && index === pendingAnchorSpreadIndex) {
+                        return renderHostedImport(blankHostedImport);
+                      }
                       return renderBlank(
                         false,
-                        // Beside a chapter the buttons say what the page is for,
-                        // so it carries no explanation line of its own.
-                        isBlankLeaf && !besideChapter ? blankPageReason(sheets, sheetIndex) : undefined,
+                        isBlankLeaf
+                          ? besideChapter
+                            ? "Give this chapter an image page, or start it with a recipe."
+                            : blankPageReason(sheets, sheetIndex)
+                          : undefined,
                         isOpeningPage && onAddDedication ? (
                           <button
                             type="button"
@@ -1723,8 +1765,20 @@ export function PrintDeck(props: PrintDeckProps) {
                           : (
                             <>
                               {renderSide(spread.left, "left")}
-                              {spread.right === null && index === spreads.length - 1
-                                ? renderBlank(!designedBlank, undefined, chapterBlankActions)
+                              {spread.right === null &&
+                              index === spreads.length - 1 &&
+                              chapterBlankActions &&
+                              blankHostedImport &&
+                              index === pendingAnchorSpreadIndex
+                                ? renderHostedImport(blankHostedImport)
+                                : spread.right === null && index === spreads.length - 1
+                                ? renderBlank(
+                                    !designedBlank,
+                                    chapterBlankActions
+                                      ? "Give this chapter an image page, or start it with a recipe."
+                                      : undefined,
+                                    chapterBlankActions,
+                                  )
                                 : renderSide(spread.right, "right")}
                             </>
                           )}
