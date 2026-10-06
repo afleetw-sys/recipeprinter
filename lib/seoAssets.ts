@@ -183,7 +183,10 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     height: 2000,
     alt:
       "A finished spiral-bound cookbook open to a Greek chicken souvlaki recipe and full-page food photograph.",
-    objectPosition: "50% 62%",
+    // Portrait in a 3:2 slot: about 44% of the height shows. Higher than centre
+    // so the recipe's title stays in, with the first plate beside it; lower
+    // cut the title off and sat on the plates.
+    objectPosition: "50% 38%",
   },
   // The same cover, whole, on a paper-coloured backdrop at 3:2, for the
   // feature slots that crop the portrait original top and bottom.
