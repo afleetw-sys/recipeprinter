@@ -2789,7 +2789,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What can I import into the cookbook maker?",
         answer:
-          "You can import recipes from websites, photos, screenshots, handwritten recipe cards, pasted text, supported recipe apps, and other RecipePrinter imports. Review each recipe before adding it to the cookbook.",
+          "Recipe links from any website, photos and screenshots, handwritten recipe cards, pasted text, and recipes saved in Paprika or CookPilot. Each one comes in as a recipe you can edit.",
       },
       {
         question: "Can I organize recipes into chapters?",
