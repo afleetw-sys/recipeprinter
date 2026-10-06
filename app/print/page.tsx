@@ -720,7 +720,9 @@ export default function PrintPage() {
   // (`showPhoto`). Default "card" = a header photo in each recipe card.
   const photoStyle: PhotoStyle = projectMeta.meta.photoStyle ?? "card";
   const headerPhotosOn = cookbookMode ? photoStyle === "card" : showPhoto;
-  const photosOn = headerPhotosOn && anyRecipeHasImage;
+  // A book of the cook's own photos shows "In page" before any photo exists,
+  // as placeholders where the photos go (see `photoOnFor` in usePrintSheets).
+  const photosOn = headerPhotosOn && (anyRecipeHasImage || ownPhotosOnly);
   // "Full page" style defaults every photo recipe to a full-bleed image spread;
   // the per-page picker overrides individual recipes on top of it.
   const defaultFullPage = cookbookMode && photoStyle === "full";
@@ -800,20 +802,22 @@ export default function PrintPage() {
     preset: projectMeta.meta.cookbookPreset,
   });
 
-  // Full pages still waiting for their photo (books of the cook's own photos
-  // only). They show as placeholders on screen; the export refuses to print
-  // them as blank pages and names them instead.
-  const emptyPhotoPageTitles = useMemo(
-    () =>
-      ownPhotosOnly
-        ? sheets.flatMap((sheet) =>
-            sheet.layoutKind === "image"
-              ? sheet.slots.flatMap((slot) => (slot?.kind === "image" && !slot.imageUrl ? [slot.label] : []))
-              : [],
-          )
-        : [],
-    [ownPhotosOnly, sheets],
-  );
+  // Recipes whose photo is still a placeholder, full page or in page (books
+  // of the cook's own photos only). The export refuses to print a placeholder
+  // and names these instead.
+  const emptyPhotoTitles = useMemo(() => {
+    if (!ownPhotosOnly) return [];
+    const titles = new Set<string>();
+    for (const sheet of sheets) {
+      for (const slot of sheet.slots) {
+        if (slot?.kind === "image" && !slot.imageUrl) titles.add(slot.label);
+        if (slot?.kind === "recipe" && slot.showPhoto && !slot.isContinuation && !slot.recipe.image) {
+          titles.add(slot.recipe.title || "Untitled recipe");
+        }
+      }
+    }
+    return Array.from(titles);
+  }, [ownPhotosOnly, sheets]);
 
   // The preview is double-buffered (see `usePrintSheets`): it keeps painting the
   // last complete layout while a new one is measured, so a settings change no
@@ -3337,12 +3341,12 @@ export default function PrintPage() {
     if (!project) return;
     setCookbookExportNeedsAuth(false);
     setCookbookExportNeedsAccount(false);
-    if (emptyPhotoPageTitles.length > 0) {
-      track("cookbook_export_blocked_empty_photos", { preset: presetId, count: emptyPhotoPageTitles.length });
+    if (emptyPhotoTitles.length > 0) {
+      track("cookbook_export_blocked_empty_photos", { preset: presetId, count: emptyPhotoTitles.length });
       setCookbookExportError(
-        emptyPhotoPageTitles.length === 1
-          ? `"${emptyPhotoPageTitles[0]}" has a full page waiting for its photo. Add one, or switch that recipe to In page or None, then export again.`
-          : `${emptyPhotoPageTitles.length} recipes have a full page waiting for a photo: ${emptyPhotoPageTitles.join(", ")}. Add their photos, or switch them to In page or None, then export again.`,
+        emptyPhotoTitles.length === 1
+          ? `"${emptyPhotoTitles[0]}" is waiting for its photo. Add one, or set its photo to None, then export again.`
+          : `${emptyPhotoTitles.length} recipes are waiting for photos: ${emptyPhotoTitles.join(", ")}. Add their photos, or set them to None, then export again.`,
       );
       return;
     }
@@ -6356,7 +6360,6 @@ export default function PrintPage() {
           sections={sections}
           toggleDedication={toggleDedication}
           toggleCover={toggleCover}
-          anyRecipeHasImage={anyRecipeHasImage}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
           photoStyleTip={photoStyleTip?.surface === "sheet" ? photoStyleTip : null}

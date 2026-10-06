@@ -417,6 +417,40 @@
   text-align: center;
 }
 
+/* The organizer with no recipes in the book yet. */
+.recipe-organize-start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 24px 4px;
+  padding: 20px 16px;
+  border: 1px dashed var(--cp-line-strong);
+  border-radius: var(--cp-radius-md);
+  text-align: center;
+}
+
+.recipe-organize-start__title {
+  margin: 0;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body);
+  font-weight: var(--cp-fw-bold);
+}
+
+.recipe-organize-start__body {
+  margin: 0;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+}
+
+.recipe-organize-start__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 /* The question this control raises is "will this shuffle my chapters?" — so it
    answers it in the menu, where the choice is made. */
 .recipe-organize-bar__sort-note {
@@ -4159,6 +4193,34 @@
 
 .recipe-image-spread__placeholder-note {
   font-size: 0.2in;
+}
+
+/* The in-page twin: a recipe set to "In page" before its photo is added.
+   Same box as the photo, so adding one later does not move anything. */
+.recipe-card__photo--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0.015in dashed var(--cp-line-strong);
+  border-radius: 0.06in;
+  background: var(--cp-surface-muted);
+  color: var(--cp-ink-soft);
+  text-align: center;
+}
+
+.recipe-card__photo-placeholder-label {
+  padding: 0 0.06in;
+  font-size: 0.11in;
+  font-weight: var(--cp-fw-bold);
+  line-height: 1.2;
+}
+
+.recipe-spread__page.is-focused .recipe-card__photo--placeholder {
+  cursor: pointer;
+}
+
+.recipe-spread__page.is-focused .recipe-card__photo--placeholder:hover {
+  background: var(--cp-surface-strong);
 }
 
 /* Drag-to-reposition affordance (screen only, on the focused photo). */

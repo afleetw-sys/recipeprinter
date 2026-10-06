@@ -419,7 +419,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     ownPhotosOnly,
     cardSize,
     doubleSided: settings.doubleSided,
-    photosOn: headerPhotosOn && anyRecipeHasImage,
+    photosOn: headerPhotosOn && (anyRecipeHasImage || ownPhotosOnly),
     sourceUrlOn: settings.showSourceUrl && anyRecipeHasSourceUrl,
     descriptionOn: settings.showDescription ?? true,
     template,

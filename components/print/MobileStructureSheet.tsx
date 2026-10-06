@@ -15,7 +15,6 @@ interface MobileStructureSheetProps {
   sections: Section[];
   toggleDedication: () => void;
   toggleCover: (side: "front" | "back") => void;
-  anyRecipeHasImage: boolean;
   bookPhotoStyle: PhotoStyle | null;
   applyBookPhotoStyle: (mode: PhotoStyle) => void;
   /** Set when the cook has been choosing the same photo layout recipe by
@@ -61,7 +60,6 @@ export function MobileStructureSheet({
   sections,
   toggleDedication,
   toggleCover,
-  anyRecipeHasImage,
   bookPhotoStyle,
   applyBookPhotoStyle,
   photoStyleTip,
@@ -140,14 +138,6 @@ export function MobileStructureSheet({
                 <span className="recipe-config-sublabel" id="sheet-photos-label">
                   Photos
                 </span>
-                {/* The tiles change nothing on screen until a recipe has a
-                    photo, so a new book can look as though they are broken.
-                    Same note the desktop panel gives. */}
-                {!anyRecipeHasImage && (
-                  <p className="recipe-structure-sheet__note">
-                    Add a photo to a recipe to see these layouts on its page.
-                  </p>
-                )}
                 <div
                   className="recipe-photo-style"
                   role="radiogroup"
