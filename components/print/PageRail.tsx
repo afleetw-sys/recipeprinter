@@ -476,6 +476,7 @@ export function PageRail(props: PageRailProps) {
           item,
           chapterTitle: section.title ?? "",
           placement: projectMeta.meta.itemPlacements?.[item.id],
+          ownPhotosOnly: projectMeta.meta.ownPhotosOnly,
           pageCount: pageCounts.get(item.id) ?? 1,
         });
       });

@@ -177,12 +177,14 @@ import { writeProject as runSaveWrite } from "@/lib/printSaveWrite";
 import { autosaveVerdict, LOADED_BASELINE, shouldFlushOnHide } from "@/lib/printAutosave";
 import { readRailWidths, writeRailWidths, type RailWidthMode, type RailWidths } from "@/lib/railWidth";
 import { RailResizer } from "@/components/print/RailResizer";
+import { bookRecipeImage } from "@/lib/bookPhotos";
 
 /** This section's own recipe photos, in item order, capped for a collage. Scopes
-    the opener picker to the chapter (unlike the whole-book `coverPhotoCandidates`). */
-function sectionRecipeImages(section: Section): string[] {
+    the opener picker to the chapter (unlike the whole-book `coverPhotoCandidates`).
+    `imageOf` is the photo the BOOK shows for a recipe (see lib/bookPhotos.ts). */
+function sectionRecipeImages(section: Section, imageOf: (item: QueueItem) => string | undefined): string[] {
   return section.items
-    .map((item) => item.recipe?.image)
+    .map(imageOf)
     .filter((url): url is string => Boolean(url))
     .slice(0, 9);
 }
@@ -660,8 +662,20 @@ export default function PrintPage() {
    */
   const isOursToAwait = useCallback((id: string) => !initialQueueIdsRef.current.has(id), []);
 
-  const anyRecipeHasImage =
-    items?.some((item) => Boolean(item.recipe?.image)) ?? false;
+  // The photo the book shows for each recipe: in a book of the cook's own
+  // photos, only one they added; in an older book, the recipe's own image.
+  // Every "does this recipe have a photo" question the BOOK asks goes through
+  // here. Editing and saving keep reading `recipe.image` itself.
+  const ownPhotosOnly = Boolean(projectMeta.meta.cookbookMode && projectMeta.meta.ownPhotosOnly);
+  const bookImageOf = useCallback(
+    (item: QueueItem) => bookRecipeImage(item.recipe, projectMeta.meta.itemPlacements?.[item.id], ownPhotosOnly),
+    [projectMeta.meta.itemPlacements, ownPhotosOnly],
+  );
+  const bookSectionImages = useCallback(
+    (section: Section) => sectionRecipeImages(section, bookImageOf),
+    [bookImageOf],
+  );
+  const anyRecipeHasImage = items?.some((item) => Boolean(bookImageOf(item))) ?? false;
   const anyRecipeHasSourceUrl =
     items?.some((item) => Boolean(item.recipe?.sourceUrl)) ?? false;
   const cookbookMode = Boolean(projectMeta.meta.cookbookMode);
@@ -717,11 +731,11 @@ export default function PrintPage() {
       Array.from(
         new Set(
           (items ?? [])
-            .map((item) => item.recipe?.image)
+            .map(bookImageOf)
             .filter((src): src is string => Boolean(src)),
         ),
       ),
-    [items],
+    [items, bookImageOf],
   );
 
 
@@ -773,6 +787,7 @@ export default function PrintPage() {
     // Chapter openers with no placement of their own follow the book's Photos
     // choice (see `resolveSectionPhotoMode`).
     photoStyle: cookbookMode ? photoStyle : undefined,
+    ownPhotosOnly,
     cardSize,
     doubleSided,
     photosOn,
@@ -784,6 +799,21 @@ export default function PrintPage() {
     // recipe is measured against (see `presetCardDims`).
     preset: projectMeta.meta.cookbookPreset,
   });
+
+  // Full pages still waiting for their photo (books of the cook's own photos
+  // only). They show as placeholders on screen; the export refuses to print
+  // them as blank pages and names them instead.
+  const emptyPhotoPageTitles = useMemo(
+    () =>
+      ownPhotosOnly
+        ? sheets.flatMap((sheet) =>
+            sheet.layoutKind === "image"
+              ? sheet.slots.flatMap((slot) => (slot?.kind === "image" && !slot.imageUrl ? [slot.label] : []))
+              : [],
+          )
+        : [],
+    [ownPhotosOnly, sheets],
+  );
 
   // The preview is double-buffered (see `usePrintSheets`): it keeps painting the
   // last complete layout while a new one is measured, so a settings change no
@@ -1403,11 +1433,9 @@ export default function PrintPage() {
     // Classic default) opens on Bistro.
     const bookTemplate = cookbookTemplateFor(currentTemplate);
     // Lead with a confident, giftable title instead of exposing an empty-state
-    // implementation detail such as "Untitled Cookbook".
-    const images = Array.from(
-      new Set(scaffoldItems.map((item) => item.recipe?.image).filter((src): src is string => Boolean(src))),
-    );
-    const gridCount = images.length >= 6 ? 6 : images.length >= 4 ? 4 : images.length >= 2 ? 2 : 0;
+    // implementation detail such as "Untitled Cookbook". The cover starts
+    // typographic: a new book never borrows the recipes' imported photos (see
+    // `ownPhotosOnly`), so there is nothing to make a collage from yet.
     const cover: CoverConfig | undefined = meta.cover
       ? undefined
       : {
@@ -1416,12 +1444,7 @@ export default function PrintPage() {
           template: bookTemplate,
           style: "photo",
           creditLabel: "compiled-by",
-          layout: gridCount > 0 ? "collage" : images.length === 1 ? "photo" : "typographic",
-          ...(gridCount > 0
-            ? { gridImages: images.slice(0, gridCount) }
-            : images.length === 1
-              ? { imageUrl: images[0] }
-              : {}),
+          layout: "typographic",
         };
     // A minimal closing page (template band on the theme's paper); the cook
     // can add a blurb / "from the kitchen of" line by editing it.
@@ -1437,9 +1460,9 @@ export default function PrintPage() {
       // Give the book a default print format (US Letter) so export geometry is
       // set from the start; a returning book keeps whatever it chose.
       cookbookPreset: meta.cookbookPreset ? undefined : DEFAULT_COOKBOOK_PRESET_ID,
-      // The premium default is an editorial spread: the recipe's full-bleed
-      // photograph on the left, with its recipe page facing it on the right.
-      photoStyle: meta.photoStyle ? undefined : "full",
+      // No photos until the cook adds them: a new book does not use the
+      // recipes' imported images (see `ownPhotosOnly`).
+      photoStyle: meta.photoStyle ? undefined : "none",
       cover,
       backCover,
       tableOfContents: true,
@@ -1464,10 +1487,11 @@ export default function PrintPage() {
     // the pre-restore meta snapshot).
     if (projectMeta.restoreCookbook()) return undefined;
     projectMeta.setCookbookMode(true);
+    // Every book scaffolded from here on shows only photos the cook adds.
+    projectMeta.setOwnPhotosOnly();
     const patch = buildCookbookScaffoldPatch(projectMeta.meta, items ?? [], template);
     if (patch.template !== template) setTemplate(patch.template);
-    // Turn recipe photos on so the scaffolded book looks finished rather than
-    // bare. The recipe link is on by default here too, the same as on cards:
+    // The recipe link is on by default here, the same as on cards:
     // the book prints someone else's recipe, so it says where it came from.
     if (patch.cookbookPreset) projectMeta.setCookbookPreset(patch.cookbookPreset);
     if (patch.photoStyle) projectMeta.setPhotoStyle(patch.photoStyle);
@@ -1580,11 +1604,11 @@ export default function PrintPage() {
   // Returns null when recipes use a MIX of photo modes, so the book-wide control
   // shows nothing selected rather than pretending one option applies to all.
   const bookPhotoStyle = useMemo<PhotoStyle | null>(() => {
-    const withImage = (items ?? []).filter((item) => item.recipe?.image);
+    const withImage = (items ?? []).filter((item) => bookImageOf(item));
     if (withImage.length === 0) return photoStyle;
     const modes = new Set(withImage.map((item) => photoModeFor(item.id)));
     return modes.size === 1 ? (Array.from(modes)[0] as PhotoStyle) : null;
-  }, [items, photoModeFor, photoStyle]);
+  }, [items, photoModeFor, photoStyle, bookImageOf]);
 
   // Someone setting the same photo layout recipe after recipe from each page's
   // toolbar, who may not know the "Every recipe" Photos control exists. See
@@ -1976,11 +2000,11 @@ export default function PrintPage() {
       Array.from(
         new Set(
           (items ?? [])
-            .map((item) => item.recipe?.image)
+            .map(bookImageOf)
             .filter((src): src is string => Boolean(src) && !src!.startsWith("data:")),
         ),
       ),
-    [items],
+    [items, bookImageOf],
   );
   useEffect(() => {
     if (printPhotoUrls.length === 0) return;
@@ -3311,9 +3335,18 @@ export default function PrintPage() {
     track("cookbook_preset_selected", { preset: presetId });
     const project = currentExportProject();
     if (!project) return;
-    setCookbookExportError(null);
     setCookbookExportNeedsAuth(false);
     setCookbookExportNeedsAccount(false);
+    if (emptyPhotoPageTitles.length > 0) {
+      track("cookbook_export_blocked_empty_photos", { preset: presetId, count: emptyPhotoPageTitles.length });
+      setCookbookExportError(
+        emptyPhotoPageTitles.length === 1
+          ? `"${emptyPhotoPageTitles[0]}" has a full page waiting for its photo. Add one, or switch that recipe to In page or None, then export again.`
+          : `${emptyPhotoPageTitles.length} recipes have a full page waiting for a photo: ${emptyPhotoPageTitles.join(", ")}. Add their photos, or switch them to In page or None, then export again.`,
+      );
+      return;
+    }
+    setCookbookExportError(null);
     setExportingPreset(presetId);
     setCookbookExportProgress("preparing");
     setLastCookbookExport(null);
@@ -3589,6 +3622,7 @@ export default function PrintPage() {
           tocKicker: project.settings.tocKicker,
           tocTitle: project.settings.tocTitle,
           photoStyle: project.settings.photoStyle,
+          ownPhotosOnly: project.settings.ownPhotosOnly,
           railSortMode: project.settings.railSortMode,
           lastImportSource: project.settings.lastImportSource,
           cover: project.cover,
@@ -4745,7 +4779,7 @@ export default function PrintPage() {
   // dialog is just "this slot's photo, or a collage, or none" — deleting the
   // photo is the None tile the plain picker already offers).
   const buildCardPhotoEdit = (section: Section | undefined) => {
-    const ownImages = section ? sectionRecipeImages(section) : [];
+    const ownImages = section ? bookSectionImages(section) : [];
     // Nothing ticked until the cook taps a tile. (The printed page still falls
     // back to the chapter's own recipe photos while the collage is empty; see
     // `defaultSectionGridImages` — that fallback is the renderer's, not this
@@ -4773,7 +4807,7 @@ export default function PrintPage() {
   // The facing/art page's own photo edit wiring — same shape as the card's
   // above, entirely independent of it (see `buildCardPhotoEdit`).
   const buildArtPhotoEdit = (section: Section | undefined) => {
-    const ownImages = section ? sectionRecipeImages(section) : [];
+    const ownImages = section ? bookSectionImages(section) : [];
     // See buildCardPhotoEdit: nothing ticked until the cook taps a tile.
     const gridImages = section?.artGridImages ?? [];
     return {
@@ -4901,8 +4935,12 @@ export default function PrintPage() {
     notePhotoChoice(recipeId, mode);
     if (showEmptyFields && activeRecipeId === recipeId) keepEditingRef.current = recipeId;
     setPendingFocusRecipeId(recipeId);
-    const image = items?.find((item) => item.id === recipeId)?.recipe?.image;
-    if (mode !== "none" && !image) {
+    const item = items?.find((candidate) => candidate.id === recipeId);
+    const image = item ? bookImageOf(item) : undefined;
+    // With no photo yet, go and get one. Except Full page in a book of the
+    // cook's own photos: that page appears as a placeholder, and the
+    // placeholder is where the photo is added.
+    if (mode !== "none" && !image && !(ownPhotosOnly && mode === "full")) {
       openPhotoDialog(recipeId);
     }
     // Clearing the override lets the page follow the book — but only when the
@@ -4911,12 +4949,43 @@ export default function PrintPage() {
     // `cookbookResolution`), so clearing here snapped the choice straight back
     // to None: the one placement you might pick in order to add a photo was
     // the one placement you could not pick until you had one.
-    if (mode === photoStyle && (mode !== "full" || image)) {
-      projectMeta.setItemPlacement(recipeId, undefined);
+    // In a book of the cook's own photos that fallback does not happen (the
+    // page holds a placeholder instead), so it can always follow the book.
+    // Clearing the whole placement would also drop the photo they added,
+    // which lives on it, so only the layout half is cleared there.
+    if (mode === photoStyle && (mode !== "full" || image || ownPhotosOnly)) {
+      if (ownPhotosOnly) {
+        projectMeta.setItemPlacement(recipeId, { pageLayout: undefined, showPhoto: undefined });
+      } else {
+        projectMeta.setItemPlacement(recipeId, undefined);
+      }
       return;
     }
-    const hero = mode === "full" ? image : undefined;
+    // A book of the cook's own photos has one photo per recipe (`photoUrl`)
+    // for both placements, so it never stores a separate full-page copy.
+    const hero = mode === "full" && !ownPhotosOnly ? image : undefined;
     projectMeta.setItemPhotoMode(recipeId, mode, hero);
+  }
+
+  /**
+   * The photo a book of the cook's own photos shows for one recipe: picked
+   * from the recipe's imported image, uploaded, or removed (`undefined`).
+   * Stored on the book, never on the recipe, so the imported image stays on
+   * offer in the picker. The photo being replaced joins the recipe's history,
+   * and picking one for a recipe showing none puts it in the page.
+   */
+  function chooseBookPhoto(recipeId: string, url: string | undefined) {
+    const placement = projectMeta.meta.itemPlacements?.[recipeId];
+    const previous = placement?.photoUrl;
+    if (url === previous) return;
+    const kept = placement?.photoHistory ?? [];
+    projectMeta.setItemPlacement(recipeId, {
+      photoUrl: url,
+      ...(previous && !kept.includes(previous)
+        ? { photoHistory: [previous, ...kept.filter((entry) => entry !== url)].slice(0, 8) }
+        : {}),
+    });
+    if (url && photoModeFor(recipeId) === "none") projectMeta.setItemPhotoMode(recipeId, "card");
   }
   /**
    * Counts a per-recipe photo choice toward the streak, and once it is long
@@ -4977,13 +5046,20 @@ export default function PrintPage() {
     if (!recipe) return null;
     const own = recipe.image;
     const history = projectMeta.meta.itemPlacements?.[recipeId]?.photoHistory ?? [];
+    // What the page shows: in a book of the cook's own photos, the one they
+    // added, with the recipe's imported image still offered as a tile.
+    const shown = ownPhotosOnly ? projectMeta.meta.itemPlacements?.[recipeId]?.photoUrl : own;
     return (
       <ImagePicker
-        current={own}
+        current={shown}
         // The recipe's own photo plus the ones it has worn before, so a photo
         // replaced by an upload stays reachable instead of vanishing.
-        images={Array.from(new Set([...(own ? [own] : []), ...history]))}
-        onSelect={(url) => updateRecipeAndRevealPhoto(recipeId, { ...recipe, image: url ?? "" })}
+        images={Array.from(new Set([...(own ? [own] : []), ...(shown ? [shown] : []), ...history]))}
+        onSelect={(url) =>
+          ownPhotosOnly
+            ? chooseBookPhoto(recipeId, url)
+            : updateRecipeAndRevealPhoto(recipeId, { ...recipe, image: url ?? "" })
+        }
         // A cookbook page offers None / In page / Full page. A recipe card
         // has no facing page, so it offers None / In card: whether THIS card
         // shows its photo, over the "Include recipe photo" setting.
@@ -5008,7 +5084,7 @@ export default function PrintPage() {
         }
         // Says which job it is doing: there is nothing to change yet when the
         // recipe came in without a photo.
-        label={own ? "Photo" : "Add photo"}
+        label={shown ? "Photo" : "Add photo"}
         className="recipe-page-toolbar__photo"
         onOpenChange={notePhotoPickerOpen}
         openSignal={photoDialogSignal(recipeId)}
@@ -5025,16 +5101,23 @@ export default function PrintPage() {
     const own = items?.find((item) => item.id === recipeId)?.recipe?.image;
     const placement = projectMeta.meta.itemPlacements?.[recipeId];
     const history = placement?.photoHistory ?? [];
+    // A book of the cook's own photos keeps one photo per recipe, the same one
+    // the recipe page's picker sets; the full page shows it (or a placeholder).
+    const shown = ownPhotosOnly ? placement?.photoUrl : (placement?.heroImageUrl ?? own);
     return (
       <ImagePicker
-        current={placement?.heroImageUrl ?? own}
+        current={shown}
         // Only this recipe's own photo (plus upload) — never a grid of OTHER
         // recipes' images, which isn't what "change this photo" means.
-        images={Array.from(new Set([...(own ? [own] : []), ...history]))}
+        images={Array.from(new Set([...(own ? [own] : []), ...(shown ? [shown] : []), ...history]))}
         onSelect={(url) =>
-          url
-            ? projectMeta.setItemPhotoMode(recipeId, "full", url)
-            : setRecipePhotoMode(recipeId, "none")
+          ownPhotosOnly
+            ? url
+              ? chooseBookPhoto(recipeId, url)
+              : setRecipePhotoMode(recipeId, "none")
+            : url
+              ? projectMeta.setItemPhotoMode(recipeId, "full", url)
+              : setRecipePhotoMode(recipeId, "none")
         }
         placement={photoModeFor(recipeId)}
         placementOptions={PHOTO_STYLE_OPTIONS.map((option) => ({
@@ -6053,7 +6136,7 @@ export default function PrintPage() {
           renderPagePhotoControl={renderPagePhotoControl}
           renderCardPhotoControl={renderCardPhotoControl}
           renderArtPhotoControl={renderArtPhotoControl}
-          sectionRecipeImages={sectionRecipeImages}
+          sectionRecipeImages={bookSectionImages}
           photoStyle={photoStyle}
           renderCoverPhotoControl={renderCoverPhotoControl}
           renderImagePagePhotoControl={renderImagePagePhotoControl}

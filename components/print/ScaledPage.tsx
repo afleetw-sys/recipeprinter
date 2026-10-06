@@ -234,6 +234,41 @@ export const ScaledPage = memo(function ScaledPage({
       (slot): slot is ImageSheetSlot => slot?.kind === "image",
     );
     if (!imageSlot) return null;
+    // A full page the cook chose before adding its photo: an empty page
+    // holding the photo's place. Screen only; the export refuses to print one
+    // (see `emptyPhotoPageTitles` on the print page). Clicking it opens the
+    // photo picker like clicking any photo does (PHOTO_SURFACES in PrintDeck).
+    if (!imageSlot.imageUrl) {
+      return (
+        <div
+          className="recipe-page-scaler"
+          style={{ "--page-scale": scale, "--page-w": `${dims.w}px`, "--page-h": `${dims.h}px` } as CSSProperties}
+        >
+          <div className="recipe-page-scaler__inner">
+            <div
+              className={`recipe-print-preview recipe-print-preview--letter ${presetBaseClass} ${presetArtClass}`}
+              style={cardVars}
+              data-double-sided="false"
+            >
+              <div className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}>
+                <div
+                  className={`recipe-card-page recipe-card-page--front recipe-card-page--image ${
+                    isLastSheet ? "recipe-card-page--no-break" : ""
+                  }`}
+                >
+                  <div className="recipe-image-spread__placeholder no-print">
+                    <span className="recipe-image-spread__placeholder-title">Add a photo</span>
+                    <span className="recipe-image-spread__placeholder-note">
+                      Upload your own or use the recipe&rsquo;s
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
     // The live zoom: the cook's while editing, otherwise whatever the slot
     // carries — so preview, print and export all crop identically.
     const zoom = clampImageZoom(imageEdit?.zoom ?? imageSlot.zoom ?? 1);

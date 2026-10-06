@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { usePrintSheets } from "@/lib/usePrintSheets";
+import { bookRecipeImage } from "@/lib/bookPhotos";
 import {
   getCookbookPreset,
   presetSheetInches,
@@ -368,7 +369,10 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   // in app/print/page.tsx): a toggle only takes effect if the content can honour
   // it, and the layout engine must be handed the resolved answer, not the raw
   // preference, or it paginates for photos that aren't there.
-  const anyRecipeHasImage = items.some((item) => Boolean(item.recipe?.image));
+  const ownPhotosOnly = cookbookMode && Boolean(settings.ownPhotosOnly);
+  const anyRecipeHasImage = items.some((item) =>
+    Boolean(bookRecipeImage(item.recipe, project.itemPlacements?.[item.id], ownPhotosOnly)),
+  );
   const anyRecipeHasSourceUrl = items.some((item) => Boolean(item.recipe?.sourceUrl));
   const photoStyle = settings.photoStyle ?? "card";
   const headerPhotosOn = cookbookMode ? photoStyle === "card" : settings.showPhoto;
@@ -412,6 +416,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     // handed the same one the editor previewed, or a derived opener (a facing
     // collage, an in-card band) would exist on screen and not on paper.
     photoStyle: cookbookMode ? photoStyle : undefined,
+    ownPhotosOnly,
     cardSize,
     doubleSided: settings.doubleSided,
     photosOn: headerPhotosOn && anyRecipeHasImage,

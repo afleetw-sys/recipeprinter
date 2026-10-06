@@ -828,7 +828,7 @@ function continuationFaces(
    - `full`/`image-spread` → one card per sheet; the card's overflow continues
      on its own back only when the job is duplex (`continueOnBack`).
    - `image-spread` prepends a full-bleed facing photo page (only if a hero
-     image exists), then the card page(s). */
+     image exists, or the item asks for a placeholder), then the card page(s). */
 export interface CookbookPlanItem {
   id: string;
   layout: RecipePageLayout;
@@ -836,6 +836,9 @@ export interface CookbookPlanItem {
   faceCount: number;
   /** Facing-page image for `image-spread`; absent = no photo page emitted. */
   heroImageUrl?: string;
+  /** Emit the photo page even without an image, as an empty placeholder
+      (`heroImageUrl: ""`) for the cook to fill. */
+  heroPlaceholder?: boolean;
 }
 
 export interface CookbookPlanRecipeSlot {
@@ -894,11 +897,11 @@ export function planCookbookSection(
     const item = items[i];
 
     if (item.layout === "image-spread") {
-      if (item.heroImageUrl) {
+      if (item.heroImageUrl || item.heroPlaceholder) {
         out.push({
           layoutKind: "image",
           backGroupNeeded: false,
-          slots: [{ kind: "image", itemId: item.id, heroImageUrl: item.heroImageUrl }],
+          slots: [{ kind: "image", itemId: item.id, heroImageUrl: item.heroImageUrl ?? "" }],
         });
       }
       out.push(...planFullRecipe(item, continueOnBack));

@@ -258,8 +258,9 @@ async function visitSectionArt<
 }
 
 /**
- * A recipe page's layout art: the facing full-page photo, and the photos this
- * recipe has worn before.
+ * A recipe page's layout art: the facing full-page photo, the photo a book of
+ * the cook's own photos shows (`photoUrl`), and the photos this recipe has
+ * worn before.
  *
  * `photoHistory` holds images REPLACED by a later pick, which for an imported
  * recipe is exactly the kind that was only ever browser-local. It is what the
@@ -273,11 +274,12 @@ async function visitPlacements(
   if (!placements) return placements;
   const entries = await Promise.all(
     Object.entries(placements).map(async ([id, placement]) => {
-      const [heroImageUrl, photoHistory] = await Promise.all([
+      const [heroImageUrl, photoUrl, photoHistory] = await Promise.all([
         visitOne(placement.heroImageUrl, ART, visit),
+        visitOne(placement.photoUrl, ART, visit),
         visitList(placement.photoHistory, visit),
       ]);
-      return [id, { ...placement, heroImageUrl, photoHistory }] as const;
+      return [id, { ...placement, heroImageUrl, photoUrl, photoHistory }] as const;
     }),
   );
   return Object.fromEntries(entries);
