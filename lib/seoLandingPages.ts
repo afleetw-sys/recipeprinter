@@ -2725,7 +2725,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "cookbook creator",
       "custom cookbook maker",
       "cookbook template",
-      "print a cookbook",
+      "cookbook software",
     ],
     shortLabel: "Cookbook maker",
     pickerGroup: "output",
