@@ -206,6 +206,7 @@ export function RecipeFaceMeasurer({
   size,
   template,
   hasPhoto,
+  photoPlaceholder = false,
   showSourceUrl,
   cookbookMode = false,
   cardVars,
@@ -215,6 +216,9 @@ export function RecipeFaceMeasurer({
   size: PrintCardSize;
   template: RecipePrintTemplate;
   hasPhoto: boolean;
+  /** See `RecipeCardFace`'s `photoPlaceholder`: a photo asked for but not
+      added yet still takes its space. */
+  photoPlaceholder?: boolean;
   showSourceUrl: boolean;
   /** Match the real card's cookbook layout (link in header, no footer) so the
       off-screen measurement reflects what actually prints. */
@@ -544,6 +548,7 @@ export function RecipeFaceMeasurer({
               layout={page.layout}
               hasBackFace={pages.length > 1}
               showImage={i === 0 && hasPhoto}
+              photoPlaceholder={photoPlaceholder}
               showSourceUrl={showSourceUrl}
               continued={i > 0}
               contentScale={page.contentScale}

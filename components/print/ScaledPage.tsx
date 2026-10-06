@@ -236,7 +236,7 @@ export const ScaledPage = memo(function ScaledPage({
     if (!imageSlot) return null;
     // A full page the cook chose before adding its photo: an empty page
     // holding the photo's place. Screen only; the export refuses to print one
-    // (see `emptyPhotoPageTitles` on the print page). Clicking it opens the
+    // (see `emptyPhotoTitles` on the print page). Clicking it opens the
     // photo picker like clicking any photo does (PHOTO_SURFACES in PrintDeck).
     if (!imageSlot.imageUrl) {
       return (
@@ -659,6 +659,7 @@ export const ScaledPage = memo(function ScaledPage({
                     contentScale={slot.front.contentScale}
                     hasBackFace={slot.hasBack}
                     showImage={slot.showPhoto}
+                    photoPlaceholder
                     photoOnFacingPage={slot.hidePhoto}
                     showSourceUrl={slot.showSourceUrl || revealSourceUrl}
                     showDescription={showDescription}

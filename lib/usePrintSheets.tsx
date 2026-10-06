@@ -547,12 +547,17 @@ export function usePrintSheets({
   // to actually be a photo. Single source of truth
   // for BOTH measurement (a header photo changes card height) and what the slot
   // renders, so the two can never disagree and clip.
+  //
+  // Except in a book of the cook's own photos, where "In page" with no photo
+  // yet holds the photo's space as an "Add a photo" placeholder, the in-page
+  // twin of the empty full page. Measured that way too, so adding the photo
+  // later does not reflow the page.
   const photoOnFor = useCallback(
     (id: string, recipe: Recipe): boolean => {
-      if (!recipe.image) return false;
+      if (!recipe.image && !(ownPhotosOnly && cookbookLayouts)) return false;
       return itemPlacements?.[id]?.showPhoto ?? photosOn;
     },
-    [itemPlacements, photosOn],
+    [itemPlacements, photosOn, ownPhotosOnly, cookbookLayouts],
   );
 
   // The same decision for the source link. A link line changes a card's height
@@ -1338,6 +1343,7 @@ export function usePrintSheets({
             size={size}
             template={template}
             hasPhoto={hasPhoto}
+            photoPlaceholder
             showSourceUrl={linkOnFor(id)}
             cookbookMode={cookbookLayouts}
             cardVars={cardVars}

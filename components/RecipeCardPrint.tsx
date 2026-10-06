@@ -500,6 +500,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   previewHidden = false,
   blank = false,
   showImage = false,
+  photoPlaceholder = false,
   photoOnFacingPage = false,
   showSourceUrl = false,
   showDescription = true,
@@ -522,6 +523,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   previewHidden?: boolean;
   blank?: boolean;
   showImage?: boolean;
+  /** With `showImage` and no photo yet, hold the photo's place with an "Add a
+      photo" placeholder instead of laying the header out without one. Only a
+      book of the cook's own photos ever asks for a photo that is not there
+      (see `photoOnFor` in usePrintSheets). */
+  photoPlaceholder?: boolean;
   /** This recipe's photo fills its own facing page (cookbook image-spread), so
       the card must NOT offer an in-card "Add photo" — the photo (and its
       "Change photo" control) live on the image page. */
@@ -603,7 +609,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   // The photo only rides along on the front face (where the header lives). If
   // the source image 404s or is hotlink-blocked we drop it rather than print a
   // broken-image box.
-  const showPhoto = showHeader && (showImage && Boolean(recipe.image));
+  const hasImage = Boolean(recipe.image);
+  const showPhoto = showHeader && showImage && (hasImage || photoPlaceholder);
   // There is no in-card photo affordance any more, in either mode. The page
   // toolbar carries ONE photo button, permanently, for every recipe and chapter
   // opener — so a photo is added, replaced and placed from the same control
@@ -1371,7 +1378,12 @@ export const RecipeCardFace = memo(function RecipeCardFace({
               )
             )}
           </div>
-          {showPhoto && (
+          {showPhoto && !hasImage && (
+            <span className="recipe-card__photo recipe-card__photo--placeholder">
+              <span className="recipe-card__photo-placeholder-label no-print">Add a photo</span>
+            </span>
+          )}
+          {showPhoto && hasImage && (
             <span className={`recipe-card__photo ${canEdit ? "recipe-card__photo--editable" : ""}`}>
               {/* No referrer on any recipe photo: sites with hotlink protection
                   (Cloudflare/BigScoots and friends) serve the image to a request with
