@@ -2754,18 +2754,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Turn links, photos, and screenshots into recipes",
         image: "addrecipes-cookbook",
         body:
-          "You don't need to start with a finished manuscript. Import recipes one at a time from websites, photos, handwritten cards, screenshots, apps, or pasted text, then edit them as you build the cookbook.",
+          "Start with the recipes you have today and add the rest as you find them. Each link, photo, handwritten card, screenshot, or pasted recipe becomes a recipe you can edit as the book comes together.",
         afterBody:
           "That makes it easy to combine recipes that currently live in completely different places into one consistent book.",
-      },
-      {
-        heading: "Organize chapters and design the cover",
-        // Not `bound-cookbook`: the hero already shows that photo.
-        image: "cookbook-cover-wide",
-        body:
-          "Create chapters, move recipes between them, and choose a cover design and photo. The table of contents and page numbers build themselves and update as recipes move or chapters change.",
-        afterBody:
-          "Chapter opener pages can have their own photo and a line of text.",
       },
       {
         heading: "Themes designed for print",

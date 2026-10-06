@@ -10,6 +10,7 @@ import {
 } from "@/components/seo/LandingFrame";
 import { SeoCapture } from "@/components/seo/SeoCapture";
 import { CookbookStartButton } from "@/components/seo/CookbookStartButton";
+import { CustomerQuote } from "@/components/seo/CustomerQuote";
 import { Breadcrumb, type Crumb } from "@/components/seo/Breadcrumb";
 import { cookbookPitchFeature } from "@/components/seo/CookbookPitch";
 import { RecipeBinderSections } from "@/components/seo/RecipeBinderSections";
@@ -179,7 +180,16 @@ export default function SeoLandingPage({ params }: PageProps) {
   ];
 
   return (
-    <LandingFrame headerActions={<LandingCta label="Go to printer" compact />}>
+    <LandingFrame
+      headerActions={
+        // A cookbook page's way in is starting a book, in the header too.
+        page.startsCookbook ? (
+          <CookbookStartButton label={page.importSubmitLabel} compact />
+        ) : (
+          <LandingCta label="Go to printer" compact />
+        )
+      }
+    >
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(pageJsonLd(page)) }}
@@ -279,7 +289,27 @@ export default function SeoLandingPage({ params }: PageProps) {
         </section>
       )}
 
-      {isGuide && (
+      {page.startsCookbook && (
+        <section aria-label="What a customer said">
+          <CustomerQuote />
+        </section>
+      )}
+
+      {/* A cookbook page's capture is one button, so the heading and button
+          stack in the middle instead of spanning the two-column layout an
+          import box needs. */}
+      {isGuide && page.startsCookbook && (
+        <section className="border-y border-line py-[64px] text-center" aria-labelledby="guide-capture-heading">
+          <h2 id="guide-capture-heading" className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">
+            {page.captureHeading ?? "Start here"}
+          </h2>
+          <div id="rp-capture" className="mt-cp-5 flex scroll-mt-24 justify-center">
+            <CookbookStartButton label={page.importSubmitLabel} />
+          </div>
+        </section>
+      )}
+
+      {isGuide && !page.startsCookbook && (
         <section className="border-y border-line py-[64px]" aria-labelledby="guide-capture-heading">
           <div className="grid gap-cp-6 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] lg:items-center lg:gap-[88px]">
             <div>
