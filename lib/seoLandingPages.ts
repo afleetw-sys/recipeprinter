@@ -2613,7 +2613,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     h1: "How to make your own cookbook",
     lede:
       "A cookbook is easier to finish when you plan it first. Here's how to choose the recipes, organize them into chapters, make the book personal, and get it printed, with RecipePrinter handling the layout.",
-    howToHeading: "How to make your own cookbook",
+    howToHeading: "Make your cookbook in four steps",
     howTo: [
       {
         name: "Choose your recipes",
@@ -2670,16 +2670,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "How do I make my own cookbook?",
         answer:
           "Choose your recipes, plan the chapters, add a dedication and any notes, then print the finished PDF at home or through a print shop. RecipePrinter handles the layout, contents page, and page numbers.",
-      },
-      {
-        question: "How many recipes should my cookbook have?",
-        answer:
-          "Anywhere from about 20 to well over 100. A gift book feels complete with a few dozen, and a family collection can be much bigger. You can add more after you start.",
-      },
-      {
-        question: "How should I organize my cookbook?",
-        answer:
-          "By course is the most familiar. By person, season, or holiday suits family and gift books. Choose the order you'd look things up in when you're cooking.",
       },
       {
         question: "What should go at the front of a cookbook?",
@@ -2761,7 +2751,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "Import recipes from anywhere",
+        heading: "Turn links, photos, and screenshots into recipes",
         image: "addrecipes-cookbook",
         body:
           "You don't need to start with a finished manuscript. Import recipes one at a time from websites, photos, handwritten cards, screenshots, apps, or pasted text, then edit them as you build the cookbook.",
