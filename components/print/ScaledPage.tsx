@@ -455,6 +455,14 @@ export const ScaledPage = memo(function ScaledPage({
                       </span>
                     ))}
                   </div>
+                ) : anySlot.mode !== "none" && !anySlot.caption?.trim() ? (
+                  // An image page added before its photo: hold the place, as a
+                  // recipe's full page does. Screen only; clicking it opens the
+                  // page's photo picker (PHOTO_SURFACES in PrintDeck).
+                  <div className="recipe-image-spread__placeholder no-print">
+                    <span className="recipe-image-spread__placeholder-title">Add a photo</span>
+                    <span className="recipe-image-spread__placeholder-note">Upload your own photo</span>
+                  </div>
                 ) : null}
                 {anySlot.caption?.trim() && (
                   <p

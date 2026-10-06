@@ -811,6 +811,15 @@ export default function PrintPage() {
     for (const sheet of sheets) {
       for (const slot of sheet.slots) {
         if (slot?.kind === "image" && !slot.imageUrl) titles.add(slot.label);
+        // A chapter's image page with nothing on it yet.
+        if (
+          slot?.kind === "section-photo" &&
+          slot.mode !== "none" &&
+          !(slot.mode === "photo" ? slot.photoUrl : slot.gridImages?.length) &&
+          !slot.caption?.trim()
+        ) {
+          titles.add(slot.title || "A chapter");
+        }
         if (slot?.kind === "recipe" && slot.showPhoto && !slot.isContinuation && !slot.recipe.image) {
           titles.add(slot.recipe.title || "Untitled recipe");
         }
