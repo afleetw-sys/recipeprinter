@@ -15,6 +15,8 @@ export interface OrganizeRecipeContext {
   /** The chapter it sits in, blank when it is in no named chapter. */
   chapterTitle: string;
   placement?: RecipePagePlacement;
+  /** The book shows only photos the cook added (see lib/bookPhotos.ts). */
+  ownPhotosOnly?: boolean;
   /** How many printed pages the recipe card itself runs to. */
   pageCount: number;
 }
@@ -41,6 +43,7 @@ const hasText = (value: string | undefined | null) => Boolean(value && value.tri
     photo is set. Whether the book currently PRINTS it is a setting, not a
     missing photo. */
 export function hasPhoto(context: OrganizeRecipeContext): boolean {
+  if (context.ownPhotosOnly) return hasText(context.placement?.photoUrl);
   return hasText(context.item.recipe?.image) || hasText(context.placement?.heroImageUrl);
 }
 

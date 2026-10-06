@@ -4124,6 +4124,43 @@
   display: block;
 }
 
+/* A full page whose photo has not been added yet (books of the cook's own
+   photos). Screen only: the export will not run while one is empty. */
+.recipe-image-spread__placeholder {
+  position: absolute;
+  inset: 0.5in;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.08in;
+  border: 0.02in dashed var(--cp-line-strong);
+  border-radius: 0.12in;
+  background: var(--cp-surface-muted);
+  color: var(--cp-ink-soft);
+  font: inherit;
+  text-align: center;
+}
+
+/* Clickable once its page is the focused one, like every photo surface. */
+.recipe-spread__page.is-focused .recipe-image-spread__placeholder {
+  cursor: pointer;
+}
+
+.recipe-spread__page.is-focused .recipe-image-spread__placeholder:hover {
+  background: var(--cp-surface-strong);
+}
+
+.recipe-image-spread__placeholder-title {
+  font-size: 0.34in;
+  font-weight: var(--cp-fw-bold);
+  color: var(--cp-ink);
+}
+
+.recipe-image-spread__placeholder-note {
+  font-size: 0.2in;
+}
+
 /* Drag-to-reposition affordance (screen only, on the focused photo). */
 .recipe-image-spread__photo--draggable {
   cursor: grab;
