@@ -41,7 +41,7 @@ import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import { PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
-import { deckIndexForPendingSlot } from "@/lib/pendingDeckSlot";
+import { deckIndexForPendingSlot, landingForRecipe } from "@/lib/pendingDeckSlot";
 import {
   usePrintSheets,
   type NavItem,
@@ -5707,18 +5707,19 @@ export default function PrintPage() {
   useEffect(() => {
     const pendingId = pendingFocusNavId ?? pendingFocusRecipeId;
     if (!pendingId) return;
-    const index = navItems.findIndex((navItem) => navItem.recipeId === pendingId);
-    if (index === -1) return;
-    const targetSheet = navItems[index]?.sheetIndex;
-    const targetIndex = cookbookView
-      ? spreads.findIndex(
-          (spread) => spread.left === targetSheet || spread.right === targetSheet,
-        )
-      : index;
-    if (targetIndex === -1) return;
+    const landing = landingForRecipe({ cookbookView, recipeId: pendingId, navItems, spreads });
+    if (!landing) return;
+    const targetIndex = landing.slide;
     // If the recipe didn't actually move pages, no navigation reset fires to
     // consume the keep-editing ref, so clear it here to avoid a stale skip.
     if (targetIndex === activeNavIndex) keepEditingRef.current = null;
+    // Select the arrived page itself, not just its spread (see
+    // `landingForRecipe`).
+    if (landing.sheet !== null) {
+      setActiveImportId(null);
+      if (targetIndex === activeNavIndex) setFocusedSheetIndex(landing.sheet);
+      else pendingFocusSheetRef.current = landing.sheet;
+    }
     goToSlide(targetIndex);
     if (pendingFocusNavId) setPendingFocusNavId(null);
     if (pendingFocusRecipeId === pendingId) setPendingFocusRecipeId(null);

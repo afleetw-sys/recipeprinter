@@ -13,6 +13,7 @@ import {
 } from "react";
 import { formatRecipeTime } from "@/lib/time";
 import { RichText } from "@/components/RichText";
+import { PhotoPlaceholder } from "@/components/print/PhotoPlaceholder";
 import { composeNote } from "@/lib/recipeNote";
 import { InlineRichField, type CaretRange } from "@/components/InlineRichField";
 import { photoGridLayout } from "@/lib/photoGrid";
@@ -1380,7 +1381,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           </div>
           {showPhoto && !hasImage && (
             <span className="recipe-card__photo recipe-card__photo--placeholder">
-              <span className="recipe-card__photo-placeholder-label no-print">Add a photo</span>
+              <PhotoPlaceholder variant="inline" />
             </span>
           )}
           {showPhoto && hasImage && (

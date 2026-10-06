@@ -25,6 +25,7 @@ import {
   clampImageZoom,
 } from "@/lib/imageZoom";
 import { ZoomControl } from "@/components/print/ZoomControl";
+import { PhotoPlaceholder } from "@/components/print/PhotoPlaceholder";
 import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import {
@@ -256,12 +257,7 @@ export const ScaledPage = memo(function ScaledPage({
                     isLastSheet ? "recipe-card-page--no-break" : ""
                   }`}
                 >
-                  <div className="recipe-image-spread__placeholder no-print">
-                    <span className="recipe-image-spread__placeholder-title">Add a photo</span>
-                    <span className="recipe-image-spread__placeholder-note">
-                      Upload your own photo
-                    </span>
-                  </div>
+                  <PhotoPlaceholder variant="page" />
                 </div>
               </div>
             </div>
@@ -459,10 +455,7 @@ export const ScaledPage = memo(function ScaledPage({
                   // An image page added before its photo: hold the place, as a
                   // recipe's full page does. Screen only; clicking it opens the
                   // page's photo picker (PHOTO_SURFACES in PrintDeck).
-                  <div className="recipe-image-spread__placeholder no-print">
-                    <span className="recipe-image-spread__placeholder-title">Add a photo</span>
-                    <span className="recipe-image-spread__placeholder-note">Upload your own photo</span>
-                  </div>
+                  <PhotoPlaceholder variant="page" />
                 ) : null}
                 {anySlot.caption?.trim() && (
                   <p

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deckIndexForPendingSlot } from "@/lib/pendingDeckSlot";
+import { deckIndexForPendingSlot, landingForRecipe } from "@/lib/pendingDeckSlot";
 
 // Cover alone, then (1,2), (3,4), (5,6) — sheet indexes, one nav item per sheet.
 const navItems = Array.from({ length: 7 }, (_, sheetIndex) => ({ sheetIndex }));
@@ -38,5 +38,26 @@ describe("deckIndexForPendingSlot", () => {
     expect(deckIndexForPendingSlot({ cookbookView: true, slot: 1, navItems: [{ sheetIndex: 99 }], spreads })).toBe(3);
     expect(deckIndexForPendingSlot({ cookbookView: true, slot: 0, navItems: [], spreads })).toBe(0);
     expect(deckIndexForPendingSlot({ cookbookView: true, slot: 3, navItems, spreads: [] })).toBe(0);
+  });
+});
+
+describe("landingForRecipe", () => {
+  it("selects the just-added recipe's own page, on either side of its spread", () => {
+    // Sheets: 0 chapter opener, 1 new recipe facing it, 2 a new recipe on a
+    // left-hand page.
+    const navItems = [
+      { recipeId: "chapter", sheetIndex: 0 },
+      { recipeId: "beside-opener", sheetIndex: 1 },
+      { recipeId: "on-left", sheetIndex: 2 },
+    ];
+    const spreads = [
+      { left: 0, right: 1 },
+      { left: 2, right: null },
+    ];
+    const land = (recipeId: string) => landingForRecipe({ cookbookView: true, recipeId, navItems, spreads });
+    // Left as the spread's default, the opener stayed selected and the new
+    // recipe, on the right, was not.
+    expect(land("beside-opener")).toEqual({ slide: 0, sheet: 1 });
+    expect(land("on-left")).toEqual({ slide: 1, sheet: 2 });
   });
 });

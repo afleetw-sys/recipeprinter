@@ -101,8 +101,8 @@ const PHOTO_SURFACES = [
   // Both full-page art surfaces: a recipe's facing photo and a chapter's.
   // There is no `.recipe-image-spread` wrapper, only this element.
   ".recipe-image-spread__photo",
-  // A full page still waiting for its photo: the place the photo goes.
-  ".recipe-image-spread__placeholder",
+  // A photo still waiting to be added: the place the photo goes.
+  ".photo-placeholder",
 ].join(", ");
 
 export const DECK_ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
