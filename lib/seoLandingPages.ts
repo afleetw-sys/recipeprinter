@@ -2741,19 +2741,19 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howTo: [
       {
         name: "Add recipes from anywhere",
-        text: "Add links, screenshots, handwritten cards, pasted text, or recipes from apps. No retyping.",
+        text: "Add recipe links, screenshots, handwritten cards, pasted text, or recipes from apps, and each one becomes an editable recipe, no retyping needed.",
       },
       {
         name: "Build chapters",
-        text: "Create, rename, and reorder chapters, and move recipes between them.",
+        text: "Create and name chapters, put them in order, and move recipes between them as your book takes shape.",
       },
       {
         name: "Edit every recipe and page",
-        text: "Fix any recipe, add notes and photos, and rearrange as you go. Contents and page numbers keep up.",
+        text: "Fix any recipe, add notes and photos, and rearrange as you go, while the table of contents and page numbers update on their own.",
       },
       {
         name: "Export a print-ready cookbook PDF",
-        text: "Download a PDF to print at home or send to a print shop.",
+        text: "Download a print-ready PDF to print at home or send to a print shop for binding.",
       },
     ],
     featureSections: [
