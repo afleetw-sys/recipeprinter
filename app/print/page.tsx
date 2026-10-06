@@ -6543,6 +6543,11 @@ export default function PrintPage() {
         }}
         onStart={() => {
           setShowCookbookOfferDialog(false);
+          // The button says "Start adding recipes", so it does: straight into
+          // Add recipes. Only closing left a new cook in an empty book with no
+          // idea where adding happens. No page is aimed at, so the recipe goes
+          // where an unplaced one always does (see `addRecipeTarget`).
+          openAddRecipeBelow(null);
         }}
       />
       {showProUpgradeDialog && (
