@@ -2712,7 +2712,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "cookbook-maker",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-06",
     copyReviewed: "2026-10-02",
     primaryKeyword: "cookbook maker",
     secondaryKeywords: [
@@ -2720,7 +2720,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "recipe book creator",
       "recipe book maker",
       "create a cookbook online",
-      "make a cookbook from my recipes",
       "cookbook creator",
       "custom cookbook maker",
       "family cookbook maker",
@@ -2732,16 +2731,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     layout: "capture-first",
     heroImage: "bound-cookbook",
     importSubmitLabel: "Start my cookbook",
-    title: "Cookbook Maker for Your Own Recipes | RecipePrinter",
+    title: "Online Cookbook Maker | Turn Any Recipes Into a Book | RecipePrinter",
     description:
-      "Create a cookbook from your own recipes. Import recipes, organize chapters, edit pages, add a cover and table of contents, then export a print-ready PDF.",
-    h1: "Make a cookbook from your own recipes",
+      "Make a cookbook from recipes you find anywhere: links, screenshots, apps, or handwritten cards. Organize chapters, add a cover, and export a print-ready PDF.",
+    h1: "Online cookbook maker",
     lede:
-      "Use the RecipePrinter cookbook maker to import your own recipes, organize them into chapters, edit the pages, customize the cover, and export a finished print-ready PDF.",
+      "Bring recipes in from websites, screenshots, apps, or handwritten cards, organize them into chapters, design the cover, and export a print-ready PDF of your cookbook.",
     howToHeading: "How the cookbook maker works",
     howTo: [
       {
-        name: "Import your recipes",
+        name: "Add recipes from anywhere",
         text: "Add recipe links, photos, screenshots, handwritten cards, pasted text, or recipes from supported apps. RecipePrinter turns them into editable recipes so you do not have to retype everything by hand.",
       },
       {
