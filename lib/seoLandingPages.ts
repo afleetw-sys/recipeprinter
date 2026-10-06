@@ -3178,7 +3178,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Build it free, pay when you download",
         image: "printed-cookbook",
         body:
-          "Building and editing the cookbook is free. You pay $19.99 once, when you download the finished PDF. After that, you can keep adding recipes, fixing mistakes, and rearranging chapters, and download an updated copy whenever you like.",
+          "Building and editing the cookbook is free, and so is every change: add recipes, fix mistakes, and rearrange chapters whenever you like. You pay $19.99 once, when you download the PDF, and downloading an updated copy later costs nothing extra.",
       },
     ],
     faqHeading: "Homemade cookbook gift questions",
@@ -3209,7 +3209,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I keep editing before I give it?",
         answer:
-          "Yes. Editing is free while you build it, and after you download it you can keep editing and download an updated copy whenever you like.",
+          "Yes. Editing is always free, before and after you download, and downloading an updated copy costs nothing extra.",
       },
       {
         question: "How much does a homemade cookbook cost?",
