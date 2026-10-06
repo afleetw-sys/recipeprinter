@@ -2349,8 +2349,7 @@
     object-fit: cover;
     background: var(--cp-surface-muted);
   }
-  .dropzone__preview--name,
-  .dropzone__preview--more {
+  .dropzone__preview--name {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2361,12 +2360,30 @@
     font-weight: var(--cp-fw-medium);
     overflow-wrap: anywhere;
   }
-  .dropzone__change {
-    color: var(--cp-accent);
-    font-size: var(--cp-fs-caption);
-    font-weight: var(--cp-fw-medium);
-    text-decoration: underline;
-    text-underline-offset: 2px;
+  .dropzone__preview-wrap {
+    position: relative;
+    display: block;
+  }
+  .dropzone__remove {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--cp-line-strong);
+    border-radius: 999px;
+    background: var(--cp-card);
+    color: var(--cp-ink);
+    cursor: pointer;
+  }
+  .dropzone__remove:hover {
+    background: var(--cp-surface-strong);
+  }
+  .dropzone__remove:focus-visible {
+    outline: var(--cp-focus-ring);
+    outline-offset: 2px;
   }
 
   /* ── Save state ───────────────────────────────────────────────────────────
