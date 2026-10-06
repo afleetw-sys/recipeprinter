@@ -3109,8 +3109,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "homemade-cookbook-gift",
-    contentUpdated: "2026-10-05",
-    copyReviewed: "2026-10-02",
+    contentUpdated: "2026-10-06",
+    copyReviewed: "2026-10-06",
+    imagesReviewed: "2026-10-06",
     primaryKeyword: "homemade cookbook gift",
     secondaryKeywords: [
       "DIY cookbook gift",
