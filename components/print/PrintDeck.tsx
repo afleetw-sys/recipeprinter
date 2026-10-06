@@ -45,7 +45,7 @@ import {
   type useProjectMeta,
 } from "@/lib/project";
 import type { useDeckScroller } from "@/lib/useDeckScroller";
-import { isPhotoOpenClick, type PhotoPress } from "@/lib/photoOpenGesture";
+import { isPhotoOpenClick, photoDialogKey, type PhotoPress } from "@/lib/photoOpenGesture";
 import { LineSelectionToolbar } from "@/components/print/LineSelectionToolbar";
 import { TextFieldToolbar } from "@/components/print/TextFieldToolbar";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
@@ -101,8 +101,8 @@ const PHOTO_SURFACES = [
   // Both full-page art surfaces: a recipe's facing photo and a chapter's.
   // There is no `.recipe-image-spread` wrapper, only this element.
   ".recipe-image-spread__photo",
-  // A full page still waiting for its photo: the place the photo goes.
-  ".recipe-image-spread__placeholder",
+  // A photo still waiting to be added: the place the photo goes.
+  ".photo-placeholder",
 ].join(", ");
 
 export const DECK_ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -718,7 +718,7 @@ export function PrintDeck(props: PrintDeckProps) {
       ? sectionHasArtPage(dividerSection, sectionRecipeImages(dividerSection), photoStyle)
       : false;
     const addImagePageButton =
-      dividerSection && !dividerHasFacing ? (
+      dividerSection && !dividerHasFacing && !chapterFacesBlank(navItem.sheetIndex) ? (
         <PageToolbarItem
           menuLabel="Add image page"
           menuIcon={<PagePlusIcon size={ICON_SIZE.sm} />}
@@ -729,10 +729,7 @@ export function PrintDeck(props: PrintDeckProps) {
             className="recipe-page-toolbar__btn"
             onClick={(event) => {
               event.stopPropagation();
-              const seedPhoto = sectionRecipeImages(dividerSection)[0];
-              projectMeta.setArtPhoto(navItem.recipeId, "photo", {
-                photoUrl: dividerSection.artPhotoUrl ?? seedPhoto,
-              });
+              addChapterImagePage(dividerSection.id);
             }}
           >
             Add image page
@@ -1080,6 +1077,23 @@ export function PrintDeck(props: PrintDeckProps) {
       surface: target.closest(PHOTO_SURFACES),
     };
   };
+  /** Gives a chapter its facing image page (seeded from the chapter's own
+      photos when it has any), as the opener's old toolbar button did. */
+  const addChapterImagePage = (sectionId: string) => {
+    const section = sections.find((candidate) => candidate.id === sectionId);
+    if (!section) return;
+    const seedPhoto = sectionRecipeImages(section)[0];
+    projectMeta.setArtPhoto(sectionId, "photo", { photoUrl: section.artPhotoUrl ?? seedPhoto });
+  };
+  /** Whether this chapter opener sits on a left page with nothing facing it,
+      where the empty page itself offers Add image page / Add recipe. */
+  const chapterFacesBlank = (sheetIndex: number) => {
+    if (!cookbookView) return false;
+    const spread = spreads.find((candidate) => candidate.left === sheetIndex && !candidate.single);
+    if (!spread) return false;
+    if (spread.right === null) return spreads[spreads.length - 1] === spread;
+    return Boolean(sheets[spread.right]?.slots.some((slot) => slot?.kind === "blank"));
+  };
   const openPhotoOnClick = (navItem: NavItem, active: boolean) => (event: ReactMouseEvent) => {
     const press = photoPointerStart.current;
     // One press opens at most one photo. Left set, a stale press stays a
@@ -1097,8 +1111,7 @@ export function PrintDeck(props: PrintDeckProps) {
     ) {
       return;
     }
-    const key =
-      navItem.kind === "cover" ? `cover:${coverSideFromNavItem(navItem)}` : navItem.recipeId;
+    const key = photoDialogKey(navItem, () => coverSideFromNavItem(navItem));
     if (key) openPhotoDialog(key);
   };
 
@@ -1121,10 +1134,60 @@ export function PrintDeck(props: PrintDeckProps) {
     const index = spreads.findIndex((spread) => spread.left === sheet || spread.right === sheet);
     return index === -1 ? null : index;
   })();
+  /**
+   * A recipe added to the top of a chapter whose opener faces an empty page
+   * lands ON that page, so it loads there too. Drawn below the spread
+   * instead, the placeholder sat under the empty page and the finished
+   * recipe then jumped up into it, and the cook lost track of it.
+   *
+   * Not when the book puts every recipe on a full-page photo spread: such a
+   * recipe starts on a left-hand page, so it cannot fill the page facing the
+   * opener and does land after it.
+   */
+  const blankHostedImport = (() => {
+    if (pendingAnchorSpreadIndex === null || photoStyle === "full") return null;
+    const spread = spreads[pendingAnchorSpreadIndex];
+    if (!spread || spread.single || spread.left === null) return null;
+    const opener = sheets[spread.left]?.slots.find((slot) => slot?.kind === "divider");
+    if (!opener || opener.id !== pendingAddAfterRecipeId) return null;
+    const facesEmpty =
+      spread.right === null || Boolean(sheets[spread.right]?.slots.some((slot) => slot?.kind === "blank"));
+    return facesEmpty ? (parsingImports[0] ?? null) : null;
+  })();
+  /** The loading page itself: the photo being read, or what is being fetched. */
+  const pendingSheet = (pendingItem: QueueItem) => (
+    <div
+      className="recipe-page-pending__sheet"
+      style={{
+        width: previewDims.w * deckScale,
+        aspectRatio: `${previewDims.w} / ${previewDims.h}`,
+      }}
+    >
+      {importPreview(pendingItem.id) ? (
+        <>
+          {/* The photo being read, not its file name. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="recipe-page-pending__photo"
+            src={importPreview(pendingItem.id)}
+            alt=""
+            onError={(event) => {
+              // A photo this browser cannot draw (HEIC outside Safari).
+              event.currentTarget.hidden = true;
+            }}
+          />
+          <RecipeLoadingState label="Reading your photo…" />
+        </>
+      ) : (
+        <RecipeLoadingState label={importLoadingLabel(pendingItem)} />
+      )}
+    </div>
+  );
+  const listedImports = parsingImports.filter((item) => item !== blankHostedImport);
   const pendingPages =
-    parsingImports.length > 0 ? (
+    listedImports.length > 0 ? (
       <>
-        {parsingImports.map((pendingItem, index) => (
+        {listedImports.map((pendingItem, index) => (
           <div
             className={`recipe-page-slide recipe-page-pending ${
               activeImportId === pendingItem.id ? "is-active" : ""
@@ -1154,34 +1217,9 @@ export function PrintDeck(props: PrintDeckProps) {
             // The deck scrolls itself here while the import parses. Found by
             // attribute rather than a ref because the placeholder is outside
             // the sheets pipeline and has no slot in `slideRefs` to hold one.
-            data-pending-page={index === 0 ? "" : undefined}
+            data-pending-page={index === 0 && !blankHostedImport ? "" : undefined}
           >
-            <div
-              className="recipe-page-pending__sheet"
-              style={{
-                width: previewDims.w * deckScale,
-                aspectRatio: `${previewDims.w} / ${previewDims.h}`,
-              }}
-            >
-              {importPreview(pendingItem.id) ? (
-                <>
-                  {/* The photo being read, not its file name. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    className="recipe-page-pending__photo"
-                    src={importPreview(pendingItem.id)}
-                    alt=""
-                    onError={(event) => {
-                      // A photo this browser cannot draw (HEIC outside Safari).
-                      event.currentTarget.hidden = true;
-                    }}
-                  />
-                  <RecipeLoadingState label="Reading your photo…" />
-                </>
-              ) : (
-                <RecipeLoadingState label={importLoadingLabel(pendingItem)} />
-              )}
-            </div>
+            {pendingSheet(pendingItem)}
           </div>
         ))}
       </>
@@ -1485,10 +1523,59 @@ export function PrintDeck(props: PrintDeckProps) {
                       ? spread.left
                       : null;
                   const designedBlank = leftSlot?.kind === "toc";
+                  // A chapter opener with nothing facing it (an empty page the
+                  // book prints, or the open end of the book): that page is
+                  // where the chapter's own image page or its first recipe
+                  // would go, so it offers both. The opener's toolbar drops its
+                  // "Add image page" while this is showing (`chapterFacesBlank`).
+                  const chapterBesideBlank =
+                    cookbookView && leftSlot?.kind === "divider" ? leftSlot.id : null;
+                  const chapterBlankActions = chapterBesideBlank ? (
+                    <div className="recipe-spread__blank-note-actions">
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-compact recipe-spread__blank-note-action"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          addChapterImagePage(chapterBesideBlank);
+                        }}
+                      >
+                        <PagePlusIcon size={ICON_SIZE.sm} />
+                        Add image page
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-compact recipe-spread__blank-note-action"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openAddRecipeBelow(
+                            navItems.find(
+                              (nav) => nav.kind === "divider" && nav.recipeId === chapterBesideBlank,
+                            ) ?? null,
+                          );
+                        }}
+                      >
+                        <PlusIcon size={ICON_SIZE.sm} />
+                        Add recipe
+                      </button>
+                    </div>
+                  ) : null;
+                  // The import landing on the empty page beside a chapter
+                  // (`blankHostedImport`), loading in that page's place.
+                  const renderHostedImport = (pendingItem: QueueItem) => (
+                    <div
+                      className="recipe-page-pending recipe-page-pending--in-spread"
+                      aria-label={`Importing ${pendingItem.source}`}
+                      data-pending-import-id={pendingItem.id}
+                      data-pending-page=""
+                    >
+                      {pendingSheet(pendingItem)}
+                    </div>
+                  );
                   const renderBlank = (
                     trailing = false,
                     reason?: string,
-                    addDedication?: () => void,
+                    actions?: ReactNode,
                   ) => (
                     <div
                       className={`recipe-spread__blank recipe-template--${previewTemplate} ${
@@ -1508,23 +1595,15 @@ export function PrintDeck(props: PrintDeckProps) {
                       {leftSlot?.kind === "toc" ? (
                         <div className="recipe-spread__blank-decoration" aria-hidden />
                       ) : null}
-                      {reason ? (
+                      {reason || actions ? (
                         <div className="recipe-spread__blank-note no-print">
-                          <p className="recipe-spread__blank-note-title">Blank page</p>
-                          <p className="recipe-spread__blank-note-reason">{reason}</p>
-                          {addDedication ? (
-                            <button
-                              type="button"
-                              className="btn btn-secondary btn-compact recipe-spread__blank-note-action"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                addDedication();
-                              }}
-                            >
-                              <PlusIcon size={ICON_SIZE.sm} />
-                              Add dedication
-                            </button>
+                          {reason ? (
+                            <>
+                              <p className="recipe-spread__blank-note-title">Blank page</p>
+                              <p className="recipe-spread__blank-note-reason">{reason}</p>
+                            </>
                           ) : null}
+                          {actions}
                         </div>
                       ) : null}
                     </div>
@@ -1565,10 +1644,32 @@ export function PrintDeck(props: PrintDeckProps) {
                           .every((earlier) =>
                             earlier.slots.some((slot) => slot?.kind === "cover" && slot.side === "front"),
                           );
+                      const besideChapter = role === "right" && chapterBlankActions !== null;
+                      if (besideChapter && blankHostedImport && index === pendingAnchorSpreadIndex) {
+                        return renderHostedImport(blankHostedImport);
+                      }
                       return renderBlank(
                         false,
-                        isBlankLeaf ? blankPageReason(sheets, sheetIndex) : undefined,
-                        isOpeningPage ? onAddDedication : undefined,
+                        isBlankLeaf
+                          ? besideChapter
+                            ? "Give this chapter an image page, or start it with a recipe."
+                            : blankPageReason(sheets, sheetIndex)
+                          : undefined,
+                        isOpeningPage && onAddDedication ? (
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-compact recipe-spread__blank-note-action"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onAddDedication();
+                            }}
+                          >
+                            <PlusIcon size={ICON_SIZE.sm} />
+                            Add dedication
+                          </button>
+                        ) : role === "right" ? (
+                          chapterBlankActions
+                        ) : undefined,
                       );
                     }
                     // A linked spread (image or TOC) outlines both pages when
@@ -1664,8 +1765,20 @@ export function PrintDeck(props: PrintDeckProps) {
                           : (
                             <>
                               {renderSide(spread.left, "left")}
-                              {spread.right === null && index === spreads.length - 1
-                                ? renderBlank(!designedBlank)
+                              {spread.right === null &&
+                              index === spreads.length - 1 &&
+                              chapterBlankActions &&
+                              blankHostedImport &&
+                              index === pendingAnchorSpreadIndex
+                                ? renderHostedImport(blankHostedImport)
+                                : spread.right === null && index === spreads.length - 1
+                                ? renderBlank(
+                                    !designedBlank,
+                                    chapterBlankActions
+                                      ? "Give this chapter an image page, or start it with a recipe."
+                                      : undefined,
+                                    chapterBlankActions,
+                                  )
                                 : renderSide(spread.right, "right")}
                             </>
                           )}

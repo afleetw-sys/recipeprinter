@@ -41,7 +41,7 @@ import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import { PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
-import { deckIndexForPendingSlot } from "@/lib/pendingDeckSlot";
+import { deckIndexForPendingSlot, landingForRecipe } from "@/lib/pendingDeckSlot";
 import {
   usePrintSheets,
   type NavItem,
@@ -811,6 +811,15 @@ export default function PrintPage() {
     for (const sheet of sheets) {
       for (const slot of sheet.slots) {
         if (slot?.kind === "image" && !slot.imageUrl) titles.add(slot.label);
+        // A chapter's image page with nothing on it yet.
+        if (
+          slot?.kind === "section-photo" &&
+          slot.mode !== "none" &&
+          !(slot.mode === "photo" ? slot.photoUrl : slot.gridImages?.length) &&
+          !slot.caption?.trim()
+        ) {
+          titles.add(slot.title || "A chapter");
+        }
         if (slot?.kind === "recipe" && slot.showPhoto && !slot.isContinuation && !slot.recipe.image) {
           titles.add(slot.recipe.title || "Untitled recipe");
         }
@@ -1265,15 +1274,18 @@ export default function PrintPage() {
     }
   }
 
-  // Reorders whole sections by their stored (meta) index so the swap is correct
-  // even when `sections` has dropped an empty/unnamed section that `buildSections`
-  // filters out of the derived list.
+  // Moves a whole section past its neighbour AS THE COOK SEES THEM, by stored
+  // (meta) index. `sections` drops empty/unnamed sections that the stored list
+  // still holds, so stepping one stored place could land on an invisible one
+  // and look like nothing happened; this moves to the visible neighbour's slot.
   function moveSectionInBook(sectionId: string, direction: -1 | 1) {
+    const visible = sections.findIndex((section) => section.id === sectionId);
+    const neighbour = visible === -1 ? undefined : sections[visible + direction];
+    if (!neighbour) return;
     const metaSections = projectMeta.meta.sections;
     const from = metaSections.findIndex((section) => section.id === sectionId);
-    if (from === -1) return;
-    const to = from + direction;
-    if (to < 0 || to >= metaSections.length) return;
+    const to = metaSections.findIndex((section) => section.id === neighbour.id);
+    if (from === -1 || to === -1) return;
     projectMeta.reorderSections(from, to);
   }
 
@@ -4843,6 +4855,39 @@ export default function PrintPage() {
    * this function entirely (it sets the pending-add state directly), which
    * is correct for the same reason.
    */
+  /**
+   * The Add dialog's "Adding to" choice: every chapter, plus the recipes in no
+   * chapter when there are any (or when that is where this add was aimed).
+   * Only in a book with at least one named chapter. Picking one sends the
+   * recipe to the END of that chapter; the default stays wherever
+   * `addRecipeTarget` aimed it from the page on screen.
+   */
+  const addChapterTarget = (() => {
+    if (!cookbookMode || !sections.some((section) => section.title?.trim())) return undefined;
+    let hasUngrouped = false;
+    const options = sections.flatMap((section) => {
+      if (section.title?.trim()) return [{ id: section.id, label: section.title.trim() }];
+      if (hasUngrouped || (section.items.length === 0 && section.id !== pendingAddSectionId)) return [];
+      hasUngrouped = true;
+      return [{ id: section.id, label: "No chapter" }];
+    });
+    return {
+      options,
+      value: pendingAddSectionId,
+      onChange: (sectionId: string) => {
+        const section = sections.find((candidate) => candidate.id === sectionId);
+        if (!section) return;
+        setPendingAddSectionId(section.id);
+        setPendingAddIndex(section.items.length);
+        // The loading placeholder follows the chapter's last recipe, or sits
+        // after the opener of an empty chapter (see `AddRecipeTarget`).
+        setPendingAddAfterRecipeId(
+          section.items[section.items.length - 1]?.id ?? (section.title?.trim() ? section.id : null),
+        );
+      },
+    };
+  })();
+
   function openAddRecipeBelow(navItem: NavItem | null = activeNavItem) {
     if (multiRecipeAddLocked) {
       track("pro_feature_encountered", { feature: "batch_print", source: "add_more_recipes" });
@@ -5051,14 +5096,17 @@ export default function PrintPage() {
     const own = recipe.image;
     const history = projectMeta.meta.itemPlacements?.[recipeId]?.photoHistory ?? [];
     // What the page shows: in a book of the cook's own photos, the one they
-    // added, with the recipe's imported image still offered as a tile.
+    // added. The recipe's imported image is not offered there at all: it
+    // belongs to whoever published the recipe, so a printed book only ever
+    // holds photos the cook uploads.
     const shown = ownPhotosOnly ? projectMeta.meta.itemPlacements?.[recipeId]?.photoUrl : own;
+    const offered = ownPhotosOnly ? undefined : own;
     return (
       <ImagePicker
         current={shown}
         // The recipe's own photo plus the ones it has worn before, so a photo
         // replaced by an upload stays reachable instead of vanishing.
-        images={Array.from(new Set([...(own ? [own] : []), ...(shown ? [shown] : []), ...history]))}
+        images={Array.from(new Set([...(offered ? [offered] : []), ...(shown ? [shown] : []), ...history]))}
         onSelect={(url) =>
           ownPhotosOnly
             ? chooseBookPhoto(recipeId, url)
@@ -5108,12 +5156,14 @@ export default function PrintPage() {
     // A book of the cook's own photos keeps one photo per recipe, the same one
     // the recipe page's picker sets; the full page shows it (or a placeholder).
     const shown = ownPhotosOnly ? placement?.photoUrl : (placement?.heroImageUrl ?? own);
+    // Never the imported image in such a book (see `renderPagePhotoControl`).
+    const offered = ownPhotosOnly ? undefined : own;
     return (
       <ImagePicker
         current={shown}
         // Only this recipe's own photo (plus upload) — never a grid of OTHER
         // recipes' images, which isn't what "change this photo" means.
-        images={Array.from(new Set([...(own ? [own] : []), ...(shown ? [shown] : []), ...history]))}
+        images={Array.from(new Set([...(offered ? [offered] : []), ...(shown ? [shown] : []), ...history]))}
         onSelect={(url) =>
           ownPhotosOnly
             ? url
@@ -5657,18 +5707,19 @@ export default function PrintPage() {
   useEffect(() => {
     const pendingId = pendingFocusNavId ?? pendingFocusRecipeId;
     if (!pendingId) return;
-    const index = navItems.findIndex((navItem) => navItem.recipeId === pendingId);
-    if (index === -1) return;
-    const targetSheet = navItems[index]?.sheetIndex;
-    const targetIndex = cookbookView
-      ? spreads.findIndex(
-          (spread) => spread.left === targetSheet || spread.right === targetSheet,
-        )
-      : index;
-    if (targetIndex === -1) return;
+    const landing = landingForRecipe({ cookbookView, recipeId: pendingId, navItems, spreads });
+    if (!landing) return;
+    const targetIndex = landing.slide;
     // If the recipe didn't actually move pages, no navigation reset fires to
     // consume the keep-editing ref, so clear it here to avoid a stale skip.
     if (targetIndex === activeNavIndex) keepEditingRef.current = null;
+    // Select the arrived page itself, not just its spread (see
+    // `landingForRecipe`).
+    if (landing.sheet !== null) {
+      setActiveImportId(null);
+      if (targetIndex === activeNavIndex) setFocusedSheetIndex(landing.sheet);
+      else pendingFocusSheetRef.current = landing.sheet;
+    }
     goToSlide(targetIndex);
     if (pendingFocusNavId) setPendingFocusNavId(null);
     if (pendingFocusRecipeId === pendingId) setPendingFocusRecipeId(null);
@@ -6049,6 +6100,7 @@ export default function PrintPage() {
           itemIdsForSection={itemIdsForSection}
           renameSectionEverywhere={renameSectionEverywhere}
           requestDeleteSection={requestDeleteSection}
+          moveSectionInBook={moveSectionInBook}
           activeNavIndex={activeNavIndex}
           focusedSheet={focusedSheet}
           focusSheetInSpread={focusSheetInSpread}
@@ -6572,6 +6624,7 @@ export default function PrintPage() {
           track("pro_feature_encountered", { feature: "batch_print", source: "add_more_recipes" });
           openProUpgradeDialog("add_more_recipes");
         }}
+        chapterTarget={addChapterTarget}
       />
       <FeedbackDialog
         open={showFeedbackDialog}

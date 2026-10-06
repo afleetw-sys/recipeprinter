@@ -45,3 +45,24 @@ export function isPhotoOpenClick(options: {
 
   return Math.hypot(click.x - press.x, click.y - press.y) <= slop;
 }
+
+/**
+ * Which photo dialog a click on a page's photo opens: the same key the page's
+ * own toolbar picker listens on (see `photoDialogSignal` on the print page).
+ */
+export function photoDialogKey(
+  navItem: { kind: string; recipeId: string },
+  coverSide: () => string,
+): string | null {
+  switch (navItem.kind) {
+    case "cover":
+      return `cover:${coverSide()}`;
+    // A chapter has two pickers: its opener's photo and its facing image page.
+    case "divider":
+      return `card:${navItem.recipeId}`;
+    case "section-photo":
+      return `art:${navItem.recipeId}`;
+    default:
+      return navItem.recipeId;
+  }
+}
