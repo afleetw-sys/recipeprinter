@@ -12,7 +12,7 @@
 import { ImportError } from "@/lib/parser";
 import type { ImportFailureCode } from "@/lib/analytics";
 
-const MAX_IMAGE_FILES = 4;
+export const MAX_IMAGE_FILES = 4;
 const MAX_IMAGE_FILE_BYTES = 12 * 1024 * 1024;
 const MAX_IMAGE_TOTAL_BYTES = 24 * 1024 * 1024;
 const MAX_IMAGE_DATA_URL_CHARS = 3_500_000;

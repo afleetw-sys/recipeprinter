@@ -394,6 +394,13 @@ export interface RecipePagePlacement {
    * a fact about this project's presentation, not about the recipe itself.
    */
   photoHistory?: string[];
+  /**
+   * The photo this book shows for the recipe, in a book with
+   * `ownPhotosOnly`: one the cook picked or uploaded, used both in the page
+   * and as the full-page photo. Absent = no photo, whatever the recipe
+   * imported with. Ignored by older books, which still use `recipe.image`.
+   */
+  photoUrl?: string;
 }
 
 export interface CoverConfig {
@@ -472,6 +479,11 @@ export interface PrintProjectSettings {
   tocKicker?: string;
   tocTitle?: string;
   photoStyle?: "none" | "card" | "full";
+  /** A cookbook made after recipe photos stopped being pulled in: it shows
+      only photos the cook added (`RecipePagePlacement.photoUrl`), never the
+      image a recipe imported with. Absent on every older book, which keep
+      working exactly as they did. */
+  ownPhotosOnly?: boolean;
   /** How the cook chose to order recipes within each section. A property of the
       BOOK, not of the browser looking at it: "A-Z" is a standing instruction
       that keeps sorting as recipes are added and retitled, so it has to come

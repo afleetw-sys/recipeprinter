@@ -136,6 +136,7 @@ export function recipePagePlacementHasValues(placement: RecipePagePlacement): bo
     placement.heroZoom !== undefined ||
     placement.showPhoto !== undefined ||
     placement.showSourceUrl !== undefined ||
+    placement.photoUrl !== undefined ||
     (placement.photoHistory?.length ?? 0) > 0
   );
 }
@@ -169,6 +170,9 @@ export interface ProjectMeta {
   /** Book-wide recipe-photo default (cookbook). See PhotoStyle. Absent = the
       plain-card default ("card") — a header photo in each recipe card. */
   photoStyle?: PhotoStyle;
+  /** See `PrintProjectSettings.ownPhotosOnly`. Set when a new book is
+      scaffolded; absent on every book made before. */
+  ownPhotosOnly?: boolean;
   /** Whether the cookbook renders a table-of-contents page. */
   tableOfContents?: boolean;
   /** Editable TOC heading text (the entries themselves are derived from the
@@ -1137,6 +1141,12 @@ export function useProjectMeta() {
     [update],
   );
 
+  /** Marks a book as showing only the cook's own photos. See
+      `PrintProjectSettings.ownPhotosOnly`. */
+  const setOwnPhotosOnly = useCallback(() => {
+    update((current) => (current.ownPhotosOnly ? current : { ...current, ownPhotosOnly: true }));
+  }, [update]);
+
   /** Book-wide recipe-photo default (cookbook). See PhotoStyle. */
   const setPhotoStyle = useCallback(
     (value: PhotoStyle) => {
@@ -1193,6 +1203,9 @@ export function useProjectMeta() {
         // Dropping them here meant choosing a book-wide Photos option quietly
         // threw away every photo anyone had swapped out.
         if (placement.photoHistory?.length) kept.photoHistory = placement.photoHistory;
+        // The photo itself, in a book of the cook's own photos. A book-wide
+        // Photos choice says where photos go, not which ones.
+        if (placement.photoUrl !== undefined) kept.photoUrl = placement.photoUrl;
         if (recipePagePlacementHasValues(kept)) next[id] = kept;
       }
       return { ...current, itemPlacements: next };
@@ -1296,6 +1309,10 @@ export function useProjectMeta() {
         // of it and has to ride along.
         const showSourceUrl = map[itemId]?.showSourceUrl;
         const link = showSourceUrl !== undefined ? { showSourceUrl } : {};
+        // So is the photo a book of the cook's own photos shows, and the ones
+        // the recipe wore before it: a placement change is not a photo change.
+        const { photoUrl, photoHistory } = map[itemId] ?? {};
+        Object.assign(link, photoUrl ? { photoUrl } : {}, photoHistory?.length ? { photoHistory } : {});
         if (mode === "full") {
           map[itemId] = { pageLayout: "image-spread", ...(heroImageUrl ? { heroImageUrl } : {}), ...link };
         } else {
@@ -1344,6 +1361,7 @@ export function useProjectMeta() {
     clearItemLinkOverrides,
     clearSectionPhotoModes,
     setPhotoStyle,
+    setOwnPhotosOnly,
     startNewProject,
     clearCookbookIntent,
     replaceMeta,

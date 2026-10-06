@@ -112,3 +112,16 @@ export function chapterIntroFromRecipes(titles: readonly (string | undefined)[] 
   }
   return `${total} ${recipeWord(total)} in this chapter`;
 }
+
+/**
+ * The line "Use recipe names" would put back, or `undefined` when the chapter
+ * has no recipe with a name to put in it. Offering the button there would only
+ * swap the cook's own words for the generic fallback, which names nothing.
+ */
+export function recipeNamesIntro(
+  items: readonly { title?: string; recipe?: { title?: string } }[],
+): string | undefined {
+  const titles = chapterRecipeTitles(items);
+  if (!titles.some((title) => cleanTitle(title))) return undefined;
+  return chapterIntroFromRecipes(titles);
+}

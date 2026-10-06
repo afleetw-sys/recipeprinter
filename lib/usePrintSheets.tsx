@@ -27,6 +27,7 @@ import {
   presetCardHeightIn,
   presetCardVars,
 } from "@/lib/cookbookPresets";
+import { sectionsWithBookPhotos } from "@/lib/bookPhotos";
 import { RecipeFaceMeasurer } from "@/components/RecipeFaceMeasurer";
 import type {
   CookbookPresetId,
@@ -451,6 +452,10 @@ interface UsePrintSheetsOptions {
   /** Book-wide "Full page" photo default (cookbook): every recipe with an image
       defaults to a full-page image spread unless its own placement overrides. */
   defaultFullPage?: boolean;
+  /** The book shows only photos the cook added, never a recipe's imported
+      image (see lib/bookPhotos.ts), and a full-page photo not added yet holds
+      its page as an empty placeholder rather than disappearing. */
+  ownPhotosOnly?: boolean;
   /** The book-wide Photos choice itself (cookbook). Chapter openers with no
       placement of their own follow it — see `resolveCardPhotoMode` /
       `resolveArtPhotoMode`. */
@@ -498,6 +503,7 @@ export function usePrintSheets({
   itemPlacements,
   defaultFullPage,
   photoStyle,
+  ownPhotosOnly = false,
   cardSize,
   doubleSided,
   photosOn,
@@ -507,10 +513,13 @@ export function usePrintSheets({
   template,
   preset,
 }: UsePrintSheetsOptions) {
+  // Everything below reads `recipe.image` as "the photo this book shows", so
+  // a book of the cook's own photos swaps it here, once, for the photo they
+  // added (or none).
   const sections = useMemo<Section[]>(() => {
-    if (sectionsProp) return sectionsProp;
-    return [{ id: "__default", items: items ?? [] }];
-  }, [sectionsProp, items]);
+    const base = sectionsProp ?? [{ id: "__default", items: items ?? [] }];
+    return sectionsWithBookPhotos(base, itemPlacements, Boolean(cookbookMode) && ownPhotosOnly);
+  }, [sectionsProp, items, itemPlacements, cookbookMode, ownPhotosOnly]);
 
   const allItems = useMemo(() => sections.flatMap((section) => section.items), [sections]);
 
@@ -538,12 +547,17 @@ export function usePrintSheets({
   // to actually be a photo. Single source of truth
   // for BOTH measurement (a header photo changes card height) and what the slot
   // renders, so the two can never disagree and clip.
+  //
+  // Except in a book of the cook's own photos, where "In page" with no photo
+  // yet holds the photo's space as an "Add a photo" placeholder, the in-page
+  // twin of the empty full page. Measured that way too, so adding the photo
+  // later does not reflow the page.
   const photoOnFor = useCallback(
     (id: string, recipe: Recipe): boolean => {
-      if (!recipe.image) return false;
+      if (!recipe.image && !(ownPhotosOnly && cookbookLayouts)) return false;
       return itemPlacements?.[id]?.showPhoto ?? photosOn;
     },
-    [itemPlacements, photosOn],
+    [itemPlacements, photosOn, ownPhotosOnly, cookbookLayouts],
   );
 
   // The same decision for the source link. A link line changes a card's height
@@ -607,14 +621,17 @@ export function usePrintSheets({
 
     for (const item of allItems) {
       if (!item.recipe) continue;
+      // A book of the cook's own photos keeps the full page even with no
+      // photo yet: it holds an empty placeholder where the photo goes, so
+      // "Full page" for every recipe shows every page it will add.
       const fallback: RecipePageLayout =
-        defaultFullPage && item.recipe.image ? "image-spread" : "full";
+        defaultFullPage && (item.recipe.image || ownPhotosOnly) ? "image-spread" : "full";
       const resolved = itemPlacements?.[item.id]?.pageLayout || fallback;
       const hero = itemPlacements?.[item.id]?.heroImageUrl || item.recipe.image;
-      layoutOf.set(item.id, resolved === "image-spread" && !hero ? "full" : resolved);
+      layoutOf.set(item.id, resolved === "image-spread" && !hero && !ownPhotosOnly ? "full" : resolved);
     }
     return { layoutOf };
-  }, [cookbookLayouts, allItems, itemPlacements, defaultFullPage]);
+  }, [cookbookLayouts, allItems, itemPlacements, defaultFullPage, ownPhotosOnly]);
 
   const measuredRecipeItems = useMemo(
     () =>
@@ -861,7 +878,10 @@ export function usePrintSheets({
           id: item.id,
           layout,
           faceCount: info.faces.length,
-          heroImageUrl: itemPlacements?.[item.id]?.heroImageUrl || item.recipe.image,
+          heroImageUrl: ownPhotosOnly
+            ? item.recipe.image
+            : itemPlacements?.[item.id]?.heroImageUrl || item.recipe.image,
+          heroPlaceholder: ownPhotosOnly,
         });
       }
 
@@ -1139,7 +1159,7 @@ export function usePrintSheets({
     if (cookbookLayouts) closeSpreadGaps(out);
 
     return out;
-  }, [layoutSettled, sections, allItems, cover, backCover, dedication, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, linkOnFor, photoStyle, template, measuredFacesFor, cookbookMode, cookbookLayouts, cookbookResolution, itemPlacements, bookPreset]);
+  }, [layoutSettled, sections, allItems, cover, backCover, dedication, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, linkOnFor, photoStyle, template, measuredFacesFor, cookbookMode, cookbookLayouts, cookbookResolution, itemPlacements, bookPreset, ownPhotosOnly]);
 
   // What the rail and deck actually browse: one face per item, in physical
   // sheet order, except that a recipe's own faces (front + any continuations)
@@ -1323,6 +1343,7 @@ export function usePrintSheets({
             size={size}
             template={template}
             hasPhoto={hasPhoto}
+            photoPlaceholder
             showSourceUrl={linkOnFor(id)}
             cookbookMode={cookbookLayouts}
             cardVars={cardVars}

@@ -16,7 +16,11 @@ import type { QueueItem } from "@/types/recipe";
 import { track, type ImportFailureCode } from "@/lib/analytics";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { isPastedRecipeText } from "@/lib/importUrl";
-import { imageLabel, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
+import { imageLabel, MAX_IMAGE_FILES, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
+
+/** The Image tab's submit, on every surface. Exported for the add dialog,
+    whose own footer button stands in for this one. */
+export const IMAGE_SUBMIT_LABEL = "Read my photo";
 import {
   AppsIcon,
   ArrowRightIcon,
@@ -28,6 +32,7 @@ import {
   SpinnerIcon,
   TextIcon,
   UploadIcon,
+  XIcon,
 } from "@/components/icons";
 import { ButtonToggle } from "@/components/ButtonToggle";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
@@ -170,6 +175,16 @@ export function ImportPanel({
   const textRef = useRef<HTMLTextAreaElement | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
+  // Thumbnails of the attached photos, so the box shows what was chosen and
+  // not just a file name. A photo the browser cannot draw (HEIC outside
+  // Safari) shows its name instead.
+  const [imagePreviews, setImagePreviews] = useState<{ url: string; name: string; failed?: boolean }[]>([]);
+  useEffect(() => {
+    const next = imageFiles.map((file) => ({ url: URL.createObjectURL(file), name: file.name }));
+    setImagePreviews(next);
+    return () => next.forEach((preview) => URL.revokeObjectURL(preview.url));
+  }, [imageFiles]);
+
   const [error, setError] = useState<string | null>(null);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const overflowRef = useRef<HTMLDivElement | null>(null);
@@ -241,9 +256,13 @@ export function ImportPanel({
    * different button rather than as the same one working. The spinner sits in
    * the arrow's own slot, so nothing moves.
    */
+  // The Image tab's button always says what it does, on every surface (a
+  // cookbook's "Start my cookbook" included), and does not change with the
+  // number of photos.
+  const faceLabel = mode === "image" ? IMAGE_SUBMIT_LABEL : submitLabel;
   const submitFace = workspace ? (
     <>
-      {submitLabel}
+      {faceLabel}
       {submitBusy ? (
         <SpinnerIcon size={ICON_SIZE.md} />
       ) : (
@@ -253,7 +272,7 @@ export function ImportPanel({
   ) : (
     <>
       {submitBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
-      {submitLabel}
+      {faceLabel}
     </>
   );
 
@@ -324,7 +343,9 @@ export function ImportPanel({
       // other image failure the queue never gets to report them. Emit the
       // started+failed pair ourselves so they don't vanish from the funnel
       // (this is where "Choose at least one photo" was hiding).
-      if (imageFiles.length === 0 && onStartEmpty) return startEmpty(onStartEmpty);
+      // No empty start from here: a button that says "Read my photo" asks for
+      // one. A cookbook can still start empty from its other tabs and its own
+      // start-empty link.
       if (imageFiles.length === 0) {
         trackImageFailure("no_files", "no usable photo selected");
         return fail("Please add an image to start.");
@@ -368,20 +389,32 @@ export function ImportPanel({
   // rather than leaving the dropzone looking untouched. (Selection-time
   // problems aren't tracked — an import attempt only counts once the user hits
   // Add, which handleSubmit reports.)
+  /**
+   * Photos chosen or dropped ADD to the ones already attached. A recipe that
+   * runs over two pages is photographed twice, and replacing the first page
+   * with the second (what a second pick used to do) quietly lost half the
+   * recipe. The box never invites more than one, it just doesn't refuse them;
+   * each thumbnail has its own remove. A pick that would break the limits is
+   * turned away without touching what is already attached.
+   */
   function selectImageFiles(list: FileList | null) {
     const { images, rejected } = partitionImageFiles(list);
     if (images.length === 0) {
-      setImageFiles([]);
       if (rejected > 0) setError("Those files aren't photos we can read. Choose JPG or PNG images.");
       return;
     }
-    const validationError = validateImageFiles(images);
+    const next = [...imageFiles, ...images];
+    const validationError = validateImageFiles(next);
     if (validationError) {
-      setImageFiles([]);
       setError(validationError.message);
       return;
     }
-    setImageFiles(images);
+    setImageFiles(next);
+    resetError();
+  }
+
+  function removeImageFile(index: number) {
+    setImageFiles((current) => current.filter((_, i) => i !== index));
     resetError();
   }
 
@@ -415,13 +448,15 @@ export function ImportPanel({
    */
   useEffect(() => {
     if (!commitRef) return;
-    commitRef.current = () => (hasUncommittedInput() ? handleSubmit() : true);
+    // The Image tab's "Read my photo" with nothing chosen says so rather than
+    // closing the dialog as if a photo had gone in.
+    commitRef.current = () => (hasUncommittedInput() || mode === "image" ? handleSubmit() : true);
     return () => {
       commitRef.current = null;
     };
   });
 
-  function onDrop(e: DragEvent<HTMLLabelElement>) {
+  function onDrop(e: DragEvent<HTMLElement>) {
     e.preventDefault();
     setDragging(false);
     if (e.dataTransfer.files.length > 0) selectImageFiles(e.dataTransfer.files);
@@ -600,8 +635,12 @@ export function ImportPanel({
         {mode === "image" && (
           <div>
             <label className="field-label">Recipe photos</label>
-            <label
-              className={`dropzone ${dragging ? "is-dragging" : ""}`}
+            {/* One box to start. Once a photo is attached the box shrinks into
+                a small tile beside it (an animated width, see `.dropzone`), so
+                another page can be added without the screen asking for one.
+                Dropping works anywhere on the row. */}
+            <div
+              className={`dropzone-row ${imageFiles.length > 0 ? "is-attached" : ""}`}
               onDragOver={(e) => {
                 e.preventDefault();
                 setDragging(true);
@@ -612,25 +651,66 @@ export function ImportPanel({
               }}
               onDrop={onDrop}
             >
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="sr-only absolute h-px w-px overflow-hidden"
-                onChange={(e) => {
-                  selectImageFiles(e.target.files);
-                  // Clear the input so picking the SAME file again still fires
-                  // onChange — otherwise a retry after an error is a silent
-                  // no-op and the selection looks stuck at empty.
-                  e.target.value = "";
-                }}
-              />
-              <UploadIcon size={26} />
-              <span className="text-cp-body">{imageLabel(imageFiles)}</span>
-              <span className="text-cp-caption font-medium text-ink-soft">
-                Snap a cookbook page or screenshot, or drop multiple for one recipe
-              </span>
-            </label>
+              {imagePreviews.map((preview, index) => (
+                <span key={preview.url} className="dropzone__preview-wrap">
+                  {preview.failed ? (
+                    <span className="dropzone__preview dropzone__preview--name">{preview.name}</span>
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      className="dropzone__preview"
+                      src={preview.url}
+                      alt={preview.name}
+                      onError={() =>
+                        setImagePreviews((current) =>
+                          current.map((entry, i) => (i === index ? { ...entry, failed: true } : entry)),
+                        )
+                      }
+                    />
+                  )}
+                  <button
+                    type="button"
+                    className="dropzone__remove"
+                    aria-label={`Remove ${preview.name}`}
+                    onClick={() => removeImageFile(index)}
+                  >
+                    <XIcon size={ICON_SIZE.sm} />
+                  </button>
+                </span>
+              ))}
+              {imageFiles.length < MAX_IMAGE_FILES && (
+                <label
+                  className={`dropzone ${dragging ? "is-dragging" : ""} ${
+                    imageFiles.length > 0 ? "dropzone--compact" : ""
+                  }`}
+                  title={imageFiles.length > 0 ? "Add another photo" : undefined}
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    aria-label={imageFiles.length > 0 ? "Add another photo" : "Choose recipe photos"}
+                    className="sr-only absolute h-px w-px overflow-hidden"
+                    onChange={(e) => {
+                      selectImageFiles(e.target.files);
+                      // Clear the input so picking the SAME file again still fires
+                      // onChange — otherwise a retry after an error is a silent
+                      // no-op and the selection looks stuck at empty.
+                      e.target.value = "";
+                    }}
+                  />
+                  <UploadIcon size={26} />
+                  {imageFiles.length === 0 && (
+                    <>
+                      <span className="text-cp-body">{imageLabel(imageFiles)}</span>
+                      <span className="text-cp-caption font-medium text-ink-soft">
+                        Snap a cookbook page or screenshot, or drop multiple for one recipe
+                      </span>
+                    </>
+                  )}
+                </label>
+              )}
+            </div>
             {error && <p className="field-error" role="alert">{error}</p>}
           </div>
         )}

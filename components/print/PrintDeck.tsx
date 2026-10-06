@@ -29,7 +29,7 @@ import { ZoomControl } from "@/components/print/ZoomControl";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { recipeLinkOn } from "@/lib/recipeLink";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
-import { chapterIntroFromRecipes, chapterRecipeTitles } from "@/lib/chapterIntro";
+import { recipeNamesIntro } from "@/lib/chapterIntro";
 import { missingRecipeFields } from "@/lib/recipeMissingFields";
 import {
   RECIPE_PRINT_TEMPLATE_OPTIONS,
@@ -52,6 +52,7 @@ import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { PageToolbar, PageToolbarItem } from "@/components/print/PageToolbar";
 import { FailedImportCard } from "@/components/print/FailedImportCard";
 import { importLoadingLabel } from "@/lib/importProgress";
+import { importPreview } from "@/lib/importPreviews";
 import { BACK_COVER_NAV_ID } from "@/lib/railPending";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
 
@@ -100,6 +101,8 @@ const PHOTO_SURFACES = [
   // Both full-page art surfaces: a recipe's facing photo and a chapter's.
   // There is no `.recipe-image-spread` wrapper, only this element.
   ".recipe-image-spread__photo",
+  // A full page still waiting for its photo: the place the photo goes.
+  ".recipe-image-spread__placeholder",
 ].join(", ");
 
 export const DECK_ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -1160,7 +1163,24 @@ export function PrintDeck(props: PrintDeckProps) {
                 aspectRatio: `${previewDims.w} / ${previewDims.h}`,
               }}
             >
-              <RecipeLoadingState label={importLoadingLabel(pendingItem)} />
+              {importPreview(pendingItem.id) ? (
+                <>
+                  {/* The photo being read, not its file name. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    className="recipe-page-pending__photo"
+                    src={importPreview(pendingItem.id)}
+                    alt=""
+                    onError={(event) => {
+                      // A photo this browser cannot draw (HEIC outside Safari).
+                      event.currentTarget.hidden = true;
+                    }}
+                  />
+                  <RecipeLoadingState label="Reading your photo…" />
+                </>
+              ) : (
+                <RecipeLoadingState label={importLoadingLabel(pendingItem)} />
+              )}
             </div>
           </div>
         ))}
@@ -1235,15 +1255,17 @@ export function PrintDeck(props: PrintDeckProps) {
    * replaces that line for good — nothing overwrites what a cook wrote — so the
    * offer to go back is made where the words are: on the description field's own
    * bar, like bold and italic, and only while that field is the one being edited
-   * and there is something to undo. `undefined` until then, which keeps the bar
+   * and there is something to undo, and recipes to name. `undefined` until then, which keeps the bar
    * off a field that is still following the recipes.
    */
   const activeIntroReset = (() => {
     if (activeNavItem?.kind !== "divider") return undefined;
     const section = sections.find((candidate) => candidate.id === activeNavItem.recipeId);
     if (!section || section.intro === undefined) return undefined;
+    const derived = recipeNamesIntro(section.items);
+    if (derived === undefined) return undefined;
     return {
-      derived: chapterIntroFromRecipes(chapterRecipeTitles(section.items)),
+      derived,
       onReset: () => projectMeta.setSectionIntro(section.id, undefined),
     };
   })();

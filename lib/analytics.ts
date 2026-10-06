@@ -447,6 +447,9 @@ type EventProps = {
     stage: CookbookExportFailureStage;
     status?: number;
   };
+  /** An export held back because photo placeholders were still empty
+      (books of the cook's own photos). Not a fault: the cook is told which. */
+  cookbook_export_blocked_empty_photos: { preset: CookbookPresetId; count: number };
   /** A failed cover was prepared without rendering the safe interior again. */
   cookbook_cover_retry_succeeded: { preset: CookbookPresetId };
   /** A signed-out cookbook owner clicked a "back up your purchase with a free

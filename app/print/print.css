@@ -417,6 +417,40 @@
   text-align: center;
 }
 
+/* The organizer with no recipes in the book yet. */
+.recipe-organize-start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 24px 4px;
+  padding: 20px 16px;
+  border: 1px dashed var(--cp-line-strong);
+  border-radius: var(--cp-radius-md);
+  text-align: center;
+}
+
+.recipe-organize-start__title {
+  margin: 0;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body);
+  font-weight: var(--cp-fw-bold);
+}
+
+.recipe-organize-start__body {
+  margin: 0;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+}
+
+.recipe-organize-start__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 /* The question this control raises is "will this shuffle my chapters?" — so it
    answers it in the menu, where the choice is made. */
 .recipe-organize-bar__sort-note {
@@ -4124,6 +4158,71 @@
   display: block;
 }
 
+/* A full page whose photo has not been added yet (books of the cook's own
+   photos). Screen only: the export will not run while one is empty. */
+.recipe-image-spread__placeholder {
+  position: absolute;
+  inset: 0.5in;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.08in;
+  border: 0.02in dashed var(--cp-line-strong);
+  border-radius: 0.12in;
+  background: var(--cp-surface-muted);
+  color: var(--cp-ink-soft);
+  font: inherit;
+  text-align: center;
+}
+
+/* Clickable once its page is the focused one, like every photo surface. */
+.recipe-spread__page.is-focused .recipe-image-spread__placeholder {
+  cursor: pointer;
+}
+
+.recipe-spread__page.is-focused .recipe-image-spread__placeholder:hover {
+  background: var(--cp-surface-strong);
+}
+
+.recipe-image-spread__placeholder-title {
+  font-size: 0.34in;
+  font-weight: var(--cp-fw-bold);
+  color: var(--cp-ink);
+}
+
+.recipe-image-spread__placeholder-note {
+  font-size: 0.2in;
+}
+
+/* The in-page twin: a recipe set to "In page" before its photo is added.
+   Same box as the photo, so adding one later does not move anything. */
+.recipe-card__photo--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0.015in dashed var(--cp-line-strong);
+  border-radius: 0.06in;
+  background: var(--cp-surface-muted);
+  color: var(--cp-ink-soft);
+  text-align: center;
+}
+
+.recipe-card__photo-placeholder-label {
+  padding: 0 0.06in;
+  font-size: 0.11in;
+  font-weight: var(--cp-fw-bold);
+  line-height: 1.2;
+}
+
+.recipe-spread__page.is-focused .recipe-card__photo--placeholder {
+  cursor: pointer;
+}
+
+.recipe-spread__page.is-focused .recipe-card__photo--placeholder:hover {
+  background: var(--cp-surface-strong);
+}
+
 /* Drag-to-reposition affordance (screen only, on the focused photo). */
 .recipe-image-spread__photo--draggable {
   cursor: grab;
@@ -7493,6 +7592,23 @@ textarea.recipe-card__toc-title {
   max-height: 100%;
   border: 1px dashed var(--cp-line-strong);
   border-radius: 12px;
+}
+
+/* A photo import shows the photo it is reading, with the spinner and its
+   line underneath, all in the sheet's one grid cell. */
+.recipe-page-pending__sheet:has(.recipe-page-pending__photo) {
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 10% 10% 8%;
+  box-sizing: border-box;
+}
+
+.recipe-page-pending__photo {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+  border-radius: var(--cp-radius-sm);
 }
 
 /* The page an import failed on. Same box the recipe would have had — same

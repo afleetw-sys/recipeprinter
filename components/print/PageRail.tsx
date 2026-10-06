@@ -476,6 +476,7 @@ export function PageRail(props: PageRailProps) {
           item,
           chapterTitle: section.title ?? "",
           placement: projectMeta.meta.itemPlacements?.[item.id],
+          ownPhotosOnly: projectMeta.meta.ownPhotosOnly,
           pageCount: pageCounts.get(item.id) ?? 1,
         });
       });
@@ -1196,6 +1197,34 @@ export function PageRail(props: PageRailProps) {
                   {renderAddPages(addsAtTop)}
                   {organizeFiltering && shownGroups.length === 0 && (
                     <p className="recipe-organize-empty">No recipes match.</p>
+                  )}
+                  {/* Nothing to organize yet: say what to do instead of
+                      showing an empty panel. */}
+                  {organizeMode && !hasRecipes && (
+                    <div className="recipe-organize-start">
+                      <p className="recipe-organize-start__title">Nothing to organize yet</p>
+                      <p className="recipe-organize-start__body">
+                        Add recipes to your book, or set up chapters first and fill them as you go.
+                      </p>
+                      <div className="recipe-organize-start__actions">
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-compact"
+                          onClick={() => openAddRecipeBelow()}
+                        >
+                          <PlusIcon size={ICON_SIZE.md} />
+                          Add recipes
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-compact"
+                          onClick={() => addSectionDivider()}
+                        >
+                          <PlusIcon size={ICON_SIZE.md} />
+                          Add chapter
+                        </button>
+                      </div>
+                    </div>
                   )}
                   {shownGroups.map((group, groupIdx) => (
                   <Fragment key={group.key}>

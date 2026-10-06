@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ImportTab } from "@/types/recipe";
-import { ImportPanel } from "@/components/ImportPanel";
+import { IMAGE_SUBMIT_LABEL, ImportPanel } from "@/components/ImportPanel";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
 import { track } from "@/lib/analytics";
@@ -228,7 +228,11 @@ export function AddRecipeDialog({
             onClose();
           }}
         >
-          {addsOnPick ? "Done" : "Add"}
+          {addsOnPick
+            ? "Done"
+            : mode === "image"
+              ? IMAGE_SUBMIT_LABEL
+              : "Add"}
         </button>
       </div>
     </Dialog>
