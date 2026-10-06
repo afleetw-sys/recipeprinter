@@ -3159,7 +3159,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Combine handwritten recipes and online favorites",
-        image: "inline-editing",
+        image: "sources",
         body:
           "Recipes do not need to begin in the same format. Photograph an index card, paste a recipe link, upload a screenshot, or add recipe text manually. RecipePrinter turns those different sources into editable recipes so the finished cookbook feels consistent.",
         afterBody:
