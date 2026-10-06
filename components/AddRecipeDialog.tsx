@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ImportTab } from "@/types/recipe";
 import { IMAGE_SUBMIT_LABEL, ImportPanel } from "@/components/ImportPanel";
+import { Select } from "@/components/Select";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
 import { track } from "@/lib/analytics";
@@ -30,6 +31,7 @@ export function AddRecipeDialog({
   libraryLocked = false,
   librarySingleSelect = false,
   onLibraryLockedTap,
+  chapterTarget,
 }: {
   open: boolean;
   onClose: () => void;
@@ -53,6 +55,17 @@ export function AddRecipeDialog({
   librarySingleSelect?: boolean;
   /** Opens the Pro upgrade dialog — only ever called while `libraryLocked`. */
   onLibraryLockedTap?: () => void;
+  /**
+   * Which chapter the recipe goes into, shown so the cook can see it and
+   * change it. Without this, where a recipe landed depended on the page that
+   * happened to be on screen, which nothing ever said. Absent for a book with
+   * no chapters, where there is nothing to choose.
+   */
+  chapterTarget?: {
+    options: { id: string; label: string }[];
+    value: string | null;
+    onChange: (sectionId: string) => void;
+  };
 }) {
   /** Filled in by the import panel; lets Add finish the entry in the form. */
   const commitImportRef = useRef<(() => boolean) | null>(null);
@@ -165,6 +178,25 @@ export function AddRecipeDialog({
         </button>
       </div>
       <div className="recipe-add-dialog__body">
+        {chapterTarget && (
+          <div className="recipe-add-dialog__target">
+            <label className="recipe-add-dialog__target-label" htmlFor="recipe-add-chapter">
+              Adding to
+            </label>
+            <Select
+              id="recipe-add-chapter"
+              variant="compact"
+              value={chapterTarget.value ?? ""}
+              onChange={(event) => chapterTarget.onChange(event.target.value)}
+            >
+              {chapterTarget.options.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
         <ImportPanel
           commitRef={commitImportRef}
           onSubmitted={onClose}

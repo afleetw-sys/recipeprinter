@@ -424,9 +424,7 @@
   align-items: center;
   gap: 6px;
   margin: 24px 4px;
-  padding: 20px 16px;
-  border: 1px dashed var(--cp-line-strong);
-  border-radius: var(--cp-radius-md);
+  padding: 8px 16px;
   text-align: center;
 }
 
@@ -8640,6 +8638,25 @@ textarea.recipe-card__toc-title {
    the button click, and the deck that would otherwise show it is behind the
    backdrop. Flat, per the app's shadow policy — a hairline rule separates it
    from the form rather than a raised card. */
+.recipe-add-dialog__target {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.recipe-add-dialog__target-label {
+  flex: 0 0 auto;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+  font-weight: var(--cp-fw-medium);
+}
+
+.recipe-add-dialog__target .select-shell {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .recipe-add-dialog__duplicate {
   margin-top: 14px;
   color: var(--cp-ink-soft);
