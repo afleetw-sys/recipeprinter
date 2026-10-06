@@ -28,6 +28,7 @@ import {
   SpinnerIcon,
   TextIcon,
   UploadIcon,
+  XIcon,
 } from "@/components/icons";
 import { ButtonToggle } from "@/components/ButtonToggle";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
@@ -392,20 +393,32 @@ export function ImportPanel({
   // rather than leaving the dropzone looking untouched. (Selection-time
   // problems aren't tracked — an import attempt only counts once the user hits
   // Add, which handleSubmit reports.)
+  /**
+   * Photos chosen or dropped ADD to the ones already attached. A recipe that
+   * runs over two pages is photographed twice, and replacing the first page
+   * with the second (what a second pick used to do) quietly lost half the
+   * recipe. The box never invites more than one, it just doesn't refuse them;
+   * each thumbnail has its own remove. A pick that would break the limits is
+   * turned away without touching what is already attached.
+   */
   function selectImageFiles(list: FileList | null) {
     const { images, rejected } = partitionImageFiles(list);
     if (images.length === 0) {
-      setImageFiles([]);
       if (rejected > 0) setError("Those files aren't photos we can read. Choose JPG or PNG images.");
       return;
     }
-    const validationError = validateImageFiles(images);
+    const next = [...imageFiles, ...images];
+    const validationError = validateImageFiles(next);
     if (validationError) {
-      setImageFiles([]);
       setError(validationError.message);
       return;
     }
-    setImageFiles(images);
+    setImageFiles(next);
+    resetError();
+  }
+
+  function removeImageFile(index: number) {
+    setImageFiles((current) => current.filter((_, i) => i !== index));
     resetError();
   }
 
@@ -654,34 +667,41 @@ export function ImportPanel({
               {imageFiles.length > 0 ? (
                 <>
                   <span className="dropzone__previews">
-                    {imagePreviews.slice(0, 4).map((preview, index) =>
-                      preview.failed ? (
-                        <span key={preview.url} className="dropzone__preview dropzone__preview--name">
-                          {preview.name}
-                        </span>
-                      ) : (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          key={preview.url}
-                          className="dropzone__preview"
-                          src={preview.url}
-                          alt={preview.name}
-                          onError={() =>
-                            setImagePreviews((current) =>
-                              current.map((entry, i) => (i === index ? { ...entry, failed: true } : entry)),
-                            )
-                          }
-                        />
-                      ),
-                    )}
-                    {imagePreviews.length > 4 && (
-                      <span className="dropzone__preview dropzone__preview--more">
-                        +{imagePreviews.length - 4}
+                    {imagePreviews.map((preview, index) => (
+                      <span key={preview.url} className="dropzone__preview-wrap">
+                        {preview.failed ? (
+                          <span className="dropzone__preview dropzone__preview--name">{preview.name}</span>
+                        ) : (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            className="dropzone__preview"
+                            src={preview.url}
+                            alt={preview.name}
+                            onError={() =>
+                              setImagePreviews((current) =>
+                                current.map((entry, i) => (i === index ? { ...entry, failed: true } : entry)),
+                              )
+                            }
+                          />
+                        )}
+                        <button
+                          type="button"
+                          className="dropzone__remove"
+                          aria-label={`Remove ${preview.name}`}
+                          onClick={(event) => {
+                            // Inside the label: without this the click also
+                            // opens the file picker.
+                            event.preventDefault();
+                            event.stopPropagation();
+                            removeImageFile(index);
+                          }}
+                        >
+                          <XIcon size={ICON_SIZE.sm} />
+                        </button>
                       </span>
-                    )}
+                    ))}
                   </span>
                   <span className="text-cp-body">{imageLabel(imageFiles)}</span>
-                  <span className="dropzone__change">Choose different photos</span>
                 </>
               ) : (
                 <>
