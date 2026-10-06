@@ -3209,12 +3209,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I keep editing before I give it?",
         answer:
-          "Yes. Keep adding and revising recipes while you work. After the cookbook is purchased, you can continue editing that cookbook and export updated versions later.",
+          "Yes. Editing is free while you build it, and after you download it you can keep editing and download an updated copy whenever you like.",
       },
       {
         question: "How much does a homemade cookbook cost?",
         answer:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. Outside printing or binding costs are not included.",
+          "$19.99 once per cookbook, paid when you download the PDF. Printing and binding at a print shop are separate.",
       },
       {
         question: "Can I make the cookbook as a Christmas or holiday gift?",
