@@ -2603,7 +2603,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     startsCookbook: true,
     // A how-to search: the guide comes before the button.
     layout: "guide-first",
-    captureHeading: "Start your cookbook",
     heroImage: "printed-cookbook",
     heroImageAlt: "A homemade cookbook open to a recipe page beside a full-page photo of the finished dish.",
     importSubmitLabel: "Start my cookbook",
