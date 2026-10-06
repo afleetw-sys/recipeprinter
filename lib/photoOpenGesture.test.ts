@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPhotoOpenClick } from "./photoOpenGesture";
+import { isPhotoOpenClick, photoDialogKey } from "./photoOpenGesture";
 
 const photo = { id: "chapter-photo" };
 const otherPhoto = { id: "another-chapter-photo" };
@@ -46,5 +46,20 @@ describe("isPhotoOpenClick", () => {
     expect(
       isPhotoOpenClick({ press: { x: 100, y: 100, surface: photo }, click: at(100, 100, null), slop: 4 }),
     ).toBe(false);
+  });
+});
+
+describe("photoDialogKey", () => {
+  it("opens the picker each page's own toolbar listens on", () => {
+    const side = () => "front";
+    // Each kind of page with a clickable photo, and the key its toolbar
+    // picker opens on (see `photoDialogSignal` in app/print/page.tsx). A
+    // chapter's opener photo and its facing image page each have their own
+    // picker; keying them by the bare chapter id opened neither.
+    expect(photoDialogKey({ kind: "recipe", recipeId: "r1" }, side)).toBe("r1");
+    expect(photoDialogKey({ kind: "image", recipeId: "r1" }, side)).toBe("r1");
+    expect(photoDialogKey({ kind: "cover", recipeId: "cover-front" }, side)).toBe("cover:front");
+    expect(photoDialogKey({ kind: "divider", recipeId: "s1" }, side)).toBe("card:s1");
+    expect(photoDialogKey({ kind: "section-photo", recipeId: "s1" }, side)).toBe("art:s1");
   });
 });

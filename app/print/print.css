@@ -2036,6 +2036,13 @@
   line-height: 1.45;
 }
 
+.recipe-spread__blank-note-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
 .recipe-spread__blank-note-action {
   display: inline-flex;
   align-items: center;
