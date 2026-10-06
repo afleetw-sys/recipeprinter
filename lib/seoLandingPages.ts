@@ -3141,7 +3141,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Preservation and Gift SEO",
     startsCookbook: true,
     layout: "capture-first",
-    heroImage: "bound-cookbook",
+    // Not `bound-cookbook`, which opens /cookbook-maker: the cover, titled for
+    // one family, is the gift.
+    heroImage: "cookbook-cover",
+    heroImageAlt: "A printed homemade cookbook titled Our Family Cookbook, ready to give as a gift.",
     importSubmitLabel: "Start my cookbook",
     title: "Homemade Cookbook Gift | Make a Personalized Recipe Book",
     description:
@@ -3192,6 +3195,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "A dedication, family notes, photos, and recipe names can make the book feel more personal without turning it into a scrapbook.",
       },
       {
+        heading: "Plan around the date",
+        body:
+          "Start a few weeks before you need it. Collecting recipes from relatives usually takes the longest, and a print shop needs time to print, bind, and ship the book, so check their turnaround before you set a deadline.",
+        afterBody:
+          "If time runs short, print a copy at home for the day and order the bound version after.",
+      },
+      {
         // Not `bound-cookbook`: the hero already shows that photo.
         heading: "Build it free, pay when you download",
         image: "printed-cookbook",
@@ -3223,6 +3233,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Can I print the cookbook gift myself?",
         answer:
           "Yes. Download the finished PDF and print it at home, or send the file to a professional printing service for binding. RecipePrinter doesn't physically print or ship the book.",
+      },
+      {
+        question: "When should I start making a cookbook gift?",
+        answer:
+          "A few weeks ahead is comfortable. Gathering recipes from family takes the most time, and a print shop needs time to print, bind, and ship, so check their turnaround before the date.",
+      },
+      {
+        question: "How do I collect recipes from family?",
+        answer:
+          "Ask for photos of handwritten cards, screenshots, or links to the recipes they make most, and add them as they arrive. You don't need everything before you start.",
       },
       {
         question: "Can I keep editing before I give it?",
