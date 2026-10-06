@@ -2759,35 +2759,27 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Make a cookbook from recipes you already have",
-        image: "inline-editing",
-        imageAlt: "A recipe being edited inside the RecipePrinter cookbook maker.",
+        image: "addrecipes-cookbook",
         body:
           "You don't need to start with a finished manuscript. Import recipes one at a time from websites, photos, handwritten cards, screenshots, apps, or pasted text, then edit them as you build the cookbook.",
         afterBody:
           "That makes it easy to combine recipes that currently live in completely different places into one consistent book.",
       },
       {
-        heading: "Organize recipes into cookbook chapters",
-        image: "bound-cookbook",
-        imageAlt: "A finished cookbook open to a full-page photograph and a formatted recipe page.",
+        heading: "Organize chapters and design the cover",
+        // Not `bound-cookbook`: the hero already shows that photo.
+        image: "cookbook-cover",
         body:
-          "Create chapters, move recipes between sections, and see how the cookbook is organized while you work. The cover, opening pages, recipe pages, table of contents, and page numbers stay part of the same cookbook.",
+          "Create chapters, move recipes between them, and choose a cover design and photo. The table of contents and page numbers build themselves and update as recipes move or chapters change.",
         afterBody:
-          "Chapter opener pages can also include custom images and optional text.",
+          "Chapter opener pages can have their own photo and a line of text.",
       },
       {
-        heading: "Customize the cover, table of contents, and page numbers",
-        body:
-          "Give the cookbook a finished structure with a custom cover, chapter sections, a table of contents, and page numbers. You can keep editing the book as recipes move or chapters change.",
-        afterBody:
-          "Choose a cover design and image that fits the cookbook.",
-      },
-      {
-        heading: "$19.99 for one editable cookbook",
+        heading: "Build it free, pay $19.99 when you download",
         image: "printed-cookbook",
         imageAlt: "A finished spiral-bound cookbook open to a formatted recipe and food photograph.",
         body:
-          "Cookbook export costs $19.99 per cookbook. That one-time purchase lets you keep editing that cookbook and export updated PDFs again later.",
+          "Building and editing the cookbook is free, and so is every change. You pay $19.99 once, when you download the PDF, and downloading an updated copy later costs nothing extra.",
         afterBody:
           "RecipePrinter creates the PDF; you can print it at home or send the finished file to a printing service of your choice. A free RecipePrinter account is required to download the cookbook.",
       },
@@ -2827,7 +2819,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does the cookbook maker cost?",
         answer:
-          "Cookbook export is $19.99 per cookbook. The purchase lets you keep editing that cookbook and export updated PDFs again later.",
+          "$19.99 once per cookbook, paid when you download the PDF. Editing is free before and after, and downloading an updated copy costs nothing extra.",
       },
       {
         question: "Can I edit my cookbook after I buy it?",
