@@ -2779,7 +2779,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         image: "printed-cookbook",
         imageAlt: "A finished spiral-bound cookbook open to a formatted recipe and food photograph.",
         body:
-          "Building and editing the cookbook is free, and so is every change. You pay $19.99 once, when you download the PDF, and downloading an updated copy later costs nothing extra.",
+          "Building and editing your cookbook is always free. When it's ready, pay $19.99 once to download the PDF, and download updated copies anytime at no extra cost.",
         afterBody:
           "RecipePrinter creates the PDF; you can print it at home or send the finished file to a printing service of your choice. A free RecipePrinter account is required to download the cookbook.",
       },
@@ -3170,7 +3170,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Build it free, pay when you download",
         image: "printed-cookbook",
         body:
-          "Building and editing the cookbook is free, and so is every change: add recipes, fix mistakes, and rearrange chapters whenever you like. You pay $19.99 once, when you download the PDF, and downloading an updated copy later costs nothing extra.",
+          "Building and editing the cookbook is free, and so is every change: add recipes, fix mistakes, and rearrange chapters whenever you like. When it's ready, pay $19.99 once to download the PDF, and download updated copies anytime at no extra cost.",
       },
     ],
     faqHeading: "Homemade cookbook gift questions",
