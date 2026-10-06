@@ -2745,7 +2745,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Build chapters",
-        text: "Create and rename cookbook chapters, reorder them, and move recipes between sections as your book takes shape.",
+        text: "Create, rename, and reorder chapters, and move recipes between them.",
       },
       {
         name: "Edit every recipe and page",
