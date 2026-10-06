@@ -2429,7 +2429,9 @@
     height: 32px;
     border: 1px solid transparent;
     border-radius: 8px;
-    background: transparent;
+    /* Solid, not transparent: the settings scroll underneath this corner,
+       and a see-through button let them show through it. */
+    background: var(--cp-card);
     color: var(--cp-ink-soft);
     /* Hiding the panels never moves it: same corner, same size, same icon.
        Only its card fades in underneath, so it reads as the one thing left
@@ -2441,7 +2443,7 @@
       box-shadow 120ms ease;
   }
   .recipe-panel-toggle:hover {
-    background: var(--cp-overlay-hover);
+    background: color-mix(in srgb, var(--cp-ink) 6%, var(--cp-card));
     color: var(--cp-ink);
   }
   .recipe-panel-toggle.is-floating {
@@ -2482,7 +2484,14 @@
      edges — overflow-y:auto forces overflow-x to compute to auto, which clips. */
   padding-inline: 8px;
   overflow-y: auto;
-  scrollbar-gutter: stable;
+  /* Scrolls without showing a bar: the panel is a column of settings, and a
+     bar down its edge was chrome beside chrome. Wheel, trackpad, touch and
+     keyboard scrolling are unchanged. */
+  scrollbar-width: none;
+}
+
+.recipe-config-panel__scroll::-webkit-scrollbar {
+  display: none;
 }
 
 /* No rule across the top. It used to separate the settings above from Print
@@ -4259,7 +4268,6 @@
   width: calc(36 * var(--placeholder-px));
   height: calc(36 * var(--placeholder-px));
   border-radius: 999px;
-  background: var(--cp-accent-soft);
   color: var(--cp-ink);
 }
 
@@ -4275,6 +4283,7 @@
 }
 
 .photo-placeholder__note {
+  max-width: 24ch;
   font-size: calc(var(--cp-fs-caption) / var(--page-scale, 1));
 }
 
