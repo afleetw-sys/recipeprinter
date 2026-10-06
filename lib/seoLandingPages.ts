@@ -2724,7 +2724,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "create a cookbook online",
       "cookbook creator",
       "custom cookbook maker",
-      "family cookbook maker",
+      "cookbook template",
+      "print a cookbook",
     ],
     shortLabel: "Cookbook maker",
     pickerGroup: "output",
@@ -2760,7 +2761,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "Make a cookbook from recipes you already have",
+        heading: "Import recipes from anywhere",
         image: "addrecipes-cookbook",
         body:
           "You don't need to start with a finished manuscript. Import recipes one at a time from websites, photos, handwritten cards, screenshots, apps, or pasted text, then edit them as you build the cookbook.",
@@ -2775,6 +2776,19 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Create chapters, move recipes between them, and choose a cover design and photo. The table of contents and page numbers build themselves and update as recipes move or chapters change.",
         afterBody:
           "Chapter opener pages can have their own photo and a line of text.",
+      },
+      {
+        heading: "Themes designed for print",
+        image: "multi-themes",
+        body:
+          "Choose from more than a dozen themes, from clean and modern to a cream-stock keepsake look, plus a seasonal Christmas theme. The theme carries through the cover, chapter openers, and every recipe page.",
+        afterBody:
+          "Switch themes at any point and the whole book changes with it.",
+      },
+      {
+        heading: "Print-ready formats, including hardcover",
+        body:
+          "Download US Letter for a home printer, or full-bleed files for a coil-bound or hardcover book at US Letter or 8 × 10. Formats for print services come with a separate cover file sized to your book's spine, ready for services like Lulu.",
       },
       {
         heading: "Build it free, pay $19.99 when you download",
@@ -2802,6 +2816,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Does it create a table of contents and page numbers?",
         answer:
           "Yes. RecipePrinter builds the table of contents and page numbers from the cookbook's current recipe and chapter order.",
+      },
+      {
+        question: "What sizes can I print?",
+        answer:
+          "US Letter for printing at home, and US Letter or 8 × 10 for coil-bound and hardcover books from a print service.",
+      },
+      {
+        question: "Does it make a cover for a print service?",
+        answer:
+          "Yes. For the print-service formats you also get a separate cover file sized to your book's spine, using the cover size your printer gives you.",
       },
       {
         question: "Can I customize the cookbook cover?",
