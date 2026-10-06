@@ -2612,7 +2612,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "A step-by-step guide to making your own cookbook: choosing the recipes, organizing chapters, adding a dedication and family stories, and getting it printed.",
     h1: "How to make your own cookbook",
     lede:
-      "A cookbook is easier to finish when you plan it first. Here's how to choose the recipes, organize them into chapters, make the book personal, and get it printed, with RecipePrinter handling the layout.",
+      "A little planning makes a cookbook much easier to finish. This guide walks through choosing your recipes, organizing them into chapters, adding the personal touches, and getting the book printed. RecipePrinter takes care of the layout along the way.",
     howToHeading: "Make your cookbook in four steps",
     howTo: [
       {
@@ -2643,6 +2643,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Ways to organize your cookbook",
+        image: "organize-cookbook",
         body:
           "Most cookbooks follow the meal: breakfast, mains, sides, desserts. A family cookbook often works better by person, and a holiday book by occasion. Choose the order you'd reach for in the kitchen.",
         afterBody:
