@@ -2759,12 +2759,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "That makes it easy to combine recipes that currently live in completely different places into one consistent book.",
       },
       {
-        heading: "Themes designed for print",
+        heading: "Design the whole book",
         image: "multi-themes",
         body:
           "Choose from more than a dozen themes, from clean and modern to a cream-stock keepsake look, plus a seasonal Christmas theme. The theme carries through the cover, chapter openers, and every recipe page.",
         afterBody:
-          "Switch themes at any point and the whole book changes with it.",
+          "Add your own cover photo and title, give each chapter opener its own photo, and switch themes at any point.",
       },
       {
         heading: "Print-ready formats, including hardcover",
