@@ -2616,19 +2616,19 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howTo: [
       {
         name: "Collect the recipes you want to include",
-        text: "Add recipes from websites, photos, screenshots, handwritten cards, recipe apps, or pasted text. Check each recipe over and change anything you want before it goes into the book.",
+        text: "Add recipes from websites, photos, screenshots, handwritten cards, recipe apps, or pasted text, and change anything you like once they're in.",
       },
       {
         name: "Organize recipes into chapters",
-        text: "Sort recipes into chapters, choose their order, and add chapter opener pages. RecipePrinter keeps the table of contents and page numbers aligned with the book as it changes.",
+        text: "Sort recipes into chapters and put them in order, while the table of contents and page numbers keep up on their own.",
       },
       {
         name: "Customize the cover and pages",
-        text: "Add a title, cover image, dedication, recipe notes, and photos where supported. Keep editing the cookbook until the collection feels finished.",
+        text: "Add a title, cover photo, dedication, and notes, and keep editing until the book feels finished.",
       },
       {
         name: "Export and print your cookbook",
-        text: "Purchase the cookbook once, download the finished PDF, and print it at home or send the file to a professional printer. RecipePrinter creates the file but doesn't manufacture or ship the physical book.",
+        text: "Pay once when you download the PDF, then make copies at home or have a shop bind it into a book.",
       },
     ],
     featureSections: [
