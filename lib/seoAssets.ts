@@ -128,6 +128,13 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "The Add recipes dialog in a cookbook, with its four sources circled: a recipe link, a recipe app, an image, or pasted text.",
   },
+  "print-cookbook": {
+    src: "/images/print-cookbook.png",
+    width: 6350,
+    height: 3800,
+    alt:
+      "The Print your cookbook dialog set up for Lulu: two files, the pages and the cover, with a choice of hardcover or spiral binding and standard or edge-to-edge photos.",
+  },
   "dedication-page": {
     src: "/images/dedication.jpeg",
     width: 5472,

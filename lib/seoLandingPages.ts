@@ -2768,6 +2768,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Print-ready formats, including hardcover",
+        image: "print-cookbook",
         body:
           "Download US Letter for a home printer, or full-bleed files for a coil-bound or hardcover book at US Letter or 8 × 10. Formats for print services come with a separate cover file sized to your book's spine, ready for services like Lulu.",
       },
