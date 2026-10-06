@@ -71,6 +71,20 @@ type ProFeature = "theme" | "card_size" | "batch_print" | "advanced_layout" | "i
 export type ImportSurface = "home" | "capture" | "rail" | "dialog";
 
 /**
+ * Which kind of project an import fills, on the import events. Both products
+ * share one import path, so without this a cookbook's recipes and a recipe
+ * card's were indistinguishable. `cookbookId` is the book's project id (a
+ * random id, nothing personal), so imports can be counted per book and set
+ * against that book's `cookbook_export_ready`. Absent on imports that start
+ * before any project exists (the homepage and landing-page hand-offs count
+ * their attempt there, and the parse that follows on /print carries it).
+ */
+export interface ImportContextProps {
+  context: "cookbook" | "recipe_cards";
+  cookbookId?: string;
+}
+
+/**
  * Declared in types/recipe, where `QueueItem.errorCode` and `ParseError.failure`
  * are typed on it too — it is domain vocabulary that this file happens to bucket
  * events by, not an analytics invention. It lived here until 2026-09-12, which
@@ -136,6 +150,9 @@ type EventProps = {
    */
   recipe_import_started: {
     source: ImportMethod;
+    /** What the import is filling. See `ImportContextProps`. */
+    context?: ImportContextProps["context"];
+    cookbookId?: string;
     hostname?: string;
     /**
      * The queue item's id (`lib/ids.ts` `uid()`), not a new identifier minted
@@ -167,7 +184,7 @@ type EventProps = {
     url?: string;
   };
   /** Parsing produced a recipe. */
-  recipe_imported: { source: ImportMethod; hostname?: string };
+  recipe_imported: { source: ImportMethod; hostname?: string } & Partial<ImportContextProps>;
   /**
    * An import that succeeded but was then substantially rewritten by hand: the
    * parser read it wrong. Counts only, never text; the text goes to
@@ -430,7 +447,9 @@ type EventProps = {
   cookbook_printer_clicked: { printer: string; preset?: CookbookPresetId };
   /** Every file in an export package passed validation and is ready for the
       cook's explicit download. */
-  cookbook_export_ready: { preset: CookbookPresetId; files: number };
+  /** `recipeCount` and `cookbookId` let a paid book be compared, by size, with
+      the books that never got this far (see `ImportContextProps`). */
+  cookbook_export_ready: { preset: CookbookPresetId; files: number; recipeCount: number; cookbookId?: string };
   /** A prepared file's user-gesture download was started. Browsers expose no
       reliable completion signal, so this deliberately does not say finished. */
   cookbook_export_download_started: {

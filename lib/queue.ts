@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ImportMethod, QueueItem, Recipe } from "@/types/recipe";
-import { track, truncateReason } from "@/lib/analytics";
+import { track, truncateReason, type ImportContextProps } from "@/lib/analytics";
 import { ImportError, parseImages, parseText, parseUrlAll } from "@/lib/parser";
 import { captureFailedImportImages, recordFailedImport } from "@/lib/failedImportCapture";
 import { noteImported, noteRecipeEdited } from "@/lib/importCorrections";
@@ -439,6 +439,9 @@ export function useQueue() {
   // (rather than a value captured once) is what lets a mid-session upgrade
   // unlock the very next import with no reload.
   const singleRecipeOnlyRef = useRef(false);
+  // What the imports are filling, for the import events (see
+  // `ImportContextProps`). Set alongside the gate, for the same reason.
+  const importContextRef = useRef<ImportContextProps | undefined>(undefined);
   const onMultiRecipeBlockedRef = useRef<((info: MultiRecipeBlockedInfo) => void) | undefined>(
     undefined,
   );
@@ -465,9 +468,11 @@ export function useQueue() {
     (config: {
       singleRecipeOnly: boolean;
       onMultiRecipeBlocked?: (info: MultiRecipeBlockedInfo) => void;
+      importContext?: ImportContextProps;
     }) => {
       singleRecipeOnlyRef.current = config.singleRecipeOnly;
       onMultiRecipeBlockedRef.current = config.onMultiRecipeBlocked;
+      importContextRef.current = config.importContext;
     },
     [],
   );
@@ -709,7 +714,9 @@ export function useQueue() {
       // Before `work()` — the parse has not been asked for anything yet, and
       // this is a `capture` on the analytics queue, so it neither awaits
       // anything nor touches the parser path.
-      track("recipe_import_started", { ...outcome, importId: id, ...(url ? { url } : {}) });
+      // Read once, at the start: the import belongs to the project it began in.
+      const context = importContextRef.current ?? {};
+      track("recipe_import_started", { ...outcome, ...context, importId: id, ...(url ? { url } : {}) });
       try {
         const result = await work();
         // A URL import is a website's page, and we keep none of a website's
@@ -728,7 +735,7 @@ export function useQueue() {
         }
         const [first, ...allRest] = recipes;
         patch(id, { status: "ready", recipe: first, title: first.title || "Untitled recipe" });
-        track("recipe_imported", outcome);
+        track("recipe_imported", { ...outcome, ...context });
         // Watch for the cook rewriting it, the sign this "success" read the
         // recipe wrong (lib/importCorrections). Against the printable form,
         // the same one their edits arrive in.
@@ -773,7 +780,7 @@ export function useQueue() {
             addedAt: Date.now(),
           }));
           commit([...itemsRef.current, ...extras]);
-          rest.forEach(() => track("recipe_imported", outcome));
+          rest.forEach(() => track("recipe_imported", { ...outcome, ...context }));
         }
       } catch (err) {
         // A reserved documentation domain gets its own answer. The generic
@@ -1019,7 +1026,7 @@ export function useQueue() {
       // here or the library sources silently miss from every import total.
       // No started/failed pair: there's no parse step that could fail.
       nextRecipes.forEach((recipe) => {
-        track("recipe_imported", { source: recipe.method });
+        track("recipe_imported", { source: recipe.method, ...importContextRef.current });
       });
       return nextRecipes.length;
     },
