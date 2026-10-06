@@ -135,6 +135,13 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "The Print your cookbook dialog set up for Lulu: two files, the pages and the cover, with a choice of hardcover or spiral binding and standard or edge-to-edge photos.",
   },
+  "organize-cookbook": {
+    src: "/images/organize-cookbook.png",
+    width: 6350,
+    height: 3800,
+    alt:
+      "Organizing a cookbook into chapters by person, such as Aunt Wendy's Recipes and Grandma's Recipes, with a chapter opener page beside the list.",
+  },
   "dedication-page": {
     src: "/images/dedication.jpeg",
     width: 5472,

@@ -2589,73 +2589,79 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     copyReviewed: "2026-10-02",
     primaryKeyword: "make your own cookbook",
     secondaryKeywords: [
-      "create your own cookbook",
       "how to make a cookbook",
-      "make a cookbook from your recipes",
       "how to make your own cookbook",
-      "homemade cookbook",
+      "create your own cookbook",
+      "make a cookbook from your recipes",
       "custom cookbook from recipes",
-      "family cookbook",
-      "make a recipe book",
+      "how to organize a cookbook",
+      "how many recipes in a cookbook",
     ],
     shortLabel: "Your own cookbook",
     pickerGroup: "output",
     intent: "Organization SEO",
     startsCookbook: true,
-    layout: "capture-first",
-    heroImage: "bound-cookbook",
-    heroImageAlt: "A finished cookbook made from personal recipes, open to a full-page photograph and formatted recipe.",
+    // A how-to search: the guide comes before the button.
+    layout: "guide-first",
+    heroImage: "printed-cookbook",
+    heroImageAlt: "A homemade cookbook open to a recipe page beside a full-page photo of the finished dish.",
     importSubmitLabel: "Start my cookbook",
-    title: "Make Your Own Cookbook From Your Recipes | RecipePrinter",
+    title: "How to Make Your Own Cookbook, Step by Step | RecipePrinter",
     description:
-      "Turn your own recipes into a cookbook with chapters, a cover, table of contents, and page numbers. Print it at home or export a print-ready PDF.",
-    h1: "Make your own cookbook",
+      "A step-by-step guide to making your own cookbook: choosing the recipes, organizing chapters, adding a dedication and family stories, and getting it printed.",
+    h1: "How to make your own cookbook",
     lede:
-      "Turn the recipes you already use into your own cookbook. Import recipes from different places, organize them into chapters, customize the cover, and export a finished PDF you can print at home or send to a printer.",
-    howToHeading: "How to make a cookbook from your recipes",
+      "A little planning makes a cookbook much easier to finish. This guide walks through choosing your recipes, organizing them into chapters, adding the personal touches, and getting the book printed. RecipePrinter takes care of the layout along the way.",
+    howToHeading: "Make your cookbook in four steps",
     howTo: [
       {
-        name: "Collect the recipes you want to include",
-        text: "Add recipes from websites, photos, screenshots, handwritten cards, recipe apps, or pasted text. Check each recipe over and change anything you want before it goes into the book.",
+        name: "Choose your recipes",
+        text: "Pick the recipes you actually make and want to keep, and gather them from wherever they live: websites, screenshots, handwritten cards, or recipe apps.",
       },
       {
-        name: "Organize recipes into chapters",
-        text: "Sort recipes into chapters, choose their order, and add chapter opener pages. RecipePrinter keeps the table of contents and page numbers aligned with the book as it changes.",
+        name: "Plan your chapters",
+        text: "Group the recipes in a way that suits the book, by course, season, holiday, or the person each recipe came from.",
       },
       {
-        name: "Customize the cover and pages",
-        text: "Add a title, cover image, dedication, recipe notes, and photos where supported. Keep editing the cookbook until the collection feels finished.",
+        name: "Add the personal touches",
+        text: "Write a dedication, add a note to the recipes that have a story, and choose a cover photo that sets the tone.",
       },
       {
-        name: "Export and print your cookbook",
-        text: "Purchase the cookbook once, download the finished PDF, and print it at home or send the file to a professional printer. RecipePrinter creates the file but doesn't manufacture or ship the physical book.",
+        name: "Get it printed",
+        text: "Download the PDF when it's ready, then make copies at home or have a print shop bind it into a book.",
       },
     ],
     featureSections: [
       {
-        heading: "Make a cookbook from recipes you already have",
-        image: "cookpilot-export",
-        imageAlt: "Recipes from different sources collected into one RecipePrinter project.",
+        heading: "How many recipes should a cookbook have?",
+        image: "addrecipes-cookbook",
         body:
-          "Your recipes don't need to start in the same place. Bring together recipe links, screenshots, photos, handwritten cards, app imports, and recipes shared by family, then turn them into one consistent cookbook.",
+          "There's no right number. A small gift book can feel complete with 20 or 30 recipes, and a full family collection can run past 100. Start with the recipes you'd be sorry to lose, then add the ones people always ask you for.",
         afterBody:
-          "Each recipe stays editable, so you can correct old notes, clean up formatting, and make the collection feel like one book instead of a stack of unrelated recipes.",
+          "You can keep adding recipes after you start, so the first version doesn't have to be the final one.",
       },
       {
-        heading: "Organize your cookbook with chapters and a table of contents",
+        heading: "Ways to organize your cookbook",
+        image: "organize-cookbook",
         body:
-          "Group recipes into chapters and move them around as the book develops. RecipePrinter keeps the chapter structure, table of contents, and page numbers updated so you don't have to rebuild the layout every time something moves.",
+          "Most cookbooks follow the meal: breakfast, mains, sides, desserts. A family cookbook often works better by person, and a holiday book by occasion. Choose the order you'd reach for in the kitchen.",
         afterBody:
-          "Chapter opener pages can also include a custom image and optional text.",
+          "Chapters can be renamed and recipes moved at any time, and the table of contents and page numbers follow along.",
       },
       {
-        heading: "Print your cookbook at home or with a professional printer",
+        heading: "Make it more than a list of recipes",
+        image: "dedication-page",
+        body:
+          "The details are what make a cookbook worth keeping: a dedication at the front, a line about who made each dish, a photo of the food the way your family serves it.",
+        afterBody:
+          "Each chapter can open with its own photo and a few words about what's inside.",
+      },
+      {
+        heading: "Getting your cookbook printed",
         image: "bound-cookbook",
-        imageAlt: "A finished cookbook ready for home or professional printing.",
+        imageAlt: "A finished homemade cookbook open to a full-page photograph and a recipe page.",
         body:
-          "Cookbook export costs $19.99 per cookbook. That one-time purchase unlocks the cookbook and lets you keep editing it and export updated PDFs again later.",
-        afterBody:
-          "Print the finished PDF at home or send it to a professional printing service for binding or hardcover printing. RecipePrinter provides the finished file rather than printing or shipping physical books. If you change a recipe, reorder a chapter, or add a family note later, you can update the same purchased cookbook and export a new version without buying that cookbook again.",
+          "Print at home on US Letter paper, or send the PDF to a print shop for spiral binding or a hardcover. Building and editing your cookbook is always free. When it's ready, pay $19.99 once to download the PDF, and download updated copies anytime at no extra cost.",
       },
     ],
     faqHeading: "Questions about making your own cookbook",
@@ -2663,7 +2669,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I make my own cookbook?",
         answer:
-          "Collect the recipes you want to keep, import them into RecipePrinter, review and edit each recipe, organize them into chapters, customize the cover and pages, then export the finished cookbook as a PDF.",
+          "Choose your recipes, plan the chapters, add a dedication and any notes, then print the finished PDF at home or through a print shop. RecipePrinter handles the layout, contents page, and page numbers.",
+      },
+      {
+        question: "What should go at the front of a cookbook?",
+        answer:
+          "A dedication, a short introduction about where the recipes came from, or both. RecipePrinter has an opening page for either.",
       },
       {
         question: "Can I make a cookbook from recipes I already have?",
@@ -2673,32 +2684,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print the cookbook at home?",
         answer:
-          "Yes. Export the cookbook as a PDF and print the home-print format on your own printer. You can also take or upload the PDF to a professional printing service.",
-      },
-      {
-        question: "Can I export the cookbook as a PDF?",
-        answer:
-          "Yes. Purchasing the cookbook unlocks PDF export for that cookbook. A free RecipePrinter account is required at download time so the purchase can be confirmed and kept with your cookbook.",
-      },
-      {
-        question: "Can I edit the cookbook after I make it?",
-        answer:
-          "Yes. The purchase belongs to that cookbook, so you can continue editing it and export updated versions later without purchasing the same cookbook again.",
+          "Yes. Download the US Letter version and print it on your own printer, or send the PDF to a print shop for binding.",
       },
       {
         question: "How much does it cost?",
         answer:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. Printing and binding from an outside printing service cost extra.",
-      },
-      {
-        question: "Does RecipePrinter print and ship my cookbook?",
-        answer:
-          "No. RecipePrinter creates the finished cookbook PDF. You can print it yourself or send the file to a professional printing service.",
-      },
-      {
-        question: "Can I make a family cookbook from handwritten recipes?",
-        answer:
-          "Yes. Photograph or scan handwritten recipe cards, review the recipe text, then add those recipes to the cookbook alongside recipes from other sources.",
+          "Building and editing are free. You pay $19.99 once per cookbook when you download the PDF. Printing and binding at a print shop are separate.",
       },
     ],
     links: [
@@ -3132,7 +3123,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Preservation and Gift SEO",
     startsCookbook: true,
     layout: "capture-first",
-    heroImage: "bound-cookbook",
+    // Not `bound-cookbook`, which opens /cookbook-maker: the cover, titled for
+    // one family, is the gift.
+    heroImage: "cookbook-cover",
+    heroImageAlt: "A printed homemade cookbook titled Our Family Cookbook, ready to give as a gift.",
     importSubmitLabel: "Start my cookbook",
     title: "Homemade Cookbook Gift | Make a Personalized Recipe Book",
     description:
@@ -3183,6 +3177,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "A dedication, family notes, photos, and recipe names can make the book feel more personal without turning it into a scrapbook.",
       },
       {
+        heading: "Plan around the date",
+        body:
+          "Start a few weeks before you need it. Collecting recipes from relatives usually takes the longest, and a print shop needs time to print, bind, and ship the book, so check their turnaround before you set a deadline.",
+        afterBody:
+          "If time runs short, print a copy at home for the day and order the bound version after.",
+      },
+      {
         // Not `bound-cookbook`: the hero already shows that photo.
         heading: "Build it free, pay when you download",
         image: "printed-cookbook",
@@ -3214,6 +3215,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Can I print the cookbook gift myself?",
         answer:
           "Yes. Download the finished PDF and print it at home, or send the file to a professional printing service for binding. RecipePrinter doesn't physically print or ship the book.",
+      },
+      {
+        question: "When should I start making a cookbook gift?",
+        answer:
+          "A few weeks ahead is comfortable. Gathering recipes from family takes the most time, and a print shop needs time to print, bind, and ship, so check their turnaround before the date.",
+      },
+      {
+        question: "How do I collect recipes from family?",
+        answer:
+          "Ask for photos of handwritten cards, screenshots, or links to the recipes they make most, and add them as they arrive. You don't need everything before you start.",
       },
       {
         question: "Can I keep editing before I give it?",

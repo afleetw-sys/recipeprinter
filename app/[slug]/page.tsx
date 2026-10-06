@@ -295,20 +295,9 @@ export default function SeoLandingPage({ params }: PageProps) {
         </section>
       )}
 
-      {/* A cookbook page's capture is one button, so the heading and button
-          stack in the middle instead of spanning the two-column layout an
-          import box needs. */}
-      {isGuide && page.startsCookbook && (
-        <section className="border-y border-line py-[64px] text-center" aria-labelledby="guide-capture-heading">
-          <h2 id="guide-capture-heading" className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">
-            {page.captureHeading ?? "Start here"}
-          </h2>
-          <div id="rp-capture" className="mt-cp-5 flex scroll-mt-24 justify-center">
-            <CookbookStartButton label={page.importSubmitLabel} />
-          </div>
-        </section>
-      )}
-
+      {/* Not on a cookbook page: its start button is in the hero and the
+          header already, and a band holding the same button again added
+          nothing. */}
       {isGuide && !page.startsCookbook && (
         <section className="border-y border-line py-[64px]" aria-labelledby="guide-capture-heading">
           <div className="grid gap-cp-6 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] lg:items-center lg:gap-[88px]">
