@@ -59,6 +59,8 @@ export function AddRecipeDialog({
   const [duplicateTitle, setDuplicateTitle] = useState<string | null>(null);
   /** A URL field needs one line; a paste box and a dropzone need a dialog. */
   const [mode, setMode] = useState<ImportTab>(lastSource);
+  // Photos attached on the Image tab, so this footer button can say "Read my photo".
+  const [attachedPhotos, setAttachedPhotos] = useState(0);
   /**
    * The recipe-app sources have no form to submit: they add on pick, straight
    * from their own lists. So that tab's button finishes rather than adds.
@@ -167,6 +169,7 @@ export function AddRecipeDialog({
       <div className="recipe-add-dialog__body">
         <ImportPanel
           commitRef={commitImportRef}
+          onImageCountChange={setAttachedPhotos}
           onSubmitted={onClose}
           hideSubmit
           showAllModes
@@ -228,7 +231,13 @@ export function AddRecipeDialog({
             onClose();
           }}
         >
-          {addsOnPick ? "Done" : "Add"}
+          {addsOnPick
+            ? "Done"
+            : mode === "image" && attachedPhotos > 0
+              ? attachedPhotos > 1
+                ? "Read my photos"
+                : "Read my photo"
+              : "Add"}
         </button>
       </div>
     </Dialog>

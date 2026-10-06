@@ -83,6 +83,7 @@ export function ImportPanel({
   onAddText,
   onAddReadyRecipes,
   commitRef,
+  onImageCountChange,
   onSubmitted,
   libraryLocked = false,
   librarySingleSelect,
@@ -125,6 +126,9 @@ export function ImportPanel({
   /** Filled in by this panel with a function that submits whatever is in the
       form, so a parent's own "done" button can finish the job. */
   commitRef?: MutableRefObject<(() => boolean) | null>;
+  /** How many photos are attached on the Image tab, for a surface whose own
+      button (`hideSubmit`) should say "Read my photo" too. */
+  onImageCountChange?: (count: number) => void;
   /** The form's own submit (Enter in a field) handed its entry off. A surface
       that closes on its own Add should close on this too, or Enter adds the
       recipe and leaves the dialog sitting there as if nothing happened. */
@@ -170,6 +174,18 @@ export function ImportPanel({
   const textRef = useRef<HTMLTextAreaElement | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
+  // Thumbnails of the attached photos, so the box shows what was chosen and
+  // not just a file name. A photo the browser cannot draw (HEIC outside
+  // Safari) shows its name instead.
+  const [imagePreviews, setImagePreviews] = useState<{ url: string; name: string; failed?: boolean }[]>([]);
+  useEffect(() => {
+    const next = imageFiles.map((file) => ({ url: URL.createObjectURL(file), name: file.name }));
+    setImagePreviews(next);
+    return () => next.forEach((preview) => URL.revokeObjectURL(preview.url));
+  }, [imageFiles]);
+  useEffect(() => {
+    onImageCountChange?.(imageFiles.length);
+  }, [imageFiles.length, onImageCountChange]);
   const [error, setError] = useState<string | null>(null);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const overflowRef = useRef<HTMLDivElement | null>(null);
@@ -241,9 +257,17 @@ export function ImportPanel({
    * different button rather than as the same one working. The spinner sits in
    * the arrow's own slot, so nothing moves.
    */
+  // With photos attached the button says what it will do with them, on every
+  // surface (a cookbook's "Start my cookbook" included: it still starts it).
+  const faceLabel =
+    mode === "image" && imageFiles.length > 0
+      ? imageFiles.length > 1
+        ? "Read my photos"
+        : "Read my photo"
+      : submitLabel;
   const submitFace = workspace ? (
     <>
-      {submitLabel}
+      {faceLabel}
       {submitBusy ? (
         <SpinnerIcon size={ICON_SIZE.md} />
       ) : (
@@ -253,7 +277,7 @@ export function ImportPanel({
   ) : (
     <>
       {submitBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <PlusIcon size={ICON_SIZE.md} />}
-      {submitLabel}
+      {faceLabel}
     </>
   );
 
@@ -601,7 +625,9 @@ export function ImportPanel({
           <div>
             <label className="field-label">Recipe photos</label>
             <label
-              className={`dropzone ${dragging ? "is-dragging" : ""}`}
+              className={`dropzone ${dragging ? "is-dragging" : ""} ${
+                imageFiles.length > 0 ? "dropzone--attached" : ""
+              }`}
               onDragOver={(e) => {
                 e.preventDefault();
                 setDragging(true);
@@ -625,11 +651,47 @@ export function ImportPanel({
                   e.target.value = "";
                 }}
               />
-              <UploadIcon size={26} />
-              <span className="text-cp-body">{imageLabel(imageFiles)}</span>
-              <span className="text-cp-caption font-medium text-ink-soft">
-                Snap a cookbook page or screenshot, or drop multiple for one recipe
-              </span>
+              {imageFiles.length > 0 ? (
+                <>
+                  <span className="dropzone__previews">
+                    {imagePreviews.slice(0, 4).map((preview, index) =>
+                      preview.failed ? (
+                        <span key={preview.url} className="dropzone__preview dropzone__preview--name">
+                          {preview.name}
+                        </span>
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={preview.url}
+                          className="dropzone__preview"
+                          src={preview.url}
+                          alt={preview.name}
+                          onError={() =>
+                            setImagePreviews((current) =>
+                              current.map((entry, i) => (i === index ? { ...entry, failed: true } : entry)),
+                            )
+                          }
+                        />
+                      ),
+                    )}
+                    {imagePreviews.length > 4 && (
+                      <span className="dropzone__preview dropzone__preview--more">
+                        +{imagePreviews.length - 4}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-cp-body">{imageLabel(imageFiles)}</span>
+                  <span className="dropzone__change">Choose different photos</span>
+                </>
+              ) : (
+                <>
+                  <UploadIcon size={26} />
+                  <span className="text-cp-body">{imageLabel(imageFiles)}</span>
+                  <span className="text-cp-caption font-medium text-ink-soft">
+                    Snap a cookbook page or screenshot, or drop multiple for one recipe
+                  </span>
+                </>
+              )}
             </label>
             {error && <p className="field-error" role="alert">{error}</p>}
           </div>
