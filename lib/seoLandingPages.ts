@@ -2741,7 +2741,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howTo: [
       {
         name: "Add recipes from anywhere",
-        text: "Add recipe links, photos, screenshots, handwritten cards, pasted text, or recipes from supported apps. RecipePrinter turns them into editable recipes so you do not have to retype everything by hand.",
+        text: "Add links, screenshots, handwritten cards, pasted text, or recipes from apps. No retyping.",
       },
       {
         name: "Build chapters",
@@ -2749,11 +2749,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Edit every recipe and page",
-        text: "Correct recipe text, add notes or photos, rearrange recipes, and customize the book while you work. The table of contents and page numbers update with the current structure.",
+        text: "Fix any recipe, add notes and photos, and rearrange as you go. Contents and page numbers keep up.",
       },
       {
         name: "Export a print-ready cookbook PDF",
-        text: "Export a PDF for printing at home or with a professional printer. RecipePrinter creates the finished file but does not physically print or ship the book.",
+        text: "Download a PDF to print at home or send to a print shop.",
       },
     ],
     featureSections: [
