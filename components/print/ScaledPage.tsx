@@ -259,7 +259,7 @@ export const ScaledPage = memo(function ScaledPage({
                   <div className="recipe-image-spread__placeholder no-print">
                     <span className="recipe-image-spread__placeholder-title">Add a photo</span>
                     <span className="recipe-image-spread__placeholder-note">
-                      Upload your own or use the recipe&rsquo;s
+                      Upload your own photo
                     </span>
                   </div>
                 </div>

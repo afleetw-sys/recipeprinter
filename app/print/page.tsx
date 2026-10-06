@@ -5051,14 +5051,17 @@ export default function PrintPage() {
     const own = recipe.image;
     const history = projectMeta.meta.itemPlacements?.[recipeId]?.photoHistory ?? [];
     // What the page shows: in a book of the cook's own photos, the one they
-    // added, with the recipe's imported image still offered as a tile.
+    // added. The recipe's imported image is not offered there at all: it
+    // belongs to whoever published the recipe, so a printed book only ever
+    // holds photos the cook uploads.
     const shown = ownPhotosOnly ? projectMeta.meta.itemPlacements?.[recipeId]?.photoUrl : own;
+    const offered = ownPhotosOnly ? undefined : own;
     return (
       <ImagePicker
         current={shown}
         // The recipe's own photo plus the ones it has worn before, so a photo
         // replaced by an upload stays reachable instead of vanishing.
-        images={Array.from(new Set([...(own ? [own] : []), ...(shown ? [shown] : []), ...history]))}
+        images={Array.from(new Set([...(offered ? [offered] : []), ...(shown ? [shown] : []), ...history]))}
         onSelect={(url) =>
           ownPhotosOnly
             ? chooseBookPhoto(recipeId, url)
@@ -5108,12 +5111,14 @@ export default function PrintPage() {
     // A book of the cook's own photos keeps one photo per recipe, the same one
     // the recipe page's picker sets; the full page shows it (or a placeholder).
     const shown = ownPhotosOnly ? placement?.photoUrl : (placement?.heroImageUrl ?? own);
+    // Never the imported image in such a book (see `renderPagePhotoControl`).
+    const offered = ownPhotosOnly ? undefined : own;
     return (
       <ImagePicker
         current={shown}
         // Only this recipe's own photo (plus upload) — never a grid of OTHER
         // recipes' images, which isn't what "change this photo" means.
-        images={Array.from(new Set([...(own ? [own] : []), ...(shown ? [shown] : []), ...history]))}
+        images={Array.from(new Set([...(offered ? [offered] : []), ...(shown ? [shown] : []), ...history]))}
         onSelect={(url) =>
           ownPhotosOnly
             ? url
