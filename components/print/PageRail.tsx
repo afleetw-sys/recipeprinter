@@ -225,6 +225,8 @@ interface PageRailProps {
   setShowAddRecipeDialog: Dispatch<SetStateAction<boolean>>;
   openAddRecipeBelow: (navItem?: NavItem | null) => void;
   addSectionDivider: () => void;
+  /** Moves a whole chapter one place up (-1) or down (1) in the book. */
+  moveSectionInBook: (sectionId: string, direction: -1 | 1) => void;
   makeSectionFromSelection: (selection?: ReadonlySet<string>) => void;
   /** Tile-menu move: drops `ids` at the end of `sectionId`, in book order. */
   moveRecipesToSection: (ids: string[], sectionId: string) => void;
@@ -294,6 +296,7 @@ export function PageRail(props: PageRailProps) {
     setShowAddRecipeDialog,
     openAddRecipeBelow,
     addSectionDivider,
+    moveSectionInBook,
     makeSectionFromSelection,
     moveRecipesToSection,
     railSortMode,
@@ -1299,6 +1302,15 @@ export function PageRail(props: PageRailProps) {
                         // on it goes to the top of this chapter, folded or not
                         // (see `resolveRailDrop`).
                         data-rail-section-head={section.id}
+                        // Right-click opens the same menu as the ⋯ button, as
+                        // it already does on a recipe. Left alone while the
+                        // chapter name is being typed in, where the browser's
+                        // own menu (paste, spelling) is the one wanted.
+                        onContextMenu={(event) => {
+                          if ((event.target as HTMLElement).closest("input, textarea")) return;
+                          event.preventDefault();
+                          setChapterMenuId(section.id);
+                        }}
                       >
                         {!organizeFiltering && (
                           <button
@@ -1343,14 +1355,16 @@ export function PageRail(props: PageRailProps) {
                             ? "1 recipe"
                             : `${itemIdsForSection(section.id).length} recipes`}
                         </span>
-                        {/* Add recipe, rename and delete wait in a menu so the
-                            chapter name stays the main thing. A folded chapter
-                            is its name and count only. */}
-                        {!sectionFolded(section.id) && (
+                        {/* Add recipe, move, rename and delete wait in a menu so
+                            the chapter name stays the main thing. A folded
+                            chapter shows its name and count only, but still
+                            answers a right-click, so the menu is mounted for
+                            it with no button showing. */}
                           <div
                             className="recipe-page-rail__section-menu"
                             ref={chapterMenuId === section.id ? chapterMenuRef : undefined}
                           >
+                            {!sectionFolded(section.id) && (
                             <IconButton
                               className="icon-button--bare"
                               aria-label={`More actions for ${section.title}`}
@@ -1365,6 +1379,7 @@ export function PageRail(props: PageRailProps) {
                             >
                               <MoreHorizontalIcon size={ICON_SIZE.md} />
                             </IconButton>
+                            )}
                             {chapterMenuId === section.id && (
                               <AnchoredMenu
                                 anchorRef={chapterMenuRef}
@@ -1385,6 +1400,36 @@ export function PageRail(props: PageRailProps) {
                                     <PlusIcon size={ICON_SIZE.sm} />
                                     Add recipe
                                   </button>
+                                )}
+                                {!organizeFiltering && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      className="cp-menu__item"
+                                      disabled={sections[0]?.id === section.id}
+                                      onClick={() => {
+                                        setChapterMenuId(null);
+                                        moveSectionInBook(section.id, -1);
+                                      }}
+                                    >
+                                      <ChevronDownIcon size={ICON_SIZE.sm} className="rotate-180" />
+                                      Move chapter up
+                                    </button>
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      className="cp-menu__item"
+                                      disabled={sections[sections.length - 1]?.id === section.id}
+                                      onClick={() => {
+                                        setChapterMenuId(null);
+                                        moveSectionInBook(section.id, 1);
+                                      }}
+                                    >
+                                      <ChevronDownIcon size={ICON_SIZE.sm} />
+                                      Move chapter down
+                                    </button>
+                                  </>
                                 )}
                                 <button
                                   type="button"
@@ -1417,7 +1462,6 @@ export function PageRail(props: PageRailProps) {
                               </AnchoredMenu>
                             )}
                           </div>
-                        )}
                       </div>
                     )}
                     <div

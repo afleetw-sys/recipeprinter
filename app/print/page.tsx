@@ -1265,15 +1265,18 @@ export default function PrintPage() {
     }
   }
 
-  // Reorders whole sections by their stored (meta) index so the swap is correct
-  // even when `sections` has dropped an empty/unnamed section that `buildSections`
-  // filters out of the derived list.
+  // Moves a whole section past its neighbour AS THE COOK SEES THEM, by stored
+  // (meta) index. `sections` drops empty/unnamed sections that the stored list
+  // still holds, so stepping one stored place could land on an invisible one
+  // and look like nothing happened; this moves to the visible neighbour's slot.
   function moveSectionInBook(sectionId: string, direction: -1 | 1) {
+    const visible = sections.findIndex((section) => section.id === sectionId);
+    const neighbour = visible === -1 ? undefined : sections[visible + direction];
+    if (!neighbour) return;
     const metaSections = projectMeta.meta.sections;
     const from = metaSections.findIndex((section) => section.id === sectionId);
-    if (from === -1) return;
-    const to = from + direction;
-    if (to < 0 || to >= metaSections.length) return;
+    const to = metaSections.findIndex((section) => section.id === neighbour.id);
+    if (from === -1 || to === -1) return;
     projectMeta.reorderSections(from, to);
   }
 
@@ -4843,6 +4846,39 @@ export default function PrintPage() {
    * this function entirely (it sets the pending-add state directly), which
    * is correct for the same reason.
    */
+  /**
+   * The Add dialog's "Adding to" choice: every chapter, plus the recipes in no
+   * chapter when there are any (or when that is where this add was aimed).
+   * Only in a book with at least one named chapter. Picking one sends the
+   * recipe to the END of that chapter; the default stays wherever
+   * `addRecipeTarget` aimed it from the page on screen.
+   */
+  const addChapterTarget = (() => {
+    if (!cookbookMode || !sections.some((section) => section.title?.trim())) return undefined;
+    let hasUngrouped = false;
+    const options = sections.flatMap((section) => {
+      if (section.title?.trim()) return [{ id: section.id, label: section.title.trim() }];
+      if (hasUngrouped || (section.items.length === 0 && section.id !== pendingAddSectionId)) return [];
+      hasUngrouped = true;
+      return [{ id: section.id, label: "No chapter" }];
+    });
+    return {
+      options,
+      value: pendingAddSectionId,
+      onChange: (sectionId: string) => {
+        const section = sections.find((candidate) => candidate.id === sectionId);
+        if (!section) return;
+        setPendingAddSectionId(section.id);
+        setPendingAddIndex(section.items.length);
+        // The loading placeholder follows the chapter's last recipe, or sits
+        // after the opener of an empty chapter (see `AddRecipeTarget`).
+        setPendingAddAfterRecipeId(
+          section.items[section.items.length - 1]?.id ?? (section.title?.trim() ? section.id : null),
+        );
+      },
+    };
+  })();
+
   function openAddRecipeBelow(navItem: NavItem | null = activeNavItem) {
     if (multiRecipeAddLocked) {
       track("pro_feature_encountered", { feature: "batch_print", source: "add_more_recipes" });
@@ -6054,6 +6090,7 @@ export default function PrintPage() {
           itemIdsForSection={itemIdsForSection}
           renameSectionEverywhere={renameSectionEverywhere}
           requestDeleteSection={requestDeleteSection}
+          moveSectionInBook={moveSectionInBook}
           activeNavIndex={activeNavIndex}
           focusedSheet={focusedSheet}
           focusSheetInSpread={focusSheetInSpread}
@@ -6577,6 +6614,7 @@ export default function PrintPage() {
           track("pro_feature_encountered", { feature: "batch_print", source: "add_more_recipes" });
           openProUpgradeDialog("add_more_recipes");
         }}
+        chapterTarget={addChapterTarget}
       />
       <FeedbackDialog
         open={showFeedbackDialog}
