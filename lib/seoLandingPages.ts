@@ -1673,7 +1673,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-social-media-recipes",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-06",
     primaryKeyword: "print recipes from social media",
     // Not the per-app phrases ("print TikTok recipes" and so on): each is
     // another page's primary, and this page links to all five instead.
@@ -1740,7 +1740,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "You don't need to figure out where the recipe is first. Paste the link and RecipePrinter checks the places it could be.",
       },
       {
-        heading: "Saved is not the same as kept",
+        heading: "Saved isn't the same as kept",
         image: "card-in-box",
         body:
           "Saved posts are easy to lose in a folder full of hundreds of other recipes. A printed recipe is easier to find, cook from, and come back to.",
@@ -2585,7 +2585,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "make-your-own-cookbook",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-06",
     copyReviewed: "2026-10-02",
     primaryKeyword: "make your own cookbook",
     secondaryKeywords: [
@@ -2628,7 +2628,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Export and print your cookbook",
-        text: "Purchase the cookbook once, download the finished PDF, and print it at home or send the file to a professional printer. RecipePrinter creates the file but does not manufacture or ship the physical book.",
+        text: "Purchase the cookbook once, download the finished PDF, and print it at home or send the file to a professional printer. RecipePrinter creates the file but doesn't manufacture or ship the physical book.",
       },
     ],
     featureSections: [
@@ -2637,14 +2637,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         image: "cookpilot-export",
         imageAlt: "Recipes from different sources collected into one RecipePrinter project.",
         body:
-          "Your recipes do not need to start in the same place. Bring together recipe links, screenshots, photos, handwritten cards, app imports, and recipes shared by family, then turn them into one consistent cookbook.",
+          "Your recipes don't need to start in the same place. Bring together recipe links, screenshots, photos, handwritten cards, app imports, and recipes shared by family, then turn them into one consistent cookbook.",
         afterBody:
           "Each recipe stays editable, so you can correct old notes, clean up formatting, and make the collection feel like one book instead of a stack of unrelated recipes.",
       },
       {
         heading: "Organize your cookbook with chapters and a table of contents",
         body:
-          "Group recipes into chapters and move them around as the book develops. RecipePrinter keeps the chapter structure, table of contents, and page numbers updated so you do not have to rebuild the layout every time something moves.",
+          "Group recipes into chapters and move them around as the book develops. RecipePrinter keeps the chapter structure, table of contents, and page numbers updated so you don't have to rebuild the layout every time something moves.",
         afterBody:
           "Chapter opener pages can also include a custom image and optional text.",
       },
@@ -2668,7 +2668,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I make a cookbook from recipes I already have?",
         answer:
-          "Yes. Recipes can come from websites, photos, screenshots, handwritten recipe cards, pasted text, supported recipe apps, and other RecipePrinter imports. You can edit imported recipes before adding them to the cookbook.",
+          "Yes. Recipes can come from any website, photos and screenshots, handwritten recipe cards, pasted text, or Paprika and CookPilot, and you can edit each one once it's in your cookbook.",
       },
       {
         question: "Can I print the cookbook at home?",
@@ -2712,15 +2712,15 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "cookbook-maker",
-    contentUpdated: "2026-10-05",
-    copyReviewed: "2026-10-02",
+    contentUpdated: "2026-10-06",
+    copyReviewed: "2026-10-06",
+    imagesReviewed: "2026-10-06",
     primaryKeyword: "cookbook maker",
     secondaryKeywords: [
       "online cookbook maker",
       "recipe book creator",
       "recipe book maker",
       "create a cookbook online",
-      "make a cookbook from my recipes",
       "cookbook creator",
       "custom cookbook maker",
       "family cookbook maker",
@@ -2732,63 +2732,55 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     layout: "capture-first",
     heroImage: "bound-cookbook",
     importSubmitLabel: "Start my cookbook",
-    title: "Cookbook Maker for Your Own Recipes | RecipePrinter",
+    title: "Online Cookbook Maker | Turn Any Recipes Into a Book | RecipePrinter",
     description:
-      "Create a cookbook from your own recipes. Import recipes, organize chapters, edit pages, add a cover and table of contents, then export a print-ready PDF.",
-    h1: "Make a cookbook from your own recipes",
+      "Make a cookbook from recipes you find anywhere: links, screenshots, apps, or handwritten cards. Organize chapters, add a cover, and export a print-ready PDF.",
+    h1: "Online cookbook maker",
     lede:
-      "Use the RecipePrinter cookbook maker to import your own recipes, organize them into chapters, edit the pages, customize the cover, and export a finished print-ready PDF.",
+      "Bring recipes in from websites, screenshots, apps, or handwritten cards, organize them into chapters, design the cover, and export a print-ready PDF of your cookbook.",
     howToHeading: "How the cookbook maker works",
     howTo: [
       {
-        name: "Import your recipes",
-        text: "Add recipe links, photos, screenshots, handwritten cards, pasted text, or recipes from supported apps. RecipePrinter turns them into editable recipes so you do not have to retype everything by hand.",
+        name: "Add recipes from anywhere",
+        text: "Add recipe links, screenshots, handwritten cards, pasted text, or recipes from apps, and each one becomes an editable recipe, no retyping needed.",
       },
       {
         name: "Build chapters",
-        text: "Create and rename cookbook chapters, reorder them, and move recipes between sections as your book takes shape.",
+        text: "Create and name chapters, put them in order, and move recipes between them as your book takes shape.",
       },
       {
         name: "Edit every recipe and page",
-        text: "Correct recipe text, add notes or photos, rearrange recipes, and customize the book while you work. The table of contents and page numbers update with the current structure.",
+        text: "Fix any recipe, add notes and photos, and rearrange as you go, while the table of contents and page numbers update on their own.",
       },
       {
         name: "Export a print-ready cookbook PDF",
-        text: "Export a PDF for printing at home or with a professional printer. RecipePrinter creates the finished file but does not physically print or ship the book.",
+        text: "Download the finished file, then make copies at home or have a shop bind it into a book.",
       },
     ],
     featureSections: [
       {
         heading: "Make a cookbook from recipes you already have",
-        image: "inline-editing",
-        imageAlt: "A recipe being edited inside the RecipePrinter cookbook maker.",
+        image: "addrecipes-cookbook",
         body:
-          "You do not need to start with a finished manuscript. Import recipes one at a time from websites, photos, handwritten cards, screenshots, apps, or pasted text, then edit them as you build the cookbook.",
+          "You don't need to start with a finished manuscript. Import recipes one at a time from websites, photos, handwritten cards, screenshots, apps, or pasted text, then edit them as you build the cookbook.",
         afterBody:
           "That makes it easy to combine recipes that currently live in completely different places into one consistent book.",
       },
       {
-        heading: "Organize recipes into cookbook chapters",
-        image: "bound-cookbook",
-        imageAlt: "A finished cookbook open to a full-page photograph and a formatted recipe page.",
+        heading: "Organize chapters and design the cover",
+        // Not `bound-cookbook`: the hero already shows that photo.
+        image: "cookbook-cover-wide",
         body:
-          "Create chapters, move recipes between sections, and see how the cookbook is organized while you work. The cover, opening pages, recipe pages, table of contents, and page numbers stay part of the same cookbook.",
+          "Create chapters, move recipes between them, and choose a cover design and photo. The table of contents and page numbers build themselves and update as recipes move or chapters change.",
         afterBody:
-          "Chapter opener pages can also include custom images and optional text.",
+          "Chapter opener pages can have their own photo and a line of text.",
       },
       {
-        heading: "Customize the cover, table of contents, and page numbers",
-        body:
-          "Give the cookbook a finished structure with a custom cover, chapter sections, a table of contents, and page numbers. You can keep editing the book as recipes move or chapters change.",
-        afterBody:
-          "Choose a cover design and image that fits the cookbook.",
-      },
-      {
-        heading: "$19.99 for one editable cookbook",
+        heading: "Build it free, pay $19.99 when you download",
         image: "printed-cookbook",
         imageAlt: "A finished spiral-bound cookbook open to a formatted recipe and food photograph.",
         body:
-          "Cookbook export costs $19.99 per cookbook. That one-time purchase lets you keep editing that cookbook and export updated PDFs again later.",
+          "Building and editing your cookbook is always free. When it's ready, pay $19.99 once to download the PDF, and download updated copies anytime at no extra cost.",
         afterBody:
           "RecipePrinter creates the PDF; you can print it at home or send the finished file to a printing service of your choice. A free RecipePrinter account is required to download the cookbook.",
       },
@@ -2798,7 +2790,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What can I import into the cookbook maker?",
         answer:
-          "You can import recipes from websites, photos, screenshots, handwritten recipe cards, pasted text, supported recipe apps, and other RecipePrinter imports. Review each recipe before adding it to the cookbook.",
+          "Recipe links from any website, photos and screenshots, handwritten recipe cards, pasted text, and recipes saved in Paprika or CookPilot. Each one comes in as a recipe you can edit.",
       },
       {
         question: "Can I organize recipes into chapters?",
@@ -2823,12 +2815,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Do I need RecipePrinter Pro?",
         answer:
-          "No. Cookbook purchases and RecipePrinter Pro are separate. Pro covers other RecipePrinter features and does not include cookbook export.",
+          "No. Cookbook purchases and RecipePrinter Pro are separate. Pro covers other RecipePrinter features and doesn't include cookbook export.",
       },
       {
         question: "How much does the cookbook maker cost?",
         answer:
-          "Cookbook export is $19.99 per cookbook. The purchase lets you keep editing that cookbook and export updated PDFs again later.",
+          "$19.99 once per cookbook, paid when you download the PDF. Editing is free before and after, and downloading an updated copy costs nothing extra.",
       },
       {
         question: "Can I edit my cookbook after I buy it?",
@@ -2973,7 +2965,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "handwritten-recipes-to-cookbook",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-06",
     copyReviewed: "2026-10-02",
     primaryKeyword: "turn handwritten recipes into a cookbook",
     secondaryKeywords: [
@@ -3028,7 +3020,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         image: "inline-editing",
         imageAlt: "A handwritten recipe converted into editable recipe text in RecipePrinter.",
         body:
-          "The original handwritten card is part of the family history, so you do not have to replace it. Keep the original safely stored while RecipePrinter creates an editable version you can correct, print, and cook from.",
+          "The original handwritten card is part of the family history, so you don't have to replace it. Keep the original safely stored while RecipePrinter creates an editable version you can correct, print, and cook from.",
         afterBody:
           "This is especially useful for faded measurements, hard-to-read handwriting, or cards that are becoming too fragile for everyday use.",
       },
@@ -3039,7 +3031,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         body:
           "A family cookbook can include recipes from grandparents, parents, siblings, cousins, or anyone else whose recipes belong in the collection. Organize them by person, meal, holiday, family branch, or recipe type.",
         afterBody:
-          "Recipes do not have to come from handwritten cards only. You can mix handwritten family recipes with recipes from websites, screenshots, photos, or pasted text.",
+          "Recipes don't have to come from handwritten cards only. You can mix handwritten family recipes with recipes from websites, screenshots, photos, or pasted text.",
       },
       {
         heading: "Keep the handwriting without cooking from the fragile original",
@@ -3162,7 +3154,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Combine handwritten recipes and online favorites",
         image: "addrecipes-cookbook",
         body:
-          "Recipes do not need to begin in the same format. Photograph an index card, paste a recipe link, upload a screenshot, or add recipe text manually. RecipePrinter turns those different sources into editable recipes so the finished cookbook feels consistent.",
+          "Recipes don't need to begin in the same format. Photograph an index card, paste a recipe link, upload a screenshot, or add recipe text manually. RecipePrinter turns those different sources into editable recipes so the finished cookbook feels consistent.",
         afterBody:
           "Review difficult handwriting and imported measurements before adding each recipe to the book.",
       },
@@ -3179,7 +3171,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Build it free, pay when you download",
         image: "printed-cookbook",
         body:
-          "Building and editing the cookbook is free, and so is every change: add recipes, fix mistakes, and rearrange chapters whenever you like. You pay $19.99 once, when you download the PDF, and downloading an updated copy later costs nothing extra.",
+          "Building and editing the cookbook is free, and so is every change: add recipes, fix mistakes, and rearrange chapters whenever you like. When it's ready, pay $19.99 once to download the PDF, and download updated copies anytime at no extra cost.",
       },
     ],
     faqHeading: "Homemade cookbook gift questions",
@@ -3205,7 +3197,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print the cookbook gift myself?",
         answer:
-          "Yes. Download the finished PDF and print it at home, or send the file to a professional printing service for binding. RecipePrinter does not physically print or ship the book.",
+          "Yes. Download the finished PDF and print it at home, or send the file to a professional printing service for binding. RecipePrinter doesn't physically print or ship the book.",
       },
       {
         question: "Can I keep editing before I give it?",
@@ -3220,7 +3212,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I make the cookbook as a Christmas or holiday gift?",
         answer:
-          "Yes. The finished cookbook is exported as a PDF, so you can print it at home or send it to a printer whenever you are ready.",
+          "Yes. The finished cookbook is exported as a PDF, so you can print it at home or send it to a printer whenever you're ready.",
         links: [{ href: "/christmas-recipe-book", label: "Christmas recipe book ideas" }],
       },
       {
@@ -3241,7 +3233,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "recipe-book-gift",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-06",
     copyReviewed: "2026-10-02",
     primaryKeyword: "recipe book gift",
     secondaryKeywords: [
@@ -3283,7 +3275,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print it or send it to a printer",
-        text: "Export the finished recipe book as a PDF and print it at home or send it to a professional printer. RecipePrinter creates the file but does not physically print or ship the book.",
+        text: "Export the finished recipe book as a PDF and print it at home or send it to a professional printer. RecipePrinter creates the file but doesn't physically print or ship the book.",
       },
     ],
     featureSections: [
@@ -3373,7 +3365,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I make one for Christmas?",
         answer:
-          "Yes. RecipePrinter creates the finished PDF, so there is no RecipePrinter shipping cutoff. If you use an outside printer, check that company's current holiday production schedule.",
+          "Yes. RecipePrinter creates the finished PDF, so there's no RecipePrinter shipping cutoff. If you use an outside printer, check that company's current holiday production schedule.",
         links: [{ href: "/christmas-recipe-book", label: "Make a family recipe book for Christmas" }],
       },
       {
@@ -3392,7 +3384,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "christmas-recipe-book",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-06",
     copyReviewed: "2026-10-02",
     primaryKeyword: "Christmas recipe book",
     secondaryKeywords: [
@@ -3430,7 +3422,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print or export the finished Christmas gift",
-        text: "Download the finished PDF and print it at home or send it to a professional printer. RecipePrinter creates the file but does not physically print or ship the book.",
+        text: "Download the finished PDF and print it at home or send it to a professional printer. RecipePrinter creates the file but doesn't physically print or ship the book.",
       },
     ],
     featureSections: [
@@ -3455,7 +3447,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Finish the cookbook without waiting for RecipePrinter shipping",
         image: "printed-cookbook",
         body:
-          "RecipePrinter creates the finished cookbook PDF instead of manufacturing or shipping a physical book. That means there is no RecipePrinter production queue or shipping cutoff.",
+          "RecipePrinter creates the finished cookbook PDF instead of manufacturing or shipping a physical book. That means there's no RecipePrinter production queue or shipping cutoff.",
         afterBody: [
           "You can print the PDF at home or send it to a professional printing service. If you plan to use an outside printer, check that company's current holiday production and delivery schedule.",
           "Cookbook export costs $19.99 per cookbook as a one-time purchase. After purchasing that cookbook, you can keep editing it and export updated PDFs later.",
@@ -3465,7 +3457,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "What to put in a Christmas family recipe book",
         image: "cookbook-cover",
         body:
-          "Include the recipes people expect at Christmas, but do not limit the book to holiday food. Everyday family favorites, handwritten recipes from relatives, birthday dishes, baking recipes, and meals connected to family memories can make the gift more useful all year.",
+          "Include the recipes people expect at Christmas, but don't limit the book to holiday food. Everyday family favorites, handwritten recipes from relatives, birthday dishes, baking recipes, and meals connected to family memories can make the gift more useful all year.",
         afterBody:
           "A smaller collection of meaningful recipes can feel more personal than trying to fill the book with every recipe the family has ever made.",
       },
