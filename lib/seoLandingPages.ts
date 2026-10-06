@@ -3175,10 +3175,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         // Not `bound-cookbook`: the hero already shows that photo.
-        heading: "Keep editing the cookbook until the gift is finished",
+        heading: "Build it free, pay when you download",
         image: "printed-cookbook",
         body:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. After purchasing that cookbook, you can keep editing it, add newly found recipes, correct mistakes, rearrange chapters, and export updated PDFs later.",
+          "Building and editing the cookbook is free. You pay $19.99 once, when you download the finished PDF. After that, you can keep adding recipes, fixing mistakes, and rearranging chapters, and download an updated copy whenever you like.",
       },
     ],
     faqHeading: "Homemade cookbook gift questions",
