@@ -188,6 +188,14 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     // cut the title off and sat on the plates.
     objectPosition: "50% 38%",
   },
+  // The printed-cookbook photo whole (the open book uncropped) on the same
+  // paper-coloured backdrop as `cookbook-cover-wide`, for a 3:2 slot.
+  "printed-cookbook-wide": {
+    src: "/images/printed-cookbook-wide.jpg",
+    width: 2731,
+    height: 1821,
+    alt: "A finished spiral-bound cookbook open to a Greek chicken souvlaki recipe and full-page food photograph.",
+  },
   // The same cover, whole, on a paper-coloured backdrop at 3:2, for the
   // feature slots that crop the portrait original top and bottom.
   "cookbook-cover-wide": {

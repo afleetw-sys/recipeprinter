@@ -2776,8 +2776,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Build it free, pay $19.99 when you download",
-        image: "printed-cookbook",
-        imageAlt: "A finished spiral-bound cookbook open to a formatted recipe and food photograph.",
+        image: "printed-cookbook-wide",
         body:
           "Building and editing your cookbook is always free. When it's ready, pay $19.99 once to download the PDF, and download updated copies anytime at no extra cost.",
         afterBody:
