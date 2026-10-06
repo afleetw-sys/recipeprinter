@@ -3167,7 +3167,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Ideas for making the cookbook feel personal",
-        image: "cookbook-cover",
+        image: "dedication-page",
         body:
           "Organize chapters around the person receiving the gift instead of following a traditional cookbook. You might group recipes by family member, holidays, childhood favorites, weeknight dinners, or desserts everyone requests.",
         afterBody:
