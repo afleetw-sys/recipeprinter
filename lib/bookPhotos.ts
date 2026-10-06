@@ -5,8 +5,8 @@ import type { QueueItem, Recipe, RecipePagePlacement, Section } from "@/types/re
  *
  * A book made before `ownPhotosOnly` shows the image the recipe imported with,
  * as it always has. A newer book shows only a photo the cook added
- * (`placement.photoUrl`): the imported image is offered in the photo picker,
- * but nothing places it in the book on its own.
+ * (`placement.photoUrl`), which they upload. The imported image is not used
+ * or offered at all: it belongs to whoever published the recipe.
  */
 export function bookRecipeImage(
   recipe: Pick<Recipe, "image"> | undefined,
