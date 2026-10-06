@@ -2174,7 +2174,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "recipe-binder",
     contentUpdated: "2026-10-05",
     copyReviewed: "2026-10-02",
-    importSubmitLabel: "Start your recipe binder",
+    importSubmitLabel: "Start my cookbook",
     startsCookbook: true,
     layout: "capture-first",
     primaryKeyword: "how to make a recipe binder",
@@ -2505,7 +2505,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     h1: "Family recipe book ideas",
     lede:
       "RecipePrinter turns online recipes, old cards, photos, and typed-in notes into clean, matching pages. Put them together in a cookbook with your own cover and chapters, and RecipePrinter builds the table of contents.",
-    importSubmitLabel: "Start the cookbook",
+    importSubmitLabel: "Start my cookbook",
     howTo: [
       {
         name: "Gather the recipes",
@@ -2731,7 +2731,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     startsCookbook: true,
     layout: "capture-first",
     heroImage: "bound-cookbook",
-    importSubmitLabel: "Open the cookbook maker",
+    importSubmitLabel: "Start my cookbook",
     title: "Cookbook Maker for Your Own Recipes | RecipePrinter",
     description:
       "Create a cookbook from your own recipes. Import recipes, organize chapters, edit pages, add a cover and table of contents, then export a print-ready PDF.",
@@ -2866,7 +2866,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     startsCookbook: true,
     layout: "guide-first",
     heroImage: "bound-cookbook",
-    importSubmitLabel: "Start your cookbook",
+    importSubmitLabel: "Start my cookbook",
     captureHeading: "Start your cookbook",
     title: "How to Print a Cookbook | At Home, Copy Shop, Lulu or Blurb",
     description:
@@ -2996,7 +2996,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImageAlt: "A handwritten family recipe card ready to be digitized.",
     importPlaceholder:
       "Upload a photo or scan of a handwritten recipe card. Add the front and back together if the recipe continues onto both sides.",
-    importSubmitLabel: "Start your cookbook",
+    importSubmitLabel: "Start my cookbook",
     title: "Turn Handwritten Recipes Into a Cookbook | RecipePrinter",
     description:
       "Digitize handwritten recipe cards, clean up the recipe text, and turn family recipes into a cookbook you can edit, print, or export as a PDF.",
@@ -3124,7 +3124,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     startsCookbook: true,
     layout: "capture-first",
     heroImage: "bound-cookbook",
-    importSubmitLabel: "Start the gift cookbook",
+    importSubmitLabel: "Start my cookbook",
     title: "Homemade Cookbook Gift | Make a Personalized Recipe Book",
     description:
       "Turn family recipes, handwritten cards, and favorite dishes into a personalized cookbook gift you can edit, print at home, or export as a PDF.",
@@ -3258,7 +3258,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImage: "cookbook-cover",
     heroImageAlt:
       "A printed recipe book cover titled Our Family Cookbook, made as a personalized gift.",
-    importSubmitLabel: "Start the recipe book",
+    importSubmitLabel: "Start my cookbook",
     title: "Personalized Recipe Book Gift | RecipePrinter",
     description:
       "Create a personalized recipe book gift from family recipes, handwritten cards, photos, and favorites, then print it at home or export a finished PDF.",
@@ -3406,7 +3406,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     startsCookbook: true,
     layout: "capture-first",
     heroImage: "bound-cookbook",
-    importSubmitLabel: "Start the Christmas recipe book",
+    importSubmitLabel: "Start my cookbook",
     title: "Make a Family Recipe Book for Christmas | RecipePrinter",
     description:
       "Turn family recipes and handwritten cards into a personalized Christmas recipe book you can edit, print at home, or export as a PDF.",
@@ -4021,7 +4021,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     startsCookbook: true,
     layout: "capture-first",
     heroImage: "printed-cookbook",
-    importSubmitLabel: "Start the cookbook",
+    importSubmitLabel: "Start my cookbook",
     title: "CreateMyCookbook Alternative for Family Cookbooks | RecipePrinter",
     description:
       "Compare RecipePrinter with CreateMyCookbook. Import recipes from links, photos, and handwritten cards, build your cookbook, and export a print-ready PDF.",

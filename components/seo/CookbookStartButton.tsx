@@ -18,7 +18,7 @@ import { track } from "@/lib/analytics";
  * cookbook. The book opens with its own ways in: Add recipes, chapters, and
  * the empty pages that offer both.
  */
-export function CookbookStartButton({ label = "Start your cookbook" }: { label?: string }) {
+export function CookbookStartButton({ label = "Start my cookbook" }: { label?: string }) {
   const router = useRouter();
   const { startNewProject } = useProjectMeta();
   const [opening, setOpening] = useState(false);
