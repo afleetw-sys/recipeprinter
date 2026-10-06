@@ -2,7 +2,8 @@
 
 import { Suspense, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { capturePageleave, capturePageview, initAnalytics } from "@/lib/analytics";
+import { capturePageleave, capturePageview, initAnalytics, track } from "@/lib/analytics";
+import { screenshotShortcutFrom } from "@/lib/screenshotShortcut";
 
 // useSearchParams opts the subtree into client-side rendering, so it has to
 // sit behind its own Suspense boundary or every route using this layout is
@@ -14,6 +15,15 @@ function PageviewTracker() {
   // Declared first so init always precedes the first pageview capture.
   useEffect(() => {
     initAnalytics();
+  }, []);
+
+  useEffect(() => {
+    function handleScreenshotShortcut(event: KeyboardEvent) {
+      const shortcut = screenshotShortcutFrom(event);
+      if (shortcut) track("screenshot_shortcut_detected", { shortcut });
+    }
+    window.addEventListener("keydown", handleScreenshotShortcut, true);
+    return () => window.removeEventListener("keydown", handleScreenshotShortcut, true);
   }, []);
 
   useEffect(() => {
