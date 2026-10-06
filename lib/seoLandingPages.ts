@@ -2668,7 +2668,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I make a cookbook from recipes I already have?",
         answer:
-          "Yes. Recipes can come from websites, photos, screenshots, handwritten recipe cards, pasted text, supported recipe apps, and other RecipePrinter imports. You can edit imported recipes before adding them to the cookbook.",
+          "Yes. Recipes can come from any website, photos and screenshots, handwritten recipe cards, pasted text, or Paprika and CookPilot, and you can edit each one once it's in your cookbook.",
       },
       {
         question: "Can I print the cookbook at home?",
