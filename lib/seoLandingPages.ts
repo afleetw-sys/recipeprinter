@@ -3134,20 +3134,20 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howToHeading: "How to make a personalized cookbook gift",
     howTo: [
       {
-        name: "Choose who it's for",
-        text: "Start with the recipes they love: family favorites, dishes they grew up with, and ones tied to people who matter to them.",
+        name: "Start a cookbook",
+        text: "Open a new cookbook. The cover, contents, and page numbers are set up for you.",
       },
       {
-        name: "Collect recipes from family and friends",
+        name: "Add the family recipes",
         text: "Add handwritten recipe cards, links, screenshots, or pasted text. Each one becomes a recipe you can edit.",
       },
       {
-        name: "Personalize the cookbook",
-        text: "Add chapters, a cover, a dedication, and notes. Check names, measurements, and handwriting as you go.",
+        name: "Make it personal",
+        text: "Sort recipes into chapters, then add a cover photo, a dedication, and notes for the person receiving it.",
       },
       {
-        name: "Print the finished gift",
-        text: "Download the PDF to print at home or send to a print shop for binding. RecipePrinter makes the file; the print shop makes the book.",
+        name: "Print the gift",
+        text: "Download the PDF to print at home or send to a print shop for binding.",
       },
     ],
     featureSections: [
