@@ -9,6 +9,7 @@ import {
   SectionHeading,
 } from "@/components/seo/LandingFrame";
 import { SeoCapture } from "@/components/seo/SeoCapture";
+import { CookbookStartButton } from "@/components/seo/CookbookStartButton";
 import { Breadcrumb, type Crumb } from "@/components/seo/Breadcrumb";
 import { cookbookPitchFeature } from "@/components/seo/CookbookPitch";
 import { RecipeBinderSections } from "@/components/seo/RecipeBinderSections";
@@ -87,6 +88,9 @@ function pageJsonLd(page: SeoLandingPage) {
 function CaptureBlock({ page }: { page: SeoLandingPage }) {
   return (
     <div id="rp-capture" className="scroll-mt-24">
+      {page.startsCookbook ? (
+        <CookbookStartButton label={page.importSubmitLabel} />
+      ) : (
       <SeoCapture
         initialMode={page.initialImportMode ?? "url"}
         submitLabel={page.importSubmitLabel ?? "Start printing"}
@@ -95,6 +99,7 @@ function CaptureBlock({ page }: { page: SeoLandingPage }) {
         uploadTitle={page.importUploadTitle}
         modes={page.importModes}
       />
+      )}
       {/* Off by default — see the field's own doc comment. Full-contrast,
           deliberately NOT the muted caption weight ImportPanel's own inline
           notes use (the "Works with Instagram…" line under the URL field,
@@ -193,7 +198,11 @@ export default function SeoLandingPage({ params }: PageProps) {
             // how-to section is the next thing on the screen, with nothing
             // between it and the hero, so the link scrolled you to something
             // you could already see.
-            <LandingCta label={page.importSubmitLabel ?? "Start your cookbook"} />
+            page.startsCookbook ? (
+              <CookbookStartButton label={page.importSubmitLabel} />
+            ) : (
+              <LandingCta label={page.importSubmitLabel ?? "Start your cookbook"} />
+            )
           ) : (
             <CaptureBlock page={page} />
           )

@@ -3141,6 +3141,9 @@ export default function PrintPage() {
   queue.configureMultiRecipeGate({
     singleRecipeOnly,
     onMultiRecipeBlocked: handleMultiRecipeBlocked,
+    importContext: cookbookMode
+      ? { context: "cookbook", ...(cookbookProjectId ? { cookbookId: cookbookProjectId } : {}) }
+      : { context: "recipe_cards" },
   });
   function proLockFeature(): "batch_print" | "card_size" | "theme" {
     const reasons = activeProLockReasons({ themeLocked, cardSizeLocked, multiRecipeLocked }, "print_button");
@@ -3383,7 +3386,12 @@ export default function PrintPage() {
       // rather than being rendered from our own estimate right now.
       downloadPreparedFile(pages.file);
       setLastCookbookExport({ presetId, files: [pages.file] });
-      track("cookbook_export_ready", { preset: presetId, files: 1 });
+      track("cookbook_export_ready", {
+        preset: presetId,
+        files: 1,
+        recipeCount: items?.length ?? 0,
+        ...(cookbookProjectId ? { cookbookId: cookbookProjectId } : {}),
+      });
       track("cookbook_export_download_started", { preset: presetId, role: "pages" });
       if (getCookbookPreset(presetId).wrapRequired && !pages.coversInline) {
         setCookbookCoverPending(pages);
@@ -6543,6 +6551,11 @@ export default function PrintPage() {
         }}
         onStart={() => {
           setShowCookbookOfferDialog(false);
+          // The button says "Start adding recipes", so it does: straight into
+          // Add recipes. Only closing left a new cook in an empty book with no
+          // idea where adding happens. No page is aimed at, so the recipe goes
+          // where an unplaced one always does (see `addRecipeTarget`).
+          openAddRecipeBelow(null);
         }}
       />
       {showProUpgradeDialog && (

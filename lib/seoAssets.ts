@@ -121,6 +121,19 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "One saved PDF holding several printed recipes, a page each, open in a document viewer with the page thumbnails down the side.",
   },
+  "addrecipes-cookbook": {
+    src: "/images/addrecipes-cookbook.png",
+    width: 6350,
+    height: 3800,
+    alt:
+      "The Add recipes dialog in a cookbook, with its four sources circled: a recipe link, a recipe app, an image, or pasted text.",
+  },
+  "dedication-page": {
+    src: "/images/dedication.jpeg",
+    width: 5472,
+    height: 3648,
+    alt: "A printed, spiral-bound cookbook open to its dedication page: \"For the ones who taught us to cook, and who made every table feel like home.\"",
+  },
   sources: {
     src: "/images/sources.png",
     width: 6350,
