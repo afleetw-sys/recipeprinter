@@ -325,18 +325,7 @@ export function ImportPanel({
       // started+failed pair ourselves so they don't vanish from the funnel
       // (this is where "Choose at least one photo" was hiding).
       if (imageFiles.length === 0 && onStartEmpty) return startEmpty(onStartEmpty);
-      if (imageFiles.length === 0) {
-        trackImageFailure("no_files", "no usable photo selected");
-        return fail("Please add an image to start.");
-      }
-      const validationError = validateImageFiles(imageFiles);
-      if (validationError) {
-        trackImageFailure(validationError.category, validationError.message);
-        return fail(validationError.message);
-      }
-      onAddImageFiles(imageFiles, imageLabel(imageFiles));
-      setImageFiles([]);
-      return true;
+      return addImages(imageFiles);
     }
 
     const trimmed = text.trim();
@@ -368,6 +357,29 @@ export function ImportPanel({
   // rather than leaving the dropzone looking untouched. (Selection-time
   // problems aren't tracked — an import attempt only counts once the user hits
   // Add, which handleSubmit reports.)
+  /** Hands photos to the queue, or says why they can't go. Shared by the
+      submit button and by choosing photos, which submits on its own. */
+  function addImages(files: File[]): boolean {
+    if (files.length === 0) {
+      trackImageFailure("no_files", "no usable photo selected");
+      return fail("Please add an image to start.");
+    }
+    const validationError = validateImageFiles(files);
+    if (validationError) {
+      trackImageFailure(validationError.category, validationError.message);
+      return fail(validationError.message);
+    }
+    onAddImageFiles(files, imageLabel(files));
+    setImageFiles([]);
+    return true;
+  }
+
+  /**
+   * Choosing photos (picker or drop) IS the submit: there is nothing left to
+   * fill in once they are chosen, so making the cook press Add as well was a
+   * step that did nothing. Several photos for one recipe still work, chosen or
+   * dropped together.
+   */
   function selectImageFiles(list: FileList | null) {
     const { images, rejected } = partitionImageFiles(list);
     if (images.length === 0) {
@@ -375,14 +387,8 @@ export function ImportPanel({
       if (rejected > 0) setError("Those files aren't photos we can read. Choose JPG or PNG images.");
       return;
     }
-    const validationError = validateImageFiles(images);
-    if (validationError) {
-      setImageFiles([]);
-      setError(validationError.message);
-      return;
-    }
-    setImageFiles(images);
-    resetError();
+    setError(null);
+    if (addImages(images)) onSubmitted?.();
   }
 
   /**
