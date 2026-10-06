@@ -2327,6 +2327,48 @@
     transform: translateY(-1px);
   }
 
+  /* Photos attached: a solid frame around what was chosen, not the dashed
+     invitation of the empty box. */
+  .dropzone--attached {
+    border-style: solid;
+    border-color: var(--cp-line-strong);
+    background: var(--cp-card);
+    gap: 8px;
+  }
+  .dropzone__previews {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  .dropzone__preview {
+    width: 96px;
+    height: 96px;
+    border: 1px solid var(--cp-line);
+    border-radius: var(--cp-radius-sm);
+    object-fit: cover;
+    background: var(--cp-surface-muted);
+  }
+  .dropzone__preview--name,
+  .dropzone__preview--more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    overflow: hidden;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-micro);
+    font-weight: var(--cp-fw-medium);
+    overflow-wrap: anywhere;
+  }
+  .dropzone__change {
+    color: var(--cp-accent);
+    font-size: var(--cp-fs-caption);
+    font-weight: var(--cp-fw-medium);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
   /* ── Save state ───────────────────────────────────────────────────────────
      Shown at every width. It used to be `hidden sm:inline-flex`, so a cookbook
      autosaving on a phone that failed to save said nothing at all — the owner

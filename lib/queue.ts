@@ -16,6 +16,7 @@ import { deleteLocalPhoto, isBlobUrl, localPhotoUrls, reviveLocalPhotoUrls } fro
 import { localProjectPhotoIds } from "@/lib/localProjects";
 import { QUEUE_RECOVERY_OWNER_KEY, stampRecoveryOwner } from "@/lib/recoveryMirror";
 import { localStore, sessionStore } from "@/lib/storage";
+import { releaseImportPreview, setImportPreview } from "@/lib/importPreviews";
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
 // It survives navigation to /print (same tab) via sessionStorage.
@@ -926,6 +927,8 @@ export function useQueue() {
     (files: File[], label: string) => {
       if (files.length === 0) return;
       const id = queueImageItem(label);
+      // The placeholder shows the photo being read (see lib/importPreviews).
+      setImportPreview(id, files[0]);
       // Live array: the originals until they compress, then what the parser was
       // actually handed. Whichever it holds when something throws is what gets
       // stashed for debugging.
@@ -939,7 +942,7 @@ export function useQueue() {
           return parseImages(images);
         },
         { failedImages },
-      );
+      ).finally(() => releaseImportPreview(id));
     },
     [queueImageItem, runParse],
   );
@@ -950,7 +953,10 @@ export function useQueue() {
     (images: string[], label: string) => {
       if (images.length === 0) return;
       const id = queueImageItem(label);
-      void runParse(id, { source: "image" }, () => parseImages(images), { failedImages: images });
+      setImportPreview(id, images[0]);
+      void runParse(id, { source: "image" }, () => parseImages(images), { failedImages: images }).finally(() =>
+        releaseImportPreview(id),
+      );
     },
     [queueImageItem, runParse],
   );

@@ -7594,6 +7594,23 @@ textarea.recipe-card__toc-title {
   border-radius: 12px;
 }
 
+/* A photo import shows the photo it is reading, with the spinner and its
+   line underneath, all in the sheet's one grid cell. */
+.recipe-page-pending__sheet:has(.recipe-page-pending__photo) {
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 10% 10% 8%;
+  box-sizing: border-box;
+}
+
+.recipe-page-pending__photo {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+  border-radius: var(--cp-radius-sm);
+}
+
 /* The page an import failed on. Same box the recipe would have had — same
    PAGE_DIMS x deckScale, same aspect — so the loading placeholder becomes the
    failure rather than the deck closing the gap as if nothing was ever added.

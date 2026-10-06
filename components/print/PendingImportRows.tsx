@@ -1,6 +1,7 @@
 import { AlertIcon, ICON_SIZE } from "@/components/icons";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { importLoadingLabel } from "@/lib/importProgress";
+import { importPreview } from "@/lib/importPreviews";
 import type { QueueItem } from "@/types/recipe";
 
 interface PendingImportRowsProps {
@@ -101,7 +102,9 @@ export function PendingImportRows({
               >
                 <RecipeLoadingState
                   className="recipe-page-rail__loading-status"
-                  label={importLoadingLabel(item)}
+                  // A photo import names the photo by showing it on its page,
+                  // so the row says what is happening rather than a file name.
+                  label={importPreview(item.id) ? "Reading your photo…" : importLoadingLabel(item)}
                 />
               </button>
             </div>

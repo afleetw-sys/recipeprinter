@@ -52,6 +52,7 @@ import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { PageToolbar, PageToolbarItem } from "@/components/print/PageToolbar";
 import { FailedImportCard } from "@/components/print/FailedImportCard";
 import { importLoadingLabel } from "@/lib/importProgress";
+import { importPreview } from "@/lib/importPreviews";
 import { BACK_COVER_NAV_ID } from "@/lib/railPending";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
 
@@ -1162,7 +1163,24 @@ export function PrintDeck(props: PrintDeckProps) {
                 aspectRatio: `${previewDims.w} / ${previewDims.h}`,
               }}
             >
-              <RecipeLoadingState label={importLoadingLabel(pendingItem)} />
+              {importPreview(pendingItem.id) ? (
+                <>
+                  {/* The photo being read, not its file name. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    className="recipe-page-pending__photo"
+                    src={importPreview(pendingItem.id)}
+                    alt=""
+                    onError={(event) => {
+                      // A photo this browser cannot draw (HEIC outside Safari).
+                      event.currentTarget.hidden = true;
+                    }}
+                  />
+                  <RecipeLoadingState label="Reading your photo…" />
+                </>
+              ) : (
+                <RecipeLoadingState label={importLoadingLabel(pendingItem)} />
+              )}
             </div>
           </div>
         ))}
