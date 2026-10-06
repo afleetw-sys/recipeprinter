@@ -185,6 +185,14 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
       "A finished spiral-bound cookbook open to a Greek chicken souvlaki recipe and full-page food photograph.",
     objectPosition: "50% 62%",
   },
+  // The same cover, whole, on a paper-coloured backdrop at 3:2, for the
+  // feature slots that crop the portrait original top and bottom.
+  "cookbook-cover-wide": {
+    src: "/images/cookbook-cover-wide.jpg",
+    width: 2176,
+    height: 1451,
+    alt: "A printed spiral-bound cookbook cover titled Our Family Cookbook, with a grid of home-cooked dishes.",
+  },
   "cookbook-cover": {
     src: "/images/cookbook-printed-cover.jpg",
     width: 900,

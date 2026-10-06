@@ -2768,7 +2768,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         heading: "Organize chapters and design the cover",
         // Not `bound-cookbook`: the hero already shows that photo.
-        image: "cookbook-cover",
+        image: "cookbook-cover-wide",
         body:
           "Create chapters, move recipes between them, and choose a cover design and photo. The table of contents and page numbers build themselves and update as recipes move or chapters change.",
         afterBody:
