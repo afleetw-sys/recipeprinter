@@ -28,7 +28,7 @@ export function PhotoPlaceholder({ variant }: { variant: "page" | "inline" }) {
         <ImageIcon size={18} />
       </span>
       <span className="photo-placeholder__title">Add a photo</span>
-      <span className="photo-placeholder__note">Upload your own photo</span>
+      <span className="photo-placeholder__note">Upload a photo of your own to make this book yours.</span>
     </div>
   );
 }
