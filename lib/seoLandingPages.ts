@@ -2753,7 +2753,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Export a print-ready cookbook PDF",
-        text: "Download a print-ready PDF to print at home or send to a print shop for binding.",
+        text: "Download the finished file, then make copies at home or have a shop bind it into a book.",
       },
     ],
     featureSections: [
