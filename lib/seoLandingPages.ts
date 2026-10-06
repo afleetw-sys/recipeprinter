@@ -2723,7 +2723,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "create a cookbook online",
       "cookbook creator",
       "custom cookbook maker",
-      "family cookbook maker",
+      "cookbook template",
+      "cookbook software",
     ],
     shortLabel: "Cookbook maker",
     pickerGroup: "output",
@@ -2759,21 +2760,26 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "Make a cookbook from recipes you already have",
+        heading: "Turn links, photos, and screenshots into recipes",
         image: "addrecipes-cookbook",
         body:
-          "You don't need to start with a finished manuscript. Import recipes one at a time from websites, photos, handwritten cards, screenshots, apps, or pasted text, then edit them as you build the cookbook.",
+          "Start with the recipes you have today and add the rest as you find them. Each link, photo, handwritten card, screenshot, or pasted recipe becomes a recipe you can edit as the book comes together.",
         afterBody:
-          "That makes it easy to combine recipes that currently live in completely different places into one consistent book.",
+          "That makes it easy to bring recipes from completely different places together in one consistent book.",
       },
       {
-        heading: "Organize chapters and design the cover",
-        // Not `bound-cookbook`: the hero already shows that photo.
-        image: "cookbook-cover-wide",
+        heading: "Design the whole book",
+        image: "multi-themes",
         body:
-          "Create chapters, move recipes between them, and choose a cover design and photo. The table of contents and page numbers build themselves and update as recipes move or chapters change.",
+          "Choose from more than a dozen themes, from clean and modern to a cream-stock keepsake look, plus a seasonal Christmas theme. The theme carries through the cover, chapter openers, and every recipe page.",
         afterBody:
-          "Chapter opener pages can have their own photo and a line of text.",
+          "Add your own cover photo and title, give each chapter opener its own photo, and switch themes at any point.",
+      },
+      {
+        heading: "Print-ready formats, including hardcover",
+        image: "print-cookbook",
+        body:
+          "Download US Letter for a home printer, or full-bleed files for a coil-bound or hardcover book at US Letter or 8 × 10. Formats for print services come with a separate cover file sized to your book's spine, ready for services like Lulu.",
       },
       {
         heading: "Build it free, pay $19.99 when you download",
@@ -2801,6 +2807,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Does it create a table of contents and page numbers?",
         answer:
           "Yes. RecipePrinter builds the table of contents and page numbers from the cookbook's current recipe and chapter order.",
+      },
+      {
+        question: "What sizes can I print?",
+        answer:
+          "US Letter for printing at home, and US Letter or 8 × 10 for coil-bound and hardcover books from a print service.",
+      },
+      {
+        question: "Does it make a cover for a print service?",
+        answer:
+          "Yes. For the print-service formats you also get a separate cover file sized to your book's spine, using the cover size your printer gives you.",
       },
       {
         question: "Can I customize the cookbook cover?",

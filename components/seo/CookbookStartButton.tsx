@@ -18,7 +18,14 @@ import { track } from "@/lib/analytics";
  * cookbook. The book opens with its own ways in: Add recipes, chapters, and
  * the empty pages that offer both.
  */
-export function CookbookStartButton({ label = "Start my cookbook" }: { label?: string }) {
+export function CookbookStartButton({
+  label = "Start my cookbook",
+  compact = false,
+}: {
+  label?: string;
+  /** The site header's control size (`.btn-header`), for the header slot. */
+  compact?: boolean;
+}) {
   const router = useRouter();
   const { startNewProject } = useProjectMeta();
   const [opening, setOpening] = useState(false);
@@ -39,7 +46,7 @@ export function CookbookStartButton({ label = "Start my cookbook" }: { label?: s
   return (
     <button
       type="button"
-      className="btn btn-primary"
+      className={`btn btn-primary${compact ? " btn-header" : ""}`}
       aria-busy={opening || undefined}
       onClick={() => void start()}
     >
