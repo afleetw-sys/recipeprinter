@@ -2756,7 +2756,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         body:
           "Start with the recipes you have today and add the rest as you find them. Each link, photo, handwritten card, screenshot, or pasted recipe becomes a recipe you can edit as the book comes together.",
         afterBody:
-          "That makes it easy to combine recipes that currently live in completely different places into one consistent book.",
+          "That makes it easy to bring recipes from completely different places together in one consistent book.",
       },
       {
         heading: "Design the whole book",
