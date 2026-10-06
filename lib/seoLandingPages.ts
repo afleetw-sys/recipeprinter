@@ -2634,8 +2634,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Make a cookbook from recipes you already have",
-        image: "cookpilot-export",
-        imageAlt: "Recipes from different sources collected into one RecipePrinter project.",
+        image: "addrecipes-cookbook",
         body:
           "Your recipes don't need to start in the same place. Bring together recipe links, screenshots, photos, handwritten cards, app imports, and recipes shared by family, then turn them into one consistent cookbook.",
         afterBody:
