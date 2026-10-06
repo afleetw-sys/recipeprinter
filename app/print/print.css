@@ -417,6 +417,18 @@
   text-align: center;
 }
 
+/* An organizer chapter with no recipes in it yet. */
+.recipe-organize-chapter-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 4px 0 8px 22px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+}
+
 /* The organizer with no recipes in the book yet. */
 .recipe-organize-start {
   display: flex;
@@ -2002,6 +2014,9 @@
 
 /* Why a blank page is blank. Screen only: the page prints empty. */
 .recipe-spread__blank {
+  /* The note inside sizes itself to the page, which can be small (the
+     organizer narrows the deck). See the container query below. */
+  container-type: inline-size;
   position: relative;
 }
 
@@ -2041,6 +2056,7 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
+  margin-top: 6px;
 }
 
 .recipe-spread__blank-note-action {
@@ -2048,6 +2064,48 @@
   align-items: center;
   gap: 6px;
   margin-top: 6px;
+}
+
+/* On a small page the note keeps only its buttons, stacked, and never spills
+   past the page edge. */
+.recipe-spread__blank-note {
+  overflow: hidden;
+}
+
+@container (max-width: 200px) {
+  .recipe-spread__blank-note-title,
+  .recipe-spread__blank-note-reason {
+    display: none;
+  }
+
+  .recipe-spread__blank-note-actions {
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 0;
+  }
+
+  .recipe-spread__blank-note .btn.btn-compact.recipe-spread__blank-note-action {
+    justify-content: center;
+    padding: 0 4px;
+  }
+}
+
+/* Sized to the note it sits in (caption text on a scaled-down page), not to
+   the workspace chrome: a full compact button dwarfed the page. */
+.recipe-spread__blank-note .btn.btn-compact.recipe-spread__blank-note-action {
+  min-height: 24px;
+  padding: 0 8px;
+  gap: 4px;
+  border-radius: 6px;
+  font-size: var(--cp-fs-caption);
+}
+
+.recipe-spread__blank-note-actions {
+  gap: 6px;
+}
+
+.recipe-spread__blank-note-actions .recipe-spread__blank-note-action {
+  margin-top: 0;
 }
 
 /* The first slide's controls float above the card like every other slide's —
