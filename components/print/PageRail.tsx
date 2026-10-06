@@ -1201,9 +1201,11 @@ export function PageRail(props: PageRailProps) {
                   {organizeFiltering && shownGroups.length === 0 && (
                     <p className="recipe-organize-empty">No recipes match.</p>
                   )}
-                  {/* Nothing to organize yet: say what to do instead of
-                      showing an empty panel. */}
-                  {organizeMode && !hasRecipes && (
+                  {/* Nothing to organize yet (no recipes and no chapters):
+                      say what to do instead of showing an empty panel. A
+                      chapter alone is something to organize, and gets its own
+                      empty state below. */}
+                  {organizeMode && !hasRecipes && !sections.some((section) => section.title?.trim()) && (
                     <div className="recipe-organize-start">
                       <p className="recipe-organize-start__title">Nothing to organize yet</p>
                       <p className="recipe-organize-start__body">
@@ -1580,9 +1582,29 @@ export function PageRail(props: PageRailProps) {
                 );
                   });
                   })()}
-                  {/* A named chapter's Add recipe is in its heading, beside
-                      Delete. The ungrouped recipes have no heading, so they
-                      keep the card. */}
+                  {/* A chapter with no recipes yet says so, and offers to add
+                      one, instead of sitting there as a bare heading. */}
+                  {organizeMode &&
+                    group.sectionId &&
+                    !organizeFiltering &&
+                    !sectionFolded(group.sectionId) &&
+                    sections.find((entry) => entry.id === group.sectionId)?.title?.trim() &&
+                    itemIdsForSection(group.sectionId).length === 0 && (
+                    <div className="recipe-organize-chapter-empty">
+                      <span>No recipes yet.</span>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-compact"
+                        onClick={() => openAddToSection(group.sectionId!)}
+                      >
+                        <PlusIcon size={ICON_SIZE.sm} />
+                        Add recipe
+                      </button>
+                    </div>
+                  )}
+                  {/* A named chapter's Add recipe is also in its heading's
+                      menu. The ungrouped recipes have no heading, so they keep
+                      the card. */}
                   {organizeMode &&
                     group.sectionId &&
                     !organizeFiltering &&

@@ -1610,11 +1610,9 @@ export function PrintDeck(props: PrintDeckProps) {
                       const besideChapter = role === "right" && chapterBlankActions !== null;
                       return renderBlank(
                         false,
-                        isBlankLeaf
-                          ? besideChapter
-                            ? "Add this chapter's image page or its first recipe here, or leave it blank."
-                            : blankPageReason(sheets, sheetIndex)
-                          : undefined,
+                        // Beside a chapter the buttons say what the page is for,
+                        // so it carries no explanation line of its own.
+                        isBlankLeaf && !besideChapter ? blankPageReason(sheets, sheetIndex) : undefined,
                         isOpeningPage && onAddDedication ? (
                           <button
                             type="button"
