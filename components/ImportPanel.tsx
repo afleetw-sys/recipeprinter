@@ -16,7 +16,11 @@ import type { QueueItem } from "@/types/recipe";
 import { track, type ImportFailureCode } from "@/lib/analytics";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { isPastedRecipeText } from "@/lib/importUrl";
-import { imageLabel, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
+import { imageLabel, MAX_IMAGE_FILES, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
+
+/** The Image tab's submit, on every surface. Exported for the add dialog,
+    whose own footer button stands in for this one. */
+export const IMAGE_SUBMIT_LABEL = "Read my photo";
 import {
   AppsIcon,
   ArrowRightIcon,
@@ -84,7 +88,6 @@ export function ImportPanel({
   onAddText,
   onAddReadyRecipes,
   commitRef,
-  onImageCountChange,
   onSubmitted,
   libraryLocked = false,
   librarySingleSelect,
@@ -127,9 +130,6 @@ export function ImportPanel({
   /** Filled in by this panel with a function that submits whatever is in the
       form, so a parent's own "done" button can finish the job. */
   commitRef?: MutableRefObject<(() => boolean) | null>;
-  /** How many photos are attached on the Image tab, for a surface whose own
-      button (`hideSubmit`) should say "Read my photo" too. */
-  onImageCountChange?: (count: number) => void;
   /** The form's own submit (Enter in a field) handed its entry off. A surface
       that closes on its own Add should close on this too, or Enter adds the
       recipe and leaves the dialog sitting there as if nothing happened. */
@@ -184,9 +184,7 @@ export function ImportPanel({
     setImagePreviews(next);
     return () => next.forEach((preview) => URL.revokeObjectURL(preview.url));
   }, [imageFiles]);
-  useEffect(() => {
-    onImageCountChange?.(imageFiles.length);
-  }, [imageFiles.length, onImageCountChange]);
+
   const [error, setError] = useState<string | null>(null);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const overflowRef = useRef<HTMLDivElement | null>(null);
@@ -258,14 +256,10 @@ export function ImportPanel({
    * different button rather than as the same one working. The spinner sits in
    * the arrow's own slot, so nothing moves.
    */
-  // With photos attached the button says what it will do with them, on every
-  // surface (a cookbook's "Start my cookbook" included: it still starts it).
-  const faceLabel =
-    mode === "image" && imageFiles.length > 0
-      ? imageFiles.length > 1
-        ? "Read my photos"
-        : "Read my photo"
-      : submitLabel;
+  // The Image tab's button always says what it does, on every surface (a
+  // cookbook's "Start my cookbook" included), and does not change with the
+  // number of photos.
+  const faceLabel = mode === "image" ? IMAGE_SUBMIT_LABEL : submitLabel;
   const submitFace = workspace ? (
     <>
       {faceLabel}
@@ -349,7 +343,9 @@ export function ImportPanel({
       // other image failure the queue never gets to report them. Emit the
       // started+failed pair ourselves so they don't vanish from the funnel
       // (this is where "Choose at least one photo" was hiding).
-      if (imageFiles.length === 0 && onStartEmpty) return startEmpty(onStartEmpty);
+      // No empty start from here: a button that says "Read my photo" asks for
+      // one. A cookbook can still start empty from its other tabs and its own
+      // start-empty link.
       if (imageFiles.length === 0) {
         trackImageFailure("no_files", "no usable photo selected");
         return fail("Please add an image to start.");
@@ -452,13 +448,15 @@ export function ImportPanel({
    */
   useEffect(() => {
     if (!commitRef) return;
-    commitRef.current = () => (hasUncommittedInput() ? handleSubmit() : true);
+    // The Image tab's "Read my photo" with nothing chosen says so rather than
+    // closing the dialog as if a photo had gone in.
+    commitRef.current = () => (hasUncommittedInput() || mode === "image" ? handleSubmit() : true);
     return () => {
       commitRef.current = null;
     };
   });
 
-  function onDrop(e: DragEvent<HTMLLabelElement>) {
+  function onDrop(e: DragEvent<HTMLElement>) {
     e.preventDefault();
     setDragging(false);
     if (e.dataTransfer.files.length > 0) selectImageFiles(e.dataTransfer.files);
@@ -637,10 +635,12 @@ export function ImportPanel({
         {mode === "image" && (
           <div>
             <label className="field-label">Recipe photos</label>
-            <label
-              className={`dropzone ${dragging ? "is-dragging" : ""} ${
-                imageFiles.length > 0 ? "dropzone--attached" : ""
-              }`}
+            {/* One box to start. Once a photo is attached the box shrinks into
+                a small tile beside it (an animated width, see `.dropzone`), so
+                another page can be added without the screen asking for one.
+                Dropping works anywhere on the row. */}
+            <div
+              className={`dropzone-row ${imageFiles.length > 0 ? "is-attached" : ""}`}
               onDragOver={(e) => {
                 e.preventDefault();
                 setDragging(true);
@@ -651,68 +651,66 @@ export function ImportPanel({
               }}
               onDrop={onDrop}
             >
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="sr-only absolute h-px w-px overflow-hidden"
-                onChange={(e) => {
-                  selectImageFiles(e.target.files);
-                  // Clear the input so picking the SAME file again still fires
-                  // onChange — otherwise a retry after an error is a silent
-                  // no-op and the selection looks stuck at empty.
-                  e.target.value = "";
-                }}
-              />
-              {imageFiles.length > 0 ? (
-                <>
-                  <span className="dropzone__previews">
-                    {imagePreviews.map((preview, index) => (
-                      <span key={preview.url} className="dropzone__preview-wrap">
-                        {preview.failed ? (
-                          <span className="dropzone__preview dropzone__preview--name">{preview.name}</span>
-                        ) : (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            className="dropzone__preview"
-                            src={preview.url}
-                            alt={preview.name}
-                            onError={() =>
-                              setImagePreviews((current) =>
-                                current.map((entry, i) => (i === index ? { ...entry, failed: true } : entry)),
-                              )
-                            }
-                          />
-                        )}
-                        <button
-                          type="button"
-                          className="dropzone__remove"
-                          aria-label={`Remove ${preview.name}`}
-                          onClick={(event) => {
-                            // Inside the label: without this the click also
-                            // opens the file picker.
-                            event.preventDefault();
-                            event.stopPropagation();
-                            removeImageFile(index);
-                          }}
-                        >
-                          <XIcon size={ICON_SIZE.sm} />
-                        </button>
-                      </span>
-                    ))}
-                  </span>
-                  <span className="text-cp-body">{imageLabel(imageFiles)}</span>
-                </>
-              ) : (
-                <>
+              {imagePreviews.map((preview, index) => (
+                <span key={preview.url} className="dropzone__preview-wrap">
+                  {preview.failed ? (
+                    <span className="dropzone__preview dropzone__preview--name">{preview.name}</span>
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      className="dropzone__preview"
+                      src={preview.url}
+                      alt={preview.name}
+                      onError={() =>
+                        setImagePreviews((current) =>
+                          current.map((entry, i) => (i === index ? { ...entry, failed: true } : entry)),
+                        )
+                      }
+                    />
+                  )}
+                  <button
+                    type="button"
+                    className="dropzone__remove"
+                    aria-label={`Remove ${preview.name}`}
+                    onClick={() => removeImageFile(index)}
+                  >
+                    <XIcon size={ICON_SIZE.sm} />
+                  </button>
+                </span>
+              ))}
+              {imageFiles.length < MAX_IMAGE_FILES && (
+                <label
+                  className={`dropzone ${dragging ? "is-dragging" : ""} ${
+                    imageFiles.length > 0 ? "dropzone--compact" : ""
+                  }`}
+                  title={imageFiles.length > 0 ? "Add another photo" : undefined}
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    aria-label={imageFiles.length > 0 ? "Add another photo" : "Choose recipe photos"}
+                    className="sr-only absolute h-px w-px overflow-hidden"
+                    onChange={(e) => {
+                      selectImageFiles(e.target.files);
+                      // Clear the input so picking the SAME file again still fires
+                      // onChange — otherwise a retry after an error is a silent
+                      // no-op and the selection looks stuck at empty.
+                      e.target.value = "";
+                    }}
+                  />
                   <UploadIcon size={26} />
-                  <span className="text-cp-body">{imageLabel(imageFiles)}</span>
-                  <span className="text-cp-caption font-medium text-ink-soft">
-                    Snap a cookbook page or screenshot, or drop multiple for one recipe
-                  </span>
-                </>
+                  {imageFiles.length === 0 && (
+                    <>
+                      <span className="text-cp-body">{imageLabel(imageFiles)}</span>
+                      <span className="text-cp-caption font-medium text-ink-soft">
+                        Snap a cookbook page or screenshot, or drop multiple for one recipe
+                      </span>
+                    </>
+                  )}
+                </label>
               )}
-            </label>
+            </div>
             {error && <p className="field-error" role="alert">{error}</p>}
           </div>
         )}

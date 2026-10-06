@@ -2327,19 +2327,45 @@
     transform: translateY(-1px);
   }
 
-  /* Photos attached: a solid frame around what was chosen, not the dashed
-     invitation of the empty box. */
-  .dropzone--attached {
-    border-style: solid;
-    border-color: var(--cp-line-strong);
-    background: var(--cp-card);
-    gap: 8px;
-  }
-  .dropzone__previews {
+  /* The image tab's row: thumbnails of the attached photos, then the box.
+     Empty, the box is the whole row; with a photo attached it shrinks into a
+     small tile beside it (width/height animate, so it visibly steps aside).
+     No wrapping, so the box never drops to a second line mid-shrink; a phone
+     too narrow for four photos and the tile scrolls sideways instead. The top
+     and right padding leave room for the remove buttons that overhang each
+     thumbnail. */
+  .dropzone-row {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
+    align-items: flex-start;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 8px 8px 0 0;
+    margin: -8px -8px 0 0;
+  }
+  .dropzone-row > .dropzone {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 96px;
+    transition:
+      width 280ms ease,
+      min-height 280ms ease,
+      padding 280ms ease,
+      background 150ms ease,
+      border-color 150ms ease;
+  }
+  /* Shrinkable while it animates down, so the incoming thumbnail never pushes
+     the row into a sideways scroll for the length of the transition. */
+  .dropzone-row > .dropzone.dropzone--compact {
+    flex: 0 1 auto;
+    width: 96px;
+    min-height: 96px;
+    height: 96px;
+    padding: 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dropzone-row > .dropzone {
+      transition: none;
+    }
   }
   .dropzone__preview {
     width: 96px;
@@ -2349,20 +2375,22 @@
     object-fit: cover;
     background: var(--cp-surface-muted);
   }
-  .dropzone__preview--name {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px;
-    overflow: hidden;
-    color: var(--cp-ink-soft);
-    font-size: var(--cp-fs-micro);
-    font-weight: var(--cp-fw-medium);
-    overflow-wrap: anywhere;
-  }
   .dropzone__preview-wrap {
     position: relative;
     display: block;
+    flex: 0 0 auto;
+    animation: rp-dropzone-photo-in 280ms ease both;
+  }
+  @keyframes rp-dropzone-photo-in {
+    from {
+      opacity: 0;
+      transform: scale(0.92);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dropzone__preview-wrap {
+      animation: none;
+    }
   }
   .dropzone__remove {
     position: absolute;
