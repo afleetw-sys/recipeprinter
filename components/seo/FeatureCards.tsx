@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { LANDING_IMAGE_QUALITY } from "@/lib/seoAssets";
 import { FEATURE_IMAGES, type FeatureCard } from "@/lib/seoAssets";
 
 // Declared in lib/seoAssets; re-exported because callers look for it here.
@@ -46,6 +47,7 @@ export function FeatureCards({
                   height={image.height}
                   alt={image.alt}
                   sizes="(max-width: 639px) 92vw, (max-width: 1023px) 46vw, 30vw"
+                  quality={LANDING_IMAGE_QUALITY}
                   className="w-full rounded-xl object-cover"
                   style={{ aspectRatio: "3 / 2", objectPosition: image.objectPosition }}
                 />
