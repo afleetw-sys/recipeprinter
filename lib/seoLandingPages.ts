@@ -287,7 +287,7 @@ export type SeoLandingPage = {
 export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "print-recipe-from-website",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-06",
     copyReviewed: "2026-09-02",
     primaryKeyword: "print recipe from website",
     secondaryKeywords: [
@@ -350,7 +350,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         ],
       },
       {
-        heading: "Print it the way your kitchen actually works",
+        heading: "Print it the way your kitchen works",
         proof: "card",
         body:
           "Pick the format that fits how you cook. A 4 by 6 card drops straight into a recipe box or an index-card binder. A full letter page suits long bakes and doubled batches, with room in the margin for your own notes. Keep the finished-dish photo or leave it off to save ink, and the type stays large enough to read from across the counter.",
@@ -501,7 +501,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "convert-recipe-to-pdf",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-06",
     imagesReviewed: "2026-10-05",
     copyReviewed: "2026-09-02",
     primaryKeyword: "convert recipe to PDF",
@@ -555,7 +555,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Save the recipe, not the whole webpage",
         proof: "before-after",
         body:
-          "Saving a recipe directly from a website can turn the entire article, ads and all, into a long PDF. RecipePrinter pulls out the recipe first, so the PDF contains the ingredients and instructions you actually wanted to keep.",
+          "Saving a recipe directly from a website can turn the entire article, ads and all, into a long PDF. RecipePrinter pulls out the recipe first, so the PDF contains the ingredients and instructions you wanted to keep.",
       },
       {
         heading: "A recipe you can search",
@@ -903,7 +903,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-recipe-from-screenshot",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-06",
     copyReviewed: "2026-10-02",
     primaryKeyword: "print recipe from screenshot",
     secondaryKeywords: [
@@ -929,7 +929,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Finally cook from that recipe you screenshotted. Upload it and print it as a clean full page or a 4x6 recipe card, or save it as a PDF.",
     h1: "Print a recipe from a screenshot",
     lede:
-      "That recipe you screenshotted deserves better than your camera roll. Upload it from a post, message, app, or website and print it as a clean recipe you can actually cook from.",
+      "That recipe you screenshotted deserves better than your camera roll. Upload it from a post, message, app, or website and print it as a clean recipe you can cook from.",
     howTo: [
       {
         name: "Screenshot the recipe",
@@ -953,7 +953,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Out of the camera roll, onto the counter",
         image: "counter-card",
         body:
-          "Recipe screenshots pile up and get lost between photos of everything else. Print the ones you actually make and keep them right where you cook, so there's no unlocking your phone with flour on your hands.",
+          "Recipe screenshots pile up and get lost between photos of everything else. Print the ones you make and keep them right where you cook, so there's no unlocking your phone with flour on your hands.",
       },
       {
         heading: "Keep the recipes that never had a link",
@@ -1003,7 +1003,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "print-pinterest-recipes",
     importFieldLabel: "Pinterest link",
     importPlaceholder: "Paste Pinterest link",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-06",
     copyReviewed: "2026-09-07",
     primaryKeyword: "print Pinterest recipes",
     secondaryKeywords: [
@@ -1026,7 +1026,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Turn Pinterest recipe links, screenshots, or saved recipe text into printable recipe cards, pages, and PDFs.",
     h1: "Print Pinterest recipes",
     lede:
-      "RecipePrinter moves the recipes you actually want to make off the board and onto a printable card you can cook from.",
+      "RecipePrinter moves the recipes you want to make off the board and onto a printable card you can cook from.",
     howTo: [
       {
         name: "Copy the pin's link",
@@ -1108,7 +1108,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "print-instagram-recipes",
     importFieldLabel: "Instagram link",
     importPlaceholder: "Paste Instagram link",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-06",
     copyReviewed: "2026-09-09",
     primaryKeyword: "print Instagram recipes",
     secondaryKeywords: [
@@ -1158,7 +1158,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Saved posts were never meant to be a recipe box",
         image: "card-in-box",
         body:
-          "Forty saved posts look much the same at a glance: a grid of good-looking dinners with nothing to say which one you actually loved. Printing makes you choose, and that is the useful part. What comes off the printer is the short list, and it goes where you cook, in a recipe box, a binder, or a folder by the stove.",
+          "Forty saved posts look much the same at a glance: a grid of good-looking dinners with nothing to say which one you loved. Printing makes you choose, and that is the useful part. What comes off the printer is the short list, and it goes where you cook, in a recipe box, a binder, or a folder by the stove.",
       },
       {
         heading: "The card outlasts the post",
@@ -1440,7 +1440,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-paprika-recipes",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-06",
     copyReviewed: "2026-10-02",
 
     primaryKeyword: "print Paprika recipes",
@@ -1481,7 +1481,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Choose the recipes you want",
-        text: "Browse the imported recipes and select the ones you actually want to print. You do not have to print the entire library.",
+        text: "Browse the imported recipes and select the ones you want to print. You do not have to print the entire library.",
       },
       {
         name: "Print recipes as pages or cards",
@@ -1496,7 +1496,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Your Paprika export includes more than just the recipe name. RecipePrinter brings over the recipe details it can read from the export, including ingredients, instructions, timing, servings, source, named categories, and notes, so you do not have to rebuild each recipe by hand.",
       },
       {
-        heading: "Print the Paprika recipes you actually want to keep",
+        heading: "Print the Paprika recipes you want to keep",
         image: "card-in-box",
         body:
           "You do not have to print your entire Paprika library. Choose the recipes you come back to most and turn them into printable pages, 4x6 recipe cards, or a cookbook you can keep on the shelf.",
@@ -1809,7 +1809,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "screen-free-cooking",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-06",
     primaryKeyword: "screen-free cooking",
     secondaryKeywords: [
       "cook without your phone",
@@ -1838,8 +1838,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howToHeading: "How to take your recipes off the screen",
     howTo: [
       {
-        name: "Choose the recipes you actually cook",
-        text: "Start with the recipes you come back to. Instead of keeping hundreds of saved posts and screenshots, put the ones you actually use on paper.",
+        name: "Choose the recipes you cook",
+        text: "Start with the recipes you come back to. Instead of keeping hundreds of saved posts and screenshots, put the ones you use on paper.",
       },
       {
         name: "Bring them in from wherever they are",
@@ -1877,7 +1877,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         body:
           "Saved recipes pile up out of sight. Screenshots disappear into your camera roll, and saved posts get buried under hundreds of others.",
         afterBody: [
-          "Printed recipes give the ones you actually cook a place to live. Keep them in a recipe box or a recipe binder, and add to the collection over time.",
+          "Printed recipes give the ones you cook a place to live. Keep them in a recipe box or a recipe binder, and add to the collection over time.",
           "When the collection gets bigger, you can turn it into a cookbook.",
         ],
         links: [
@@ -2049,7 +2049,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "organize-recipes",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-06",
     copyReviewed: "2026-10-02",
     captureHeading: "Start with one recipe",
     importSubmitLabel: "Add your first recipe",
@@ -2087,7 +2087,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Choose the recipes worth keeping",
-        text: "Pick the recipes you actually come back to and turn them into clean printable copies instead of leaving them scattered across bookmarks, apps, and saved posts.",
+        text: "Pick the recipes you come back to and turn them into clean printable copies instead of leaving them scattered across bookmarks, apps, and saved posts.",
       },
       {
         name: "Choose a consistent recipe format",
@@ -2126,7 +2126,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What is the easiest way to organize online recipes?",
         answer:
-          "Bring the recipes you actually want to keep into one consistent system instead of trying to organize every saved link. RecipePrinter can turn recipe links, screenshots, photos, app imports, and pasted text into printable recipes for a binder, recipe box, or cookbook.",
+          "Bring the recipes you want to keep into one consistent system instead of trying to organize every saved link. RecipePrinter can turn recipe links, screenshots, photos, app imports, and pasted text into printable recipes for a binder, recipe box, or cookbook.",
       },
       {
         question: "What categories should I use for a recipe binder?",
@@ -2172,7 +2172,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "recipe-binder",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-06",
     copyReviewed: "2026-10-02",
     importSubmitLabel: "Start my cookbook",
     startsCookbook: true,
@@ -2197,7 +2197,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     title: "Recipe Binder Ideas & Printable Pages | RecipePrinter",
     description:
       "Build a recipe binder from recipes you find online, in apps, screenshots, photos, or handwritten cards. Print consistent pages and organize them your way.",
-    h1: "Build a recipe binder from the recipes you actually use",
+    h1: "Build a recipe binder from the recipes you use",
     breadcrumbLabel: "Recipe binder",
     anchor: "Make a recipe binder",
     lede:
@@ -2476,7 +2476,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "family-recipe-book",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-06",
     // Signed off on the writing. The three feature rows still ask for `photo`
     // and `book` proof kinds that have no image behind them, so they render as
     // text-only blocks: there is no finished family cookbook to photograph yet.
@@ -2557,7 +2557,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Not directly, there's no invite link. They can send you the recipe however they have it though, a photo of a card, a screenshot, a text message, and you add it to the book from there.",
       },
       {
-        question: "How do I actually get it printed and bound?",
+        question: "How do I get it printed and bound?",
         answer:
           "Two ways. Print it at home on the Letter layout, set up for a spiral or 3-ring binder, or export the file and hand it to a print shop, where the 8 by 10 hardcover layout gives them what a case-bound book needs.",
         links: Object.values(PRINTERS).map((printer) => ({
@@ -2616,7 +2616,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howTo: [
       {
         name: "Choose your recipes",
-        text: "Pick the recipes you actually make and want to keep, and gather them from wherever they live: websites, screenshots, handwritten cards, or recipe apps.",
+        text: "Pick the recipes you make and want to keep, and gather them from wherever they live: websites, screenshots, handwritten cards, or recipe apps.",
       },
       {
         name: "Plan your chapters",
