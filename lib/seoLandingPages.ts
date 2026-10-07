@@ -2554,7 +2554,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can other people in the family add theirs?",
         answer:
-          "Not directly, there's no invite link. They can send you the recipe however they have it though, a photo of a card, a screenshot, a text message, and you add it to the book from there.",
+          "Yes, through you. Everyone sends their recipes however they have them, a photo of a card, a screenshot, or a text message, and you add each one to the book. Nobody else needs an account or a new app, so even the relatives who never download anything can be in it.",
       },
       {
         question: "How do I get it printed and bound?",
