@@ -2541,7 +2541,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Print one at home, or a bound copy for everyone",
         image: "cookbook-cover-wide",
         body:
-          "Print a copy on your home printer to flip through and check, then export a print-ready file to order bound books from a professional printer. A finished cookbook makes a keepsake gift for a wedding, a milestone birthday, or the holidays, and everyone who cooks from it gets their own copy in the kitchen.",
+          "Print copies on your own printer, or send the file to a print shop for bound books, one for everyone in the family. A finished family cookbook makes a keepsake gift for a wedding, a milestone birthday, or the holidays.",
       },
     ],
     faqHeading: "Family recipe book questions",
