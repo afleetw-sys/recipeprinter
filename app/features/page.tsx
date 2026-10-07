@@ -76,6 +76,17 @@ export default function FeaturesPage() {
         heading="Print recipes how you want"
       >
         <FeatureCards items={PRINT_CARDS} />
+        {/* One link into the cookbook pages, not a chip for each. Eight
+            cookbook chips outnumbered the printing guides in the row below;
+            /cookbook-maker carries its own row of them (its `hub`). Sits
+            straight under the Cookbook builder card it follows on from. */}
+        <p className="mt-cp-6 text-cp-body-lg text-ink-soft leading-relaxed">
+          Making a cookbook? Start with the{" "}
+          <Link href="/cookbook-maker" className="font-bold text-ink hover:underline">
+            online cookbook maker
+          </Link>
+          , with a guide for every kind of book, from family cookbooks to gifts.
+        </p>
         <PickerRow label="Guides by what you end up with" pages={byGroup("output")} />
       </LandingSection>
 
