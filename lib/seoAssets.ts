@@ -43,6 +43,13 @@ export type FeatureCard = {
   needs?: string;
 };
 
+/**
+ * Encoding quality for the landing pages' images. Next's default (75) is fine
+ * for food photos but smears the small text and thin lines in the product
+ * screenshots, which is most of what these pages show. 90 costs a few KB each.
+ */
+export const LANDING_IMAGE_QUALITY = 90;
+
 export const FEATURE_IMAGES: Record<string, ProofImage> = {
   "buffalo-chicken": {
     src: "/images/printed-cards/buffalo-chicken.jpeg",

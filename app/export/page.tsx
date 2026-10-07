@@ -371,7 +371,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   // preference, or it paginates for photos that aren't there.
   const ownPhotosOnly = cookbookMode && Boolean(settings.ownPhotosOnly);
   const anyRecipeHasImage = items.some((item) =>
-    Boolean(bookRecipeImage(item.recipe, project.itemPlacements?.[item.id], ownPhotosOnly)),
+    Boolean(bookRecipeImage(item, project.itemPlacements?.[item.id], ownPhotosOnly)),
   );
   const anyRecipeHasSourceUrl = items.some((item) => Boolean(item.recipe?.sourceUrl));
   const photoStyle = settings.photoStyle ?? "card";

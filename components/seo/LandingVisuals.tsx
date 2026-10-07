@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { LANDING_IMAGE_QUALITY } from "@/lib/seoAssets";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { FEATURE_IMAGES, PRINTED_CARDS, type ProofImage } from "@/lib/seoAssets";
@@ -89,6 +90,7 @@ export function HeroProductPhoto({
       height={card.height}
       alt={imageAlt ?? card.alt}
       sizes="(max-width: 1023px) 90vw, 460px"
+      quality={LANDING_IMAGE_QUALITY}
       priority={priority}
       className={
         isDocument
@@ -286,6 +288,7 @@ export function FeatureRows({
                   height={image.height}
                   alt={feature.imageAlt ?? image.alt}
                   sizes="(max-width: 1023px) 92vw, 520px"
+                  quality={LANDING_IMAGE_QUALITY}
                   className="w-full rounded-xl object-cover"
                   style={{ aspectRatio: PROOF_ASPECT, objectPosition: image.objectPosition }}
                 />
@@ -320,6 +323,7 @@ export function PhotoGallery({ cardKeys }: { cardKeys: string[] }) {
                 height={card.height}
                 alt={card.alt}
                 sizes="(max-width: 640px) 90vw, 380px"
+                quality={LANDING_IMAGE_QUALITY}
                 className="aspect-square w-full rounded-lg object-cover"
                 style={{ objectPosition: card.objectPosition ?? "50% 88%" }}
               />

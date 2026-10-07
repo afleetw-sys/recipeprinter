@@ -1,4 +1,5 @@
 import { ingredientText } from "@/lib/recipeCardLayout";
+import { bookRecipeImage } from "@/lib/bookPhotos";
 import type { QueueItem, RecipePagePlacement } from "@/types/recipe";
 
 /**
@@ -43,7 +44,7 @@ const hasText = (value: string | undefined | null) => Boolean(value && value.tri
     photo is set. Whether the book currently PRINTS it is a setting, not a
     missing photo. */
 export function hasPhoto(context: OrganizeRecipeContext): boolean {
-  if (context.ownPhotosOnly) return hasText(context.placement?.photoUrl);
+  if (context.ownPhotosOnly) return hasText(bookRecipeImage(context.item, context.placement, true));
   return hasText(context.item.recipe?.image) || hasText(context.placement?.heroImageUrl);
 }
 
