@@ -4,17 +4,22 @@ import type { QueueItem, Recipe, RecipePagePlacement, Section } from "@/types/re
  * Which photo a cookbook shows for one recipe.
  *
  * A book made before `ownPhotosOnly` shows the image the recipe imported with,
- * as it always has. A newer book shows only a photo the cook added
- * (`placement.photoUrl`), which they upload. The imported image is not used
- * or offered at all: it belongs to whoever published the recipe.
+ * as it always has. A newer book shows only the cook's own photos: one they
+ * added (`placement.photoUrl`), or, for a recipe they imported from a photo,
+ * that photo (see lib/importedPhoto). A website's image is never used or
+ * offered: it belongs to whoever published the recipe.
+ *
+ * `photoUrl: ""` is the cook having removed the photo, which also hides the
+ * imported one.
  */
 export function bookRecipeImage(
-  recipe: Pick<Recipe, "image"> | undefined,
+  item: { method?: QueueItem["method"]; recipe?: Pick<Recipe, "image"> },
   placement: RecipePagePlacement | undefined,
   ownPhotosOnly: boolean | undefined,
 ): string | undefined {
-  if (ownPhotosOnly) return placement?.photoUrl || undefined;
-  return recipe?.image || undefined;
+  if (!ownPhotosOnly) return item.recipe?.image || undefined;
+  if (placement?.photoUrl !== undefined) return placement.photoUrl || undefined;
+  return item.method === "image" ? item.recipe?.image || undefined : undefined;
 }
 
 // One substituted recipe per (recipe, photo) pair, so the layout engine's
@@ -54,7 +59,7 @@ export function sectionsWithBookPhotos(
     ...section,
     items: section.items.map((item): QueueItem => {
       if (!item.recipe) return item;
-      const recipe = withImage(item.recipe, bookRecipeImage(item.recipe, placements?.[item.id], true));
+      const recipe = withImage(item.recipe, bookRecipeImage(item, placements?.[item.id], true));
       return recipe === item.recipe ? item : { ...item, recipe };
     }),
   }));

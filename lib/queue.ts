@@ -17,6 +17,7 @@ import { localProjectPhotoIds } from "@/lib/localProjects";
 import { QUEUE_RECOVERY_OWNER_KEY, stampRecoveryOwner } from "@/lib/recoveryMirror";
 import { localStore, sessionStore } from "@/lib/storage";
 import { releaseImportPreview, setImportPreview } from "@/lib/importPreviews";
+import { storeImportedPhoto, withImportedPhoto } from "@/lib/importedPhoto";
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
 // It survives navigation to /print (same tab) via sessionStorage.
@@ -940,13 +941,17 @@ export function useQueue() {
       // actually handed. Whichever it holds when something throws is what gets
       // stashed for debugging.
       const failedImages: Array<Blob | string> = [...files];
+      // In a cookbook the photo itself becomes the recipe's image (see
+      // lib/importedPhoto), saved while the recipe is being read.
+      const storedPhoto =
+        importContextRef.current?.context === "cookbook" ? storeImportedPhoto(files[0]) : undefined;
       void runParse(
         id,
         { source: "image" },
         async () => {
           const images = await prepareImageDataUrls(files);
           failedImages.splice(0, failedImages.length, ...images);
-          return parseImages(images);
+          return withImportedPhoto(await parseImages(images), storedPhoto);
         },
         { failedImages },
       ).finally(() => releaseImportPreview(id));
@@ -961,9 +966,14 @@ export function useQueue() {
       if (images.length === 0) return;
       const id = queueImageItem(label);
       setImportPreview(id, images[0]);
-      void runParse(id, { source: "image" }, () => parseImages(images), { failedImages: images }).finally(() =>
-        releaseImportPreview(id),
-      );
+      const storedPhoto =
+        importContextRef.current?.context === "cookbook" ? storeImportedPhoto(images[0]) : undefined;
+      void runParse(
+        id,
+        { source: "image" },
+        async () => withImportedPhoto(await parseImages(images), storedPhoto),
+        { failedImages: images },
+      ).finally(() => releaseImportPreview(id));
     },
     [queueImageItem, runParse],
   );

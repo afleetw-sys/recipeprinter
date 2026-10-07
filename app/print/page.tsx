@@ -668,7 +668,7 @@ export default function PrintPage() {
   // here. Editing and saving keep reading `recipe.image` itself.
   const ownPhotosOnly = Boolean(projectMeta.meta.cookbookMode && projectMeta.meta.ownPhotosOnly);
   const bookImageOf = useCallback(
-    (item: QueueItem) => bookRecipeImage(item.recipe, projectMeta.meta.itemPlacements?.[item.id], ownPhotosOnly),
+    (item: QueueItem) => bookRecipeImage(item, projectMeta.meta.itemPlacements?.[item.id], ownPhotosOnly),
     [projectMeta.meta.itemPlacements, ownPhotosOnly],
   );
   const bookSectionImages = useCallback(
@@ -4305,6 +4305,18 @@ export default function PrintPage() {
     }
     setPendingFocusRecipeId((current) => current ?? newlyReady[0]!.id);
     setSettlingIds(new Set(newlyReady.map((item) => item.id)));
+    // A cookbook recipe imported from the cook's own photo arrives with that
+    // photo as its image (lib/importedPhoto). Show it, even in a book whose
+    // Photos are set to None, the way adding a photo by hand does.
+    if (cookbookMode) {
+      newlyReady.forEach((item) => {
+        if (item.method === "image" && item.recipe?.image && photoModeFor(item.id) === "none") {
+          projectMeta.setItemPhotoMode(item.id, "card");
+        }
+      });
+    }
+    // `photoModeFor`/`setItemPhotoMode` are read at arrival time only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queue.items, items, itemIdsForSection, isOursToAwait, moveProjectItem, pendingAddIndex, pendingAddSectionId, sections]);
 
   // Held just long enough for the animation to finish. A lingering class would
@@ -5033,11 +5045,14 @@ export default function PrintPage() {
    */
   function chooseBookPhoto(recipeId: string, url: string | undefined) {
     const placement = projectMeta.meta.itemPlacements?.[recipeId];
-    const previous = placement?.photoUrl;
+    const item = items?.find((candidate) => candidate.id === recipeId);
+    const previous = item ? bookImageOf(item) : placement?.photoUrl;
     if (url === previous) return;
     const kept = placement?.photoHistory ?? [];
     projectMeta.setItemPlacement(recipeId, {
-      photoUrl: url,
+      // "" rather than nothing when the photo is removed, so a recipe imported
+      // from a photo doesn't fall back to showing it (see `bookRecipeImage`).
+      photoUrl: url ?? "",
       ...(previous && !kept.includes(previous)
         ? { photoHistory: [previous, ...kept.filter((entry) => entry !== url)].slice(0, 8) }
         : {}),
@@ -5107,7 +5122,8 @@ export default function PrintPage() {
     // added. The recipe's imported image is not offered there at all: it
     // belongs to whoever published the recipe, so a printed book only ever
     // holds photos the cook uploads.
-    const shown = ownPhotosOnly ? projectMeta.meta.itemPlacements?.[recipeId]?.photoUrl : own;
+    const recipeItem = items?.find((item) => item.id === recipeId);
+    const shown = ownPhotosOnly ? (recipeItem ? bookImageOf(recipeItem) : undefined) : own;
     const offered = ownPhotosOnly ? undefined : own;
     return (
       <ImagePicker
@@ -5163,7 +5179,12 @@ export default function PrintPage() {
     const history = placement?.photoHistory ?? [];
     // A book of the cook's own photos keeps one photo per recipe, the same one
     // the recipe page's picker sets; the full page shows it (or a placeholder).
-    const shown = ownPhotosOnly ? placement?.photoUrl : (placement?.heroImageUrl ?? own);
+    const pageItem = items?.find((item) => item.id === recipeId);
+    const shown = ownPhotosOnly
+      ? pageItem
+        ? bookImageOf(pageItem)
+        : undefined
+      : (placement?.heroImageUrl ?? own);
     // Never the imported image in such a book (see `renderPagePhotoControl`).
     const offered = ownPhotosOnly ? undefined : own;
     return (
