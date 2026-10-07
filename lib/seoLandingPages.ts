@@ -905,6 +905,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
     ],
     links: [
+      { href: "/handwritten-recipes-to-cookbook", label: "Turn scanned recipes into a cookbook" },
       { href: "/recipe-card-printer", label: "Recipe card printer" },
       { href: "/family-recipe-book", label: "Build a family recipe book" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
@@ -2378,6 +2379,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
     ],
     links: [
+      { href: "/handwritten-recipes-to-cookbook", label: "Turn scanned recipes into a cookbook" },
       { href: "/print-recipe-from-photo", label: "Print a recipe from a photo" },
       { href: "/preserve-family-recipes", label: "Preserve family recipes" },
       { href: "/family-recipe-book", label: "Family recipe book ideas" },
@@ -2987,7 +2989,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "handwritten-recipes-to-cookbook",
-    contentUpdated: "2026-10-10",
+    contentUpdated: "2026-10-12",
     copyReviewed: "2026-10-02",
     primaryKeyword: "turn handwritten recipes into a cookbook",
     secondaryKeywords: [
@@ -3000,6 +3002,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "handwritten family recipe book",
       "recipe card cookbook",
       "family cookbook from handwritten recipes",
+      "scan recipes into a cookbook",
+      "make a cookbook from photos of recipes",
+      "recipe scanner for cookbook",
     ],
     shortLabel: "Handwritten recipe cookbook",
     pickerGroup: "output",
@@ -3011,12 +3016,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importPlaceholder:
       "Upload a photo or scan of a handwritten recipe card. Add the front and back together if the recipe continues onto both sides.",
     importSubmitLabel: "Start my cookbook",
-    title: "Turn Handwritten Recipes Into a Cookbook | RecipePrinter",
+    title: "Scan Handwritten Recipes Into a Cookbook | RecipePrinter",
     description:
       "Digitize handwritten recipe cards, clean up the recipe text, and turn family recipes into a cookbook you can edit, print, or export as a PDF.",
     h1: "Turn handwritten recipes into a cookbook",
     lede:
-      "Photograph or scan handwritten recipe cards, review the editable recipe text, and bring recipes from different generations together in one family cookbook.",
+      "Photograph or scan handwritten recipe cards, review the editable recipe text, and bring recipes from different generations together in one family cookbook. Magazine clippings, printouts, and pages from other cookbooks work the same way.",
     howToHeading: "How to turn handwritten recipes into a cookbook",
     howTo: [
       {
@@ -3091,6 +3096,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Can I combine handwritten recipes with online recipes?",
         answer:
           "Yes. A cookbook can include handwritten recipe cards alongside recipes imported from websites, screenshots, photos, pasted text, and supported recipe apps.",
+      },
+      {
+        question: "Can I scan printed recipes too, like magazine clippings?",
+        answer:
+          "Yes. A clipping, a printout, or a page from another cookbook works the same way as a handwritten card: take a clear photo or scan, and RecipePrinter types it up as a recipe you can edit.",
       },
       {
         question: "How do I make a cookbook from handwritten recipe cards?",
