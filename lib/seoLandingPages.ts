@@ -2477,6 +2477,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "family-recipe-book",
     contentUpdated: "2026-10-06",
+    copyReviewed: "2026-10-07",
+    imagesReviewed: "2026-10-07",
     // Signed off on the writing. The three feature rows still ask for `photo`
     // and `book` proof kinds that have no image behind them, so they render as
     // text-only blocks: there is no finished family cookbook to photograph yet.
