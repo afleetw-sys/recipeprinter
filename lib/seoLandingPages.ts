@@ -2479,12 +2479,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     contentUpdated: "2026-10-06",
     copyReviewed: "2026-10-07",
     imagesReviewed: "2026-10-07",
-    // Signed off on the writing. The three feature rows still ask for `photo`
-    // and `book` proof kinds that have no image behind them, so they render as
-    // text-only blocks: there is no finished family cookbook to photograph yet.
-    // Register those two kinds in LandingVisuals when there is, and this page
-    // picks them up with no edit here.
-    copyReviewed: "2026-09-02",
     // Guide intent, but the input belongs at the top like everywhere else: a
     // book starts with one recipe, and asking for it below three sections of
     // explanation buried the only thing there is to do.
