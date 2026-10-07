@@ -2527,19 +2527,19 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Different sources, one consistent cookbook",
-        proof: "photo",
+        image: "addrecipes-cookbook",
         body:
           "Family recipes arrive in every format: a stained index card, a screenshot from a group chat, a link a cousin sent, a method that only lives in someone's head. RecipePrinter reads each one and sets it on a clean, consistent page, so a card from 1975 and a text from last week look like they belong in the same book.",
       },
       {
         heading: "Keep the details that make it yours",
-        proof: "book",
+        image: "dedication-page",
         body:
           "A good family cookbook is as much about the people as the food. Keep a note about who a recipe came from, the substitution that makes it work, and the holiday it belongs to. Place a photo of the dish, the cook, or the original handwritten card next to the clean typed version, so the story and the exact wording survive alongside the measurements.",
       },
       {
         heading: "Print one at home, or a bound copy for everyone",
-        proof: "book",
+        image: "cookbook-cover-wide",
         body:
           "Print a copy on your home printer to flip through and check, then export a print-ready file to order bound books from a professional printer. A finished cookbook makes a keepsake gift for a wedding, a milestone birthday, or the holidays, and everyone who cooks from it gets their own copy in the kitchen.",
       },
