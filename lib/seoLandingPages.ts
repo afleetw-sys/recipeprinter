@@ -2586,7 +2586,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   {
     slug: "make-your-own-cookbook",
     contentUpdated: "2026-10-06",
-    copyReviewed: "2026-10-02",
+    copyReviewed: "2026-10-06",
+    imagesReviewed: "2026-10-06",
     primaryKeyword: "make your own cookbook",
     secondaryKeywords: [
       "how to make a cookbook",
