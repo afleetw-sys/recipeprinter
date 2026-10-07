@@ -105,6 +105,16 @@ export type { ImportFailureCode } from "@/types/recipe";
  * new card size or import method can't drift out of sync with what we record.
  */
 type EventProps = {
+  // ---- Device actions --------------------------------------------------
+  /**
+   * Best-effort only: browsers do not expose completed OS screenshots. This
+   * records a screenshot keyboard shortcut when the OS lets the page see it.
+   * PostHog's automatic event properties provide browser, OS and device type.
+   */
+  screenshot_shortcut_detected: {
+    shortcut: "macos_full_screen" | "macos_selection" | "macos_screenshot_app" | "print_screen" | "windows_snipping_tool";
+  };
+
   // ---- Import ----------------------------------------------------------
   // Fired as a trio so failures are visible. Recording only successes makes
   // a broken parser look identical to a visitor who wandered off: a pageview,
@@ -247,6 +257,19 @@ type EventProps = {
     doubleSided: boolean;
     recipeCount: number;
     /** The cookbook print-format preset, when exporting a cookbook. */
+    cookbookPreset?: CookbookPresetId;
+  };
+  /**
+   * The browser began preparing its print dialog. Unlike `print_started`, this
+   * also sees Ctrl/Cmd+P and the browser's Print menu via `beforeprint`.
+   */
+  print_dialog_opened: {
+    trigger: "print_button" | "keyboard_or_browser_menu";
+    template: RecipePrintTemplate;
+    cardSize: PrintCardSize;
+    showPhoto: boolean;
+    doubleSided: boolean;
+    recipeCount: number;
     cookbookPreset?: CookbookPresetId;
   };
   /**

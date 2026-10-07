@@ -4739,6 +4739,15 @@ export default function PrintPage() {
 
   useEffect(() => {
     function handleBeforePrint() {
+      track("print_dialog_opened", {
+        trigger: printRequestedRef.current ? "print_button" : "keyboard_or_browser_menu",
+        template,
+        cardSize,
+        showPhoto,
+        doubleSided,
+        recipeCount: items?.filter((item) => item.recipe).length ?? 0,
+        cookbookPreset: cookbookMode ? activePreset.id : undefined,
+      });
       // The browser has taken the print, so the watchdog in `printNow` has its
       // answer. This also fires late, after a tap on Safari's "blocked from
       // automatically printing" alert, which is why it re-renders the deck.
@@ -4760,7 +4769,7 @@ export default function PrintPage() {
     }
     window.addEventListener("beforeprint", handleBeforePrint);
     return () => window.removeEventListener("beforeprint", handleBeforePrint);
-  }, []);
+  }, [template, cardSize, showPhoto, doubleSided, items, cookbookMode, activePreset.id]);
 
   useEffect(() => {
     function handleAfterPrint() {
