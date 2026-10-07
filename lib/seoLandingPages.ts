@@ -2559,7 +2559,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I get it printed and bound?",
         answer:
-          "Two ways. Print it at home on the Letter layout, set up for a spiral or 3-ring binder, or export the file and hand it to a print shop, where the 8 by 10 hardcover layout gives them what a case-bound book needs.",
+          "You can print it yourself on regular letter paper and keep it in a binder, or send the file to a print shop to have it bound. For a hardcover, pick one of the hardcover formats when you download, and the shop will have everything it needs.",
         links: Object.values(PRINTERS).map((printer) => ({
           href: printer.url,
           label: printer.name,
