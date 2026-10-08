@@ -3341,12 +3341,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Building the book is free. You pay $19.99 once when you download the finished PDF.",
       },
       {
-        heading: "Let family and friends contribute recipes",
+        heading: "Collect recipes from family and friends",
         image: "handwritten-card",
         body:
-          "Ask contributors to send whatever they already have: a photo of a handwritten card, a recipe link, screenshot, scan, or typed recipe. You can import each one into RecipePrinter, review the ingredients and instructions, and add the finished recipe to the book.",
+          "Ask everyone to text or email you whatever they already have: a photo of a handwritten card, a recipe link, a screenshot, or a typed recipe. You bring each one into RecipePrinter, check it over, and add it to the book.",
         afterBody:
-          "This makes it easier to create a group gift without asking everyone to rewrite their recipes in the same format.",
+          "Nobody has to retype their recipe or sign up for anything.",
       },
       {
         // Text only: no existing photo shows the people this is about, and
@@ -3371,9 +3371,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Recipe books can make meaningful gifts for parents, grandparents, newlyweds, siblings, friends, or anyone with family recipes or favorite dishes they want to keep.",
       },
       {
-        question: "Can several people contribute recipes?",
+        question: "Can family members send me recipes for it?",
         answer:
-          "Yes. Contributors can send recipe links, screenshots, photos, scans of handwritten cards, or typed recipes. You can import each recipe, review it, and add it to the same cookbook.",
+          "Yes. They can send you links, screenshots, photos of handwritten cards, or typed recipes however they like, and you add each one to the book.",
         links: [{ href: "/family-recipe-book", label: "Create a family recipe book" }],
       },
       {
