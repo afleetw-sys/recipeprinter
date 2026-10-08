@@ -19,5 +19,7 @@ test("the new-cookbook welcome's Start adding recipes opens Add recipes", async 
 
   await page.getByRole("button", { name: "Start adding recipes" }).click();
 
-  await expect(page.getByRole("heading", { name: "Add recipes" })).toBeVisible();
+  // The Add dialog by its heading, not its words: from here it's titled for
+  // the first recipe.
+  await expect(page.locator("#recipe-add-dialog-title")).toBeVisible();
 });

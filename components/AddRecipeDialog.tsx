@@ -32,6 +32,7 @@ export function AddRecipeDialog({
   librarySingleSelect = false,
   onLibraryLockedTap,
   chapterTarget,
+  title = "Add recipes",
 }: {
   open: boolean;
   onClose: () => void;
@@ -66,6 +67,8 @@ export function AddRecipeDialog({
     value: string | null;
     onChange: (sectionId: string) => void;
   };
+  /** "Add your first recipe" when opened from the cookbook welcome. */
+  title?: string;
 }) {
   /** Filled in by the import panel; lets Add finish the entry in the form. */
   const commitImportRef = useRef<(() => boolean) | null>(null);
@@ -167,7 +170,7 @@ export function AddRecipeDialog({
       }`}
     >
       <div className="recipe-add-dialog__header">
-        <h2 id="recipe-add-dialog-title">Add recipes</h2>
+        <h2 id="recipe-add-dialog-title">{title}</h2>
         <button
           type="button"
           className="recipe-add-dialog__close icon-close-btn"

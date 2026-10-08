@@ -328,6 +328,11 @@ export default function PrintPage() {
   const [cookbookJustPurchased, setCookbookJustPurchased] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
+  /** Opened from the cookbook welcome's "Start adding recipes": titled for the
+      first recipe. Set by that button only, not by "the book is empty", so a
+      pick from a recipe app (which adds without closing) can't retitle the
+      sheet under the cook. */
+  const [addingFirstRecipe, setAddingFirstRecipe] = useState(false);
   const [organizeMode, setOrganizeMode] = useState(false);
   // `organizeWide` drives the panel width, `organizeMode` the rail's internal
   // grid layout. They toggle together, but entering/leaving runs a FLIP first
@@ -6785,8 +6790,8 @@ export default function PrintPage() {
             : pendingDelete?.kind === "cover"
               ? "You can add it back from the page list at any time."
               : cookbookMode
-                ? "It'll be removed from this cookbook. This can't be undone."
-                : "It'll be removed from your print list. This can't be undone."
+                ? "It'll be removed from this cookbook."
+                : "It'll be removed from your print list."
         }
         deletePrimaryLabel={
           pendingDelete?.kind === "section"
@@ -6823,6 +6828,7 @@ export default function PrintPage() {
           // Add recipes. Only closing left a new cook in an empty book with no
           // idea where adding happens. No page is aimed at, so the recipe goes
           // where an unplaced one always does (see `addRecipeTarget`).
+          setAddingFirstRecipe(true);
           openAddRecipeBelow(null);
         }}
       />
@@ -6889,7 +6895,11 @@ export default function PrintPage() {
       />
       <AddRecipeDialog
         open={showAddRecipeDialog}
-        onClose={() => setShowAddRecipeDialog(false)}
+        onClose={() => {
+          setShowAddRecipeDialog(false);
+          setAddingFirstRecipe(false);
+        }}
+        title={addingFirstRecipe ? "Add your first recipe" : undefined}
         items={queue.items}
         focusedItemId={queue.focusedItemId}
         focusNonce={queue.focusNonce}
