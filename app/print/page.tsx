@@ -84,11 +84,15 @@ import { loadLocalProject } from "@/lib/localProjects";
 import { printDocumentTitle } from "@/lib/printDocumentTitle";
 import { printIsNative } from "@/lib/browserApp";
 import {
+  arrivedPrintPass,
   openInSafari,
   packPrintHandoff,
   prepareLocalPhotos,
   printHandoffUrl,
+  requestPrintPass,
   seedPrintHandoff,
+  verifyPrintPass,
+  withPrintPass,
 } from "@/lib/printHandoff";
 import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
@@ -116,6 +120,7 @@ import {
   hasProEntitlement,
   type ProLockReason,
 } from "@/lib/recipePrinterPurchases";
+import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { resolveEffectiveCustomerInfo } from "@/lib/proAccessFallback";
 import { COOKBOOK_PRICE_FALLBACK, isFirstCookbookDiscountEligible } from "@/lib/cookbookProduct";
 import {
@@ -2337,7 +2342,7 @@ export default function PrintPage() {
       // same cards lay out and print from the first print of a new tab.
       if (isIOSPrinter() && items) {
         const url = printHandoffUrl(
-          packPrintHandoff(items, projectMeta.meta, handoffPhotosRef.current),
+          packPrintHandoff(items, projectMeta.meta, handoffPhotosRef.current, handoffPassRef.current),
           window.location.origin,
         );
         track("print_handed_to_safari", { template, cardSize, linkLength: url.length });
@@ -3158,18 +3163,65 @@ export default function PrintPage() {
   // — and a mirror that's actually past its real expiration still fails
   // locked, recomputed against the current clock on every render. See
   // lib/proAccessFallback.ts.
-  const effectiveCustomerInfo = useMemo(
-    () =>
-      resolveEffectiveCustomerInfo({
-        liveCustomerInfo: customerInfo,
-        liveStatus: customerInfoStatus,
-        liveLastVerifiedAtMs: customerInfoLastVerifiedAtMs,
-        mirroredEntitlements,
-        mirrorSyncedAtMs,
-        nowMs: Date.now(),
-      }),
-    [customerInfo, customerInfoStatus, customerInfoLastVerifiedAtMs, mirroredEntitlements, mirrorSyncedAtMs],
+  // A subscriber's deck handed over from the Google app (lib/printHandoff)
+  // arrives in a Safari tab with no account and no RevenueCat identity. The
+  // print pass it carries, once our server vouches for it, is their Pro here.
+  const [arrivalPass, setArrivalPass] = useState<CustomerInfo | null>(null);
+  const [arrivalPassPending, setArrivalPassPending] = useState(
+    () => ARRIVED_BY_HANDOFF && arrivedPrintPass() !== null,
   );
+  useEffect(() => {
+    const pass = ARRIVED_BY_HANDOFF ? arrivedPrintPass() : null;
+    if (!pass) return;
+    void verifyPrintPass(pass).then((verified) => {
+      setArrivalPass(verified);
+      setArrivalPassPending(false);
+    });
+  }, []);
+  const effectiveCustomerInfo = useMemo(() => {
+    const resolved = resolveEffectiveCustomerInfo({
+      liveCustomerInfo: customerInfo,
+      liveStatus: customerInfoStatus,
+      liveLastVerifiedAtMs: customerInfoLastVerifiedAtMs,
+      mirroredEntitlements,
+      mirrorSyncedAtMs,
+      nowMs: Date.now(),
+    });
+    if (!arrivalPass) return resolved;
+    return { ...resolved, customerInfo: withPrintPass(resolved.customerInfo, arrivalPass, Date.now()) };
+  }, [
+    customerInfo,
+    customerInfoStatus,
+    customerInfoLastVerifiedAtMs,
+    mirroredEntitlements,
+    mirrorSyncedAtMs,
+    arrivalPass,
+  ]);
+
+  /**
+   * A signed-in subscriber's print pass, fetched ahead of the tap for the same
+   * reason as the photos, and renewed well inside its 30-minute life.
+   */
+  const handoffPassRef = useRef<string | null>(null);
+  const handoffHasPaid = Object.keys(effectiveCustomerInfo.customerInfo?.entitlements.active ?? {}).length > 0;
+  useEffect(() => {
+    if (!cookPilotUser || !handoffHasPaid || !isIOSPrinter() || printIsNative()) {
+      handoffPassRef.current = null;
+      return;
+    }
+    let cancelled = false;
+    const renew = () =>
+      void requestPrintPass().then((pass) => {
+        if (!cancelled) handoffPassRef.current = pass;
+      });
+    renew();
+    const timer = window.setInterval(renew, 20 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [cookPilotUser, handoffHasPaid]);
+
   const hasProBrandless = hasProEntitlement(effectiveCustomerInfo.customerInfo);
   useEffect(() => {
     setBrandHidden(hasProBrandless);
@@ -4826,6 +4878,7 @@ export default function PrintPage() {
   useEffect(() => {
     if (
       shouldPrint &&
+      !arrivalPassPending &&
       items &&
       items.length > 0 &&
       printLayoutReady &&
@@ -4845,6 +4898,7 @@ export default function PrintPage() {
     template,
     customerInfo,
     printLayoutReady,
+    arrivalPassPending,
     projectMeta.meta.cookbookMode,
   ]);
 

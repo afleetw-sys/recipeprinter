@@ -3,6 +3,7 @@ import { CURRENT_PRINT_JOB_STORAGE_KEY, QUEUE_STORAGE_KEY } from "@/lib/queue";
 import { PROJECT_META_STORAGE_KEY, type ProjectMeta } from "@/lib/project";
 import { PRINT_SETTINGS_STORAGE_KEY } from "@/lib/printSettings";
 import { localStore, sessionStore } from "@/lib/storage";
+import type { CustomerInfo } from "@revenuecat/purchases-js";
 import type { QueueItem } from "@/types/recipe";
 
 /**
@@ -28,6 +29,8 @@ import type { QueueItem } from "@/types/recipe";
  */
 
 export const HANDOFF_PARAM = "handoff";
+/** Where an arriving tab keeps the print pass until it is checked. */
+const PRINT_PASS_STORAGE_KEY = "recipeprinter:print-pass:v1";
 const FRAGMENT_PREFIX = "#rp=";
 
 export interface PrintHandoff {
@@ -36,6 +39,9 @@ export interface PrintHandoff {
   meta: ProjectMeta;
   /** The raw print-settings value, exactly as this browser stored it. */
   settings: string | null;
+  /** A subscriber's signed print pass (lib/server/printPass), so Safari prints
+      their deck as theirs rather than as a free one. */
+  pass?: string;
 }
 
 function toBase64Url(bytes: Uint8Array): string {
@@ -62,6 +68,7 @@ export function packPrintHandoff(
   items: readonly QueueItem[],
   meta: ProjectMeta,
   localPhotos: ReadonlyMap<string, string>,
+  pass: string | null = null,
 ): PrintHandoff {
   const swap = (_key: string, value: unknown) => {
     if (typeof value !== "string" || !value.startsWith("blob:")) return value;
@@ -78,6 +85,7 @@ export function packPrintHandoff(
     items: portable,
     meta: JSON.parse(JSON.stringify(meta, swap)) as ProjectMeta,
     settings: localStore.get(PRINT_SETTINGS_STORAGE_KEY),
+    ...(pass ? { pass } : {}),
   };
 }
 
@@ -125,6 +133,7 @@ export function seedPrintHandoff(): boolean {
   );
   sessionStore.set(PROJECT_META_STORAGE_KEY, JSON.stringify(handoff.meta));
   if (handoff.settings) localStore.set(PRINT_SETTINGS_STORAGE_KEY, handoff.settings);
+  if (handoff.pass) sessionStore.set(PRINT_PASS_STORAGE_KEY, handoff.pass);
   // The recipes have no business in the address bar, history or a shared link.
   window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
   return true;
@@ -170,4 +179,77 @@ export async function prepareLocalPhotos(
     }
   }
   return prepared;
+}
+
+// ── Print passes ─────────────────────────────────────────────────────────────
+
+/**
+ * A pass for this signed-in subscriber, or null when they hold nothing a pass
+ * would carry (or are not signed in, or the server cannot say right now).
+ */
+export async function requestPrintPass(): Promise<string | null> {
+  try {
+    const { getFirebaseAuth } = await import("@/lib/firebase/client");
+    const idToken = await getFirebaseAuth().currentUser?.getIdToken();
+    if (!idToken) return null;
+    const response = await fetch("/api/print-pass", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${idToken}` },
+      body: JSON.stringify({ action: "issue" }),
+    });
+    if (!response.ok) return null;
+    const { pass } = (await response.json()) as { pass?: string | null };
+    return pass ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** The pass this tab arrived with, if any. */
+export function arrivedPrintPass(): string | null {
+  return sessionStore.get(PRINT_PASS_STORAGE_KEY);
+}
+
+/**
+ * What a pass is good for, as the entitlements RevenueCat would report, or
+ * null when the server does not vouch for it (forged, expired, or unreachable).
+ */
+export async function verifyPrintPass(pass: string): Promise<CustomerInfo | null> {
+  try {
+    const response = await fetch("/api/print-pass", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "verify", pass }),
+    });
+    if (!response.ok) return null;
+    const { ent, exp } = (await response.json()) as { ent: string[]; exp: number };
+    const entries = ent.map((identifier) => [
+      identifier,
+      { identifier, isActive: true, willRenew: false, expirationDate: new Date(exp) },
+    ]);
+    const map = Object.fromEntries(entries);
+    return { entitlements: { active: map, all: map } } as unknown as CustomerInfo;
+  } catch {
+    return null;
+  }
+}
+
+/** `base` with a verified pass's entitlements added, while the pass lasts. */
+export function withPrintPass(base: CustomerInfo | null, pass: CustomerInfo | null, nowMs: number): CustomerInfo | null {
+  if (!pass) return base;
+  const live = Object.fromEntries(
+    Object.entries(pass.entitlements.active).filter(
+      ([, entitlement]) => (entitlement.expirationDate?.getTime() ?? 0) > nowMs,
+    ),
+  );
+  if (Object.keys(live).length === 0) return base;
+  if (!base) return { entitlements: { active: live, all: live } } as unknown as CustomerInfo;
+  return {
+    ...base,
+    entitlements: {
+      ...base.entitlements,
+      active: { ...live, ...base.entitlements.active },
+      all: { ...live, ...base.entitlements.all },
+    },
+  } as CustomerInfo;
 }
