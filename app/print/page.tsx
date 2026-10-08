@@ -2325,6 +2325,11 @@ export default function PrintPage() {
     // Already closed if this came from a pointer press; a keyboard press or a
     // deferred print closes it here, and Safari prints the moment it is shut.
     pauseFirestoreForPrint();
+    // Before print(), not after: Chrome runs its whole preview inside print()
+    // and Mac Safari fires beforeprint there too, so a clock started once
+    // print() returned missed the sheet it was waiting for and called the
+    // print refused.
+    awaitPrintVerdict();
     try {
       window.print();
     } catch (error) {
@@ -2361,7 +2366,6 @@ export default function PrintPage() {
     // `beforeprint`, which re-renders the deck itself.
     if (printWatchdogRef.current !== null) window.clearTimeout(printWatchdogRef.current);
     holdSpinnerUntilSheetOpens();
-    awaitPrintVerdict();
     printWatchdogRef.current = window.setTimeout(() => {
       printWatchdogRef.current = null;
       // A print the browser took keeps its spinner until the sheet is actually
@@ -2405,6 +2409,8 @@ export default function PrintPage() {
   /** Puts the page back as it was before a print that never started. */
   function abandonPrint() {
     printRequestedRef.current = false;
+    // Not a refusal: the caller reports what actually happened.
+    takePrintWait();
     stopSheetWait();
     if (printWatchdogRef.current !== null) window.clearTimeout(printWatchdogRef.current);
     printWatchdogRef.current = null;

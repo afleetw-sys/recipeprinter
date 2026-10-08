@@ -722,6 +722,7 @@ describe("Firestore's connection around a print", () => {
   beforeEach(() => {
     layout.navItems = [{ id: "fx-1", label: "Fixture 1" }];
     printNet.calls = [];
+    analytics.events = [];
     // jsdom has no window.focus; afterprint calls it.
     vi.spyOn(window, "focus").mockImplementation(() => undefined);
     vi.spyOn(window, "print").mockImplementation(() => {
@@ -828,6 +829,29 @@ describe("Firestore's connection around a print", () => {
       expect(failed?.[1].error, `report, viaPointer=${viaPointer}`).toMatch(/messageHandlers\.print/);
       cleanup();
     }
+  });
+
+  it("a print whose events fire inside print() is not counted as refused", async () => {
+    // Chrome runs its whole preview inside print(), and Mac Safari fires
+    // beforeprint and afterprint there too, so both events land before print()
+    // returns. The refusal clock used to start after it returned, missed them,
+    // and called every such print refused 60s later, or on leaving the page.
+    vi.spyOn(window, "print").mockImplementation(() => {
+      window.dispatchEvent(new Event("beforeprint"));
+      window.dispatchEvent(new Event("afterprint"));
+    });
+    seedRecipes(1);
+    const { unmount } = await renderPrintPage();
+    await settle(100);
+
+    act(() => {
+      fireEvent.click(printButton());
+    });
+    await settle(5_000);
+    unmount();
+    await settle(120_000);
+    expect(eventNames()).toContain("print_dialog_opened");
+    expect(eventNames()).not.toContain("print_refused_by_browser");
   });
 
   it("a print sheet that is slow to open is not counted as refused; one that never opens is", async () => {
