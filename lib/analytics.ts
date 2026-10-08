@@ -312,6 +312,16 @@ type EventProps = {
     cardSize: PrintCardSize;
     error: string;
   };
+  /**
+   * After a `print_failed` on an iPhone: the deck was sent to Safari to print
+   * (lib/printHandoff). `linkLength` is the size of the link that carried it,
+   * since a link has limits and a big deck with local photos is the risk.
+   */
+  print_handed_to_safari: {
+    template: RecipePrintTemplate;
+    cardSize: PrintCardSize;
+    linkLength: number;
+  };
   /** Which card designs people actually reach for. */
   template_selected: { template: RecipePrintTemplate; premium: boolean };
 

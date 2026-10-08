@@ -110,6 +110,15 @@ vi.mock("@/lib/analytics", async (importOriginal) => {
   };
 });
 
+// ---- leaving for Safari ----------------------------------------------------
+
+/** Every link the page tried to open in Safari. */
+const safari = vi.hoisted(() => ({ opened: [] as string[] }));
+vi.mock("@/lib/printHandoff", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/printHandoff")>();
+  return { ...original, openInSafari: (url: string) => safari.opened.push(url) };
+});
+
 // ---- Next -----------------------------------------------------------------
 
 const nav = vi.hoisted(() => ({ push: vi.fn(), search: "" }));
@@ -910,6 +919,46 @@ describe("Firestore's connection around a print", () => {
     fire("blur");
     await settle(50);
     expect(printSpinner(), "Mac once the sheet has the window").toBeNull();
+  });
+
+  it("an iPhone app whose print() throws hands the same cards to Safari to print", async () => {
+    // The Google app on iOS: print() throws and nothing inside the app reaches
+    // a print sheet, but Safari, opened with x-safari-https://, prints (tested
+    // on a real iPhone 2026-10-08). The deck has to go with it.
+    vi.spyOn(navigator, "userAgent", "get").mockReturnValue(
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) GSA/441.5.989047059 Mobile/15E148 Safari/604.1",
+    );
+    vi.spyOn(window, "print").mockImplementation(() => {
+      throw new TypeError("undefined is not an object (evaluating 'window.webkit.messageHandlers.print.postMessage')");
+    });
+    safari.opened = [];
+    seedRecipes(1);
+    localStorage.setItem("recipeprinter:print-settings:v1", JSON.stringify({ showPhoto: false }));
+    await renderPrintPage();
+    await settle(100);
+
+    act(() => {
+      fireEvent.click(printButton());
+    });
+    expect(safari.opened).toHaveLength(1);
+    const link = new URL(safari.opened[0].replace(/^x-safari-https:/, "https:"));
+    expect(link.pathname).toBe("/print");
+    expect(link.searchParams.get("print")).toBe("1");
+    cleanup();
+
+    // Safari: a new tab with nothing in it, opened on that link.
+    sessionStorage.clear();
+    localStorage.clear();
+    window.history.replaceState(null, "", `${link.pathname}${link.search}${link.hash}`);
+    const { seedPrintHandoff } = await import("@/lib/printHandoff");
+    expect(seedPrintHandoff()).toBe(true);
+    const queue = JSON.parse(sessionStorage.getItem("recipeprinter:queue:v1") ?? "[]");
+    expect(queue.map((item: { title: string }) => item.title)).toEqual(["Fixture 1"]);
+    expect(JSON.parse(sessionStorage.getItem("recipeprinter:print-job:current:v1") ?? "{}").ids).toEqual(["fx-1"]);
+    expect(JSON.parse(localStorage.getItem("recipeprinter:print-settings:v1") ?? "{}").showPhoto).toBe(false);
+    // And the recipes are out of the address bar once read.
+    expect(window.location.hash).toBe("");
+    window.history.replaceState(null, "", "/");
   });
 
   it("leaving the page reopens it", async () => {
