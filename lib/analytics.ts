@@ -714,6 +714,10 @@ function bootPostHog(
     capture_pageview: false,
     // Keep the opt-out flag out of cookies, in keeping with the rest.
     opt_out_capturing_persistence_type: "localStorage",
+    // Off by default, so the Google app's built-in browser is reported as
+    // "Mobile Safari" with no version. A print that failed in an app browser
+    // like that (its window.print shim had no native side) looked like Safari.
+    detect_google_search_app: true,
 
     // Everything below is PostHog's automatic capture, and every one of them
     // defaults to ON. Left alone they produced ~60 events in a single browsing
