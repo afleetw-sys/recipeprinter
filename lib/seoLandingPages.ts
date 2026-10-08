@@ -3278,7 +3278,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "recipe-book-gift",
-    contentUpdated: "2026-10-10",
+    contentUpdated: "2026-10-12",
     copyReviewed: "2026-10-02",
     primaryKeyword: "recipe book gift",
     secondaryKeywords: [
@@ -3286,7 +3286,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "personalized recipe book gift",
       "cookbook gift",
       "custom recipe book gift",
-      "recipe card gift",
     ],
     shortLabel: "A recipe book gift",
     pickerGroup: "output",
@@ -3298,18 +3297,18 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImage: "dedication-page",
     heroImageAlt: "A printed recipe book open to its dedication page, made as a gift.",
     importSubmitLabel: "Start my cookbook",
-    title: "Recipe Book Gift Ideas: Who It Suits and What to Include | RecipePrinter",
+    title: "Recipe Book Gift Ideas: What to Include and How to Make One | RecipePrinter",
     description:
-      "Ideas for a personalized recipe book gift: who it suits, what to put in it, and whether to give a bound book or a box of recipe cards.",
+      "Ideas for a personalized recipe book gift: what to put in it, how to gather recipes from family, and how to print it or give it as a PDF.",
     h1: "Recipe book gift ideas",
     anchor: "Personalized recipe book gift",
     lede:
-      "A recipe book makes a thoughtful gift for almost anyone who cooks. This page covers who it suits, what to put in it, and whether a bound book or a box of recipe cards fits them better.",
+      "A recipe book makes a thoughtful gift for anyone. Fill it with the dishes they love and the people behind them, write a dedication, and print it at home or send the PDF to a print shop.",
     howToHeading: "How to give a personalized recipe book",
     howTo: [
       {
-        name: "Choose a book or recipe cards",
-        text: "Pick a bound recipe book for a full collection, or a set of recipe cards for a smaller one they can keep adding to.",
+        name: "Start with who it's for",
+        text: "Think about the dishes they make, the ones they grew up with, and the people those recipes came from.",
       },
       {
         name: "Add the recipes",
@@ -3334,12 +3333,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "The strongest recipe book gifts are usually specific: family recipes, favorite meals, recipes from someone they love, or dishes tied to traditions they want to keep.",
       },
       {
-        heading: "Give a recipe book or a box of recipe cards",
-        image: "card-in-box",
+        heading: "Give it a cover, chapters, and a dedication",
+        image: "organize-cookbook",
         body:
-          "A cookbook is useful when you want a cover, chapters, and a finished collection. A recipe box can work better for a smaller set of favorite recipes that someone can keep adding to over time.",
+          "Sort the recipes into chapters, put their name on the cover, and write a dedication up front. The table of contents and page numbers keep up as you add more.",
         afterBody:
-          "Cookbook export costs $19.99 per cookbook. 4x6 recipe cards are available with RecipePrinter Pro.",
+          "Building the book is free. You pay $19.99 once when you download the finished PDF.",
       },
       {
         heading: "Let family and friends contribute recipes",
@@ -3357,7 +3356,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         // Text only: no existing photo shows the people this is about, and
         // the page already carries five.
-        heading: "Who makes a good recipe book gift for?",
+        heading: "Who a recipe book is a good gift for",
         body:
           "A personalized recipe book can work for parents, grandparents, newlyweds, adult children, siblings, friends, or anyone who has recipes worth collecting in one place.",
         afterBody:
@@ -3383,12 +3382,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         links: [{ href: "/family-recipe-book", label: "Create a family recipe book" }],
       },
       {
-        question: "Can I give recipe cards instead of a book?",
-        answer:
-          "Yes. Recipe cards can be a good choice for a smaller collection or a recipe box someone can keep adding to. 4x6 recipe cards are available with RecipePrinter Pro.",
-        links: [{ href: "/recipe-card-printer", label: "Make printable recipe cards" }],
-      },
-      {
         question: "Does RecipePrinter print and ship the recipe book?",
         answer:
           "No. RecipePrinter creates the finished cookbook PDF. You can print it at home or send the file to a professional printing service.",
@@ -3408,7 +3401,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     links: [
       { href: "/homemade-cookbook-gift", label: "Make a homemade cookbook gift" },
       { href: "/family-recipe-book", label: "Create a family recipe book" },
-      { href: "/recipe-card-printer", label: "Make printable recipe cards" },
       { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
       { href: "/bridal-shower-recipe-book", label: "Bridal shower recipe book" },
       { href: "/christmas-recipe-book", label: "Make a family recipe book for Christmas" },
