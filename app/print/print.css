@@ -3215,9 +3215,32 @@
     max-width: none;
   }
 
-  .recipe-print-page {
-    height: 100dvh;
+  /* App-shell layout: the top bar and the action bar stay put and only the
+     deck scrolls. The document already fits the screen, but iOS Safari still
+     drags and rubber-bands it from any touch the deck doesn't take (the top
+     bar, the gutters, the deck at either end), and with the floating toolbars
+     of Safari 26 that dragged the whole screen around. Pinning the page to the
+     viewport leaves the document nothing to scroll.
+
+     Being `fixed` and touching the top edge also lets Safari 26 tint the
+     status bar from the top bar's white, rather than from the grey page
+     behind a statically positioned one. */
+  html:has(.recipe-print-page),
+  body:has(.recipe-print-page) {
     overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  .recipe-print-page {
+    position: fixed;
+    inset: 0;
+    /* Its own `h-dvh` would otherwise win over `bottom: 0`. */
+    height: auto;
+    overflow: hidden;
+  }
+
+  .recipe-page-deck {
+    overscroll-behavior: contain;
   }
 
   /* The desktop header (now wrapped with the back-up bar in .recipe-print-topbar)
@@ -3242,7 +3265,7 @@
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: minmax(0, 1fr);
-    height: 100dvh;
+    height: 100%;
     padding: 0 0 var(--rp-mobile-bar-reserve, 132px) !important;
     gap: 0;
     overflow: hidden;

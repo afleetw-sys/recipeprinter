@@ -1,6 +1,12 @@
 import { Suspense } from "react";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./print.css";
+
+// Older Safari (before 26) tints the status bar from theme-color; match the
+// phone top bar's white so the bar runs up to the top of the screen.
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+};
 
 // The print preview is a per-session, query-string-driven view of recipes the
 // user just imported, there's no stable, standalone content to index here.
