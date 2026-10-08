@@ -3328,7 +3328,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Recipe book gift ideas for different occasions",
         image: "bound-cookbook",
         body:
-          "A personalized recipe book can work as a wedding gift, birthday gift, Mother's Day gift, anniversary gift, housewarming gift, or holiday present. The occasion matters less than choosing recipes that feel connected to the person receiving it.",
+          "A personalized recipe book fits a wedding, a birthday, Mother's Day, an anniversary, a housewarming, or the holidays. The occasion matters less than filling it with recipes that feel like the person you're giving it to.",
         afterBody:
           "The strongest recipe book gifts are usually specific: family recipes, favorite meals, recipes from someone they love, or dishes tied to traditions they want to keep.",
       },
