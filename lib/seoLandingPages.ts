@@ -3349,11 +3349,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "This makes it easier to create a group gift without asking everyone to rewrite their recipes in the same format.",
       },
       {
-        heading: "Keep updating the recipe book after you give it",
-        body:
-          "Editing stays free after you give it. Add recipes that arrive late, fix a mistake, and download an updated copy at no extra cost.",
-      },
-      {
         // Text only: no existing photo shows the people this is about, and
         // the page already carries five.
         heading: "Who a recipe book is a good gift for",
