@@ -6784,8 +6784,8 @@ export default function PrintPage() {
             : pendingDelete?.kind === "cover"
               ? "You can add it back from the page list at any time."
               : cookbookMode
-                ? "It'll be removed from this cookbook. This can't be undone."
-                : "It'll be removed from your print list. This can't be undone."
+                ? "It'll be removed from this cookbook."
+                : "It'll be removed from your print list."
         }
         deletePrimaryLabel={
           pendingDelete?.kind === "section"
