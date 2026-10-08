@@ -184,18 +184,25 @@ export async function prepareLocalPhotos(
 // ── Print passes ─────────────────────────────────────────────────────────────
 
 /**
- * A pass for this signed-in subscriber, or null when they hold nothing a pass
- * would carry (or are not signed in, or the server cannot say right now).
+ * A pass for this subscriber, or null when they hold nothing a pass would
+ * carry, or the server cannot say right now. Signed in, the account's ID token
+ * proves who they are; signed out, the anonymous RevenueCat id their purchase
+ * belongs to.
  */
-export async function requestPrintPass(): Promise<string | null> {
+export async function requestPrintPass(revenueCatUserId: string | null): Promise<string | null> {
   try {
     const { getFirebaseAuth } = await import("@/lib/firebase/client");
-    const idToken = await getFirebaseAuth().currentUser?.getIdToken();
-    if (!idToken) return null;
+    const user = getFirebaseAuth().currentUser;
+    const idToken = user && !user.isAnonymous ? await user.getIdToken() : null;
+    // Signed out, a purchase belongs to the browser's anonymous RevenueCat id.
+    if (!idToken && !revenueCatUserId?.startsWith("$RCAnonymousID:")) return null;
     const response = await fetch("/api/print-pass", {
       method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${idToken}` },
-      body: JSON.stringify({ action: "issue" }),
+      headers: {
+        "content-type": "application/json",
+        ...(idToken ? { authorization: `Bearer ${idToken}` } : {}),
+      },
+      body: JSON.stringify({ action: "issue", ...(idToken ? {} : { customerId: revenueCatUserId }) }),
     });
     if (!response.ok) return null;
     const { pass } = (await response.json()) as { pass?: string | null };

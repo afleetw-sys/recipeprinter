@@ -3199,19 +3199,19 @@ export default function PrintPage() {
   ]);
 
   /**
-   * A signed-in subscriber's print pass, fetched ahead of the tap for the same
+   * A subscriber's print pass, fetched ahead of the tap for the same
    * reason as the photos, and renewed well inside its 30-minute life.
    */
   const handoffPassRef = useRef<string | null>(null);
   const handoffHasPaid = Object.keys(effectiveCustomerInfo.customerInfo?.entitlements.active ?? {}).length > 0;
   useEffect(() => {
-    if (!cookPilotUser || !handoffHasPaid || !isIOSPrinter() || printIsNative()) {
+    if (!handoffHasPaid || !isIOSPrinter() || printIsNative()) {
       handoffPassRef.current = null;
       return;
     }
     let cancelled = false;
     const renew = () =>
-      void requestPrintPass().then((pass) => {
+      void requestPrintPass(revenueCatUserId).then((pass) => {
         if (!cancelled) handoffPassRef.current = pass;
       });
     renew();
@@ -3220,7 +3220,7 @@ export default function PrintPage() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [cookPilotUser, handoffHasPaid]);
+  }, [cookPilotUser, revenueCatUserId, handoffHasPaid]);
 
   const hasProBrandless = hasProEntitlement(effectiveCustomerInfo.customerInfo);
   useEffect(() => {

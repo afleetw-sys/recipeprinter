@@ -130,3 +130,65 @@ export async function activeEntitlements(
   }
   return { ent, endsAt };
 }
+
+/** RevenueCat's anonymous app-user id: what a signed-out purchase belongs to. */
+const ANONYMOUS_CUSTOMER = /^\$RCAnonymousID:[0-9a-f]{32}$/;
+const RC_API = "https://api.revenuecat.com/v2";
+
+export function isAnonymousCustomerId(value: unknown): value is string {
+  return typeof value === "string" && ANONYMOUS_CUSTOMER.test(value);
+}
+
+async function rc<T>(path: string, secret: string): Promise<T> {
+  const response = await fetch(`${RC_API}${path}`, {
+    headers: { Authorization: `Bearer ${secret}`, Accept: "application/json" },
+    signal: AbortSignal.timeout(10_000),
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`RevenueCat ${response.status} on ${path.split("?")[0]}: ${body.slice(0, 300)}`);
+  }
+  return (await response.json()) as T;
+}
+
+/**
+ * The entitlements a signed-out purchase holds, asked of RevenueCat directly.
+ *
+ * A signed-out subscriber has no account and so no mirror to read; their Pro
+ * lives on the random anonymous id in their browser, and holding that id is
+ * what owning the purchase means today. Only anonymous ids are accepted here:
+ * an account's id is its Firebase uid, which is not a secret, so accounts go
+ * through the ID-token path instead. These are GETs, which never create a
+ * RevenueCat customer (unlike configuring the SDK).
+ *
+ * Needs `customer_information:customers:read` and
+ * `project_configuration:entitlements:read` on `REVENUECAT_SECRET_KEY`.
+ */
+export async function anonymousEntitlements(
+  customerId: string,
+  nowMs = Date.now(),
+): Promise<{ ent: string[]; endsAt: number | null }> {
+  const secret = process.env.REVENUECAT_SECRET_KEY?.trim();
+  const projectId = process.env.REVENUECAT_PROJECT_ID?.trim();
+  if (!secret || !projectId) throw new Error("RevenueCat is not configured.");
+  const project = `/projects/${encodeURIComponent(projectId)}`;
+  const [active, catalog] = await Promise.all([
+    rc<{ items: Array<{ entitlement_id: string; expires_at: number | null }> }>(
+      `${project}/customers/${encodeURIComponent(customerId)}/active_entitlements`,
+      secret,
+    ),
+    rc<{ items: Array<{ id: string; lookup_key: string }> }>(`${project}/entitlements?limit=100`, secret),
+  ]);
+  const lookupKey = new Map(catalog.items.map((entitlement) => [entitlement.id, entitlement.lookup_key]));
+  const ent: string[] = [];
+  let endsAt: number | null = null;
+  for (const item of active.items) {
+    const id = lookupKey.get(item.entitlement_id);
+    if (!id || !MIRRORED.includes(id)) continue;
+    if (item.expires_at === null ? !LIFETIME_ELIGIBLE.has(id) : item.expires_at <= nowMs) continue;
+    ent.push(id);
+    if (item.expires_at !== null) endsAt = endsAt === null ? item.expires_at : Math.min(endsAt, item.expires_at);
+  }
+  return { ent, endsAt };
+}
