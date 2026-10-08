@@ -852,6 +852,66 @@ describe("Firestore's connection around a print", () => {
     expect(eventNames()).toContain("print_refused_by_browser");
   });
 
+  it("the spinner lasts until the print sheet is on screen, in each Safari", async () => {
+    // Measured in the iOS 17.5 and 26.5 simulators (2026-10-08): iPhone Safari
+    // fires beforeprint ~0.3s after print() and puts the sheet up within 0.5s,
+    // then fires nothing at all, not when the sheet opens and not when it
+    // closes. Its "blocked from automatically printing" alert does fire blur
+    // when it appears and focus when Allow or Ignore is tapped. Mac Safari
+    // holds its sheet, with no event, until the page stops loading.
+    const ua = vi.spyOn(navigator, "userAgent", "get");
+    const userAgents = {
+      iPhone:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+      Mac: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
+    };
+    const fire = (type: string) =>
+      act(() => {
+        window.dispatchEvent(new Event(type));
+      });
+    const startPrint = async (device: keyof typeof userAgents) => {
+      ua.mockReturnValue(userAgents[device]);
+      seedRecipes(1);
+      await renderPrintPage();
+      await settle(100);
+      act(() => {
+        fireEvent.click(printButton());
+      });
+    };
+
+    // iPhone, a normal print: gone just after the sheet slides up, so it is not
+    // still spinning when they close the sheet (nothing says they did).
+    await startPrint("iPhone");
+    await settle(300);
+    fire("beforeprint");
+    fire("afterprint");
+    await settle(1_000);
+    expect(printSpinner(), "iPhone after the sheet is up").toBeNull();
+    cleanup();
+
+    // iPhone, a second print: Safari's alert takes focus. Keep spinning behind
+    // it; Ignore (focus, no beforeprint) ends it.
+    await startPrint("iPhone");
+    await settle(50);
+    fire("blur");
+    await settle(3_000);
+    expect(printSpinner(), "iPhone behind the blocked alert").not.toBeNull();
+    fire("focus");
+    await settle(1_000);
+    expect(printSpinner(), "iPhone after Ignore").toBeNull();
+    cleanup();
+
+    // Mac Safari waiting on the network: no event for seconds, then the sheet.
+    await startPrint("Mac");
+    await settle(5_000);
+    expect(printSpinner(), "Mac while Safari holds the sheet").not.toBeNull();
+    fire("beforeprint");
+    fire("afterprint");
+    fire("blur");
+    await settle(50);
+    expect(printSpinner(), "Mac once the sheet has the window").toBeNull();
+  });
+
   it("leaving the page reopens it", async () => {
     seedRecipes(1);
     const { unmount } = await renderPrintPage();

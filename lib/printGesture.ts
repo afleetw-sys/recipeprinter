@@ -26,10 +26,16 @@ export function printNeedsLiveGesture(): boolean {
 /** Safari on the Mac, or any browser on iOS — WebKit's print engine. */
 export function isWebKitPrinter(): boolean {
   if (typeof navigator === "undefined") return false;
+  if (isIOSPrinter()) return true;
   const ua = navigator.userAgent;
-  const iOS =
-    /iPad|iPhone|iPod/.test(ua) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  if (iOS) return true;
   return /Safari/.test(ua) && !/Chrome|Chromium|CriOS|Edg|OPR|Android|Firefox|FxiOS/.test(ua);
+}
+
+/** Any browser on an iPhone or iPad, which all print through iOS's sheet. */
+export function isIOSPrinter(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
 }

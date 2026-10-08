@@ -170,7 +170,7 @@ import {
   PRINT_PREVIEW_STABILITY_MS,
 } from "@/lib/printErrorRecovery";
 import { hasPendingImport, takePendingImport } from "@/lib/pendingImport";
-import { isWebKitPrinter, printNeedsLiveGesture } from "@/lib/printGesture";
+import { isIOSPrinter, isWebKitPrinter, printNeedsLiveGesture } from "@/lib/printGesture";
 import { markPostPrintDialogShown, shouldShowPostPrintDialog } from "@/lib/postPrintDialog";
 import { useToast } from "@/lib/useToast";
 import { printProjectFingerprint, type PendingSave } from "@/lib/printSave";
@@ -228,8 +228,16 @@ const FULL_CARD_DECK_MAX_PAGES = 80;
  */
 const PRINT_VERDICT_MS = 60_000;
 
-/** Longest the Print spinner waits for the print sheet to take focus. */
-const PRINT_SHEET_WAIT_CEILING_MS = 20_000;
+/** Longest the Print spinner waits for the print sheet. Long, because Mac
+    Safari holds its sheet until nothing on the page is loading. */
+const PRINT_SHEET_WAIT_CEILING_MS = 30_000;
+/** iPhone: from `beforeprint` to the sheet covering the page. Measured under
+    0.5s on iOS 17.5 and 26.5. */
+const IOS_SHEET_RISE_MS = 600;
+/** iPhone: after Safari's "blocked from printing" alert hands focus back, how
+    long `beforeprint` (Allow) gets before it counts as Ignore. Allow fires it
+    within milliseconds. */
+const IOS_ALERT_ANSWER_MS = 300;
 /** Pointer/key input this soon after Print is the click itself settling, not
     the cook back on the page after the sheet. */
 const PRINT_SHEET_INPUT_GRACE_MS = 600;
@@ -2167,12 +2175,24 @@ export default function PrintPage() {
    *   sheet, often for seconds. So `afterprint` says nothing about the dialog
    *   there, and reading it as "done" dropped the spinner at once.
    *
-   * On Safari, then, the spinner stays until the page loses focus to the sheet
-   * (`blur`), or the cook is back on the page (a click or key press, which
-   * cannot reach it while the sheet is up; a short grace ignores the input
-   * that started this print), or a ceiling, whichever comes first. Not pointer
-   * MOVES: a hand nudging the mouse while it waits would drop the spinner
-   * early, which is the very thing this exists to stop.
+   * On Mac Safari, then, the spinner stays until the page loses focus to the
+   * sheet (`blur`). Safari can hold the sheet for many seconds, with no event,
+   * while anything on the page is loading, so there is no early cut-off.
+   *
+   * iPhone Safari is different again (measured on iOS 17.5 and 26.5): it fires
+   * `beforeprint` ~0.3s after `print()`, the sheet covers the page within 0.5s,
+   * and then nothing fires at all, not when the sheet opens and not when it
+   * closes. Waiting for a `blur` left the button spinning after the cook had
+   * closed the sheet. So the spinner goes `IOS_SHEET_RISE_MS` after
+   * `beforeprint`, behind the rising sheet. Its "blocked from automatically
+   * printing" alert does take focus (`blur`), so the spinner keeps going behind
+   * it, and `focus` with no `beforeprint` after it is Ignore.
+   *
+   * Everywhere, the cook being back on the page (a click or key press, which
+   * cannot reach it while the sheet is up; a short grace ignores the input that
+   * started this print) or a ceiling also ends it. Not pointer MOVES: a hand
+   * nudging the mouse while it waits would drop the spinner early, which is the
+   * very thing this exists to stop.
    */
   const sheetWaitCleanupRef = useRef<(() => void) | null>(null);
   function stopSheetWait() {
@@ -2197,16 +2217,39 @@ export default function PrintPage() {
       if (Date.now() - startedAt > PRINT_SHEET_INPUT_GRACE_MS) done();
     };
     const ceiling = window.setTimeout(done, PRINT_SHEET_WAIT_CEILING_MS);
-    window.addEventListener("blur", done);
     window.addEventListener("pointerdown", backOnPage);
     window.addEventListener("keydown", backOnPage);
-    if (!isWebKitPrinter()) window.addEventListener("afterprint", done);
+    const timers: number[] = [];
+    let sheetComing = false;
+    const sheetRising = () => {
+      sheetComing = true;
+      timers.push(window.setTimeout(done, IOS_SHEET_RISE_MS));
+    };
+    const alertAnswered = () => {
+      timers.push(
+        window.setTimeout(() => {
+          if (!sheetComing) done();
+        }, IOS_ALERT_ANSWER_MS),
+      );
+    };
+    if (isIOSPrinter()) {
+      // `beforeprint` can land before this runs (print() blocks ~0.3s on iOS 26).
+      if (printAcceptedRef.current) sheetRising();
+      else window.addEventListener("beforeprint", sheetRising);
+      window.addEventListener("focus", alertAnswered);
+    } else {
+      window.addEventListener("blur", done);
+      if (!isWebKitPrinter()) window.addEventListener("afterprint", done);
+    }
     sheetWaitCleanupRef.current = () => {
       window.clearTimeout(ceiling);
+      timers.forEach((timer) => window.clearTimeout(timer));
       window.removeEventListener("blur", done);
       window.removeEventListener("pointerdown", backOnPage);
       window.removeEventListener("keydown", backOnPage);
       window.removeEventListener("afterprint", done);
+      window.removeEventListener("beforeprint", sheetRising);
+      window.removeEventListener("focus", alertAnswered);
     };
   }
   useEffect(() => () => stopSheetWait(), []);
@@ -2295,8 +2338,12 @@ export default function PrintPage() {
       // A print the browser took keeps its spinner until the sheet is actually
       // up (see `holdSpinnerUntilSheetOpens`); only a refusal drops it here.
       if (printAcceptedRef.current) return;
-      stopSheetWait();
-      setPrintAwaitingBrowser(false);
+      // Safari is not refusing yet: the Mac holds its sheet while the page
+      // loads, and the iPhone's alert waits on Allow. The sheet wait owns it.
+      if (!isWebKitPrinter()) {
+        stopSheetWait();
+        setPrintAwaitingBrowser(false);
+      }
       // No `beforeprint` yet, so nothing is going to fire `afterprint` to put
       // the deck back to its five-page window. Left as it is, a print that is
       // still waiting on Safari's alert (or was dismissed) leaves the entire
