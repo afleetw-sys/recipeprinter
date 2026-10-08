@@ -1,5 +1,6 @@
 import type { PostHog } from "posthog-js";
 import { isProductionRuntime } from "@/lib/appEnvironment";
+import { currentBrowserApp } from "@/lib/browserApp";
 import { sessionStore } from "@/lib/storage";
 import {
   type Attribution,
@@ -258,6 +259,9 @@ type EventProps = {
     recipeCount: number;
     /** The cookbook print-format preset, when exporting a cookbook. */
     cookbookPreset?: CookbookPresetId;
+    /** Whether `window.print` was still the browser's own, or an app's
+        stand-in for it (see lib/browserApp). */
+    printIsNative: boolean;
   };
   /**
    * The browser began preparing its print dialog. Unlike `print_started`, this
@@ -271,6 +275,9 @@ type EventProps = {
     doubleSided: boolean;
     recipeCount: number;
     cookbookPreset?: CookbookPresetId;
+    /** Print button only: ms from the press to the sheet starting. Safari holds
+        its sheet until the page stops loading, so this can run to seconds. */
+    waitedMs?: number;
   };
   /**
    * The browser's afterprint fired. Note this does NOT mean paper came out —
@@ -283,15 +290,27 @@ type EventProps = {
     cookbookPreset?: CookbookPresetId;
   };
   /**
-   * `window.print()` ran and no `beforeprint` followed within the grace period.
-   * On iOS Safari that is almost always its own "blocked from automatically
-   * printing" alert waiting on Allow (a tab gets one free print), so this counts
-   * prints that reached that alert, not prints that failed. It is the gap
-   * between `print_started` and `print_dialog_closed` given a name.
+   * `window.print()` ran and no print sheet followed: no `beforeprint` within
+   * `PRINT_VERDICT_MS`, or the cook left first (`left`). A sheet that is merely
+   * slow is not this; it is a `print_dialog_opened` with a large `waitedMs`.
+   * On iOS Safari this is usually its "blocked from automatically printing"
+   * alert, never answered (a tab gets one free print).
    */
   print_refused_by_browser: {
     template: RecipePrintTemplate;
     cardSize: PrintCardSize;
+    waitedMs: number;
+    left: boolean;
+  };
+  /**
+   * `window.print()` threw. The browser's own never does; an in-app browser's
+   * stand-in can, as the Google app's does when its native hand-off is missing.
+   * `error` is the message, so a new broken stand-in names itself.
+   */
+  print_failed: {
+    template: RecipePrintTemplate;
+    cardSize: PrintCardSize;
+    error: string;
   };
   /** Which card designs people actually reach for. */
   template_selected: { template: RecipePrintTemplate; premium: boolean };
@@ -651,6 +670,8 @@ export function initAnalytics(): void {
   // render) stored a brand-new anonymous PostHog person with an /export
   // pageview: a fresh browser profile every time, so never the same one twice.
   if (window.location.pathname.startsWith("/export")) return;
+  // Our own print diagnostics, opened only by us testing in-app browsers.
+  if (window.location.pathname.startsWith("/print-check")) return;
 
   // From here we are committed to loading. Set the flag synchronously (before
   // the await) so events fired between now and the bundle arriving get queued
@@ -714,6 +735,10 @@ function bootPostHog(
     capture_pageview: false,
     // Keep the opt-out flag out of cookies, in keeping with the rest.
     opt_out_capturing_persistence_type: "localStorage",
+    // Off by default, so the Google app's built-in browser is reported as
+    // "Mobile Safari" with no version. A print that failed in an app browser
+    // like that (its window.print shim had no native side) looked like Safari.
+    detect_google_search_app: true,
 
     // Everything below is PostHog's automatic capture, and every one of them
     // defaults to ON. Left alone they produced ~60 events in a single browsing
@@ -745,6 +770,12 @@ function bootPostHog(
       maskAllInputs: true,
     },
   });
+
+  // The app showing the page, on every event. PostHog's `$browser` calls every
+  // iPhone app's web view "Mobile Safari", which hid that print fails in some
+  // of them. Per page load, so a link opened in Safari from an app is labelled
+  // as Safari. See lib/browserApp.
+  client.register_for_session({ browser_app: currentBrowserApp() });
 
   const params = new URLSearchParams(search);
 
