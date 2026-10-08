@@ -98,6 +98,18 @@ vi.mock("@/lib/firebase/db", async (importOriginal) => {
   };
 });
 
+// ---- what the print reports ------------------------------------------------
+
+/** Every product event the page sent, in order. */
+const analytics = vi.hoisted(() => ({ events: [] as Array<[string, Record<string, unknown>]> }));
+vi.mock("@/lib/analytics", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/analytics")>();
+  return {
+    ...original,
+    track: (name: string, props: Record<string, unknown>) => analytics.events.push([name, props]),
+  };
+});
+
 // ---- Next -----------------------------------------------------------------
 
 const nav = vi.hoisted(() => ({ push: vi.fn(), search: "" }));
@@ -772,6 +784,72 @@ describe("Firestore's connection around a print", () => {
       window.dispatchEvent(new Event("afterprint"));
     });
     expect(printNet.calls).toEqual(["resume", "resume"]);
+  });
+
+  /** The spinner on the Print button, or null once it has stopped. */
+  const printSpinner = () => printButton().querySelector("svg.spin");
+  const eventNames = () => analytics.events.map(([name]) => name);
+
+  it("a print() that throws (an app's broken stand-in) stops the spinner and says why", async () => {
+    // The Google app's in-app browser replaces window.print with a hand-off to
+    // the app that throws: `window.webkit.messageHandlers.print` is missing.
+    // The throw used to skip everything after print(), so the button spun for
+    // good, Firestore stayed paused, and nothing was ever reported.
+    for (const viaPointer of [true, false]) {
+      seedRecipes(1);
+      analytics.events = [];
+      vi.spyOn(window, "print").mockImplementation(() => {
+        throw new TypeError(
+          "undefined is not an object (evaluating 'window.webkit.messageHandlers.print.postMessage')",
+        );
+      });
+      await renderPrintPage();
+      await settle(100);
+      printNet.calls = [];
+
+      if (viaPointer) press(printButton());
+      act(() => {
+        fireEvent.click(printButton());
+      });
+      await settle(50);
+
+      expect(printSpinner(), `spinner, viaPointer=${viaPointer}`).toBeNull();
+      expect(printNet.calls.at(-1), `connection, viaPointer=${viaPointer}`).toBe("resume");
+      const failed = analytics.events.find(([name]) => name === "print_failed");
+      expect(failed?.[1].error, `report, viaPointer=${viaPointer}`).toMatch(/messageHandlers\.print/);
+      cleanup();
+    }
+  });
+
+  it("a print sheet that is slow to open is not counted as refused; one that never opens is", async () => {
+    // Safari holds its print sheet until the page stops loading, so a working
+    // print can take many seconds. Counting anything past 1.2s as refused made
+    // Mac Safari look broken two times in three.
+    seedRecipes(1);
+    await renderPrintPage();
+    await settle(100);
+
+    act(() => {
+      fireEvent.click(printButton());
+    });
+    await settle(8_000);
+    act(() => {
+      window.dispatchEvent(new Event("beforeprint"));
+    });
+    await settle(120_000);
+    expect(eventNames()).not.toContain("print_refused_by_browser");
+    const opened = analytics.events.find(([name]) => name === "print_dialog_opened");
+    expect(opened?.[1].waitedMs).toBeGreaterThanOrEqual(8_000);
+    act(() => {
+      window.dispatchEvent(new Event("afterprint"));
+    });
+
+    analytics.events = [];
+    act(() => {
+      fireEvent.click(printButton());
+    });
+    await settle(120_000);
+    expect(eventNames()).toContain("print_refused_by_browser");
   });
 
   it("leaving the page reopens it", async () => {

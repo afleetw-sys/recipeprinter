@@ -82,6 +82,7 @@ import {
 import type { ProBillingCycle } from "@/lib/proProduct";
 import { loadLocalProject } from "@/lib/localProjects";
 import { printDocumentTitle } from "@/lib/printDocumentTitle";
+import { printIsNative } from "@/lib/browserApp";
 import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
 import { useRailSelection } from "@/lib/useRailSelection";
@@ -215,6 +216,17 @@ const PRINT_ACCEPTANCE_GRACE_MS = 1_200;
 /** Above this many pages a recipe-card deck keeps drawing only the pages near
     the reader, like a cookbook, instead of the whole deck up front. */
 const FULL_CARD_DECK_MAX_PAGES = 80;
+
+/**
+ * How long a print sheet may take before the print counts as refused.
+ *
+ * Not the grace above, which is for the button: Safari holds its sheet until
+ * nothing on the page is loading, so a print that works can open many seconds
+ * after the press, and counting those as refused made Mac Safari look broken
+ * in two prints out of three. A sheet that arrives inside this window is a
+ * slow print, reported with how long it took.
+ */
+const PRINT_VERDICT_MS = 60_000;
 
 /** Longest the Print spinner waits for the print sheet to take focus. */
 const PRINT_SHEET_WAIT_CEILING_MS = 20_000;
@@ -603,9 +615,16 @@ export default function PrintPage() {
   /** The pending verdict, so leaving the page cancels it. A watchdog that
       outlived its page would reload someone who had already walked away. */
   const printWatchdogRef = useRef<number | null>(null);
+  /** The press time of a print still waiting for its sheet, and the timer that
+      calls it refused at `PRINT_VERDICT_MS`. See `awaitPrintVerdict`. */
+  const printVerdictRef = useRef<{ startedAt: number; timer: number; report: (left: boolean) => void } | null>(
+    null,
+  );
   useEffect(
     () => () => {
       if (printWatchdogRef.current !== null) window.clearTimeout(printWatchdogRef.current);
+      // Leaving before the sheet came is the refusal, said now or never.
+      printVerdictRef.current?.report(true);
       resumeFirestoreAfterPrint();
     },
     [],
@@ -2201,6 +2220,7 @@ export default function PrintPage() {
       doubleSided,
       recipeCount: items?.filter((item) => item.recipe).length ?? 0,
       cookbookPreset: cookbookMode ? activePreset.id : undefined,
+      printIsNative: printIsNative(),
     });
     // Name the exported PDF after what is in it. The browser seeds the
     // Save-as-PDF filename from document.title, so this is what turns the
@@ -2243,7 +2263,21 @@ export default function PrintPage() {
     // Already closed if this came from a pointer press; a keyboard press or a
     // deferred print closes it here, and Safari prints the moment it is shut.
     pauseFirestoreForPrint();
-    window.print();
+    try {
+      window.print();
+    } catch (error) {
+      // The browser's own print() never throws. An in-app browser's stand-in
+      // can: the Google app's hands off to `webkit.messageHandlers.print`, which
+      // it does not always provide. Uncaught, this skipped everything below, so
+      // the button spun for good and nothing was reported.
+      abandonPrint();
+      track("print_failed", {
+        template,
+        cardSize,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return;
+    }
     // `window.print()` returns at once whether or not a sheet opens, so watch
     // for `beforeprint`. iOS Safari lets a tab print once and puts its own
     // "blocked from automatically printing" alert (Ignore / Allow) in front of
@@ -2255,6 +2289,7 @@ export default function PrintPage() {
     // `beforeprint`, which re-renders the deck itself.
     if (printWatchdogRef.current !== null) window.clearTimeout(printWatchdogRef.current);
     holdSpinnerUntilSheetOpens();
+    awaitPrintVerdict();
     printWatchdogRef.current = window.setTimeout(() => {
       printWatchdogRef.current = null;
       // A print the browser took keeps its spinner until the sheet is actually
@@ -2265,10 +2300,57 @@ export default function PrintPage() {
       // No `beforeprint` yet, so nothing is going to fire `afterprint` to put
       // the deck back to its five-page window. Left as it is, a print that is
       // still waiting on Safari's alert (or was dismissed) leaves the entire
-      // book rendered on a page the cook is still using.
+      // book rendered on a page the cook is still using. Not reported here:
+      // a sheet can still be on its way (see `PRINT_VERDICT_MS`).
       setRenderAllPages(false);
-      track("print_refused_by_browser", { template, cardSize });
     }, PRINT_ACCEPTANCE_GRACE_MS);
+  }
+
+  /** Puts the page back as it was before a print that never started. */
+  function abandonPrint() {
+    printRequestedRef.current = false;
+    stopSheetWait();
+    if (printWatchdogRef.current !== null) window.clearTimeout(printWatchdogRef.current);
+    printWatchdogRef.current = null;
+    setPrintAwaitingBrowser(false);
+    setRenderAllPages(false);
+    if (previousDocTitleRef.current !== null) {
+      document.title = previousDocTitleRef.current;
+      previousDocTitleRef.current = null;
+    }
+    resumeFirestoreAfterPrint();
+  }
+
+  /**
+   * Starts the clock on a print: `beforeprint` stops it (a print, however slow,
+   * see `takePrintWait`), and `PRINT_VERDICT_MS` without one, or leaving the
+   * page first, reports it refused.
+   */
+  function awaitPrintVerdict() {
+    const previous = printVerdictRef.current;
+    if (previous) window.clearTimeout(previous.timer);
+    const startedAt = Date.now();
+    const settings = { template, cardSize };
+    const report = (left: boolean) => {
+      if (printVerdictRef.current?.startedAt !== startedAt) return;
+      window.clearTimeout(printVerdictRef.current.timer);
+      printVerdictRef.current = null;
+      track("print_refused_by_browser", { ...settings, waitedMs: Date.now() - startedAt, left });
+    };
+    printVerdictRef.current = {
+      startedAt,
+      timer: window.setTimeout(() => report(false), PRINT_VERDICT_MS),
+      report,
+    };
+  }
+
+  /** How long the pending print waited for its sheet, ending the wait. */
+  function takePrintWait(): number | undefined {
+    const pending = printVerdictRef.current;
+    if (!pending) return undefined;
+    window.clearTimeout(pending.timer);
+    printVerdictRef.current = null;
+    return Date.now() - pending.startedAt;
   }
 
   /**
@@ -4740,6 +4822,8 @@ export default function PrintPage() {
   useEffect(() => {
     function handleBeforePrint() {
       track("print_dialog_opened", {
+        // Only refs inside, so an older render's copy reads the same state.
+        waitedMs: takePrintWait(),
         trigger: printRequestedRef.current ? "print_button" : "keyboard_or_browser_menu",
         template,
         cardSize,
@@ -4777,6 +4861,7 @@ export default function PrintPage() {
       // at all means the print was real, so the watchdog must not call it
       // refused.
       printAcceptedRef.current = true;
+      takePrintWait();
       setRenderAllPages(false);
       resumeFirestoreAfterPrint();
       // Chrome on macOS sometimes doesn't hand keyboard/mouse focus back to
