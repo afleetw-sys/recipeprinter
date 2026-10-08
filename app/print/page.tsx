@@ -83,6 +83,17 @@ import type { ProBillingCycle } from "@/lib/proProduct";
 import { loadLocalProject } from "@/lib/localProjects";
 import { printDocumentTitle } from "@/lib/printDocumentTitle";
 import { printIsNative } from "@/lib/browserApp";
+import {
+  arrivedPrintPass,
+  openInSafari,
+  packPrintHandoff,
+  prepareLocalPhotos,
+  printHandoffUrl,
+  requestPrintPass,
+  seedPrintHandoff,
+  verifyPrintPass,
+  withPrintPass,
+} from "@/lib/printHandoff";
 import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
 import { useRailSelection } from "@/lib/useRailSelection";
@@ -109,6 +120,7 @@ import {
   hasProEntitlement,
   type ProLockReason,
 } from "@/lib/recipePrinterPurchases";
+import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { resolveEffectiveCustomerInfo } from "@/lib/proAccessFallback";
 import { COOKBOOK_PRICE_FALLBACK, isFirstCookbookDiscountEligible } from "@/lib/cookbookProduct";
 import {
@@ -241,6 +253,13 @@ const IOS_ALERT_ANSWER_MS = 300;
 /** Pointer/key input this soon after Print is the click itself settling, not
     the cook back on the page after the sheet. */
 const PRINT_SHEET_INPUT_GRACE_MS = 600;
+
+/**
+ * A deck carried here from an app that cannot print (see lib/printHandoff),
+ * written into this tab's storage before anything below reads it. Module
+ * scope, so it runs once, ahead of the first render.
+ */
+const ARRIVED_BY_HANDOFF = seedPrintHandoff();
 
 export default function PrintPage() {
   useEffect(() => {
@@ -2319,6 +2338,16 @@ export default function PrintPage() {
         cardSize,
         error: error instanceof Error ? error.message : String(error),
       });
+      // Still inside the tap, which is what lets the app open Safari. There the
+      // same cards lay out and print from the first print of a new tab.
+      if (isIOSPrinter() && items) {
+        const url = printHandoffUrl(
+          packPrintHandoff(items, projectMeta.meta, handoffPhotosRef.current, handoffPassRef.current),
+          window.location.origin,
+        );
+        track("print_handed_to_safari", { template, cardSize, linkLength: url.length });
+        openInSafari(url);
+      }
       return;
     }
     // `window.print()` returns at once whether or not a sheet opens, so watch
@@ -2352,6 +2381,26 @@ export default function PrintPage() {
       setRenderAllPages(false);
     }, PRINT_ACCEPTANCE_GRACE_MS);
   }
+
+  /**
+   * Local photos ready to travel to Safari (see lib/printHandoff), kept current
+   * ahead of time on iPhone browsers whose print is not their own: the link
+   * has to open inside the tap, and reading a photo is not instant.
+   */
+  const handoffPhotosRef = useRef<Map<string, string>>(new Map());
+  useEffect(() => {
+    if (!items || !isIOSPrinter() || printIsNative()) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void prepareLocalPhotos(items, projectMeta.meta, handoffPhotosRef.current).then((photos) => {
+        if (!cancelled) handoffPhotosRef.current = photos;
+      });
+    }, 600);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [items, projectMeta.meta]);
 
   /** Puts the page back as it was before a print that never started. */
   function abandonPrint() {
@@ -3114,18 +3163,65 @@ export default function PrintPage() {
   // — and a mirror that's actually past its real expiration still fails
   // locked, recomputed against the current clock on every render. See
   // lib/proAccessFallback.ts.
-  const effectiveCustomerInfo = useMemo(
-    () =>
-      resolveEffectiveCustomerInfo({
-        liveCustomerInfo: customerInfo,
-        liveStatus: customerInfoStatus,
-        liveLastVerifiedAtMs: customerInfoLastVerifiedAtMs,
-        mirroredEntitlements,
-        mirrorSyncedAtMs,
-        nowMs: Date.now(),
-      }),
-    [customerInfo, customerInfoStatus, customerInfoLastVerifiedAtMs, mirroredEntitlements, mirrorSyncedAtMs],
+  // A subscriber's deck handed over from the Google app (lib/printHandoff)
+  // arrives in a Safari tab with no account and no RevenueCat identity. The
+  // print pass it carries, once our server vouches for it, is their Pro here.
+  const [arrivalPass, setArrivalPass] = useState<CustomerInfo | null>(null);
+  const [arrivalPassPending, setArrivalPassPending] = useState(
+    () => ARRIVED_BY_HANDOFF && arrivedPrintPass() !== null,
   );
+  useEffect(() => {
+    const pass = ARRIVED_BY_HANDOFF ? arrivedPrintPass() : null;
+    if (!pass) return;
+    void verifyPrintPass(pass).then((verified) => {
+      setArrivalPass(verified);
+      setArrivalPassPending(false);
+    });
+  }, []);
+  const effectiveCustomerInfo = useMemo(() => {
+    const resolved = resolveEffectiveCustomerInfo({
+      liveCustomerInfo: customerInfo,
+      liveStatus: customerInfoStatus,
+      liveLastVerifiedAtMs: customerInfoLastVerifiedAtMs,
+      mirroredEntitlements,
+      mirrorSyncedAtMs,
+      nowMs: Date.now(),
+    });
+    if (!arrivalPass) return resolved;
+    return { ...resolved, customerInfo: withPrintPass(resolved.customerInfo, arrivalPass, Date.now()) };
+  }, [
+    customerInfo,
+    customerInfoStatus,
+    customerInfoLastVerifiedAtMs,
+    mirroredEntitlements,
+    mirrorSyncedAtMs,
+    arrivalPass,
+  ]);
+
+  /**
+   * A subscriber's print pass, fetched ahead of the tap for the same
+   * reason as the photos, and renewed well inside its 30-minute life.
+   */
+  const handoffPassRef = useRef<string | null>(null);
+  const handoffHasPaid = Object.keys(effectiveCustomerInfo.customerInfo?.entitlements.active ?? {}).length > 0;
+  useEffect(() => {
+    if (!handoffHasPaid || !isIOSPrinter() || printIsNative()) {
+      handoffPassRef.current = null;
+      return;
+    }
+    let cancelled = false;
+    const renew = () =>
+      void requestPrintPass(revenueCatUserId).then((pass) => {
+        if (!cancelled) handoffPassRef.current = pass;
+      });
+    renew();
+    const timer = window.setInterval(renew, 20 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [cookPilotUser, revenueCatUserId, handoffHasPaid]);
+
   const hasProBrandless = hasProEntitlement(effectiveCustomerInfo.customerInfo);
   useEffect(() => {
     setBrandHidden(hasProBrandless);
@@ -3446,7 +3542,9 @@ export default function PrintPage() {
       openCookbookPrintDialog();
       return;
     }
-    if (deferred && printNeedsLiveGesture()) {
+    // A deck handed over from an app opens in a new Safari tab, whose first
+    // print needs no tap: that is the whole point of sending it here.
+    if (deferred && printNeedsLiveGesture() && !ARRIVED_BY_HANDOFF) {
       // Safari would meet a print fired from here with its "blocked from
       // automatically printing" alert, or silently drop it. The cards are
       // ready now, so say so and let the next tap print them for real.
@@ -4780,6 +4878,7 @@ export default function PrintPage() {
   useEffect(() => {
     if (
       shouldPrint &&
+      !arrivalPassPending &&
       items &&
       items.length > 0 &&
       printLayoutReady &&
@@ -4799,6 +4898,7 @@ export default function PrintPage() {
     template,
     customerInfo,
     printLayoutReady,
+    arrivalPassPending,
     projectMeta.meta.cookbookMode,
   ]);
 

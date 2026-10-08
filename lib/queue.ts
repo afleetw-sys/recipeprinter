@@ -22,7 +22,7 @@ import { storeImportedPhoto, withImportedPhoto } from "@/lib/importedPhoto";
 // The print queue is session-based for the MVP, no accounts, no saved library.
 // It survives navigation to /print (same tab) via sessionStorage.
 export const QUEUE_STORAGE_KEY = "recipeprinter:queue:v1";
-const CURRENT_PRINT_JOB_STORAGE_KEY = "recipeprinter:print-job:current:v1";
+export const CURRENT_PRINT_JOB_STORAGE_KEY = "recipeprinter:print-job:current:v1";
 // Durable backup of the session queue. sessionStorage is wiped when the tab
 // closes; this localStorage mirror lets a reopened tab restore the in-progress
 // working set so a cook never loses an unsaved book/cards by closing the tab.
