@@ -3320,7 +3320,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print it or have it bound",
-        text: "Print it at home to wrap today, or send the PDF to a print shop for a bound copy.",
+        text: "Print it at home to give today, or send the PDF to a print shop for a bound copy.",
       },
     ],
     featureSections: [
