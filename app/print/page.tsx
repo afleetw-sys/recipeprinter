@@ -289,6 +289,11 @@ export default function PrintPage() {
   const [cookbookJustPurchased, setCookbookJustPurchased] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
+  /** Opened from the cookbook welcome's "Start adding recipes": titled for the
+      first recipe. Set by that button only, not by "the book is empty", so a
+      pick from a recipe app (which adds without closing) can't retitle the
+      sheet under the cook. */
+  const [addingFirstRecipe, setAddingFirstRecipe] = useState(false);
   const [organizeMode, setOrganizeMode] = useState(false);
   // `organizeWide` drives the panel width, `organizeMode` the rail's internal
   // grid layout. They toggle together, but entering/leaving runs a FLIP first
@@ -6552,6 +6557,8 @@ export default function PrintPage() {
         }}
         onStart={() => {
           setShowCookbookOfferDialog(false);
+          setAddingFirstRecipe(true);
+          openAddRecipeBelow();
         }}
       />
       {showProUpgradeDialog && (
@@ -6617,7 +6624,11 @@ export default function PrintPage() {
       />
       <AddRecipeDialog
         open={showAddRecipeDialog}
-        onClose={() => setShowAddRecipeDialog(false)}
+        onClose={() => {
+          setShowAddRecipeDialog(false);
+          setAddingFirstRecipe(false);
+        }}
+        title={addingFirstRecipe ? "Add your first recipe" : undefined}
         items={queue.items}
         focusedItemId={queue.focusedItemId}
         focusNonce={queue.focusNonce}
