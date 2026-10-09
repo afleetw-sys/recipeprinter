@@ -6585,6 +6585,11 @@ export default function PrintPage() {
           // Add recipes. Only closing left a new cook in an empty book with no
           // idea where adding happens. No page is aimed at, so the recipe goes
           // where an unplaced one always does (see `addRecipeTarget`).
+          //
+          // Only an empty book, though. A cook who arrived here by importing a
+          // recipe (still parsing counts) is already started, and lands on the
+          // book that recipe began rather than on "Add your first recipe".
+          if (recipeCount > 0) return;
           setAddingFirstRecipe(true);
           openAddRecipeBelow(null);
         }}
