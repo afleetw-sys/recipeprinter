@@ -85,8 +85,30 @@ export async function callCookPilotParser(name: string, data: unknown): Promise<
   ]);
 
   const callable = httpsCallable(getFns(), name);
-  const res = await callable(withAnonId(data));
-  return res.data;
+  const payload = withAnonId(data);
+  try {
+    return (await callable(payload)).data;
+  } catch (err) {
+    // A phone dropping signal for a moment is the usual cause, and the second
+    // try usually lands. Once only: anything that fails twice is worth telling
+    // the cook about, not hiding behind more waiting.
+    if (!isDroppedConnection(err)) throw err;
+    await new Promise((resolve) => setTimeout(resolve, RETRY_AFTER_DROP_MS));
+    return (await callable(payload)).data;
+  }
+}
+
+const RETRY_AFTER_DROP_MS = 1500;
+
+/**
+ * The SDK's answer when its fetch never got a response: status 0, which it
+ * reports as code `internal` with the lowercase message "internal". A phone
+ * losing signal mid-upload lands here. A function that actually crashed
+ * answers {status: "INTERNAL"} and arrives UPPERCASE, so it is not this.
+ */
+function isDroppedConnection(err: unknown): boolean {
+  const { code, message } = errorParts(err);
+  return code.includes("internal") && message === "internal";
 }
 
 /**
@@ -176,12 +198,9 @@ function classifyError(
   if (isAuthOrAppCheckError(err)) {
     return new ImportError(unavailableCopy, "backend_unavailable");
   }
-  // The SDK's answer when its fetch never got a response: status 0, which it
-  // reports as code `internal` with the lowercase message "internal". A phone
-  // losing signal mid-upload lands here. A function that actually crashed
-  // answers {status: "INTERNAL"} and arrives UPPERCASE, so it falls through to
-  // the backend branch below instead.
-  if (code.includes("internal") && message === "internal") {
+  // Already retried once in callCookPilotParser. A crash falls through to the
+  // backend branch below instead.
+  if (isDroppedConnection(err)) {
     return new ImportError(
       "The connection dropped before we got an answer. Check your signal and try again.",
       "network",
