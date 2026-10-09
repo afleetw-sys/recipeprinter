@@ -177,6 +177,11 @@ type EventProps = {
      * the URL as submitted, which is the only version that reproduces.
      */
     url?: string;
+    /**
+     * How long the import meter's reservation held this import up, in ms.
+     * Absent when the meter wasn't asked (cookbook, known Pro, or not deployed).
+     */
+    meterMs?: number;
   };
   /**
    * Parsing produced a recipe, or an already-parsed one (Paprika, a CookPilot
@@ -207,6 +212,16 @@ type EventProps = {
      */
     bookRecipes?: number;
     bookBought?: boolean;
+    /**
+     * The import meter's answer, on free card-mode imports it answered
+     * (docs/import-meter-plan.md, 4.1). `meter_used_30d` is the counted
+     * imports in the previous 30 days, BEFORE this one; the two booleans say
+     * whether a limit of 5 or 10 would have refused it.
+     */
+    meter_used_30d?: number;
+    meter_would_block_5?: boolean;
+    meter_would_block_10?: boolean;
+    meter_subject_kind?: "browser" | "account";
   };
   /**
    * An import that succeeded but was then substantially rewritten by hand: the
@@ -255,7 +270,14 @@ type EventProps = {
      * on the remainder.
      */
     botVendor?: BotWallVendor;
+    /** As on `recipe_import_started`. */
+    meterMs?: number;
   };
+  /**
+   * The import meter didn't answer in time or answered with an error, so the
+   * import went ahead without it (it always fails open).
+   */
+  import_meter_unavailable: { op: "reserve" | "settle"; reason: "timeout" | "error" };
   /**
    * A single URL turned out to be a "roundup" and yielded more than one recipe
    * (RecipePrinter multi-recipe import) — all of which were added. `count` is how
