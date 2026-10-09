@@ -825,64 +825,11 @@ describe("Firestore's connection around a print", () => {
 
       expect(printSpinner(), `spinner, viaPointer=${viaPointer}`).toBeNull();
       expect(printNet.calls.at(-1), `connection, viaPointer=${viaPointer}`).toBe("resume");
-      const failed = analytics.events.find(([name]) => name === "print_failed");
-      expect(failed?.[1].error, `report, viaPointer=${viaPointer}`).toMatch(/messageHandlers\.print/);
+      const attempt = analytics.events.find(([name]) => name === "print_attempt");
+      expect(attempt?.[1].endedBy, `report, viaPointer=${viaPointer}`).toBe("threw");
+      expect(attempt?.[1].error, `report, viaPointer=${viaPointer}`).toMatch(/messageHandlers\.print/);
       cleanup();
     }
-  });
-
-  it("a print whose events fire inside print() is not counted as refused", async () => {
-    // Chrome runs its whole preview inside print(), and Mac Safari fires
-    // beforeprint and afterprint there too, so both events land before print()
-    // returns. The refusal clock used to start after it returned, missed them,
-    // and called every such print refused 60s later, or on leaving the page.
-    vi.spyOn(window, "print").mockImplementation(() => {
-      window.dispatchEvent(new Event("beforeprint"));
-      window.dispatchEvent(new Event("afterprint"));
-    });
-    seedRecipes(1);
-    const { unmount } = await renderPrintPage();
-    await settle(100);
-
-    act(() => {
-      fireEvent.click(printButton());
-    });
-    await settle(5_000);
-    unmount();
-    await settle(120_000);
-    expect(eventNames()).toContain("print_dialog_opened");
-    expect(eventNames()).not.toContain("print_refused_by_browser");
-  });
-
-  it("a print sheet that is slow to open is not counted as refused; one that never opens is", async () => {
-    // Safari holds its print sheet until the page stops loading, so a working
-    // print can take many seconds. Counting anything past 1.2s as refused made
-    // Mac Safari look broken two times in three.
-    seedRecipes(1);
-    await renderPrintPage();
-    await settle(100);
-
-    act(() => {
-      fireEvent.click(printButton());
-    });
-    await settle(8_000);
-    act(() => {
-      window.dispatchEvent(new Event("beforeprint"));
-    });
-    await settle(120_000);
-    expect(eventNames()).not.toContain("print_refused_by_browser");
-    const opened = analytics.events.find(([name]) => name === "print_dialog_opened");
-    expect(opened?.[1].waitedMs).toBeGreaterThanOrEqual(8_000);
-    act(() => {
-      window.dispatchEvent(new Event("afterprint"));
-    });
-
-    analytics.events = [];
-    act(() => {
-      fireEvent.click(printButton());
-    });
-    await settle(120_000);
-    expect(eventNames()).toContain("print_refused_by_browser");
   });
 
   it("the spinner lasts until the print sheet is on screen, in each Safari", async () => {

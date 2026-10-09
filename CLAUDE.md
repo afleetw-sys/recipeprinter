@@ -60,6 +60,30 @@ Don't write tests that add nothing: no assertions on exact copy wording (test *w
 appears, not its words), no browser test for something a unit test already covers, no snapshot dumps,
 no tests for the parts of a commit that weren't the fix.
 
+## Print runs on recorded browser behaviour, not guesses
+
+The Print button (`lib/printAttempt.ts`) has one rule for every browser, and every part of it is
+there because a recording of a real browser needs it (`lib/printRecordings.ts`). Before October
+2026 it was 46 patches in five weeks, each a guess about one browser's print events, and the guesses
+kept being wrong.
+
+- **Never reason about how a browser prints; record it.** Serve a probe page that logs `print()`'s
+  return time and `beforeprint`/`afterprint`/`blur`/`focus` without network calls mid-print, press
+  Print, read the log. Add the result to `lib/printRecordings.ts` with where it came from.
+- **Where to record:** iPhone Safari in the iOS Simulator; iPhone app print bridges (Firefox,
+  Chrome, DuckDuckGo, Brave, the Google app's broken one) with `tools/ios-print-harness/run.sh`;
+  Android Chrome, Samsung Internet and Firefox on the Pixel emulator (`~/Library/Android/sdk`, AVD
+  `rp-pixel`, Play Store signed in); Mac Safari and Chrome by asking Amelia to run the probe.
+  Closed-source app browsers only on a real phone, via `/print-check`.
+- **A Print change ships only when** `lib/printAttempt.test.ts` passes (it replays every recording)
+  and the change has been pressed on the real `/print` page in the simulator and emulator. Load a
+  deck with a hand-off link (`/print?handoff=1#rp=…`, see `lib/printHandoff.ts`), never by
+  importing (imports bill ScraperAPI).
+- **A rule no recording needs gets deleted, not kept "just in case".** If a new rule is needed,
+  the recording that needs it goes in first and fails without it.
+- One `print_attempt` event per press is the only print telemetry. It must never change what the
+  button does.
+
 ## Deployment
 
 Production is the **`recipeprinter-1zf6`** Vercel project (custom domain `recipeprinter.com`). It deploys automatically via Vercel's Git integration on push — do not run `vercel deploy` / `vercel --prod` directly. A fresh checkout with no `.vercel/project.json` link creates a **brand-new Vercel project** instead of targeting the real one (this has already happened multiple times: `recipeprinter`, `recipeprinter-8bvr`, and `recipeprinter-dtap` are stale duplicates from this).
