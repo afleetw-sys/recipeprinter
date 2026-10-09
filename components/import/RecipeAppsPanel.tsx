@@ -136,10 +136,12 @@ function IntegrationCard({
       {/* `mt-auto` so the two buttons sit on one line when the descriptions
           wrap to different heights, which they do at most widths. */}
       <div className="mt-auto flex flex-col gap-cp-2">
-        {/* The how-to sits ABOVE the action: you read how to get the file
-            before you are asked to open it, and the action then lands on the
-            same line as the buttons on cards with no how-to. */}
-        <div className="flex flex-col items-start gap-cp-2">
+        {/* On a phone the how-to sits ABOVE the action: you read how to get
+            the file before you are asked to open it. Side by side (sm+) it
+            moves to the RIGHT of the action, so the action keeps the same spot
+            as the button on cards with no how-to. Wraps rather than squeezing
+            when the card is narrow. */}
+        <div className="flex flex-col items-start gap-cp-2 sm:flex-row sm:flex-wrap sm:items-center">
           {help && onToggleHelp && (
             /* The icon sits BESIDE the words, not instead of them. On its own
                an ⓘ is a guess; with the label it is a signpost, and the label
@@ -148,7 +150,7 @@ function IntegrationCard({
               type="button"
               onClick={onToggleHelp}
               aria-haspopup="dialog"
-              className="btn-ghost btn-compact"
+              className="btn-ghost btn-compact sm:order-last"
             >
               <InfoIcon size={ICON_SIZE.md} />
               {helpLabel}

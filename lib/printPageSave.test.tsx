@@ -221,8 +221,23 @@ vi.mock("@/components/AccountControl", () => ({
 }));
 vi.mock("@/components/FeedbackButton", () => ({ FeedbackDialog: nullComponent }));
 vi.mock("@/components/PrintDialogs", () => ({ PrintDialogs: nullComponent }));
-vi.mock("@/components/AddRecipeDialog", () => ({ AddRecipeDialog: nullComponent }));
-vi.mock("@/components/CookbookWelcomeDialog", () => ({ CookbookWelcomeDialog: nullComponent }));
+/** The latest props of the two dialogs the cookbook welcome hands between. */
+const dialogs = vi.hoisted(() => ({
+  add: {} as { open?: boolean; title?: string },
+  welcome: {} as { onStart?: () => void },
+}));
+vi.mock("@/components/AddRecipeDialog", () => ({
+  AddRecipeDialog: (props: { open?: boolean; title?: string }) => {
+    dialogs.add = props;
+    return null;
+  },
+}));
+vi.mock("@/components/CookbookWelcomeDialog", () => ({
+  CookbookWelcomeDialog: (props: { onStart?: () => void }) => {
+    dialogs.welcome = props;
+    return null;
+  },
+}));
 vi.mock("@/components/CookbookReadyDialog", () => ({ CookbookReadyDialog: nullComponent }));
 vi.mock("@/components/ImagePicker", () => ({ ImagePicker: nullComponent }));
 vi.mock("@/components/RecipeLoadingState", () => ({ RecipeLoadingState: nullComponent }));
@@ -940,5 +955,29 @@ describe("Firestore's connection around a print", () => {
 
     unmount();
     expect(printNet.calls).toContain("resume");
+  });
+});
+
+describe("the cookbook welcome's Start adding recipes", () => {
+  it("asks for a first recipe only when the book has none", async () => {
+    // A cook who reached the welcome by importing a recipe was still shown
+    // "Add your first recipe" (2026-10-09).
+    for (const count of [1, 0]) {
+      if (count) seedRecipes(count);
+      // The welcome is shown over a book: the page is in cookbook mode.
+      sessionStorage.setItem("recipeprinter:project-meta:v1", JSON.stringify({ cookbookMode: true }));
+      await renderPrintPage();
+      await settle(100);
+      act(() => dialogs.welcome.onStart?.());
+      await settle(50);
+      if (count) {
+        expect(dialogs.add.open, "a book with a recipe").toBeFalsy();
+      } else {
+        expect(dialogs.add.open, "an empty book").toBe(true);
+        expect(dialogs.add.title, "an empty book").toBeTruthy();
+      }
+      cleanup();
+      sessionStorage.clear();
+    }
   });
 });

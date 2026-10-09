@@ -57,7 +57,9 @@ type ProFeature = "theme" | "card_size" | "batch_print" | "advanced_layout" | "i
  *     number instead of a session replay.
  *   - decode_failed: the browser couldn't even read the chosen image.
  *   - too_large: the image was still over budget after resizing.
- *   - backend_unavailable: auth / App Check / Functions config failure.
+ *   - backend_unavailable: auth / App Check / Functions config failure, or the
+ *     function itself crashed. `errorDetail` carries the raw error.
+ *   - network: the request never got an answer (the connection dropped).
  *   - timeout: the parser ran past its deadline.
  *   - unknown: anything we didn't classify.
  */
@@ -224,6 +226,12 @@ type EventProps = {
      * the capture didn't land.
      */
     debugPath?: string;
+    /**
+     * The raw `code: message` behind the failure, when it came from a thrown
+     * Firebase error (`ImportErrorMeta.errorDetail`). `reason` is the copy the
+     * cook saw, which can't tell a dropped connection from a crashed function.
+     */
+    errorDetail?: string;
     /**
      * Which bot-protection product we fingerprinted. Only ever set alongside
      * category "blocked", and deliberately a property of that bucket rather
