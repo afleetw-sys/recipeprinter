@@ -220,6 +220,8 @@ export type ImportFailureCode =
   | "decode_failed"
   | "too_large"
   | "backend_unavailable"
+  // The request never got an answer: the connection dropped on the way.
+  | "network"
   | "timeout"
   // A recipe-app export file we couldn't read: not the archive we expected, or
   // nothing recipe-shaped inside it. Nothing was ever parsed.

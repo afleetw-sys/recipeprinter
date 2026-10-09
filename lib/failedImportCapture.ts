@@ -83,15 +83,15 @@ const DEBUG_INBOX_COLLECTION = "debugInbox";
  * Failures where the photographs cannot answer the question.
  *
  * The bytes are kept so a failure can be REPRODUCED, and that only means
- * anything when the failure was about the photographs. These three are not:
- * the parser was rate-limited, unreachable, or too slow, and the picture the
+ * anything when the failure was about the photographs. These four are not:
+ * the parser was rate-limited, unreachable, cut off, or too slow, and the picture the
  * cook chose had nothing to do with it. Uploading several megabytes to learn
  * "the backend was down" is paying storage rent on an answer we already have.
  *
  * The Firestore row is still written for every one of them. The event is never
  * lost — only the bytes that could not have explained it.
  */
-const BYTES_EXPLAIN_NOTHING = new Set(["rate_limited", "backend_unavailable", "timeout"]);
+const BYTES_EXPLAIN_NOTHING = new Set(["rate_limited", "backend_unavailable", "network", "timeout"]);
 
 /** Whether a failure in this bucket is one the photographs could explain.
     Exported because it is policy about what we spend storage on, not a detail

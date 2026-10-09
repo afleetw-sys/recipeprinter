@@ -334,7 +334,7 @@ describe("parseUrlAll — the route's own verdict", () => {
 
     expect(err).toBeInstanceOf(ImportError);
     expect(err.code).toBe("blocked");
-    expect(err.meta).toEqual({ botVendor: "cloudflare" });
+    expect(err.meta).toMatchObject({ botVendor: "cloudflare" });
   });
 
   // The double-billing case. CookPilot reaches sites through a paid scraping
@@ -347,7 +347,7 @@ describe("parseUrlAll — the route's own verdict", () => {
 
     expect(callable).not.toHaveBeenCalled();
     expect(err.code).toBe("blocked");
-    expect(err.meta).toEqual({ botVendor: "cloudflare" });
+    expect(err.meta).toMatchObject({ botVendor: "cloudflare" });
   });
 
   // A 200 interstitial answers 422 like an ordinary empty page does, so the
@@ -476,5 +476,36 @@ describe("parseImages at the hourly photo limit", () => {
     await expect(parseImages(["data:image/jpeg;base64,AAAA"])).rejects.toThrow(
       "You've already done 5 image imports this hour. You can import more within the hour, or upgrade to Pro for 30 image imports an hour.",
     );
+  });
+});
+
+describe("parseImages when the failure isn't the photos' fault", () => {
+  // What the Firebase SDK actually throws for each, read from its source: a
+  // fetch that never got an answer is code `internal` with the lowercase
+  // message "internal"; a function that crashed answers {status: "INTERNAL"},
+  // which arrives uppercase. Every one of these used to land in
+  // backend_unavailable with the "make sure the title is visible" copy, and
+  // the raw error was thrown away, so PostHog couldn't tell them apart.
+  const cases: Array<[string, Error, string]> = [
+    ["the connection dropped", Object.assign(new Error("internal"), { code: "functions/internal" }), "network"],
+    ["the function crashed", Object.assign(new Error("INTERNAL"), { code: "functions/internal" }), "backend_unavailable"],
+    [
+      "App Check refused us",
+      Object.assign(new Error("Unauthenticated"), { code: "functions/unauthenticated" }),
+      "backend_unavailable",
+    ],
+  ];
+
+  afterEach(() => callable.mockReset());
+
+  it.each(cases)("%s: own bucket, no blame on the photos, raw error kept", async (_, raw, category) => {
+    callable.mockRejectedValue(raw);
+
+    const failure = (await parseImages(["data:image/jpeg;base64,AAAA"]).catch((err: unknown) => err)) as ImportError;
+
+    expect(failure).toBeInstanceOf(ImportError);
+    expect(failure.code).toBe(category);
+    expect(failure.message).not.toMatch(/visible|in focus|link/i);
+    expect(failure.meta?.errorDetail).toContain(raw.message);
   });
 });
