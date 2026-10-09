@@ -6557,6 +6557,10 @@ export default function PrintPage() {
         }}
         onStart={() => {
           setShowCookbookOfferDialog(false);
+          // Only an empty book asks for its first recipe. A cook who arrived
+          // here by importing one (still parsing counts) is already started,
+          // and lands on the book that recipe began.
+          if (recipeCount > 0) return;
           setAddingFirstRecipe(true);
           openAddRecipeBelow();
         }}
