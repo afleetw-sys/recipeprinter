@@ -3145,6 +3145,9 @@ export default function PrintPage() {
   // render that first resolves entitlement rather than one render behind.
   queue.configureMultiRecipeGate({
     singleRecipeOnly,
+    cookbookMode,
+    bookBought:
+      cookbookMode && (cookbookAccessStatus === "unlocked" || isCookbookProjectUnlocked(cookbookProjectId)),
     onMultiRecipeBlocked: handleMultiRecipeBlocked,
   });
   function proLockFeature(): "batch_print" | "card_size" | "theme" {

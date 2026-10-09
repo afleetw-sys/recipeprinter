@@ -178,8 +178,36 @@ type EventProps = {
      */
     url?: string;
   };
-  /** Parsing produced a recipe. */
-  recipe_imported: { source: ImportMethod; hostname?: string };
+  /**
+   * Parsing produced a recipe, or an already-parsed one (Paprika, a CookPilot
+   * library) was added. One event per recipe, so a roundup fires several.
+   */
+  recipe_imported: {
+    source: ImportMethod;
+    hostname?: string;
+    /**
+     * The queue item id the parse ran on, the same `importId` as on
+     * `recipe_import_started`, so one import's events join without timestamps.
+     * Absent for library recipes, which never become a parse.
+     */
+    importId?: string;
+    /**
+     * True on the second and later recipes a roundup link or multi-recipe photo
+     * bloomed into. They share the first recipe's `importId`. Counting
+     * non-extra events counts import actions, which is what an import
+     * allowance would count (docs/import-meter-plan.md, section 3.1).
+     */
+    extra?: boolean;
+    /** The recipe landed in a cookbook rather than a card project. */
+    cookbook?: boolean;
+    /**
+     * Cookbook imports only: how many recipes the book holds after this
+     * import, and whether that book is bought. Together they show how big
+     * unbought books get, which is what a cookbook free size would cap.
+     */
+    bookRecipes?: number;
+    bookBought?: boolean;
+  };
   /**
    * An import that succeeded but was then substantially rewritten by hand: the
    * parser read it wrong. Counts only, never text; the text goes to

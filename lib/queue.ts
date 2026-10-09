@@ -439,6 +439,9 @@ export function useQueue() {
   // (rather than a value captured once) is what lets a mid-session upgrade
   // unlock the very next import with no reload.
   const singleRecipeOnlyRef = useRef(false);
+  // Analytics only: where an import lands, read when it lands.
+  const cookbookModeRef = useRef(false);
+  const bookBoughtRef = useRef(false);
   const onMultiRecipeBlockedRef = useRef<((info: MultiRecipeBlockedInfo) => void) | undefined>(
     undefined,
   );
@@ -464,13 +467,32 @@ export function useQueue() {
   const configureMultiRecipeGate = useCallback(
     (config: {
       singleRecipeOnly: boolean;
+      cookbookMode?: boolean;
+      /** This cookbook is bought. Meaningless outside cookbook mode. */
+      bookBought?: boolean;
       onMultiRecipeBlocked?: (info: MultiRecipeBlockedInfo) => void;
     }) => {
       singleRecipeOnlyRef.current = config.singleRecipeOnly;
+      cookbookModeRef.current = Boolean(config.cookbookMode);
+      bookBoughtRef.current = Boolean(config.bookBought);
       onMultiRecipeBlockedRef.current = config.onMultiRecipeBlocked;
     },
     [],
   );
+
+  /**
+   * Where a recipe landed, for `recipe_imported`. Read when it lands, after
+   * any recipes it brought have been committed, so `bookRecipes` is the
+   * book's size with this import in it.
+   */
+  const landingFields = (): { cookbook?: true; bookRecipes?: number; bookBought?: boolean } => {
+    if (!cookbookModeRef.current) return {};
+    return {
+      cookbook: true,
+      bookRecipes: itemsRef.current.filter((item) => item.status === "ready").length,
+      bookBought: bookBoughtRef.current,
+    };
+  };
 
   const [items, setItems] = useState<QueueItem[]>([]);
 
@@ -728,7 +750,6 @@ export function useQueue() {
         }
         const [first, ...allRest] = recipes;
         patch(id, { status: "ready", recipe: first, title: first.title || "Untitled recipe" });
-        track("recipe_imported", outcome);
         // Watch for the cook rewriting it, the sign this "success" read the
         // recipe wrong (lib/importCorrections). Against the printable form,
         // the same one their edits arrive in.
@@ -760,7 +781,7 @@ export function useQueue() {
         if (rest.length > 0) {
           // A roundup URL: keep the first recipe on this item and add the rest as
           // their own ready items, mirroring this item's URL context so retry/dedupe
-          // still key off the same source. Count each as its own import.
+          // still key off the same source.
           const base = itemsRef.current.find((it) => it.id === id);
           const extras: QueueItem[] = rest.map((recipe) => ({
             id: uid(),
@@ -773,8 +794,12 @@ export function useQueue() {
             addedAt: Date.now(),
           }));
           commit([...itemsRef.current, ...extras]);
-          rest.forEach(() => track("recipe_imported", outcome));
         }
+        // After the extras are in, so a cookbook's `bookRecipes` counts them.
+        // One event per recipe, with the bloomed ones marked `extra`.
+        const landing = landingFields();
+        track("recipe_imported", { ...outcome, importId: id, ...landing });
+        rest.forEach(() => track("recipe_imported", { ...outcome, importId: id, extra: true, ...landing }));
       } catch (err) {
         // A reserved documentation domain gets its own answer. The generic
         // "check the link and try again" treats a deliberate placeholder as a
@@ -1018,8 +1043,9 @@ export function useQueue() {
       // These arrive already parsed, so they never touch runParse — count them
       // here or the library sources silently miss from every import total.
       // No started/failed pair: there's no parse step that could fail.
+      const landing = landingFields();
       nextRecipes.forEach((recipe) => {
-        track("recipe_imported", { source: recipe.method });
+        track("recipe_imported", { source: recipe.method, ...landing });
       });
       return nextRecipes.length;
     },
