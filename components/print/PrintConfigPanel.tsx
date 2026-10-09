@@ -17,8 +17,10 @@ interface PrintConfigPanelProps {
   /** Turns this print job into a cookbook. A create action, not a view change —
       see `renderModeSwitch`'s removal in app/print/page.tsx. */
   /** The cover title — this panel's heading in cookbook mode. */
-  /** Leaves the book and prints the same recipes as cards. The book is stashed
-      with the project, so this is reversible and loses nothing. */
+  // There is deliberately no "back to cards" prop. The cards switch was
+  // removed on 2026-09-18, and imports into a book don't use the free card
+  // import allowance, so a control that moved a book's recipes into card mode
+  // would have to charge them as card imports (docs/import-meter-plan.md, 1.3).
   // Setup controls (Size / Photos / Include)
   cardSize: PrintCardSize;
   setCardSize: Dispatch<SetStateAction<PrintCardSize>>;
