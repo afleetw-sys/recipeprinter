@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { Section } from "@/types/recipe";
 
 interface UseRailSelectionOptions {
@@ -71,9 +71,13 @@ export function useRailSelection({
     });
   }
 
-  function clearRailSelection() {
+  // Stable: the page clears the selection from an effect that lists it as a
+  // dependency, so a new function each render re-ran that effect after every
+  // commit. Its update is a no-op, but not one React can always skip, and on
+  // 2026-10-09 it kept /print rendering until React threw.
+  const clearRailSelection = useCallback(() => {
     setSelectedRailIds((current) => (current.size ? new Set() : current));
-  }
+  }, []);
 
   // Selected recipe ids in book order, so a new/receiving section keeps sequence.
   function orderedRailSelection(selection: ReadonlySet<string> = effectiveRailSelection): string[] {

@@ -155,6 +155,7 @@ import {
 } from "@/lib/recipePrinterUserProfile";
 import {
   createCurrentPrintJob,
+  projectPrintJob,
   readCurrentPrintJobIds,
   useQueue,
   type MultiRecipeBlockedInfo,
@@ -374,13 +375,14 @@ export default function PrintPage() {
   // deck here — there is no second copy to keep in step. Non-ready/absent ids
   // are dropped, matching what the job could ever render. `null` mirrors
   // `jobIds === null` so the loading guard below still reads `items === null`.
-  const items = useMemo<QueueItem[] | null>(() => {
-    if (jobIds === null) return null;
-    const byId = new Map(queue.items.map((it) => [it.id, it] as const));
-    return jobIds
-      .map((id) => byId.get(id))
-      .filter((it): it is QueueItem => Boolean(it && it.status === "ready" && it.recipe));
-  }, [jobIds, queue.items]);
+  //
+  // Kept as the same array while it holds the same recipes (see
+  // `projectPrintJob`): everything the deck lays out hangs off its identity.
+  const itemsRef = useRef<QueueItem[] | null>(null);
+  const items = useMemo(
+    () => (itemsRef.current = projectPrintJob(jobIds, queue.items, itemsRef.current)),
+    [jobIds, queue.items],
+  );
   // The section/cover/title organizational layer, joined against the working
   // `items` projection (see lib/project.ts) — recipe content itself stays owned
   // by the queue.
