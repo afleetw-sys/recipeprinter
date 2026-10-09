@@ -1,0 +1,23 @@
+name: IndexNow
+
+# Vercel's Git integration posts a deployment status to GitHub when a deploy
+# finishes. Once a PRODUCTION deploy is live, ask it to submit the public pages
+# it changed (see app/api/indexnow/route.ts). Preview deploys are ignored.
+# Needs the repo secret INDEXNOW_SUBMIT_SECRET, matching Vercel's env var.
+on:
+  deployment_status:
+
+jobs:
+  submit:
+    if: github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Submit changed URLs
+        env:
+          SECRET: ${{ secrets.INDEXNOW_SUBMIT_SECRET }}
+        run: |
+          curl --fail-with-body -sS -X POST https://www.recipeprinter.com/api/indexnow \
+            -H "Authorization: Bearer $SECRET" \
+            -H "Content-Type: application/json" \
+            -d '{}'

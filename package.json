@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:app": "next dev",
-    "build": "next build",
+    "build": "node scripts/indexnow-baseline.mjs && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
