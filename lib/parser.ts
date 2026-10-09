@@ -33,12 +33,17 @@ interface LocalParseOutcome {
 /**
  * What we know about a failure beyond its bucket.
  *
- * Only ever produced by the route, which is the one place that sees the actual
- * response headers and body. Rides on the `ImportError` so `recipe_import_failed`
- * can carry it without the queue having to re-derive anything.
+ * Rides on the `ImportError` so `recipe_import_failed` can carry it without the
+ * queue having to re-derive anything (the queue spreads it into the event).
  */
 export interface ImportErrorMeta {
+  /** Only ever set by the route, the one place that sees the actual response
+      headers and body. */
   botVendor?: BotWallVendor;
+  /** The raw `code: message` of the error we translated, truncated. The
+      ImportError's own message is copy for the cook, so without this an event
+      can't say whether the connection dropped or the function crashed. */
+  errorDetail?: string;
 }
 
 /**
@@ -99,10 +104,26 @@ function friendlyError(
   err: unknown,
   fallback: string,
   noRecipeCopy: string = fallback,
+  unavailableCopy: string = UNAVAILABLE_COPY,
 ): ImportError {
   // A failure that already carries a code (e.g. our own "no recipe found")
   // keeps it — don't relabel it as unknown on the way out.
   if (err instanceof ImportError) return err;
+  const friendly = classifyError(err, fallback, noRecipeCopy, unavailableCopy);
+  const { code, message } = errorParts(err);
+  const errorDetail = `${code || "no-code"}: ${message}`.slice(0, 160);
+  return new ImportError(friendly.message, friendly.code, { ...friendly.meta, errorDetail });
+}
+
+/** Our side failed, so there's nothing for the cook to change but the moment. */
+const UNAVAILABLE_COPY = "Something went wrong on our end. Try again in a minute.";
+
+function classifyError(
+  err: unknown,
+  fallback: string,
+  noRecipeCopy: string,
+  unavailableCopy: string,
+): ImportError {
 
   // Firebase callables throw FunctionsError with a `.code` like "functions/...".
   // Shared with lib/friendlyErrors, which was reading a thrown value the same
@@ -153,9 +174,17 @@ function friendlyError(
     return new ImportError("We couldn't find that page. Check the link and try again.", "not_found");
   }
   if (isAuthOrAppCheckError(err)) {
+    return new ImportError(unavailableCopy, "backend_unavailable");
+  }
+  // The SDK's answer when its fetch never got a response: status 0, which it
+  // reports as code `internal` with the lowercase message "internal". A phone
+  // losing signal mid-upload lands here. A function that actually crashed
+  // answers {status: "INTERNAL"} and arrives UPPERCASE, so it falls through to
+  // the backend branch below instead.
+  if (code.includes("internal") && message === "internal") {
     return new ImportError(
-      "We couldn't import this link right now. Paste the recipe text or upload screenshots instead.",
-      "backend_unavailable",
+      "The connection dropped before we got an answer. Check your signal and try again.",
+      "network",
     );
   }
   if (code.includes("deadline-exceeded")) {
@@ -177,7 +206,7 @@ function friendlyError(
     return new ImportError(noRecipeCopy, "no_recipe");
   }
   if (/firebase|functions\/|app check|appcheck|auth\/|permission-denied|internal|stack|api key/i.test(message)) {
-    return new ImportError(fallback, "backend_unavailable");
+    return new ImportError(unavailableCopy, "backend_unavailable");
   }
   // Provider exceptions may contain function names, status codes, or setup
   // details. Keep those in the logged exception; only approved copy reaches
@@ -258,6 +287,10 @@ async function parseUrlWithCookPilot(url: string, localError?: string): Promise<
       err,
       localError ||
         "We couldn't import that recipe. Try the link again, paste the recipe text, or upload screenshots.",
+      undefined,
+      // A link is the one source with somewhere else to go: the same recipe
+      // pasted or photographed doesn't need this page to load.
+      "We couldn't import this link right now. Paste the recipe text or upload screenshots instead.",
     );
   }
 }
@@ -318,8 +351,8 @@ export async function parseUrlAll(rawUrl: string): Promise<Recipe[]> {
       // fact is still true whatever the fallback then made of the page, and
       // it is the one thing that turns "sites are blocking us" into a list of
       // vendors with counts — so it must not be dropped on the way out.
-      if (err instanceof ImportError && !err.meta && local.meta) {
-        throw new ImportError(err.message, err.code, local.meta);
+      if (err instanceof ImportError && local.meta) {
+        throw new ImportError(err.message, err.code, { ...err.meta, ...local.meta });
       }
       throw err;
     }
