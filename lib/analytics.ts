@@ -1,6 +1,7 @@
 import type { PostHog } from "posthog-js";
 import { isProductionRuntime } from "@/lib/appEnvironment";
-import { currentBrowserApp } from "@/lib/browserApp";
+import { currentBrowserApp, type BrowserApp } from "@/lib/browserApp";
+import type { PrintAttemptEnd } from "@/lib/printAttempt";
 import { sessionStore } from "@/lib/storage";
 import {
   type Attribution,
@@ -250,77 +251,30 @@ type EventProps = {
   // Card size, photo and duplex are the axes the clipping bug lives on, so
   // they ride along on every print event. Knowing a card overflowed is only
   // actionable alongside the configuration it overflowed in.
-  /** window.print() was called. Intent, and as close to truth as the web gets. */
-  print_started: {
+  /**
+   * One press of Print, reported once its spinner is done (lib/printAttempt).
+   * The timings say what the browser did: `printReturnedMs` is how long
+   * `print()` held the page (in Chrome and Mac Safari, the whole time the
+   * dialog was open), and each `*Ms` is when that event first fired, null if
+   * it never did. `endedBy` is what ended the wait; `cap` means nothing did.
+   * `error` names a throwing stand-in for `print()` (the Google app's).
+   */
+  print_attempt: {
     template: RecipePrintTemplate;
     cardSize: PrintCardSize;
     showPhoto: boolean;
     doubleSided: boolean;
     recipeCount: number;
-    /** The cookbook print-format preset, when exporting a cookbook. */
-    cookbookPreset?: CookbookPresetId;
-    /** Whether `window.print` was still the browser's own, or an app's
-        stand-in for it (see lib/browserApp). */
+    browserApp: BrowserApp;
     printIsNative: boolean;
-  };
-  /**
-   * The browser began preparing its print dialog. Unlike `print_started`, this
-   * also sees Ctrl/Cmd+P and the browser's Print menu via `beforeprint`.
-   */
-  print_dialog_opened: {
-    trigger: "print_button" | "keyboard_or_browser_menu";
-    template: RecipePrintTemplate;
-    cardSize: PrintCardSize;
-    showPhoto: boolean;
-    doubleSided: boolean;
-    recipeCount: number;
-    cookbookPreset?: CookbookPresetId;
-    /** Print button only: ms from the press to the sheet starting. Safari holds
-        its sheet until the page stops loading, so this can run to seconds. */
-    waitedMs?: number;
-  };
-  /**
-   * The browser's afterprint fired. Note this does NOT mean paper came out —
-   * afterprint fires on cancel too, and no browser distinguishes them. It's
-   * "they got as far as the OS dialog and dismissed it".
-   */
-  print_dialog_closed: {
-    template: RecipePrintTemplate;
-    cardSize: PrintCardSize;
-    cookbookPreset?: CookbookPresetId;
-  };
-  /**
-   * `window.print()` ran and no print sheet followed: no `beforeprint` within
-   * `PRINT_VERDICT_MS`, or the cook left first (`left`). A sheet that is merely
-   * slow is not this; it is a `print_dialog_opened` with a large `waitedMs`.
-   * On iOS Safari this is usually its "blocked from automatically printing"
-   * alert, never answered (a tab gets one free print).
-   */
-  print_refused_by_browser: {
-    template: RecipePrintTemplate;
-    cardSize: PrintCardSize;
-    waitedMs: number;
-    left: boolean;
-  };
-  /**
-   * `window.print()` threw. The browser's own never does; an in-app browser's
-   * stand-in can, as the Google app's does when its native hand-off is missing.
-   * `error` is the message, so a new broken stand-in names itself.
-   */
-  print_failed: {
-    template: RecipePrintTemplate;
-    cardSize: PrintCardSize;
-    error: string;
-  };
-  /**
-   * After a `print_failed` on an iPhone: the deck was sent to Safari to print
-   * (lib/printHandoff). `linkLength` is the size of the link that carried it,
-   * since a link has limits and a big deck with local photos is the risk.
-   */
-  print_handed_to_safari: {
-    template: RecipePrintTemplate;
-    cardSize: PrintCardSize;
-    linkLength: number;
+    endedBy: PrintAttemptEnd;
+    printReturnedMs: number | null;
+    beforeprintMs: number | null;
+    afterprintMs: number | null;
+    blurMs: number | null;
+    spinnerMs: number;
+    error?: string;
+    handedToSafari: boolean;
   };
   /** Which card designs people actually reach for. */
   template_selected: { template: RecipePrintTemplate; premium: boolean };
