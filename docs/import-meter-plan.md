@@ -342,8 +342,10 @@ Pro doesn't lift it. Pro members get 20% off the book instead.
 ### 4.1 Fields
 
 On every free import:
-- **`recipe_import_started`** gets `meterMs`.
+- **`recipe_import_started`** is unchanged. It fires when the import begins, before the
+  reservation, so it keeps counting every import a cook started (Amelia, 2026-10-09).
 - **`recipe_imported`** gets:
+  - `meterMs`
   - `importId`
   - `extra` (bloomed roundup recipes)
   - `cookbook`
@@ -352,7 +354,8 @@ On every free import:
   - `meter_would_block_5`, `meter_would_block_10`
 - **`recipe_import_failed`** gets `meterMs`.
 - **`import_meter_unavailable`**: `{ op, reason: "timeout" | "error" }`
-- **Super property `meter_subject_kind`**: `browser` or `account`
+- **`meter_subject_kind`** on `recipe_imported`: `browser` or `account` (an event property, not a
+  super property)
 
 Cookbook and Pro imports still fire `recipe_imported` (`cookbook: true`, or no meter fields), so
 PostHog sees **all** usage. The server sees free card-mode usage, which is the population the limit

@@ -767,6 +767,11 @@ export function useQueue() {
       const { url, ...outcome } = origin;
       liveParseIds.add(id);
       patch(id, { status: "parsing", error: undefined });
+      // When the cook handed the import over, before anything is awaited:
+      // a `capture` on the analytics queue, so it neither waits on anything
+      // nor touches the parser path. The meter's wait is reported on the
+      // outcome events instead, so this keeps meaning "an import began".
+      track("recipe_import_started", { ...outcome, importId: id, ...(url ? { url } : {}) });
       // The meter reserves BEFORE any parser request starts, and is awaited:
       // a free import is only parsed once the server has it on record. It
       // can't hold the import up for more than 5 seconds, and never stops it
@@ -793,15 +798,6 @@ export function useQueue() {
         settled = true;
         settleImport(id, result);
       };
-      // Before `work()` — the parse has not been asked for anything yet, and
-      // this is a `capture` on the analytics queue, so it neither awaits
-      // anything nor touches the parser path.
-      track("recipe_import_started", {
-        ...outcome,
-        importId: id,
-        ...(url ? { url } : {}),
-        ...meterMsOf(reservation),
-      });
       try {
         const result = await work();
         // A URL import is a website's page, and we keep none of a website's
@@ -869,7 +865,11 @@ export function useQueue() {
         }
         // After the extras are in, so a cookbook's `bookRecipes` counts them.
         // One event per recipe, with the bloomed ones marked `extra`.
-        const landing = { ...landingFields(), ...meterImportedFields(reservation) };
+        const landing = {
+          ...landingFields(),
+          ...meterMsOf(reservation),
+          ...meterImportedFields(reservation),
+        };
         track("recipe_imported", { ...outcome, importId: id, ...landing });
         rest.forEach(() => track("recipe_imported", { ...outcome, importId: id, extra: true, ...landing }));
       } catch (err) {

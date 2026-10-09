@@ -177,11 +177,6 @@ type EventProps = {
      * the URL as submitted, which is the only version that reproduces.
      */
     url?: string;
-    /**
-     * How long the import meter's reservation held this import up, in ms.
-     * Absent when the meter wasn't asked (cookbook, known Pro, or not deployed).
-     */
-    meterMs?: number;
   };
   /**
    * Parsing produced a recipe, or an already-parsed one (Paprika, a CookPilot
@@ -218,6 +213,13 @@ type EventProps = {
      * imports in the previous 30 days, BEFORE this one; the two booleans say
      * whether a limit of 5 or 10 would have refused it.
      */
+    /**
+     * How long the import meter's reservation held this import up, in ms.
+     * Absent when the meter wasn't asked (cookbook, known Pro, or not
+     * deployed). Not on `recipe_import_started`, which fires before the
+     * reservation so it keeps counting every import a cook began.
+     */
+    meterMs?: number;
     meter_used_30d?: number;
     meter_would_block_5?: boolean;
     meter_would_block_10?: boolean;
@@ -270,7 +272,7 @@ type EventProps = {
      * on the remainder.
      */
     botVendor?: BotWallVendor;
-    /** As on `recipe_import_started`. */
+    /** As on `recipe_imported`. */
     meterMs?: number;
   };
   /**
