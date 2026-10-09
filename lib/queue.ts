@@ -113,6 +113,35 @@ export function readCurrentPrintJobIds(): string[] | null {
   return job.ids.filter((value): value is string => typeof value === "string");
 }
 
+/**
+ * The print job as live recipes: each job id projected onto the queue's
+ * content, keeping only ready recipes. `null` while the job is still loading.
+ *
+ * Returns `previous` itself when it already holds exactly these recipes. The
+ * deck's sections, sheets and displayed layout all hang off this array's
+ * identity, and the ids can arrive as a new array with nothing new in it: React
+ * re-runs a starved `setJobIds((current) => [...current, id])` on every render
+ * that skips past it. A fresh array each time re-laid-out the deck, whose
+ * effect set state, which rendered again, until React gave up with "Maximum
+ * update depth exceeded" (2026-10-09).
+ */
+export function projectPrintJob(
+  jobIds: readonly string[] | null,
+  queueItems: readonly QueueItem[],
+  previous: QueueItem[] | null,
+): QueueItem[] | null {
+  if (jobIds === null) return null;
+  const byId = new Map(queueItems.map((it) => [it.id, it] as const));
+  const next = jobIds
+    .map((id) => byId.get(id))
+    .filter((it): it is QueueItem => Boolean(it && it.status === "ready" && it.recipe));
+  const unchanged =
+    previous !== null &&
+    previous.length === next.length &&
+    previous.every((item, index) => item === next[index]);
+  return unchanged ? previous : next;
+}
+
 function serializeQueue(items: QueueItem[]): string | null {
   try {
     return JSON.stringify(printableQueue(items));
