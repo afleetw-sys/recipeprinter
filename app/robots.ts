@@ -16,6 +16,5 @@ export default function robots(): MetadataRoute.Robots {
     // lazy-loaded and served through the image optimizer, so a crawler
     // reading the markup sees no path ending in .jpeg to follow.
     sitemap: [absoluteUrl("/sitemap.xml"), absoluteUrl("/image-sitemap.xml")],
-    host: absoluteUrl("/"),
   };
 }
