@@ -8,6 +8,7 @@ import { ICON_SIZE, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
 import { track } from "@/lib/analytics";
 import type { QueueItem } from "@/types/recipe";
+import { ImportAllowanceLine } from "@/components/ImportAllowanceLine";
 
 // A lighter version of the homepage's import panel, for adding to a print job
 // or a cookbook without leaving the deck.
@@ -33,7 +34,13 @@ export function AddRecipeDialog({
   onLibraryLockedTap,
   chapterTarget,
   title = "Add recipes",
+  allowance = true,
+  onGetUnlimited,
 }: {
+  /** Passed to `ImportPanel`: show the free-import count, and what its
+      "Get unlimited imports" opens. */
+  allowance?: boolean;
+  onGetUnlimited?: () => void;
   open: boolean;
   onClose: () => void;
   items: QueueItem[];
@@ -205,6 +212,8 @@ export function AddRecipeDialog({
           onSubmitted={onClose}
           hideSubmit
           showAllModes
+          /* This dialog shows the free-import banner itself, under Add. */
+          allowance={false}
           /* Read once per open: `Dialog` renders nothing while closed, so the
              panel is a fresh mount every time the sheet appears. */
           initialMode={lastSource}
@@ -269,6 +278,9 @@ export function AddRecipeDialog({
               ? IMAGE_SUBMIT_LABEL
               : "Add"}
         </button>
+        {/* Under the action it counts, so the count is the last thing read
+            before pressing Add rather than something above the fold of the form. */}
+        <ImportAllowanceLine enabled={allowance} onGetUnlimited={onGetUnlimited} className="mt-cp-4" />
       </div>
     </Dialog>
   );

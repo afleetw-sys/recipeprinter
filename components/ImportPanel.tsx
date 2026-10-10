@@ -34,6 +34,7 @@ import {
   UploadIcon,
   XIcon,
 } from "@/components/icons";
+import { ImportAllowanceLine } from "@/components/ImportAllowanceLine";
 import { ButtonToggle } from "@/components/ButtonToggle";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
@@ -93,7 +94,14 @@ export function ImportPanel({
   librarySingleSelect,
   onStartEmpty,
   onLibraryLockedTap,
+  allowance = true,
+  onGetUnlimited,
 }: {
+  /** Show the free-import count under the panel. False where the allowance
+      doesn't apply: a cookbook, or a cook the surface knows is Pro. */
+  allowance?: boolean;
+  /** Opens the Pro dialog from the count's "Get unlimited imports". */
+  onGetUnlimited?: () => void;
   items: QueueItem[];
   workspace?: boolean;
   initialMode?: ImportTab;
@@ -743,6 +751,7 @@ export function ImportPanel({
       </form>
       )}
 
+      <ImportAllowanceLine enabled={allowance} onGetUnlimited={onGetUnlimited} className="mt-cp-5" />
     </section>
   );
 }

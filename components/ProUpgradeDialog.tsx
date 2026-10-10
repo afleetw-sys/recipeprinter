@@ -66,7 +66,10 @@ export function ProUpgradeDialog({
   onSignInRequired,
   busy,
   cookPilotUser,
-  title = "RecipePrinter Pro",
+  // The same words as `proUpgradeCopy`'s generic title, so the dialog reads
+  // alike whether or not the caller passes copy of its own.
+  title = "Upgrade to RecipePrinter Pro",
+  body,
   benefits = PRO_BENEFITS,
   ctaLabel = "Unlock Pro and continue",
 }: {
@@ -83,6 +86,8 @@ export function ProUpgradeDialog({
   busy: boolean;
   cookPilotUser: User | null;
   title?: string;
+  /** Shown under the title when the trigger has something to explain. */
+  body?: string;
   /** Same benefits as `PRO_BENEFITS`, reordered to lead with what opened this. */
   benefits?: string[];
   ctaLabel?: string;
@@ -223,6 +228,7 @@ export function ProUpgradeDialog({
               {title}
             </h2>
           </div>
+          {body && <p className="text-cp-body text-ink-soft">{body}</p>}
 
           <ul className="flex flex-col gap-cp-1">
             {benefits.map((benefit) => (

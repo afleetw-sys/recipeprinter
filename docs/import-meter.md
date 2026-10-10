@@ -3,8 +3,10 @@
 How to deploy, switch on, watch and roll back the free import meter. The design and the reasons
 are in [import-meter-plan.md](import-meter-plan.md). This file is the procedure.
 
-**Scope of this rollout: measurement only.** Nobody is ever refused an import. Allowance copy,
-the cookbook free size and enforcement are a later, separately approved go-live PR (plan 8.6).
+**Where things stand (2026-10-10):** the meter and its client wiring are live and switched off.
+There is no measurement phase (plan rev 5): the limit is decided at 10 per fixed 30 days (they start with the first import), and
+the next step is the enforcement build and go-live (plan section 9, step D). Until then, do not
+create the config doc: counting starts at go-live so everyone begins with a full 10.
 
 ---
 
@@ -30,7 +32,7 @@ Three switches. All three start off, and each one is safe to flip back on its ow
 
 | Switch | Where | Values | What it does |
 |---|---|---|---|
-| `IMPORT_METER_DEPLOYED` | `lib/importMeter.ts` (RecipePrinter, needs a deploy) | `true` since 2026-10-10 (not pushed yet), `false` to roll back | `false`: the client never calls the meter, so imports behave exactly as before step C. `true`: free card-mode imports reserve and settle. |
+| `IMPORT_METER_DEPLOYED` | `lib/importMeter.ts` (RecipePrinter, needs a deploy) | `true`, live since 2026-10-10 (PR #185); `false` to roll back | `false`: the client never calls the meter, so imports behave exactly as before step C. `true`: free card-mode imports reserve and settle. |
 | `mode` | Firestore `recipePrinterConfig/importMeter` (CookPilot, no deploy, read through a 60 s cache) | `"off"`, `"measure"` (`"enforce"` comes with go-live) | `off`: every call answers `{ mode: "off", allowed: true }` and touches no documents. `measure`: records imports, refuses nobody. |
 | `IMPORT_ALLOWANCE_LIVE` | `lib/freeImports.ts` (RecipePrinter) | `false` | Gates enforcement and all allowance copy. Only the go-live PR sets it. Even with `mode: "enforce"`, a build where this is `false` can't refuse anyone. |
 
@@ -87,9 +89,8 @@ Each step needs the one before it. Steps marked **(Amelia)** need her credential
    this costs one function call per free import and records nothing.
 10. **Confirm the privacy sentence is live** on recipeprinter.com/privacy. Read the deployed
     source or use `curl`; never open production in a browser (it would land in PostHog).
-11. **Set `mode: "measure"` (Amelia, Firebase console).** Takes effect within 60 seconds.
-12. **Day-one checks (section 5)**, then leave it running for at least 30 days so the rolling
-    window fills.
+11. **Steps 1 to 10 are done (2026-10-10).** Do not set `mode: "measure"`. The next switch-on
+    is `mode: "enforce"`, on go-live day, after the enforcing build and its copy are live.
 
 ---
 
@@ -122,18 +123,61 @@ Only when all five pass does `IMPORT_METER_DEPLOYED` become `true`.
 
 ---
 
-## 5. Day-one checks after `measure`
+## 5. Day-one checks (removed)
 
-From PostHog, by Amelia or with an API key (B5); never by loading production:
-- `meterMs` on `recipe_imported` and `recipe_import_failed`: p50 and p95. If p95 is above about
-  1.5 s, consider `minInstances: 1` (decision D4, about $5 to $10 a month).
-- `import_meter_unavailable` count against free card-mode `recipe_imported`. Anything above a
-  percent or two needs a look.
-- `meter_used_30d` values look sane (mostly 0 to a few).
+There is no measurement phase, so there is nothing to watch before go-live. The go-live checks
+will be written with the enforcement build.
 
-From Google Cloud Logging (`cookpilot-bbecb`):
-- the `hasImportId` ratio on `recipePrinterParseRecipeFromURL`. A large share of `false` means
-  `/api/parse` is being called from outside the app (decision D5).
+---
+
+## 5b. Go-live: switching the limit on
+
+Built on branch `claude/import-allowance` (RecipePrinter) and commit `9e88c89` (CookPilot). The
+order matters: each step is safe to stop after.
+
+1. **Deploy the CookPilot meter (Amelia).** It adds `enforce`, the `status` op and usage in every
+   answer. The live RecipePrinter build ignores the new fields, and with no config doc the meter
+   stays off, so this changes nothing for anyone:
+   ```bash
+   cd /Users/ameliawinger/Desktop/CookPilot/functions && npm run build && firebase deploy --only functions:recipePrinterImportMeter --project cookpilot-bbecb
+   ```
+2. **Check it:** `node scripts/check-import-meter.mjs` from the RecipePrinter repo. Expect `PASS`
+   with `mode "off"`.
+3. **Amelia approves the wording** (the usage line, the limit dialog, the cookbook preview lines,
+   and the changed FAQ, pricing and llms.txt sentences).
+4. **Merge the RecipePrinter PR.** The copy and the usage line go live. Nothing is refused yet,
+   because the server is still off; the import boxes show "10 free recipe imports every 30 days".
+   The cookbook preview cap of 10 IS live from this moment: it is checked in the browser.
+5. **Switch the limit on (Amelia, Firebase console).** Create `recipePrinterConfig/importMeter`
+   with a string field `mode` set to `enforce`. Optional number field `limit` (default 10, at most
+   30). Counting starts now, so everyone begins with a full 10.
+6. **Check:** run the script again. Expect `mode "enforce"` and `used: 0, limit: 10`.
+
+**To stop:** set `mode` to `off` (within 60 seconds nobody is refused and nothing is counted). To
+also remove the copy and the cookbook cap, set `IMPORT_ALLOWANCE_LIVE = false` and ship that.
+
+---
+
+## 5c. Added after the first build (2026-10-10)
+
+- **A fixed 30 days, ending at midnight.** The 30 days start with the first import, and all 10
+  come back together at 12:00 AM starting the day they end, in the cook's own time zone (the site
+  sends it as `tz`). "Resets Nov 9" means from the first minute of Nov 9.
+- **Nothing gets through at the limit**, including a link imported before. With imports left, the
+  same link or text again doesn't use a second one.
+- **A manual hold.** To keep one browser or account at "none left" until a date, add a timestamp
+  field `holdUntil` to its document in `recipePrinterImportMeter` (`b_…` for a browser, `u_<uid>`
+  for an account). It ends at midnight starting that date. Remove the field to lift it. A hold on
+  a signed-out browser is that browser only.
+- **Only the real site is counted.** localhost, LAN addresses and Vercel previews skip the meter.
+  To test the limit locally, run the dev server with `NEXT_PUBLIC_FIREBASE_LOCAL_FUNCTIONS=1` and
+  a local stand-in for the callables on port 3211.
+- **Pro is never limited**, and the site forgets the free count the moment it knows someone is
+  Pro. The backend recognises Pro from its own record of RevenueCat; keep
+  `RECIPEPRINTER_ACCEPT_SANDBOX_EVENTS` off in production so a test purchase can't write to it.
+- **Photo imports per hour** are 10 free and 50 Pro (were 5 and 30), so a free cook can spend all
+  10 imports on photos. Neither number is listed as a plan benefit any more.
+- **Don't clear `recipePrinterImportMeter` at go-live** if any document carries a `holdUntil`.
 
 ---
 

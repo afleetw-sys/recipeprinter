@@ -2,16 +2,14 @@
  * Image imports per hour, by plan.
  *
  * CookPilot enforces these (functions/src/imageImportLimits.ts, separate repo,
- * keep in sync by hand). They live here too because they are part of what Pro
- * sells: both plan cards name them, and the limit-reached message offers the
- * Pro number to a free account. Settings reads the live numbers back from
- * CookPilot (`loadImageImportQuota`), so a drift shows up there first.
+ * keep in sync by hand). Neither is listed as a plan benefit any more (Amelia,
+ * 2026-10-10): the free number was raised from 5 to 10 so a free cook can spend
+ * the whole 10-import allowance on photos, and the only place either number
+ * still appears is the message shown when the hourly limit is actually hit.
  */
-export const IMAGE_IMPORTS_PER_HOUR_FREE = 5;
-export const IMAGE_IMPORTS_PER_HOUR_PRO = 30;
+export const IMAGE_IMPORTS_PER_HOUR_FREE = 10;
+export const IMAGE_IMPORTS_PER_HOUR_PRO = 50;
 
-export const FREE_IMAGE_IMPORT_BENEFIT = `${IMAGE_IMPORTS_PER_HOUR_FREE} image imports an hour`;
-export const PRO_IMAGE_IMPORT_BENEFIT = `${IMAGE_IMPORTS_PER_HOUR_PRO} image imports an hour`;
 
 export interface ImageImportQuota {
   used: number;

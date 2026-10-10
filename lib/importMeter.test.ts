@@ -2,7 +2,21 @@
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { flushQueueWrites, useQueue } from "@/lib/queue";
-import { IMPORT_METER_CALLABLE, IMPORT_METER_TIMEOUT_MS } from "@/lib/importMeter";
+import {
+  IMPORT_METER_CALLABLE,
+  IMPORT_METER_TIMEOUT_MS,
+  clearImportsUnlimited,
+  importRefused,
+  importsKnownUnlimited,
+  importsSpent,
+  markImportsUnlimited,
+  refreshImportUsage,
+  refuseImportIfSpent,
+  subscribeImportRefusal,
+  rememberedImportUsage,
+  resetImportUsageForTest,
+  usageNow,
+} from "@/lib/importMeter";
 
 /**
  * The import meter's client rules (docs/import-meter-plan.md, 10.1): who is
@@ -30,11 +44,14 @@ vi.mock("@/lib/parser", async (importOriginal) => ({
   parseText,
   callCookPilotParser,
 }));
-// The meter as it will be once CookPilot has it. Production ships with it off.
-vi.mock("@/lib/importMeter", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/importMeter")>()),
-  IMPORT_METER_DEPLOYED: true,
+// The allowance as it is once it's live. The switch ships off until go-live.
+vi.mock("@/lib/freeImports", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/freeImports")>()),
+  IMPORT_ALLOWANCE_LIVE: true,
 }));
+// The meter is only ever asked from the real site; these tests stand there.
+const onProductionHost = vi.hoisted(() => ({ value: true }));
+vi.mock("@/lib/appEnvironment", () => ({ isProductionRuntime: () => onProductionHost.value }));
 vi.mock("@/lib/analytics", () => ({ track, truncateReason: (e: unknown) => String(e) }));
 vi.mock("@/lib/failedImportCapture", () => ({
   captureFailedImportImages: vi.fn(async () => null),
@@ -47,7 +64,9 @@ function recipe(title: string) {
   return { title, ingredients: [{ raw: "2 beets" }], instructions: [{ text: "Simmer." }] };
 }
 
-const RESERVED = { mode: "measure", allowed: true, used30d: 4, wouldBlock: { 5: false, 10: false }, subjectKind: "browser" };
+const NEXT_FREE = Date.UTC(2026, 9, 21);
+const RESERVED = { mode: "enforce", allowed: true, used: 4, limit: 10, nextFreeAt: NEXT_FREE, subjectKind: "browser" };
+const REFUSED = { ...RESERVED, allowed: false, reason: "limit", used: 10 };
 
 /** The meter calls the queue made, as `op`s in order. */
 function meterOps(): Array<{ op: string; outcome?: string }> {
@@ -63,9 +82,11 @@ const METHODS = [
   { method: "text", parser: parseText, start: (q: ReturnType<typeof useQueue>, o?: { meterExempt?: boolean }) => q.addText("Borscht\n2 beets\nSimmer.", o) },
 ] as const;
 
+const onImportLimitReached = vi.fn();
+
 function setup(gates: { cookbookMode?: boolean; clientPro?: boolean } = {}) {
   const hook = renderHook(() => useQueue());
-  act(() => hook.result.current.configureImportGates({ singleRecipeOnly: false, ...gates }));
+  act(() => hook.result.current.configureImportGates({ singleRecipeOnly: false, onImportLimitReached, ...gates }));
   return hook;
 }
 
@@ -74,7 +95,7 @@ beforeEach(() => {
   parseImages.mockResolvedValue(recipe("Borscht"));
   parseText.mockResolvedValue(recipe("Borscht"));
   callCookPilotParser.mockImplementation(async (_name: string, data: { op: string }) =>
-    data.op === "reserve" ? RESERVED : { ok: true },
+    data.op === "reserve" ? RESERVED : { ok: true, mode: "enforce", used: 5, limit: 10, nextFreeAt: NEXT_FREE },
   );
 });
 
@@ -87,6 +108,8 @@ afterEach(() => {
   flushQueueWrites();
   window.sessionStorage.clear();
   window.localStorage.clear();
+  resetImportUsageForTest();
+  onProductionHost.value = true;
 });
 
 describe("who the meter sees", () => {
@@ -180,5 +203,198 @@ describe("a missing or slow meter imports normally", () => {
     await vi.advanceTimersByTimeAsync(1);
     await vi.waitFor(() => expect(parser).toHaveBeenCalledTimes(1));
     expect(track).toHaveBeenCalledWith("import_meter_unavailable", { op: "reserve", reason: "timeout" });
+  });
+});
+
+describe("out of free imports", () => {
+  test.each(METHODS)("$method: a refused import never reaches the parser or settles", async ({ start, parser }) => {
+    callCookPilotParser.mockImplementation(async (_name: string, data: { op: string }) =>
+      data.op === "reserve" ? REFUSED : { ok: true },
+    );
+    const { result } = setup();
+    act(() => start(result.current));
+    await vi.waitFor(() => expect(onImportLimitReached).toHaveBeenCalledTimes(1));
+    expect(onImportLimitReached.mock.calls[0][0]).toMatchObject({ usage: { used: 10, limit: 10 } });
+    expect(parser).not.toHaveBeenCalled();
+    // The placeholder is gone, not left as a failed card to retry.
+    expect(result.current.items).toEqual([]);
+    expect(meterOps()).toEqual([expect.objectContaining({ op: "reserve" })]);
+    expect(track).toHaveBeenCalledWith("import_limit_reached", expect.objectContaining({ used: 10, limit: 10 }));
+    expect(track).not.toHaveBeenCalledWith("recipe_import_failed", expect.anything());
+  });
+
+  test("a refusal leaves the recipes already there alone", async () => {
+    const { result } = setup();
+    act(() => result.current.addText("Borscht\n2 beets\nSimmer."));
+    await vi.waitFor(() => expect(result.current.items[0]?.status).toBe("ready"));
+    callCookPilotParser.mockResolvedValue(REFUSED);
+    act(() => result.current.addUrl("https://example.com/second"));
+    await vi.waitFor(() => expect(onImportLimitReached).toHaveBeenCalled());
+    expect(result.current.items.map((it) => it.status)).toEqual(["ready"]);
+  });
+
+  test("the server's answers are what the import boxes show", async () => {
+    const { result } = setup();
+    act(() => result.current.addText("Borscht\n2 beets\nSimmer."));
+    // The settle's answer is the count with this import in it.
+    await vi.waitFor(() => expect(rememberedImportUsage()).toMatchObject({ used: 5, limit: 10, enforcing: true }));
+
+    callCookPilotParser.mockResolvedValue({ mode: "enforce", allowed: true, used: 7, limit: 10, nextFreeAt: NEXT_FREE });
+    await refreshImportUsage();
+    expect(rememberedImportUsage()).toMatchObject({ used: 7 });
+
+    // Pro, or the allowance switched off: nothing to show.
+    callCookPilotParser.mockResolvedValue({ mode: "enforce", allowed: true, reason: "pro" });
+    await refreshImportUsage();
+    expect(rememberedImportUsage()).toBeNull();
+  });
+
+  // Rule E1: what a meter we can't reach means depends on its last answer.
+  test.each([
+    { name: "last answer was none left", last: { used: 10 }, refused: true },
+    { name: "last answer had imports left", last: { used: 9 }, refused: false },
+    { name: "the 30 days have since ended", last: { used: 10, nextFreeAt: Date.UTC(2020, 0, 1) }, refused: false },
+    { name: "the last answer wasn't enforcing", last: { used: 10, mode: "measure" }, refused: false },
+    { name: "there is no answer on record", last: null, refused: false },
+  ])("meter unreachable, $name: refused is $refused", async ({ last, refused }) => {
+    if (last) {
+      callCookPilotParser.mockResolvedValue({ mode: "enforce", allowed: true, limit: 10, nextFreeAt: Date.UTC(2099, 0, 1), ...last });
+      await refreshImportUsage();
+    }
+    callCookPilotParser.mockRejectedValue(new Error("offline"));
+    const { result } = setup();
+    act(() => result.current.addText("Borscht\n2 beets\nSimmer."));
+    if (refused) {
+      await vi.waitFor(() => expect(onImportLimitReached).toHaveBeenCalled());
+      expect(parseText).not.toHaveBeenCalled();
+    } else {
+      await vi.waitFor(() => expect(parseText).toHaveBeenCalledTimes(1));
+      expect(onImportLimitReached).not.toHaveBeenCalled();
+    }
+  });
+
+  test("nothing is refused while the allowance isn't live, whatever the server says", () => {
+    const refusal = { status: "reserved", meterMs: 1, result: { mode: "enforce", allowed: false } } as const;
+    expect(importRefused(refusal, Date.now(), true)).toBe(true);
+    expect(importRefused(refusal, Date.now(), false)).toBe(false);
+    // A server that only counts never refuses either.
+    expect(importRefused({ ...refusal, result: { mode: "measure", allowed: false } }, Date.now(), true)).toBe(false);
+  });
+
+  test("a remembered count is back to zero once its reset time has passed", () => {
+    const usage = { used: 10, limit: 10, nextFreeAt: 1_000 };
+    expect(usageNow(usage, 999)).toEqual(usage);
+    expect(usageNow(usage, 1_000)).toEqual({ used: 0, limit: 10, nextFreeAt: null });
+  });
+});
+
+describe("an unbought cookbook's free size", () => {
+  const onBookCapReached = vi.fn();
+  function book(bookCap: number | null) {
+    const hook = renderHook(() => useQueue());
+    act(() =>
+      hook.result.current.configureImportGates({ singleRecipeOnly: false, cookbookMode: true, bookCap, onBookCapReached }),
+    );
+    return hook;
+  }
+  const ready = (id: string) =>
+    ({ id, method: "paprika", source: "Paprika", status: "ready", title: id, recipe: recipe(id), addedAt: 1 }) as never;
+
+  test("a roundup past the cap keeps the first recipe and what fits, and says so", async () => {
+    parseUrlAll.mockResolvedValue([recipe("One"), recipe("Two"), recipe("Three"), recipe("Four")]);
+    const { result } = book(2);
+    act(() => result.current.addUrl("https://example.com/roundup"));
+    await vi.waitFor(() => expect(onBookCapReached).toHaveBeenCalledWith({ found: 4, kept: 2 }));
+    expect(result.current.items.map((it) => it.title)).toEqual(["One", "Two"]);
+  });
+
+  test("recipes from a recipe app take the room that's left", () => {
+    const { result } = book(2);
+    let added = 0;
+    act(() => {
+      added = result.current.addReadyRecipes([ready("a"), ready("b"), ready("c")]);
+    });
+    expect(added).toBe(2);
+    expect(onBookCapReached).toHaveBeenCalledWith({ found: 3, kept: 2 });
+    act(() => {
+      added = result.current.addReadyRecipes([ready("d")]);
+    });
+    expect(added).toBe(0);
+  });
+
+  test("a bought book takes everything", async () => {
+    parseUrlAll.mockResolvedValue([recipe("One"), recipe("Two"), recipe("Three")]);
+    const { result } = book(null);
+    act(() => result.current.addUrl("https://example.com/roundup"));
+    await vi.waitFor(() => expect(result.current.items).toHaveLength(3));
+    expect(onBookCapReached).not.toHaveBeenCalled();
+  });
+});
+
+describe("a page that hands imports off to /print", () => {
+  // The homepage and the SEO pages ask before navigating, so a cook who is out
+  // of imports sees the upgrade dialog where they are.
+  test.each([
+    { name: "out of imports", answer: { used: 10 }, refuses: true },
+    { name: "imports left", answer: { used: 9 }, refuses: false },
+    { name: "Pro", answer: { reason: "pro" }, refuses: false },
+    { name: "a first-time visitor (no answer on record)", answer: null, refuses: false },
+  ])("$name: stays put is $refuses", async ({ answer, refuses }) => {
+    if (answer) {
+      callCookPilotParser.mockResolvedValue({ mode: "enforce", allowed: true, limit: 10, nextFreeAt: Date.UTC(2099, 0, 1), ...answer });
+      await refreshImportUsage();
+    }
+    const opened = vi.fn();
+    const stop = subscribeImportRefusal(opened);
+    expect(refuseImportIfSpent()).toBe(refuses);
+    expect(opened).toHaveBeenCalledTimes(refuses ? 1 : 0);
+    stop();
+    // With no banner on the page to open the dialog, the handoff goes ahead.
+    expect(refuseImportIfSpent()).toBe(false);
+  });
+});
+
+describe("anywhere but the real site", () => {
+  // localhost, a LAN address, a Vercel preview: all reach the production
+  // backend, so testing there must never use or record a real allowance.
+  test.each(METHODS)("$method: imports without asking the meter", async ({ start, parser }) => {
+    onProductionHost.value = false;
+    const { result } = setup();
+    act(() => start(result.current));
+    await vi.waitFor(() => expect(parser).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(result.current.items[0]?.status).toBe("ready"));
+    await refreshImportUsage();
+    expect(meterOps()).toEqual([]);
+  });
+});
+
+describe("after buying Pro", () => {
+  test("a count from the server never makes a Pro member limited again", async () => {
+    // The homepage can ask before sign-in has loaded, and is then answered as
+    // the bare browser, with that browser's old count.
+    markImportsUnlimited();
+    callCookPilotParser.mockResolvedValue({ mode: "enforce", allowed: true, used: 10, limit: 10, nextFreeAt: Date.UTC(2099, 0, 1) });
+    await refreshImportUsage();
+    expect(importsKnownUnlimited()).toBe(true);
+    expect(importsSpent()).toBe(false);
+
+    // Only something that knows they aren't Pro switches it off.
+    clearImportsUnlimited();
+    expect(importsSpent()).toBe(true);
+  });
+
+  test("the free count is forgotten at once, so nothing treats them as out of imports", async () => {
+    callCookPilotParser.mockResolvedValue({ mode: "enforce", allowed: true, used: 10, limit: 10, nextFreeAt: Date.UTC(2099, 0, 1) });
+    await refreshImportUsage();
+    expect(importsSpent()).toBe(true);
+
+    markImportsUnlimited();
+    expect(importsSpent()).toBe(false);
+    expect(rememberedImportUsage()).toBeNull();
+    const opened = vi.fn();
+    const stop = subscribeImportRefusal(opened);
+    expect(refuseImportIfSpent()).toBe(false);
+    expect(opened).not.toHaveBeenCalled();
+    stop();
   });
 });

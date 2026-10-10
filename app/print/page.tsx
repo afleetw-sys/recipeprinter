@@ -105,7 +105,17 @@ import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { useProPurchase } from "@/lib/useProPurchase";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
-import { IMAGE_IMPORT_LIMIT_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
+import { IMAGE_IMPORT_LIMIT_TRIGGER, IMPORT_LIMIT_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
+import {
+  clearImportsUnlimited,
+  importsKnownUnlimited,
+  importsSpent,
+  markImportsUnlimited,
+  rememberedImportUsage,
+} from "@/lib/importMeter";
+import { ImportUsageMenu } from "@/components/ImportUsageMenu";
+import { bookRoomLeft } from "@/lib/cookbookFreeSize";
+import { FREE_COOKBOOK_RECIPES } from "@/lib/freeImports";
 import {
   markPhotoStyleTipSeen,
   photoStyleTipSeen,
@@ -158,6 +168,7 @@ import {
   projectPrintJob,
   readCurrentPrintJobIds,
   useQueue,
+  type BookCapInfo,
   type MultiRecipeBlockedInfo,
 } from "@/lib/queue";
 import {
@@ -3023,6 +3034,15 @@ export default function PrintPage() {
   }, [cookPilotUser, revenueCatUserId, handoffHasPaid]);
 
   const hasProBrandless = hasProEntitlement(effectiveCustomerInfo.customerInfo);
+  // The moment this page knows the cook is Pro (a purchase just finished, or
+  // their entitlement loaded), the free-import count stops applying: clear it
+  // so no banner, ring or paywall goes on treating them as out of imports.
+  useEffect(() => {
+    if (hasProBrandless) markImportsUnlimited();
+    // The purchase SDK has answered, and the answer is "not Pro": the one
+    // place that can switch "unlimited" back off (an expired subscription).
+    else if (customerInfoStatus === "ok") clearImportsUnlimited();
+  }, [hasProBrandless, customerInfoStatus]);
   useEffect(() => {
     setBrandHidden(hasProBrandless);
   }, [hasProBrandless]);
@@ -3145,6 +3165,22 @@ export default function PrintPage() {
   /** Recipe cards' phone "Every recipe" sheet: offered once there can be more
       than one recipe and some recipe has a photo or a link to show or hide. */
   const cardEveryRecipe = !cookbookMode && !singleRecipeOnly && (anyRecipeHasImage || anyRecipeHasSourceUrl);
+  // An unbought cookbook's free preview size (lib/cookbookFreeSize): how many
+  // more recipes this book can take, or null when nothing caps it (a bought
+  // book, a card project, or the allowance not live yet).
+  const bookRoom = bookRoomLeft({
+    cookbookMode,
+    locked: cookbookLocked && !isCookbookProjectUnlocked(cookbookProjectId),
+    recipeCount,
+  });
+  const bookCapReached = bookRoom === 0;
+  function handleBookCapReached(info: BookCapInfo) {
+    showToast(
+      info.kept > 0
+        ? `We added ${info.kept} of ${info.found} recipes. A free preview holds up to ${FREE_COOKBOOK_RECIPES}; buy this cookbook to add the rest.`
+        : `A free preview holds up to ${FREE_COOKBOOK_RECIPES} recipes. Buy this cookbook to keep adding.`,
+    );
+  }
   function handleMultiRecipeBlocked(info: MultiRecipeBlockedInfo) {
     if (info.source === "library") {
       // The pickers already refuse to let a locked account select more than
@@ -3168,8 +3204,18 @@ export default function PrintPage() {
     cookbookMode,
     bookBought:
       cookbookMode && (cookbookAccessStatus === "unlocked" || isCookbookProjectUnlocked(cookbookProjectId)),
-    clientPro: hasProEntitlement(effectiveCustomerInfo.customerInfo),
+    // Pro for sure, or remembered as Pro while the purchase SDK is still
+    // loading: a Pro member's first import after a reload must not be metered
+    // (or refused) in the second before their entitlement arrives.
+    clientPro:
+      hasProEntitlement(effectiveCustomerInfo.customerInfo) ||
+      (customerInfoStatus !== "ok" && importsKnownUnlimited()),
     onMultiRecipeBlocked: handleMultiRecipeBlocked,
+    // Out of free imports: the existing Pro dialog, with the allowance's own
+    // wording. Nothing the cook already has is touched.
+    onImportLimitReached: () => openProUpgradeDialog(IMPORT_LIMIT_TRIGGER),
+    bookCap: bookRoom === null ? null : FREE_COOKBOOK_RECIPES,
+    onBookCapReached: handleBookCapReached,
     importContext: cookbookMode
       ? { context: "cookbook", ...(cookbookProjectId ? { cookbookId: cookbookProjectId } : {}) }
       : { context: "recipe_cards" },
@@ -3187,7 +3233,14 @@ export default function PrintPage() {
     { themeLocked, cardSizeLocked, multiRecipeLocked },
     proUpgradeTrigger,
   );
-  const proUpgradeDialogCopy = proUpgradeCopy(proUpgradeLockReasons, proUpgradeTrigger);
+  const proUpgradeDialogCopy = proUpgradeCopy(
+    proUpgradeLockReasons,
+    proUpgradeTrigger,
+    // Read when the dialog renders: the refusal that opened it has just
+    // recorded the server's count.
+    proUpgradeTrigger === IMPORT_LIMIT_TRIGGER ? rememberedImportUsage() : null,
+    (items?.length ?? 0) > 0,
+  );
 
   /**
    * Which Pro lock a Print press ran into, for `paywall_viewed`. `print_button`
@@ -3268,7 +3321,12 @@ export default function PrintPage() {
       if (outcome !== "purchased" && outcome !== "already-active") return;
       if (outcome === "purchased") {
         track("pro_feature_used", {
-          feature: trigger === IMAGE_IMPORT_LIMIT_TRIGGER ? "image_imports" : proLockFeature(),
+          feature:
+            trigger === IMAGE_IMPORT_LIMIT_TRIGGER
+              ? "image_imports"
+              : trigger === IMPORT_LIMIT_TRIGGER
+                ? "imports"
+                : proLockFeature(),
         });
         if (cookPilotUser && autosaveEnabledForCurrentMode) void handleSaveProject();
       }
@@ -4137,7 +4195,9 @@ export default function PrintPage() {
     <div className="recipe-page-rail__book">
       <p className="recipe-page-rail__book-meta">
         <span>
-          {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"}
+          {bookRoom === null
+            ? `${recipeCount} ${recipeCount === 1 ? "recipe" : "recipes"}`
+            : `Free preview: ${recipeCount} of ${FREE_COOKBOOK_RECIPES} recipes`}
         </span>
         {bookSaveNote}
       </p>
@@ -4554,17 +4614,32 @@ export default function PrintPage() {
    * see an "Upgrade to Pro" door standing open in a room where nothing is
    * actually locked.
    */
+  /**
+   * Upgrade pressed from the free-import count (the banner under Add, the
+   * header's ring menu). It is there in every state, so only someone who is
+   * actually out of imports gets the "you've used your 10" wording; anyone
+   * else pressed Upgrade and gets the plain Pro dialog.
+   */
+  function openImportUpgrade() {
+    const usage = rememberedImportUsage();
+    openProUpgradeDialog(usage && usage.used >= usage.limit ? IMPORT_LIMIT_TRIGGER : "import_banner");
+  }
   function renderProUpgradeButton() {
     if (cookbookMode || hasProEntitlement(effectiveCustomerInfo.customerInfo)) return null;
     return (
-      <button
-        type="button"
-        className="btn btn-premium btn-compact"
-        onClick={() => openProUpgradeDialog("topbar_button")}
-      >
-        <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-        Upgrade to Pro
-      </button>
+      <>
+        <button
+          type="button"
+          className="btn btn-premium btn-compact"
+          onClick={() => openProUpgradeDialog("topbar_button")}
+        >
+          <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
+          Upgrade to Pro
+        </button>
+        {/* How many free imports are used, as a ring that opens the details.
+            To the right of the thing that lifts the limit. */}
+        <ImportUsageMenu onUpgrade={openImportUpgrade} />
+      </>
     );
   }
 
@@ -4936,12 +5011,40 @@ export default function PrintPage() {
     };
   })();
 
+  /**
+   * Opens the import-limit paywall when a free card-mode cook has no imports
+   * left, and says so. Cookbooks and Pro have no allowance to run out of. It
+   * goes by the server's last answer to this browser (refreshed whenever an
+   * import box or the header ring mounts, and after every import), so it is
+   * true from the moment the last import lands.
+   */
+  function importPaywallIfSpent(): boolean {
+    if (cookbookMode || hasProEntitlement(effectiveCustomerInfo.customerInfo)) return false;
+    if (!importsSpent()) return false;
+    openProUpgradeDialog(IMPORT_LIMIT_TRIGGER);
+    return true;
+  }
   function openAddRecipeBelow(navItem: NavItem | null = activeNavItem) {
+    // Out of free imports: the paywall, not a form to fill in and be refused
+    // from. Checked first, so the dialog names the limit they actually hit
+    // rather than "print multiple recipes".
+    if (importPaywallIfSpent()) return;
     if (multiRecipeAddLocked) {
       track("pro_feature_encountered", { feature: "batch_print", source: "add_more_recipes" });
       openProUpgradeDialog("add_more_recipes");
       return;
     }
+    // A full free preview: straight to this book's checkout, the way Print
+    // reads "Buy & Print", and on to the add the cook asked for once it's
+    // bought. Cancelling leaves the book exactly as it was.
+    if (bookCapReached) {
+      track("cookbook_preview_full", { recipeCount, price: cookbookPrice });
+      void purchaseCookbookAndContinue(() => openAddRecipeDialogAt(navItem));
+      return;
+    }
+    openAddRecipeDialogAt(navItem);
+  }
+  function openAddRecipeDialogAt(navItem: NavItem | null) {
     const target = addRecipeTarget(navItem, sections);
     setPendingAddSectionId(target?.sectionId ?? sections[0]?.id ?? null);
     setPendingAddIndex(target?.index ?? 0);
@@ -4959,6 +5062,7 @@ export default function PrintPage() {
    * doesn't free up anything for it to be replacing.
    */
   function tryAnotherImportWay(id: string) {
+    if (importPaywallIfSpent()) return;
     if (multiRecipeAddLocked) {
       track("pro_feature_encountered", { feature: "batch_print", source: "add_more_recipes" });
       openProUpgradeDialog("add_more_recipes");
@@ -5966,15 +6070,20 @@ export default function PrintPage() {
           */
           lead={renderProUpgradeButton()}
           actions={
-            items?.length ? (
               <>
                 {/* How this project stands, to the LEFT of the action rather
                     than out by the avatar — it reads as part of the same
                     sentence as Print, and the avatar goes back to being only
                     the account. See `renderSaveControl`'s own doc comment
                     for why the control and the state are one thing. Shared
-                    with the mobile topbar (PrintDeck.tsx). */}
-                {renderSaveControl()}
+                    with the mobile topbar (PrintDeck.tsx). Only once there is
+                    something to save. */}
+                {items?.length ? renderSaveControl() : null}
+
+                {/* Print is always here, as it is on a phone's bottom bar:
+                    the page is for printing, and a button that appears only
+                    once a recipe lands makes the header jump. With nothing to
+                    print it is disabled (`printBlocked` covers an empty deck). */}
 
                 {/*
                   One button, not two. Buying and printing are not separate
@@ -6024,7 +6133,6 @@ export default function PrintPage() {
                   {cookbookLocked ? "Buy & Print" : "Print"}
                 </button>
               </>
-            ) : undefined
           }
           onNavigateHome={() => handleNavigateHome()}
         />
@@ -6135,6 +6243,7 @@ export default function PrintPage() {
              count means the label and the badge always flip together. */
           hasRecipes={recipeCount > 0}
           bookHeader={railBookHeader}
+          bookCapReached={bookCapReached}
           multiRecipeAddLocked={multiRecipeAddLocked}
           railScrollRef={railScrollRef}
           railDrag={railDrag}
@@ -6701,6 +6810,9 @@ export default function PrintPage() {
           openProUpgradeDialog("add_more_recipes");
         }}
         chapterTarget={addChapterTarget}
+        // The card allowance isn't a cookbook's, and Pro has none.
+        allowance={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
+        onGetUnlimited={openImportUpgrade}
       />
       <FeedbackDialog
         open={showFeedbackDialog}

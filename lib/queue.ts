@@ -17,11 +17,14 @@ import { localProjectPhotoIds } from "@/lib/localProjects";
 import { QUEUE_RECOVERY_OWNER_KEY, stampRecoveryOwner } from "@/lib/recoveryMirror";
 import { localStore, sessionStore } from "@/lib/storage";
 import { releaseImportPreview, setImportPreview } from "@/lib/importPreviews";
+import { fitBookRoom } from "@/lib/cookbookFreeSize";
 import { storeImportedPhoto, withImportedPhoto } from "@/lib/importedPhoto";
 import {
-  IMPORT_METER_DEPLOYED,
   SKIPPED,
+  importRefused,
   meterGateFor,
+  rememberedImportUsage,
+  type ImportUsage,
   meterImportedFields,
   meterMsOf,
   normalizedTextForDedupe,
@@ -479,6 +482,20 @@ export interface AddImportOptions {
   meterExempt?: boolean;
 }
 
+/** Recipes that didn't fit an unbought cookbook's free preview size. */
+export interface BookCapInfo {
+  /** How many arrived, and how many of them were kept. */
+  found: number;
+  kept: number;
+}
+
+/** An import that didn't start because the free allowance is used up. */
+export interface ImportLimitInfo {
+  source: ImportMethod;
+  /** The server's count, when it answered; absent if it couldn't be reached. */
+  usage?: ImportUsage;
+}
+
 export function useQueue() {
   // Latest-value refs, not state: entitlement (customerInfo, cookbookMode)
   // isn't known yet at the point a caller calls `useQueue()` — it's computed
@@ -502,6 +519,16 @@ export function useQueue() {
   const onMultiRecipeBlockedRef = useRef<((info: MultiRecipeBlockedInfo) => void) | undefined>(
     undefined,
   );
+  const onImportLimitReachedRef = useRef<((info: ImportLimitInfo) => void) | undefined>(undefined);
+  // An unbought cookbook's free size, or null when nothing caps this project
+  // (see lib/cookbookFreeSize). Counted against the recipes in the queue.
+  const bookCapRef = useRef<number | null>(null);
+  const onBookCapReachedRef = useRef<((info: BookCapInfo) => void) | undefined>(undefined);
+  /** How many more recipes the book can take right now; null for no cap. */
+  const bookRoom = (): number | null =>
+    bookCapRef.current === null
+      ? null
+      : Math.max(0, bookCapRef.current - itemsRef.current.filter((item) => item.status === "ready").length);
   /**
    * True for an account with neither Pro nor cookbook mode: outside a
    * cookbook, printing more than one recipe at a time is the premium action
@@ -533,6 +560,12 @@ export function useQueue() {
       bookBought?: boolean;
       clientPro?: boolean;
       onMultiRecipeBlocked?: (info: MultiRecipeBlockedInfo) => void;
+      /** A free import was refused because the allowance is used up. */
+      onImportLimitReached?: (info: ImportLimitInfo) => void;
+      /** An unbought cookbook's free size; null or absent for no cap. */
+      bookCap?: number | null;
+      /** Recipes arrived that the book's free size had no room for. */
+      onBookCapReached?: (info: BookCapInfo) => void;
       importContext?: ImportContextProps;
     }) => {
       singleRecipeOnlyRef.current = config.singleRecipeOnly;
@@ -540,6 +573,9 @@ export function useQueue() {
       bookBoughtRef.current = Boolean(config.bookBought);
       clientProRef.current = Boolean(config.clientPro);
       onMultiRecipeBlockedRef.current = config.onMultiRecipeBlocked;
+      onImportLimitReachedRef.current = config.onImportLimitReached;
+      bookCapRef.current = config.bookCap ?? null;
+      onBookCapReachedRef.current = config.onBookCapReached;
       importContextRef.current = config.importContext;
     },
     [],
@@ -821,7 +857,6 @@ export function useQueue() {
           cookbookMode: cookbookModeRef.current,
           clientPro: clientProRef.current,
           override: opts?.meterExempt,
-          deployed: IMPORT_METER_DEPLOYED,
         }) === "reserve";
       const reservation: Reservation = metered
         ? await reserveImport({
@@ -830,6 +865,24 @@ export function useQueue() {
             dedupeInput: opts?.dedupeInput,
           })
         : SKIPPED;
+      // Out of free imports: the parse never starts, so nothing is spent and
+      // nothing is counted. The placeholder goes (there is no failure to show
+      // or retry), and the page says why. Everything the cook already has is
+      // untouched.
+      if (importRefused(reservation)) {
+        liveParseIds.delete(id);
+        commit(itemsRef.current.filter((it) => it.id !== id));
+        const usage =
+          reservation.status === "reserved" ? reservation.result.usage : rememberedImportUsage() ?? undefined;
+        track("import_limit_reached", {
+          ...outcome,
+          ...context,
+          importId: id,
+          ...(usage ? { used: usage.used, limit: usage.limit } : {}),
+        });
+        onImportLimitReachedRef.current?.({ source: origin.source, ...(usage ? { usage } : {}) });
+        return;
+      }
       let settled = false;
       const settle = (result: "success" | "failure") => {
         if (!metered || settled) return;
@@ -873,8 +926,15 @@ export function useQueue() {
         // blooms into the rest for it. This is not "add the second one only
         // if there's room": there is never room, the same way `+ Add recipe`
         // refuses outright rather than adding and blocking at Print.
-        const rest = singleRecipeOnlyRef.current ? [] : allRest;
-        if (allRest.length > 0 && rest.length === 0) {
+        // An unbought cookbook keeps only what fits its free size. The first
+        // recipe has already landed (an import under way when the book fills
+        // still lands); the extras take whatever room is left, and the page
+        // says how many were kept.
+        const rest = singleRecipeOnlyRef.current ? [] : fitBookRoom(allRest, bookRoom());
+        if (!singleRecipeOnlyRef.current && rest.length < allRest.length) {
+          onBookCapReachedRef.current?.({ found: recipes.length, kept: 1 + rest.length });
+        }
+        if (singleRecipeOnlyRef.current && allRest.length > 0) {
           onMultiRecipeBlockedRef.current?.({
             source: origin.source === "image" ? "image" : "url",
             foundCount: recipes.length,
@@ -1157,6 +1217,12 @@ export function useQueue() {
           track("pro_feature_encountered", { feature: "batch_print", source: "library_multi_select" });
         }
         nextRecipes = nextRecipes.slice(0, allowed);
+      }
+      // An unbought cookbook's free size, for recipes that arrive ready.
+      const fitting = fitBookRoom(nextRecipes, bookRoom());
+      if (fitting.length < nextRecipes.length) {
+        onBookCapReachedRef.current?.({ found: nextRecipes.length, kept: fitting.length });
+        nextRecipes = fitting;
       }
       if (nextRecipes.length === 0) return 0;
       commit([...kept, ...nextRecipes]);

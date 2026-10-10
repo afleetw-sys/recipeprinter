@@ -31,4 +31,15 @@ describe("screenshotShortcutFrom", () => {
       screenshotShortcutFrom(key("4", { metaKey: true, shiftKey: true, repeat: true }), "MacIntel"),
     ).toBeNull();
   });
+
+  // Autofill and password managers dispatch a "keydown" that is a plain Event:
+  // no `key` at all. That used to throw on every such event.
+  it.each([
+    ["a keydown with no key", new Event("keydown")],
+    ["a keydown whose key isn't a string", Object.assign(new Event("keydown"), { key: undefined, metaKey: true, shiftKey: true })],
+  ])("ignores %s instead of throwing", (_name, event) => {
+    for (const platform of ["MacIntel", "Win32", ""]) {
+      expect(screenshotShortcutFrom(event as KeyboardEvent, platform)).toBeNull();
+    }
+  });
 });

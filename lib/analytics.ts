@@ -38,7 +38,7 @@ type PurchasedProduct = "premium_template" | "cookbook" | "pro";
 /** The Pro-only capability a Free user ran into. Named narrowly enough to be
  *  useful in a funnel ("which feature drives upgrades") without carrying any
  *  recipe content. */
-type ProFeature = "theme" | "card_size" | "batch_print" | "advanced_layout" | "image_imports";
+type ProFeature = "theme" | "card_size" | "batch_print" | "advanced_layout" | "image_imports" | "imports";
 
 /**
  * Why an import failed, as a small closed vocabulary rather than a free-text
@@ -234,15 +234,11 @@ type EventProps = {
      */
     meterMs?: number;
     /**
-     * The import meter's answer, on free card-mode imports it answered
-     * (docs/import-meter-plan.md, 4.1). `meter_used_30d` is the counted
-     * imports in the previous 30 days, BEFORE this one; the two booleans say
-     * whether a limit of 5 or 10 would have refused it.
+     * On free card-mode imports the meter answered: how many of the free
+     * allowance were already used when this one began, and out of how many.
      */
-    meter_used_30d?: number;
-    meter_would_block_5?: boolean;
-    meter_would_block_10?: boolean;
-    meter_subject_kind?: "browser" | "account";
+    meter_used?: number;
+    meter_limit?: number;
   } & Partial<ImportContextProps>;
   /**
    * An import that succeeded but was then substantially rewritten by hand: the
@@ -299,6 +295,24 @@ type EventProps = {
    * import went ahead without it (it always fails open).
    */
   import_meter_unavailable: { op: "reserve" | "settle"; reason: "timeout" | "error" };
+  /**
+   * "Buy & add recipes" was pressed: an unbought cookbook's free preview was
+   * full, so adding went to the cookbook checkout instead.
+   */
+  cookbook_preview_full: { recipeCount: number; price?: string };
+  /**
+   * A free import didn't start because the allowance is used up. It follows a
+   * `recipe_import_started` with the same `importId` and has no imported or
+   * failed event after it: nothing was parsed. `used` and `limit` are absent
+   * when the meter couldn't be reached and its last answer was relied on.
+   */
+  import_limit_reached: {
+    source: ImportMethod;
+    hostname?: string;
+    importId: string;
+    used?: number;
+    limit?: number;
+  } & Partial<ImportContextProps>;
   /**
    * A single URL turned out to be a "roundup" and yielded more than one recipe
    * (RecipePrinter multi-recipe import) — all of which were added. `count` is how

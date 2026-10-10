@@ -7,9 +7,8 @@ import { CheckIcon, ClockIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
 import { ProBadge } from "@/components/ProBadge";
 import { SegmentedControl } from "@/components/Controls";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
-import { BASIC_BENEFITS, PRO_BENEFITS } from "@/lib/proUpgradeCopy";
-import { FREE_IMAGE_IMPORT_BENEFIT, PRO_IMAGE_IMPORT_BENEFIT } from "@/lib/imageImportQuota";
-import { AccountImageImportUsage } from "@/components/AccountImageImportUsage";
+import { BASIC_BENEFITS, FREE_IMPORTS_BENEFIT, PRO_BENEFITS } from "@/lib/proUpgradeCopy";
+import { AccountImportAllowanceUsage } from "@/components/AccountImportAllowanceUsage";
 import { track } from "@/lib/analytics";
 import {
   authenticatedProManagementUrl,
@@ -273,15 +272,11 @@ export function AccountProStatus({ user }: { user: User }) {
                   {PRO_BENEFITS.map((benefit) => (
                     <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
                       <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        {benefit}
-                        {/* This hour's usage, under the allowance it counts
-                            against, on the card for the plan you're on. */}
-                        {benefit === PRO_IMAGE_IMPORT_BENEFIT && <AccountImageImportUsage uid={uid} />}
-                      </div>
+                      <div className="min-w-0 flex-1">{benefit}</div>
                     </li>
                   ))}
                 </ul>
+
                 {proDetails.willRenew ? (
                   // Opens RevenueCat's own hosted billing portal, where
                   // canceling actually happens — there's no separate
@@ -348,13 +343,14 @@ export function AccountProStatus({ user }: { user: User }) {
                       <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
                       <div className="min-w-0 flex-1">
                         {benefit}
-                        {/* This hour's usage, under the allowance it counts
+                        {/* The allowance's usage, under the line it counts
                             against, on the card for the plan you're on. */}
-                        {benefit === FREE_IMAGE_IMPORT_BENEFIT && <AccountImageImportUsage uid={uid} />}
+                        {benefit === FREE_IMPORTS_BENEFIT && <AccountImportAllowanceUsage />}
                       </div>
                     </li>
                   ))}
                 </ul>
+
                 <button type="button" className="btn btn-primary btn-compact mt-cp-3 w-full" disabled>
                   Your current plan
                 </button>

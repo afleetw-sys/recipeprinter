@@ -21,9 +21,9 @@ describe("proUpgradeCopy", () => {
     expect(copy.title).toBe("Print with this premium theme");
     expect(copy.benefits).toEqual([
       "All premium themes",
+      "Unlimited recipe imports",
       "Print multiple recipes at once",
       "4×6 recipe cards",
-      "30 image imports an hour",
       "No RecipePrinter branding on your prints",
       "20% off your first cookbook",
     ]);
@@ -35,8 +35,8 @@ describe("proUpgradeCopy", () => {
     expect(copy.benefits).toEqual([
       "Print multiple recipes at once",
       "4×6 recipe cards",
+      "Unlimited recipe imports",
       "All premium themes",
-      "30 image imports an hour",
       "No RecipePrinter branding on your prints",
       "20% off your first cookbook",
     ]);
@@ -58,10 +58,11 @@ describe("proUpgradeCopy", () => {
     }
   });
 
-  test("hitting the image limit names the Pro allowance and leads with it", () => {
+  test("hitting the hourly photo limit names what Pro changes about it, in the title only", () => {
     const copy = proUpgradeCopy([], IMAGE_IMPORT_LIMIT_TRIGGER);
-    expect(copy.title).toBe("Import up to 30 images an hour");
-    expect(copy.benefits[0]).toBe("30 image imports an hour");
-    expect([...copy.benefits].sort()).toEqual([...PRO_BENEFITS].sort());
+    expect(copy.title).toBe("Import up to 50 images an hour");
+    // The hourly number is not a listed benefit of either plan any more.
+    expect(copy.benefits).toEqual(PRO_BENEFITS);
+    expect(PRO_BENEFITS.some((benefit) => /an hour/.test(benefit))).toBe(false);
   });
 });

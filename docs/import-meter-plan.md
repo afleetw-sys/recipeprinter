@@ -1,7 +1,27 @@
-# Free import allowance: implementation plan (rev 4)
+# Free import allowance: implementation plan (rev 5)
 
-Status: **plan only. Nothing is built or deployed.** Audited 2026-10-09 against
-`claude/cookbook-organize-search` and the CookPilot working tree at `/Users/ameliawinger/Desktop/CookPilot`.
+Status (2026-10-10): **the meter and its client wiring are live in production, switched off.**
+CookPilot's `recipePrinterImportMeter` is deployed, RecipePrinter calls it (PR #185), and no config
+doc exists, so nothing is recorded and nobody is limited. **Next: build enforcement and go live.**
+
+**Rev 5 decisions (Amelia, 2026-10-10). These replace anything below that says otherwise:**
+- **No measurement period.** We are not waiting 30 days and not comparing 5 against 10. Every
+  "measure first", "candidate limit", "would block at 5" and "choose the limit later" passage
+  below is superseded.
+- **The card limit is decided: 10 free imports per 30 days, as a FIXED window, not a rolling
+  one** (Amelia, 2026-10-10, later the same day). The 30 days start with the first import, and
+  when they end all 10 come back together; the next import starts a new 30 days. That is what
+  "Resets Oct 21" means. Every "rolling", "comes back 30 days after you used it" and "next one
+  back" passage below is superseded.
+- **Counting starts at go-live.** The meter stays `off` until the enforcing build and its copy
+  ship together, so everyone starts with a full 10 and nobody meets a limit they were never
+  told about. `measure` mode is not used.
+- **No PostHog insights to build first** (blocker B5 is dropped), and no day-one measurement
+  checks.
+- **The network/IP check stays dropped** (section 7).
+- **A cook can always see how many imports they've used**, signed in or out (section 8.3).
+- Still as decided before: cookbook previews are free up to 10 recipes; Pro and cookbook
+  purchases never overlap; the "free recipe printer" positioning stays.
 
 **Rev 2 decisions (Amelia, 2026-10-09):**
 - Key on `rpAnonId`, metered by a CookPilot callable. No PostHog ids, no Firebase Anonymous Auth.
@@ -36,7 +56,7 @@ Status: **plan only. Nothing is built or deployed.** Audited 2026-10-09 against
   - cookbook free size: **10** (D8). The point is to ask for payment at a reasonable time, so
     books that are never bought don't keep costing parses and storage.
 
-Goal when we eventually enforce:
+Goal at go-live:
 - **Free visitors:** N card imports in any rolling 30 days, and up to M recipes in each unbought
   cookbook.
 - **Pro:** unlimited card imports.
@@ -338,7 +358,12 @@ Pro doesn't lift it. Pro members get 20% off the book instead.
 
 ---
 
-## 4. Measurement design
+## 4. Measurement design (SUPERSEDED by rev 5)
+
+*There is no measurement phase. What survives from this section: the `recipe_imported` fields
+(`importId`, `extra`, `cookbook`, `bookRecipes`, `bookBought`, `meterMs`) and
+`import_meter_unavailable`. The `meter_would_block_5` / `_10` fields and the `candidateLimits`
+config are removed in the enforcement build (step D below).*
 
 ### 4.1 Fields
 
@@ -602,6 +627,15 @@ block (`components/seo/SeoCapture.tsx`) and the print page's Add-recipe dialog
   errors already live. There's a small info button beside it.
 - **The homepage hero, headings and calls to action don't change.**
 
+**No "How it works" note (Amelia, 2026-10-10):** the info button and popover described below
+were built and then removed. The line stands on its own.
+
+**Wording (Amelia, 2026-10-10), which replaces the strings in the table below:** the line never
+says "No account required" (beside a link to Pro it reads as if Pro needs no account), and the date
+reads "Resets Oct 21", not "Your next one's back on Oct 21". So: "10 free recipe imports every 30
+days." / "4 of 10 free imports used. Resets Oct 21." / the same at none left, with "Get unlimited
+imports". The Pro dialog says "Your free imports reset Oct 21."
+
 **Requirement (Amelia, 2026-10-10): a cook can always see how many imports they've used toward
 the limit, signed in or signed out.** The count is never hidden until someone is nearly out.
 
@@ -848,17 +882,33 @@ drifting against `seoLandingPages.ts` edits in the meantime.
   guard comments from section 1.3.
 - `docs/import-meter.md`: the runbook (modes, rollback, TTL commands, flag query, histogram script).
 
-### Step D: turn on measurement
-- Set `mode: "measure"`.
-- Check the first day:
-  - meter p50/p95 `meterMs`
-  - `import_meter_unavailable` rate
-  - `used30d` values that look sane
-  - the `hasImportId` ratio for `/api/parse`
-  - the network log line showing client addresses
-- Run 30 days or more, so the rolling window fills.
+### Step D (rev 5): enforcement, built and shipped as go-live
+There is no separate measurement step. Steps A to C are done and live (switched off).
 
-### Step E (later, separate approval): choose the limit, then the go-live PR (section 8.6)
+**CookPilot meter:**
+- `mode: "enforce"`: a reserve past the limit answers `allowed: false`. `off` stays the default.
+- Reserve, settle and a new `op: "status"` return `used` (exact rolling count), `limit` and
+  `nextFreeAt`.
+- Remove the measurement leftovers: `candidateLimits`, `wouldBlock`, and `measure` as a
+  destination (keep it only as "count, never refuse" for a staged switch-on if wanted).
+- The limit lives in the config doc (`enforce: { limit: 10 }`), default 10.
+
+**RecipePrinter:**
+- `runParse` honours a refusal only when `IMPORT_ALLOWANCE_LIVE` is true AND the server says
+  `enforce`; rule E1 (section 1.2) for a meter error at the limit.
+- The usage line under every import box and in the rail, always visible (section 8.3).
+- The limit moment: the existing Pro dialog, new wording (section 8.4).
+- The cookbook preview cap of 10 (sections 3.2, 6, 8.4b).
+- The account page: allowance count on the Free card, hourly photo usage kept on both
+  (section 8.3).
+- Copy C1 to C14 and sitemap dates (sections 8.5, 8.6), with Amelia's approval of the wording.
+- Remove `meter_would_block_5` / `_10` and `meterImportedFields`' measurement fields.
+- Tests: the enforce branch of the meter suite, and the cookbook cap table (section 10.1).
+
+**On the day:** merge RecipePrinter (copy and UI live), confirm, then create the config doc with
+`mode: "enforce"`. Rollback: `mode: "off"`.
+
+### Step E: SUPERSEDED, folded into step D above (original text kept for detail)
 - Add `op: "status"` to the callable (section 8.3), with `used`, `limit` and `nextFreeAt` on it
   and on the reserve and settle responses, so every import door can show "N of 10 used" to
   signed-in and signed-out cooks alike. Add `enforce` to `mode`, including rule E1 from
@@ -913,13 +963,12 @@ Cookbook exemptions live in the client, so they're tested here:
 - The production monitor is unaffected. Its import check calls `recipePrinterParseSuppliedHTML`
   directly, and the meter isn't on that path.
 
-### 10.3 Rollout
-1. Step A ships with the next normal deploy. Build the insights on history.
-2. Step B deployed to CookPilot with `mode: "off"`. Verify one reserve from a local dev build
-   against production App Check, which needs a debug token.
-3. Step C merged, inert in production while the mode is `off`.
-4. Step D sets `measure`. Watch day one, then let it run 30 days or more.
-5. A review produces a limit proposal, and then an enforcement plan comes back for approval.
+### 10.3 Rollout (rev 5)
+1. Steps A to C: done, live, switched off (2026-10-10).
+2. Step D: build enforcement in CookPilot and RecipePrinter, inert behind
+   `IMPORT_ALLOWANCE_LIVE = false` and `mode` off.
+3. Amelia approves the copy (B7).
+4. Go-live: deploy CookPilot, merge RecipePrinter, then set `mode: "enforce"`.
 
 ### 10.4 Rollback
 - **Instant:** `mode: "off"` in the config doc. Calls return within 60 seconds, with no document
@@ -970,7 +1019,7 @@ per free import.
   another session's edits to `lib/queue.ts` and `app/print/page.tsx`.
 - **B4 (yours):** approve the privacy-policy sentence before `measure` goes on, since we'll start
   processing IP addresses for this purpose.
-- **B5 (yours or a key):** the PostHog insights. I mustn't load production, so either you build
+- **B5 (DROPPED, rev 5: no measurement phase):** the PostHog insights. I mustn't load production, so either you build
   them from my HogQL, or you give me a personal API key with insight-write scope.
 - **B6 (dropped with section 7):** confirm the callable's client-address source, using the first log lines
   after step D.
@@ -983,13 +1032,13 @@ per free import.
 - **D1:** leave Paprika and CookPilot-library imports unmetered? *Yes.*
 - **D2:** is re-importing the same link or text within 30 days free? *Yes.*
 - **D3:** should a bought cookbook raise its owner's photo limit? *Not now.*
-- **D4:** `minInstances: 1` for the meter? *Only if p95 `meterMs` is above about 1.5 s.*
+- **D4:** `minInstances: 1` for the meter? *Now that every free import waits on it, decide at go-live: about $5 to $10 a month removes the 1 to 3 s cold start.*
 - **D5:** build the `/api/parse` ticket? *Only if `hasImportId: false` is a meaningful share.*
 - **D6:** should the at-rest footer line ("10 free recipe imports every 30 days. No account
   required.") show to first-time visitors on the homepage, or only once they've imported
   something? *Show it. It reads as a free offer, it's the cheapest way to make sure the limit is
   never a surprise, and it sits below the import box, not in the hero.*
-- **D7:** card allowance N. *10, from section 1.5. Confirm with 30 days of measure-mode data.*
+- **D7 (decided 2026-10-10):** card allowance N = **10** per rolling 30 days.
 - **D8 (decided 2026-10-09):** cookbook free size M = **10**.
   - **Why:** the purpose is to ask for payment at a reasonable point, so we stop storing and
     parsing books for people who never pay. It isn't meant to catch people at "done".
