@@ -3,8 +3,10 @@
 How to deploy, switch on, watch and roll back the free import meter. The design and the reasons
 are in [import-meter-plan.md](import-meter-plan.md). This file is the procedure.
 
-**Scope of this rollout: measurement only.** Nobody is ever refused an import. Allowance copy,
-the cookbook free size and enforcement are a later, separately approved go-live PR (plan 8.6).
+**Where things stand (2026-10-10):** the meter and its client wiring are live and switched off.
+There is no measurement phase (plan rev 5): the limit is decided at 10 per rolling 30 days, and
+the next step is the enforcement build and go-live (plan section 9, step D). Until then, do not
+create the config doc: counting starts at go-live so everyone begins with a full 10.
 
 ---
 
@@ -30,7 +32,7 @@ Three switches. All three start off, and each one is safe to flip back on its ow
 
 | Switch | Where | Values | What it does |
 |---|---|---|---|
-| `IMPORT_METER_DEPLOYED` | `lib/importMeter.ts` (RecipePrinter, needs a deploy) | `true` since 2026-10-10 (not pushed yet), `false` to roll back | `false`: the client never calls the meter, so imports behave exactly as before step C. `true`: free card-mode imports reserve and settle. |
+| `IMPORT_METER_DEPLOYED` | `lib/importMeter.ts` (RecipePrinter, needs a deploy) | `true`, live since 2026-10-10 (PR #185); `false` to roll back | `false`: the client never calls the meter, so imports behave exactly as before step C. `true`: free card-mode imports reserve and settle. |
 | `mode` | Firestore `recipePrinterConfig/importMeter` (CookPilot, no deploy, read through a 60 s cache) | `"off"`, `"measure"` (`"enforce"` comes with go-live) | `off`: every call answers `{ mode: "off", allowed: true }` and touches no documents. `measure`: records imports, refuses nobody. |
 | `IMPORT_ALLOWANCE_LIVE` | `lib/freeImports.ts` (RecipePrinter) | `false` | Gates enforcement and all allowance copy. Only the go-live PR sets it. Even with `mode: "enforce"`, a build where this is `false` can't refuse anyone. |
 
@@ -87,9 +89,8 @@ Each step needs the one before it. Steps marked **(Amelia)** need her credential
    this costs one function call per free import and records nothing.
 10. **Confirm the privacy sentence is live** on recipeprinter.com/privacy. Read the deployed
     source or use `curl`; never open production in a browser (it would land in PostHog).
-11. **Set `mode: "measure"` (Amelia, Firebase console).** Takes effect within 60 seconds.
-12. **Day-one checks (section 5)**, then leave it running for at least 30 days so the rolling
-    window fills.
+11. **Steps 1 to 10 are done (2026-10-10).** Do not set `mode: "measure"`. The next switch-on
+    is `mode: "enforce"`, on go-live day, after the enforcing build and its copy are live.
 
 ---
 
@@ -122,18 +123,10 @@ Only when all five pass does `IMPORT_METER_DEPLOYED` become `true`.
 
 ---
 
-## 5. Day-one checks after `measure`
+## 5. Day-one checks (removed)
 
-From PostHog, by Amelia or with an API key (B5); never by loading production:
-- `meterMs` on `recipe_imported` and `recipe_import_failed`: p50 and p95. If p95 is above about
-  1.5 s, consider `minInstances: 1` (decision D4, about $5 to $10 a month).
-- `import_meter_unavailable` count against free card-mode `recipe_imported`. Anything above a
-  percent or two needs a look.
-- `meter_used_30d` values look sane (mostly 0 to a few).
-
-From Google Cloud Logging (`cookpilot-bbecb`):
-- the `hasImportId` ratio on `recipePrinterParseRecipeFromURL`. A large share of `false` means
-  `/api/parse` is being called from outside the app (decision D5).
+There is no measurement phase, so there is nothing to watch before go-live. The go-live checks
+will be written with the enforcement build.
 
 ---
 
