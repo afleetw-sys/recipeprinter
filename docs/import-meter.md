@@ -16,7 +16,7 @@ the cookbook free size and enforcement are a later, separately approved go-live 
 | Client wiring: `lib/importMeter.ts`, `lib/freeImports.ts`, `runParse` reserve → parse → settle | RecipePrinter | built (step C), inert |
 | `x-rp-import-id` header, forwarded by `/api/parse` as `importId` | RecipePrinter | built (step C) |
 | Privacy policy: "Import counts" and its retention line | RecipePrinter | drafted, needs Amelia's approval (B4) |
-| `recipePrinterImportMeter` callable, `hasImportId` log line | CookPilot | **not built** (step B) |
+| `recipePrinterImportMeter` callable, `hasImportId` log line | CookPilot | built and committed (`5443f1d`, step B), **not deployed** |
 | `recipePrinterConfig/importMeter` doc, TTL policies, `RECIPEPRINTER_METER_NET_KEY` | CookPilot / GCP | **not created** (B2) |
 
 Nothing reaches production until RecipePrinter is pushed, and pushing is Amelia's call.
@@ -82,13 +82,15 @@ Each step needs the one before it. Steps marked **(Amelia)** need her credential
    gcloud firestore fields ttls update expiresAt --collection-group=recipePrinterMeterNet --enable-ttl --project=cookpilot-bbecb
    ```
    Check with `gcloud firestore fields ttls list --project=cookpilot-bbecb`.
-7. **Build and deploy step B (after B1).** In the CookPilot main tree (never a worktree). The
-   predeploy runs CookPilot's `npm test`, including the meter suite:
+7. **Deploy step B (after B1 and steps 3 to 6).** From the CookPilot main tree (never a
+   worktree). Build first: the CLI finds functions in the compiled `lib/`, and this codebase's
+   predeploy runs `npm test` but not the build, so without it the new function isn't deployed.
    ```bash
-   cd /Users/ameliawinger/Desktop/CookPilot/functions && firebase deploy --only functions:recipePrinterImportMeter,functions:recipePrinterParseRecipeFromURL --project cookpilot-bbecb
+   cd /Users/ameliawinger/Desktop/CookPilot/functions && npm run build && firebase deploy --only functions:recipePrinterImportMeter,functions:recipePrinterParseRecipeFromURL --project cookpilot-bbecb
    ```
-   Step B requirement: the meter must never read or write CookPilot's hourly parse quotas
-   (`recipePrinterQuota`). Those stay exactly as they are.
+   The deploy fails if `RECIPEPRINTER_METER_NET_KEY` doesn't exist yet (step 4).
+   The meter doesn't read or write CookPilot's hourly parse quotas. Those stay exactly as they
+   are.
 8. **Verify the production callable (section 4).** Still `mode: "off"`.
 9. **Flip `IMPORT_METER_DEPLOYED` to `true`** in a one-line RecipePrinter commit. Run
    `npm run verify`. Push only when Amelia says so (push = production deploy). With `mode: "off"`
