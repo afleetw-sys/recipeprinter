@@ -94,7 +94,7 @@ function CaptureBlock({ page }: { page: SeoLandingPage }) {
       ) : (
       <SeoCapture
         initialMode={page.initialImportMode ?? "url"}
-        submitLabel={page.importSubmitLabel ?? "Start printing"}
+        submitLabel={page.importSubmitLabel ?? "Make it printable"}
         fieldLabel={page.importFieldLabel}
         placeholder={page.importPlaceholder}
         uploadTitle={page.importUploadTitle}

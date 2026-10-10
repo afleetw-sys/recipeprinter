@@ -5164,11 +5164,15 @@ export default function PrintPage() {
             hint: !cookbookMode && option.id === "card" ? "The photo in this card's header" : option.hint,
           }),
         )}
-        onPlacementChange={(mode) =>
-          cookbookMode
-            ? setRecipePhotoMode(recipeId, mode as PhotoStyle)
-            : projectMeta.setItemPlacement(recipeId, { showPhoto: mode === "card" })
-        }
+        onPlacementChange={(mode) => {
+          if (cookbookMode) return setRecipePhotoMode(recipeId, mode as PhotoStyle);
+          // The only card there is IS every card, and "Every recipe" is not
+          // offered for it, so its choice is the setting itself: remembered on
+          // this device, and what the next import starts with. Among several
+          // cards, one switched off is that card's own exception.
+          if (recipeCount === 1) return setAllShowPhoto(mode === "card");
+          return projectMeta.setItemPlacement(recipeId, { showPhoto: mode === "card" });
+        }}
         // Says which job it is doing: there is nothing to change yet when the
         // recipe came in without a photo.
         label={shown ? "Photo" : "Add photo"}
