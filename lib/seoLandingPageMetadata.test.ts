@@ -1,4 +1,6 @@
+/// <reference types="vite/client" />
 import { describe, expect, it } from "vitest";
+import type { Metadata } from "next";
 import { SITE_NAME } from "@/lib/seo";
 import { SEO_LANDING_PAGES, seoLandingPageMetadata } from "@/lib/seoLandingPages";
 
@@ -30,4 +32,19 @@ describe("SEO landing page titles", () => {
       expect(countSiteName(String(metadata.twitter?.title))).toBe(1);
     });
   }
+});
+
+// The hand-written pages get the same template and the same trap: /pricing
+// shipped as "RecipePrinter Pricing: … · RecipePrinter". A glob, so a page
+// added later is held to it without anyone remembering this list exists.
+const staticPages = import.meta.glob<{ metadata?: Metadata }>("../app/*/page.tsx");
+
+describe("static page titles", () => {
+  it.each(Object.keys(staticPages))("%s names RecipePrinter exactly once", async (file) => {
+    const metadata = (await staticPages[file]()).metadata;
+    if (!metadata?.title) return; // inherits the root layout's title
+    expect(countSiteName(renderedTitle(metadata.title))).toBe(1);
+    expect(countSiteName(String(metadata.openGraph?.title))).toBe(1);
+    expect(countSiteName(String(metadata.twitter?.title))).toBe(1);
+  });
 });
