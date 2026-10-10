@@ -107,6 +107,7 @@ import { useProPurchase } from "@/lib/useProPurchase";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
 import { IMAGE_IMPORT_LIMIT_TRIGGER, IMPORT_LIMIT_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
 import { rememberedImportUsage } from "@/lib/importMeter";
+import { ImportUsageMenu } from "@/components/ImportUsageMenu";
 import { bookRoomLeft } from "@/lib/cookbookFreeSize";
 import { FREE_COOKBOOK_RECIPES } from "@/lib/freeImports";
 import {
@@ -4593,17 +4594,32 @@ export default function PrintPage() {
    * see an "Upgrade to Pro" door standing open in a room where nothing is
    * actually locked.
    */
+  /**
+   * Upgrade pressed from the free-import count (the banner under Add, the
+   * header's ring menu). It is there in every state, so only someone who is
+   * actually out of imports gets the "you've used your 10" wording; anyone
+   * else pressed Upgrade and gets the plain Pro dialog.
+   */
+  function openImportUpgrade() {
+    const usage = rememberedImportUsage();
+    openProUpgradeDialog(usage && usage.used >= usage.limit ? IMPORT_LIMIT_TRIGGER : "import_banner");
+  }
   function renderProUpgradeButton() {
     if (cookbookMode || hasProEntitlement(effectiveCustomerInfo.customerInfo)) return null;
     return (
-      <button
-        type="button"
-        className="btn btn-premium btn-compact"
-        onClick={() => openProUpgradeDialog("topbar_button")}
-      >
-        <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-        Upgrade to Pro
-      </button>
+      <>
+        {/* How many free imports are used, as a ring that opens the details.
+            Beside the thing that lifts the limit. */}
+        <ImportUsageMenu onUpgrade={openImportUpgrade} />
+        <button
+          type="button"
+          className="btn btn-premium btn-compact"
+          onClick={() => openProUpgradeDialog("topbar_button")}
+        >
+          <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
+          Upgrade to Pro
+        </button>
+      </>
     );
   }
 
@@ -6754,13 +6770,7 @@ export default function PrintPage() {
         chapterTarget={addChapterTarget}
         // The card allowance isn't a cookbook's, and Pro has none.
         allowance={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
-        onGetUnlimited={() => {
-          // The banner's Upgrade is there in every state. Only someone who is
-          // actually out of imports gets the "you've used your 10" wording;
-          // anyone else pressed Upgrade and gets the plain Pro dialog.
-          const usage = rememberedImportUsage();
-          openProUpgradeDialog(usage && usage.used >= usage.limit ? IMPORT_LIMIT_TRIGGER : "import_banner");
-        }}
+        onGetUnlimited={openImportUpgrade}
       />
       <FeedbackDialog
         open={showFeedbackDialog}

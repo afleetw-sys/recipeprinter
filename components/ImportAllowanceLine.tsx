@@ -80,39 +80,38 @@ export function ImportAllowanceLine({
   );
 }
 
-const RING_SIZE = 14;
-const RING_STROKE = 2.5;
-const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
-const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
 /**
  * The count as a ring that fills clockwise from the top: empty before the
  * first import, full at none left. Decorative: the sentence beside it says the
  * same thing in words, so it is hidden from screen readers.
  */
-function UsageRing({ fraction }: { fraction: number }) {
-  const center = RING_SIZE / 2;
+export function UsageRing({ fraction, size = 14 }: { fraction: number; size?: number }) {
+  const stroke = size >= 18 ? 3 : 2.5;
+  const radius = (size - stroke) / 2;
+  const length = 2 * Math.PI * radius;
+  const center = size / 2;
   return (
     <svg
-      width={RING_SIZE}
-      height={RING_SIZE}
-      viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
       className="shrink-0"
       aria-hidden
     >
-      <circle cx={center} cy={center} r={RING_RADIUS} fill="none" stroke="var(--cp-line)" strokeWidth={RING_STROKE} />
+      <circle cx={center} cy={center} r={radius} fill="none" stroke="var(--cp-line)" strokeWidth={stroke} />
       {/* Nothing drawn at zero: a round cap would leave a dot. */}
       {fraction > 0 && (
         <circle
           cx={center}
           cy={center}
-          r={RING_RADIUS}
+          r={radius}
           fill="none"
           stroke="var(--cp-accent)"
-          strokeWidth={RING_STROKE}
+          strokeWidth={stroke}
           strokeLinecap="round"
-          strokeDasharray={RING_LENGTH}
-          strokeDashoffset={RING_LENGTH * (1 - fraction)}
+          strokeDasharray={length}
+          strokeDashoffset={length * (1 - fraction)}
           transform={`rotate(-90 ${center} ${center})`}
         />
       )}
