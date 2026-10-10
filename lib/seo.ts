@@ -128,8 +128,12 @@ export interface NavLink {
    * reads, not an index of everything published. Turning this off keeps the
    * page in the sitemap and in llms.txt, so search engines still find it and
    * it still ranks — it just stops competing for attention in the footer.
+   *
+   * `"off-home"` is the middle setting: every footer except the homepage's.
+   * For a page the homepage itself already is, but that the rest of the site
+   * has no other way to reach.
    */
-  inFooter?: boolean;
+  inFooter?: boolean | "off-home";
 }
 
 export const NAV_LINKS: NavLink[] = [
@@ -137,13 +141,14 @@ export const NAV_LINKS: NavLink[] = [
     href: "/how-it-works",
     label: "How it works",
     blurb: "The three steps from a recipe link to a printed recipe card or PDF.",
-    // Search traffic, not site navigation. Someone who has already landed on
+    // Off the homepage's footer, on everyone else's. Someone who has landed on
     // the homepage is looking at the thing itself — the three steps are the
-    // page in front of them — so "How it works" and "Features" side by side in
-    // the footer were two doors onto the same explanation. It keeps its place
-    // in the sitemap, and /about still links to it, so it is reachable and
-    // indexable without being chrome.
-    inFooter: false,
+    // page in front of them — so the link stays out of the way there. Out of
+    // every footer, though, it left this page with a single link in from the
+    // whole site (/about), which is as good as telling a crawler it does not
+    // matter. A reader on a guide or the FAQ is not looking at the tool, and
+    // for them it is a real next page.
+    inFooter: "off-home",
   },
   {
     href: "/features",
