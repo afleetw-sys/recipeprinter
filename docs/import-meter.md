@@ -130,6 +130,34 @@ will be written with the enforcement build.
 
 ---
 
+## 5b. Go-live: switching the limit on
+
+Built on branch `claude/import-allowance` (RecipePrinter) and commit `9e88c89` (CookPilot). The
+order matters: each step is safe to stop after.
+
+1. **Deploy the CookPilot meter (Amelia).** It adds `enforce`, the `status` op and usage in every
+   answer. The live RecipePrinter build ignores the new fields, and with no config doc the meter
+   stays off, so this changes nothing for anyone:
+   ```bash
+   cd /Users/ameliawinger/Desktop/CookPilot/functions && npm run build && firebase deploy --only functions:recipePrinterImportMeter --project cookpilot-bbecb
+   ```
+2. **Check it:** `node scripts/check-import-meter.mjs` from the RecipePrinter repo. Expect `PASS`
+   with `mode "off"`.
+3. **Amelia approves the wording** (the usage line, the limit dialog, the cookbook preview lines,
+   and the changed FAQ, pricing and llms.txt sentences).
+4. **Merge the RecipePrinter PR.** The copy and the usage line go live. Nothing is refused yet,
+   because the server is still off; the import boxes show "10 free recipe imports every 30 days".
+   The cookbook preview cap of 10 IS live from this moment: it is checked in the browser.
+5. **Switch the limit on (Amelia, Firebase console).** Create `recipePrinterConfig/importMeter`
+   with a string field `mode` set to `enforce`. Optional number field `limit` (default 10, at most
+   30). Counting starts now, so everyone begins with a full 10.
+6. **Check:** run the script again. Expect `mode "enforce"` and `used: 0, limit: 10`.
+
+**To stop:** set `mode` to `off` (within 60 seconds nobody is refused and nothing is counted). To
+also remove the copy and the cookbook cap, set `IMPORT_ALLOWANCE_LIVE = false` and ship that.
+
+---
+
 ## 6. Rollback
 
 Fastest first. None of them touches Pro, cookbook purchases or the hourly parse quotas.

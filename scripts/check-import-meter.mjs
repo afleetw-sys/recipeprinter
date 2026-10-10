@@ -7,8 +7,9 @@
 // reserve and settle one made-up import. It never imports a recipe, so it costs nothing, and it
 // prints the meter's answers only: no token or key is ever written to the terminal.
 //
-// Expect `mode: "off"` until recipePrinterConfig/importMeter says otherwise. In `measure` mode the
-// check settles its reservation as a failure, so it is never counted.
+// Expect `mode: "off"` until recipePrinterConfig/importMeter says otherwise. In `measure` and
+// `enforce` the check settles its reservation as a failure, so it is never counted, and the
+// answers show `used`, `limit` and `nextFreeAt` for the check's own made-up browser.
 
 import { readFileSync } from "node:fs";
 
@@ -58,6 +59,8 @@ async function meter(data) {
   return { status: response.status, ms: Date.now() - startedAt, result: body?.result, error: body?.error };
 }
 
+const status = await meter({ op: "status" });
+console.log("status: ", JSON.stringify(status));
 const reserve = await meter({ op: "reserve", method: "text" });
 console.log("reserve:", JSON.stringify(reserve));
 const settle = await meter({ op: "settle", outcome: "failure" });
@@ -66,7 +69,8 @@ console.log("settle: ", JSON.stringify(settle));
 const ok =
   reserve.status === 200 &&
   reserve.result?.allowed === true &&
-  (reserve.result?.mode === "off" || reserve.result?.mode === "measure") &&
+  status.status === 200 &&
+  ["off", "measure", "enforce"].includes(reserve.result?.mode) &&
   settle.status === 200 &&
   settle.result?.ok === true;
 console.log(ok ? `PASS: the meter answers, mode "${reserve.result.mode}"` : "FAIL: see the answers above");
