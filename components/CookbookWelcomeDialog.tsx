@@ -5,6 +5,7 @@ import { Dialog } from "@/components/Dialog";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import type { CoverConfig } from "@/types/recipe";
 import { useUsdPriceLabel } from "@/lib/visitorCurrency";
+import { FREE_COOKBOOK_RECIPES, IMPORT_ALLOWANCE_LIVE } from "@/lib/freeImports";
 
 const COOKBOOK_STEPS = [
   "Add your recipes",
@@ -12,6 +13,13 @@ const COOKBOOK_STEPS = [
   "Edit pages and add your photos",
   "Pick a theme, then download it to print anywhere",
 ] as const;
+
+// The cookbook's own rule, stated before the first recipe so the cap is never
+// a surprise. "Preview" (free) is always paired with what the purchase adds:
+// a cookbook is never "free up to 10 recipes" on its own.
+const PREVIEW_RULE = IMPORT_ALLOWANCE_LIVE
+  ? `Preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes. Buy it to download your cookbook and keep adding.`
+  : "Pay when you download.";
 
 export function CookbookWelcomeDialog({
   open,
@@ -93,12 +101,12 @@ export function CookbookWelcomeDialog({
                 <span className="sr-only">now </span>
                 {usd(price)} one time
               </b>
-              <span>Your Pro membership takes 20% off your first cookbook. Pay when you download.</span>
+              <span>Your Pro membership takes 20% off your first cookbook. {PREVIEW_RULE}</span>
             </>
           ) : (
             <>
               <b>{usd(price)} one time</b>
-              <span>Pay when you download.</span>
+              <span>{PREVIEW_RULE}</span>
             </>
           )}
         </div>

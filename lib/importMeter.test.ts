@@ -277,3 +277,46 @@ describe("out of free imports", () => {
     expect(usageNow(usage, 1_000)).toEqual({ used: 9, limit: 10, nextFreeAt: null });
   });
 });
+
+describe("an unbought cookbook's free size", () => {
+  const onBookCapReached = vi.fn();
+  function book(bookCap: number | null) {
+    const hook = renderHook(() => useQueue());
+    act(() =>
+      hook.result.current.configureImportGates({ singleRecipeOnly: false, cookbookMode: true, bookCap, onBookCapReached }),
+    );
+    return hook;
+  }
+  const ready = (id: string) =>
+    ({ id, method: "paprika", source: "Paprika", status: "ready", title: id, recipe: recipe(id), addedAt: 1 }) as never;
+
+  test("a roundup past the cap keeps the first recipe and what fits, and says so", async () => {
+    parseUrlAll.mockResolvedValue([recipe("One"), recipe("Two"), recipe("Three"), recipe("Four")]);
+    const { result } = book(2);
+    act(() => result.current.addUrl("https://example.com/roundup"));
+    await vi.waitFor(() => expect(onBookCapReached).toHaveBeenCalledWith({ found: 4, kept: 2 }));
+    expect(result.current.items.map((it) => it.title)).toEqual(["One", "Two"]);
+  });
+
+  test("recipes from a recipe app take the room that's left", () => {
+    const { result } = book(2);
+    let added = 0;
+    act(() => {
+      added = result.current.addReadyRecipes([ready("a"), ready("b"), ready("c")]);
+    });
+    expect(added).toBe(2);
+    expect(onBookCapReached).toHaveBeenCalledWith({ found: 3, kept: 2 });
+    act(() => {
+      added = result.current.addReadyRecipes([ready("d")]);
+    });
+    expect(added).toBe(0);
+  });
+
+  test("a bought book takes everything", async () => {
+    parseUrlAll.mockResolvedValue([recipe("One"), recipe("Two"), recipe("Three")]);
+    const { result } = book(null);
+    act(() => result.current.addUrl("https://example.com/roundup"));
+    await vi.waitFor(() => expect(result.current.items).toHaveLength(3));
+    expect(onBookCapReached).not.toHaveBeenCalled();
+  });
+});

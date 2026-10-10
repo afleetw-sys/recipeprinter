@@ -169,6 +169,9 @@ interface PageRailProps {
   /** A cookbook's recipe count and save state, shown above Add recipes. Absent
       for recipe cards. */
   bookHeader?: ReactNode;
+  /** An unbought cookbook's free preview is full: adding goes to checkout
+      first, and the button says so. */
+  bookCapReached?: boolean;
   /** Whether the NEXT recipe added here would be the one that requires Pro —
       true once a project already has a recipe and the customer lacks Pro
       (see `hasMultiRecipeEntitlement` in lib/recipePrinterPurchases.ts).
@@ -251,6 +254,7 @@ export function PageRail(props: PageRailProps) {
   const {
     hasRecipes,
     bookHeader,
+    bookCapReached = false,
     multiRecipeAddLocked,
     railScrollRef,
     railDrag,
@@ -693,7 +697,13 @@ export function PageRail(props: PageRailProps) {
                     already matched them; the icon was a step down, which made the
                     whole button read as smaller than the ones in the header. */}
                 <PlusIcon size={ICON_SIZE.md} />
-                {projectMeta.meta.cookbookMode ? "Add recipes" : hasRecipes ? "Add more recipes" : "Add recipe"}
+                {bookCapReached
+                  ? "Buy & add recipes"
+                  : projectMeta.meta.cookbookMode
+                    ? "Add recipes"
+                    : hasRecipes
+                      ? "Add more recipes"
+                      : "Add recipe"}
                 {multiRecipeAddLocked && (
                   <ProBadge variant="inline" label={false} tooltip="Adding more recipes is Pro" />
                 )}

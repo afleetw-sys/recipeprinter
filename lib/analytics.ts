@@ -296,6 +296,11 @@ type EventProps = {
    */
   import_meter_unavailable: { op: "reserve" | "settle"; reason: "timeout" | "error" };
   /**
+   * "Buy & add recipes" was pressed: an unbought cookbook's free preview was
+   * full, so adding went to the cookbook checkout instead.
+   */
+  cookbook_preview_full: { recipeCount: number; price?: string };
+  /**
    * A free import didn't start because the allowance is used up. It follows a
    * `recipe_import_started` with the same `importId` and has no imported or
    * failed event after it: nothing was parsed. `used` and `limit` are absent

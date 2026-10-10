@@ -107,6 +107,8 @@ import { useProPurchase } from "@/lib/useProPurchase";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
 import { IMAGE_IMPORT_LIMIT_TRIGGER, IMPORT_LIMIT_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
 import { rememberedImportUsage } from "@/lib/importMeter";
+import { bookRoomLeft } from "@/lib/cookbookFreeSize";
+import { FREE_COOKBOOK_RECIPES } from "@/lib/freeImports";
 import {
   markPhotoStyleTipSeen,
   photoStyleTipSeen,
@@ -159,6 +161,7 @@ import {
   projectPrintJob,
   readCurrentPrintJobIds,
   useQueue,
+  type BookCapInfo,
   type MultiRecipeBlockedInfo,
 } from "@/lib/queue";
 import {
@@ -3146,6 +3149,22 @@ export default function PrintPage() {
   /** Recipe cards' phone "Every recipe" sheet: offered once there can be more
       than one recipe and some recipe has a photo or a link to show or hide. */
   const cardEveryRecipe = !cookbookMode && !singleRecipeOnly && (anyRecipeHasImage || anyRecipeHasSourceUrl);
+  // An unbought cookbook's free preview size (lib/cookbookFreeSize): how many
+  // more recipes this book can take, or null when nothing caps it (a bought
+  // book, a card project, or the allowance not live yet).
+  const bookRoom = bookRoomLeft({
+    cookbookMode,
+    locked: cookbookLocked && !isCookbookProjectUnlocked(cookbookProjectId),
+    recipeCount,
+  });
+  const bookCapReached = bookRoom === 0;
+  function handleBookCapReached(info: BookCapInfo) {
+    showToast(
+      info.kept > 0
+        ? `We added ${info.kept} of ${info.found} recipes. A free preview holds up to ${FREE_COOKBOOK_RECIPES}; buy this cookbook to add the rest.`
+        : `A free preview holds up to ${FREE_COOKBOOK_RECIPES} recipes. Buy this cookbook to keep adding.`,
+    );
+  }
   function handleMultiRecipeBlocked(info: MultiRecipeBlockedInfo) {
     if (info.source === "library") {
       // The pickers already refuse to let a locked account select more than
@@ -3174,6 +3193,8 @@ export default function PrintPage() {
     // Out of free imports: the existing Pro dialog, with the allowance's own
     // wording. Nothing the cook already has is touched.
     onImportLimitReached: () => openProUpgradeDialog(IMPORT_LIMIT_TRIGGER),
+    bookCap: bookRoom === null ? null : FREE_COOKBOOK_RECIPES,
+    onBookCapReached: handleBookCapReached,
     importContext: cookbookMode
       ? { context: "cookbook", ...(cookbookProjectId ? { cookbookId: cookbookProjectId } : {}) }
       : { context: "recipe_cards" },
@@ -4152,7 +4173,9 @@ export default function PrintPage() {
     <div className="recipe-page-rail__book">
       <p className="recipe-page-rail__book-meta">
         <span>
-          {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"}
+          {bookRoom === null
+            ? `${recipeCount} ${recipeCount === 1 ? "recipe" : "recipes"}`
+            : `Free preview: ${recipeCount} of ${FREE_COOKBOOK_RECIPES} recipes`}
         </span>
         {bookSaveNote}
       </p>
@@ -4957,6 +4980,17 @@ export default function PrintPage() {
       openProUpgradeDialog("add_more_recipes");
       return;
     }
+    // A full free preview: straight to this book's checkout, the way Print
+    // reads "Buy & Print", and on to the add the cook asked for once it's
+    // bought. Cancelling leaves the book exactly as it was.
+    if (bookCapReached) {
+      track("cookbook_preview_full", { recipeCount, price: cookbookPrice });
+      void purchaseCookbookAndContinue(() => openAddRecipeDialogAt(navItem));
+      return;
+    }
+    openAddRecipeDialogAt(navItem);
+  }
+  function openAddRecipeDialogAt(navItem: NavItem | null) {
     const target = addRecipeTarget(navItem, sections);
     setPendingAddSectionId(target?.sectionId ?? sections[0]?.id ?? null);
     setPendingAddIndex(target?.index ?? 0);
@@ -6150,6 +6184,7 @@ export default function PrintPage() {
              count means the label and the badge always flip together. */
           hasRecipes={recipeCount > 0}
           bookHeader={railBookHeader}
+          bookCapReached={bookCapReached}
           multiRecipeAddLocked={multiRecipeAddLocked}
           railScrollRef={railScrollRef}
           railDrag={railDrag}
