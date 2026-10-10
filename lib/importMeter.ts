@@ -243,11 +243,25 @@ function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
   });
 }
 
+/**
+ * This browser's time zone, sent with every meter call so the reset lands on
+ * the cook's own midnight: the banner shows a date ("Resets Nov 9"), and
+ * whoever waits for that date finds their imports back from its first minute.
+ */
+function browserTimeZone(): { tz?: string } {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return tz ? { tz } : {};
+  } catch {
+    return {};
+  }
+}
+
 async function callMeter(data: Record<string, unknown>): Promise<unknown> {
   // Through `callCookPilotParser`, like `loadImageImportQuota`, so the call
   // carries App Check and `rpAnonId` the same way every parser call does.
   const { callCookPilotParser } = await import("@/lib/parser");
-  return callCookPilotParser(IMPORT_METER_CALLABLE, data);
+  return callCookPilotParser(IMPORT_METER_CALLABLE, { ...data, ...browserTimeZone() });
 }
 
 /**
