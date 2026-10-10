@@ -16,6 +16,9 @@ export function screenshotShortcutFrom(
   platform = typeof navigator === "undefined" ? "" : navigator.platform,
 ): ScreenshotShortcut | null {
   if (event.repeat) return null;
+  // Not every "keydown" is a key press: autofill and password managers
+  // dispatch one that is a plain Event, with no `key` at all.
+  if (typeof event.key !== "string") return null;
   if (event.key === "PrintScreen") return "print_screen";
 
   const key = event.key.toLowerCase();
