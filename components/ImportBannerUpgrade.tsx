@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { rememberedImportUsage } from "@/lib/importMeter";
+import { useEffect, useRef } from "react";
+import { markImportsUnlimited, rememberedImportUsage } from "@/lib/importMeter";
 import { IMPORT_LIMIT_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
 import { useStandaloneProUpgrade } from "@/lib/useStandaloneProUpgrade";
 
@@ -17,13 +17,33 @@ import { useStandaloneProUpgrade } from "@/lib/useStandaloneProUpgrade";
  * pressed Upgrade and gets the plain Pro dialog.
  */
 export function ImportBannerUpgrade({ openSignal, spent = false }: { openSignal: number; spent?: boolean }) {
-  const { openProUpgrade, proUpgradeDialog, proMessage } = useStandaloneProUpgrade(
-    spent ? IMPORT_LIMIT_TRIGGER : "import_banner",
-    spent ? proUpgradeCopy([], IMPORT_LIMIT_TRIGGER, rememberedImportUsage()) : undefined,
+  // Which wording this opening uses is decided when it opens and then left
+  // alone. `spent` changes underneath an open dialog (a purchase clears the
+  // count), and following it would swap the dialog's words, and its trigger,
+  // mid-checkout.
+  const opening = useRef({ signal: openSignal, spent });
+  if (opening.current.signal !== openSignal) opening.current = { signal: openSignal, spent };
+  const spentAtOpen = opening.current.spent;
+
+  const { openProUpgrade, proUpgradeDialog, proMessage, proJustActivated } = useStandaloneProUpgrade(
+    spentAtOpen ? IMPORT_LIMIT_TRIGGER : "import_banner",
+    spentAtOpen ? proUpgradeCopy([], IMPORT_LIMIT_TRIGGER, rememberedImportUsage()) : undefined,
   );
+
+  // Opens once per press, and only then. This used to list `openProUpgrade`
+  // as a dependency, whose identity changes whenever the trigger does: when a
+  // purchase cleared the count, the effect ran again and the dialog flashed
+  // back up over a cook who had just paid.
+  const open = useRef(openProUpgrade);
+  open.current = openProUpgrade;
   useEffect(() => {
-    openProUpgrade();
-  }, [openSignal, openProUpgrade]);
+    open.current();
+  }, [openSignal]);
+
+  // Paid: the free count no longer applies, from this moment.
+  useEffect(() => {
+    if (proJustActivated) markImportsUnlimited();
+  }, [proJustActivated]);
 
   return (
     <>

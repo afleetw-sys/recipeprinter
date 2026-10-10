@@ -106,7 +106,7 @@ import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { useProPurchase } from "@/lib/useProPurchase";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
 import { IMAGE_IMPORT_LIMIT_TRIGGER, IMPORT_LIMIT_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
-import { importsSpent, rememberedImportUsage } from "@/lib/importMeter";
+import { importsSpent, markImportsUnlimited, rememberedImportUsage } from "@/lib/importMeter";
 import { ImportUsageMenu } from "@/components/ImportUsageMenu";
 import { bookRoomLeft } from "@/lib/cookbookFreeSize";
 import { FREE_COOKBOOK_RECIPES } from "@/lib/freeImports";
@@ -3028,6 +3028,12 @@ export default function PrintPage() {
   }, [cookPilotUser, revenueCatUserId, handoffHasPaid]);
 
   const hasProBrandless = hasProEntitlement(effectiveCustomerInfo.customerInfo);
+  // The moment this page knows the cook is Pro (a purchase just finished, or
+  // their entitlement loaded), the free-import count stops applying: clear it
+  // so no banner, ring or paywall goes on treating them as out of imports.
+  useEffect(() => {
+    if (hasProBrandless) markImportsUnlimited();
+  }, [hasProBrandless]);
   useEffect(() => {
     setBrandHidden(hasProBrandless);
   }, [hasProBrandless]);
@@ -4608,9 +4614,6 @@ export default function PrintPage() {
     if (cookbookMode || hasProEntitlement(effectiveCustomerInfo.customerInfo)) return null;
     return (
       <>
-        {/* How many free imports are used, as a ring that opens the details.
-            Beside the thing that lifts the limit. */}
-        <ImportUsageMenu onUpgrade={openImportUpgrade} />
         <button
           type="button"
           className="btn btn-premium btn-compact"
@@ -4619,6 +4622,9 @@ export default function PrintPage() {
           <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
           Upgrade to Pro
         </button>
+        {/* How many free imports are used, as a ring that opens the details.
+            To the right of the thing that lifts the limit. */}
+        <ImportUsageMenu onUpgrade={openImportUpgrade} />
       </>
     );
   }

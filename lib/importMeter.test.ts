@@ -6,6 +6,8 @@ import {
   IMPORT_METER_CALLABLE,
   IMPORT_METER_TIMEOUT_MS,
   importRefused,
+  importsSpent,
+  markImportsUnlimited,
   refreshImportUsage,
   refuseImportIfSpent,
   subscribeImportRefusal,
@@ -361,5 +363,22 @@ describe("anywhere but the real site", () => {
     await vi.waitFor(() => expect(result.current.items[0]?.status).toBe("ready"));
     await refreshImportUsage();
     expect(meterOps()).toEqual([]);
+  });
+});
+
+describe("after buying Pro", () => {
+  test("the free count is forgotten at once, so nothing treats them as out of imports", async () => {
+    callCookPilotParser.mockResolvedValue({ mode: "enforce", allowed: true, used: 10, limit: 10, nextFreeAt: Date.UTC(2099, 0, 1) });
+    await refreshImportUsage();
+    expect(importsSpent()).toBe(true);
+
+    markImportsUnlimited();
+    expect(importsSpent()).toBe(false);
+    expect(rememberedImportUsage()).toBeNull();
+    const opened = vi.fn();
+    const stop = subscribeImportRefusal(opened);
+    expect(refuseImportIfSpent()).toBe(false);
+    expect(opened).not.toHaveBeenCalled();
+    stop();
   });
 });

@@ -173,6 +173,17 @@ function rememberUnlimited(next: boolean): void {
   listeners.forEach((listener) => listener());
 }
 
+/**
+ * This browser has just learned the cook is Pro (a purchase finished, or the
+ * purchase SDK reported an active entitlement). Forget the free count at once,
+ * rather than waiting for the server to say so: a count left at "10 of 10"
+ * would keep showing the banner and stopping imports to someone who just paid.
+ */
+export function markImportsUnlimited(): void {
+  remember(null);
+  rememberUnlimited(true);
+}
+
 export function resetImportUsageForTest(): void {
   remembered = undefined;
   unlimited = undefined;
