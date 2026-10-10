@@ -38,7 +38,7 @@ type PurchasedProduct = "premium_template" | "cookbook" | "pro";
 /** The Pro-only capability a Free user ran into. Named narrowly enough to be
  *  useful in a funnel ("which feature drives upgrades") without carrying any
  *  recipe content. */
-type ProFeature = "theme" | "card_size" | "batch_print" | "advanced_layout" | "image_imports";
+type ProFeature = "theme" | "card_size" | "batch_print" | "advanced_layout" | "image_imports" | "imports";
 
 /**
  * Why an import failed, as a small closed vocabulary rather than a free-text

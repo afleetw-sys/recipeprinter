@@ -105,7 +105,8 @@ import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { useProPurchase } from "@/lib/useProPurchase";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
-import { IMAGE_IMPORT_LIMIT_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
+import { IMAGE_IMPORT_LIMIT_TRIGGER, IMPORT_LIMIT_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
+import { rememberedImportUsage } from "@/lib/importMeter";
 import {
   markPhotoStyleTipSeen,
   photoStyleTipSeen,
@@ -3170,6 +3171,9 @@ export default function PrintPage() {
       cookbookMode && (cookbookAccessStatus === "unlocked" || isCookbookProjectUnlocked(cookbookProjectId)),
     clientPro: hasProEntitlement(effectiveCustomerInfo.customerInfo),
     onMultiRecipeBlocked: handleMultiRecipeBlocked,
+    // Out of free imports: the existing Pro dialog, with the allowance's own
+    // wording. Nothing the cook already has is touched.
+    onImportLimitReached: () => openProUpgradeDialog(IMPORT_LIMIT_TRIGGER),
     importContext: cookbookMode
       ? { context: "cookbook", ...(cookbookProjectId ? { cookbookId: cookbookProjectId } : {}) }
       : { context: "recipe_cards" },
@@ -3187,7 +3191,13 @@ export default function PrintPage() {
     { themeLocked, cardSizeLocked, multiRecipeLocked },
     proUpgradeTrigger,
   );
-  const proUpgradeDialogCopy = proUpgradeCopy(proUpgradeLockReasons, proUpgradeTrigger);
+  const proUpgradeDialogCopy = proUpgradeCopy(
+    proUpgradeLockReasons,
+    proUpgradeTrigger,
+    // Read when the dialog renders: the refusal that opened it has just
+    // recorded the server's count.
+    proUpgradeTrigger === IMPORT_LIMIT_TRIGGER ? rememberedImportUsage() : null,
+  );
 
   /**
    * Which Pro lock a Print press ran into, for `paywall_viewed`. `print_button`
@@ -3268,7 +3278,12 @@ export default function PrintPage() {
       if (outcome !== "purchased" && outcome !== "already-active") return;
       if (outcome === "purchased") {
         track("pro_feature_used", {
-          feature: trigger === IMAGE_IMPORT_LIMIT_TRIGGER ? "image_imports" : proLockFeature(),
+          feature:
+            trigger === IMAGE_IMPORT_LIMIT_TRIGGER
+              ? "image_imports"
+              : trigger === IMPORT_LIMIT_TRIGGER
+                ? "imports"
+                : proLockFeature(),
         });
         if (cookPilotUser && autosaveEnabledForCurrentMode) void handleSaveProject();
       }
@@ -6701,6 +6716,9 @@ export default function PrintPage() {
           openProUpgradeDialog("add_more_recipes");
         }}
         chapterTarget={addChapterTarget}
+        // The card allowance isn't a cookbook's, and Pro has none.
+        allowance={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
+        onGetUnlimited={() => openProUpgradeDialog(IMPORT_LIMIT_TRIGGER)}
       />
       <FeedbackDialog
         open={showFeedbackDialog}

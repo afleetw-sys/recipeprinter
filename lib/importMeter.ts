@@ -137,8 +137,30 @@ export function rememberedImportUsage(): RememberedUsage | null {
   return readRemembered();
 }
 
+/**
+ * The server said this cook's imports aren't limited (Pro). Remembered so the
+ * import boxes on pages that don't load the purchase SDK (the homepage, the
+ * SEO pages) don't tell a Pro member about a free allowance.
+ */
+const UNLIMITED_STORAGE_KEY = "recipeprinter:import-unlimited:v1";
+let unlimited: boolean | undefined;
+
+export function importsKnownUnlimited(): boolean {
+  if (unlimited === undefined) unlimited = localStore.get(UNLIMITED_STORAGE_KEY) === "true";
+  return unlimited;
+}
+
+function rememberUnlimited(next: boolean): void {
+  if (importsKnownUnlimited() === next) return;
+  unlimited = next;
+  if (next) localStore.set(UNLIMITED_STORAGE_KEY, "true");
+  else localStore.remove(UNLIMITED_STORAGE_KEY);
+  listeners.forEach((listener) => listener());
+}
+
 export function resetImportUsageForTest(): void {
   remembered = undefined;
+  unlimited = undefined;
   listeners.clear();
 }
 
@@ -176,9 +198,14 @@ function parseAnswer(data: unknown): MeterAnswer | null {
 
 /** Keeps the remembered count in step with whatever the server just said. */
 function noteAnswer(answer: MeterAnswer): void {
-  if (answer.usage) remember({ ...answer.usage, enforcing: answer.mode === "enforce" });
-  // Off, Pro, or a caller the server can't identify: no allowance applies.
-  else if (answer.reason === "off" || answer.reason === "pro" || answer.reason === "unidentified") remember(null);
+  if (answer.usage) {
+    remember({ ...answer.usage, enforcing: answer.mode === "enforce" });
+    rememberUnlimited(false);
+  } else if (answer.reason === "off" || answer.reason === "pro" || answer.reason === "unidentified") {
+    // Off, Pro, or a caller the server can't identify: no count applies.
+    remember(null);
+    rememberUnlimited(answer.reason === "pro");
+  }
 }
 
 // ---- Talking to the meter ---------------------------------------------------

@@ -21,6 +21,7 @@ describe("proUpgradeCopy", () => {
     expect(copy.title).toBe("Print with this premium theme");
     expect(copy.benefits).toEqual([
       "All premium themes",
+      "Unlimited recipe imports",
       "Print multiple recipes at once",
       "4×6 recipe cards",
       "30 image imports an hour",
@@ -35,6 +36,7 @@ describe("proUpgradeCopy", () => {
     expect(copy.benefits).toEqual([
       "Print multiple recipes at once",
       "4×6 recipe cards",
+      "Unlimited recipe imports",
       "All premium themes",
       "30 image imports an hour",
       "No RecipePrinter branding on your prints",

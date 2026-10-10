@@ -4,6 +4,11 @@ import {
   IMAGE_IMPORTS_PER_HOUR_PRO,
   PRO_IMAGE_IMPORT_BENEFIT,
 } from "@/lib/imageImportQuota";
+import {
+  FREE_IMPORTS_PER_WINDOW,
+  FREE_IMPORT_WINDOW_DAYS,
+  formatImportReturnDate,
+} from "@/lib/freeImports";
 
 // Every one of these is a real, implemented gate (see computeProLocks in
 // lib/recipePrinterPurchases.ts). A "20% off your first cookbook export"
@@ -26,24 +31,28 @@ const COOKBOOK_BENEFIT = "20% off your first cookbook";
 // Not "no watermark": the free line is a quiet footer, not a watermark, and
 // the wording shouldn't talk the free tier down. See `.recipe-print-page--pro`.
 const NO_BRANDING_BENEFIT = "No RecipePrinter branding on your prints";
+// Free accounts get a monthly allowance of imports (lib/freeImports.ts, enforced
+// by CookPilot's import meter); Pro has none. Photo imports stay paced by the
+// hour on every plan, which is why that line is separate.
+const UNLIMITED_IMPORTS_BENEFIT = "Unlimited recipe imports";
 
 // What Basic (the free tier) actually includes. Shared by /account and
 // /pricing, so the two cannot describe the free plan differently — and it's a lot, which the
 // old "Classic & Pantry themes / Full Page printing / one recipe at a time"
-// list undersold by leading with a limitation. "Import from any site" /
-// "Import from Instagram, TikTok..." / "Unlimited imports" were three lines
-// making the same point (importing has no limit); folded into two by saying
-// "Unlimited" on each rather than splitting it out as its own line.
+// list undersold by leading with a limitation.
 // "One recipe at a time" is real (see PrintSetupControls.tsx's "This
 // recipe" title) but it's a constraint, not a benefit, so it doesn't belong
 // on a list meant to make the case for staying on Basic being a perfectly
-// good deal. Photo imports are the exception to "unlimited": each one is a
-// paid model call, so they are counted by the hour, and the Pro card names
-// its larger allowance (see lib/imageImportQuota.ts).
+// good deal. Imports are counted two ways and the list says both: an
+// allowance every 30 days (the first line, whose usage /account shows under
+// it), and photo imports by the hour, because each one is a paid model call
+// (see lib/imageImportQuota.ts). Editing and reprinting never use either.
+export const FREE_IMPORTS_BENEFIT = `${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days`;
 export const BASIC_BENEFITS = [
-  "Unlimited imports from any recipe website",
-  "Unlimited imports from Instagram, TikTok, Pinterest & more",
+  FREE_IMPORTS_BENEFIT,
+  "Import from any recipe site, Instagram, TikTok, Pinterest & more",
   FREE_IMAGE_IMPORT_BENEFIT,
+  "Edit and reprint your recipes as often as you like",
   "Letter-size printing with two free themes",
 ];
 
@@ -53,6 +62,7 @@ export const BASIC_BENEFITS = [
 // enforced by CookPilot per plan (see lib/imageImportQuota.ts), not by a lock
 // here, so it has no `ProLockReason`.
 export const PRO_BENEFITS = [
+  UNLIMITED_IMPORTS_BENEFIT,
   ...Object.values(BENEFIT_BY_REASON),
   PRO_IMAGE_IMPORT_BENEFIT,
   NO_BRANDING_BENEFIT,
@@ -61,6 +71,8 @@ export const PRO_BENEFITS = [
 
 /** Opened from a photo import that hit the free hourly limit. */
 export const IMAGE_IMPORT_LIMIT_TRIGGER = "image_import_limit";
+/** Opened from an import that didn't start because the free allowance is used up. */
+export const IMPORT_LIMIT_TRIGGER = "import_limit";
 
 const TITLE_BY_REASON: Record<ProLockReason, string> = {
   multi_recipe: "Print multiple recipes at once",
@@ -70,6 +82,9 @@ const TITLE_BY_REASON: Record<ProLockReason, string> = {
 
 export interface ProUpgradeCopy {
   title: string;
+  /** A sentence or two under the title, when the title alone would leave a
+      question open (what happened, and what the cook still has). */
+  body?: string;
   /** Every benefit, with whichever triggered the dialog first. */
   benefits: string[];
   ctaLabel: string;
@@ -90,7 +105,25 @@ const GENERIC_COPY: ProUpgradeCopy = {
  * reference, so it always gets the generic pitch — even if a locked theme or
  * card size happens to be selected at that moment.
  */
-export function proUpgradeCopy(reasons: ProLockReason[], trigger: string): ProUpgradeCopy {
+export function proUpgradeCopy(
+  reasons: ProLockReason[],
+  trigger: string,
+  /** For `IMPORT_LIMIT_TRIGGER`: the allowance, and when the next import is back. */
+  importUsage?: { limit: number; nextFreeAt: number | null } | null,
+): ProUpgradeCopy {
+  if (trigger === IMPORT_LIMIT_TRIGGER) {
+    const back = importUsage?.nextFreeAt
+      ? `Your next one's back on ${formatImportReturnDate(importUsage.nextFreeAt)}. `
+      : "";
+    return {
+      title: `You've used your ${importUsage?.limit ?? FREE_IMPORTS_PER_WINDOW} free imports`,
+      // Says what they still have before what they could buy: nothing they
+      // made is locked, and waiting is a real option.
+      body: `${back}Your recipes are still here to edit and print. Go Pro for unlimited recipe imports.`,
+      benefits: PRO_BENEFITS,
+      ctaLabel: "Unlock Pro",
+    };
+  }
   if (trigger === IMAGE_IMPORT_LIMIT_TRIGGER) {
     return {
       title: `Import up to ${IMAGE_IMPORTS_PER_HOUR_PRO} images an hour`,

@@ -33,7 +33,13 @@ export function AddRecipeDialog({
   onLibraryLockedTap,
   chapterTarget,
   title = "Add recipes",
+  allowance = true,
+  onGetUnlimited,
 }: {
+  /** Passed to `ImportPanel`: show the free-import count, and what its
+      "Get unlimited imports" opens. */
+  allowance?: boolean;
+  onGetUnlimited?: () => void;
   open: boolean;
   onClose: () => void;
   items: QueueItem[];
@@ -205,6 +211,8 @@ export function AddRecipeDialog({
           onSubmitted={onClose}
           hideSubmit
           showAllModes
+          allowance={allowance}
+          onGetUnlimited={onGetUnlimited}
           /* Read once per open: `Dialog` renders nothing while closed, so the
              panel is a fresh mount every time the sheet appears. */
           initialMode={lastSource}

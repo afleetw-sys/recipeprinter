@@ -7,7 +7,8 @@ import { CheckIcon, ClockIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
 import { ProBadge } from "@/components/ProBadge";
 import { SegmentedControl } from "@/components/Controls";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
-import { BASIC_BENEFITS, PRO_BENEFITS } from "@/lib/proUpgradeCopy";
+import { BASIC_BENEFITS, FREE_IMPORTS_BENEFIT, PRO_BENEFITS } from "@/lib/proUpgradeCopy";
+import { AccountImportAllowanceUsage } from "@/components/AccountImportAllowanceUsage";
 import { FREE_IMAGE_IMPORT_BENEFIT, PRO_IMAGE_IMPORT_BENEFIT } from "@/lib/imageImportQuota";
 import { AccountImageImportUsage } from "@/components/AccountImageImportUsage";
 import { track } from "@/lib/analytics";
@@ -348,8 +349,10 @@ export function AccountProStatus({ user }: { user: User }) {
                       <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
                       <div className="min-w-0 flex-1">
                         {benefit}
-                        {/* This hour's usage, under the allowance it counts
-                            against, on the card for the plan you're on. */}
+                        {/* Usage, under the allowance it counts against, on
+                            the card for the plan you're on: imports this 30
+                            days, and photo imports this hour. */}
+                        {benefit === FREE_IMPORTS_BENEFIT && <AccountImportAllowanceUsage />}
                         {benefit === FREE_IMAGE_IMPORT_BENEFIT && <AccountImageImportUsage uid={uid} />}
                       </div>
                     </li>
