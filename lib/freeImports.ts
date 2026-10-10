@@ -28,23 +28,27 @@ export function formatImportReturnDate(ms: number): string {
 }
 
 export interface ImportAllowanceLine {
-  text: string;
-  /** None left: the line offers Pro. */
+  /** The count, or the allowance when nothing has been used. */
+  lead: string;
+  /** When it resets, once anything has been used. */
+  detail?: string;
+  /** None left: the banner offers Pro. */
   spent: boolean;
 }
 
 /**
- * The one line every import box shows a free cook: how many imports they've
+ * The one banner every import box shows a free cook: how many imports they've
  * used toward the limit, from the first one on, and when it resets. `usage`
  * is the server's count; without one the line states the allowance.
  */
 export function importAllowanceLine(
   usage: { used: number; limit: number; nextFreeAt: number | null } | null,
 ): ImportAllowanceLine {
-  if (!usage || usage.used <= 0) return { text: FREE_IMPORTS_LINE, spent: false };
+  if (!usage || usage.used <= 0) return { lead: FREE_IMPORTS_LINE, spent: false };
   const used = Math.min(usage.used, usage.limit);
-  const left = usage.limit - used;
-  const count = `${used} of ${usage.limit} free imports used.`;
-  if (usage.nextFreeAt === null) return { text: count, spent: left <= 0 };
-  return { text: `${count} Resets ${formatImportReturnDate(usage.nextFreeAt)}.`, spent: left <= 0 };
+  return {
+    lead: `${used} of ${usage.limit} free imports used.`,
+    ...(usage.nextFreeAt !== null ? { detail: `Resets ${formatImportReturnDate(usage.nextFreeAt)}.` } : {}),
+    spent: used >= usage.limit,
+  };
 }
