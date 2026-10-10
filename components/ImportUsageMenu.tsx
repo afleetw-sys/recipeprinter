@@ -28,7 +28,9 @@ export function ImportUsageMenu({ enabled = true, onUpgrade }: { enabled?: boole
       <button
         ref={anchorRef}
         type="button"
-        className="btn btn-neutral btn-compact"
+        // An icon button with no fill of its own (Amelia, 2026-10-10): the
+        // ring is the control, and only a hover shows it can be pressed.
+        className="btn-ghost btn-compact"
         aria-haspopup="menu"
         aria-expanded={open}
         // The ring is a picture of the count; the name says it in words.

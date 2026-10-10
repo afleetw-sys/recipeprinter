@@ -106,7 +106,7 @@ import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { useProPurchase } from "@/lib/useProPurchase";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
 import { IMAGE_IMPORT_LIMIT_TRIGGER, IMPORT_LIMIT_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
-import { rememberedImportUsage } from "@/lib/importMeter";
+import { importsSpent, rememberedImportUsage } from "@/lib/importMeter";
 import { ImportUsageMenu } from "@/components/ImportUsageMenu";
 import { bookRoomLeft } from "@/lib/cookbookFreeSize";
 import { FREE_COOKBOOK_RECIPES } from "@/lib/freeImports";
@@ -4991,7 +4991,24 @@ export default function PrintPage() {
     };
   })();
 
+  /**
+   * Opens the import-limit paywall when a free card-mode cook has no imports
+   * left, and says so. Cookbooks and Pro have no allowance to run out of. It
+   * goes by the server's last answer to this browser (refreshed whenever an
+   * import box or the header ring mounts, and after every import), so it is
+   * true from the moment the last import lands.
+   */
+  function importPaywallIfSpent(): boolean {
+    if (cookbookMode || hasProEntitlement(effectiveCustomerInfo.customerInfo)) return false;
+    if (!importsSpent()) return false;
+    openProUpgradeDialog(IMPORT_LIMIT_TRIGGER);
+    return true;
+  }
   function openAddRecipeBelow(navItem: NavItem | null = activeNavItem) {
+    // Out of free imports: the paywall, not a form to fill in and be refused
+    // from. Checked first, so the dialog names the limit they actually hit
+    // rather than "print multiple recipes".
+    if (importPaywallIfSpent()) return;
     if (multiRecipeAddLocked) {
       track("pro_feature_encountered", { feature: "batch_print", source: "add_more_recipes" });
       openProUpgradeDialog("add_more_recipes");
@@ -5025,6 +5042,7 @@ export default function PrintPage() {
    * doesn't free up anything for it to be replacing.
    */
   function tryAnotherImportWay(id: string) {
+    if (importPaywallIfSpent()) return;
     if (multiRecipeAddLocked) {
       track("pro_feature_encountered", { feature: "batch_print", source: "add_more_recipes" });
       openProUpgradeDialog("add_more_recipes");
