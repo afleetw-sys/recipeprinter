@@ -280,7 +280,7 @@ export function AddRecipeDialog({
         </button>
         {/* Under the action it counts, so the count is the last thing read
             before pressing Add rather than something above the fold of the form. */}
-        <ImportAllowanceLine enabled={allowance} onGetUnlimited={onGetUnlimited} className="mt-cp-2" />
+        <ImportAllowanceLine enabled={allowance} onGetUnlimited={onGetUnlimited} className="mt-cp-4" />
       </div>
     </Dialog>
   );

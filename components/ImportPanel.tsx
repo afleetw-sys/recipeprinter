@@ -751,7 +751,7 @@ export function ImportPanel({
       </form>
       )}
 
-      <ImportAllowanceLine enabled={allowance} onGetUnlimited={onGetUnlimited} className="mt-cp-3" />
+      <ImportAllowanceLine enabled={allowance} onGetUnlimited={onGetUnlimited} className="mt-cp-5" />
     </section>
   );
 }
