@@ -45,6 +45,9 @@ vi.mock("@/lib/freeImports", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/freeImports")>()),
   IMPORT_ALLOWANCE_LIVE: true,
 }));
+// The meter is only ever asked from the real site; these tests stand there.
+const onProductionHost = vi.hoisted(() => ({ value: true }));
+vi.mock("@/lib/appEnvironment", () => ({ isProductionRuntime: () => onProductionHost.value }));
 vi.mock("@/lib/analytics", () => ({ track, truncateReason: (e: unknown) => String(e) }));
 vi.mock("@/lib/failedImportCapture", () => ({
   captureFailedImportImages: vi.fn(async () => null),
@@ -102,6 +105,7 @@ afterEach(() => {
   window.sessionStorage.clear();
   window.localStorage.clear();
   resetImportUsageForTest();
+  onProductionHost.value = true;
 });
 
 describe("who the meter sees", () => {
@@ -343,5 +347,19 @@ describe("a page that hands imports off to /print", () => {
     stop();
     // With no banner on the page to open the dialog, the handoff goes ahead.
     expect(refuseImportIfSpent()).toBe(false);
+  });
+});
+
+describe("anywhere but the real site", () => {
+  // localhost, a LAN address, a Vercel preview: all reach the production
+  // backend, so testing there must never use or record a real allowance.
+  test.each(METHODS)("$method: imports without asking the meter", async ({ start, parser }) => {
+    onProductionHost.value = false;
+    const { result } = setup();
+    act(() => start(result.current));
+    await vi.waitFor(() => expect(parser).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(result.current.items[0]?.status).toBe("ready"));
+    await refreshImportUsage();
+    expect(meterOps()).toEqual([]);
   });
 });

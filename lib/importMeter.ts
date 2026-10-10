@@ -1,6 +1,8 @@
 import type { ImportMethod } from "@/types/recipe";
 import { track } from "@/lib/analytics";
 import { anonymousOwnerId } from "@/lib/anonymousOwner";
+import { isProductionRuntime } from "@/lib/appEnvironment";
+import { useFirebaseEmulators } from "@/lib/firebase/emulators";
 import { IMPORT_ALLOWANCE_LIVE } from "@/lib/freeImports";
 import { localStore } from "@/lib/storage";
 
@@ -34,6 +36,19 @@ export const IMPORT_METER_TIMEOUT_MS = 5_000;
  * this back to false is the client-side rollback (docs/import-meter.md).
  */
 export const IMPORT_METER_DEPLOYED = true;
+
+/**
+ * Whether this browser may talk to the meter at all. Only the real site does:
+ * a local dev server, a LAN address on a phone and a Vercel preview all reach
+ * the PRODUCTION backend, and an import made while testing there must not use
+ * up anyone's real allowance or write a record of it (Amelia, 2026-10-10). The
+ * same rule keeps analytics and RevenueCat off those hosts
+ * (`isProductionRuntime`). The exception is emulator mode, where "the backend"
+ * is a local stand-in and metering it is the point.
+ */
+export function meterReachableHere(): boolean {
+  return IMPORT_METER_DEPLOYED && (isProductionRuntime() || useFirebaseEmulators);
+}
 
 export type MeteredMethod = "url" | "image" | "text";
 
@@ -80,7 +95,7 @@ export function meterGateFor(input: {
   override?: boolean;
   deployed?: boolean;
 }): "skip" | "reserve" {
-  if (!(input.deployed ?? IMPORT_METER_DEPLOYED)) return "skip";
+  if (!(input.deployed ?? meterReachableHere())) return "skip";
   if (!isMeteredMethod(input.method)) return "skip";
   if (input.cookbookMode || input.clientPro || input.override) return "skip";
   return "reserve";
@@ -321,7 +336,7 @@ export function settleImport(importId: string, outcome: "success" | "failure"): 
  * the import boxes simply keep showing what they had.
  */
 export async function refreshImportUsage(): Promise<void> {
-  if (!IMPORT_METER_DEPLOYED) return;
+  if (!meterReachableHere()) return;
   try {
     const answer = parseAnswer(await withTimeout(callMeter({ op: "status" }), IMPORT_METER_TIMEOUT_MS));
     if (answer) noteAnswer(answer);

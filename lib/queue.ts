@@ -20,7 +20,6 @@ import { releaseImportPreview, setImportPreview } from "@/lib/importPreviews";
 import { fitBookRoom } from "@/lib/cookbookFreeSize";
 import { storeImportedPhoto, withImportedPhoto } from "@/lib/importedPhoto";
 import {
-  IMPORT_METER_DEPLOYED,
   SKIPPED,
   importRefused,
   meterGateFor,
@@ -858,7 +857,6 @@ export function useQueue() {
           cookbookMode: cookbookModeRef.current,
           clientPro: clientProRef.current,
           override: opts?.meterExempt,
-          deployed: IMPORT_METER_DEPLOYED,
         }) === "reserve";
       const reservation: Reservation = metered
         ? await reserveImport({
