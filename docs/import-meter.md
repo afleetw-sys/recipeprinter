@@ -17,7 +17,8 @@ the cookbook free size and enforcement are a later, separately approved go-live 
 | `x-rp-import-id` header, forwarded by `/api/parse` as `importId` | RecipePrinter | built (step C) |
 | Privacy policy: "Import counts" and its retention line | RecipePrinter | drafted, needs Amelia's approval (B4) |
 | `recipePrinterImportMeter` callable, `hasImportId` log line | CookPilot | built and committed (`5443f1d`, step B), **not deployed** |
-| `recipePrinterConfig/importMeter` doc, TTL policies, `RECIPEPRINTER_METER_NET_KEY` | CookPilot / GCP | **not created** (B2) |
+| `recipePrinterConfig/importMeter` doc, TTL policy on `recipePrinterImportMeter` | CookPilot / GCP | Amelia's to create (B2) |
+| Network check (`recipePrinterMeterNet`, `RECIPEPRINTER_METER_NET_KEY`) | CookPilot | **dropped 2026-10-10**; no IP addresses are processed for the meter |
 
 Nothing reaches production until RecipePrinter is pushed, and pushing is Amelia's call.
 
@@ -56,16 +57,9 @@ Each step needs the one before it. Steps marked **(Amelia)** need her credential
    ```
    Compare each function's `source.storageSource.generation` with the files' mtimes and the last
    commit. Stop if the tree is behind.
-4. **Create the network-hash secret (B2, Amelia).** A random 32-byte value, never committed or
-   pasted anywhere else. Generate it:
-   ```bash
-   openssl rand -base64 32
-   ```
-   then set it, pasting the value at the prompt:
-   ```bash
-   firebase functions:secrets:set RECIPEPRINTER_METER_NET_KEY --project cookpilot-bbecb
-   ```
-   The deploy also still needs the existing `OPENAI_KEY` and `RECIPEPRINTER_PARSER_SECRET`.
+4. **No secret to create.** The network check (plan section 7) was dropped on 2026-10-10, so
+   the meter needs no secret of its own. The deploy still needs the existing `OPENAI_KEY` and
+   `RECIPEPRINTER_PARSER_SECRET`, which are already set.
 5. **Create the config doc, off (Amelia, Firebase console).** Collection `recipePrinterConfig`,
    document `importMeter`:
    ```json
@@ -73,25 +67,18 @@ Each step needs the one before it. Steps marked **(Amelia)** need her credential
    ```
    A missing doc must also read as `off` in the callable, so this order is a belt-and-braces
    step, not a dependency.
-6. **Turn on TTL for both collections (B2, Amelia).** Takes effect within about a day; deletes
-   are best-effort, usually within 24 hours of `expiresAt`. `gcloud` isn't installed on this Mac,
-   so use the console: Google Cloud console → project `cookpilot-bbecb` → Firestore → **TTL** →
-   **Create policy**, once with collection group `recipePrinterImportMeter` and once with
-   `recipePrinterMeterNet`, timestamp field `expiresAt` both times. The `gcloud` equivalent:
-   ```bash
-   gcloud firestore fields ttls update expiresAt --collection-group=recipePrinterImportMeter --enable-ttl --project=cookpilot-bbecb
-   ```
-   ```bash
-   gcloud firestore fields ttls update expiresAt --collection-group=recipePrinterMeterNet --enable-ttl --project=cookpilot-bbecb
-   ```
-   Check with `gcloud firestore fields ttls list --project=cookpilot-bbecb`.
+6. **Turn on TTL for the meter collection (B2, Amelia).** Takes effect within about a day;
+   deletes are best-effort, usually within 24 hours of `expiresAt`. `gcloud` isn't installed on
+   this Mac, so use the console: Google Cloud console → project `cookpilot-bbecb` → Firestore →
+   **Time-to-live (TTL)** → **Create policy**, collection group `recipePrinterImportMeter`,
+   timestamp field `expiresAt`. The console only offers collections that exist, so create a
+   `placeholder` document with a timestamp field `expiresAt` first if the name doesn't come up.
 7. **Deploy step B (after B1 and steps 3 to 6).** From the CookPilot main tree (never a
    worktree). Build first: the CLI finds functions in the compiled `lib/`, and this codebase's
    predeploy runs `npm test` but not the build, so without it the new function isn't deployed.
    ```bash
    cd /Users/ameliawinger/Desktop/CookPilot/functions && npm run build && firebase deploy --only functions:recipePrinterImportMeter,functions:recipePrinterParseRecipeFromURL --project cookpilot-bbecb
    ```
-   The deploy fails if `RECIPEPRINTER_METER_NET_KEY` doesn't exist yet (step 4).
    The meter doesn't read or write CookPilot's hourly parse quotas. Those stay exactly as they
    are.
 8. **Verify the production callable (section 4).** Still `mode: "off"`.
@@ -148,8 +135,6 @@ From PostHog, by Amelia or with an API key (B5); never by loading production:
 From Google Cloud Logging (`cookpilot-bbecb`):
 - the `hasImportId` ratio on `recipePrinterParseRecipeFromURL`. A large share of `false` means
   `/api/parse` is being called from outside the app (decision D5).
-- the network flag line, and whether the callable sees client addresses rather than Google's
-  front end (B6).
 
 ---
 
@@ -167,8 +152,7 @@ Fastest first. None of them touches Pro, cookbook purchases or the hourly parse 
    ```bash
    firebase functions:delete recipePrinterImportMeter --project cookpilot-bbecb
    ```
-6. **Data:** TTL deletes meter documents 31 days after a subject's last import and network
-   documents after 30 days. Nothing else needs cleaning up. Deleting them sooner is Amelia's
+6. **Data:** TTL deletes meter documents 31 days after a subject's last import. Nothing else needs cleaning up. Deleting them sooner is Amelia's
    call, from the console.
 
 If the meter stays off for more than a few days, keep the privacy sentence anyway. It describes

@@ -70,7 +70,7 @@ Goal when we eventually enforce:
      when the client doesn't know yet.
 6. **Control:** one config doc. `mode: "off" | "measure" | "enforce"`. This rollout only ever sets
    `off` or `measure`. Any meter error fails open.
-7. **IP monitoring:** keyed hashes only, written only on rare events, flag only.
+7. **IP monitoring:** dropped on 2026-10-10 (section 7). No IP addresses are processed.
 8. **Messaging (section 8):**
    - one quiet line in the shared import panel, which always shows how many imports are used
      toward the limit, signed in or out
@@ -523,7 +523,15 @@ account doc when the entry has `o`. **Settle failure:** remove the entry. An unk
 
 ---
 
-## 7. IP monitoring (unchanged design, measure-only)
+## 7. IP monitoring: DROPPED (Amelia, 2026-10-10)
+
+**Not built.** It needed its own secret, a second collection and TTL policy, and a privacy
+disclosure about network addresses, for a flag that only matters once a limit is enforced. The
+meter processes no IP addresses. Every later mention of network hashing, `net`,
+`recipePrinterMeterNet` or `RECIPEPRINTER_METER_NET_KEY` in this plan is superseded by this note.
+If storage-reset abuse shows up after go-live, revisit the design below.
+
+*Original design, kept for reference:*
 
 - **Normalize:** IPv4 /32, IPv6 /64, IPv4-mapped IPv6 becomes v4.
 - **Store:** `HMAC-SHA256(RECIPEPRINTER_METER_NET_KEY, network)`, truncated. Raw IPs are never
@@ -940,7 +948,8 @@ per free import.
 **Blockers, before anything ships:**
 - **B1 (yours):** go-ahead for a CookPilot deploy to `cookpilot-bbecb`: one new function, a change
   to one log line, and a moved helper.
-- **B2 (yours):** create the secret `RECIPEPRINTER_METER_NET_KEY`
+- **B2 (yours):** *(the secret is no longer needed; only the TTL policy on
+  `recipePrinterImportMeter` remains.)* Originally: create the secret `RECIPEPRINTER_METER_NET_KEY`
   (`firebase functions:secrets:set`, with a random 32-byte value). Also the two Firestore TTL
   policies (`gcloud firestore fields ttls update expiresAt --collection-group=…`). Both need your
   credentials. I'll put the exact commands in the runbook.
@@ -951,7 +960,7 @@ per free import.
   processing IP addresses for this purpose.
 - **B5 (yours or a key):** the PostHog insights. I mustn't load production, so either you build
   them from my HogQL, or you give me a personal API key with insight-write scope.
-- **B6 (needs data):** confirm the callable's client-address source, using the first log lines
+- **B6 (dropped with section 7):** confirm the callable's client-address source, using the first log lines
   after step D.
 
 - **B7 (yours, go-live only):** approve the final wording of C1 to C14 and of the sections 8.3, 8.4 and 8.4b

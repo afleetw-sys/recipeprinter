@@ -258,9 +258,8 @@ export default function PrivacyPage() {
             understand how much RecipePrinter is used. For each import we keep
             the time, the kind of import, and a short one-way fingerprint of the
             link or text, so importing the same recipe again is not counted
-            twice; the recipe itself is not kept. We also keep a keyed one-way
-            hash of your network address, never the address itself, to spot
-            automated misuse. The analytics opt-out does not stop these counts.
+            twice; the recipe itself is not kept. The analytics opt-out does not
+            stop these counts.
           </li>
           <li>
             <strong>Error reports.</strong> When an error occurs, we record the
@@ -564,8 +563,7 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Import counts</strong> are deleted automatically 31 days
-            after your most recent import, and network hashes 30 days after
-            they are recorded.
+            after your most recent import.
           </li>
           <li>
             <strong>Server logs</strong> are kept by our hosting provider for a
