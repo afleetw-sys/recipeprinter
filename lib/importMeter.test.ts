@@ -7,6 +7,8 @@ import {
   IMPORT_METER_TIMEOUT_MS,
   importRefused,
   refreshImportUsage,
+  refuseImportIfSpent,
+  subscribeImportRefusal,
   rememberedImportUsage,
   resetImportUsageForTest,
   usageNow,
@@ -318,5 +320,28 @@ describe("an unbought cookbook's free size", () => {
     act(() => result.current.addUrl("https://example.com/roundup"));
     await vi.waitFor(() => expect(result.current.items).toHaveLength(3));
     expect(onBookCapReached).not.toHaveBeenCalled();
+  });
+});
+
+describe("a page that hands imports off to /print", () => {
+  // The homepage and the SEO pages ask before navigating, so a cook who is out
+  // of imports sees the upgrade dialog where they are.
+  test.each([
+    { name: "out of imports", answer: { used: 10 }, refuses: true },
+    { name: "imports left", answer: { used: 9 }, refuses: false },
+    { name: "Pro", answer: { reason: "pro" }, refuses: false },
+    { name: "a first-time visitor (no answer on record)", answer: null, refuses: false },
+  ])("$name: stays put is $refuses", async ({ answer, refuses }) => {
+    if (answer) {
+      callCookPilotParser.mockResolvedValue({ mode: "enforce", allowed: true, limit: 10, nextFreeAt: Date.UTC(2099, 0, 1), ...answer });
+      await refreshImportUsage();
+    }
+    const opened = vi.fn();
+    const stop = subscribeImportRefusal(opened);
+    expect(refuseImportIfSpent()).toBe(refuses);
+    expect(opened).toHaveBeenCalledTimes(refuses ? 1 : 0);
+    stop();
+    // With no banner on the page to open the dialog, the handoff goes ahead.
+    expect(refuseImportIfSpent()).toBe(false);
   });
 });

@@ -31,7 +31,11 @@ import { useProPurchase } from "@/lib/useProPurchase";
  * beat before this hook has an account to buy for, so for a signed-out cook
  * it does nothing and leaves the intent to the effect.
  */
-export function useStandaloneProUpgrade(trigger: string): {
+export function useStandaloneProUpgrade(
+  trigger: string,
+  /** What the dialog says, when the trigger has its own wording. */
+  copy?: { title?: string; body?: string; benefits?: string[]; ctaLabel?: string },
+): {
   openProUpgrade: () => void;
   /** Render this once, anywhere in the tree. */
   proUpgradeDialog: ReactNode;
@@ -120,6 +124,7 @@ export function useStandaloneProUpgrade(trigger: string): {
     <ProUpgradeDialog
       busy={proBusy}
       cookPilotUser={user}
+      {...copy}
       onClose={() => {
         // Closing after picking a plan but before finishing sign-in must drop
         // the stored intent, or signing in later for something unrelated

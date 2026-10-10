@@ -354,6 +354,45 @@ export function importRefused(
   return now.used >= now.limit;
 }
 
+/**
+ * Whether this browser's last answer from the server says there are no free
+ * imports left right now. For a page that would otherwise send the cook off to
+ * `/print` just to be refused there: it can say so where they are. The count is
+ * refreshed when an import box mounts (`useImportUsage`), so this is as fresh
+ * as the page load, and it is false whenever there is no enforcing answer on
+ * record, so it never stops a first-time visitor.
+ */
+export function importsSpent(nowMs: number = Date.now(), live: boolean = IMPORT_ALLOWANCE_LIVE): boolean {
+  if (!live || importsKnownUnlimited()) return false;
+  const last = readRemembered();
+  if (!last || !last.enforcing) return false;
+  const now = usageNow(last, nowMs);
+  return now.used >= now.limit;
+}
+
+const refusalListeners = new Set<() => void>();
+
+/** The free-import banner listens here so it can open the upgrade dialog. */
+export function subscribeImportRefusal(listener: () => void): () => void {
+  refusalListeners.add(listener);
+  return () => refusalListeners.delete(listener);
+}
+
+/**
+ * For a page that hands an import off to `/print` (the homepage, the SEO
+ * capture blocks). When the cook is out of free imports, the upgrade dialog
+ * opens where they are and this answers true: the caller then does nothing
+ * else, instead of walking them to an empty print page to be refused there
+ * (Amelia, 2026-10-10). The dialog is opened by the free-import banner on
+ * that page; with no banner mounted to open it, this answers false and the
+ * handoff goes ahead as before, to be refused on `/print`.
+ */
+export function refuseImportIfSpent(): boolean {
+  if (!importsSpent() || refusalListeners.size === 0) return false;
+  refusalListeners.forEach((listener) => listener());
+  return true;
+}
+
 /** How long the meter held this import up, for the import events. */
 export function meterMsOf(reservation: Reservation): { meterMs?: number } {
   return reservation.status === "skipped" ? {} : { meterMs: reservation.meterMs };

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { CrownIcon, ICON_SIZE } from "@/components/icons";
 import { importAllowanceLine } from "@/lib/freeImports";
+import { subscribeImportRefusal } from "@/lib/importMeter";
 import { useImportUsage } from "@/lib/useImportUsage";
 
 // Loaded on the first press of Upgrade, not with the banner: it brings the
@@ -39,6 +40,13 @@ export function ImportAllowanceLine({
   const { hidden, usage } = useImportUsage(enabled);
   // How many times Upgrade has been pressed here; 0 until the first.
   const [upgradePresses, setUpgradePresses] = useState(0);
+  // On a page that hands imports off to /print, an import submitted with none
+  // left opens the dialog here instead of navigating (`refuseImportIfSpent`).
+  // Only where this banner owns the dialog; /print passes its own.
+  useEffect(() => {
+    if (hidden || onGetUnlimited) return;
+    return subscribeImportRefusal(() => setUpgradePresses((count) => count + 1));
+  }, [hidden, onGetUnlimited]);
   if (hidden) return null;
   const line = importAllowanceLine(usage);
   const fraction = usage && usage.limit > 0 ? Math.min(usage.used, usage.limit) / usage.limit : 0;
@@ -75,7 +83,9 @@ export function ImportAllowanceLine({
       >
         {upgrade}
       </button>
-      {upgradePresses > 0 && <ImportBannerUpgrade openSignal={upgradePresses} />}
+      {upgradePresses > 0 && (
+        <ImportBannerUpgrade openSignal={upgradePresses} spent={Boolean(usage && usage.used >= usage.limit)} />
+      )}
     </div>
   );
 }

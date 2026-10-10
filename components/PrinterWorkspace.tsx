@@ -12,6 +12,7 @@ import { imageLabel, validateImageFiles } from "@/lib/imageImport";
 import { track } from "@/lib/analytics";
 import { nextPaint } from "@/lib/nextPaint";
 import type { ImportMethod, ImportTab, QueueItem } from "@/types/recipe";
+import { refuseImportIfSpent } from "@/lib/importMeter";
 
 /** Which kind of project the front door is about to start. Recipe cards is
     the default and asks for nothing; Cookbook is the one-project, $19.99,
@@ -221,6 +222,10 @@ export function PrinterWorkspace({
    * better failure.
    */
   async function handoff(payload: PendingImport, kind: ImportKind = importKind) {
+    // Out of free imports: the upgrade dialog opens here, and nothing is
+    // stashed or navigated to. Card imports that go to a parser only; a
+    // cookbook and a recipe-app pick aren't counted against the allowance.
+    if (kind === "cards" && payload.kind !== "ready" && payload.kind !== "empty" && refuseImportIfSpent()) return;
     setHandoffError(null);
     setOpening(true);
     // Stamps the choice onto the project /print is about to open — the same
