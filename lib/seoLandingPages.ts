@@ -223,11 +223,17 @@ export type SeoLandingPage = {
    */
   comparison?: {
     competitor: string;
-    /** When the competitor's site and pricing were last read. Not rendered —
-        it records who the claims were checked against and when, the same way
-        `copyReviewed` records a content pass, so a stale table is greppable
-        rather than invisible. */
+    /** When the competitor's site and pricing were last read. Rendered under
+        the table beside `sources`. It records who the claims were checked
+        against and when, the same way `copyReviewed` records a content pass,
+        so a stale table is greppable rather than invisible. */
     checked: string;
+    /** The competitor's own pages the "them" column was read from, linked
+        under the table so a reader, or an assistant deciding whether to quote
+        the table, can check a claim at its origin. Their pages only: a
+        third-party review is somebody else's reading of the same facts.
+        `label` finishes the sentence "checked against …". */
+    sources: { href: string; label: string }[];
     /** Labelled groups, not a flat list: a run of ten unbroken rows is the
         thing readers skim past. Order them by what a visitor is deciding, not
         by where we look best. */
@@ -2964,7 +2970,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "just-the-recipe-alternative",
-    contentUpdated: "2026-09-09",
+    contentUpdated: "2026-10-10",
     copyReviewed: "2026-09-02",
     primaryKeyword: "Just the Recipe alternative",
     // Deliberately narrow. This page used to also claim "print recipe without
@@ -3015,6 +3021,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     comparison: {
       competitor: "Just the Recipe",
       checked: "September 2026",
+      sources: [
+        { href: "https://www.justtherecipe.com/", label: "its website" },
+        { href: "https://apps.apple.com/us/app/id1598423213", label: "its App Store listing" },
+      ],
       groups: [
         {
           title: "Getting recipes in",
@@ -3082,7 +3092,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "reciscan-alternative",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-10",
     copyReviewed: "2026-09-02",
     primaryKeyword: "ReciScan alternative",
     secondaryKeywords: [
@@ -3124,6 +3134,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     comparison: {
       competitor: "ReciScan",
       checked: "September 2026",
+      sources: [
+        { href: "https://reciscan.app/", label: "its website" },
+        { href: "https://apps.apple.com/us/app/reciscan/id6478405196", label: "its App Store listing" },
+      ],
       groups: [
         {
           title: "Getting recipes in",
