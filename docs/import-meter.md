@@ -158,6 +158,29 @@ also remove the copy and the cookbook cap, set `IMPORT_ALLOWANCE_LIVE = false` a
 
 ---
 
+## 5c. Added after the first build (2026-10-10)
+
+- **A fixed 30 days, ending at midnight.** The 30 days start with the first import, and all 10
+  come back together at 12:00 AM starting the day they end, in the cook's own time zone (the site
+  sends it as `tz`). "Resets Nov 9" means from the first minute of Nov 9.
+- **Nothing gets through at the limit**, including a link imported before. With imports left, the
+  same link or text again doesn't use a second one.
+- **A manual hold.** To keep one browser or account at "none left" until a date, add a timestamp
+  field `holdUntil` to its document in `recipePrinterImportMeter` (`b_…` for a browser, `u_<uid>`
+  for an account). It ends at midnight starting that date. Remove the field to lift it. A hold on
+  a signed-out browser is that browser only.
+- **Only the real site is counted.** localhost, LAN addresses and Vercel previews skip the meter.
+  To test the limit locally, run the dev server with `NEXT_PUBLIC_FIREBASE_LOCAL_FUNCTIONS=1` and
+  a local stand-in for the callables on port 3211.
+- **Pro is never limited**, and the site forgets the free count the moment it knows someone is
+  Pro. The backend recognises Pro from its own record of RevenueCat; keep
+  `RECIPEPRINTER_ACCEPT_SANDBOX_EVENTS` off in production so a test purchase can't write to it.
+- **Photo imports per hour** are 10 free and 50 Pro (were 5 and 30), so a free cook can spend all
+  10 imports on photos. Neither number is listed as a plan benefit any more.
+- **Don't clear `recipePrinterImportMeter` at go-live** if any document carries a `holdUntil`.
+
+---
+
 ## 6. Rollback
 
 Fastest first. None of them touches Pro, cookbook purchases or the hourly parse quotas.
