@@ -1,6 +1,7 @@
 import type { ImportMethod } from "@/types/recipe";
 import { track } from "@/lib/analytics";
 import { anonymousOwnerId } from "@/lib/anonymousOwner";
+import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
 import { isProductionRuntime } from "@/lib/appEnvironment";
 import { useLocalFunctions } from "@/lib/firebase/emulators";
 import { IMPORT_ALLOWANCE_LIVE } from "@/lib/freeImports";
@@ -184,6 +185,16 @@ export function markImportsUnlimited(): void {
   rememberUnlimited(true);
 }
 
+/**
+ * Something that knows for sure says this cook is NOT Pro: the purchase SDK's
+ * own answer on `/print`, or signing out. Until then "unlimited" stands, so a
+ * Pro member is never shown a count or stopped because one request went out
+ * before their sign-in had loaded.
+ */
+export function clearImportsUnlimited(): void {
+  rememberUnlimited(false);
+}
+
 export function resetImportUsageForTest(): void {
   remembered = undefined;
   unlimited = undefined;
@@ -225,12 +236,18 @@ function parseAnswer(data: unknown): MeterAnswer | null {
 /** Keeps the remembered count in step with whatever the server just said. */
 function noteAnswer(answer: MeterAnswer): void {
   if (answer.usage) {
+    // A count does NOT mean "not Pro". The server only recognises Pro on a
+    // call that carried the account's sign-in, and a call from a page that
+    // hasn't loaded sign-in yet is answered as the bare browser. So a count
+    // never switches "unlimited" off: only something that actually knows the
+    // cook isn't Pro does (`clearImportsUnlimited`).
     remember({ ...answer.usage, enforcing: answer.mode === "enforce" });
-    rememberUnlimited(false);
-  } else if (answer.reason === "off" || answer.reason === "pro" || answer.reason === "unidentified") {
-    // Off, Pro, or a caller the server can't identify: no count applies.
+  } else if (answer.reason === "pro") {
     remember(null);
-    rememberUnlimited(answer.reason === "pro");
+    rememberUnlimited(true);
+  } else if (answer.reason === "off" || answer.reason === "unidentified") {
+    // Off, or a caller the server can't identify: no count applies.
+    remember(null);
   }
 }
 
@@ -363,6 +380,15 @@ export function settleImport(importId: string, outcome: "success" | "failure"): 
 export async function refreshImportUsage(): Promise<void> {
   if (!meterReachableHere()) return;
   try {
+    // Someone who has been signed in here is asked AS their account, so the
+    // server can see Pro and the account's own count. That means waiting for
+    // sign-in to finish restoring first; without it the call would go out as
+    // the bare browser. A visitor who has never signed in skips this entirely
+    // and loads no sign-in code.
+    if (readCookPilotWasSignedIn()) {
+      const { getFirebaseAuth } = await import("@/lib/firebase/client");
+      await withTimeout(getFirebaseAuth().authStateReady(), IMPORT_METER_TIMEOUT_MS);
+    }
     const answer = parseAnswer(await withTimeout(callMeter({ op: "status" }), IMPORT_METER_TIMEOUT_MS));
     if (answer) noteAnswer(answer);
   } catch {

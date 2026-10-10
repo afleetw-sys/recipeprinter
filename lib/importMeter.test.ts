@@ -5,7 +5,9 @@ import { flushQueueWrites, useQueue } from "@/lib/queue";
 import {
   IMPORT_METER_CALLABLE,
   IMPORT_METER_TIMEOUT_MS,
+  clearImportsUnlimited,
   importRefused,
+  importsKnownUnlimited,
   importsSpent,
   markImportsUnlimited,
   refreshImportUsage,
@@ -367,6 +369,20 @@ describe("anywhere but the real site", () => {
 });
 
 describe("after buying Pro", () => {
+  test("a count from the server never makes a Pro member limited again", async () => {
+    // The homepage can ask before sign-in has loaded, and is then answered as
+    // the bare browser, with that browser's old count.
+    markImportsUnlimited();
+    callCookPilotParser.mockResolvedValue({ mode: "enforce", allowed: true, used: 10, limit: 10, nextFreeAt: Date.UTC(2099, 0, 1) });
+    await refreshImportUsage();
+    expect(importsKnownUnlimited()).toBe(true);
+    expect(importsSpent()).toBe(false);
+
+    // Only something that knows they aren't Pro switches it off.
+    clearImportsUnlimited();
+    expect(importsSpent()).toBe(true);
+  });
+
   test("the free count is forgotten at once, so nothing treats them as out of imports", async () => {
     callCookPilotParser.mockResolvedValue({ mode: "enforce", allowed: true, used: 10, limit: 10, nextFreeAt: Date.UTC(2099, 0, 1) });
     await refreshImportUsage();

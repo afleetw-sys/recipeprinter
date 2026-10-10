@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
+import { onCookPilotSignedInChange, readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
 import { IMPORT_ALLOWANCE_LIVE } from "@/lib/freeImports";
 import {
+  clearImportsUnlimited,
   importsKnownUnlimited,
   refreshImportUsage,
   rememberedImportUsage,
@@ -33,7 +34,16 @@ export function useImportUsage(enabled: boolean = true): { hidden: boolean; usag
 
   useEffect(() => {
     if (!active) return;
-    if (rememberedImportUsage() || importsKnownUnlimited() || readCookPilotWasSignedIn()) void refreshImportUsage();
+    // A known Pro member has no count to fetch.
+    if (!importsKnownUnlimited() && (rememberedImportUsage() || readCookPilotWasSignedIn())) {
+      void refreshImportUsage();
+    }
+    // Signing in or out changes whose count this is. Signing out also ends
+    // "unlimited": that belonged to the account, not to this browser.
+    return onCookPilotSignedInChange((signedIn) => {
+      if (!signedIn) clearImportsUnlimited();
+      void refreshImportUsage();
+    });
   }, [active]);
 
   if (!active || unlimited) return { hidden: true, usage: null };

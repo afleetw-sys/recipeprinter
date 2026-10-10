@@ -106,7 +106,13 @@ import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { useProPurchase } from "@/lib/useProPurchase";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
 import { IMAGE_IMPORT_LIMIT_TRIGGER, IMPORT_LIMIT_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
-import { importsSpent, markImportsUnlimited, rememberedImportUsage } from "@/lib/importMeter";
+import {
+  clearImportsUnlimited,
+  importsKnownUnlimited,
+  importsSpent,
+  markImportsUnlimited,
+  rememberedImportUsage,
+} from "@/lib/importMeter";
 import { ImportUsageMenu } from "@/components/ImportUsageMenu";
 import { bookRoomLeft } from "@/lib/cookbookFreeSize";
 import { FREE_COOKBOOK_RECIPES } from "@/lib/freeImports";
@@ -3033,7 +3039,10 @@ export default function PrintPage() {
   // so no banner, ring or paywall goes on treating them as out of imports.
   useEffect(() => {
     if (hasProBrandless) markImportsUnlimited();
-  }, [hasProBrandless]);
+    // The purchase SDK has answered, and the answer is "not Pro": the one
+    // place that can switch "unlimited" back off (an expired subscription).
+    else if (customerInfoStatus === "ok") clearImportsUnlimited();
+  }, [hasProBrandless, customerInfoStatus]);
   useEffect(() => {
     setBrandHidden(hasProBrandless);
   }, [hasProBrandless]);
@@ -3195,7 +3204,12 @@ export default function PrintPage() {
     cookbookMode,
     bookBought:
       cookbookMode && (cookbookAccessStatus === "unlocked" || isCookbookProjectUnlocked(cookbookProjectId)),
-    clientPro: hasProEntitlement(effectiveCustomerInfo.customerInfo),
+    // Pro for sure, or remembered as Pro while the purchase SDK is still
+    // loading: a Pro member's first import after a reload must not be metered
+    // (or refused) in the second before their entitlement arrives.
+    clientPro:
+      hasProEntitlement(effectiveCustomerInfo.customerInfo) ||
+      (customerInfoStatus !== "ok" && importsKnownUnlimited()),
     onMultiRecipeBlocked: handleMultiRecipeBlocked,
     // Out of free imports: the existing Pro dialog, with the allowance's own
     // wording. Nothing the cook already has is touched.
