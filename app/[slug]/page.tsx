@@ -87,7 +87,7 @@ function CaptureBlock({ page }: { page: SeoLandingPage }) {
     <div id="rp-capture" className="scroll-mt-24">
       <SeoCapture
         initialMode={page.initialImportMode ?? "url"}
-        submitLabel={page.importSubmitLabel ?? "Start printing"}
+        submitLabel={page.importSubmitLabel ?? "Make it printable"}
         fieldLabel={page.importFieldLabel}
         placeholder={page.importPlaceholder}
         uploadTitle={page.importUploadTitle}

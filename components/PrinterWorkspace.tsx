@@ -55,7 +55,7 @@ type ImportKind = "cards" | "cookbook";
  */
 export function PrinterWorkspace({
   initialImportMode = "url",
-  importSubmitLabel = "Start printing",
+  importSubmitLabel = "Make it printable",
 }: {
   initialImportMode?: ImportTab;
   /**
