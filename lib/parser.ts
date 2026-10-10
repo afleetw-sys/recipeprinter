@@ -244,11 +244,18 @@ function isAuthOrAppCheckError(err: unknown): boolean {
   );
 }
 
-async function parseUrlLocally(url: string): Promise<LocalParseOutcome> {
+async function parseUrlLocally(url: string, importId?: string): Promise<LocalParseOutcome> {
   try {
     const response = await fetch("/api/parse", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      // The import id lets CookPilot count how many `/api/parse` calls come
+      // from this app, and so how many come from somewhere else
+      // (docs/import-meter-plan.md, 1.2). Only an id, never anything about
+      // the cook.
+      headers: {
+        "Content-Type": "application/json",
+        ...(importId ? { "x-rp-import-id": importId } : {}),
+      },
       body: JSON.stringify({ url }),
     });
     const data = (await response.json()) as ParseResponse;
@@ -344,7 +351,7 @@ function categoryForRouteStatus(status: number | undefined): ImportFailureCode {
  * yields several. Never resolves to an empty array — it throws `ImportError`
  * instead so the queue can report the failure.
  */
-export async function parseUrlAll(rawUrl: string): Promise<Recipe[]> {
+export async function parseUrlAll(rawUrl: string, opts?: { importId?: string }): Promise<Recipe[]> {
   // A wrapper (`google.com/url?q=…`) is a recipe page with a doorway in front
   // of it, so we step through the doorway rather than sending the parser at
   // the doorway itself. Idempotent, and the queue already did it — this is
@@ -360,7 +367,7 @@ export async function parseUrlAll(rawUrl: string): Promise<Recipe[]> {
   const searchPage = searchPageMessage(url);
   if (searchPage) throw new ImportError(searchPage, "search_page");
 
-  const local = await parseUrlLocally(url);
+  const local = await parseUrlLocally(url, opts?.importId);
   if (local.recipes && local.recipes.length > 0) return local.recipes;
   if (shouldTryUrlFallback(local)) {
     try {

@@ -320,7 +320,7 @@ export default function PrintPage() {
   const [lineDeleteUndo, setLineDeleteUndo] = useState<(() => void) | null>(null);
   /** The toast reporting that a roundup URL, a multi-recipe photo, or a
       library commit found more than one recipe but this account can only add
-      one (see `queue.configureMultiRecipeGate`) carries an Upgrade action —
+      one (see `queue.configureImportGates`) carries an Upgrade action —
       held until that toast goes, same as `lineDeleteUndo`. */
   const [multiRecipeUpsellPending, setMultiRecipeUpsellPending] = useState(false);
   // The organizer's "Sort by". `custom` is whatever order the cook has built by
@@ -1494,6 +1494,13 @@ export default function PrintPage() {
   // shell — scaffold the book they'd have built by hand. Reached from the
   // pending-import effect above, for a fresh project born from the homepage's
   // Cookbook tab.
+  //
+  // Becoming a cookbook is one-way. Imports into a book never use the free
+  // card import allowance (lib/importMeter), which is only sound while no path
+  // moves a book's recipes back into card mode. Any future path that does
+  // (a cards switch, "copy to a new project", a cards export of a book) must
+  // charge those recipes as card imports first. See
+  // docs/import-meter-plan.md, section 1.3.
   function scaffoldCookbook() {
     // A cookbook is a bound book, never a 4×6 card, and it wants its photos.
     // These are component-level (not meta), so they apply whether we restore a
@@ -3153,11 +3160,15 @@ export default function PrintPage() {
     }
     setMultiRecipeUpsellPending(true);
   }
-  // Called every render (not from an effect — see `configureMultiRecipeGate`'s
+  // Called every render (not from an effect — see `configureImportGates`'s
   // own doc comment): cheap, and keeps the gate correct within the very
   // render that first resolves entitlement rather than one render behind.
-  queue.configureMultiRecipeGate({
+  queue.configureImportGates({
     singleRecipeOnly,
+    cookbookMode,
+    bookBought:
+      cookbookMode && (cookbookAccessStatus === "unlocked" || isCookbookProjectUnlocked(cookbookProjectId)),
+    clientPro: hasProEntitlement(effectiveCustomerInfo.customerInfo),
     onMultiRecipeBlocked: handleMultiRecipeBlocked,
     importContext: cookbookMode
       ? { context: "cookbook", ...(cookbookProjectId ? { cookbookId: cookbookProjectId } : {}) }
@@ -3928,10 +3939,16 @@ export default function PrintPage() {
       // homepage tab dropped its own pricing banner in favor of this dialog
       // doing that job once the book is actually built, over the finished
       // article rather than a bare choice of tabs.
-      if (projectMeta.meta.cookbookIntent && !projectMeta.meta.cookbookMode) {
+      // The book is switched on inside `beginCookbookBuild`'s timer, after
+      // the import below has already started, so the queue's own cookbook
+      // gate still reads "cards" for it. Saying so here keeps the import
+      // meter off a recipe that is landing in a book (lib/importMeter).
+      const intoNewBook = Boolean(projectMeta.meta.cookbookIntent && !projectMeta.meta.cookbookMode);
+      if (intoNewBook) {
         projectMeta.clearCookbookIntent();
         beginCookbookBuild({ offerAfter: true, followImport: pending.kind !== "empty" });
       }
+      const importOptions = { meterExempt: intoNewBook };
       // A cookbook begun with nothing in it: the book is built above, and
       // there is no recipe to add.
       if (pending.kind === "empty") return;
@@ -3973,14 +3990,14 @@ export default function PrintPage() {
         recipeCount: recipeCountNow,
       });
       if (wouldBeLocked) queue.clear();
-      if (pending.kind === "url") queue.addUrl(pending.url);
-      else if (pending.kind === "text") queue.addText(pending.text);
+      if (pending.kind === "url") queue.addUrl(pending.url, importOptions);
+      else if (pending.kind === "text") queue.addText(pending.text, importOptions);
       else if (pending.kind === "ready") queue.addReadyRecipes(pending.recipes);
       // Files, not data URLs: the decode now happens HERE, inside `runParse`,
       // so the placeholder row goes up first and the photo is worked on in
       // front of the cook instead of behind a spinner on the page they left.
-      else if (pending.kind === "imageFiles") queue.addImageFiles(pending.files, pending.label);
-      else if (pending.kind === "images") queue.addImages(pending.images, pending.label);
+      else if (pending.kind === "imageFiles") queue.addImageFiles(pending.files, pending.label, importOptions);
+      else if (pending.kind === "images") queue.addImages(pending.images, pending.label, importOptions);
     });
     return () => {
       cancelled = true;
