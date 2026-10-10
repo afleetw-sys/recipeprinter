@@ -627,6 +627,9 @@ block (`components/seo/SeoCapture.tsx`) and the print page's Add-recipe dialog
   errors already live. There's a small info button beside it.
 - **The homepage hero, headings and calls to action don't change.**
 
+**No "How it works" note (Amelia, 2026-10-10):** the info button and popover described below
+were built and then removed. The line stands on its own.
+
 **Wording (Amelia, 2026-10-10), which replaces the strings in the table below:** the line never
 says "No account required" (beside a link to Pro it reads as if Pro needs no account), and the date
 reads "Resets Oct 21", not "Your next one's back on Oct 21". So: "10 free recipe imports every 30

@@ -48,11 +48,3 @@ export function importAllowanceLine(
   if (usage.nextFreeAt === null) return { text: count, spent: left <= 0 };
   return { text: `${count} Resets ${formatImportReturnDate(usage.nextFreeAt)}.`, spent: left <= 0 };
 }
-
-/** What the "about free imports" note says, in order. */
-export const IMPORT_ALLOWANCE_NOTES = [
-  `Your ${FREE_IMPORT_WINDOW_DAYS} days start with your first import. When they end, all ${FREE_IMPORTS_PER_WINDOW} are yours again.`,
-  "Editing, customizing and reprinting recipes you've already imported never uses an import.",
-  "RecipePrinter Pro includes unlimited imports.",
-  `Making a cookbook instead? You can preview one free with up to ${FREE_COOKBOOK_RECIPES} recipes, and it doesn't use these.`,
-];
