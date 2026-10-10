@@ -19,7 +19,9 @@ export function SiteFooter({ isHome = false }: { isHome?: boolean }) {
           aria-label="Footer"
           className="flex flex-wrap items-center gap-x-cp-6 gap-y-cp-3"
         >
-          {NAV_LINKS.filter((link) => link.inFooter !== false).map(({ href, label }) => (
+          {NAV_LINKS.filter(
+            (link) => link.inFooter !== false && !(isHome && link.inFooter === "off-home"),
+          ).map(({ href, label }) => (
             <Link
               key={href}
               href={href}

@@ -501,7 +501,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "convert-recipe-to-pdf",
-    contentUpdated: "2026-10-06",
+    contentUpdated: "2026-10-10",
     imagesReviewed: "2026-10-05",
     copyReviewed: "2026-09-02",
     primaryKeyword: "convert recipe to PDF",
@@ -594,6 +594,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-recipe-from-website", label: "Print from a website" },
       { href: "/print-recipe-without-ads", label: "Print without ads" },
       { href: "/recipe-card-printer", label: "Make recipe cards" },
+      { href: "/canva-recipe-card-alternative", label: "Canva alternative for recipe cards" },
+      { href: "/just-the-recipe-alternative", label: "Just the Recipe alternative" },
     ],
   },
   {
@@ -703,7 +705,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-multiple-recipes",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-10",
     copyReviewed: "2026-10-05",
     primaryKeyword: "print multiple recipes",
     secondaryKeywords: [
@@ -793,11 +795,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/family-recipe-book", label: "Build a family recipe book" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
       { href: "/print-meal-plan-recipes", label: "Print a week of dinners" },
+      { href: "/canva-recipe-card-alternative", label: "Canva alternative for recipe cards" },
     ],
   },
   {
     slug: "print-recipe-from-photo",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-10",
     copyReviewed: "2026-10-02",
     primaryKeyword: "print a recipe from a photo",
     secondaryKeywords: [
@@ -899,6 +902,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/recipe-card-printer", label: "Recipe card printer" },
       { href: "/family-recipe-book", label: "Build a family recipe book" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
+      { href: "/digitize-recipe-cards", label: "Digitize recipe cards" },
+      { href: "/reciscan-alternative", label: "ReciScan alternative" },
     ],
   },
   {
@@ -2253,7 +2258,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "digitize-recipe-cards",
-    contentUpdated: "2026-10-02",
+    contentUpdated: "2026-10-10",
     copyReviewed: "2026-10-02",
     primaryKeyword: "digitize recipe cards",
     secondaryKeywords: [
@@ -2373,12 +2378,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/family-recipe-book", label: "Family recipe book ideas" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
       { href: "/organize-recipes", label: "Organize recipes" },
+      { href: "/reciscan-alternative", label: "ReciScan alternative" },
     ],
   },
   {
     slug: "preserve-family-recipes",
     importPlaceholder: "Photograph a handwritten card, or drop a scan",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-10",
     // Signed off on the writing. One image is still owed: "Keep the original,
     // cook from the copy" wants a photograph of the printed copy lying beside
     // the handwritten card it came from, which is the whole claim in one frame
@@ -2472,11 +2478,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/reciscan-alternative", label: "ReciScan alternative" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
       { href: "/recipe-card-printer", label: "Make recipe cards" },
+      { href: "/christmas-recipe-book", label: "Make a Christmas recipe book" },
+      { href: "/digitize-recipe-cards", label: "Digitize recipe cards" },
     ],
   },
   {
     slug: "family-recipe-book",
-    contentUpdated: "2026-10-06",
+    contentUpdated: "2026-10-10",
     copyReviewed: "2026-10-07",
     imagesReviewed: "2026-10-07",
     // Guide intent, but the input belongs at the top like everywhere else: a
@@ -2577,11 +2585,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/recipe-binder", label: "Recipe binder ideas" },
       { href: "/organize-recipes", label: "Organize recipes" },
       { href: "/how-to-print-a-cookbook", label: "How to print a cookbook" },
+      { href: "/cookbook-maker", label: "Online cookbook maker" },
     ],
   },
   {
     slug: "make-your-own-cookbook",
-    contentUpdated: "2026-10-06",
+    contentUpdated: "2026-10-10",
     copyReviewed: "2026-10-06",
     imagesReviewed: "2026-10-06",
     primaryKeyword: "make your own cookbook",
@@ -2696,11 +2705,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/homemade-cookbook-gift", label: "Make a cookbook gift" },
       { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
       { href: "/how-to-print-a-cookbook", label: "How to print a cookbook" },
+      { href: "/christmas-recipe-book", label: "Make a Christmas recipe book" },
     ],
   },
   {
     slug: "cookbook-maker",
-    contentUpdated: "2026-10-06",
+    contentUpdated: "2026-10-10",
     copyReviewed: "2026-10-06",
     imagesReviewed: "2026-10-06",
     primaryKeyword: "cookbook maker",
@@ -2839,11 +2849,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/recipe-binder", label: "Build a recipe binder" },
       { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
       { href: "/how-to-print-a-cookbook", label: "How to print a cookbook" },
+      { href: "/christmas-recipe-book", label: "Make a Christmas recipe book" },
     ],
   },
   {
     slug: "how-to-print-a-cookbook",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-10",
     primaryKeyword: "how to print a cookbook",
     // Facts about each destination come from lib/printDestinations.ts and
     // lib/cookbookPresets.ts (what the export dialog builds) and are phrased
@@ -2965,11 +2976,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/cookbook-maker", label: "Cookbook maker" },
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/homemade-cookbook-gift", label: "Make a homemade cookbook gift" },
+      { href: "/christmas-recipe-book", label: "Make a family recipe book for Christmas" },
+      { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
     ],
   },
   {
     slug: "handwritten-recipes-to-cookbook",
-    contentUpdated: "2026-10-06",
+    contentUpdated: "2026-10-10",
     copyReviewed: "2026-10-02",
     primaryKeyword: "turn handwritten recipes into a cookbook",
     secondaryKeywords: [
@@ -3101,11 +3114,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
       { href: "/bridal-shower-recipe-book", label: "Bridal shower recipe book" },
+      { href: "/christmas-recipe-book", label: "Make a family recipe book for Christmas" },
+      { href: "/cookbook-maker", label: "Online cookbook maker" },
     ],
   },
   {
     slug: "homemade-cookbook-gift",
-    contentUpdated: "2026-10-06",
+    contentUpdated: "2026-10-10",
     copyReviewed: "2026-10-06",
     imagesReviewed: "2026-10-06",
     primaryKeyword: "homemade cookbook gift",
@@ -3253,11 +3268,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
       { href: "/recipe-book-gift", label: "More recipe book gift ideas" },
       { href: "/bridal-shower-recipe-book", label: "Bridal shower recipe book" },
+      { href: "/cookbook-maker", label: "Online cookbook maker" },
     ],
   },
   {
     slug: "recipe-book-gift",
-    contentUpdated: "2026-10-06",
+    contentUpdated: "2026-10-10",
     copyReviewed: "2026-10-02",
     primaryKeyword: "recipe book gift",
     secondaryKeywords: [
@@ -3390,11 +3406,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/recipe-card-printer", label: "Make printable recipe cards" },
       { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
       { href: "/bridal-shower-recipe-book", label: "Bridal shower recipe book" },
+      { href: "/christmas-recipe-book", label: "Make a family recipe book for Christmas" },
+      { href: "/cookbook-maker", label: "Online cookbook maker" },
     ],
   },
   {
     slug: "christmas-recipe-book",
-    contentUpdated: "2026-10-06",
+    contentUpdated: "2026-10-10",
     copyReviewed: "2026-10-02",
     primaryKeyword: "Christmas recipe book",
     secondaryKeywords: [
@@ -3526,11 +3544,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
       { href: "/recipe-book-gift", label: "More recipe book gift ideas" },
+      { href: "/cookbook-maker", label: "Online cookbook maker" },
     ],
   },
   {
     slug: "bridal-shower-recipe-book",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-10",
     primaryKeyword: "bridal shower recipe book",
     // Not "turn handwritten recipes into a cookbook": that is
     // /handwritten-recipes-to-cookbook's primary, linked from here instead.
@@ -3654,11 +3673,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/recipe-card-printer", label: "Make printable recipe cards" },
+      { href: "/digitize-recipe-cards", label: "Digitize recipe cards" },
+      { href: "/cookbook-maker", label: "Online cookbook maker" },
     ],
   },
   {
     slug: "just-the-recipe-alternative",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-10",
     copyReviewed: "2026-09-02",
     primaryKeyword: "Just the Recipe alternative",
     // Deliberately narrow. This page used to also claim "print recipe without
@@ -3773,11 +3794,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-recipe-from-website", label: "Print a recipe from a website" },
       { href: "/print-recipe-without-ads", label: "Print without ads" },
       { href: "/recipe-card-printer", label: "Make printable recipe cards" },
+      { href: "/canva-recipe-card-alternative", label: "Canva alternative for recipe cards" },
     ],
   },
   {
     slug: "reciscan-alternative",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-10",
     copyReviewed: "2026-09-02",
     primaryKeyword: "ReciScan alternative",
     secondaryKeywords: [
@@ -3881,11 +3903,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/recipe-binder", label: "Build a recipe binder" },
       { href: "/family-recipe-book", label: "Family recipe book ideas" },
       { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
+      { href: "/digitize-recipe-cards", label: "Digitize recipe cards" },
     ],
   },
   {
     slug: "canva-recipe-card-alternative",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-10",
     primaryKeyword: "Canva recipe card alternative",
     // Not "recipe card maker" / "printable recipe card generator" or
     // "cookbook maker": those are /recipe-card-printer's and /cookbook-maker's,
@@ -4001,6 +4024,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/print-multiple-recipes", label: "Print multiple recipes at once" },
       { href: "/cookbook-maker", label: "Cookbook maker" },
       { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
+      { href: "/just-the-recipe-alternative", label: "Just the Recipe alternative" },
     ],
   },
   {
