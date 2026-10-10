@@ -255,7 +255,8 @@ export default function PrivacyPage() {
           <li>
             <strong>Import counts.</strong> We count successful recipe imports
             for each browser, or for each account when you are signed in, to
-            understand how much RecipePrinter is used. For each import we keep
+            apply the free import allowance and show you how much of it you
+            have used. For each import we keep
             the time, the kind of import, and a short one-way fingerprint of the
             link or text, so importing the same recipe again is not counted
             twice; the recipe itself is not kept. The analytics opt-out does not
