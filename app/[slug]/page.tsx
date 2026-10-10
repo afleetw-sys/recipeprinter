@@ -266,6 +266,27 @@ export default function SeoLandingPage({ params }: PageProps) {
               groups={page.comparison.groups}
             />
           </div>
+          {/* Where the other column came from. A table of claims about someone
+              else's product is only as good as the reader's way of checking
+              it, so the competitor's own pages are one click away. */}
+          <p className="mt-cp-3 text-cp-small text-ink-soft">
+            {page.comparison.competitor} details checked {page.comparison.checked} against{" "}
+            {page.comparison.sources.map((source, index) => (
+              <span key={source.href}>
+                {index > 0 && " and "}
+                <a
+                  href={source.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-ink hover:underline"
+                >
+                  {source.label}
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
+              </span>
+            ))}
+            .
+          </p>
         </section>
       )}
 
