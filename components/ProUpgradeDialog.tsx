@@ -66,7 +66,9 @@ export function ProUpgradeDialog({
   onSignInRequired,
   busy,
   cookPilotUser,
-  title = "RecipePrinter Pro",
+  // The same words as `proUpgradeCopy`'s generic title, so the dialog reads
+  // alike whether or not the caller passes copy of its own.
+  title = "Upgrade to RecipePrinter Pro",
   body,
   benefits = PRO_BENEFITS,
   ctaLabel = "Unlock Pro and continue",

@@ -6032,15 +6032,20 @@ export default function PrintPage() {
           */
           lead={renderProUpgradeButton()}
           actions={
-            items?.length ? (
               <>
                 {/* How this project stands, to the LEFT of the action rather
                     than out by the avatar — it reads as part of the same
                     sentence as Print, and the avatar goes back to being only
                     the account. See `renderSaveControl`'s own doc comment
                     for why the control and the state are one thing. Shared
-                    with the mobile topbar (PrintDeck.tsx). */}
-                {renderSaveControl()}
+                    with the mobile topbar (PrintDeck.tsx). Only once there is
+                    something to save. */}
+                {items?.length ? renderSaveControl() : null}
+
+                {/* Print is always here, as it is on a phone's bottom bar:
+                    the page is for printing, and a button that appears only
+                    once a recipe lands makes the header jump. With nothing to
+                    print it is disabled (`printBlocked` covers an empty deck). */}
 
                 {/*
                   One button, not two. Buying and printing are not separate
@@ -6090,7 +6095,6 @@ export default function PrintPage() {
                   {cookbookLocked ? "Buy & Print" : "Print"}
                 </button>
               </>
-            ) : undefined
           }
           onNavigateHome={() => handleNavigateHome()}
         />
