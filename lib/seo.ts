@@ -195,6 +195,17 @@ export const LEGAL_LINKS: NavLink[] = [
 ];
 
 /**
+ * The branded card app/opengraph-image.tsx draws, as pages have to name it.
+ * Keep the size and alt in step with that file's own exports.
+ */
+const SOCIAL_IMAGE = {
+  url: "/opengraph-image",
+  width: 1200,
+  height: 630,
+  alt: `${SITE_NAME}: ${SITE_TAGLINE}`,
+};
+
+/**
  * Per-page metadata helper. Keeps canonical URLs, OpenGraph, and Twitter tags
  * consistent across every page so we never re-derive them by hand. The document
  * <title> picks up the "%s · RecipePrinter" template from the root layout.
@@ -213,8 +224,26 @@ export function pageMetadata({
     title,
     description,
     alternates: { canonical: path },
-    openGraph: { title: ogTitle, description, url: path },
-    twitter: { title: ogTitle, description },
+    // Everything the root layout's blocks say has to be said again here. Next
+    // does not merge `openGraph` or `twitter` across segments: a page that
+    // sets either replaces the parent's whole, including the image Next adds
+    // from app/opengraph-image.tsx. Leaving these out is how every page but
+    // the homepage shared with no picture and the small "summary" card.
+    openGraph: {
+      type: "website",
+      siteName: SITE_NAME,
+      locale: "en_US",
+      title: ogTitle,
+      description,
+      url: path,
+      images: [SOCIAL_IMAGE],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: ogTitle,
+      description,
+      images: [SOCIAL_IMAGE],
+    },
   };
 }
 
