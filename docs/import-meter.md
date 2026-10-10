@@ -74,7 +74,10 @@ Each step needs the one before it. Steps marked **(Amelia)** need her credential
    A missing doc must also read as `off` in the callable, so this order is a belt-and-braces
    step, not a dependency.
 6. **Turn on TTL for both collections (B2, Amelia).** Takes effect within about a day; deletes
-   are best-effort, usually within 24 hours of `expiresAt`:
+   are best-effort, usually within 24 hours of `expiresAt`. `gcloud` isn't installed on this Mac,
+   so use the console: Google Cloud console → project `cookpilot-bbecb` → Firestore → **TTL** →
+   **Create policy**, once with collection group `recipePrinterImportMeter` and once with
+   `recipePrinterMeterNet`, timestamp field `expiresAt` both times. The `gcloud` equivalent:
    ```bash
    gcloud firestore fields ttls update expiresAt --collection-group=recipePrinterImportMeter --enable-ttl --project=cookpilot-bbecb
    ```
