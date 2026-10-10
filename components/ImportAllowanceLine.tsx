@@ -31,20 +31,22 @@ export function ImportAllowanceLine({
   if (hidden) return null;
   const line = importAllowanceLine(usage);
   const fraction = usage && usage.limit > 0 ? Math.min(usage.used, usage.limit) / usage.limit : 0;
-  // The one spot of colour: the same Pro button as the print page's header,
-  // so "upgrade" looks like one thing wherever it appears.
+  // As quiet as the rest of the banner: text, not a boxed button. The small
+  // crown is what marks it as Pro, and it only darkens on hover.
   const upgrade = (
     <>
-      <CrownIcon size={ICON_SIZE.sm} className="text-[var(--cp-premium-bright)]" />
+      <CrownIcon size={ICON_SIZE.xs} className="text-[var(--cp-premium-bright)]" />
       Upgrade
     </>
   );
+  const upgradeClass =
+    "inline-flex shrink-0 items-center gap-1 rounded px-cp-2 py-1 font-semibold text-ink-soft hover:text-ink";
 
   return (
     <div
       // Quiet on purpose: no fill, a hairline outline at the control radius
       // (the field's and the buttons' corners), caption-size soft text. The
-      // count is the only thing in ink, and the Upgrade button the only colour.
+      // count is the only thing in ink.
       className={`flex items-center justify-between gap-cp-3 rounded border border-line py-1 pl-cp-3 pr-1 text-cp-caption text-ink-soft ${className}`}
       data-import-allowance
     >
@@ -56,11 +58,11 @@ export function ImportAllowanceLine({
         </p>
       </div>
       {onGetUnlimited ? (
-        <button type="button" className="btn btn-premium btn-compact shrink-0" onClick={onGetUnlimited}>
+        <button type="button" className={upgradeClass} onClick={onGetUnlimited}>
           {upgrade}
         </button>
       ) : (
-        <Link href="/pricing" className="btn btn-premium btn-compact shrink-0">
+        <Link href="/pricing" className={upgradeClass}>
           {upgrade}
         </Link>
       )}
