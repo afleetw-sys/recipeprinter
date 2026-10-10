@@ -40,9 +40,30 @@ const VERBOSE = process.env.RP_AUDIT_VERBOSE === "1";
 
 const NAMESPACE = "products/recipePrinter";
 
+import { createRequire } from "node:module";
+import path from "node:path";
+
+/** `npx --package` puts the package's `.bin` on PATH but nowhere a bare
+    `import` looks, so resolve from those directories when the import misses. */
+function requireFromNpx(name) {
+  for (const dir of (process.env.PATH ?? "").split(path.delimiter)) {
+    if (!dir.endsWith(path.join("node_modules", ".bin"))) continue;
+    try {
+      return createRequire(path.join(dir, "..", "noop.js"))(name);
+    } catch {
+      // Not in this one; keep looking.
+    }
+  }
+  throw new Error(`${name} not found`);
+}
+
 let admin;
 try {
-  admin = (await import("firebase-admin")).default;
+  try {
+    admin = (await import("firebase-admin")).default;
+  } catch {
+    admin = requireFromNpx("firebase-admin");
+  }
 } catch {
   console.error(
     "firebase-admin is not resolvable. Run this via:\n\n" +
