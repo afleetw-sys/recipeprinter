@@ -79,7 +79,7 @@ export function PaprikaCapture({
             key={libraryNonce}
             items={[]}
             onAddRecipes={onAddRecipes}
-            commitLabel="Start printing"
+            commitLabel="Make it printable"
             commitLeavesPage
             onChooseAnotherFile={() => inputRef.current?.click()}
             replaceError={error}

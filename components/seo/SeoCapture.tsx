@@ -81,7 +81,7 @@ function useHandoff() {
 
 export function SeoCapture({
   initialMode = "url",
-  submitLabel = "Start printing",
+  submitLabel = "Make it printable",
   fieldLabel,
   placeholder,
   uploadTitle,
@@ -286,7 +286,7 @@ function SingleFieldCapture({
    * while the front door at "/" carries all of them plus the library imports.
    * So someone who arrives on the Pinterest page holding a photo, a block of
    * text, or a Paprika export can see no route to it from here — and the thing
-   * they just tapped said "Start printing". Taking them to the tool keeps that
+   * they just tapped said "Make it printable". Taking them to the tool keeps that
    * promise. Telling someone with no link to "paste a recipe link first" tells
    * them they came to the wrong page, which they didn't.
    *
