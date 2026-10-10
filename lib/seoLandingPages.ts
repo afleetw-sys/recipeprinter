@@ -5,6 +5,7 @@ import { PRINTERS } from "@/lib/cookbookPresets";
 import { PRO_ANNUAL_PRICE_FALLBACK, PRO_MONTHLY_PRICE_FALLBACK } from "@/lib/proProduct";
 import { IMAGE_IMPORTS_PER_HOUR_FREE, IMAGE_IMPORTS_PER_HOUR_PRO } from "@/lib/imageImportQuota";
 import { COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
+import { FREE_IMPORTS_PER_WINDOW, FREE_IMPORT_WINDOW_DAYS } from "@/lib/freeImports";
 
 /** Icon slugs a value-prop chip can use, resolved to real icons in the template. */
 export type SeoIconKey =
@@ -766,7 +767,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print multiple recipes at once for free?",
         answer:
-          "You can import and print recipes one at a time for free, as many as you like. Printing several together as one collection is part of RecipePrinter Pro.",
+          `You can print recipes one at a time for free, as often as you like, with ${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days. Printing several together as one collection is part of RecipePrinter Pro, which also includes unlimited imports.`,
       },
       {
         question: "Can I print recipes from different websites, screenshots, and recipe apps together?",
@@ -3777,7 +3778,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does each one cost?",
         answer:
-          "Just the Recipe is free to read recipes and to save up to 20; printing, unlimited saves and serving adjustments are on Premium. RecipePrinter is free to print full-page recipes, with no account and no limit. The recipe-card format — every theme, 4x6 cards, the card toolkit — is RecipePrinter Pro, $4.99 a month or $39.99 a year. Cookbooks are separate: $19.99 per book, paid once.",
+          "Just the Recipe is free to read recipes and to save up to 20; printing, unlimited saves and serving adjustments are on Premium. RecipePrinter is free to print full-page recipes, with no account and 10 free recipe imports every 30 days. The recipe-card format — every theme, 4x6 cards, the card toolkit — is RecipePrinter Pro, $4.99 a month or $39.99 a year. Cookbooks are separate: $19.99 per book, paid once.",
       },
       {
         question: "Can I bring my saved Just the Recipe recipes over?",

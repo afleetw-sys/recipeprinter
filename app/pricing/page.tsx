@@ -47,7 +47,7 @@ const FAQS = [
   {
     question: "Do I need Pro to print recipes?",
     answer:
-      "No. Importing recipes and printing or saving full-page recipes is free, with no account. Pro adds 4×6 recipe cards, premium themes, and printing several recipes in one job.",
+      "No. Printing or saving full-page recipes is free, with no account and 10 free recipe imports every 30 days. Pro adds unlimited imports, 4×6 recipe cards, premium themes, and printing several recipes in one job.",
   },
   {
     question: "What's the difference between Pro and a cookbook?",
@@ -66,7 +66,7 @@ const FAQS = [
   {
     question: "What happens to my recipes if Pro ends?",
     answer:
-      "Anything you've printed or saved as a PDF is yours to keep, and your saved recipes stay in your account. You can keep importing and printing recipes for free, and come back to Pro whenever you like.",
+      "Anything you've printed or saved as a PDF is yours to keep, and your saved recipes stay in your account. You can keep printing for free, with 10 free recipe imports every 30 days, and come back to Pro whenever you like.",
   },
 ];
 

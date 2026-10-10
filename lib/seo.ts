@@ -9,6 +9,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import type { Metadata } from "next";
+import { FREE_COOKBOOK_RECIPES, FREE_IMPORTS_PER_WINDOW, FREE_IMPORT_WINDOW_DAYS } from "@/lib/freeImports";
 
 /**
  * Canonical production origin. Override with NEXT_PUBLIC_SITE_URL in the
@@ -432,7 +433,7 @@ export const FAQ: FaqItem[] = [
     question: "Is RecipePrinter free?",
     group: "account",
     answer:
-      "Yes. You can import, edit, and print full-page recipes for free, with no account required. RecipePrinter Pro is optional and adds 4 by 6 recipe cards, every theme, batch printing, and the full card toolkit for $4.99 a month or $39.99 a year.",
+      `Yes. You get ${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days, with no account required, and you can edit, customize and print your recipes as often as you like. RecipePrinter Pro is optional: it adds unlimited imports, 4 by 6 recipe cards, every theme, batch printing, and the full card toolkit for $4.99 a month or $39.99 a year. Making a cookbook? You can preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes; downloading it is $19.99 once, and then you can add as many recipes as you like.`,
   },
   {
     question: "Is RecipePrinter a recipe app?",
@@ -510,8 +511,9 @@ export function webApplicationNode() {
     operatingSystem: "Any (web browser)",
     browserRequirements: "Requires JavaScript.",
     inLanguage: "en",
-    // Importing, editing and full-page printing stay genuinely free (no
-    // account, no paywall) — `isAccessibleForFree` is still true for that
+    // Editing and full-page printing stay genuinely free (no account, no
+    // paywall), with a free allowance of imports every 30 days
+    // (lib/freeImports.ts) — `isAccessibleForFree` is still true for that
     // core use. RecipePrinter Pro is a second, separate Offer: the physical
     // recipe-card experience (every theme, 4x6 cards, the card toolkit),
     // priced monthly or annually. Keep both listed rather than collapsing to
@@ -523,12 +525,14 @@ export function webApplicationNode() {
       {
         "@type": "Offer",
         name: "RecipePrinter Free",
+        description: `${FREE_IMPORTS_PER_WINDOW} recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days, unlimited editing and full-page printing`,
         price: "0",
         priceCurrency: "USD",
       },
       {
         "@type": "Offer",
         name: "RecipePrinter Pro",
+        description: "Unlimited recipe imports, every theme, 4x6 cards, batch printing",
         priceCurrency: "USD",
         priceSpecification: [
           {

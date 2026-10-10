@@ -1,9 +1,6 @@
 /**
- * The free import allowance, in one place (docs/import-meter-plan.md, 8.1).
- *
- * Nothing renders from this yet. During measurement the site says nothing
- * about an allowance; the copy and the limits ship together in the go-live
- * PR, which is the only change that sets `IMPORT_ALLOWANCE_LIVE`.
+ * The free import allowance, in one place (docs/import-meter-plan.md, 8.1):
+ * the numbers, the switch, and the one line every import box shows.
  */
 
 /** Card imports a free visitor gets per rolling window. Keep in sync with
@@ -13,12 +10,13 @@ export const FREE_IMPORT_WINDOW_DAYS = 30;
 /** An unbought cookbook's free preview size (decision D8). */
 export const FREE_COOKBOOK_RECIPES = 10;
 /**
- * Gates BOTH limits, the card allowance and the cookbook free size. The client
- * only ever restricts anyone when this is true AND the meter answers in
- * `enforce` mode, so a build from the measurement era can't restrict anyone
- * even if the server config is flipped early.
+ * Gates BOTH limits, the card allowance and the cookbook free size, and every
+ * line of UI that mentions them. The client only refuses an import when this
+ * is true AND the meter answers in `enforce` mode, so the copy can be live
+ * before the server is switched on, and setting this to false is a complete
+ * client-side rollback. Turned on 2026-10-10 with the go-live build.
  */
-export const IMPORT_ALLOWANCE_LIVE = false;
+export const IMPORT_ALLOWANCE_LIVE = true;
 export const FREE_IMPORTS_LINE = `${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days. No account required.`;
 
 /** "Oct 21": the day an import comes back, in the cook's own locale. */

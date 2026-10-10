@@ -12,12 +12,12 @@ import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
 // in SEO_LANDING_PAGES and overrides this map, so a slug listed here would be
 // read by nobody and drift quietly out of date.
 const LAST_MODIFIED: Record<string, string> = {
-  "/": "2026-09-11",
+  "/": "2026-10-10",
   "/how-it-works": "2026-09-09",
   "/features": "2026-10-05",
-  "/faq": "2026-10-05",
+  "/faq": "2026-10-10",
   "/about": "2026-09-09",
-  "/pricing": "2026-10-05",
+  "/pricing": "2026-10-10",
   "/privacy": "2026-10-10",
   "/terms": "2026-09-04",
 };
