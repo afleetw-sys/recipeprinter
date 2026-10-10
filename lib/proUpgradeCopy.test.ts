@@ -60,7 +60,7 @@ describe("proUpgradeCopy", () => {
 
   test("hitting the hourly photo limit names what Pro changes about it, in the title only", () => {
     const copy = proUpgradeCopy([], IMAGE_IMPORT_LIMIT_TRIGGER);
-    expect(copy.title).toBe("Import up to 30 images an hour");
+    expect(copy.title).toBe("Import up to 50 images an hour");
     // The hourly number is not a listed benefit of either plan any more.
     expect(copy.benefits).toEqual(PRO_BENEFITS);
     expect(PRO_BENEFITS.some((benefit) => /an hour/.test(benefit))).toBe(false);

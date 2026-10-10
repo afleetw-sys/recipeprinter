@@ -8,7 +8,7 @@
  * still appears is the message shown when the hourly limit is actually hit.
  */
 export const IMAGE_IMPORTS_PER_HOUR_FREE = 10;
-export const IMAGE_IMPORTS_PER_HOUR_PRO = 30;
+export const IMAGE_IMPORTS_PER_HOUR_PRO = 50;
 
 
 export interface ImageImportQuota {
