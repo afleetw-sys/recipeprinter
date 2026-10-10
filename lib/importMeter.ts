@@ -39,10 +39,10 @@ export type MeteredMethod = "url" | "image" | "text";
 
 /** How much of the allowance is used, as the server reports it. */
 export interface ImportUsage {
-  /** Imports counted in the rolling window. */
+  /** Imports counted in the current 30 days. */
   used: number;
   limit: number;
-  /** When the next import comes back (ms), or null when none has been used. */
+  /** When the 30 days end and every import comes back (ms), or null when none has been used. */
   nextFreeAt: number | null;
 }
 
@@ -165,14 +165,14 @@ export function resetImportUsageForTest(): void {
 }
 
 /**
- * The count as it stands now. An import whose 30 days are up has come back
- * even if the server hasn't been asked since, so a remembered count whose
- * `nextFreeAt` has passed is at least one lower; it is shown as that until the
- * next real answer.
+ * The count as it stands now. The 30 days are a fixed window: they start with
+ * the first import, and when they end every import comes back together. So a
+ * remembered count whose reset time has passed is zero, even if the server
+ * hasn't been asked since.
  */
 export function usageNow(usage: ImportUsage, nowMs: number): ImportUsage {
   if (usage.nextFreeAt === null || usage.nextFreeAt > nowMs) return usage;
-  return { used: Math.max(0, usage.used - 1), limit: usage.limit, nextFreeAt: null };
+  return { used: 0, limit: usage.limit, nextFreeAt: null };
 }
 
 function parseUsage(record: Record<string, unknown>): ImportUsage | undefined {

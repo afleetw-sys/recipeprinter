@@ -243,7 +243,7 @@ describe("out of free imports", () => {
   test.each([
     { name: "last answer was none left", last: { used: 10 }, refused: true },
     { name: "last answer had imports left", last: { used: 9 }, refused: false },
-    { name: "the last import has since come back", last: { used: 10, nextFreeAt: Date.UTC(2020, 0, 1) }, refused: false },
+    { name: "the 30 days have since ended", last: { used: 10, nextFreeAt: Date.UTC(2020, 0, 1) }, refused: false },
     { name: "the last answer wasn't enforcing", last: { used: 10, mode: "measure" }, refused: false },
     { name: "there is no answer on record", last: null, refused: false },
   ])("meter unreachable, $name: refused is $refused", async ({ last, refused }) => {
@@ -271,10 +271,10 @@ describe("out of free imports", () => {
     expect(importRefused({ ...refusal, result: { mode: "measure", allowed: false } }, Date.now(), true)).toBe(false);
   });
 
-  test("a remembered count drops by one once its next import has come back", () => {
+  test("a remembered count is back to zero once its reset time has passed", () => {
     const usage = { used: 10, limit: 10, nextFreeAt: 1_000 };
     expect(usageNow(usage, 999)).toEqual(usage);
-    expect(usageNow(usage, 1_000)).toEqual({ used: 9, limit: 10, nextFreeAt: null });
+    expect(usageNow(usage, 1_000)).toEqual({ used: 0, limit: 10, nextFreeAt: null });
   });
 });
 

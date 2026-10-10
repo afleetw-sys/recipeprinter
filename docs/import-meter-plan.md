@@ -8,8 +8,11 @@ doc exists, so nothing is recorded and nobody is limited. **Next: build enforcem
 - **No measurement period.** We are not waiting 30 days and not comparing 5 against 10. Every
   "measure first", "candidate limit", "would block at 5" and "choose the limit later" passage
   below is superseded.
-- **The card limit is decided: 10 free imports per rolling 30 days.** Each import comes back 30
-  days after it was used.
+- **The card limit is decided: 10 free imports per 30 days, as a FIXED window, not a rolling
+  one** (Amelia, 2026-10-10, later the same day). The 30 days start with the first import, and
+  when they end all 10 come back together; the next import starts a new 30 days. That is what
+  "Resets Oct 21" means. Every "rolling", "comes back 30 days after you used it" and "next one
+  back" passage below is superseded.
 - **Counting starts at go-live.** The meter stays `off` until the enforcing build and its copy
   ship together, so everyone starts with a full 10 and nobody meets a limit they were never
   told about. `measure` mode is not used.

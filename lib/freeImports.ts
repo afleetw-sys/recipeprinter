@@ -3,8 +3,9 @@
  * the numbers, the switch, and the one line every import box shows.
  */
 
-/** Card imports a free visitor gets per rolling window. Keep in sync with
-    CookPilot's `recipePrinterConfig/importMeter`. */
+/** Card imports a free visitor gets per window. The window is fixed: it
+    starts with the first import and everything resets together when it ends.
+    Keep in sync with CookPilot's `recipePrinterConfig/importMeter`. */
 export const FREE_IMPORTS_PER_WINDOW = 10;
 export const FREE_IMPORT_WINDOW_DAYS = 30;
 /** An unbought cookbook's free preview size (decision D8). */
@@ -21,7 +22,7 @@ export const IMPORT_ALLOWANCE_LIVE = true;
 // needs no account either (Amelia, 2026-10-10).
 export const FREE_IMPORTS_LINE = `${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days.`;
 
-/** "Oct 21": the day an import comes back, in the cook's own locale. */
+/** "Oct 21": the day the free imports reset, in the cook's own locale. */
 export function formatImportReturnDate(ms: number): string {
   return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
@@ -50,7 +51,7 @@ export function importAllowanceLine(
 
 /** What the "about free imports" note says, in order. */
 export const IMPORT_ALLOWANCE_NOTES = [
-  `Each import comes back ${FREE_IMPORT_WINDOW_DAYS} days after you used it.`,
+  `Your ${FREE_IMPORT_WINDOW_DAYS} days start with your first import. When they end, all ${FREE_IMPORTS_PER_WINDOW} are yours again.`,
   "Editing, customizing and reprinting recipes you've already imported never uses an import.",
   "RecipePrinter Pro includes unlimited imports.",
   `Making a cookbook instead? You can preview one free with up to ${FREE_COOKBOOK_RECIPES} recipes, and it doesn't use these.`,

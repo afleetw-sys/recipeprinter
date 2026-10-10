@@ -4,7 +4,7 @@ How to deploy, switch on, watch and roll back the free import meter. The design 
 are in [import-meter-plan.md](import-meter-plan.md). This file is the procedure.
 
 **Where things stand (2026-10-10):** the meter and its client wiring are live and switched off.
-There is no measurement phase (plan rev 5): the limit is decided at 10 per rolling 30 days, and
+There is no measurement phase (plan rev 5): the limit is decided at 10 per fixed 30 days (they start with the first import), and
 the next step is the enforcement build and go-live (plan section 9, step D). Until then, do not
 create the config doc: counting starts at go-live so everyone begins with a full 10.
 
