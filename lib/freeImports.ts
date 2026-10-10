@@ -32,8 +32,6 @@ export interface ImportAllowanceLine {
   lead: string;
   /** When it resets, once anything has been used. */
   detail?: string;
-  /** None left: the banner offers Pro. */
-  spent: boolean;
 }
 
 /**
@@ -44,11 +42,10 @@ export interface ImportAllowanceLine {
 export function importAllowanceLine(
   usage: { used: number; limit: number; nextFreeAt: number | null } | null,
 ): ImportAllowanceLine {
-  if (!usage || usage.used <= 0) return { lead: FREE_IMPORTS_LINE, spent: false };
+  if (!usage || usage.used <= 0) return { lead: FREE_IMPORTS_LINE };
   const used = Math.min(usage.used, usage.limit);
   return {
     lead: `${used} of ${usage.limit} free imports used.`,
     ...(usage.nextFreeAt !== null ? { detail: `Resets ${formatImportReturnDate(usage.nextFreeAt)}.` } : {}),
-    spent: used >= usage.limit,
   };
 }

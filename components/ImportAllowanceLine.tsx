@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CrownIcon, ICON_SIZE } from "@/components/icons";
 import { importAllowanceLine } from "@/lib/freeImports";
 import { useImportUsage } from "@/lib/useImportUsage";
 
@@ -10,10 +11,10 @@ import { useImportUsage } from "@/lib/useImportUsage";
  * count, signed in or out. Renders nothing for Pro, for cookbooks (`enabled`
  * false) and while the allowance isn't live.
  *
- * A banner, not a caption (Amelia, 2026-10-10): neutral gray with a hairline
- * border and the controls' corner radius, a ring showing how much is used,
- * and at none left a link to Pro. It never disables the import box: the server is always
- * asked first, so a stale count can't lock anyone out.
+ * A quiet banner (Amelia, 2026-10-10): a hairline outline, a small ring that
+ * fills as imports are used, the count, and an Upgrade button at the far
+ * right in every state. It never disables the import box: the server is
+ * always asked first, so a stale count can't lock anyone out.
  */
 export function ImportAllowanceLine({
   enabled = true,
@@ -22,7 +23,7 @@ export function ImportAllowanceLine({
 }: {
   /** False where the allowance doesn't apply: a cookbook, a known Pro member. */
   enabled?: boolean;
-  /** Opens the Pro dialog. Without one, the offer links to the pricing page. */
+  /** Opens the Pro dialog. Without one, Upgrade links to the pricing page. */
   onGetUnlimited?: () => void;
   className?: string;
 }) {
@@ -30,39 +31,45 @@ export function ImportAllowanceLine({
   if (hidden) return null;
   const line = importAllowanceLine(usage);
   const fraction = usage && usage.limit > 0 ? Math.min(usage.used, usage.limit) / usage.limit : 0;
-  const offerClass = "shrink-0 font-bold text-ink underline";
+  // The one spot of colour: the same Pro button as the print page's header,
+  // so "upgrade" looks like one thing wherever it appears.
+  const upgrade = (
+    <>
+      <CrownIcon size={ICON_SIZE.sm} className="text-[var(--cp-premium-bright)]" />
+      Upgrade
+    </>
+  );
 
   return (
     <div
-      // `rounded` is the control radius, the same corners as the field and
-      // the buttons this sits beside. Neutral gray in every state: it is
-      // information, not a selected control (blue) or a Pro surface (gold).
-      className={`flex flex-wrap items-center justify-between gap-x-cp-3 gap-y-1 rounded border border-line bg-[var(--cp-surface-muted)] px-cp-3 py-cp-2 text-cp-small ${className}`}
+      // Quiet on purpose: no fill, a hairline outline at the control radius
+      // (the field's and the buttons' corners), caption-size soft text. The
+      // count is the only thing in ink, and the Upgrade button the only colour.
+      className={`flex items-center justify-between gap-cp-3 rounded border border-line py-1 pl-cp-3 pr-1 text-cp-caption text-ink-soft ${className}`}
       data-import-allowance
     >
       <div className="flex min-w-0 items-center gap-cp-2">
         <UsageRing fraction={fraction} />
-        <p className="text-ink">
-          <span className="font-bold">{line.lead}</span>
-          {line.detail && <span className="text-ink-soft"> {line.detail}</span>}
+        <p>
+          <span className="font-semibold text-ink">{line.lead}</span>
+          {line.detail && <> {line.detail}</>}
         </p>
       </div>
-      {line.spent &&
-        (onGetUnlimited ? (
-          <button type="button" className={offerClass} onClick={onGetUnlimited}>
-            Get unlimited imports
-          </button>
-        ) : (
-          <Link href="/pricing" className={offerClass}>
-            Get unlimited imports
-          </Link>
-        ))}
+      {onGetUnlimited ? (
+        <button type="button" className="btn btn-premium btn-compact shrink-0" onClick={onGetUnlimited}>
+          {upgrade}
+        </button>
+      ) : (
+        <Link href="/pricing" className="btn btn-premium btn-compact shrink-0">
+          {upgrade}
+        </Link>
+      )}
     </div>
   );
 }
 
-const RING_SIZE = 18;
-const RING_STROKE = 3;
+const RING_SIZE = 14;
+const RING_STROKE = 2.5;
 const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
