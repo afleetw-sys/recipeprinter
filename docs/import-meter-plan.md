@@ -72,7 +72,8 @@ Goal when we eventually enforce:
    `off` or `measure`. Any meter error fails open.
 7. **IP monitoring:** keyed hashes only, written only on rare events, flag only.
 8. **Messaging (section 8):**
-   - one quiet line in the shared import panel
+   - one quiet line in the shared import panel, which always shows how many imports are used
+     toward the limit, signed in or out
    - the existing Pro dialog when the limit is reached
    - seven copy fixes (C1 to C7)
    - every "free" title and keyword kept
@@ -593,12 +594,23 @@ block (`components/seo/SeoCapture.tsx`) and the print page's Add-recipe dialog
   errors already live. There's a small info button beside it.
 - **The homepage hero, headings and calls to action don't change.**
 
+**Requirement (Amelia, 2026-10-10): a cook can always see how many imports they've used toward
+the limit, signed in or signed out.** The count is never hidden until someone is nearly out.
+
 | State (non-Pro, card mode) | Footer line | Action |
 |---|---|---|
-| No usage known, or 3 or more left | **10 free recipe imports every 30 days. No account required.** | ⓘ |
-| 1 or 2 left | **2 free imports left. Your next one's back on Oct 21.** | ⓘ |
-| 0 left | **You've used your 10 free imports. Your next one's back on Oct 21.** | quiet **Get unlimited imports** text button, which opens the existing Pro dialog |
+| Nothing used yet | **10 free recipe imports every 30 days. No account required.** | ⓘ |
+| 1 or more used, 3 or more left | **4 of 10 free imports used. No account required.** | ⓘ |
+| 1 or 2 left | **8 of 10 free imports used. Your next one's back on Oct 21.** | ⓘ |
+| 0 left | **10 of 10 free imports used. Your next one's back on Oct 21.** | quiet **Get unlimited imports** text button, which opens the existing Pro dialog |
 | Pro, cookbook mode, or allowance not live | nothing | none |
+
+- **The count is the same number signed in or out.** Signed out it's this browser's count; signed
+  in it's the account's, including what was imported before signing in (section 5.3). It never
+  drops when someone signs in or out.
+- **Where it shows:** every import door (the panel footer above), the print page's own paste
+  field in the rail, and for signed-in cooks the account page ("4 of 10 used. Next one back
+  Oct 21."). Signed-out cooks have no account page, so the import doors are where they see it.
 
 - **Info popover:**
   - **10 free recipe imports every 30 days. No account required.**
@@ -608,16 +620,20 @@ block (`components/seo/SeoCapture.tsx`) and the print page's Add-recipe dialog
   - Making a cookbook instead? You can preview one free with up to 10 recipes, and it doesn't use these.
   - When the visitor has used any imports, it ends with "Your next free import is back on
     {date}." The date comes from `nextFreeAt` and is formatted like `formatResetTime`.
-- **No counters, banners, toasts or badges** anywhere else. The print page's own paste field in the
-  rail shows the same line only in the 1-or-2-left and 0-left states, so a cook adding recipes
-  there isn't surprised either.
-- **Never a surprise:** the warning starts at 2 left, and the 0-left line names the date before
-  the cook even tries. The submit button stays enabled at 0, so a stale cached count can never
-  wrongly lock someone out; the server is always asked first.
-- **Cost:** no meter call on page load for a first-time visitor. The panel reads the last status
-  cached from that browser's own reserve or settle responses, and asks the server (`op: "status"`,
-  added when we go live) only when the cache shows 2 or fewer left, or when its `nextFreeAt` has
-  passed. Homepage traffic therefore costs no Firestore reads.
+- **No banners, toasts or badges.** The count lives in the one footer line, and the print page's
+  paste field in the rail shows the same line in every state once anything has been used.
+- **Never a surprise:** the count is visible from the first import, the line names the date from
+  2 left, and the 0-left line names it before the cook even tries. The submit button stays
+  enabled at 0, so a stale cached count can never wrongly lock someone out; the server is always
+  asked first.
+- **Where the number comes from:** the server, never a browser-side tally. Reserve and settle
+  responses carry `used` (the exact rolling count, from `entries`), `limit` and `nextFreeAt`, and
+  the panel caches the latest one in this browser. `op: "status"` (added at go-live) returns the
+  same three for a page that hasn't imported yet this visit.
+- **Cost:** a first-time visitor (no cached status, signed out) makes no meter call on page load
+  and sees the at-rest line. The panel asks `status` once per page load only when this browser
+  has a cached status, or the cook is signed in (their account may have imports from another
+  device). Anonymous homepage traffic that has never imported costs no Firestore reads.
 
 ### 8.4 When the limit is reached: the existing Pro dialog only
 
@@ -823,7 +839,9 @@ drifting against `seoLandingPages.ts` edits in the meantime.
 - Run 30 days or more, so the rolling window fills.
 
 ### Step E (later, separate approval): choose the limit, then the go-live PR (section 8.6)
-- Add `op: "status"` to the callable (section 8.3), and `enforce` to `mode`, including rule E1 from
+- Add `op: "status"` to the callable (section 8.3), with `used`, `limit` and `nextFreeAt` on it
+  and on the reserve and settle responses, so every import door can show "N of 10 used" to
+  signed-in and signed-out cooks alike. Add `enforce` to `mode`, including rule E1 from
   section 1.2.
 - Allowance UI and copy C1 to C14, sitemap dates, `IMPORT_ALLOWANCE_LIVE = true`.
 - The cookbook free-size gate (sections 3.2, 6 and 8.4b), set from `FREE_COOKBOOK_RECIPES`. It's
