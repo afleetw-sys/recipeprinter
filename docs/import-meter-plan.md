@@ -624,6 +624,12 @@ block (`components/seo/SeoCapture.tsx`) and the print page's Add-recipe dialog
   errors already live. There's a small info button beside it.
 - **The homepage hero, headings and calls to action don't change.**
 
+**Wording (Amelia, 2026-10-10), which replaces the strings in the table below:** the line never
+says "No account required" (beside a link to Pro it reads as if Pro needs no account), and the date
+reads "Resets Oct 21", not "Your next one's back on Oct 21". So: "10 free recipe imports every 30
+days." / "4 of 10 free imports used. Resets Oct 21." / the same at none left, with "Get unlimited
+imports". The Pro dialog says "Your free imports reset Oct 21."
+
 **Requirement (Amelia, 2026-10-10): a cook can always see how many imports they've used toward
 the limit, signed in or signed out.** The count is never hidden until someone is nearly out.
 

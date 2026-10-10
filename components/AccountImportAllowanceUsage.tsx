@@ -34,7 +34,7 @@ export function AccountImportAllowanceUsage() {
           </div>
           <p className="mt-cp-1 text-cp-small text-ink-soft">
             {usage.nextFreeAt !== null
-              ? `Next one back ${formatImportReturnDate(usage.nextFreeAt)}`
+              ? `Resets ${formatImportReturnDate(usage.nextFreeAt)}`
               : "Each import comes back 30 days after you use it"}
           </p>
         </>

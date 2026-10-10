@@ -113,7 +113,7 @@ export function proUpgradeCopy(
 ): ProUpgradeCopy {
   if (trigger === IMPORT_LIMIT_TRIGGER) {
     const back = importUsage?.nextFreeAt
-      ? `Your next one's back on ${formatImportReturnDate(importUsage.nextFreeAt)}. `
+      ? `Your free imports reset ${formatImportReturnDate(importUsage.nextFreeAt)}. `
       : "";
     return {
       title: `You've used your ${importUsage?.limit ?? FREE_IMPORTS_PER_WINDOW} free imports`,
