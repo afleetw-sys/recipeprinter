@@ -26,7 +26,7 @@ import { absoluteUrl, breadcrumbNode, faqJsonLd, pageMetadata } from "@/lib/seo"
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const metadata: Metadata = pageMetadata({
-  title: "RecipePrinter Pricing: Free, Pro, and Cookbooks",
+  title: "Pricing: Free, Pro, and Cookbooks",
   description:
     "Print full-page recipes free, with no account. RecipePrinter Pro adds 4×6 recipe cards, premium themes, and printing several recipes at once. Cookbooks are a one-time purchase.",
   path: "/pricing",
