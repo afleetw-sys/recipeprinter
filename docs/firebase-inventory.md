@@ -34,10 +34,10 @@ that half of the original warning stands.
 | Template purchases | RevenueCat entitlements `template_*` | RevenueCat remains purchase source; namespaced account may hold server reconciliation metadata | purchase hooks | RevenueCat Web Billing/webhooks | RevenueCat identity aliasing remains required |
 | Cookbook purchase | Project unlock docs (the sole record; there is no account-wide `cookbook` entitlement to read) | namespaced `cookbookUnlocks` | `useCookbookPurchase` | RevenueCat webhook only — clients cannot write | Local marker carries access on the buying device until the webhook lands |
 | RevenueCat identity | `recipeprinter:customer-id:v1` and known-customer marker | Unchanged | purchase module | purchase module/SDK | Anonymous RevenueCat customer is aliased on login |
-| Saved projects | `users/{uid}/printProjects/{id}` | `products/recipePrinter/users/{uid}/printProjects/{id}` | account library/print loader | autosave transaction | Namespace-first plus legacy fallback; new writes namespace-only |
-| Cookbook unlocks | `users/{uid}/cookbookUnlocks/{id}` and local unlock keys | namespaced user subcollection | cookbook gate | RevenueCat webhook (admin SDK); client writes denied by rules | Namespace-first plus legacy fallback |
-| Shared cards | `sharedRecipeCards/{slug}` | `products/recipePrinter/sharedRecipeCards/{slug}` | public REST and client counter | Recipe Printer admin | Namespace-first public read plus legacy fallback |
-| Feedback | `feedback-printer/{id}` | `products/recipePrinter/feedback/{id}` | administrators only | feedback form | New writes only; backfill for administrative continuity; no client fallback |
+| Saved projects | `products/recipePrinter/users/{uid}/printProjects/{id}` | Unchanged | account library/print loader | autosave transaction | Done. Legacy `users/{uid}/printProjects` was empty on 2026-10-10; fallback reads and rules match removed |
+| Cookbook unlocks | `products/recipePrinter/users/{uid}/cookbookUnlocks/{id}` and local unlock keys | Unchanged | cookbook gate | RevenueCat webhook (admin SDK); client writes denied by rules | Done. Legacy `users/{uid}/cookbookUnlocks` was empty on 2026-10-10; fallback reads and rules match removed |
+| Shared cards | `products/recipePrinter/sharedRecipeCards/{slug}` | Unchanged | public REST | Nobody: creating a link is gone | Done. The five legacy-only links in top-level `sharedRecipeCards` were deleted 2026-10-10 (a missing link now redirects home); fallback read and rules match removed |
+| Feedback | `products/recipePrinter/feedback/{id}` | Unchanged | administrators only | feedback form | Done. `feedback-printer` no longer exists (verified 2026-10-10) |
 | User photos | `recipeprinter/photos/{uid}/**` | `recipeprinter/photos/users/{uid}/**` | printed project URLs | authenticated browser | New writes only; retained public URLs remain valid |
 | Anonymous photos | `recipeprinter/photos/anon/**` | `recipeprinter/photos/anonymous/{anonymousOwnerId}/**`, then copied to user prefix on adoption | local project URLs | anonymous browser | Local manifest, deterministic client copy, verify before any cleanup |
 | Failed import captures | `debug/failed-imports/**` | `recipeprinter/debug/failed-imports/**` | administrators via bucket tooling | best-effort browser capture | New writes only; rows deleted by hand (no TTL), image bytes deliberately unswept -- see docs/failed-import-retention.md |
@@ -66,8 +66,15 @@ that half of the original warning stands.
    member free-template perk was retired 2026-09-20.
 3. Confirm RevenueCat webhook destinations and reconcile all existing template
    and cookbook customers; no webhook implementation exists in this repo.
-4. Backfill profile fields, projects, unlocks, shared cards, and feedback before
-   removing compatibility reads.
+4. ~~Backfill projects, unlocks, shared cards, and feedback before removing
+   compatibility reads.~~ **Done 2026-10-10** -- nothing needed copying.
+   `npm run audit:legacy` (read-only) found the three legacy locations empty
+   and `feedback-printer` gone, so the compatibility reads and the legacy rules
+   matches were removed. The rules change only takes effect once deployed (see
+   the command above). Still open: profile fields on `users/{uid}`, which that
+   audit does not count. CookPilot's `functions-pdf/src/storageSweeps.ts` still
+   reads the top-level `sharedRecipeCards`, which no longer exists; it must
+   read the namespaced collection or share-link photos are unprotected.
 5. Failed-import capture image bytes grow without bound: `debugInbox` rows are
    reviewed and deleted by hand (and must NOT be given a TTL -- the rows still
    present are the unreviewed ones), but deleting a row leaves its photographs

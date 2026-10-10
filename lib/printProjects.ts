@@ -15,11 +15,6 @@ import type {
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
 import { metaSectionsFromFull, type ProjectMeta } from "@/lib/project";
-import {
-  LEGACY_PROJECTS_EMPTY_KEY,
-  legacyKnownEmpty,
-  rememberLegacyEmpty,
-} from "@/lib/legacyCollections";
 import { stripUndefined } from "@/lib/firebase/stripUndefined";
 import { projectLibraryChanged } from "@/lib/projectCount";
 import {
@@ -28,17 +23,8 @@ import {
   recipePrinterUserPhotoRoot,
 } from "@/lib/firebase/recipePrinterPaths";
 
-const PRINT_PROJECTS_COLLECTION = "printProjects";
-
 /** The subdocument holding the recipes. One per project; see `PrintProjectContent`. */
 const CONTENT_DOC = ["content", "main"] as const;
-
-/** Whether this account's pre-namespace project collection is known empty, so
-    the compatibility reads below can be skipped rather than paid for. Lifted
-    into lib/legacyCollections so the unlock reads share the same reasoning. */
-function legacyProjectsKnownEmpty(ownerUid: string): boolean {
-  return legacyKnownEmpty(LEGACY_PROJECTS_EMPTY_KEY, ownerUid);
-}
 
 /** Up to four recipe photos in book order — the projects grid's cover mosaic. */
 function coverThumbsOf(sections: Section[]): string[] {
@@ -535,54 +521,28 @@ export async function loadPrintProjectSummaries(ownerUid: string): Promise<Print
     import("@/lib/firebase/db"),
   ]);
   const db = getDb();
-  // The legacy collection is read-only and delete-only — nothing has written it
-  // since the namespace move — so it can shrink and never grow. One confirmed
-  // empty read is therefore permanent, and skipping it halves this load for
-  // every account that never had a project there.
-  const skipLegacy = legacyProjectsKnownEmpty(ownerUid);
-  const [namespaced, legacy] = await Promise.all([
-    getDocs(query(collection(db, ...recipePrinterProjectsPath(ownerUid)), orderBy("updatedAt", "desc")))
-      .catch(() => null),
-    // Fault-isolated like the namespaced read: a transient error / rules change
-    // on the legacy collection must not reject the whole load and make every
-    // saved project appear to vanish — merge whichever half succeeded.
-    skipLegacy
-      ? Promise.resolve(null)
-      : getDocs(query(collection(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION), orderBy("updatedAt", "desc")))
-          .catch(() => null),
-  ]);
-  if (!skipLegacy && legacy && legacy.empty) rememberLegacyEmpty(LEGACY_PROJECTS_EMPTY_KEY, ownerUid);
   /**
-   * Fault isolation is for ONE half failing. When neither answered there is no
-   * answer at all, and resolving `[]` here made that indistinguishable from an
-   * account with nothing in it: the caller cached the empty list, the account
-   * menu hid both sections, and someone with a shelf full of cookbooks was
-   * shown a dropdown that quietly said they had none. Rejecting hands them the
+   * A failed read is not an empty library. Resolving `[]` here made the two
+   * indistinguishable: the caller cached the empty list, the account menu hid
+   * both sections, and someone with a shelf full of cookbooks was shown a
+   * dropdown that quietly said they had none. Rejecting hands them the
    * "couldn't load / try again" both callers already know how to render.
    *
-   * This used to read `!(legacy || skipLegacy)`, which let exactly that bug
-   * back in for every returning account. `skipLegacy` means we CHOSE NOT TO ASK
-   * the legacy collection — it is not an answer, and counting it as one meant a
-   * failed namespaced read fell straight through to `[]`. The marker is set on
-   * the first successful load, so this only bit accounts that had loaded
-   * correctly at least once, which is all of them after the first visit.
-   *
-   * What it looked like: open the account menu on a cold page, the one
-   * `getDocs` rejects (`unavailable` while the Firestore connection is still
-   * coming up), and the dropdown reports an empty library. Go to /projects and
-   * the same read succeeds, so the projects appear — and the dropdown then
-   * works too, which makes it read as a caching quirk rather than a failed read.
-   *
-   * Only the namespaced read can stand in for the whole answer, so only its
-   * failure is fatal when nothing else answered.
+   * What it looked like: open the account menu on a cold page, the `getDocs`
+   * rejects (`unavailable` while the Firestore connection is still coming up),
+   * and the dropdown reports an empty library. Go to /projects and the same
+   * read succeeds, which makes it read as a caching quirk rather than a failed
+   * read.
    */
-  if (!namespaced && !legacy) {
+  const snapshot = await getDocs(
+    query(collection(db, ...recipePrinterProjectsPath(ownerUid)), orderBy("updatedAt", "desc")),
+  ).catch(() => null);
+  if (!snapshot) {
     throw new Error("Couldn't read saved projects.");
   }
-  const byId = new Map<string, PrintProjectSummary>();
-  legacy?.docs.forEach((snap) => byId.set(snap.id, summaryOf(snap.data())));
-  namespaced?.docs.forEach((snap) => byId.set(snap.id, summaryOf(snap.data())));
-  return Array.from(byId.values()).sort((a, b) => Number(b.updatedAt) - Number(a.updatedAt));
+  return snapshot.docs
+    .map((snap) => summaryOf(snap.data()))
+    .sort((a, b) => Number(b.updatedAt) - Number(a.updatedAt));
 }
 
 /**
@@ -635,13 +595,7 @@ export async function loadPrintProject(ownerUid: string, projectId: string): Pro
     // said — by the throw, not by a null.
     getDoc(doc(db, ...projectPath, ...CONTENT_DOC)).catch(() => null),
   ]);
-  if (snap.exists()) return hydrate(snap.data(), contentSnap);
-  // Temporary compatibility read. New writes are namespace-only, and once the
-  // legacy collection has been seen empty for this account there is nothing
-  // there to find — see `legacyProjectsKnownEmpty`.
-  if (legacyProjectsKnownEmpty(ownerUid)) return null;
-  const legacy = await getDoc(doc(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId));
-  return legacy.exists() ? (legacy.data() as PrintProject) : null;
+  return snap.exists() ? hydrate(snap.data(), contentSnap) : null;
 }
 
 /**
@@ -663,23 +617,7 @@ export async function loadPrintProjectHead(
     import("@/lib/firebase/db"),
   ]);
   const db = getDb();
-  const read = async (segments: readonly string[]) =>
-    getDoc(doc(db, ...(segments as [string, ...string[]]))).catch(() => null);
-
-  // Both at once, not one after the other.
-  //
-  // This runs on every signed-in load of /print, and for a working copy that
-  // has never been saved BOTH reads miss — which was two sequential round trips
-  // on the app's main screen before it could even decide there was nothing to
-  // attach to. Firing them together makes the miss cost one round trip instead
-  // of two, and where the legacy collection is already known empty it costs
-  // none at all.
-  const skipLegacy = legacyProjectsKnownEmpty(ownerUid);
-  const [snap, legacy] = await Promise.all([
-    read(recipePrinterProjectPath(ownerUid, projectId)),
-    skipLegacy ? Promise.resolve(null) : read(["users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId]),
-  ]);
-  const found = snap?.exists() ? snap : legacy;
+  const found = await getDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId))).catch(() => null);
   if (!found?.exists()) return null;
   const data = found.data() as Partial<PrintProject>;
   return {
@@ -770,9 +708,6 @@ export async function deletePrintProject(
     ]);
   };
   if (!options.keepAssets) await removeFolder(adoptedRoot);
-  // Compatibility reads merge the namespaced and legacy collections. Remove
-  // both copies so an older project cannot reappear after deletion.
-  //
   // The recipes go first. Deleting a document in Firestore does NOT delete its
   // subcollections, so a parent removed while `content/main` survived would
   // leave an orphan nothing can ever reach: the project no longer lists, and
@@ -787,15 +722,7 @@ export async function deletePrintProject(
   // Firestore, so an inline project with no content subdocument still passes
   // straight through this.
   await deleteDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId), ...CONTENT_DOC));
-  await Promise.all([
-    deleteDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId))),
-    // Deleting a document that was never there is still a billed write, and the
-    // duplicate sweeper deletes in bulk. Skipped where the legacy collection is
-    // known empty for this account.
-    legacyProjectsKnownEmpty(ownerUid)
-      ? Promise.resolve()
-      : deleteDoc(doc(db, "users", ownerUid, PRINT_PROJECTS_COLLECTION, projectId)),
-  ]);
+  await deleteDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId)));
   // Gone from the account: the menu's count re-reads (see savePrintProject).
   projectLibraryChanged(ownerUid);
   // Best-effort: the project is gone either way, and a photo that fails to
