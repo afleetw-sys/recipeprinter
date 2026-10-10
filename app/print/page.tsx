@@ -3218,6 +3218,7 @@ export default function PrintPage() {
     // Read when the dialog renders: the refusal that opened it has just
     // recorded the server's count.
     proUpgradeTrigger === IMPORT_LIMIT_TRIGGER ? rememberedImportUsage() : null,
+    (items?.length ?? 0) > 0,
   );
 
   /**

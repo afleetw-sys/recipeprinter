@@ -108,8 +108,10 @@ const GENERIC_COPY: ProUpgradeCopy = {
 export function proUpgradeCopy(
   reasons: ProLockReason[],
   trigger: string,
-  /** For `IMPORT_LIMIT_TRIGGER`: the allowance, and when the next import is back. */
+  /** For `IMPORT_LIMIT_TRIGGER`: the allowance and when it resets, and whether
+      there are recipes on the page to point to. */
   importUsage?: { limit: number; nextFreeAt: number | null } | null,
+  hasRecipes: boolean = false,
 ): ProUpgradeCopy {
   if (trigger === IMPORT_LIMIT_TRIGGER) {
     const back = importUsage?.nextFreeAt
@@ -118,8 +120,9 @@ export function proUpgradeCopy(
     return {
       title: `You've used your ${importUsage?.limit ?? FREE_IMPORTS_PER_WINDOW} free imports`,
       // Says what they still have before what they could buy: nothing they
-      // made is locked, and waiting is a real option.
-      body: `${back}Your recipes are still here to edit and print. Go Pro for unlimited recipe imports.`,
+      // made is locked, and waiting is a real option. Only when it's true: an
+      // import sent from the homepage arrives on a fresh, empty project.
+      body: `${back}${hasRecipes ? "Your recipes are still here to edit and print. " : ""}Go Pro for unlimited recipe imports.`,
       benefits: PRO_BENEFITS,
       ctaLabel: "Unlock Pro",
     };
