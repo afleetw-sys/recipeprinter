@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SharedRecipeCardRedirect } from "@/components/SharedRecipeCardRedirect";
 import { fetchSharedRecipeCard } from "@/lib/sharedRecipeCards.server";
@@ -36,9 +37,9 @@ function NotFoundState() {
     <div className="h-full flex flex-col">
       <SiteHeader backHref="/" sticky />
       <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
-        <p className="font-bold text-cp-h2">This recipe link isn&apos;t available</p>
+        <p className="font-bold text-cp-h2">We couldn&apos;t load this recipe link</p>
         <p className="text-ink-soft max-w-sm">
-          It may have been removed, deactivated, or the link may be incorrect.
+          Something went wrong on our end. Give it another try in a moment.
         </p>
         <Link href="/" className="btn btn-primary">
           Go to RecipePrinter
@@ -52,8 +53,18 @@ export default async function SharedPrintPage({ params }: PageProps) {
   // Reads the recipe exactly as it was saved — never re-parses
   // recipe.sourceUrl or hits the importer, so this stays fast and stable even
   // if the original source page changes or disappears.
-  const card = await fetchSharedRecipeCard(params.slug).catch(() => null);
-  if (!card) return <NotFoundState />;
+  let card: Awaited<ReturnType<typeof fetchSharedRecipeCard>>;
+  try {
+    card = await fetchSharedRecipeCard(params.slug);
+  } catch {
+    // Couldn't ask. The link may be perfectly good, so say so here rather
+    // than send someone home as if it were gone.
+    return <NotFoundState />;
+  }
+  // A link that no longer exists (removed, deactivated, or mistyped) goes to
+  // the homepage. Temporary on purpose: a browser caches a permanent redirect,
+  // and a slug can be republished.
+  if (!card) redirect("/");
 
   return <SharedRecipeCardRedirect card={card} />;
 }

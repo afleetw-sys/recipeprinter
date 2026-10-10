@@ -12,6 +12,8 @@
     "verify": "tsc --noEmit && next lint && vitest run && node scripts/design-system-audit.mjs",
     "audit:design-system": "node scripts/design-system-audit.mjs",
     "audit:unlocks": "npx --yes --package firebase-admin -c \"node scripts/cookbook-unlock-audit.mjs\"",
+    "audit:legacy": "npx --yes --package firebase-admin@13 -c \"node scripts/legacy-collections-audit.mjs\"",
+    "backfill:shared-cards": "npx --yes --package firebase-admin@13 -c \"node scripts/shared-cards-backfill.mjs\"",
     "backfill:debug-inbox": "npx --yes --package firebase-admin -c \"node scripts/debug-inbox-backfill.mjs\"",
     "test:auth": "npx firebase-tools@14.27.0 --config firebase.auth-test.json emulators:exec --only auth --project demo-recipeprinter \"vitest run --config vitest.auth.config.ts\"",
     "test:rules": "npx firebase-tools@14.27.0 --config firebase.rules-test.json emulators:exec --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
