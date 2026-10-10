@@ -3977,6 +3977,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     comparison: {
       competitor: "Canva",
       checked: "October 2026",
+      sources: [
+        { href: "https://www.canva.com/pricing/", label: "its pricing page" },
+        { href: "https://www.canva.com/print/", label: "its print page" },
+      ],
       groups: [
         {
           title: "Getting recipes in",
@@ -4043,7 +4047,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "createmycookbook-alternative",
-    contentUpdated: "2026-10-05",
+    contentUpdated: "2026-10-10",
     primaryKeyword: "CreateMyCookbook alternative",
     // Not "cookbook maker" or "family recipe book": those are other pages'
     // primaries, linked from here instead.
@@ -4104,6 +4108,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     comparison: {
       competitor: "CreateMyCookbook",
       checked: "October 2026",
+      sources: [
+        { href: "https://www.createmycookbook.com/", label: "its website" },
+        { href: "https://www.createmycookbook.com/books/pricing", label: "its pricing page" },
+      ],
       groups: [
         {
           title: "Getting recipes in",
