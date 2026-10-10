@@ -104,15 +104,14 @@ the same App Check debug-token exchange the production monitor uses (`checks/sig
    ```bash
    firebase functions:list --project cookpilot-bbecb | grep recipePrinterImportMeter
    ```
-2. **It answers off, with App Check.** Exchange the debug token for an App Check token
-   (`POST https://firebaseappcheck.googleapis.com/v1/projects/cookpilot-bbecb/apps/<web app id>:exchangeDebugToken?key=<web API key>`
-   with `{"debugToken": "..."}`), then call the function the way the callable SDK does:
+2. **It answers, with App Check.** One command, which reads the web config and the local-dev
+   App Check debug token from `.env.local` and prints only the meter's answers:
    ```bash
-   curl -s https://us-central1-cookpilot-bbecb.cloudfunctions.net/recipePrinterImportMeter -H "content-type: application/json" -H "x-firebase-appcheck: $APP_CHECK_TOKEN" -d '{"data":{"op":"reserve","importId":"runbook-check","method":"text","rpAnonId":"runbook-check"}}'
+   node scripts/check-import-meter.mjs
    ```
-   Expect `{"result":{"mode":"off","allowed":true,"reason":"off"}}`. A cold start can take a
-   few seconds. The same call with `{"op":"settle","importId":"runbook-check","outcome":"failure"}`
-   should give `{"result":{"ok":true}}`.
+   Expect `PASS`, with `mode: "off"` until the config doc says `measure`. A cold start can take a
+   few seconds. It reserves and then settles one made-up import as a failure, so nothing is ever
+   counted.
 3. **It wrote nothing.** In the Firebase console, `recipePrinterImportMeter` has no document for
    this check.
 4. **Without App Check it's refused.** The same `curl` without the `x-firebase-appcheck` header
