@@ -270,26 +270,5 @@ service cloud.firestore {
         && request.resource.data.source == "fresh-off-the-printer";
       allow read, update, delete: if false;
     }
-
-    // ── Recipe Printer migration compatibility ─────────────────────────────
-    // Keep these until the backfill and backend claim migration are verified.
-    match /users/{uid}/printProjects/{projectId} {
-      allow read, write: if owns(uid);
-    }
-
-    // The pre-namespace share-link location. Same read-only shape as the
-    // namespaced one above, kept for links created before the namespace move.
-    match /sharedRecipeCards/{slug} {
-      allow read: if resource == null || resource.data.published == true;
-      allow write: if false;
-    }
-
-    // The pre-namespace location. Existing docs stay readable so current owners
-    // keep their books with no backfill; writes are closed here too, since this
-    // path was even looser than the namespaced one it replaced.
-    match /users/{uid}/cookbookUnlocks/{projectId} {
-      allow read: if owns(uid);
-      allow write: if false;
-    }
   }
 }

@@ -169,8 +169,8 @@ describe("Recipe Printer Firestore namespace", () => {
   // The cookbook unlock IS the $19.99 purchase record. Access is granted on the
   // mere existence of this document, so "can a client write one?" is the whole
   // paywall. It used to be yes. These lock that answer down, on both the
-  // namespaced path and the legacy one, while proving the reads the product
-  // actually depends on still work.
+  // namespaced path and the retired pre-namespace one, while proving the reads
+  // the product actually depends on still work.
   describe("cookbook unlocks are server-owned", () => {
     const unlockPath = (uid: string, projectId: string) =>
       `products/recipePrinter/users/${uid}/cookbookUnlocks/${projectId}`;
@@ -221,15 +221,15 @@ describe("Recipe Printer Firestore namespace", () => {
       await assertFails(getDoc(doc(stranger, unlockPath("buyer4", "book-1"))));
     });
 
-    test("the legacy path is closed to writes but still readable", async () => {
+    test("the pre-namespace path is closed entirely", async () => {
+      // Retired 2026-10-10 once an audit found it empty. An unlock doc here
+      // grants nothing, and no client may read or write one.
       const legacy = "users/buyer5/cookbookUnlocks/book-1";
       await environment.withSecurityRulesDisabled(async (context) => {
         await setDoc(doc(context.firestore(), legacy), { projectId: "book-1", unlockedAt: 1 });
       });
       const owner = environment.authenticatedContext("buyer5").firestore();
-      // Readable so long-standing owners keep their books with no backfill…
-      await assertSucceeds(getDoc(doc(owner, legacy)));
-      // …but this path was looser than the namespaced one, so it closes too.
+      await assertFails(getDoc(doc(owner, legacy)));
       await assertFails(setDoc(doc(owner, "users/buyer5/cookbookUnlocks/book-2"), {
         projectId: "book-2",
       }));

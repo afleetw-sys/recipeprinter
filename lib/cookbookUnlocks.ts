@@ -2,11 +2,6 @@
 
 import { localStore } from "@/lib/storage";
 import {
-  LEGACY_UNLOCKS_EMPTY_KEY,
-  legacyKnownEmpty,
-  rememberLegacyEmpty,
-} from "@/lib/legacyCollections";
-import {
   recipePrinterUnlockPath,
   recipePrinterUnlocksPath,
 } from "@/lib/firebase/recipePrinterPaths";
@@ -184,20 +179,7 @@ export async function loadCookbookProjectUnlock(ownerUid: string, projectId: str
 
   let unlocked: boolean;
   try {
-    const namespaced = await getDoc(doc(db, ...recipePrinterUnlockPath(ownerUid, projectId)));
-    // The pre-namespace path is only consulted on a miss, and only to answer
-    // "yes" — a miss on both is what makes the answer a definitive no.
-    //
-    // Skipped entirely once `loadCookbookProjectUnlockIds` has seen that
-    // collection come back empty for this account, which it does on every visit
-    // to /projects. This read happens on every print-page mount, so for the
-    // common case — no legacy unlock, because unlocks have only ever been
-    // written per project — it was a guaranteed miss paid for over and over.
-    unlocked = namespaced.exists()
-      ? true
-      : legacyKnownEmpty(LEGACY_UNLOCKS_EMPTY_KEY, ownerUid)
-        ? false
-        : (await getDoc(doc(db, "users", ownerUid, "cookbookUnlocks", projectId))).exists();
+    unlocked = (await getDoc(doc(db, ...recipePrinterUnlockPath(ownerUid, projectId)))).exists();
   } catch {
     // Offline, rules error, transient failure — an unanswered question, not a
     // negative answer. Leave the cache exactly as it is.
@@ -227,18 +209,15 @@ export async function loadCookbookProjectUnlock(ownerUid: string, projectId: str
    than left to retry forever. See docs/cookbook-unlock-webhook.md. */
 
 /**
- * Every project id this owner has an unlock for, in two reads.
+ * Every project id this owner has an unlock for, in one read.
  *
  * The per-project `loadCookbookProjectUnlock` is the right shape when you hold
  * one project (the print page), but a LIST of projects was calling it once per
- * project — and each call is up to two `getDoc`s, since a miss on the namespaced
- * path falls back to the legacy one. Thirty saved books meant up to sixty round
- * trips to render thirty badges. Both collections are small (one tiny doc per
- * purchase), so reading them whole is cheaper than any number of point lookups.
+ * project: thirty saved books meant thirty round trips to render thirty
+ * badges. The collection is small (one tiny doc per purchase), so reading it
+ * whole is cheaper than any number of point lookups.
  *
- * Fault-isolated per collection, matching `loadPrintProjects`: a rules change or
- * transient error on one path must not make every book read as unpurchased.
- * Also seeds the local marker for each hit, so a later per-project check on this
+ * A failed read resolves to an empty set rather than rejecting. Also seeds the local marker for each hit, so a later per-project check on this
  * device short-circuits without touching the network at all.
  */
 export async function loadCookbookProjectUnlockIds(ownerUid: string): Promise<Set<string>> {
@@ -247,19 +226,9 @@ export async function loadCookbookProjectUnlockIds(ownerUid: string): Promise<Se
     import("@/lib/firebase/db"),
   ]);
   const db = getDb();
-  const [namespaced, legacy] = await Promise.all([
-    getDocs(collection(db, ...recipePrinterUnlocksPath(ownerUid))).catch(() => null),
-    getDocs(collection(db, "users", ownerUid, "cookbookUnlocks")).catch(() => null),
-  ]);
-  // A successful, empty legacy read is the one observation that lets the
-  // per-project check above stop asking. Only on success: a failed read is the
-  // absence of an answer, and a wrongly-set marker would hide a real legacy
-  // unlock from the person who paid for it.
-  if (legacy && legacy.empty) rememberLegacyEmpty(LEGACY_UNLOCKS_EMPTY_KEY, ownerUid);
+  const snapshot = await getDocs(collection(db, ...recipePrinterUnlocksPath(ownerUid))).catch(() => null);
   const ids = new Set<string>();
-  for (const snapshot of [namespaced, legacy]) {
-    snapshot?.forEach((entry) => ids.add(entry.id));
-  }
+  snapshot?.forEach((entry) => ids.add(entry.id));
   markCookbookProjectsUnlockedLocal(Array.from(ids));
   return ids;
 }

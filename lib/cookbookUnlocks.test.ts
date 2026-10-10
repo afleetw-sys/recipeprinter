@@ -101,17 +101,9 @@ describe("loadCookbookProjectUnlock", () => {
 
   it("revokes a stale local unlock the server has no record of", async () => {
     seedLocalUnlock("book-1", Date.now() - 30 * DAY);
-    // Miss on the namespaced path, then miss on the legacy one = definitive no.
-    docResults.queue = [{ exists: false }, { exists: false }];
+    docResults.queue = [{ exists: false }];
     await expect(loadCookbookProjectUnlock("uid", "book-1")).resolves.toBe(false);
     expect(isCookbookProjectUnlocked("book-1")).toBe(false);
-  });
-
-  it("still honours the legacy path before revoking", async () => {
-    seedLocalUnlock("book-1", Date.now() - 30 * DAY);
-    docResults.queue = [{ exists: false }, { exists: true }];
-    await expect(loadCookbookProjectUnlock("uid", "book-1")).resolves.toBe(true);
-    expect(isCookbookProjectUnlocked("book-1")).toBe(true);
   });
 
   it("keeps a RECENT local unlock the server hasn't caught up with", async () => {
@@ -119,7 +111,7 @@ describe("loadCookbookProjectUnlock", () => {
     // RevenueCat's TRANSFER lets the webhook write it. Revoking here would take
     // a book away from someone who just paid for it.
     seedLocalUnlock("book-1", Date.now() - 60 * 1000);
-    docResults.queue = [{ exists: false }, { exists: false }];
+    docResults.queue = [{ exists: false }];
     await expect(loadCookbookProjectUnlock("uid", "book-1")).resolves.toBe(true);
     expect(isCookbookProjectUnlocked("book-1")).toBe(true);
   });
