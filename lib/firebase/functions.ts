@@ -1,6 +1,6 @@
 import { connectFunctionsEmulator, getFunctions, type Functions } from "firebase/functions";
 import { getFirebaseApp } from "./client";
-import { FIREBASE_EMULATOR, useFirebaseEmulators } from "./emulators";
+import { FIREBASE_EMULATOR, useLocalFunctions } from "./emulators";
 
 // Lazy, never initializes Functions during server prerender (see client.ts).
 // App Check is initialized inside getFirebaseApp(), so callable requests from
@@ -12,7 +12,7 @@ export function getFns(): Functions {
       getFirebaseApp(),
       process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_REGION || "us-central1",
     );
-    if (useFirebaseEmulators) {
+    if (useLocalFunctions) {
       connectFunctionsEmulator(functionsInstance, FIREBASE_EMULATOR.host, FIREBASE_EMULATOR.functionsPort);
     }
   }

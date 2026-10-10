@@ -2,7 +2,7 @@ import type { ImportMethod } from "@/types/recipe";
 import { track } from "@/lib/analytics";
 import { anonymousOwnerId } from "@/lib/anonymousOwner";
 import { isProductionRuntime } from "@/lib/appEnvironment";
-import { useFirebaseEmulators } from "@/lib/firebase/emulators";
+import { useLocalFunctions } from "@/lib/firebase/emulators";
 import { IMPORT_ALLOWANCE_LIVE } from "@/lib/freeImports";
 import { localStore } from "@/lib/storage";
 
@@ -43,11 +43,11 @@ export const IMPORT_METER_DEPLOYED = true;
  * the PRODUCTION backend, and an import made while testing there must not use
  * up anyone's real allowance or write a record of it (Amelia, 2026-10-10). The
  * same rule keeps analytics and RevenueCat off those hosts
- * (`isProductionRuntime`). The exception is emulator mode, where "the backend"
- * is a local stand-in and metering it is the point.
+ * (`isProductionRuntime`). The exception is when the callables are pointed at
+ * a local stand-in (`useLocalFunctions`), where metering it is the point.
  */
 export function meterReachableHere(): boolean {
-  return IMPORT_METER_DEPLOYED && (isProductionRuntime() || useFirebaseEmulators);
+  return IMPORT_METER_DEPLOYED && (isProductionRuntime() || useLocalFunctions);
 }
 
 export type MeteredMethod = "url" | "image" | "text";
