@@ -61,8 +61,8 @@ export const GOVERNING_LAW = {
  * change on the same day forever.
  */
 export const PRIVACY_LAST_UPDATED = {
-  iso: "2026-09-30",
-  display: "September 30, 2026",
+  iso: "2026-10-10",
+  display: "October 10, 2026",
 } as const;
 
 export const TERMS_LAST_UPDATED = {

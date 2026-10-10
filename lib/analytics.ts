@@ -197,8 +197,53 @@ type EventProps = {
      */
     url?: string;
   };
-  /** Parsing produced a recipe. */
-  recipe_imported: { source: ImportMethod; hostname?: string } & Partial<ImportContextProps>;
+  /**
+   * Parsing produced a recipe, or an already-parsed one (Paprika, a CookPilot
+   * library) was added. One event per recipe, so a roundup fires several.
+   */
+  recipe_imported: {
+    source: ImportMethod;
+    hostname?: string;
+    /**
+     * The queue item id the parse ran on, the same `importId` as on
+     * `recipe_import_started`, so one import's events join without timestamps.
+     * Absent for library recipes, which never become a parse.
+     */
+    importId?: string;
+    /**
+     * True on the second and later recipes a roundup link or multi-recipe photo
+     * bloomed into. They share the first recipe's `importId`. Counting
+     * non-extra events counts import actions, which is what an import
+     * allowance would count (docs/import-meter-plan.md, section 3.1).
+     */
+    extra?: boolean;
+    /** The recipe landed in a cookbook rather than a card project. */
+    cookbook?: boolean;
+    /**
+     * Cookbook imports only: how many recipes the book holds after this
+     * import, and whether that book is bought. Together they show how big
+     * unbought books get, which is what a cookbook free size would cap.
+     */
+    bookRecipes?: number;
+    bookBought?: boolean;
+    /**
+     * How long the import meter's reservation held this import up, in ms.
+     * Absent when the meter wasn't asked (cookbook, known Pro, or not
+     * deployed). Not on `recipe_import_started`, which fires before the
+     * reservation so it keeps counting every import a cook began.
+     */
+    meterMs?: number;
+    /**
+     * The import meter's answer, on free card-mode imports it answered
+     * (docs/import-meter-plan.md, 4.1). `meter_used_30d` is the counted
+     * imports in the previous 30 days, BEFORE this one; the two booleans say
+     * whether a limit of 5 or 10 would have refused it.
+     */
+    meter_used_30d?: number;
+    meter_would_block_5?: boolean;
+    meter_would_block_10?: boolean;
+    meter_subject_kind?: "browser" | "account";
+  } & Partial<ImportContextProps>;
   /**
    * An import that succeeded but was then substantially rewritten by hand: the
    * parser read it wrong. Counts only, never text; the text goes to
@@ -246,7 +291,14 @@ type EventProps = {
      * on the remainder.
      */
     botVendor?: BotWallVendor;
+    /** As on `recipe_imported`. */
+    meterMs?: number;
   };
+  /**
+   * The import meter didn't answer in time or answered with an error, so the
+   * import went ahead without it (it always fails open).
+   */
+  import_meter_unavailable: { op: "reserve" | "settle"; reason: "timeout" | "error" };
   /**
    * A single URL turned out to be a "roundup" and yielded more than one recipe
    * (RecipePrinter multi-recipe import) — all of which were added. `count` is how

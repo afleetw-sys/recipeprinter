@@ -1244,6 +1244,12 @@ export function useProjectMeta() {
    * Nothing saved is destroyed. The previous project keeps its own id, its own
    * document, and its own purchase, and stays in the library — this just stops
    * pointing at it.
+   *
+   * It carries no recipes across, and that matters beyond tidiness: imports
+   * into a cookbook don't use the free card import allowance, so a new card
+   * project seeded from a book's recipes would hand them out uncounted. Any
+   * future "start from these recipes" must charge them as card imports
+   * (docs/import-meter-plan.md, section 1.3).
    */
   const startNewProject = useCallback(
     (options: { cookbook?: boolean } = {}) => {

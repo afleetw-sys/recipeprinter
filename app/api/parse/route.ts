@@ -446,6 +446,7 @@ async function parseWithCookPilotServer(
   url: string,
   hostname: string,
   deadline: Deadline,
+  importId?: string,
 ): Promise<CookPilotServerOutcome> {
   const endpoint = process.env.COOKPILOT_RECIPE_PARSER_URL?.trim();
   const secret = process.env.RECIPEPRINTER_PARSER_SECRET?.trim();
@@ -462,7 +463,10 @@ async function parseWithCookPilotServer(
       },
       // `multiRecipe` is RecipePrinter's opt-in for roundup pages: CookPilot returns
       // every recipe it finds ({ recipes: [...] }) instead of just the main one.
-      body: JSON.stringify({ url, multiRecipe: true }),
+      // `importId` is passed through for counting only: CookPilot logs whether
+      // a call carried one, which tells this app's imports apart from calls
+      // made to this route by anything else (docs/import-meter-plan.md, 1.2).
+      body: JSON.stringify({ url, multiRecipe: true, ...(importId ? { importId } : {}) }),
       signal: deadline.signal(COOKPILOT_TIMEOUT_MS),
     });
   } catch (err) {
@@ -546,6 +550,12 @@ async function parseWithCookPilotServer(
   return INCONCLUSIVE;
 }
 
+/** The client's `x-rp-import-id`, if it looks like one of our ids (`lib/ids`). */
+function importIdFrom(request: Request): string | undefined {
+  const value = request.headers.get("x-rp-import-id")?.trim();
+  return value && /^[A-Za-z0-9_-]{1,64}$/.test(value) ? value : undefined;
+}
+
 export async function POST(request: Request) {
   // Started before anything else, because the clock this is shadowing — the
   // platform's — starts at invocation too.
@@ -563,6 +573,7 @@ export async function POST(request: Request) {
   }
 
   let url: URL;
+  const importId = importIdFrom(request);
 
   try {
     const body = (await request.json()) as { url?: unknown };
@@ -610,7 +621,7 @@ export async function POST(request: Request) {
     // blocklist has to gate every fetch of this URL, ours and theirs.
     await validatePublicHttpUrl(url);
 
-    const cookPilot = await parseWithCookPilotServer(url.toString(), url.hostname, deadline);
+    const cookPilot = await parseWithCookPilotServer(url.toString(), url.hostname, deadline, importId);
     if (cookPilot.kind === "recipes") {
       return NextResponse.json({ success: true, recipes: cookPilot.recipes } satisfies ParseResponse);
     }

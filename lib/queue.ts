@@ -18,6 +18,18 @@ import { QUEUE_RECOVERY_OWNER_KEY, stampRecoveryOwner } from "@/lib/recoveryMirr
 import { localStore, sessionStore } from "@/lib/storage";
 import { releaseImportPreview, setImportPreview } from "@/lib/importPreviews";
 import { storeImportedPhoto, withImportedPhoto } from "@/lib/importedPhoto";
+import {
+  IMPORT_METER_DEPLOYED,
+  SKIPPED,
+  meterGateFor,
+  meterImportedFields,
+  meterMsOf,
+  normalizedTextForDedupe,
+  reserveImport,
+  settleImport,
+  type MeteredMethod,
+  type Reservation,
+} from "@/lib/importMeter";
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
 // It survives navigation to /print (same tab) via sessionStorage.
@@ -458,11 +470,20 @@ export interface MultiRecipeBlockedInfo {
   foundCount: number;
 }
 
+/** Options every parser-backed `add*` takes. */
+export interface AddImportOptions {
+  /**
+   * This import lands in a cookbook that is being built in the same tick, so
+   * `cookbookMode` isn't true yet: never meter it (see `meterGateFor`).
+   */
+  meterExempt?: boolean;
+}
+
 export function useQueue() {
   // Latest-value refs, not state: entitlement (customerInfo, cookbookMode)
   // isn't known yet at the point a caller calls `useQueue()` — it's computed
   // later in the same render, from state this hook doesn't own — so it
-  // arrives through `configureMultiRecipeGate` instead of a constructor
+  // arrives through `configureImportGates` instead of a constructor
   // argument. Reading through a ref rather than component state keeps
   // `runParse`/`addReadyRecipes`'s identity stable across entitlement
   // changing, and reading it fresh at the moment a recipe actually lands
@@ -472,6 +493,12 @@ export function useQueue() {
   // What the imports are filling, for the import events (see
   // `ImportContextProps`). Set alongside the gate, for the same reason.
   const importContextRef = useRef<ImportContextProps | undefined>(undefined);
+  // Where an import lands, and whether this browser already knows the cook is
+  // Pro: together they decide whether `runParse` asks the import meter, and
+  // the first two go on `recipe_imported`.
+  const cookbookModeRef = useRef(false);
+  const bookBoughtRef = useRef(false);
+  const clientProRef = useRef(false);
   const onMultiRecipeBlockedRef = useRef<((info: MultiRecipeBlockedInfo) => void) | undefined>(
     undefined,
   );
@@ -489,23 +516,48 @@ export function useQueue() {
    * depth; the pickers shouldn't let this happen) a library commit arrived
    * with more than the one recipe a locked account can add.
    *
+   * `cookbookMode` and `clientPro` are the import meter's exemptions (see
+   * `meterGateFor` in lib/importMeter): neither a cookbook import nor one by a
+   * visitor this browser knows is Pro is ever metered.
+   *
    * Called unconditionally on every render rather than from an effect: it
    * only ever assigns refs, so there's nothing to gain from delaying it a
    * tick, and calling it plainly keeps the gate correct even within the
    * render that first computes entitlement, rather than one render behind.
    */
-  const configureMultiRecipeGate = useCallback(
+  const configureImportGates = useCallback(
     (config: {
       singleRecipeOnly: boolean;
+      cookbookMode?: boolean;
+      /** This cookbook is bought. Meaningless outside cookbook mode. */
+      bookBought?: boolean;
+      clientPro?: boolean;
       onMultiRecipeBlocked?: (info: MultiRecipeBlockedInfo) => void;
       importContext?: ImportContextProps;
     }) => {
       singleRecipeOnlyRef.current = config.singleRecipeOnly;
+      cookbookModeRef.current = Boolean(config.cookbookMode);
+      bookBoughtRef.current = Boolean(config.bookBought);
+      clientProRef.current = Boolean(config.clientPro);
       onMultiRecipeBlockedRef.current = config.onMultiRecipeBlocked;
       importContextRef.current = config.importContext;
     },
     [],
   );
+
+  /**
+   * Where a recipe landed, for `recipe_imported`. Read when it lands, after
+   * any recipes it brought have been committed, so `bookRecipes` is the
+   * book's size with this import in it.
+   */
+  const landingFields = (): { cookbook?: true; bookRecipes?: number; bookBought?: boolean } => {
+    if (!cookbookModeRef.current) return {};
+    return {
+      cookbook: true,
+      bookRecipes: itemsRef.current.filter((item) => item.status === "ready").length,
+      bookBought: bookBoughtRef.current,
+    };
+  };
 
   const [items, setItems] = useState<QueueItem[]>([]);
 
@@ -728,7 +780,16 @@ export function useQueue() {
       // or the pasted text / URL for the others. An image import passes a live
       // array it rewrites once the photos compress, so a decode failure keeps
       // the originals and a parse failure keeps what the parser actually saw.
-      opts?: { failedImages?: Array<Blob | string>; failedText?: string },
+      //
+      // `meterExempt` says the import lands in a cookbook that doesn't exist
+      // yet (see `meterGateFor`). `dedupeInput` is what the meter dedupes on:
+      // the canonical link, or the normalized paste.
+      opts?: {
+        failedImages?: Array<Blob | string>;
+        failedText?: string;
+        meterExempt?: boolean;
+        dedupeInput?: string;
+      },
     ) => {
       // The full URL belongs to the STARTED event only. `recipe_imported` and
       // `recipe_import_failed` below both spread their origin wholesale, and an
@@ -741,12 +802,40 @@ export function useQueue() {
       const { url, ...outcome } = origin;
       liveParseIds.add(id);
       patch(id, { status: "parsing", error: undefined });
-      // Before `work()` — the parse has not been asked for anything yet, and
-      // this is a `capture` on the analytics queue, so it neither awaits
-      // anything nor touches the parser path.
-      // Read once, at the start: the import belongs to the project it began in.
+      // When the cook handed the import over, before anything is awaited:
+      // a `capture` on the analytics queue, so it neither waits on anything
+      // nor touches the parser path. The meter's wait is reported on the
+      // outcome events instead, so this keeps meaning "an import began".
+      // The context is read once, at the start: the import belongs to the
+      // project it began in.
       const context = importContextRef.current ?? {};
       track("recipe_import_started", { ...outcome, ...context, importId: id, ...(url ? { url } : {}) });
+      // The meter reserves BEFORE any parser request starts, and is awaited:
+      // a free import is only parsed once the server has it on record. It
+      // can't hold the import up for more than 5 seconds, and never stops it
+      // (see lib/importMeter). Inside the `parsing` state, so the deck shows
+      // the import as under way the whole time.
+      const metered =
+        meterGateFor({
+          method: origin.source,
+          cookbookMode: cookbookModeRef.current,
+          clientPro: clientProRef.current,
+          override: opts?.meterExempt,
+          deployed: IMPORT_METER_DEPLOYED,
+        }) === "reserve";
+      const reservation: Reservation = metered
+        ? await reserveImport({
+            importId: id,
+            method: origin.source as MeteredMethod,
+            dedupeInput: opts?.dedupeInput,
+          })
+        : SKIPPED;
+      let settled = false;
+      const settle = (result: "success" | "failure") => {
+        if (!metered || settled) return;
+        settled = true;
+        settleImport(id, result);
+      };
       try {
         const result = await work();
         // A URL import is a website's page, and we keep none of a website's
@@ -765,7 +854,8 @@ export function useQueue() {
         }
         const [first, ...allRest] = recipes;
         patch(id, { status: "ready", recipe: first, title: first.title || "Untitled recipe" });
-        track("recipe_imported", { ...outcome, ...context });
+        // Once per import, however many recipes a roundup brings.
+        settle("success");
         // Watch for the cook rewriting it, the sign this "success" read the
         // recipe wrong (lib/importCorrections). Against the printable form,
         // the same one their edits arrive in.
@@ -797,7 +887,7 @@ export function useQueue() {
         if (rest.length > 0) {
           // A roundup URL: keep the first recipe on this item and add the rest as
           // their own ready items, mirroring this item's URL context so retry/dedupe
-          // still key off the same source. Count each as its own import.
+          // still key off the same source.
           const base = itemsRef.current.find((it) => it.id === id);
           const extras: QueueItem[] = rest.map((recipe) => ({
             id: uid(),
@@ -810,9 +900,20 @@ export function useQueue() {
             addedAt: Date.now(),
           }));
           commit([...itemsRef.current, ...extras]);
-          rest.forEach(() => track("recipe_imported", { ...outcome, ...context }));
         }
+        // After the extras are in, so a cookbook's `bookRecipes` counts them.
+        // One event per recipe, with the bloomed ones marked `extra`.
+        const landing = {
+          ...landingFields(),
+          ...meterMsOf(reservation),
+          ...meterImportedFields(reservation),
+        };
+        track("recipe_imported", { ...outcome, ...context, importId: id, ...landing });
+        rest.forEach(() =>
+          track("recipe_imported", { ...outcome, ...context, importId: id, extra: true, ...landing }),
+        );
       } catch (err) {
+        settle("failure");
         // A reserved documentation domain gets its own answer. The generic
         // "check the link and try again" treats a deliberate placeholder as a
         // typo in a real address, and it is the one failure where we know
@@ -871,6 +972,7 @@ export function useQueue() {
           // `blocked`, and only by the route, which is the one place that sees
           // the response itself.
           ...(err instanceof ImportError && err.meta ? err.meta : {}),
+          ...meterMsOf(reservation),
         });
       } finally {
         liveParseIds.delete(id);
@@ -880,7 +982,7 @@ export function useQueue() {
   );
 
   const addUrl = useCallback(
-    (rawUrl: string) => {
+    (rawUrl: string, opts?: AddImportOptions) => {
       const url = rawUrl.trim();
       if (!url) return;
       const key = canonicalUrl(unwrapRedirectUrl(url));
@@ -923,8 +1025,8 @@ export function useQueue() {
         // this property has. Normalizing only adds a missing scheme and unwraps
         // a redirect doorway; the query string is untouched.
         { source: "url", hostname: host, url: normalizedUrl },
-        () => parseUrlAll(normalizedUrl),
-        { failedText: normalizedUrl },
+        () => parseUrlAll(normalizedUrl, { importId: id }),
+        { failedText: normalizedUrl, meterExempt: opts?.meterExempt, dedupeInput: key || normalizedUrl },
       );
     },
     [commit, focusItem, runParse],
@@ -961,7 +1063,7 @@ export function useQueue() {
    * way a link does.
    */
   const addImageFiles = useCallback(
-    (files: File[], label: string) => {
+    (files: File[], label: string, opts?: AddImportOptions) => {
       if (files.length === 0) return;
       const id = queueImageItem(label);
       // The placeholder shows the photo being read (see lib/importPreviews).
@@ -982,7 +1084,7 @@ export function useQueue() {
           failedImages.splice(0, failedImages.length, ...images);
           return withImportedPhoto(await parseImages(images), storedPhoto);
         },
-        { failedImages },
+        { failedImages, meterExempt: opts?.meterExempt },
       ).finally(() => releaseImportPreview(id));
     },
     [queueImageItem, runParse],
@@ -991,7 +1093,7 @@ export function useQueue() {
   /** Photos that were already decoded elsewhere — the SEO capture block reads
       them on its own page and hands the results over (see lib/pendingImport). */
   const addImages = useCallback(
-    (images: string[], label: string) => {
+    (images: string[], label: string, opts?: AddImportOptions) => {
       if (images.length === 0) return;
       const id = queueImageItem(label);
       setImportPreview(id, images[0]);
@@ -1001,14 +1103,14 @@ export function useQueue() {
         id,
         { source: "image" },
         async () => withImportedPhoto(await parseImages(images), storedPhoto),
-        { failedImages: images },
+        { failedImages: images, meterExempt: opts?.meterExempt },
       ).finally(() => releaseImportPreview(id));
     },
     [queueImageItem, runParse],
   );
 
   const addText = useCallback(
-    (text: string) => {
+    (text: string, opts?: AddImportOptions) => {
       const trimmed = text.trim();
       if (!trimmed) return;
       const id = uid();
@@ -1023,7 +1125,11 @@ export function useQueue() {
         addedAt: Date.now(),
       };
       commit([...withoutFailedIfSingle(itemsRef.current), item]);
-      void runParse(id, { source: "text" }, () => parseText(trimmed), { failedText: trimmed });
+      void runParse(id, { source: "text" }, () => parseText(trimmed), {
+        failedText: trimmed,
+        meterExempt: opts?.meterExempt,
+        dedupeInput: normalizedTextForDedupe(trimmed),
+      });
     },
     [commit, runParse],
   );
@@ -1064,8 +1170,9 @@ export function useQueue() {
       // These arrive already parsed, so they never touch runParse — count them
       // here or the library sources silently miss from every import total.
       // No started/failed pair: there's no parse step that could fail.
+      const landing = landingFields();
       nextRecipes.forEach((recipe) => {
-        track("recipe_imported", { source: recipe.method, ...importContextRef.current });
+        track("recipe_imported", { source: recipe.method, ...importContextRef.current, ...landing });
       });
       return nextRecipes.length;
     },
@@ -1119,6 +1226,6 @@ export function useQueue() {
     replaceAll,
     focusItem,
     updateRecipe,
-    configureMultiRecipeGate,
+    configureImportGates,
   };
 }

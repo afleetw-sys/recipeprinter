@@ -144,8 +144,12 @@ export default function PrivacyPage() {
           </li>
           <li>
             Your browser generates a random identifier so that our
-            recipe-reading service can apply per-visitor usage limits. It is not
-            linked to your name or email address.
+            recipe-reading service can apply per-visitor usage limits and count
+            imports (see &ldquo;Import counts&rdquo; in{" "}
+            <a href="#what-we-collect" className={sectionLink}>
+              section 4
+            </a>
+            ). It is not linked to your name or email address.
           </li>
           <li>
             Recipes you import are still sent to our recipe-reading service,
@@ -211,8 +215,9 @@ export default function PrivacyPage() {
             page views, imports started, imports that succeeded or failed and
             why, prints, theme choices, paywall views, purchases, and feedback
             sent. For imports from a website, we record the website&apos;s
-            hostname so we can see which sites fail, but not the full address of
-            the recipe.
+            hostname so we can see which sites fail, and the address of the
+            recipe page you imported, so that a recipe we read incorrectly can
+            be reproduced and fixed.
           </li>
           <li>
             <strong>Session replay.</strong> We may record how pages respond to
@@ -246,6 +251,15 @@ export default function PrivacyPage() {
             keeps standard request logs. Our usage limits briefly count requests
             by IP address in memory, to keep the recipe-reading service
             available to everyone.
+          </li>
+          <li>
+            <strong>Import counts.</strong> We count successful recipe imports
+            for each browser, or for each account when you are signed in, to
+            understand how much RecipePrinter is used. For each import we keep
+            the time, the kind of import, and a short one-way fingerprint of the
+            link or text, so importing the same recipe again is not counted
+            twice; the recipe itself is not kept. The analytics opt-out does not
+            stop these counts.
           </li>
           <li>
             <strong>Error reports.</strong> When an error occurs, we record the
@@ -546,6 +560,10 @@ export default function PrivacyPage() {
             until we have responded to or reviewed them, and for a reasonable
             period afterwards. An approved gallery photo is kept for as long as
             it is displayed.
+          </li>
+          <li>
+            <strong>Import counts</strong> are deleted automatically 31 days
+            after your most recent import.
           </li>
           <li>
             <strong>Server logs</strong> are kept by our hosting provider for a
