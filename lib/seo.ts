@@ -77,26 +77,35 @@ export const SITE_KEYWORDS = [
   "ReciScan alternative",
 ];
 
-/** The team behind RecipePrinter, used as publisher/provider in JSON-LD. */
+/**
+ * The team behind RecipePrinter, used as publisher/provider in JSON-LD.
+ * `profiles` are CookPilot's own accounts: they go out as `sameAs` on the
+ * parentOrganization node, never on RecipePrinter's.
+ */
 export const PUBLISHER = {
   name: "CookPilot",
   url: "https://cookpilotapp.com",
+  profiles: [
+    "https://apps.apple.com/us/app/cookpilot-recipes-that-adapt/id6753838076",
+    "https://www.instagram.com/getcookpilot/",
+    "https://www.tiktok.com/@getcookpilot",
+    "https://www.pinterest.com/getcookpilot/",
+    "https://www.crunchbase.com/organization/cookpilot",
+  ],
 };
 
 /**
- * Public brand profiles for the RecipePrinter/CookPilot product. Surfaced as
- * `sameAs` in the Organization JSON-LD: this is how search engines and AI
- * assistants connect the website to a known brand entity, which is a major
- * input into whether they cite or recommend the product. Add App Store, Google
- * Play, YouTube, Facebook, or LinkedIn URLs here as they come online.
+ * RecipePrinter's own public profiles. Surfaced as `sameAs` in the
+ * Organization JSON-LD: this is how search engines and AI assistants connect
+ * the website to a known brand entity, which is a major input into whether
+ * they cite or recommend the product. `sameAs` means "this account is this
+ * same entity", so only RecipePrinter accounts belong here. CookPilot's go in
+ * PUBLISHER.profiles.
  */
 export const SOCIAL_PROFILES = [
-  "https://cookpilotapp.com/",
-  "https://apps.apple.com/us/app/cookpilot-recipes-that-adapt/id6753838076",
-  "https://www.instagram.com/getcookpilot/",
-  "https://www.tiktok.com/@getcookpilot",
-  "https://www.pinterest.com/getcookpilot/",
-  "https://www.crunchbase.com/organization/cookpilot",
+  "https://www.pinterest.com/recipeprinter/",
+  "https://www.producthunt.com/products/recipeprinter",
+  "https://peerlist.io/awinger/project/free-recipe-printer-for-online-recipes",
   // Add the YouTube channel here once it has real content (at least a video or
   // two). An empty channel adds no trust signal, a crawler that follows it
   // finds nothing to corroborate, and a dead profile can read as a less-active
@@ -476,6 +485,7 @@ export function organizationNode() {
       "@type": "Organization",
       name: PUBLISHER.name,
       url: PUBLISHER.url,
+      sameAs: PUBLISHER.profiles,
     },
   };
 }
