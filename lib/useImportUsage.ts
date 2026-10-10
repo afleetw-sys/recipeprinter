@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
 import { IMPORT_ALLOWANCE_LIVE } from "@/lib/freeImports";
 import {
@@ -24,18 +24,18 @@ import {
  */
 export function useImportUsage(enabled: boolean = true): { hidden: boolean; usage: ImportUsage | null } {
   const active = IMPORT_ALLOWANCE_LIVE && enabled;
+  // The server render and the first client render both see "no count, not
+  // unlimited" (the third argument), so the line is in the page's HTML from the
+  // start, stating the allowance, and never pops in after the scripts load.
+  // What this browser remembers is swapped into that same line straight after.
   const remembered = useSyncExternalStore(subscribeImportUsage, rememberedImportUsage, () => null);
   const unlimited = useSyncExternalStore(subscribeImportUsage, importsKnownUnlimited, () => false);
-  // Nothing on the server render or the first client one: the count lives in
-  // this browser, and showing it a frame late beats a hydration mismatch.
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     if (!active) return;
     if (rememberedImportUsage() || importsKnownUnlimited() || readCookPilotWasSignedIn()) void refreshImportUsage();
   }, [active]);
 
-  if (!active || !mounted || unlimited) return { hidden: true, usage: null };
+  if (!active || unlimited) return { hidden: true, usage: null };
   return { hidden: false, usage: remembered ? usageNow(remembered, Date.now()) : null };
 }
