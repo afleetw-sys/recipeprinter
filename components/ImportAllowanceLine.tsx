@@ -1,9 +1,17 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import { CrownIcon, ICON_SIZE } from "@/components/icons";
 import { importAllowanceLine } from "@/lib/freeImports";
 import { useImportUsage } from "@/lib/useImportUsage";
+
+// Loaded on the first press of Upgrade, not with the banner: it brings the
+// purchase flow with it, and most visitors never press it.
+const ImportBannerUpgrade = dynamic(
+  () => import("@/components/ImportBannerUpgrade").then((mod) => mod.ImportBannerUpgrade),
+  { ssr: false },
+);
 
 /**
  * How many free imports a cook has used toward the limit, as a small banner
@@ -23,11 +31,14 @@ export function ImportAllowanceLine({
 }: {
   /** False where the allowance doesn't apply: a cookbook, a known Pro member. */
   enabled?: boolean;
-  /** Opens the Pro dialog. Without one, Upgrade links to the pricing page. */
+  /** Opens the page's own Pro dialog (`/print`). Without one, the banner
+      opens the same dialog itself, so Upgrade works the same everywhere. */
   onGetUnlimited?: () => void;
   className?: string;
 }) {
   const { hidden, usage } = useImportUsage(enabled);
+  // How many times Upgrade has been pressed here; 0 until the first.
+  const [upgradePresses, setUpgradePresses] = useState(0);
   if (hidden) return null;
   const line = importAllowanceLine(usage);
   const fraction = usage && usage.limit > 0 ? Math.min(usage.used, usage.limit) / usage.limit : 0;
@@ -57,15 +68,14 @@ export function ImportAllowanceLine({
           {line.detail && <> {line.detail}</>}
         </p>
       </div>
-      {onGetUnlimited ? (
-        <button type="button" className={upgradeClass} onClick={onGetUnlimited}>
-          {upgrade}
-        </button>
-      ) : (
-        <Link href="/pricing" className={upgradeClass}>
-          {upgrade}
-        </Link>
-      )}
+      <button
+        type="button"
+        className={upgradeClass}
+        onClick={() => (onGetUnlimited ? onGetUnlimited() : setUpgradePresses((count) => count + 1))}
+      >
+        {upgrade}
+      </button>
+      {upgradePresses > 0 && <ImportBannerUpgrade openSignal={upgradePresses} />}
     </div>
   );
 }

@@ -6754,7 +6754,13 @@ export default function PrintPage() {
         chapterTarget={addChapterTarget}
         // The card allowance isn't a cookbook's, and Pro has none.
         allowance={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
-        onGetUnlimited={() => openProUpgradeDialog(IMPORT_LIMIT_TRIGGER)}
+        onGetUnlimited={() => {
+          // The banner's Upgrade is there in every state. Only someone who is
+          // actually out of imports gets the "you've used your 10" wording;
+          // anyone else pressed Upgrade and gets the plain Pro dialog.
+          const usage = rememberedImportUsage();
+          openProUpgradeDialog(usage && usage.used >= usage.limit ? IMPORT_LIMIT_TRIGGER : "import_banner");
+        }}
       />
       <FeedbackDialog
         open={showFeedbackDialog}
