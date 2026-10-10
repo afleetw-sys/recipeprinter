@@ -20,14 +20,14 @@ export const IMPORT_METER_CALLABLE = "recipePrinterImportMeter";
 export const IMPORT_METER_TIMEOUT_MS = 5_000;
 
 /**
- * Whether `recipePrinterImportMeter` exists in CookPilot yet. Until it is
- * deployed (plan step B), calling it would cost every free import a failed
- * request, a possible dropped-connection retry in `callCookPilotParser`, and an
- * `import_meter_unavailable` event, all to learn nothing. Set it to true in
- * the commit that follows the CookPilot deploy; the server's `mode` then
- * decides everything else without a RecipePrinter deploy.
+ * Whether the client calls `recipePrinterImportMeter` at all. It was false
+ * until the callable was deployed to CookPilot and checked on 2026-10-10
+ * (`scripts/check-import-meter.mjs`), because calling a function that doesn't
+ * exist would cost every free import a failed request. The server's `mode` now
+ * decides whether anything is recorded, with no RecipePrinter deploy. Setting
+ * this back to false is the client-side rollback (docs/import-meter.md).
  */
-export const IMPORT_METER_DEPLOYED = false;
+export const IMPORT_METER_DEPLOYED = true;
 
 export type MeteredMethod = "url" | "image" | "text";
 

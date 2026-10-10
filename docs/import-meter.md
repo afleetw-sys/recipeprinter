@@ -16,7 +16,7 @@ the cookbook free size and enforcement are a later, separately approved go-live 
 | Client wiring: `lib/importMeter.ts`, `lib/freeImports.ts`, `runParse` reserve → parse → settle | RecipePrinter | built (step C), inert |
 | `x-rp-import-id` header, forwarded by `/api/parse` as `importId` | RecipePrinter | built (step C) |
 | Privacy policy: "Import counts" and its retention line | RecipePrinter | drafted, needs Amelia's approval (B4) |
-| `recipePrinterImportMeter` callable, `hasImportId` log line | CookPilot | built and committed (`5443f1d`, step B), **not deployed** |
+| `recipePrinterImportMeter` callable, `hasImportId` log line | CookPilot | deployed 2026-10-10 (`5443f1d`, `58cbad2`) and checked; `mode` is off |
 | `recipePrinterConfig/importMeter` doc, TTL policy on `recipePrinterImportMeter` | CookPilot / GCP | Amelia's to create (B2) |
 | Network check (`recipePrinterMeterNet`, `RECIPEPRINTER_METER_NET_KEY`) | CookPilot | **dropped 2026-10-10**; no IP addresses are processed for the meter |
 
@@ -30,7 +30,7 @@ Three switches. All three start off, and each one is safe to flip back on its ow
 
 | Switch | Where | Values | What it does |
 |---|---|---|---|
-| `IMPORT_METER_DEPLOYED` | `lib/importMeter.ts` (RecipePrinter, needs a deploy) | `false` (now), `true` | `false`: the client never calls the meter, so imports behave exactly as before step C. `true`: free card-mode imports reserve and settle. |
+| `IMPORT_METER_DEPLOYED` | `lib/importMeter.ts` (RecipePrinter, needs a deploy) | `true` since 2026-10-10 (not pushed yet), `false` to roll back | `false`: the client never calls the meter, so imports behave exactly as before step C. `true`: free card-mode imports reserve and settle. |
 | `mode` | Firestore `recipePrinterConfig/importMeter` (CookPilot, no deploy, read through a 60 s cache) | `"off"`, `"measure"` (`"enforce"` comes with go-live) | `off`: every call answers `{ mode: "off", allowed: true }` and touches no documents. `measure`: records imports, refuses nobody. |
 | `IMPORT_ALLOWANCE_LIVE` | `lib/freeImports.ts` (RecipePrinter) | `false` | Gates enforcement and all allowance copy. Only the go-live PR sets it. Even with `mode: "enforce"`, a build where this is `false` can't refuse anyone. |
 
