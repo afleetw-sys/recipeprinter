@@ -21,7 +21,10 @@ import { storeImportedPhoto, withImportedPhoto } from "@/lib/importedPhoto";
 import {
   IMPORT_METER_DEPLOYED,
   SKIPPED,
+  importRefused,
   meterGateFor,
+  rememberedImportUsage,
+  type ImportUsage,
   meterImportedFields,
   meterMsOf,
   normalizedTextForDedupe,
@@ -479,6 +482,13 @@ export interface AddImportOptions {
   meterExempt?: boolean;
 }
 
+/** An import that didn't start because the free allowance is used up. */
+export interface ImportLimitInfo {
+  source: ImportMethod;
+  /** The server's count, when it answered; absent if it couldn't be reached. */
+  usage?: ImportUsage;
+}
+
 export function useQueue() {
   // Latest-value refs, not state: entitlement (customerInfo, cookbookMode)
   // isn't known yet at the point a caller calls `useQueue()` — it's computed
@@ -502,6 +512,7 @@ export function useQueue() {
   const onMultiRecipeBlockedRef = useRef<((info: MultiRecipeBlockedInfo) => void) | undefined>(
     undefined,
   );
+  const onImportLimitReachedRef = useRef<((info: ImportLimitInfo) => void) | undefined>(undefined);
   /**
    * True for an account with neither Pro nor cookbook mode: outside a
    * cookbook, printing more than one recipe at a time is the premium action
@@ -533,6 +544,8 @@ export function useQueue() {
       bookBought?: boolean;
       clientPro?: boolean;
       onMultiRecipeBlocked?: (info: MultiRecipeBlockedInfo) => void;
+      /** A free import was refused because the allowance is used up. */
+      onImportLimitReached?: (info: ImportLimitInfo) => void;
       importContext?: ImportContextProps;
     }) => {
       singleRecipeOnlyRef.current = config.singleRecipeOnly;
@@ -540,6 +553,7 @@ export function useQueue() {
       bookBoughtRef.current = Boolean(config.bookBought);
       clientProRef.current = Boolean(config.clientPro);
       onMultiRecipeBlockedRef.current = config.onMultiRecipeBlocked;
+      onImportLimitReachedRef.current = config.onImportLimitReached;
       importContextRef.current = config.importContext;
     },
     [],
@@ -830,6 +844,24 @@ export function useQueue() {
             dedupeInput: opts?.dedupeInput,
           })
         : SKIPPED;
+      // Out of free imports: the parse never starts, so nothing is spent and
+      // nothing is counted. The placeholder goes (there is no failure to show
+      // or retry), and the page says why. Everything the cook already has is
+      // untouched.
+      if (importRefused(reservation)) {
+        liveParseIds.delete(id);
+        commit(itemsRef.current.filter((it) => it.id !== id));
+        const usage =
+          reservation.status === "reserved" ? reservation.result.usage : rememberedImportUsage() ?? undefined;
+        track("import_limit_reached", {
+          ...outcome,
+          ...context,
+          importId: id,
+          ...(usage ? { used: usage.used, limit: usage.limit } : {}),
+        });
+        onImportLimitReachedRef.current?.({ source: origin.source, ...(usage ? { usage } : {}) });
+        return;
+      }
       let settled = false;
       const settle = (result: "success" | "failure") => {
         if (!metered || settled) return;
