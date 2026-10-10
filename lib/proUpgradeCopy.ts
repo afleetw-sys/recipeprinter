@@ -1,9 +1,5 @@
 import type { ProLockReason } from "@/lib/recipePrinterPurchases";
-import {
-  FREE_IMAGE_IMPORT_BENEFIT,
-  IMAGE_IMPORTS_PER_HOUR_PRO,
-  PRO_IMAGE_IMPORT_BENEFIT,
-} from "@/lib/imageImportQuota";
+import { IMAGE_IMPORTS_PER_HOUR_PRO } from "@/lib/imageImportQuota";
 import {
   FREE_IMPORTS_PER_WINDOW,
   FREE_IMPORT_WINDOW_DAYS,
@@ -43,15 +39,15 @@ const UNLIMITED_IMPORTS_BENEFIT = "Unlimited recipe imports";
 // "One recipe at a time" is real (see PrintSetupControls.tsx's "This
 // recipe" title) but it's a constraint, not a benefit, so it doesn't belong
 // on a list meant to make the case for staying on Basic being a perfectly
-// good deal. Imports are counted two ways and the list says both: an
-// allowance every 30 days (the first line, whose usage /account shows under
-// it), and photo imports by the hour, because each one is a paid model call
-// (see lib/imageImportQuota.ts). Editing and reprinting never use either.
+// good deal. The first line is the import allowance, whose usage /account
+// shows under it. The hourly photo pacing (lib/imageImportQuota.ts) is real on
+// every plan but is not listed on either plan: with an allowance of imports it
+// isn't something to sell (Amelia, 2026-10-10). /account still shows this
+// hour's photo usage, as usage rather than as a benefit.
 export const FREE_IMPORTS_BENEFIT = `${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days`;
 export const BASIC_BENEFITS = [
   FREE_IMPORTS_BENEFIT,
   "Import from any recipe site, Instagram, TikTok, Pinterest & more",
-  FREE_IMAGE_IMPORT_BENEFIT,
   "Edit and reprint your recipes as often as you like",
   "Letter-size printing with two free themes",
 ];
@@ -64,7 +60,6 @@ export const BASIC_BENEFITS = [
 export const PRO_BENEFITS = [
   UNLIMITED_IMPORTS_BENEFIT,
   ...Object.values(BENEFIT_BY_REASON),
-  PRO_IMAGE_IMPORT_BENEFIT,
   NO_BRANDING_BENEFIT,
   COOKBOOK_BENEFIT,
 ];
@@ -130,7 +125,7 @@ export function proUpgradeCopy(
   if (trigger === IMAGE_IMPORT_LIMIT_TRIGGER) {
     return {
       title: `Import up to ${IMAGE_IMPORTS_PER_HOUR_PRO} images an hour`,
-      benefits: [PRO_IMAGE_IMPORT_BENEFIT, ...PRO_BENEFITS.filter((b) => b !== PRO_IMAGE_IMPORT_BENEFIT)],
+      benefits: PRO_BENEFITS,
       ctaLabel: "Unlock Pro",
     };
   }

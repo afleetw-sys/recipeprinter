@@ -5,8 +5,7 @@ import { useImportUsage } from "@/lib/useImportUsage";
 
 /**
  * This 30 days' free imports, inset under the allowance line on the Free plan
- * card (see `AccountProStatus`), the same way `AccountImageImportUsage` sits
- * under the hourly photo line. The count is CookPilot's, not this browser's.
+ * card (see `AccountProStatus`). The count is CookPilot's, not this browser's.
  * Renders nothing while the allowance isn't live.
  */
 export function AccountImportAllowanceUsage() {

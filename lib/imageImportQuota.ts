@@ -10,8 +10,6 @@
 export const IMAGE_IMPORTS_PER_HOUR_FREE = 5;
 export const IMAGE_IMPORTS_PER_HOUR_PRO = 30;
 
-export const FREE_IMAGE_IMPORT_BENEFIT = `${IMAGE_IMPORTS_PER_HOUR_FREE} image imports an hour`;
-export const PRO_IMAGE_IMPORT_BENEFIT = `${IMAGE_IMPORTS_PER_HOUR_PRO} image imports an hour`;
 
 export interface ImageImportQuota {
   used: number;

@@ -19,9 +19,9 @@ const ImportBannerUpgrade = dynamic(
  * count, signed in or out. Renders nothing for Pro, for cookbooks (`enabled`
  * false) and while the allowance isn't live.
  *
- * A quiet banner (Amelia, 2026-10-10): a hairline outline, a small ring that
- * fills as imports are used, the count, and an Upgrade button at the far
- * right in every state. It never disables the import box: the server is
+ * A quiet banner (Amelia, 2026-10-10): a hairline outline, a small ring in
+ * the accent colour that fills as imports are used (the one thing in it meant
+ * to catch the eye), the count, and Upgrade at the far right in every state. It never disables the import box: the server is
  * always asked first, so a stale count can't lock anyone out.
  */
 export function ImportAllowanceLine({
@@ -108,7 +108,7 @@ function UsageRing({ fraction }: { fraction: number }) {
           cy={center}
           r={RING_RADIUS}
           fill="none"
-          stroke="var(--cp-ink-soft)"
+          stroke="var(--cp-accent)"
           strokeWidth={RING_STROKE}
           strokeLinecap="round"
           strokeDasharray={RING_LENGTH}

@@ -3,9 +3,8 @@ import { pageMetadata, SITE_NAME } from "@/lib/seo";
 import type { ImportTab } from "@/types/recipe";
 import { PRINTERS } from "@/lib/cookbookPresets";
 import { PRO_ANNUAL_PRICE_FALLBACK, PRO_MONTHLY_PRICE_FALLBACK } from "@/lib/proProduct";
-import { IMAGE_IMPORTS_PER_HOUR_FREE, IMAGE_IMPORTS_PER_HOUR_PRO } from "@/lib/imageImportQuota";
 import { COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
-import { FREE_IMPORTS_PER_WINDOW, FREE_IMPORT_WINDOW_DAYS } from "@/lib/freeImports";
+import { FREE_COOKBOOK_RECIPES, FREE_IMPORTS_PER_WINDOW, FREE_IMPORT_WINDOW_DAYS } from "@/lib/freeImports";
 
 /** Icon slugs a value-prop chip can use, resolved to real icons in the template. */
 export type SeoIconKey =
@@ -1815,7 +1814,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "screen-free-cooking",
-    contentUpdated: "2026-10-06",
+    contentUpdated: "2026-10-10",
     primaryKeyword: "screen-free cooking",
     secondaryKeywords: [
       "cook without your phone",
@@ -1925,7 +1924,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         question: "Does it cost anything?",
-        answer: `The basics are free with no account: importing recipes, editing them, and printing or saving full-page recipes, with up to ${IMAGE_IMPORTS_PER_HOUR_FREE} screenshot or photo imports an hour. RecipePrinter Pro (${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}) adds 4×6 recipe cards, premium themes, printing several recipes at once, and ${IMAGE_IMPORTS_PER_HOUR_PRO} image imports an hour.`,
+        answer: `The basics are free with no account: ${FREE_IMPORTS_PER_WINDOW} recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days, editing them, and printing or saving full-page recipes. RecipePrinter Pro (${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}) adds unlimited imports, 4×6 recipe cards, premium themes, and printing several recipes at once.`,
       },
     ],
     links: [
@@ -3661,7 +3660,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         question: "How much does it cost?",
-        answer: `Importing recipes and building the cookbook are free. Exporting the finished cookbook costs ${COOKBOOK_PRICE_FALLBACK} per cookbook, paid once, and doesn't need RecipePrinter Pro. The free plan reads ${IMAGE_IMPORTS_PER_HOUR_FREE} photos an hour; Pro (${PRO_MONTHLY_PRICE_FALLBACK}) raises that to ${IMAGE_IMPORTS_PER_HOUR_PRO} and adds 4×6 recipe cards. Printing and binding are paid to your printer.`,
+        answer: `You can preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. Exporting the finished cookbook costs ${COOKBOOK_PRICE_FALLBACK} per cookbook, paid once; that also lets you add as many recipes as you like, and it doesn't need RecipePrinter Pro. Printing and binding are paid to your printer.`,
       },
       {
         question: "Can I give everyone at the shower a copy?",
