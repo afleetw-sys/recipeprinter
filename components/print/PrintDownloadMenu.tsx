@@ -47,7 +47,14 @@ export function PrintDownloadMenu({
         <ChevronDownIcon size={ICON_SIZE.md} />
       </button>
       {open && (
-        <AnchoredMenu anchorRef={anchorRef} onClose={() => setOpen(false)} label="Print or download" align="end">
+        <AnchoredMenu
+          anchorRef={anchorRef}
+          onClose={() => setOpen(false)}
+          label="Print or download"
+          align="end"
+          // A set width: three short words would otherwise size it to a sliver.
+          className="w-44"
+        >
           {primary !== "print" && (
             <button
               type="button"
