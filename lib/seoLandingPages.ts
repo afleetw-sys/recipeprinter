@@ -1703,7 +1703,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     initialImportMode: "url",
     // The full import box, not a lone link field: a recipe on social media is
     // as often a screenshot or a copied caption as it is a link that imports.
-    importModes: ["url", "image", "text"],
+    importModes: ["url", "apps", "image", "text"],
     title: "Print Recipes from Social Media | Instagram, TikTok & More",
     description:
       "Print recipes from Instagram, TikTok, Pinterest, Facebook, and YouTube. Paste a social media link and turn it into a clean recipe you can print or save.",
