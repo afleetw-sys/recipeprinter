@@ -113,7 +113,7 @@ import {
   markImportsUnlimited,
   rememberedImportUsage,
 } from "@/lib/importMeter";
-import { ImportUsageMenu } from "@/components/ImportUsageMenu";
+import { HEADER_USAGE_CLASS, ImportUsageMenu } from "@/components/ImportUsageMenu";
 import { PrintDownloadMenu } from "@/components/print/PrintDownloadMenu";
 import { CardExportError, downloadCards } from "@/lib/cardExport";
 import type { ExportOutput } from "@/types/export";
@@ -4731,7 +4731,7 @@ export default function PrintPage() {
    */
   function renderImportUsageButton() {
     if (cookbookMode || hasProEntitlement(effectiveCustomerInfo.customerInfo)) return null;
-    return <ImportUsageMenu onUpgrade={openImportUpgrade} />;
+    return <ImportUsageMenu className={HEADER_USAGE_CLASS} onUpgrade={openImportUpgrade} />;
   }
 
   // Card-format print settings (behind the "Print settings" trigger). Cookbook

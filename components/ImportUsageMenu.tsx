@@ -6,6 +6,11 @@ import { CrownIcon, ICON_SIZE } from "@/components/icons";
 import { importAllowanceLine } from "@/lib/freeImports";
 import { useImportUsage } from "@/lib/useImportUsage";
 
+/** In a header the ring has no outline of its own, so its box is pulled in
+    toward the account button: the bar's full gap on top of the ring's own
+    margin read as a hole between the two (Amelia, 2026-10-11). */
+export const HEADER_USAGE_CLASS = "-mr-2";
+
 /**
  * The free-import count as a button: a ring that fills as imports are used,
  * in the header to the left of the account (the homepage and the print page
@@ -22,6 +27,7 @@ export function ImportUsageMenu({
   onUpgrade,
   align = "end",
   header = false,
+  className = "",
 }: {
   enabled?: boolean;
   onUpgrade: () => void;
@@ -29,6 +35,7 @@ export function ImportUsageMenu({
   align?: "start" | "end";
   /** `SiteHeader`'s own control size, for a bar whose other buttons use it. */
   header?: boolean;
+  className?: string;
 }) {
   const { hidden, usage } = useImportUsage(enabled);
   const [open, setOpen] = useState(false);
@@ -44,7 +51,9 @@ export function ImportUsageMenu({
         type="button"
         // An icon button with no fill of its own (Amelia, 2026-10-10): the
         // ring is the control, and only a hover shows it can be pressed.
-        className={`btn-ghost ${header ? "btn-header" : "btn-compact"}`}
+        // A square the size of the account button it sits beside, so the ring
+        // has the same room around it as the avatar's icon.
+        className={`btn-ghost px-0 ${header ? "btn-header w-8" : "btn-compact w-[30px]"} ${className}`}
         aria-haspopup="menu"
         aria-expanded={open}
         // The ring is a picture of the count; the name says it in words.

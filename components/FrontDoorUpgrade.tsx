@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
-import { ImportUsageMenu } from "@/components/ImportUsageMenu";
+import { HEADER_USAGE_CLASS, ImportUsageMenu } from "@/components/ImportUsageMenu";
 import { CrownIcon, ICON_SIZE } from "@/components/icons";
 import {
   importsKnownUnlimited,
@@ -79,5 +79,5 @@ export function FrontDoorUpgradeButton() {
 
 /** The free-import ring, to the left of the account. */
 export function FrontDoorImportUsage() {
-  return <ImportUsageMenu header onUpgrade={() => requestUpgrade("import_banner")} />;
+  return <ImportUsageMenu header className={HEADER_USAGE_CLASS} onUpgrade={() => requestUpgrade("import_banner")} />;
 }
