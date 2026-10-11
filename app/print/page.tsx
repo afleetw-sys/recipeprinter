@@ -6839,6 +6839,7 @@ export default function PrintPage() {
         cover={projectMeta.meta.cover ?? defaultCover()}
         price={cookbookPrice}
         fullPrice={cookbookDiscountEligible ? COOKBOOK_PRICE_FALLBACK : undefined}
+        hasRecipes={recipeCount > 0}
         onClose={() => {
           // The X, Escape and the backdrop only dismiss the panel. The cook
           // just watched this book get built; closing the thing sitting on top
@@ -6855,7 +6856,8 @@ export default function PrintPage() {
           //
           // Only an empty book, though. A cook who arrived here by importing a
           // recipe (still parsing counts) is already started, and lands on the
-          // book that recipe began rather than on "Add your first recipe".
+          // book that recipe began rather than on "Add your first recipe". The
+          // button reads "Open your cookbook" for them (`hasRecipes`).
           if (recipeCount > 0) return;
           setAddingFirstRecipe(true);
           openAddRecipeBelow(null);

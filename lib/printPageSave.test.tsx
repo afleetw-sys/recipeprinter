@@ -224,7 +224,7 @@ vi.mock("@/components/PrintDialogs", () => ({ PrintDialogs: nullComponent }));
 /** The latest props of the two dialogs the cookbook welcome hands between. */
 const dialogs = vi.hoisted(() => ({
   add: {} as { open?: boolean; title?: string },
-  welcome: {} as { onStart?: () => void },
+  welcome: {} as { onStart?: () => void; hasRecipes?: boolean },
 }));
 vi.mock("@/components/AddRecipeDialog", () => ({
   AddRecipeDialog: (props: { open?: boolean; title?: string }) => {
@@ -968,6 +968,9 @@ describe("the cookbook welcome's Start adding recipes", () => {
       sessionStorage.setItem("recipeprinter:project-meta:v1", JSON.stringify({ cookbookMode: true }));
       await renderPrintPage();
       await settle(100);
+      // The button is worded for what pressing it does: it offered to "start
+      // adding" to a cook who had just added one (2026-10-11).
+      expect(dialogs.welcome.hasRecipes, count ? "a book with a recipe" : "an empty book").toBe(Boolean(count));
       act(() => dialogs.welcome.onStart?.());
       await settle(50);
       if (count) {

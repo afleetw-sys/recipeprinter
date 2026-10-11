@@ -26,6 +26,7 @@ export function CookbookWelcomeDialog({
   cover,
   price,
   fullPrice,
+  hasRecipes,
   onStart,
   onClose,
 }: {
@@ -36,6 +37,10 @@ export function CookbookWelcomeDialog({
       struck through first so $15.99 reads as a perk on this book, not as what
       a cookbook costs. */
   fullPrice?: string;
+  /** The book already holds a recipe (one still importing counts): the cook
+      got here by importing from the homepage, so `onStart` shows them the book
+      instead of asking for a first recipe, and the button says so. */
+  hasRecipes: boolean;
   onStart: () => void;
   /** Dismiss and stay in the book: the X, Escape and the backdrop. */
   onClose: () => void;
@@ -112,7 +117,7 @@ export function CookbookWelcomeDialog({
         </div>
         <div className="cookbook-welcome__actions">
           <button type="button" className="btn btn-primary" onClick={onStart}>
-            Start adding recipes
+            {hasRecipes ? "Open your cookbook" : "Start adding recipes"}
           </button>
         </div>
       </div>
