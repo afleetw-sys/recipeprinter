@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { AnchoredMenu } from "@/components/AnchoredMenu";
-import { ChevronDownIcon, ICON_SIZE, PrintIcon } from "@/components/icons";
+import { ChevronDownIcon, DocumentIcon, ICON_SIZE, ImageIcon, PrintIcon } from "@/components/icons";
 import { PRINT_ACTION_LABEL, type PrintPrimaryAction } from "@/lib/printPrimaryAction";
 import type { ExportOutput } from "@/types/export";
 
@@ -74,6 +74,8 @@ export function PrintDownloadMenu({
                 onDownload(output);
               }}
             >
+              {/* A document for the PDF, a picture for the two pictures. */}
+              {output === "pdf" ? <DocumentIcon size={ICON_SIZE.md} /> : <ImageIcon size={ICON_SIZE.md} />}
               {PRINT_ACTION_LABEL[output]}
             </button>
           ))}
