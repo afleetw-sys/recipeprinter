@@ -354,7 +354,7 @@ PrintDownloadMenu  →  lib/cardExport.ts
   (`lib/server/cardExport.ts`). It rebuilds the payload rather than forwarding
   the request, so `brandHidden` and the format are the server's, and a cookbook
   cannot be sent through it.
-- **Pictures** are one per card at 4×6 and one per page at Full Page, at 300
+- **Pictures** are one per card, without the sheet's print margin, at 300
   dpi, captured in print media. More than one comes back as a zip.
 - **Photos** the browser holds locally go to Storage for an account and travel
   inline (shrunk) signed out, since only an account stores a photo.

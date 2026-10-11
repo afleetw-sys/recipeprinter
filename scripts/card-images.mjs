@@ -2,8 +2,8 @@
  * Recipe cards as pictures, for the dev renderer.
  *
  * The same page the PDF is printed from, photographed in print media so the
- * workspace's screen-only rules stay out of it: one picture per card at 4×6,
- * one per page at Full Page, at print resolution. Kept in step with
+ * workspace's screen-only rules stay out of it: one picture per card, without
+ * the sheet's print margin, at print resolution. Kept in step with
  * CookPilot's functions-pdf/src/cardImages.ts.
  */
 
@@ -12,15 +12,14 @@ const IMAGE_SCALE = 300 / 96;
 const JPG_QUALITY = 92;
 
 /** @returns {Promise<Buffer[]>} one image per card or page, in print order */
-export async function captureCardImages(page, payload, output) {
+export async function captureCardImages(page, output) {
   await page.emulateMediaType("print");
   await page.setViewport({ width: 816, height: 1056, deviceScaleFactor: IMAGE_SCALE });
-  // A 4×6 sheet holds two cards, and nobody wants the sheet as a picture.
-  const perCard = payload?.project?.settings?.cardSize === "card-6x4";
-  const selector = perCard
-    ? ".recipe-card-page .recipe-card:not(.recipe-card--blank)"
-    : ".recipe-card-page";
-  const targets = await page.$$(selector);
+  // The card itself, not the sheet it prints on: the sheet's margin is there
+  // for a printer's unprintable edge, and a picture has no such edge. At 4×6
+  // it also means one picture per card rather than two cards on a sheet.
+  const cards = await page.$$(".recipe-card-page .recipe-card:not(.recipe-card--blank)");
+  const targets = cards.length > 0 ? cards : await page.$$(".recipe-card-page");
   const images = [];
   for (const target of targets) {
     const shot = await target.screenshot(

@@ -235,7 +235,7 @@ createServer(async (req, res) => {
     // Recipe cards as pictures: one file, or a zip of them when there are
     // several. Same response shape as the PDF below.
     if (payload.output === "png" || payload.output === "jpg") {
-      const images = await captureCardImages(page, payload, payload.output);
+      const images = await captureCardImages(page, payload.output);
       if (images.length < 1) throw new Error("The export page had no cards to capture.");
       const fallback = `recipe-card.${payload.output}`;
       const fileName = safeDownloadFilename(
