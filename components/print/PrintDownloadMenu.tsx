@@ -2,30 +2,30 @@
 
 import { useRef, useState } from "react";
 import { AnchoredMenu } from "@/components/AnchoredMenu";
-import { ChevronDownIcon, ICON_SIZE, SpinnerIcon } from "@/components/icons";
+import { ChevronDownIcon, ICON_SIZE, PrintIcon } from "@/components/icons";
+import { PRINT_ACTION_LABEL, type PrintPrimaryAction } from "@/lib/printPrimaryAction";
 import type { ExportOutput } from "@/types/export";
 
-const FORMATS: { output: ExportOutput; label: string }[] = [
-  { output: "pdf", label: "PDF" },
-  { output: "png", label: "PNG image" },
-  { output: "jpg", label: "JPG image" },
-];
+const FORMATS: readonly ExportOutput[] = ["pdf", "png", "jpg"];
 
 /**
- * The arrow on the Print button: the same cards as a file instead of on paper.
+ * The arrow on the Print split button: the other ways to get the cards out.
  *
+ * The button's main half is whichever of Print, PDF, PNG and JPG was used last
+ * (`primary`); this lists the rest, so the one it replaced is never lost.
  * "Download", not "Save as image", because one of the three is a PDF. Recipe
  * cards only: a cookbook's Print already ends in its own download.
  */
 export function PrintDownloadMenu({
+  primary,
   disabled,
-  busy,
+  onPrint,
   onDownload,
   compact = false,
 }: {
+  primary: PrintPrimaryAction;
   disabled: boolean;
-  /** A download is being made. */
-  busy: boolean;
+  onPrint: () => void;
   onDownload: (output: ExportOutput) => void;
   /** The header's smaller button; the phone's bottom bar uses the full one. */
   compact?: boolean;
@@ -38,18 +38,32 @@ export function PrintDownloadMenu({
         ref={anchorRef}
         type="button"
         className={`btn btn-primary ${compact ? "btn-compact" : ""}`}
-        aria-label="Download"
+        aria-label="More ways to print or download"
         aria-haspopup="menu"
         aria-expanded={open}
-        disabled={disabled || busy}
+        disabled={disabled}
         onClick={() => setOpen((value) => !value)}
       >
-        {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : <ChevronDownIcon size={ICON_SIZE.md} />}
+        <ChevronDownIcon size={ICON_SIZE.md} />
       </button>
       {open && (
-        <AnchoredMenu anchorRef={anchorRef} onClose={() => setOpen(false)} label="Download" align="end">
+        <AnchoredMenu anchorRef={anchorRef} onClose={() => setOpen(false)} label="Print or download" align="end">
+          {primary !== "print" && (
+            <button
+              type="button"
+              role="menuitem"
+              className="cp-menu__item"
+              onClick={() => {
+                setOpen(false);
+                onPrint();
+              }}
+            >
+              <PrintIcon size={ICON_SIZE.md} />
+              Print
+            </button>
+          )}
           <p className="cp-menu__heading">Download as</p>
-          {FORMATS.map(({ output, label }) => (
+          {FORMATS.filter((output) => output !== primary).map((output) => (
             <button
               key={output}
               type="button"
@@ -60,7 +74,7 @@ export function PrintDownloadMenu({
                 onDownload(output);
               }}
             >
-              {label}
+              {PRINT_ACTION_LABEL[output]}
             </button>
           ))}
         </AnchoredMenu>
