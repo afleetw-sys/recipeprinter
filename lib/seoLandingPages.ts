@@ -3895,8 +3895,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         question: "What does each one cost?",
+        // ReciScan's $4.99 carries a word joiner so only ours is shown in the
+        // visitor's currency (see localizePriceText).
         answer:
-          "ReciScan is free to use, with a $4.99 monthly subscription for covers and extras, and printed books starting at $18. RecipePrinter is free to print full-page recipes, with no account. The recipe-card format — every theme, 4x6 cards, and the card toolkit — is RecipePrinter Pro: $4.99 a month or $39.99 a year. A cookbook is separate: $19.99 for each one you build, paid once.",
+          "ReciScan is free to use, with a $\u20604.99 monthly subscription for covers and extras, and printed books starting at $18. RecipePrinter is free to print full-page recipes, with no account. The recipe-card format — every theme, 4x6 cards, and the card toolkit — is RecipePrinter Pro: $4.99 a month or $39.99 a year. A cookbook is separate: $19.99 for each one you build, paid once.",
       },
       {
         question: "Can RecipePrinter send me a printed cookbook?",

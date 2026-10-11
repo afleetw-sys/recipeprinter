@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { PriceText } from "@/components/PriceText";
 import { ChevronDownIcon, ExternalIcon, ICON_SIZE } from "@/components/icons";
 
 /**
@@ -63,7 +64,7 @@ function AnswerLinks({ links }: { links: { href: string; label: string }[] }) {
 function AnswerBody({ item }: { item: FaqCardItem }) {
   return (
     <>
-      {item.answer}
+      <PriceText>{item.answer}</PriceText>
       {item.links && item.links.length > 0 && <AnswerLinks links={item.links} />}
       {item.footer}
     </>

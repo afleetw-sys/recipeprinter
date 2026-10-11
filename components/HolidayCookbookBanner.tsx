@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { COOKBOOK_DISCOUNT_PRICE_FALLBACK, COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
-import { useUsdPriceLabel } from "@/lib/visitorCurrency";
+import { useVisitorPrices } from "@/lib/visitorCurrency";
 
 /**
  * The seasonal nudge under the front door: start the book now so it is done
@@ -36,7 +36,7 @@ export function HolidayCookbookBanner({
   /** Prefetches /print on first touch, same as the import panel. */
   onWarm?: () => void;
 }) {
-  const price = useUsdPriceLabel();
+  const { label: price } = useVisitorPrices();
   const discounted = useFirstCookbookDiscount();
   return (
     <section

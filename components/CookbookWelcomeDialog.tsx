@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Dialog } from "@/components/Dialog";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import type { CoverConfig } from "@/types/recipe";
-import { useUsdPriceLabel } from "@/lib/visitorCurrency";
+import { useVisitorPrices } from "@/lib/visitorCurrency";
 import { FREE_COOKBOOK_RECIPES, IMPORT_ALLOWANCE_LIVE } from "@/lib/freeImports";
 
 const COOKBOOK_STEPS = [
@@ -45,7 +45,7 @@ export function CookbookWelcomeDialog({
   /** Dismiss and stay in the book: the X, Escape and the backdrop. */
   onClose: () => void;
 }) {
-  const usd = useUsdPriceLabel();
+  const { label: local } = useVisitorPrices();
   return (
     <Dialog
       open={open}
@@ -101,16 +101,16 @@ export function CookbookWelcomeDialog({
               <b>
                 <s className="cookbook-welcome__was">
                   <span className="sr-only">Was </span>
-                  {usd(fullPrice)}
+                  {local(fullPrice)}
                 </s>{" "}
                 <span className="sr-only">now </span>
-                {usd(price)} one time
+                {local(price)} one time
               </b>
               <span>20% off your first cookbook with Pro. {PREVIEW_RULE}</span>
             </>
           ) : (
             <>
-              <b>{usd(price)} one time</b>
+              <b>{local(price)} one time</b>
               <span>{PREVIEW_RULE}</span>
             </>
           )}

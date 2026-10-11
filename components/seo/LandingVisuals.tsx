@@ -2,6 +2,7 @@ import Image from "next/image";
 import { LANDING_IMAGE_QUALITY } from "@/lib/seoAssets";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { PriceText } from "@/components/PriceText";
 import { FEATURE_IMAGES, PRINTED_CARDS, type ProofImage } from "@/lib/seoAssets";
 import {
   CheckIcon,
@@ -138,10 +139,10 @@ export function HeroProductPhoto({
 function boldProMentions(text: string) {
   const marker = "RecipePrinter Pro";
   const parts = text.split(marker);
-  if (parts.length === 1) return text;
+  if (parts.length === 1) return <PriceText>{text}</PriceText>;
   return parts.map((part, i) => (
     <span key={i}>
-      {part}
+      <PriceText>{part}</PriceText>
       {i < parts.length - 1 && (
         <Link href="/pricing" className="font-bold text-ink hover:underline">
           {marker}
@@ -259,11 +260,15 @@ export function FeatureRows({
             : undefined;
         const copy = (
           <>
-            <h3 className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">{feature.heading}</h3>
-            <p className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">{feature.body}</p>
+            <h3 className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">
+              <PriceText>{feature.heading}</PriceText>
+            </h3>
+            <p className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">
+              <PriceText>{feature.body}</PriceText>
+            </p>
             {[feature.afterBody ?? []].flat().map((paragraph, i) => (
               <p key={i} className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">
-                {paragraph}
+                <PriceText>{paragraph}</PriceText>
               </p>
             ))}
           </>
@@ -405,7 +410,11 @@ export function ComparisonTable({
           </span>
           <span className="sr-only">Yes</span>
           {typeof v === "string" && (
-            <span className="text-cp-small font-medium leading-snug text-ink">{v}</span>
+            <span className="text-cp-small font-medium leading-snug text-ink">
+              {/* Our column only: a competitor's price is theirs, in whatever
+                  currency they quote it. */}
+              {mine ? <PriceText>{v}</PriceText> : v}
+            </span>
           )}
         </span>
       )}
