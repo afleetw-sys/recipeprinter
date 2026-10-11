@@ -27,7 +27,7 @@ export function PrintDownloadMenu({
   disabled: boolean;
   onPrint: () => void;
   onDownload: (output: ExportOutput) => void;
-  /** The header's smaller button; the phone's bottom bar uses the full one. */
+  /** The header's button, at `SiteHeader`'s own size; the phone's bottom bar uses the full one. */
   compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -37,7 +37,7 @@ export function PrintDownloadMenu({
       <button
         ref={anchorRef}
         type="button"
-        className={`btn btn-primary ${compact ? "btn-compact" : ""}`}
+        className={`btn btn-primary ${compact ? "btn-header" : ""}`}
         aria-label="More ways to print or download"
         aria-haspopup="menu"
         aria-expanded={open}
