@@ -114,6 +114,15 @@ import {
   rememberedImportUsage,
 } from "@/lib/importMeter";
 import { ImportUsageMenu } from "@/components/ImportUsageMenu";
+import { PrintDownloadMenu } from "@/components/print/PrintDownloadMenu";
+import { CardExportError, downloadCards } from "@/lib/cardExport";
+import type { ExportOutput } from "@/types/export";
+import {
+  PRINT_ACTION_LABEL,
+  readPrintPrimaryAction,
+  rememberPrintPrimaryAction,
+  type PrintPrimaryAction,
+} from "@/lib/printPrimaryAction";
 import { bookRoomLeft } from "@/lib/cookbookFreeSize";
 import { FREE_COOKBOOK_RECIPES } from "@/lib/freeImports";
 import {
@@ -151,6 +160,7 @@ import {
   InfoIcon,
   PlusIcon,
   PrintIcon,
+  DownloadIcon,
   SidePanelsIcon,
   SizeIcon,
   SpinnerIcon,
@@ -2158,6 +2168,8 @@ export default function PrintPage() {
 
   function printNow() {
     printRequestedRef.current = true;
+    // A cookbook has one way out, so only cards remember Print as the habit.
+    if (!cookbookMode) choosePrintPrimary("print");
     // Name the exported PDF after what is in it. The browser seeds the
     // Save-as-PDF filename from document.title, so this is what turns the
     // deliverable from "Print preview · RecipePrinter.pdf" into "The Smith
@@ -3126,6 +3138,18 @@ export default function PrintPage() {
     },
   });
   const [showProUpgradeDialog, setShowProUpgradeDialog] = useState(false);
+  const [cardDownloadBusy, setCardDownloadBusy] = useState(false);
+  // What the split button's main half does: the last of Print, PDF, PNG and
+  // JPG this browser used (lib/printPrimaryAction). Read after mount, so the
+  // server's Print and the first client render agree.
+  const [storedPrintPrimary, setStoredPrintPrimary] = useState<PrintPrimaryAction>("print");
+  useEffect(() => {
+    setStoredPrintPrimary(readPrintPrimaryAction());
+  }, []);
+  function choosePrintPrimary(action: PrintPrimaryAction) {
+    rememberPrintPrimaryAction(action);
+    setStoredPrintPrimary(action);
+  }
   // State, not a ref: the dialog's title read this during render
   // (see `proUpgradeLockReasons` below) to name the actual reason it opened,
   // which needs a re-render to show up.
@@ -3417,6 +3441,67 @@ export default function PrintPage() {
       return;
     }
     printNow();
+  }
+
+  /**
+   * The cards as a file, from the arrow on Print.
+   *
+   * A download is a print that lands in a folder, so it meets the same Pro
+   * gate first (`/api/card-export` applies it again where the browser cannot
+   * change it). Unlike Print it does not resume after an upgrade: the dialog
+   * closes on the deck, and the menu is one press away.
+   */
+  async function handleDownloadCards(output: ExportOutput) {
+    if (cardDownloadBusy || !items?.length) return;
+    if (proLocked) {
+      track("pro_feature_encountered", { feature: proLockFeature(), source: "download_button" });
+      openProUpgradeDialog("download_button");
+      return;
+    }
+    const recipeCount = items.filter((item) => item.recipe).length;
+    choosePrintPrimary(output);
+    setCardDownloadBusy(true);
+    try {
+      await downloadCards({
+        project: assemblePrintProject({
+          id: "card-export",
+          ownerUid: "",
+          sections,
+          itemPlacements: projectMeta.meta.itemPlacements,
+          settings: currentLayoutSettings(),
+        }),
+        output,
+        revenueCatUserId,
+      });
+      track("card_download_started", { output, recipeCount });
+    } catch (error) {
+      const failure = error instanceof CardExportError ? error : null;
+      track("card_download_failed", {
+        output,
+        ...(failure?.status === undefined ? {} : { status: failure.status }),
+      });
+      showErrorToast(failure?.message ?? "The download couldn't be made. Try again in a moment.");
+    } finally {
+      setCardDownloadBusy(false);
+    }
+  }
+
+  // A cookbook's main button is always Print: its downloads are its own dialog.
+  const printPrimary: PrintPrimaryAction = cookbookMode ? "print" : storedPrintPrimary;
+
+  /** The split button's main half when the last thing used was a download. */
+  function renderDownloadPrimary(output: ExportOutput, className: string) {
+    return (
+      <button
+        type="button"
+        className={className}
+        disabled={printBlocked || cardDownloadBusy}
+        onClick={() => void handleDownloadCards(output)}
+      >
+        {cardDownloadBusy ? <SpinnerIcon size={ICON_SIZE.md} /> : <DownloadIcon size={ICON_SIZE.md} />}
+        Download {PRINT_ACTION_LABEL[output]}
+      </button>
+    );
   }
 
   function openCookbookPrintDialog() {
@@ -6097,6 +6182,10 @@ export default function PrintPage() {
                   same thing when pressed, and leave someone unsure which one had
                   just charged them.
                 */}
+                <span className="recipe-print-split">
+                {printPrimary !== "print" ? (
+                  renderDownloadPrimary(printPrimary, "btn btn-primary btn-compact")
+                ) : (
                 <button
                   type="button"
                   className="btn btn-primary btn-compact"
@@ -6136,6 +6225,20 @@ export default function PrintPage() {
                       changes. Checkout states the authoritative price. */}
                   {cookbookLocked ? "Buy & Print" : "Print"}
                 </button>
+                )}
+                {/* The other ways out, whichever one the main half is not.
+                    Cards only: a cookbook's Print already ends in its own
+                    download. */}
+                {!cookbookMode && (
+                  <PrintDownloadMenu
+                    compact
+                    primary={printPrimary}
+                    disabled={printBlocked || cardDownloadBusy}
+                    onPrint={() => void handlePrint()}
+                    onDownload={(output) => void handleDownloadCards(output)}
+                  />
+                )}
+                </span>
               </>
           }
           onNavigateHome={() => handleNavigateHome()}
@@ -6544,6 +6647,10 @@ export default function PrintPage() {
               It is the thing this page is for and the last thing you do, and
               on a phone the bottom of the screen is where your thumb already
               is. Save stays at the top: it is housekeeping, not the finish. */}
+          <div className="recipe-print-split recipe-print-split--wide">
+          {printPrimary !== "print" ? (
+            renderDownloadPrimary(printPrimary, "btn btn-primary recipe-mobile-actions__print")
+          ) : (
           <button
             type="button"
             /* The SAME button the desktop header uses, widened — not a
@@ -6558,6 +6665,16 @@ export default function PrintPage() {
             {printSpinner ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
             {cookbookLocked ? "Buy & Print" : "Print"}
           </button>
+          )}
+          {!cookbookMode && (
+            <PrintDownloadMenu
+              primary={printPrimary}
+              disabled={printBlocked || cardDownloadBusy}
+              onPrint={handleMobilePrint}
+              onDownload={(output) => void handleDownloadCards(output)}
+            />
+          )}
+          </div>
         </div>
 
         {/* Pages/structure — the mobile stand-in for the drag-only desktop

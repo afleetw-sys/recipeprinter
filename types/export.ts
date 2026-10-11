@@ -63,9 +63,24 @@ export interface ExportPayload {
    * here because the interior render is what actually knows the final count.
    */
   pageCount?: number;
+  /**
+   * The file format. PNG and JPG are one picture per card (per page at Full
+   * Page), zipped by the renderer when there is more than one. Recipe cards
+   * only: `/api/card-export` sets it, `/api/cookbook-pdf` never does.
+   */
+  output?: ExportOutput;
+  /**
+   * Leave off the "Printed with RecipePrinter" line, a Pro benefit (see
+   * `.recipe-print-page--pro` in print.css). Set by `/api/card-export` from
+   * the caller's own entitlements, never taken from the browser.
+   */
+  brandHidden?: boolean;
 }
 
 export type ExportMode = "interior" | "cover-wrap";
+
+/** What a download comes back as. Absent = `pdf`, which is every cookbook. */
+export type ExportOutput = "pdf" | "png" | "jpg";
 
 declare global {
   interface Window {

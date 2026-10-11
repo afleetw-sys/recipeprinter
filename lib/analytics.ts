@@ -537,6 +537,11 @@ type EventProps = {
   /** `recipeCount` and `cookbookId` let a paid book be compared, by size, with
       the books that never got this far (see `ImportContextProps`). */
   cookbook_export_ready: { preset: CookbookPresetId; files: number; recipeCount: number; cookbookId?: string };
+  /** Recipe cards were downloaded as a file from the Print button's menu. */
+  card_download_started: { output: "pdf" | "png" | "jpg"; recipeCount: number };
+  /** A card download the cook asked for did not produce a file. `status` is
+      the route's answer, absent when the request never got one. */
+  card_download_failed: { output: "pdf" | "png" | "jpg"; status?: number };
   /** A prepared file's user-gesture download was started. Browsers expose no
       reliable completion signal, so this deliberately does not say finished. */
   cookbook_export_download_started: {

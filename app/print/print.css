@@ -3433,6 +3433,16 @@
     width: 100%;
   }
 
+  /* Beside the download arrow, Print gives up the arrow's width. */
+  .recipe-print-split--wide > .recipe-mobile-actions__print:not(:only-child) {
+    flex: 1 1 auto;
+    width: auto;
+  }
+  /* A thumb's width, not the header's sliver. */
+  .recipe-print-split--wide > .btn:last-child:not(:only-child) {
+    padding-inline: 13px;
+  }
+
   /* An off/excluded toggle keeps its plain icon but gets a diagonal strike
      through it, rather than swapping in a separate "disabled" icon asset.
      Bold and full-contrast (not a faint hairline) so "off" reads at a
@@ -10399,4 +10409,25 @@ textarea.recipe-card__toc-title {
     .recipe-card__christmas-hats
   ) {
   display: none;
+}
+
+/* Print and its download arrow as one control: a hairline of the header
+   between two halves that share their outer corners. Alone (a cookbook has no
+   arrow) Print keeps every corner. */
+.recipe-print-split {
+  display: inline-flex;
+  gap: 1px;
+}
+.recipe-print-split--wide {
+  display: flex;
+  width: 100%;
+}
+.recipe-print-split > .btn:first-child:not(:only-child) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.recipe-print-split > .btn:last-child:not(:only-child) {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding-inline: 7px;
 }

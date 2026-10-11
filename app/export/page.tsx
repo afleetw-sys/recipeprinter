@@ -426,6 +426,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     // The book's real page — what every recipe is measured against, and what
     // the preview draws too, so the two cannot disagree.
     preset: payload.preset,
+    brandHidden: Boolean(payload.brandHidden),
   });
 
   // `printLayoutReady` is false by definition for a book with zero recipes
@@ -463,7 +464,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     <div
       className={`recipe-page-deck rp-exporting ${preset.pageClass}${preset.coilBound ? " rp-coil" : ""} ${
         cookbookMode ? "recipe-page-deck--book" : ""
-      }`}
+      }${payload.brandHidden ? " recipe-print-page--pro" : ""}`}
       style={exportStyle}
       data-export-root="true"
       data-photo-finish={payload.photoFinish ?? "standard"}
