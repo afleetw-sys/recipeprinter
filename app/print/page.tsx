@@ -135,6 +135,7 @@ import {
 import type { PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
 import {
   activeProLockReasons,
+  captureImportStartsFresh,
   computeProLocks,
   hasMultiRecipeEntitlement,
   hasProEntitlement,
@@ -4126,15 +4127,22 @@ export default function PrintPage() {
       const recipeCountNow = queue.items.filter(
         (it) => it.status === "ready" && Boolean(it.recipe),
       ).length;
-      const { multiRecipeAddLocked: wouldBeLocked } = computeProLocks({
+      //
+      // This runs before the purchase SDK has answered, so a Pro member is
+      // told apart by what this browser last knew (`captureImportStartsFresh`).
+      // Without that, every import a Pro member sent from a landing page
+      // wiped the recipes they had paid to print together.
+      const startsFresh = captureImportStartsFresh({
         customerInfo: effectiveCustomerInfo.customerInfo,
         cookbookMode,
         template,
         selectedPremiumTemplate,
         cardSize,
         recipeCount: recipeCountNow,
+        entitlementLoaded: customerInfoStatus === "ok",
+        rememberedPro: importsKnownUnlimited(),
       });
-      if (wouldBeLocked) queue.clear();
+      if (startsFresh) queue.clear();
       if (pending.kind === "url") queue.addUrl(pending.url, importOptions);
       else if (pending.kind === "text") queue.addText(pending.text, importOptions);
       else if (pending.kind === "ready") queue.addReadyRecipes(pending.recipes);

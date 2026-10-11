@@ -333,6 +333,33 @@ export function computeProLocks({
 export type ProLockReason = "theme" | "card_size" | "multi_recipe";
 
 /**
+ * Whether an import arriving from a landing page or the homepage replaces the
+ * recipe already on `/print`, instead of joining it.
+ *
+ * It does for an account that can hold only one recipe: the capture block
+ * means "start me a fresh recipe" (see the pending-import effect in
+ * app/print/page.tsx). It must not for Pro, whose recipes accumulate.
+ *
+ * That import is replayed the moment the queue has loaded, which is before
+ * the purchase SDK has answered, so `customerInfo` alone reads every Pro
+ * member as free there. Until the SDK answers, a browser that last knew the
+ * cook as Pro keeps their recipes; once it has, its answer is the only one.
+ */
+export function captureImportStartsFresh({
+  entitlementLoaded,
+  rememberedPro,
+  ...locks
+}: Parameters<typeof computeProLocks>[0] & {
+  /** The purchase SDK has answered for this page load. */
+  entitlementLoaded: boolean;
+  /** This browser's last answer was Pro (`importsKnownUnlimited`). */
+  rememberedPro: boolean;
+}): boolean {
+  if (!entitlementLoaded && rememberedPro) return false;
+  return computeProLocks(locks).multiRecipeAddLocked;
+}
+
+/**
  * One place to name which lock(s) are actually in effect — reused by
  * analytics (`pro_feature_encountered`/`pro_feature_used`) and by the
  * upgrade dialog's own title/description, so none of them can report or
