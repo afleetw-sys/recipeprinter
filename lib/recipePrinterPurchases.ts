@@ -382,7 +382,7 @@ export function activeProLockReasons(
   locks: Pick<ProLocks, "themeLocked" | "cardSizeLocked" | "multiRecipeLocked">,
   trigger: string,
 ): ProLockReason[] {
-  if (trigger === "add_more_recipes") return ["multi_recipe"];
+  if (trigger === "add_more_recipes" || trigger === "multi_recipe_found") return ["multi_recipe"];
   const reasons: ProLockReason[] = [];
   if (locks.themeLocked) reasons.push("theme");
   if (locks.cardSizeLocked) reasons.push("card_size");

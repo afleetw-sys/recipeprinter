@@ -68,6 +68,8 @@ export const PRO_BENEFITS = [
 export const IMAGE_IMPORT_LIMIT_TRIGGER = "image_import_limit";
 /** Opened from an import that didn't start because the free allowance is used up. */
 export const IMPORT_LIMIT_TRIGGER = "import_limit";
+/** Opened by a link or photo import that found more recipes than the free plan adds. */
+export const MULTI_RECIPE_FOUND_TRIGGER = "multi_recipe_found";
 
 /** Opened by clicking the "Printed with RecipePrinter" line on a card. */
 export const REMOVE_BRANDING_TRIGGER = "remove_branding";
@@ -110,7 +112,23 @@ export function proUpgradeCopy(
       there are recipes on the page to point to. */
   importUsage?: { limit: number; nextFreeAt: number | null } | null,
   hasRecipes: boolean = false,
+  /** For `MULTI_RECIPE_FOUND_TRIGGER`: how many recipes the import found, and in what. */
+  found?: { count: number; source: "url" | "image" } | null,
 ): ProUpgradeCopy {
+  if (trigger === MULTI_RECIPE_FOUND_TRIGGER && found && found.count > 1) {
+    const others = found.count - 1;
+    return {
+      title: `We found ${found.count} recipes ${found.source === "image" ? "in that photo" : "on that link"}`,
+      // What happened first, so one recipe out of several doesn't read as a
+      // failed import, then what Pro does about it. The others are held for
+      // this session, so upgrading adds them without importing again.
+      body: `The free plan adds one recipe at a time, so we added the first one. Upgrade to Pro and we'll add the other ${others === 1 ? "one" : others}.`,
+      benefits: [...PRO_BENEFITS].sort(
+        (a, b) => Number(b === BENEFIT_BY_REASON.multi_recipe) - Number(a === BENEFIT_BY_REASON.multi_recipe),
+      ),
+      ctaLabel: "Unlock Pro and add the rest",
+    };
+  }
   if (trigger === IMPORT_LIMIT_TRIGGER) {
     const back = importUsage?.nextFreeAt
       ? `Your free imports reset ${formatImportReturnDate(importUsage.nextFreeAt)}. `

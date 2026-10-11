@@ -105,7 +105,14 @@ import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { useProPurchase } from "@/lib/useProPurchase";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
-import { IMAGE_IMPORT_LIMIT_TRIGGER, IMPORT_LIMIT_TRIGGER, REMOVE_BRANDING_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
+import {
+  IMAGE_IMPORT_LIMIT_TRIGGER,
+  IMPORT_LIMIT_TRIGGER,
+  MULTI_RECIPE_FOUND_TRIGGER,
+  REMOVE_BRANDING_TRIGGER,
+  proUpgradeCopy,
+} from "@/lib/proUpgradeCopy";
+import { readWithheldRecipes, storeWithheldRecipes, type WithheldRecipes } from "@/lib/withheldRecipes";
 import {
   clearImportsUnlimited,
   importsKnownUnlimited,
@@ -340,11 +347,22 @@ export default function PrintPage() {
    * that reports it, held until that toast goes.
    */
   const [lineDeleteUndo, setLineDeleteUndo] = useState<(() => void) | null>(null);
-  /** The toast reporting that a roundup URL, a multi-recipe photo, or a
-      library commit found more than one recipe but this account can only add
-      one (see `queue.configureImportGates`) carries an Upgrade action —
-      held until that toast goes, same as `lineDeleteUndo`. */
+  /** The toast reporting that a library commit held more than one recipe but
+      this account can only add one (see `queue.configureImportGates`) carries
+      an Upgrade action — held until that toast goes, same as `lineDeleteUndo`. */
   const [multiRecipeUpsellPending, setMultiRecipeUpsellPending] = useState(false);
+  /** The recipes a link or photo found beyond the one the free plan adds. The
+      upgrade dialog reports them, and they are added once the cook has Pro
+      (lib/withheldRecipes). Read after mount: session storage isn't there
+      during the server render. */
+  const [withheldRecipes, setWithheldRecipes] = useState<WithheldRecipes | null>(null);
+  useEffect(() => {
+    setWithheldRecipes(readWithheldRecipes());
+  }, []);
+  function holdWithheldRecipes(next: WithheldRecipes | null) {
+    storeWithheldRecipes(next);
+    setWithheldRecipes(next);
+  }
   // The organizer's "Sort by". `custom` is whatever order the cook has built by
   // hand; `title` is A–Z within every section. `customOrderUndo` holds the
   // arrangement A–Z replaced, so switching back restores it rather than leaving
@@ -3213,14 +3231,41 @@ export default function PrintPage() {
       // fires as a safety net — still worth saying something rather than the
       // recipes just quietly not being there.
       showToast("Adding more than one recipe at a time is part of Pro.");
-    } else {
-      const noun = info.source === "image" ? "photo" : "page";
+      setMultiRecipeUpsellPending(true);
+      return;
+    }
+    // A link or photo with several recipes: say so in the upgrade dialog, not
+    // a toast that is gone in a few seconds. One recipe arriving where the
+    // page plainly had five otherwise reads as a broken import (Amelia,
+    // 2026-10-11). The rest are held so upgrading adds them.
+    if (info.withheld) holdWithheldRecipes({ source: info.source, ...info.withheld });
+    openProUpgradeDialog(MULTI_RECIPE_FOUND_TRIGGER);
+  }
+  // The held recipes go in the moment the account can hold them: right after
+  // checkout, or on the reload a phone's sign-in or a bank redirect causes.
+  // They are dropped, unadded, once their first recipe has left the queue
+  // (deleted, or a different project opened): they belonged beside it.
+  const canAddWithheld = !cookbookMode && hasMultiRecipeEntitlement(effectiveCustomerInfo.customerInfo);
+  const withheldAnchorPresent =
+    withheldRecipes !== null && queue.items.some((item) => item.id === withheldRecipes.itemId);
+  useEffect(() => {
+    if (!withheldRecipes || !queue.hydrated) return;
+    if (!withheldAnchorPresent) {
+      holdWithheldRecipes(null);
+      return;
+    }
+    if (!canAddWithheld) return;
+    const added = queue.addWithheldRecipes(withheldRecipes.itemId, withheldRecipes.recipes);
+    holdWithheldRecipes(null);
+    if (added > 0) {
+      const from = withheldRecipes.source === "image" ? "photo" : "link";
       showToast(
-        `This ${noun} had ${info.foundCount} recipes — we kept the first. Printing more than one at a time is part of Pro.`,
+        added === 1 ? `We added the other recipe from that ${from}.` : `We added the other ${added} recipes from that ${from}.`,
       );
     }
-    setMultiRecipeUpsellPending(true);
-  }
+    // The queue's add methods are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [withheldRecipes, withheldAnchorPresent, canAddWithheld, queue.hydrated]);
   // Called every render (not from an effect — see `configureImportGates`'s
   // own doc comment): cheap, and keeps the gate correct within the very
   // render that first resolves entitlement rather than one render behind.
@@ -3265,6 +3310,7 @@ export default function PrintPage() {
     // recorded the server's count.
     proUpgradeTrigger === IMPORT_LIMIT_TRIGGER ? rememberedImportUsage() : null,
     (items?.length ?? 0) > 0,
+    withheldRecipes ? { count: 1 + withheldRecipes.recipes.length, source: withheldRecipes.source } : null,
   );
 
   /**
@@ -3353,7 +3399,9 @@ export default function PrintPage() {
                 ? "imports"
                 : trigger === REMOVE_BRANDING_TRIGGER
                   ? "no_branding"
-                  : proLockFeature(),
+                  : trigger === MULTI_RECIPE_FOUND_TRIGGER
+                    ? "batch_print"
+                    : proLockFeature(),
         });
         if (cookPilotUser && autosaveEnabledForCurrentMode) void handleSaveProject();
       }

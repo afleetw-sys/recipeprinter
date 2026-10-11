@@ -471,6 +471,28 @@ export interface MultiRecipeBlockedInfo {
   source: "url" | "image" | "library";
   /** How many recipes the parse/selection actually found — always > 1. */
   foundCount: number;
+  /**
+   * For a link or photo: the recipes that were found and not added, and the
+   * item the first one landed on. They are already parsed, so the page can
+   * hand them back to `addWithheldRecipes` once the cook has Pro, with no
+   * second import.
+   */
+  withheld?: { itemId: string; recipes: Recipe[] };
+}
+
+/** The other recipes one import found, as items of their own beside `base`,
+    mirroring its link so retry and dedupe still key off the same source. */
+function extraItemsFor(base: QueueItem | undefined, fallbackSource: string, recipes: Recipe[]): QueueItem[] {
+  return recipes.map((recipe) => ({
+    id: uid(),
+    method: base?.method ?? "url",
+    source: base?.source ?? fallbackSource,
+    originalUrl: base?.originalUrl,
+    status: "ready",
+    title: recipe.title || "Untitled recipe",
+    recipe,
+    addedAt: Date.now(),
+  }));
 }
 
 /** Options every parser-backed `add*` takes. */
@@ -938,6 +960,7 @@ export function useQueue() {
           onMultiRecipeBlockedRef.current?.({
             source: origin.source === "image" ? "image" : "url",
             foundCount: recipes.length,
+            withheld: { itemId: id, recipes: allRest },
           });
           track("pro_feature_encountered", {
             feature: "batch_print",
@@ -946,19 +969,9 @@ export function useQueue() {
         }
         if (rest.length > 0) {
           // A roundup URL: keep the first recipe on this item and add the rest as
-          // their own ready items, mirroring this item's URL context so retry/dedupe
-          // still key off the same source.
+          // their own ready items.
           const base = itemsRef.current.find((it) => it.id === id);
-          const extras: QueueItem[] = rest.map((recipe) => ({
-            id: uid(),
-            method: base?.method ?? "url",
-            source: base?.source ?? origin.hostname ?? "",
-            originalUrl: base?.originalUrl,
-            status: "ready",
-            title: recipe.title || "Untitled recipe",
-            recipe,
-            addedAt: Date.now(),
-          }));
+          const extras = extraItemsFor(base, origin.hostname ?? "", rest);
           commit([...itemsRef.current, ...extras]);
         }
         // After the extras are in, so a cookbook's `bookRecipes` counts them.
@@ -1245,6 +1258,36 @@ export function useQueue() {
     [commit, rehydrateLocalPhotos],
   );
 
+  /**
+   * Adds the recipes a link or photo import found but couldn't add on the free
+   * plan (`MultiRecipeBlockedInfo.withheld`), now that the cook has Pro. They
+   * were parsed with the first one, so nothing is imported again and the meter
+   * isn't asked: the import that found them was already counted, once.
+   * Answers how many were added: none when the first recipe is gone, or the
+   * account still holds only one.
+   */
+  const addWithheldRecipes = useCallback(
+    (itemId: string, recipes: Recipe[]) => {
+      const base = itemsRef.current.find((it) => it.id === itemId);
+      if (!base || singleRecipeOnlyRef.current || recipes.length === 0) return 0;
+      const extras = extraItemsFor(base, base.source, recipes);
+      commit([...itemsRef.current, ...extras]);
+      const landing = landingFields();
+      extras.forEach(() =>
+        track("recipe_imported", {
+          source: base.method,
+          ...(base.method === "url" && base.source ? { hostname: base.source } : {}),
+          ...importContextRef.current,
+          importId: itemId,
+          extra: true,
+          ...landing,
+        }),
+      );
+      return extras.length;
+    },
+    [commit],
+  );
+
   const remove = useCallback(
     (id: string) => {
       const going = itemsRef.current.find((it) => it.id === id);
@@ -1286,6 +1329,7 @@ export function useQueue() {
     addImageFiles,
     addText,
     addReadyRecipes,
+    addWithheldRecipes,
     adoptUploadedPhotos,
     remove,
     clear,
