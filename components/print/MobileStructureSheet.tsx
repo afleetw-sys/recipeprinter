@@ -47,7 +47,7 @@ export type MobileBookSheet = "extras" | "recipes" | null;
  *   the book-wide settings, grouped the way the desktop panel groups them,
  *   pages the book gains and then what every recipe carries (its link and
  *   its photo layout). They used to share one "Book" sheet.
- * - "Organize" (the floating page-sorter button over the deck): the
+ * - "Organize" (its own tile in the bottom bar, after Add): the
  *   reorderable list of chapters and recipes, named for the desktop rail's
  *   "Organize recipes" view it stands in for.
  *

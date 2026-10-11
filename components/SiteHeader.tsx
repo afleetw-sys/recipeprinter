@@ -106,8 +106,13 @@ export function SiteHeader({
       {/* The left group: the way home, and — where a page provides one — what
           you are looking at, sitting where the product's name would otherwise
           be. `min-w-0` so the name is what truncates when the bar gets tight,
-          rather than shoving the buttons off the end. */}
-      <div className="flex items-center gap-cp-3 min-w-0">
+          rather than shoving the buttons off the end.
+
+          At 820px and under (where /print swaps to its own mobile bar) the
+          group stretches and `lead` goes to its far end, so "Upgrade to Pro"
+          sits on the right with the account on every page, as it does in
+          that mobile bar, instead of changing sides between / and /print. */}
+      <div className="flex items-center gap-cp-3 min-w-0 max-[820px]:flex-1 max-[820px]:justify-between">
         <HomeLink href={backHref ?? "/"} onNavigateHome={onNavigateHome}>
           {logo}
         </HomeLink>

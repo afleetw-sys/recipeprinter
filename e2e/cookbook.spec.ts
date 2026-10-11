@@ -31,7 +31,7 @@ async function startCookbook(page: Page, request: APIRequestContext): Promise<{ 
   await field.fill(LINK);
   await field.press("Enter");
   await expect(page).toHaveURL(/\/print$/);
-  await page.getByRole("button", { name: "Start adding recipes" }).click();
+  await page.getByRole("button", { name: "Take a look" }).click();
   // This book already has its recipe, so Start lands on the book rather than
   // asking for a first recipe.
   await expect(page.locator("#recipe-add-dialog-title")).toHaveCount(0);

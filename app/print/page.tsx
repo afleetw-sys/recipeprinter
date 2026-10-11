@@ -5523,7 +5523,7 @@ export default function PrintPage() {
   // The page rail (reorder/structure) is hidden on phones because the desktop
   // one relies on drag-and-drop, which doesn't exist on touch. This is the
   // mobile stand-in: a bottom sheet with the same structure controls driven by
-  // taps instead, opened from the floating page-sorter button over the deck.
+  // taps instead, opened from the bottom bar's Organize tile.
   // Cookbook mode only — plain cards have no sections to arrange.
   const [structureSheetOpen, setStructureSheetOpen] = useState(false);
   // The bottom bar's Pages and Every recipe tiles: book-wide settings, one
@@ -6578,8 +6578,30 @@ export default function PrintPage() {
             </button>
             {/* The pages a book gains beyond its recipes. Cookbook mode only;
                 its Photos sibling sits further along, beside Links, since both
-                are about what every recipe carries. The structure list lives
-                behind the floating page-sorter button instead. */}
+                are about what every recipe carries. */}
+            {/* Organize: the mobile stand-in for the drag-only desktop rail,
+                which is hidden on touch. A tile like the others, straight
+                after Add because it is about the same recipes; it used to
+                float over the deck. The glyph is PowerPoint's Slide Sorter:
+                every page laid out small. */}
+            {cookbookMode && (
+              <button
+                type="button"
+                className={`recipe-mobile-toolbar__btn ${structureSheetOpen ? "is-active" : ""}`}
+                aria-pressed={structureSheetOpen}
+                aria-haspopup="dialog"
+                onClick={() => {
+                  setSizeMenuOpen(false);
+                  setBookSheet(null);
+                  setStructureSheetOpen((open) => !open);
+                }}
+              >
+                <span className="recipe-mobile-toolbar__btn-icon">
+                  <PagesIcon size={ICON_SIZE.lg} />
+                </span>
+                Organize
+              </button>
+            )}
             {cookbookMode && (
               <button
                 type="button"
@@ -6690,27 +6712,6 @@ export default function PrintPage() {
           )}
           </div>
         </div>
-
-        {/* Pages/structure — the mobile stand-in for the drag-only desktop
-            rail, which is hidden on touch. It floats over the deck, apart from
-            the bottom bar's tools, because it is about the pages themselves.
-            The glyph is PowerPoint's Slide Sorter: every page laid out small. */}
-        {cookbookMode && (
-          <button
-            type="button"
-            className={`recipe-pages-fab no-print ${structureSheetOpen ? "is-active" : ""}`}
-            aria-label="Organize pages"
-            aria-haspopup="dialog"
-            aria-expanded={structureSheetOpen}
-            onClick={() => {
-              setSizeMenuOpen(false);
-              setBookSheet(null);
-              setStructureSheetOpen((open) => !open);
-            }}
-          >
-            <PagesIcon size={ICON_SIZE.lg} />
-          </button>
-        )}
 
         <MobileStructureSheet
           projectMeta={projectMeta}
@@ -6839,6 +6840,7 @@ export default function PrintPage() {
         cover={projectMeta.meta.cover ?? defaultCover()}
         price={cookbookPrice}
         fullPrice={cookbookDiscountEligible ? COOKBOOK_PRICE_FALLBACK : undefined}
+        hasRecipes={recipeCount > 0}
         onClose={() => {
           // The X, Escape and the backdrop only dismiss the panel. The cook
           // just watched this book get built; closing the thing sitting on top
@@ -6855,7 +6857,8 @@ export default function PrintPage() {
           //
           // Only an empty book, though. A cook who arrived here by importing a
           // recipe (still parsing counts) is already started, and lands on the
-          // book that recipe began rather than on "Add your first recipe".
+          // book that recipe began rather than on "Add your first recipe". The
+          // button reads "Take a look" for them (`hasRecipes`).
           if (recipeCount > 0) return;
           setAddingFirstRecipe(true);
           openAddRecipeBelow(null);

@@ -18,7 +18,7 @@ const COOKBOOK_STEPS = [
 // a surprise. "Preview" (free) is always paired with what the purchase adds:
 // a cookbook is never "free up to 10 recipes" on its own.
 const PREVIEW_RULE = IMPORT_ALLOWANCE_LIVE
-  ? `Preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes. Buy it to download your cookbook and keep adding.`
+  ? `Free to preview with up to ${FREE_COOKBOOK_RECIPES} recipes. Buy to download and add more.`
   : "Pay when you download.";
 
 export function CookbookWelcomeDialog({
@@ -26,6 +26,7 @@ export function CookbookWelcomeDialog({
   cover,
   price,
   fullPrice,
+  hasRecipes,
   onStart,
   onClose,
 }: {
@@ -36,6 +37,10 @@ export function CookbookWelcomeDialog({
       struck through first so $15.99 reads as a perk on this book, not as what
       a cookbook costs. */
   fullPrice?: string;
+  /** The book already holds a recipe (one still importing counts): the cook
+      got here by importing from the homepage, so `onStart` shows them the book
+      instead of asking for a first recipe, and the button says so. */
+  hasRecipes: boolean;
   onStart: () => void;
   /** Dismiss and stay in the book: the X, Escape and the backdrop. */
   onClose: () => void;
@@ -101,7 +106,7 @@ export function CookbookWelcomeDialog({
                 <span className="sr-only">now </span>
                 {usd(price)} one time
               </b>
-              <span>Your Pro membership takes 20% off your first cookbook. {PREVIEW_RULE}</span>
+              <span>20% off your first cookbook with Pro. {PREVIEW_RULE}</span>
             </>
           ) : (
             <>
@@ -112,7 +117,7 @@ export function CookbookWelcomeDialog({
         </div>
         <div className="cookbook-welcome__actions">
           <button type="button" className="btn btn-primary" onClick={onStart}>
-            Start adding recipes
+            {hasRecipes ? "Take a look" : "Start adding recipes"}
           </button>
         </div>
       </div>

@@ -3197,8 +3197,7 @@
 .recipe-mobile-actions,
 .recipe-mobile-sheet,
 .recipe-mobile-sheet__backdrop,
-.recipe-config-panel__close,
-.recipe-pages-fab {
+.recipe-config-panel__close {
   display: none;
 }
 
@@ -3251,7 +3250,7 @@
 
   /* The room kept clear under the deck for the fixed action bar. The bar is
      ~121px; with the one-line tip in it (recipe cards) it is ~24px taller,
-     and the shell, the toast and the Pages button all read this so none of
+     and the shell and the toast both read this so neither of
      them sits behind it. */
   .recipe-print-page {
     --rp-mobile-bar-reserve: 132px;
@@ -3332,8 +3331,8 @@
   .recipe-mobile-toolbar {
     display: flex;
     flex: 0 0 auto;
-    /* 6, not 8: the two pixels a gap gives back are what let a cookbook's four
-       tiles fit a 375px phone with "Every recipe" on one line. */
+    /* 6, not 8: tighter than the bar's other spacing so more of the row is in
+       view before it scrolls. */
     gap: 6px;
     /* `safe center`: center the row under Print when the tiles are narrower
        than it (a short row reading left-aligned looked like it was avoiding
@@ -3382,11 +3381,11 @@
     align-items: center;
     justify-content: center;
     gap: 5px;
-    /* 92px, and shrinks to fit rather than scroll: a cookbook has four
-       tiles (Add, Pages, Themes, Every recipe), and on a 375px phone
-       four at 92 overflowed. 80 is the floor where the longest label ("Every
-       recipe", ~73px, with the row's 6px gap) still sits on one line, level
-       with its neighbours'; below that the row scrolls, as it always has. */
+    /* 92px, and shrinks before it scrolls. 80 is the floor where the longest
+       label ("Every recipe", ~73px, with the row's 6px gap) still sits on one
+       line, level with its neighbours'; below that the row scrolls. A
+       cookbook's five tiles (Add, Organize, Pages, Themes, Every recipe)
+       scroll on a phone, with the last one half off the edge to say so. */
     flex: 0 1 92px;
     width: 92px;
     min-width: 80px;
@@ -3835,38 +3834,6 @@
   .recipe-page-slide:not(.is-active) {
     display: grid;
     opacity: 0.72;
-  }
-
-  /* The cookbook's Pages button (MobileStructureSheet): floats over the
-     deck, bottom right, clear of the action bar by the same 132px reserve
-     the toast uses. A floating control, so it gets a shadow (the only kind
-     of thing that does). Below the sheets (80/81) and the action bar (75). */
-  .recipe-pages-fab {
-    position: fixed;
-    right: 16px;
-    bottom: calc(var(--rp-mobile-bar-reserve, 132px) + 12px + env(safe-area-inset-bottom));
-    z-index: 74;
-    display: grid;
-    place-items: center;
-    width: 48px;
-    height: 48px;
-    border: 1px solid var(--cp-line);
-    border-radius: 999px;
-    background: var(--cp-card);
-    color: var(--cp-ink);
-    box-shadow: var(--cp-shadow-md);
-    cursor: pointer;
-  }
-
-  .recipe-pages-fab.is-active {
-    border-color: var(--cp-selected-border);
-    background: var(--cp-selected-fill);
-    color: var(--cp-selected-text);
-  }
-
-  .recipe-pages-fab:focus-visible {
-    outline: var(--cp-focus-ring);
-    outline-offset: var(--cp-focus-ring-offset);
   }
 
   /* The same edge the desktop page rail uses for its selected thumbnail
