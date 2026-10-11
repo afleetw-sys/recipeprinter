@@ -35,38 +35,29 @@ const THUMB_RECIPE: Recipe = {
 // like the BBQ card — because nothing kept them in sync. A scaled real card
 // can't drift: it *is* the template.
 const TEMPLATE_THUMB_SIZE: PrintCardSize = "card-6x4";
-// A whole 6x4 card shrunk to a ~110px picker cell renders its type too small to
-// read. Instead the thumbnail zooms *past* fit-to-width (`ZOOM`) and crops to a
-// box anchored at the card's top-left (see below) — so the preview
-// shows the header and first rows at a legible size, with the right/bottom
-// edges running off under a soft mask fade. Bumping ZOOM trades how much of the
-// card is visible for how large the type reads.
-const TEMPLATE_THUMB_ZOOM = 1.95;
-// How deep the crop goes is a FRACTION of the scaled card, not a pixel height
-// (see `--template-thumb-reveal` in print.css). A pixel height reads as a
-// different thumbnail at every cell width: the card scales with the cell, so a
-// phone drawer's ~157px cell drew the same 84px box around a card zoomed a
-// fifth larger, and showed a fifth less of it. Same box, squatter picture,
-// cut mid-ingredient — which is exactly how it looked next to the desktop
-// panel. A fraction shows the same slice of the same card everywhere, and the
-// box grows with the cell instead of staying put.
+// The WHOLE card, fit to the cell's width. It used to zoom to 1.95x and crop
+// to the card's top half so the sample recipe's type was legible, which cut
+// off every theme whose art sits at the foot of the card (Garden's tomatoes,
+// the cutlery, the groceries, Heirloom): nothing in the picker said they had
+// any. A theme is chosen by its colours, art and shape, and its name is on the
+// tile, so the type gives way and every theme shows top and bottom alike.
 
 export function TemplateThumbnail({ template }: { template: RecipePrintTemplate }) {
   const dims = PAGE_DIMS[TEMPLATE_THUMB_SIZE];
   const ref = useRef<HTMLDivElement | null>(null);
   // Fit the fixed-size real card to whatever width the picker cell happens to
   // be (it varies with panel/drawer width), the same transform-scale trick
-  // ScaledPage uses, then zoom in past that fit. Starts at a sensible guess so
+  // ScaledPage uses. Starts at a sensible guess so
   // first paint is close; the observer sets the exact scale from the measured
   // cell width.
-  const [scale, setScale] = useState(0.22 * TEMPLATE_THUMB_ZOOM);
+  const [scale, setScale] = useState(0.22);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const measure = () => {
       const w = el.clientWidth;
-      if (w > 0) setScale((w / dims.w) * TEMPLATE_THUMB_ZOOM);
+      if (w > 0) setScale(w / dims.w);
     };
     measure();
     if (typeof ResizeObserver === "undefined") return;
