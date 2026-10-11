@@ -2507,6 +2507,28 @@
   padding-top: 2px;
 }
 
+/* On desktop the panel's top and bottom padding belongs to the scrolling
+   content, not to the panel: it used to sit outside the scroll, so the
+   settings were cut off a band short of the panel's edges however far they
+   were scrolled. Now they run to the edges mid-scroll, and the same room
+   shows only at the very top and the very bottom. The footer is empty here
+   (see PrintConfigPanel), so its own spacing goes too. After the base rules
+   above so it wins the cascade; the phone sheet keeps its own padding. */
+@media screen and (min-width: 821px) {
+  .recipe-config-panel {
+    padding-block: 0;
+  }
+
+  .recipe-config-panel__scroll {
+    padding-top: 22px;
+    padding-bottom: 26px;
+  }
+
+  .recipe-config-panel__footer {
+    display: none;
+  }
+}
+
 /* The Two-sided checkbox's own label row, so the hint icon that follows the
    word sits on the same line as it rather than wrapping under. `.control-checkbox
    span` (globals.css) is a descendant selector — it matches ANY span inside a
