@@ -105,7 +105,7 @@ import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { useProPurchase } from "@/lib/useProPurchase";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
-import { IMAGE_IMPORT_LIMIT_TRIGGER, IMPORT_LIMIT_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
+import { IMAGE_IMPORT_LIMIT_TRIGGER, IMPORT_LIMIT_TRIGGER, REMOVE_BRANDING_TRIGGER, proUpgradeCopy } from "@/lib/proUpgradeCopy";
 import {
   clearImportsUnlimited,
   importsKnownUnlimited,
@@ -3326,7 +3326,9 @@ export default function PrintPage() {
               ? "image_imports"
               : trigger === IMPORT_LIMIT_TRIGGER
                 ? "imports"
-                : proLockFeature(),
+                : trigger === REMOVE_BRANDING_TRIGGER
+                  ? "no_branding"
+                  : proLockFeature(),
         });
         if (cookPilotUser && autosaveEnabledForCurrentMode) void handleSaveProject();
       }
@@ -5740,6 +5742,8 @@ export default function PrintPage() {
     keepEditingRef,
     includeDescription: showDescription,
     onLinesDeleted: reportLinesDeleted,
+    // Pro already prints without the line, so there's nothing to click.
+    onRemoveBranding: brandHidden ? undefined : () => openProUpgradeDialog(REMOVE_BRANDING_TRIGGER),
   });
   // Delete/Backspace on the selected recipe opens a confirm dialog rather
   // than deleting immediately — but only when focus isn't inside an editable

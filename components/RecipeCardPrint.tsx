@@ -1592,7 +1592,25 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           has moved up under the meta line above. */}
       {!cookbookMode && (
         <footer className="recipe-card__footer">
-          <span className="recipe-card__footer-brand">Printed with RecipePrinter</span>
+          {inlineEdit?.onRemoveBranding ? (
+            // Looks like any other line you can click into; the click opens
+            // the upgrade dialog, since printing without it is a Pro benefit.
+            <span
+              className="recipe-card__footer-brand recipe-card__footer-brand--editable"
+              role="button"
+              tabIndex={0}
+              onClick={inlineEdit.onRemoveBranding}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                inlineEdit.onRemoveBranding?.();
+              }}
+            >
+              Printed with RecipePrinter
+            </span>
+          ) : (
+            <span className="recipe-card__footer-brand">Printed with RecipePrinter</span>
+          )}
           {showSourceUrl && showHeader && (
             canEdit && inlineEdit && (showEmpty || recipe.sourceUrl) ? (
               <input

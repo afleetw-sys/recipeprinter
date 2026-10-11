@@ -7512,13 +7512,22 @@ textarea.recipe-card__toc-title {
    and `no-print` is unnecessary: :hover never resolves on paper. */
 .recipe-card__title--editable,
 .recipe-card__headnote--editable,
-.recipe-card__editable-line--editable {
+.recipe-card__editable-line--editable,
+.recipe-card__footer-brand--editable {
   cursor: pointer;
+}
+
+/* The brand line hugs its words, so the ring is the size of the text rather
+   than the width of the footer it sits in. */
+.recipe-card__footer-brand--editable {
+  align-self: flex-start;
 }
 
 .recipe-card__title--editable:hover,
 .recipe-card__headnote--editable:hover,
-.recipe-card__editable-line--editable:hover {
+.recipe-card__editable-line--editable:hover,
+.recipe-card__footer-brand--editable:hover,
+.recipe-card__footer-brand--editable:focus-visible {
   outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
   outline-offset: 2px;
   border-radius: 3px;
