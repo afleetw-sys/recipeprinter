@@ -218,8 +218,6 @@ export function AddRecipeDialog({
           onSubmitted={onClose}
           hideSubmit
           showAllModes
-          /* This dialog shows the free-import count itself, by its title. */
-          allowance={false}
           /* Read once per open: `Dialog` renders nothing while closed, so the
              panel is a fresh mount every time the sheet appears. */
           initialMode={lastSource}

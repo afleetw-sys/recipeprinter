@@ -398,8 +398,6 @@ export function PrinterWorkspace({
              stays on show. */
           items={[]}
           workspace
-          /* A cookbook has its own free size; the card allowance isn't its. */
-          allowance={importKind === "cards"}
           initialMode={initialImportMode}
           submitLabel={importKind === "cookbook" ? "Start my cookbook" : importSubmitLabel}
           submitBusy={opening}
