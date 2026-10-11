@@ -27,6 +27,15 @@ import { existsSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import puppeteer from "puppeteer-core";
 import { installPrintImageNormalization } from "./pdf-print-image-normalizer.mjs";
+import { captureCardImages, numberedName } from "./card-images.mjs";
+import { storeZip } from "./store-zip.mjs";
+
+const CONTENT_TYPES = {
+  pdf: "application/pdf",
+  png: "image/png",
+  jpg: "image/jpeg",
+  zip: "application/zip",
+};
 
 const PORT = Number(process.env.PDF_DEV_PORT ?? 8899);
 const APP_ORIGIN = process.env.RECIPEPRINTER_ORIGIN ?? "http://localhost:3000";
@@ -43,9 +52,9 @@ const AUTH = process.env.RECIPEPRINTER_PDF_AUTH ?? "local-dev-secret";
  */
 const renderedFiles = new Map();
 const FILE_TTL_MS = 10 * 60 * 1000;
-function storeFile(buffer, downloadFilename) {
+function storeFile(buffer, downloadFilename, contentType = CONTENT_TYPES.pdf) {
   const id = randomUUID();
-  renderedFiles.set(id, { buffer, downloadFilename, createdAt: Date.now() });
+  renderedFiles.set(id, { buffer, downloadFilename, contentType, createdAt: Date.now() });
   setTimeout(() => renderedFiles.delete(id), FILE_TTL_MS).unref();
   return id;
 }
@@ -134,7 +143,7 @@ process.on("SIGTERM", shutdown);
 
 createServer(async (req, res) => {
   if (req.method === "GET" && req.url?.startsWith("/files/")) {
-    const id = req.url.slice("/files/".length).replace(/\.pdf$/, "");
+    const id = req.url.slice("/files/".length).replace(/\.[a-z]+$/, "");
     const entry = renderedFiles.get(id);
     if (!entry) {
       res.writeHead(404).end("Not found, or this dev renderer has restarted since it was made.");
@@ -142,7 +151,7 @@ createServer(async (req, res) => {
     }
     res
       .writeHead(200, {
-        "content-type": "application/pdf",
+        "content-type": entry.contentType,
         "content-length": entry.buffer.length,
         "content-disposition": `attachment; filename="${entry.downloadFilename}"`,
       })
@@ -223,6 +232,34 @@ createServer(async (req, res) => {
       ? 1
       : await page.$$eval(".recipe-card-page", (pages) => pages.length);
     if (pageCount < 1) throw new Error("The export page completed without any laid-out pages.");
+    // Recipe cards as pictures: one file, or a zip of them when there are
+    // several. Same response shape as the PDF below.
+    if (payload.output === "png" || payload.output === "jpg") {
+      const images = await captureCardImages(page, payload, payload.output);
+      if (images.length < 1) throw new Error("The export page had no cards to capture.");
+      const fallback = `recipe-card.${payload.output}`;
+      const fileName = safeDownloadFilename(
+        typeof payload.fileName === "string" && payload.fileName.trim() ? payload.fileName : fallback,
+      );
+      const single = images.length === 1;
+      const buffer = single
+        ? images[0]
+        : storeZip(images.map((data, index) => ({ name: numberedName(fileName, index, images.length), data })));
+      const kind = single ? payload.output : "zip";
+      const downloadFilename = single ? fileName : fileName.replace(/\.[a-z]+$/i, "") + ".zip";
+      console.log(
+        `rendered ${images.length} ${payload.output} image(s) — ${buffer.length} bytes in ${Date.now() - started}ms`,
+      );
+      const id = storeFile(buffer, downloadFilename, CONTENT_TYPES[kind]);
+      res
+        .writeHead(200, { "content-type": "application/json" })
+        .end(JSON.stringify({
+          downloadUrl: `http://localhost:${PORT}/files/${id}.${kind}`,
+          pageCount: images.length,
+          fileName: downloadFilename,
+        }));
+      return;
+    }
     const pdf = await page.pdf({
       ...sheet,
       margin: { top: "0", right: "0", bottom: "0", left: "0" },

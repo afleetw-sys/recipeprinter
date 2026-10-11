@@ -334,3 +334,29 @@ What the PDF work did retire is the browser-print *export round trip* — the
 `window.print()` fired, and the state machine around it. Deleting the `@media
 print` block itself would require the export route to carry its own screen-media
 stylesheet first.
+
+## Recipe cards: PDF, PNG and JPG
+
+The arrow on the Print button downloads the cards on the deck as a file,
+through the same renderer and the same `/export` page.
+
+```
+PrintDownloadMenu  →  lib/cardExport.ts
+                   →  POST /api/card-export        (app, applies the Pro locks)
+                   →  recipePrinterCookbookPdf     (`output`: pdf | png | jpg)
+                   →  GET  /export
+                   →  page.pdf(), or one screenshot per card  →  download
+```
+
+- **Open to everyone**, signed in or not. `/api/card-export` reads the caller's
+  entitlements itself (ID token, or the anonymous RevenueCat id) and refuses a
+  premium theme, 4×6, or more than one recipe without Pro
+  (`lib/server/cardExport.ts`). It rebuilds the payload rather than forwarding
+  the request, so `brandHidden` and the format are the server's, and a cookbook
+  cannot be sent through it.
+- **Pictures** are one per card at 4×6 and one per page at Full Page, at 300
+  dpi, captured in print media. More than one comes back as a zip.
+- **Photos** the browser holds locally go to Storage for an account and travel
+  inline (shrunk) signed out, since only an account stores a photo.
+- The renderer half lives in CookPilot's `functions-pdf/src/cardImages.ts`;
+  `scripts/card-images.mjs` and `scripts/store-zip.mjs` are its local twins.
