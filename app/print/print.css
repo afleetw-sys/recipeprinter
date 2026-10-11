@@ -3079,6 +3079,16 @@
   box-shadow: none;
 }
 
+/* A whole card at tile width draws its type at about a fifth of print size,
+   too small to read. So the WORDS are enlarged inside the card while the card,
+   its frame and its art stay at true scale: `zoom` on the header and the two
+   columns reflows them at the larger size within the same card. The sample
+   recipe is short enough to fit that way (`THUMB_RECIPE`). */
+.recipe-template-option__scaler .recipe-card__header,
+.recipe-template-option__scaler .recipe-card__cols {
+  zoom: 1.4;
+}
+
 /* The shared Pro indicator (components/ProBadge.tsx). The base
    `.pro-badge`/`.pro-badge__label` look now lives in globals.css — it isn't
    print-specific, and ProBadge itself renders outside /print too (e.g. the

@@ -9,22 +9,21 @@ import {
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import type { Recipe } from "@/types/recipe";
 
+// Short on purpose: the thumbnail draws this at about one and a half times the card's own
+// type size (see `.recipe-template-option__scaler` in print.css), so it has to
+// fit a 6x4 card at that size with room left for a theme's art.
 const THUMB_RECIPE: Recipe = {
   title: "Lemon Pasta",
   servings: 4,
   totalTime: "25 min",
   ingredients: [
     { name: "12 oz spaghetti" },
-    { name: "2 lemons, zested and juiced" },
-    { name: "1 cup grated parmesan" },
-    { name: "3 tbsp olive oil" },
-    { name: "2 cloves garlic, minced" },
-    { name: "Fresh basil and black pepper" },
+    { name: "2 lemons" },
+    { name: "1 cup parmesan" },
   ],
   instructions: [
-    { step: 1, text: "Boil the spaghetti until al dente, then drain." },
-    { step: 2, text: "Toss with olive oil, garlic, and lemon." },
-    { step: 3, text: "Finish with parmesan, basil, and pepper." },
+    { step: 1, text: "Boil the spaghetti." },
+    { step: 2, text: "Toss with lemon and parmesan." },
   ],
 };
 
@@ -39,8 +38,9 @@ const TEMPLATE_THUMB_SIZE: PrintCardSize = "card-6x4";
 // to the card's top half so the sample recipe's type was legible, which cut
 // off every theme whose art sits at the foot of the card (Garden's tomatoes,
 // the cutlery, the groceries, Heirloom): nothing in the picker said they had
-// any. A theme is chosen by its colours, art and shape, and its name is on the
-// tile, so the type gives way and every theme shows top and bottom alike.
+// any. Every theme now shows top and bottom alike, and the sample recipe is
+// kept legible by enlarging its type inside the card (print.css) rather than
+// by zooming the card itself.
 
 export function TemplateThumbnail({ template }: { template: RecipePrintTemplate }) {
   const dims = PAGE_DIMS[TEMPLATE_THUMB_SIZE];
