@@ -48,7 +48,7 @@ export const FREE_IMPORTS_BENEFIT = `${FREE_IMPORTS_PER_WINDOW} free recipe impo
 export const BASIC_BENEFITS = [
   FREE_IMPORTS_BENEFIT,
   "Import from any recipe site, Instagram, TikTok, Pinterest & more",
-  "Edit and reprint your recipes as often as you like",
+  "Edit any recipe and add your own photos",
   "Letter-size printing with two free themes",
 ];
 
