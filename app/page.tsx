@@ -25,8 +25,9 @@ export default function Home() {
         Skip to the recipe printer
       </a>
 
-      {/* The same bar as /print, less Print: Upgrade beside the wordmark, the
-          free-import ring to the left of the account. */}
+      {/* The same bar as /print, less Print: Upgrade beside the wordmark (on
+          a phone, on the right with the ring and the account, where /print's
+          mobile bar has it), the free-import ring to the left of the account. */}
       <SiteHeader
         sticky
         chrome="page"
