@@ -7,9 +7,10 @@ import { importAllowanceLine } from "@/lib/freeImports";
 import { useImportUsage } from "@/lib/useImportUsage";
 
 /** In a header the ring has no outline of its own, so its box is pulled in
-    toward the account button: the bar's full gap on top of the ring's own
-    margin read as a hole between the two (Amelia, 2026-10-11). */
-export const HEADER_USAGE_CLASS = "-mr-2";
+    toward both neighbours by the same amount: the bar's full gap on top of the
+    ring's own margin read as a hole, and the ring has to sit evenly between
+    Print and the account button (Amelia, 2026-10-11). */
+export const HEADER_USAGE_CLASS = "-mx-2";
 
 /**
  * The free-import count as a button: a ring that fills as imports are used,
