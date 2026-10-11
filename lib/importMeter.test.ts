@@ -192,11 +192,19 @@ describe("a missing or slow meter imports normally", () => {
 
   test.each(METHODS)("$method: reserve takes longer than 5 seconds", async ({ start, parser }) => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-    callCookPilotParser.mockImplementation((_name: string, data: { op: string }) =>
-      data.op === "reserve" ? new Promise(() => {}) : Promise.resolve({ ok: true }),
-    );
+    let asked: () => void = () => {};
+    const reserveAsked = new Promise<void>((resolve) => (asked = resolve));
+    callCookPilotParser.mockImplementation((_name: string, data: { op: string }) => {
+      if (data.op !== "reserve") return Promise.resolve({ ok: true });
+      asked();
+      return new Promise(() => {});
+    });
     const { result } = setup();
     act(() => start(result.current));
+    // The request has to be out before the clock moves. Hashing the dedupe key
+    // is real work off the fake clock, and a reserve that only goes out after
+    // the 5 seconds are up lands in a later test's call list.
+    await reserveAsked;
     await vi.advanceTimersByTimeAsync(IMPORT_METER_TIMEOUT_MS - 1);
     expect(parser).not.toHaveBeenCalled();
 
