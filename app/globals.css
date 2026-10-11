@@ -1140,7 +1140,7 @@
   .btn {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap
            rounded font-semibold text-cp-body
-           transition-transform duration-150 select-none;
+           transition-colors duration-150 select-none;
     min-height: 34px;
     padding: 0 14px;
   }
@@ -1164,9 +1164,10 @@
     pointer-events: none;
   }
 
-  .btn:hover:not(:disabled) {
-    transform: translateY(-1px);
-  }
+  /* Hover changes a BUTTON's colour and never its position (Amelia,
+     2026-10-11): a lift moved one half of a split button away from the other.
+     Each variant states its own hover colour below. Tiles are different: theme
+     and size tiles and rail items keep their 1px lift. */
   .btn:disabled {
     @apply opacity-50;
     cursor: default;
@@ -1176,6 +1177,9 @@
   .btn-primary {
     background: var(--cp-ink);
     color: var(--cp-card);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--cp-ink) 84%, var(--cp-card));
   }
 
   /* Filled neutral — a third weight, between the ink primary and the outlined
