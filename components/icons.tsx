@@ -181,15 +181,44 @@ export const DownloadIcon = (p: IconProps) => (
   </Base>
 );
 
-/** A document: a page with a folded corner and lines of text. The PDF download. */
-export const DocumentIcon = (p: IconProps) => (
-  <Base {...p}>
-    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
-    <path d="M14 3v5h5" />
-    <path d="M9 13h6" />
-    <path d="M9 17h6" />
-  </Base>
-);
+/**
+ * A file of a named format: a page with a folded corner and the format on a
+ * band across it, the way a desktop shows a PDF or a PNG. PDF, PNG and JPG have
+ * no shared glyph of their own (the one real logo is Adobe's), so the letters
+ * are what make each one recognisable; the band's colour is the second cue.
+ */
+export function FileTypeIcon({
+  label,
+  color,
+  size = 22,
+  ...props
+}: IconProps & { label: string; color: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden {...props}>
+      <path
+        d="M14.5 2.75H7A1.75 1.75 0 0 0 5.25 4.5v15A1.75 1.75 0 0 0 7 21.25h10a1.75 1.75 0 0 0 1.75-1.75V7z"
+        fill="var(--cp-card)"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <path d="M14.5 2.75V7h4.25" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      <rect x="1.5" y="10.5" width="21" height="8.5" rx="2" fill={color} />
+      <text
+        x="12"
+        y="17.1"
+        textAnchor="middle"
+        fontSize="6.4"
+        fontWeight="800"
+        letterSpacing="0.3"
+        fill="var(--cp-card)"
+        fontFamily="inherit"
+      >
+        {label}
+      </text>
+    </svg>
+  );
+}
 
 export const PrintIcon = (p: IconProps) => (
   <Base {...p}>

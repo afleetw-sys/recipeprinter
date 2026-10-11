@@ -2,11 +2,17 @@
 
 import { useRef, useState } from "react";
 import { AnchoredMenu } from "@/components/AnchoredMenu";
-import { ChevronDownIcon, DocumentIcon, ICON_SIZE, ImageIcon, PrintIcon } from "@/components/icons";
+import { ChevronDownIcon, FileTypeIcon, ICON_SIZE, PrintIcon } from "@/components/icons";
 import { PRINT_ACTION_LABEL, type PrintPrimaryAction } from "@/lib/printPrimaryAction";
 import type { ExportOutput } from "@/types/export";
 
 const FORMATS: readonly ExportOutput[] = ["pdf", "png", "jpg"];
+/** The band on each file icon. Red is what a PDF is everywhere. */
+const FORMAT_COLOR: Record<ExportOutput, string> = {
+  pdf: "var(--cp-offer-red)",
+  png: "var(--cp-blue)",
+  jpg: "var(--cp-accent)",
+};
 
 /**
  * The arrow on the Print split button: the other ways to get the cards out.
@@ -74,8 +80,7 @@ export function PrintDownloadMenu({
                 onDownload(output);
               }}
             >
-              {/* A document for the PDF, a picture for the two pictures. */}
-              {output === "pdf" ? <DocumentIcon size={ICON_SIZE.md} /> : <ImageIcon size={ICON_SIZE.md} />}
+              <FileTypeIcon label={PRINT_ACTION_LABEL[output]} color={FORMAT_COLOR[output]} />
               {PRINT_ACTION_LABEL[output]}
             </button>
           ))}
