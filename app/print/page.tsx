@@ -113,7 +113,7 @@ import {
   markImportsUnlimited,
   rememberedImportUsage,
 } from "@/lib/importMeter";
-import { HEADER_USAGE_CLASS, ImportUsageMenu } from "@/components/ImportUsageMenu";
+import { ImportUsageMenu } from "@/components/ImportUsageMenu";
 import { PrintDownloadMenu } from "@/components/print/PrintDownloadMenu";
 import { CardExportError, downloadCards } from "@/lib/cardExport";
 import type { ExportOutput } from "@/types/export";
@@ -4729,9 +4729,9 @@ export default function PrintPage() {
    * place in the header, to the left of the account, the same as on the
    * homepage (Amelia, 2026-10-11). Shown to whoever sees Upgrade.
    */
-  function renderImportUsageButton() {
+  function renderImportUsageButton(placement: "header" | "topbar") {
     if (cookbookMode || hasProEntitlement(effectiveCustomerInfo.customerInfo)) return null;
-    return <ImportUsageMenu className={HEADER_USAGE_CLASS} onUpgrade={openImportUpgrade} />;
+    return <ImportUsageMenu placement={placement} onUpgrade={openImportUpgrade} />;
   }
 
   // Card-format print settings (behind the "Print settings" trigger). Cookbook
@@ -6245,7 +6245,7 @@ export default function PrintPage() {
                 </span>
                 {/* Last, so it sits against the account: the same place it has
                     on the homepage. */}
-                {renderImportUsageButton()}
+                {renderImportUsageButton("header")}
               </>
           }
           onNavigateHome={() => handleNavigateHome()}
@@ -6419,7 +6419,7 @@ export default function PrintPage() {
           proUpgradeButton={
             <>
               {renderProUpgradeButton()}
-              {renderImportUsageButton()}
+              {renderImportUsageButton("topbar")}
             </>
           }
           singleRecipePrintView={singleRecipePrintView}

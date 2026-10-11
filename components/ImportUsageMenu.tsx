@@ -6,11 +6,15 @@ import { CrownIcon, ICON_SIZE } from "@/components/icons";
 import { importAllowanceLine } from "@/lib/freeImports";
 import { useImportUsage } from "@/lib/useImportUsage";
 
-/** In a header the ring has no outline of its own, so its box is pulled in
-    toward both neighbours by the same amount: the bar's full gap on top of the
-    ring's own margin read as a hole, and the ring has to sit evenly between
-    Print and the account button (Amelia, 2026-10-11). */
-export const HEADER_USAGE_CLASS = "-mx-2";
+// Beside the avatar the ring takes the avatar's own box (`.icon-button` at the
+// `data-rp-avatar` size: the same square, corner and hairline border), so the
+// two read as a pair of controls.
+const BUTTON_CLASS = {
+  header: "icon-button mx-2 sm:mx-1",
+  topbar: "icon-button",
+  inline: "btn-ghost btn-compact w-[30px] px-0",
+} as const;
+const AVATAR_SIZE = { header: "header", topbar: "compact", inline: undefined } as const;
 
 /**
  * The free-import count as a button: a ring that fills as imports are used,
@@ -27,16 +31,21 @@ export function ImportUsageMenu({
   enabled = true,
   onUpgrade,
   align = "end",
-  header = false,
-  className = "",
+  placement = "inline",
 }: {
   enabled?: boolean;
   onUpgrade: () => void;
   /** Which edge of the ring the menu lines up with. */
   align?: "start" | "end";
-  /** `SiteHeader`'s own control size, for a bar whose other buttons use it. */
-  header?: boolean;
-  className?: string;
+  /**
+   * Where it sits. Beside the account button the ring sits in a bordered box
+   * exactly the avatar's size, so the two read as a pair (Amelia, 2026-10-11):
+   * - `header`: `SiteHeader`, 32px, and 16px clear of its neighbours on each
+   *   side (the bar's own gap plus this margin).
+   * - `topbar`: the print page's phone bar, 30px, at that bar's own gap.
+   * - `inline`: no box, by a dialog's title.
+   */
+  placement?: "header" | "topbar" | "inline";
 }) {
   const { hidden, usage } = useImportUsage(enabled);
   const [open, setOpen] = useState(false);
@@ -52,9 +61,8 @@ export function ImportUsageMenu({
         type="button"
         // An icon button with no fill of its own (Amelia, 2026-10-10): the
         // ring is the control, and only a hover shows it can be pressed.
-        // A square the size of the account button it sits beside, so the ring
-        // has the same room around it as the avatar's icon.
-        className={`btn-ghost px-0 ${header ? "btn-header w-8" : "btn-compact w-[30px]"} ${className}`}
+        className={BUTTON_CLASS[placement]}
+        data-rp-avatar={AVATAR_SIZE[placement]}
         aria-haspopup="menu"
         aria-expanded={open}
         // The ring is a picture of the count; the name says it in words.
