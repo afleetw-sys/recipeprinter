@@ -69,6 +69,9 @@ export const IMAGE_IMPORT_LIMIT_TRIGGER = "image_import_limit";
 /** Opened from an import that didn't start because the free allowance is used up. */
 export const IMPORT_LIMIT_TRIGGER = "import_limit";
 
+/** Opened by clicking the "Printed with RecipePrinter" line on a card. */
+export const REMOVE_BRANDING_TRIGGER = "remove_branding";
+
 const TITLE_BY_REASON: Record<ProLockReason, string> = {
   multi_recipe: "Print multiple recipes at once",
   card_size: "Print 4×6 recipe cards",
@@ -127,6 +130,15 @@ export function proUpgradeCopy(
       title: `Import up to ${IMAGE_IMPORTS_PER_HOUR_PRO} images an hour`,
       benefits: PRO_BENEFITS,
       ctaLabel: "Unlock Pro",
+    };
+  }
+  // Before the lock reasons: a locked card size can be selected at the same
+  // moment, and it isn't what was clicked.
+  if (trigger === REMOVE_BRANDING_TRIGGER) {
+    return {
+      title: "Print without RecipePrinter branding",
+      benefits: [NO_BRANDING_BENEFIT, ...PRO_BENEFITS.filter((b) => b !== NO_BRANDING_BENEFIT)],
+      ctaLabel: "Unlock Pro and continue",
     };
   }
   if (trigger === "topbar_button" || reasons.length === 0) return GENERIC_COPY;

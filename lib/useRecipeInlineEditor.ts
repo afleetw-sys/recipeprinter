@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type MutableRefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { printableRecipe } from "@/lib/queue";
 import { storedRecipeHeading } from "@/lib/recipeHeadings";
 import { ingredientText } from "@/lib/recipeCardLayout";
@@ -339,6 +339,10 @@ interface UseRecipeInlineEditorOptions {
    * section that took one drag to remove is not.
    */
   onLinesDeleted?: (deletion: { count: number; undo: () => void }) => void;
+  /** The card's "Printed with RecipePrinter" line was clicked (see
+      `RecipeCardInlineEdit.onRemoveBranding`). Leave unset when the line
+      isn't shown. */
+  onRemoveBranding?: () => void;
   /** When a recipe is intentionally moved (e.g. its photo placement changed, so
       it lands on a different page), the page stashes that recipe id here so the
       leave-edit-mode reset skips ONCE as focus follows it to the new page —
@@ -364,8 +368,17 @@ export function useRecipeInlineEditor({
   resetKey,
   keepEditingRef,
   onLinesDeleted,
+  onRemoveBranding,
   includeDescription = true,
 }: UseRecipeInlineEditorOptions) {
+  // Read through a ref so the page can pass a fresh closure every render
+  // without re-making `activeInlineEdit` (see the memo below).
+  const onRemoveBrandingRef = useRef(onRemoveBranding);
+  useEffect(() => {
+    onRemoveBrandingRef.current = onRemoveBranding;
+  });
+  const removeBranding = useCallback(() => onRemoveBrandingRef.current?.(), []);
+  const brandingRemovable = Boolean(onRemoveBranding);
   const [pageEditMode, setPageEditMode] = useState(false);
   const [editingEdit, setEditingEdit] = useState<RecipeEditSelection | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -648,6 +661,7 @@ export function useRecipeInlineEditor({
       onInsertStep: insertStepAt,
       onSplitLine: splitEditLine,
       onDeleteLines: deleteLines,
+      onRemoveBranding: brandingRemovable ? removeBranding : undefined,
     };
   }, [
     activeRecipeItem,
@@ -661,6 +675,8 @@ export function useRecipeInlineEditor({
     insertStepAt,
     splitEditLine,
     deleteLines,
+    brandingRemovable,
+    removeBranding,
   ]);
 
   useEffect(() => {

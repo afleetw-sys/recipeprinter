@@ -755,6 +755,12 @@ export interface RecipeCardInlineEdit {
    * entries in the same selection.
    */
   onDeleteLines: (targets: RecipeCardLineTarget[]) => void;
+  /**
+   * The "Printed with RecipePrinter" line was clicked. It reads as one more
+   * editable line, but removing it is a Pro benefit, so the click opens the
+   * upgrade dialog instead of a field. Absent when there's no line to remove.
+   */
+  onRemoveBranding?: () => void;
 }
 
 function continuationFaces(
