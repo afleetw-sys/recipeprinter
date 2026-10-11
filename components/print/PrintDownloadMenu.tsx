@@ -7,12 +7,6 @@ import { PRINT_ACTION_LABEL, type PrintPrimaryAction } from "@/lib/printPrimaryA
 import type { ExportOutput } from "@/types/export";
 
 const FORMATS: readonly ExportOutput[] = ["pdf", "png", "jpg"];
-/** The band on each file icon. Red is what a PDF is everywhere. */
-const FORMAT_COLOR: Record<ExportOutput, string> = {
-  pdf: "var(--cp-offer-red)",
-  png: "var(--cp-blue)",
-  jpg: "var(--cp-accent-warm)",
-};
 
 /**
  * The arrow on the Print split button: the other ways to get the cards out.
@@ -80,7 +74,7 @@ export function PrintDownloadMenu({
                 onDownload(output);
               }}
             >
-              <FileTypeIcon label={PRINT_ACTION_LABEL[output]} color={FORMAT_COLOR[output]} />
+              <FileTypeIcon label={PRINT_ACTION_LABEL[output]} />
               {PRINT_ACTION_LABEL[output]}
             </button>
           ))}

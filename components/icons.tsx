@@ -185,14 +185,13 @@ export const DownloadIcon = (p: IconProps) => (
  * A file of a named format: a page with a folded corner and the format on a
  * band across it, the way a desktop shows a PDF or a PNG. PDF, PNG and JPG have
  * no shared glyph of their own (the one real logo is Adobe's), so the letters
- * are what make each one recognisable; the band's colour is the second cue.
+ * are what make each one recognisable. One colour, like every other icon here.
  */
 export function FileTypeIcon({
   label,
-  color,
   size = 22,
   ...props
-}: IconProps & { label: string; color: string }) {
+}: IconProps & { label: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden {...props}>
       <path
@@ -203,7 +202,7 @@ export function FileTypeIcon({
         strokeLinejoin="round"
       />
       <path d="M14.5 2.75V7h4.25" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-      <rect x="1.5" y="10.5" width="21" height="8.5" rx="2" fill={color} />
+      <rect x="1.5" y="10.5" width="21" height="8.5" rx="2" fill="currentColor" />
       <text
         x="12"
         y="17.1"
