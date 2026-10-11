@@ -1701,10 +1701,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImage: "instagram",
     heroAnnotation: "Printed from an Instagram post",
     initialImportMode: "url",
-    importFieldLabel: "Post or video link",
-    importPlaceholder: "Paste a post or video link",
-    importHint:
-      "If the link doesn't work, you can also paste the recipe text or upload a screenshot.",
+    // The full import box, not a lone link field: a recipe on social media is
+    // as often a screenshot or a copied caption as it is a link that imports.
+    importModes: ["url", "apps", "image", "text"],
     title: "Print Recipes from Social Media | Instagram, TikTok & More",
     description:
       "Print recipes from Instagram, TikTok, Pinterest, Facebook, and YouTube. Paste a social media link and turn it into a clean recipe you can print or save.",
