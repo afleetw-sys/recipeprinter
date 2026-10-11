@@ -18,7 +18,7 @@ const COOKBOOK_STEPS = [
 // a surprise. "Preview" (free) is always paired with what the purchase adds:
 // a cookbook is never "free up to 10 recipes" on its own.
 const PREVIEW_RULE = IMPORT_ALLOWANCE_LIVE
-  ? `Preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes. Buy it to download your cookbook and keep adding.`
+  ? `Free to preview with up to ${FREE_COOKBOOK_RECIPES} recipes. Buy to download and add more.`
   : "Pay when you download.";
 
 export function CookbookWelcomeDialog({
@@ -106,7 +106,7 @@ export function CookbookWelcomeDialog({
                 <span className="sr-only">now </span>
                 {usd(price)} one time
               </b>
-              <span>Your Pro membership takes 20% off your first cookbook. {PREVIEW_RULE}</span>
+              <span>20% off your first cookbook with Pro. {PREVIEW_RULE}</span>
             </>
           ) : (
             <>
