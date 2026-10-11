@@ -74,8 +74,9 @@ export function SiteHeader({
       /* One bar height everywhere: the workspace and the marketing pages used
          to run 56px and 62px respectively (`compact`), which is the sizing
          mismatch this component now avoids on purpose — every route gets the
-         same chrome. */
-      className={`no-print relative flex items-center justify-between gap-cp-3 sm:gap-cp-4 px-cp-4 sm:px-cp-6 flex-nowrap min-h-[59px] ${
+         same chrome. On desktop it is 4px shorter than on a phone (Amelia,
+         2026-10-11): a little less air above and below the 32px controls. */
+      className={`no-print relative flex items-center justify-between gap-cp-3 sm:gap-cp-4 px-cp-4 sm:px-cp-6 flex-nowrap min-h-[59px] sm:min-h-[55px] ${
         sticky
           ? /* `--z-sticky` (globals.css), not a bare Tailwind number — this
                header is what establishes the account dropdown's own stacking
