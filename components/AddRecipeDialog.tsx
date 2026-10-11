@@ -8,7 +8,7 @@ import { ICON_SIZE, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
 import { track } from "@/lib/analytics";
 import type { QueueItem } from "@/types/recipe";
-import { ImportAllowanceLine } from "@/components/ImportAllowanceLine";
+import { ImportUsageMenu } from "@/components/ImportUsageMenu";
 
 // A lighter version of the homepage's import panel, for adding to a print job
 // or a cookbook without leaving the deck.
@@ -37,8 +37,8 @@ export function AddRecipeDialog({
   allowance = true,
   onGetUnlimited,
 }: {
-  /** Passed to `ImportPanel`: show the free-import count, and what its
-      "Get unlimited imports" opens. */
+  /** Show the free-import ring beside the title, and what the Upgrade in its
+      menu opens. */
   allowance?: boolean;
   onGetUnlimited?: () => void;
   open: boolean;
@@ -177,7 +177,13 @@ export function AddRecipeDialog({
       }`}
     >
       <div className="recipe-add-dialog__header">
-        <h2 id="recipe-add-dialog-title">{title}</h2>
+        {/* The free-import count rides with the title as its ring: one press
+            says how many are left. It was a banner under Add, which was a
+            second thing to read on every open (Amelia, 2026-10-11). */}
+        <div className="flex min-w-0 items-center gap-cp-1">
+          <h2 id="recipe-add-dialog-title">{title}</h2>
+          {onGetUnlimited && <ImportUsageMenu enabled={allowance} onUpgrade={onGetUnlimited} align="start" />}
+        </div>
         <button
           type="button"
           className="recipe-add-dialog__close icon-close-btn"
@@ -212,7 +218,7 @@ export function AddRecipeDialog({
           onSubmitted={onClose}
           hideSubmit
           showAllModes
-          /* This dialog shows the free-import banner itself, under Add. */
+          /* This dialog shows the free-import count itself, by its title. */
           allowance={false}
           /* Read once per open: `Dialog` renders nothing while closed, so the
              panel is a fresh mount every time the sheet appears. */
@@ -278,9 +284,6 @@ export function AddRecipeDialog({
               ? IMAGE_SUBMIT_LABEL
               : "Add"}
         </button>
-        {/* Under the action it counts, so the count is the last thing read
-            before pressing Add rather than something above the fold of the form. */}
-        <ImportAllowanceLine enabled={allowance} onGetUnlimited={onGetUnlimited} className="mt-cp-4" />
       </div>
     </Dialog>
   );
