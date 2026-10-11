@@ -117,7 +117,7 @@ export function CookbookWelcomeDialog({
         </div>
         <div className="cookbook-welcome__actions">
           <button type="button" className="btn btn-primary" onClick={onStart}>
-            {hasRecipes ? "Open your cookbook" : "Start adding recipes"}
+            {hasRecipes ? "Take a look" : "Start adding recipes"}
           </button>
         </div>
       </div>

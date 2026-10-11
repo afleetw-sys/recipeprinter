@@ -6857,7 +6857,7 @@ export default function PrintPage() {
           // Only an empty book, though. A cook who arrived here by importing a
           // recipe (still parsing counts) is already started, and lands on the
           // book that recipe began rather than on "Add your first recipe". The
-          // button reads "Open your cookbook" for them (`hasRecipes`).
+          // button reads "Take a look" for them (`hasRecipes`).
           if (recipeCount > 0) return;
           setAddingFirstRecipe(true);
           openAddRecipeBelow(null);
