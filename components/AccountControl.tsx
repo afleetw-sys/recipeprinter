@@ -248,7 +248,10 @@ export function AccountControl({
            routes correctly even though the chunk isn't here yet. */
         <IconButton
           data-rp-avatar={compact === "header" ? "header" : compact ? "compact" : "full"}
-          className="icon-button--filled"
+          // Outlined, not filled (Amelia, 2026-10-11): a hairline box with an
+          // ink glyph and no fill, the same box as the free-import ring
+          // beside it.
+          className="bg-transparent text-ink"
           aria-label="Open account or sign in"
           title="Open account or sign in"
           onClick={() => {

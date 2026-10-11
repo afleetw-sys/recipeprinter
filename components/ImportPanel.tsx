@@ -34,7 +34,7 @@ import {
   UploadIcon,
   XIcon,
 } from "@/components/icons";
-import { ImportAllowanceLine } from "@/components/ImportAllowanceLine";
+import { FrontDoorUpgradeHost } from "@/components/FrontDoorUpgrade";
 import { ButtonToggle } from "@/components/ButtonToggle";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
@@ -94,14 +94,7 @@ export function ImportPanel({
   librarySingleSelect,
   onStartEmpty,
   onLibraryLockedTap,
-  allowance = true,
-  onGetUnlimited,
 }: {
-  /** Show the free-import count under the panel. False where the allowance
-      doesn't apply: a cookbook, or a cook the surface knows is Pro. */
-  allowance?: boolean;
-  /** Opens the Pro dialog from the count's "Get unlimited imports". */
-  onGetUnlimited?: () => void;
   items: QueueItem[];
   workspace?: boolean;
   initialMode?: ImportTab;
@@ -751,14 +744,10 @@ export function ImportPanel({
       </form>
       )}
 
-      <ImportAllowanceLine
-        enabled={allowance}
-        // `workspace` is the front door: the homepage and the SEO capture
-        // blocks. No allowance line there until an import has been used.
-        untilUsed={workspace}
-        onGetUnlimited={onGetUnlimited}
-        className="mt-cp-5"
-      />
+      {/* The front door (the homepage, the SEO capture blocks) hands imports
+          off to /print, which owns the upgrade dialog. Here this holds it, for
+          the header's Upgrade buttons and for an import with none left. */}
+      {workspace && <FrontDoorUpgradeHost />}
     </section>
   );
 }

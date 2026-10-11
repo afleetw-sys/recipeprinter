@@ -1,4 +1,5 @@
 import { SiteHeader } from "@/components/SiteHeader";
+import { FrontDoorImportUsage, FrontDoorUpgradeButton } from "@/components/FrontDoorUpgrade";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PrinterWorkspace } from "@/components/PrinterWorkspace";
 import { CommunityGallery } from "@/components/CommunityGallery";
@@ -24,7 +25,14 @@ export default function Home() {
         Skip to the recipe printer
       </a>
 
-      <SiteHeader sticky chrome="page" />
+      {/* The same bar as /print, less Print: Upgrade beside the wordmark, the
+          free-import ring to the left of the account. */}
+      <SiteHeader
+        sticky
+        chrome="page"
+        lead={<FrontDoorUpgradeButton />}
+        actions={<FrontDoorImportUsage />}
+      />
 
       <main id="rp-main" className="flex-1 px-cp-6">
         {/* Two measures, on purpose. The front door is a narrow centred column

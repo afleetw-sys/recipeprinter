@@ -2,16 +2,26 @@
 
 import { useRef, useState } from "react";
 import { AnchoredMenu } from "@/components/AnchoredMenu";
-import { UsageRing } from "@/components/ImportAllowanceLine";
-import { CrownIcon, ICON_SIZE } from "@/components/icons";
+import { CrownIcon, GaugeIcon, ICON_SIZE } from "@/components/icons";
 import { importAllowanceLine } from "@/lib/freeImports";
 import { useImportUsage } from "@/lib/useImportUsage";
 
+// Beside the avatar the ring takes the avatar's own box (`.icon-button` at the
+// `data-rp-avatar` size: the same square, corner and hairline outline, with no fill), so the
+// two read as a pair of controls.
+const BUTTON_CLASS = {
+  header: "icon-button bg-transparent text-ink mx-px sm:-mx-0.5",
+  topbar: "icon-button bg-transparent text-ink",
+} as const;
+const AVATAR_SIZE = { header: "header", topbar: "compact" } as const;
+
 /**
- * The free-import count as a button: the same ring as the import boxes'
- * banner, in the print page's header beside "Upgrade to Pro" and by the Add
- * recipes dialog's title. Pressing it opens a small menu with the same facts
- * (how many are used, when they reset) and Upgrade.
+ * The free-import count as a button: a ring that fills as imports are used,
+ * in the header to the left of the account, on the homepage and the print page
+ * alike, and nowhere else (Amelia, 2026-10-11). Pressing it opens a small menu
+ * with the facts (how many are used, when they reset) and Upgrade. It is the
+ * only place the count shows: the banner under the import boxes is gone
+ * (Amelia, 2026-10-11).
  *
  * Renders nothing where the allowance doesn't apply (`enabled` false: a
  * cookbook, a Pro member) or isn't live.
@@ -20,11 +30,20 @@ export function ImportUsageMenu({
   enabled = true,
   onUpgrade,
   align = "end",
+  placement,
 }: {
   enabled?: boolean;
   onUpgrade: () => void;
   /** Which edge of the ring the menu lines up with. */
   align?: "start" | "end";
+  /**
+   * Where it sits. Beside the account button the ring sits in an outlined box
+   * exactly the avatar's size, so the two read as a pair (Amelia, 2026-10-11):
+   * - `header`: `SiteHeader`, 32px, and 10px clear of its neighbours on each
+   *   side (the bar's own gap plus this margin).
+   * - `topbar`: the print page's phone bar, 30px, at that bar's own gap.
+   */
+  placement: "header" | "topbar";
 }) {
   const { hidden, usage } = useImportUsage(enabled);
   const [open, setOpen] = useState(false);
@@ -40,14 +59,17 @@ export function ImportUsageMenu({
         type="button"
         // An icon button with no fill of its own (Amelia, 2026-10-10): the
         // ring is the control, and only a hover shows it can be pressed.
-        className="btn-ghost btn-compact"
+        className={BUTTON_CLASS[placement]}
+        data-rp-avatar={AVATAR_SIZE[placement]}
         aria-haspopup="menu"
         aria-expanded={open}
         // The ring is a picture of the count; the name says it in words.
         aria-label={`Free imports: ${line.lead}`}
         onClick={() => setOpen((value) => !value)}
       >
-        <UsageRing fraction={fraction} size={18} />
+        {/* Nothing used yet: an empty ring reads as a blank circle, so a gauge
+            says "usage" until there is some to draw (Amelia, 2026-10-11). */}
+        {fraction > 0 ? <UsageRing fraction={fraction} size={18} /> : <GaugeIcon size={ICON_SIZE.md} />}
       </button>
       {open && (
         <AnchoredMenu anchorRef={anchorRef} onClose={() => setOpen(false)} label="Free imports" align={align}>
@@ -70,5 +92,43 @@ export function ImportUsageMenu({
         </AnchoredMenu>
       )}
     </>
+  );
+}
+
+/**
+ * The count as a ring that fills clockwise from the top: empty before the
+ * first import, full at none left. Decorative: the button's name says the
+ * same thing in words, so it is hidden from screen readers.
+ */
+function UsageRing({ fraction, size = 14 }: { fraction: number; size?: number }) {
+  const stroke = size >= 18 ? 3 : 2.5;
+  const radius = (size - stroke) / 2;
+  const length = 2 * Math.PI * radius;
+  const center = size / 2;
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      className="shrink-0"
+      aria-hidden
+    >
+      <circle cx={center} cy={center} r={radius} fill="none" stroke="var(--cp-line)" strokeWidth={stroke} />
+      {/* Nothing drawn at zero: a round cap would leave a dot. */}
+      {fraction > 0 && (
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke="var(--cp-accent)"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={length}
+          strokeDashoffset={length * (1 - fraction)}
+          transform={`rotate(-90 ${center} ${center})`}
+        />
+      )}
+    </svg>
   );
 }

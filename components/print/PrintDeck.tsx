@@ -10,6 +10,7 @@ import type {
 } from "react";
 import Link from "next/link";
 import { AccountControl } from "@/components/AccountControl";
+import { emptyOutlineIsCompact } from "@/lib/emptyPageOutline";
 import { LogoMark } from "@/components/Logo";
 import {
   ChevronLeftIcon,
@@ -427,13 +428,13 @@ export function PrintDeck(props: PrintDeckProps) {
     renderAllPages,
   } = props;
 
-  // The empty-state outline is the page at the deck's scale, which on a phone
-  // is too small to hold its title, copy and button (they do not scale). Below
-  // these sizes it gives up the page's shape for the words' sake. A 6x4 card
-  // shows no ghost columns, so it needs less height.
-  const emptySheetCompact =
-    previewDims.w * deckScale < 280 ||
-    previewDims.h * deckScale < (previewCardSize === "card-6x4" ? 190 : 340);
+  // The empty-state outline is the page at the deck's scale, unless that is
+  // too small to hold its words (see `emptyOutlineIsCompact`).
+  const emptySheetCompact = emptyOutlineIsCompact(
+    previewDims.w * deckScale,
+    previewDims.h * deckScale,
+    previewCardSize,
+  );
 
   // Whether a chapter's facing/art page can exist AT ALL right now — mirrors
   // `cookbookLayouts` in lib/usePrintSheets.tsx exactly (cookbook mode AND

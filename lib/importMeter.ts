@@ -178,7 +178,7 @@ function rememberUnlimited(next: boolean): void {
  * This browser has just learned the cook is Pro (a purchase finished, or the
  * purchase SDK reported an active entitlement). Forget the free count at once,
  * rather than waiting for the server to say so: a count left at "10 of 10"
- * would keep showing the banner and stopping imports to someone who just paid.
+ * would keep showing in the ring and stopping imports to someone who just paid.
  */
 export function markImportsUnlimited(): void {
   remember(null);
@@ -438,7 +438,7 @@ export function importsSpent(nowMs: number = Date.now(), live: boolean = IMPORT_
 
 const refusalListeners = new Set<() => void>();
 
-/** The free-import banner listens here so it can open the upgrade dialog. */
+/** `FrontDoorUpgradeHost` listens here so it can open the upgrade dialog. */
 export function subscribeImportRefusal(listener: () => void): () => void {
   refusalListeners.add(listener);
   return () => refusalListeners.delete(listener);
@@ -449,8 +449,8 @@ export function subscribeImportRefusal(listener: () => void): () => void {
  * capture blocks). When the cook is out of free imports, the upgrade dialog
  * opens where they are and this answers true: the caller then does nothing
  * else, instead of walking them to an empty print page to be refused there
- * (Amelia, 2026-10-10). The dialog is opened by the free-import banner on
- * that page; with no banner mounted to open it, this answers false and the
+ * (Amelia, 2026-10-10). The dialog is opened by `FrontDoorUpgradeHost` on
+ * that page; with none mounted to open it, this answers false and the
  * handoff goes ahead as before, to be refused on `/print`.
  */
 export function refuseImportIfSpent(): boolean {

@@ -8,7 +8,6 @@ import { ICON_SIZE, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
 import { track } from "@/lib/analytics";
 import type { QueueItem } from "@/types/recipe";
-import { ImportUsageMenu } from "@/components/ImportUsageMenu";
 
 // A lighter version of the homepage's import panel, for adding to a print job
 // or a cookbook without leaving the deck.
@@ -34,13 +33,7 @@ export function AddRecipeDialog({
   onLibraryLockedTap,
   chapterTarget,
   title = "Add recipes",
-  allowance = true,
-  onGetUnlimited,
 }: {
-  /** Show the free-import ring beside the title, and what the Upgrade in its
-      menu opens. */
-  allowance?: boolean;
-  onGetUnlimited?: () => void;
   open: boolean;
   onClose: () => void;
   items: QueueItem[];
@@ -177,13 +170,7 @@ export function AddRecipeDialog({
       }`}
     >
       <div className="recipe-add-dialog__header">
-        {/* The free-import count rides with the title as its ring: one press
-            says how many are left. It was a banner under Add, which was a
-            second thing to read on every open (Amelia, 2026-10-11). */}
-        <div className="flex min-w-0 items-center gap-cp-1">
-          <h2 id="recipe-add-dialog-title">{title}</h2>
-          {onGetUnlimited && <ImportUsageMenu enabled={allowance} onUpgrade={onGetUnlimited} align="start" />}
-        </div>
+        <h2 id="recipe-add-dialog-title">{title}</h2>
         <button
           type="button"
           className="recipe-add-dialog__close icon-close-btn"
@@ -218,8 +205,6 @@ export function AddRecipeDialog({
           onSubmitted={onClose}
           hideSubmit
           showAllModes
-          /* This dialog shows the free-import count itself, by its title. */
-          allowance={false}
           /* Read once per open: `Dialog` renders nothing while closed, so the
              panel is a fresh mount every time the sheet appears. */
           initialMode={lastSource}

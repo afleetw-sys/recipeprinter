@@ -43,6 +43,16 @@ function Base({ size = 18, children, ...props }: IconProps & { children: React.R
   );
 }
 
+// A dial with its needle: usage, before there is any to draw. The free-import
+// button shows this until the first import, then its ring.
+export const GaugeIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M5.6 18a9 9 0 1112.8 0" />
+    <path d="M12 13.5l3.6-4.6" />
+    <circle cx="12" cy="13.5" r="1.1" />
+  </Base>
+);
+
 export const LinkIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M9 15l6-6" />

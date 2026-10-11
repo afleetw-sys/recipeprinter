@@ -4622,7 +4622,9 @@ export default function PrintPage() {
    * in; "Save" is the door to that. A single card gets no door at all: it is a
    * quick print, and leaving never asks about it.
    */
-  function renderSaveControl() {
+  // `size` is the bar it is drawn in: `SiteHeader`'s 32px controls, the same
+  // as the homepage's header (Amelia, 2026-10-11), or the phone bar's 30px.
+  function renderSaveControl(size: "header" | "compact" = "compact") {
     if (saveStatus) {
       // A button only when there is something to retry — a focusable
       // control that does nothing when activated is worse than plain text.
@@ -4670,7 +4672,7 @@ export default function PrintPage() {
     return (
       <button
         type="button"
-        className="btn btn-secondary btn-compact"
+        className={`btn btn-secondary btn-${size}`}
         onClick={() => void handleSaveProject()}
         aria-label={cookbookMode ? "Sign in to save cookbook" : "Sign in to save project"}
       >
@@ -4702,8 +4704,8 @@ export default function PrintPage() {
    * actually locked.
    */
   /**
-   * Upgrade pressed from the free-import count (the banner under Add, the
-   * header's ring menu). It is there in every state, so only someone who is
+   * Upgrade pressed from the free-import count (the ring's menu in the
+   * header). It is there in every state, so only someone who is
    * actually out of imports gets the "you've used your 10" wording; anyone
    * else pressed Upgrade and gets the plain Pro dialog.
    */
@@ -4711,23 +4713,27 @@ export default function PrintPage() {
     const usage = rememberedImportUsage();
     openProUpgradeDialog(usage && usage.used >= usage.limit ? IMPORT_LIMIT_TRIGGER : "import_banner");
   }
-  function renderProUpgradeButton() {
+  function renderProUpgradeButton(size: "header" | "compact" = "compact") {
     if (cookbookMode || hasProEntitlement(effectiveCustomerInfo.customerInfo)) return null;
     return (
-      <>
-        <button
-          type="button"
-          className="btn btn-premium btn-compact"
-          onClick={() => openProUpgradeDialog("topbar_button")}
-        >
-          <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-          Upgrade to Pro
-        </button>
-        {/* How many free imports are used, as a ring that opens the details.
-            To the right of the thing that lifts the limit. */}
-        <ImportUsageMenu onUpgrade={openImportUpgrade} />
-      </>
+      <button
+        type="button"
+        className={`btn btn-premium btn-${size}`}
+        onClick={() => openProUpgradeDialog("topbar_button")}
+      >
+        <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
+        Upgrade to Pro
+      </button>
     );
+  }
+  /**
+   * How many free imports are used, as a ring that opens the details. Its own
+   * place in the header, to the left of the account, the same as on the
+   * homepage (Amelia, 2026-10-11). Shown to whoever sees Upgrade.
+   */
+  function renderImportUsageButton(placement: "header" | "topbar") {
+    if (cookbookMode || hasProEntitlement(effectiveCustomerInfo.customerInfo)) return null;
+    return <ImportUsageMenu placement={placement} onUpgrade={openImportUpgrade} />;
   }
 
   // Card-format print settings (behind the "Print settings" trigger). Cookbook
@@ -6157,7 +6163,7 @@ export default function PrintPage() {
             the order you'd reach for them: how it stands, then the action that
             finishes it.
           */
-          lead={renderProUpgradeButton()}
+          lead={renderProUpgradeButton("header")}
           actions={
               <>
                 {/* How this project stands, to the LEFT of the action rather
@@ -6167,7 +6173,7 @@ export default function PrintPage() {
                     for why the control and the state are one thing. Shared
                     with the mobile topbar (PrintDeck.tsx). Only once there is
                     something to save. */}
-                {items?.length ? renderSaveControl() : null}
+                {items?.length ? renderSaveControl("header") : null}
 
                 {/* Print is always here, as it is on a phone's bottom bar:
                     the page is for printing, and a button that appears only
@@ -6184,11 +6190,11 @@ export default function PrintPage() {
                 */}
                 <span className="recipe-print-split">
                 {printPrimary !== "print" ? (
-                  renderDownloadPrimary(printPrimary, "btn btn-primary btn-compact")
+                  renderDownloadPrimary(printPrimary, "btn btn-primary btn-header")
                 ) : (
                 <button
                   type="button"
-                  className="btn btn-primary btn-compact"
+                  className="btn btn-primary btn-header"
                   disabled={printBlocked}
                   onPointerDown={pressPrint}
                   onPointerEnter={warmPrint}
@@ -6239,6 +6245,9 @@ export default function PrintPage() {
                   />
                 )}
                 </span>
+                {/* Last, so it sits against the account: the same place it has
+                    on the homepage. */}
+                {renderImportUsageButton("header")}
               </>
           }
           onNavigateHome={() => handleNavigateHome()}
@@ -6409,7 +6418,12 @@ export default function PrintPage() {
         {/* Center: large preview of the selected page */}
         <PrintDeck
           saveControl={renderSaveControl()}
-          proUpgradeButton={renderProUpgradeButton()}
+          proUpgradeButton={
+            <>
+              {renderProUpgradeButton()}
+              {renderImportUsageButton("topbar")}
+            </>
+          }
           singleRecipePrintView={singleRecipePrintView}
           cookbookView={cookbookView}
           previewMeasuring={previewMeasuring}
@@ -6931,9 +6945,6 @@ export default function PrintPage() {
           openProUpgradeDialog("add_more_recipes");
         }}
         chapterTarget={addChapterTarget}
-        // The card allowance isn't a cookbook's, and Pro has none.
-        allowance={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
-        onGetUnlimited={openImportUpgrade}
       />
       <FeedbackDialog
         open={showFeedbackDialog}
