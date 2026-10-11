@@ -27,9 +27,16 @@ const ImportBannerUpgrade = dynamic(
  */
 export function ImportAllowanceLine({
   enabled = true,
+  untilUsed = false,
   onGetUnlimited,
   className = "",
 }: {
+  /** Stay out of sight until the cook has used an import. For the front door
+      (the homepage, the SEO pages): a first-time visitor is there to try the
+      thing, and a line about an allowance they haven't touched is one more
+      thing to read first (Amelia, 2026-10-10). From the first import on, the
+      count shows as everywhere else. */
+  untilUsed?: boolean;
   /** False where the allowance doesn't apply: a cookbook, a known Pro member. */
   enabled?: boolean;
   /** Opens the page's own Pro dialog (`/print`). Without one, the banner
@@ -48,6 +55,7 @@ export function ImportAllowanceLine({
     return subscribeImportRefusal(() => setUpgradePresses((count) => count + 1));
   }, [hidden, onGetUnlimited]);
   if (hidden) return null;
+  if (untilUsed && (!usage || usage.used <= 0)) return null;
   const line = importAllowanceLine(usage);
   const fraction = usage && usage.limit > 0 ? Math.min(usage.used, usage.limit) / usage.limit : 0;
   // As quiet as the rest of the banner: text, not a boxed button. The small

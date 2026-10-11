@@ -751,7 +751,14 @@ export function ImportPanel({
       </form>
       )}
 
-      <ImportAllowanceLine enabled={allowance} onGetUnlimited={onGetUnlimited} className="mt-cp-5" />
+      <ImportAllowanceLine
+        enabled={allowance}
+        // `workspace` is the front door: the homepage and the SEO capture
+        // blocks. No allowance line there until an import has been used.
+        untilUsed={workspace}
+        onGetUnlimited={onGetUnlimited}
+        className="mt-cp-5"
+      />
     </section>
   );
 }
