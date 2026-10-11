@@ -3065,34 +3065,28 @@
   width: 100%;
 }
 
-/* The card is zoomed past fit-to-width and cropped to the top: the box is the
-   cell's width and shows the top `--template-thumb-reveal` of the scaled card,
-   the zoomed card overflows its right and bottom edges, and a mask fades the
-   bottom out so the crop reads as "there's more below" instead of a hard cut.
-   The mask (not a solid gradient overlay) works whatever the template's card
-   colour is.
-
-   A fraction of the card rather than a fixed pixel height: the card is scaled
-   to the cell, so a phone drawer's ~157px cell zooms it a fifth larger than
-   the desktop panel's ~136px one, and the same 84px box then showed a fifth
-   LESS of it. The thumbnails came out visibly squatter on a phone than on a
-   desktop, cut mid-ingredient. This way the box grows with the cell and every
-   theme shows the same slice of the same card at either size — ~84px in the
-   desktop panel, which is where the number came from: a row of these sits
-   among 30px controls, and any taller made them the tallest thing in the
-   workspace by some way. */
+/* The whole card, fit to the cell's width: the box is exactly the scaled
+   card, so a theme's art shows wherever on the card it sits. It used to be
+   zoomed and cropped to the top half under a fade, which hid every theme
+   whose art is at the foot (see `TemplateThumbnail`). About 91px tall in the
+   desktop panel, near the 84px the crop was. */
 .recipe-template-option__scaler {
-  --template-thumb-reveal: 0.48;
   display: block;
   width: 100%;
-  /* Beats `.recipe-page-scaler`'s full-card height. */
-  height: calc(var(--page-h) * var(--page-scale) * var(--template-thumb-reveal));
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  -webkit-mask-image: linear-gradient(to bottom, #000 74%, transparent);
-  mask-image: linear-gradient(to bottom, #000 74%, transparent);
+}
+
+/* A whole card at tile width draws its type at about a fifth of print size,
+   too small to read. So the WORDS are enlarged inside the card while the card,
+   its frame and its art stay at true scale: `zoom` on the header and the two
+   columns reflows them at the larger size within the same card. The sample
+   recipe is short enough to fit that way (`THUMB_RECIPE`). */
+.recipe-template-option__scaler .recipe-card__header,
+.recipe-template-option__scaler .recipe-card__cols {
+  zoom: 1.4;
 }
 
 /* The shared Pro indicator (components/ProBadge.tsx). The base
