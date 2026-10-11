@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { AnchoredMenu } from "@/components/AnchoredMenu";
-import { CrownIcon, ICON_SIZE } from "@/components/icons";
+import { CrownIcon, GaugeIcon, ICON_SIZE } from "@/components/icons";
 import { importAllowanceLine } from "@/lib/freeImports";
 import { useImportUsage } from "@/lib/useImportUsage";
 
@@ -10,8 +10,8 @@ import { useImportUsage } from "@/lib/useImportUsage";
 // `data-rp-avatar` size: the same square, corner and hairline outline), so the
 // two read as a pair of controls.
 const BUTTON_CLASS = {
-  header: "icon-button mx-px sm:-mx-0.5",
-  topbar: "icon-button",
+  header: "icon-button text-ink mx-px sm:-mx-0.5",
+  topbar: "icon-button text-ink",
   inline: "btn-ghost btn-compact w-[30px] px-0",
 } as const;
 const AVATAR_SIZE = { header: "header", topbar: "compact", inline: undefined } as const;
@@ -69,7 +69,9 @@ export function ImportUsageMenu({
         aria-label={`Free imports: ${line.lead}`}
         onClick={() => setOpen((value) => !value)}
       >
-        <UsageRing fraction={fraction} size={18} />
+        {/* Nothing used yet: an empty ring reads as a blank circle, so a gauge
+            says "usage" until there is some to draw (Amelia, 2026-10-11). */}
+        {fraction > 0 ? <UsageRing fraction={fraction} size={18} /> : <GaugeIcon size={ICON_SIZE.md} />}
       </button>
       {open && (
         <AnchoredMenu anchorRef={anchorRef} onClose={() => setOpen(false)} label="Free imports" align={align}>
