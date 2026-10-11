@@ -6,15 +6,13 @@ import { CrownIcon, ICON_SIZE } from "@/components/icons";
 import { importAllowanceLine } from "@/lib/freeImports";
 import { useImportUsage } from "@/lib/useImportUsage";
 
-// Beside the avatar the ring takes the avatar's own box (`.icon-button` at the
-// `data-rp-avatar` size: the same square, corner and hairline border), so the
-// two read as a pair of controls.
+// Beside the avatar the ring's button is a square the avatar's size, with no
+// outline or fill of its own: only a hover shows it can be pressed.
 const BUTTON_CLASS = {
-  header: "icon-button mx-1 sm:mx-0",
-  topbar: "icon-button",
+  header: "btn-ghost btn-header w-8 px-0 mx-1 sm:mx-0",
+  topbar: "btn-ghost btn-compact w-[30px] px-0",
   inline: "btn-ghost btn-compact w-[30px] px-0",
 } as const;
-const AVATAR_SIZE = { header: "header", topbar: "compact", inline: undefined } as const;
 
 /**
  * The free-import count as a button: a ring that fills as imports are used,
@@ -38,8 +36,8 @@ export function ImportUsageMenu({
   /** Which edge of the ring the menu lines up with. */
   align?: "start" | "end";
   /**
-   * Where it sits. Beside the account button the ring sits in a bordered box
-   * exactly the avatar's size, so the two read as a pair (Amelia, 2026-10-11):
+   * Where it sits. Beside the account button the ring's button is a square
+   * exactly the avatar's size, without an outline (Amelia, 2026-10-11):
    * - `header`: `SiteHeader`, 32px, and 12px clear of its neighbours on each
    *   side (the bar's own gap plus this margin).
    * - `topbar`: the print page's phone bar, 30px, at that bar's own gap.
@@ -62,7 +60,6 @@ export function ImportUsageMenu({
         // An icon button with no fill of its own (Amelia, 2026-10-10): the
         // ring is the control, and only a hover shows it can be pressed.
         className={BUTTON_CLASS[placement]}
-        data-rp-avatar={AVATAR_SIZE[placement]}
         aria-haspopup="menu"
         aria-expanded={open}
         // The ring is a picture of the count; the name says it in words.
