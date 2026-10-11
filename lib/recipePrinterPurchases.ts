@@ -396,11 +396,18 @@ export function activeProLockReasons(
  * Returns null — without configuring, and so without creating anything — when
  * this browser has never purchased, claimed, or signed in. Callers treat null
  * exactly as "owns nothing", which is what it means.
+ *
+ * A signed-in account is always asked about, whatever this browser remembers:
+ * Pro can reach an account without a checkout ever happening here (granted by
+ * hand in RevenueCat, or bought on another device), and skipping the read left
+ * that account on Free through every reload. Only an anonymous id can be
+ * answered without asking.
  */
 export async function loadRecipePrinterCustomerInfo(
   userId: string,
 ): Promise<CustomerInfo | null> {
-  if (!isKnownRecipePrinterCustomer()) return null;
+  const signedOut = userId.startsWith(REVENUECAT_ANONYMOUS_PREFIX);
+  if (signedOut && !isKnownRecipePrinterCustomer()) return null;
   return getPurchases(userId).then((purchases) => purchases.getCustomerInfo());
 }
 
