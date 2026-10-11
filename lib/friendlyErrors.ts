@@ -169,15 +169,18 @@ export function friendlyPhotoUploadError(error: unknown): string {
  * something different here (the SDK has no usable key or offering) than it does
  * on a Firestore call, which is why that phrase is caught by its own branch
  * above and answered differently.
+ *
+ * Worded for any purchase: this answers a failed Pro or cookbook checkout too,
+ * and "we couldn't unlock that template" was what a Pro buyer was told.
  */
 export function friendlyPurchaseSetupError(error: unknown): string {
   const { message } = errorParts(error);
 
   if (/purchase option|package|offering|revenuecat/i.test(message)) {
-    return "This template isn't ready to buy yet. Please try another template or check back soon.";
+    return "This isn't ready to buy yet. Please check back soon.";
   }
   if (/temporarily unavailable|api key|configured/i.test(message)) {
-    return "Premium templates are temporarily unavailable. Please try again later.";
+    return "Purchases are temporarily unavailable. Please try again later.";
   }
   if (/network|timeout|failed to fetch/i.test(message)) {
     return "We couldn't start the purchase. Check your connection and try again.";
@@ -186,7 +189,7 @@ export function friendlyPurchaseSetupError(error: unknown): string {
     return "Purchase cancelled. Your recipe cards are still here when you're ready.";
   }
 
-  return "We couldn't unlock that template. Please try again.";
+  return "We couldn't finish that purchase. Please try again.";
 }
 
 /**
