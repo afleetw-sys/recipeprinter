@@ -885,6 +885,7 @@
 
 .recipe-page-rail__item:hover {
   border-color: var(--cp-line-strong);
+  transform: translateY(-1px);
 }
 
 /* Marked by its edge, not by its fill. Every other single-select control in
@@ -3045,6 +3046,7 @@
 
 .recipe-template-option:hover {
   border-color: var(--cp-line-strong);
+  transform: translateY(-1px);
 }
 
 .recipe-template-option.is-active {

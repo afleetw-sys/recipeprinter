@@ -1164,10 +1164,10 @@
     pointer-events: none;
   }
 
-  /* Hover changes a button's colour and never its position (Amelia,
-     2026-10-11): a lift moved one half of a split button away from the other,
-     and a control that shifts under the pointer reads as unsteady. Each variant
-     states its own hover colour below. */
+  /* Hover changes a BUTTON's colour and never its position (Amelia,
+     2026-10-11): a lift moved one half of a split button away from the other.
+     Each variant states its own hover colour below. Tiles are different: theme
+     and size tiles and rail items keep their 1px lift. */
   .btn:disabled {
     @apply opacity-50;
     cursor: default;
