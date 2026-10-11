@@ -12,14 +12,13 @@ import { useImportUsage } from "@/lib/useImportUsage";
 const BUTTON_CLASS = {
   header: "icon-button bg-transparent text-ink mx-px sm:-mx-0.5",
   topbar: "icon-button bg-transparent text-ink",
-  inline: "btn-ghost btn-compact w-[30px] px-0",
 } as const;
-const AVATAR_SIZE = { header: "header", topbar: "compact", inline: undefined } as const;
+const AVATAR_SIZE = { header: "header", topbar: "compact" } as const;
 
 /**
  * The free-import count as a button: a ring that fills as imports are used,
- * in the header to the left of the account (the homepage and the print page
- * alike) and by the Add recipes dialog's title. Pressing it opens a small menu
+ * in the header to the left of the account, on the homepage and the print page
+ * alike, and nowhere else (Amelia, 2026-10-11). Pressing it opens a small menu
  * with the facts (how many are used, when they reset) and Upgrade. It is the
  * only place the count shows: the banner under the import boxes is gone
  * (Amelia, 2026-10-11).
@@ -31,7 +30,7 @@ export function ImportUsageMenu({
   enabled = true,
   onUpgrade,
   align = "end",
-  placement = "inline",
+  placement,
 }: {
   enabled?: boolean;
   onUpgrade: () => void;
@@ -43,9 +42,8 @@ export function ImportUsageMenu({
    * - `header`: `SiteHeader`, 32px, and 10px clear of its neighbours on each
    *   side (the bar's own gap plus this margin).
    * - `topbar`: the print page's phone bar, 30px, at that bar's own gap.
-   * - `inline`: no box, by a dialog's title.
    */
-  placement?: "header" | "topbar" | "inline";
+  placement: "header" | "topbar";
 }) {
   const { hidden, usage } = useImportUsage(enabled);
   const [open, setOpen] = useState(false);

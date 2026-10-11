@@ -4704,8 +4704,8 @@ export default function PrintPage() {
    * actually locked.
    */
   /**
-   * Upgrade pressed from the free-import count (the ring's menu, in the
-   * header and by the Add recipes dialog's title). It is there in every state, so only someone who is
+   * Upgrade pressed from the free-import count (the ring's menu in the
+   * header). It is there in every state, so only someone who is
    * actually out of imports gets the "you've used your 10" wording; anyone
    * else pressed Upgrade and gets the plain Pro dialog.
    */
@@ -6945,9 +6945,6 @@ export default function PrintPage() {
           openProUpgradeDialog("add_more_recipes");
         }}
         chapterTarget={addChapterTarget}
-        // The card allowance isn't a cookbook's, and Pro has none.
-        allowance={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
-        onGetUnlimited={openImportUpgrade}
       />
       <FeedbackDialog
         open={showFeedbackDialog}
