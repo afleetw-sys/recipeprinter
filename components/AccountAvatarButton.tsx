@@ -176,7 +176,7 @@ export default function AccountAvatarButton({
       {/* One control, signed in or not — see the same button in
           `AccountControl`, which draws it while this chunk is still loading.
           Signed in it holds your initials on the accent; signed out, a person
-          on the neutral fill. Same box either way, so nothing resizes when auth
+          in a hairline outline (Amelia, 2026-10-11). Same box either way, so nothing resizes when auth
           resolves and nothing has to guess what shape to hold in the meantime. */}
       <IconButton
         data-rp-avatar={compact === "header" ? "header" : compact ? "compact" : "full"}
@@ -187,7 +187,7 @@ export default function AccountAvatarButton({
                exists precisely so this pairing is not re-decided by hand at
                each call site; it resolves to white here, 5.08:1. */
             ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-on-accent)] font-bold tracking-tight"
-            : "icon-button--filled"
+            : "text-ink"
         }
         aria-label={user ? "Open account menu" : "Sign in to RecipePrinter"}
         title={user ? "Open account menu" : "Sign in to RecipePrinter"}
