@@ -11,7 +11,7 @@ const FORMATS: readonly ExportOutput[] = ["pdf", "png", "jpg"];
 const FORMAT_COLOR: Record<ExportOutput, string> = {
   pdf: "var(--cp-offer-red)",
   png: "var(--cp-blue)",
-  jpg: "var(--cp-accent)",
+  jpg: "var(--cp-accent-warm)",
 };
 
 /**
