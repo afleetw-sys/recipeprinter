@@ -17,10 +17,9 @@ import {
 import { PRO_BENEFITS } from "@/lib/proUpgradeCopy";
 import {
   PRO_PRICE_FALLBACKS,
-  proAnnualSavingsPercent,
   type ProBillingCycle,
 } from "@/lib/proProduct";
-import { useUsdPriceLabel } from "@/lib/visitorCurrency";
+import { useVisitorPrices } from "@/lib/visitorCurrency";
 
 const PRO_CYCLE_LABEL: Record<ProBillingCycle, string> = {
   annual: "Annual",
@@ -169,8 +168,7 @@ export function ProUpgradeDialog({
   }
 
   const closeDisabled = busy || formBusy;
-  const savingsPercent = proAnnualSavingsPercent();
-  const usd = useUsdPriceLabel();
+  const { label: price, annualSavingsPercent: savingsPercent } = useVisitorPrices();
 
   return (
     <Dialog
@@ -259,7 +257,7 @@ export function ProUpgradeDialog({
                     <span className="pro-plan-card__name">{PRO_CYCLE_LABEL[cycle]}</span>
                   </div>
                   <p className="pro-plan-card__price">
-                    {usd(PRO_PRICE_FALLBACKS[cycle])}
+                    {price(PRO_PRICE_FALLBACKS[cycle])}
                     {cycle === "annual" && (
                       <span className="pro-plan-card__note"> · Save {savingsPercent}%</span>
                     )}
@@ -289,7 +287,7 @@ export function ProUpgradeDialog({
             </p>
             {pendingCycle && (
               <p className="mt-2 text-cp-label text-ink-soft font-semibold">
-                {PRO_CYCLE_LABEL[pendingCycle]} · {usd(PRO_PRICE_FALLBACKS[pendingCycle])}
+                {PRO_CYCLE_LABEL[pendingCycle]} · {price(PRO_PRICE_FALLBACKS[pendingCycle])}
               </p>
             )}
           </div>

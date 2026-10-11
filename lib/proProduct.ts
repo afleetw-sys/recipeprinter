@@ -55,9 +55,14 @@ const PRO_MONTHLY_PRICE_USD = 4.99;
 const PRO_ANNUAL_PRICE_USD = 39.99;
 
 /** What the annual plan saves versus paying monthly for a year, as a whole
- *  percent, rounded down so the claim is never optimistic. */
-export function proAnnualSavingsPercent(): number {
-  const yearlyAtMonthlyRate = PRO_MONTHLY_PRICE_USD * 12;
-  const savings = 1 - PRO_ANNUAL_PRICE_USD / yearlyAtMonthlyRate;
+ *  percent, rounded down so the claim is never optimistic. Takes the two
+ *  prices (any unit, same currency) so a visitor quoted in another currency
+ *  gets the saving their own prices give; defaults to the dollar prices. */
+export function proAnnualSavingsPercent(
+  monthly: number = PRO_MONTHLY_PRICE_USD,
+  annual: number = PRO_ANNUAL_PRICE_USD,
+): number {
+  const yearlyAtMonthlyRate = monthly * 12;
+  const savings = 1 - annual / yearlyAtMonthlyRate;
   return Math.floor(savings * 100);
 }

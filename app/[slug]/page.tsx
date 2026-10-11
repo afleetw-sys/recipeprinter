@@ -24,6 +24,7 @@ import {
 } from "@/components/seo/LandingVisuals";
 import { FaqCards } from "@/components/seo/FaqCards";
 import { PickerRow } from "@/components/seo/PickerRow";
+import { PriceText } from "@/components/PriceText";
 import {
   SEO_LANDING_PAGE_MAP,
   SEO_LANDING_PAGES,
@@ -377,9 +378,13 @@ export default function SeoLandingPage({ params }: PageProps) {
               answer:
                 item.answerEmphasis && item.answer.includes(item.answerEmphasis) ? (
                   <>
-                    {item.answer.slice(0, item.answer.indexOf(item.answerEmphasis))}
-                    <strong>{item.answerEmphasis}</strong>
-                    {item.answer.slice(item.answer.indexOf(item.answerEmphasis) + item.answerEmphasis.length)}
+                    <PriceText>{item.answer.slice(0, item.answer.indexOf(item.answerEmphasis))}</PriceText>
+                    <strong>
+                      <PriceText>{item.answerEmphasis}</PriceText>
+                    </strong>
+                    <PriceText>
+                      {item.answer.slice(item.answer.indexOf(item.answerEmphasis) + item.answerEmphasis.length)}
+                    </PriceText>
                   </>
                 ) : (
                   withLinks(item.answer, [PRO_LINK])

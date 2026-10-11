@@ -14,6 +14,7 @@ import {
   authenticatedProManagementUrl,
   loadRecipePrinterCustomerInfo,
   proManagementUrl,
+  proPaidPrice,
   proSubscriptionDetails,
 } from "@/lib/recipePrinterPurchases";
 import { useProPurchase } from "@/lib/useProPurchase";
@@ -23,10 +24,9 @@ import {
   PRO_ANNUAL_PRICE_FALLBACK,
   PRO_MONTHLY_PRICE_FALLBACK,
   PRO_PRICE_FALLBACKS,
-  proAnnualSavingsPercent,
   type ProBillingCycle,
 } from "@/lib/proProduct";
-import { useUsdPriceLabel } from "@/lib/visitorCurrency";
+import { useVisitorPrices } from "@/lib/visitorCurrency";
 
 
 function formatDate(ms: number | null): string | null {
@@ -62,7 +62,7 @@ export function AccountProStatus({ user }: { user: User }) {
       anything — `ProUpgradeDialog` still has its own cycle picker once
       you're actually choosing. */
   const [billingCycle, setBillingCycle] = useState<ProBillingCycle>("monthly");
-  const usd = useUsdPriceLabel();
+  const { label: price, format: formatPaid, annualSavingsPercent, currency } = useVisitorPrices();
 
   const refreshProCustomerInfo = useCallback(async () => {
     const [liveResult, mirrorResult] = await Promise.allSettled([
@@ -115,6 +115,7 @@ export function AccountProStatus({ user }: { user: User }) {
     [proCustomerInfo, proInfoStatus, proInfoLastVerifiedAtMs, proMirroredEntitlements, proMirrorSyncedAtMs],
   );
   const proDetails = proSubscriptionDetails(effectiveProInfo.customerInfo);
+  const paidPrice = proPaidPrice(effectiveProInfo.customerInfo);
   const proManagementLink = proManagementUrl(effectiveProInfo.customerInfo);
   const [openingPortal, setOpeningPortal] = useState(false);
   /** Resubscribing from Pro with no subscription behind it: pick a cycle. */
@@ -243,7 +244,14 @@ export function AccountProStatus({ user }: { user: User }) {
                   <h3 className="text-cp-body font-extrabold text-ink">Pro</h3>
                 </div>
                 <p className="mt-1 text-cp-body font-bold text-ink-soft">
-                  {proDetails.cycle ? usd(PRO_PRICE_FALLBACKS[proDetails.cycle]) : "Your plan"}
+                  {/* What they pay, not today's price list. When RevenueCat
+                      does not say, the dollar price is only a safe guess for
+                      someone still quoted in dollars. */}
+                  {paidPrice && proDetails.cycle
+                    ? `${formatPaid(paidPrice.amount, paidPrice.currency)}${proDetails.cycle === "annual" ? "/yr" : "/mo"}`
+                    : proDetails.cycle && currency === "USD"
+                      ? price(PRO_PRICE_FALLBACKS[proDetails.cycle])
+                      : "Your plan"}
                 </p>
                 {proDetails.willRenew ? (
                   <p className="mt-1 text-cp-small font-bold text-ink">
@@ -377,11 +385,11 @@ export function AccountProStatus({ user }: { user: User }) {
                 </div>
                 {billingCycle === "annual" ? (
                   <p className="mt-1 text-cp-body font-bold text-ink-soft">
-                    {usd(PRO_ANNUAL_PRICE_FALLBACK)}{" "}
-                    <span className="pro-plan-card__note">· Save {proAnnualSavingsPercent()}%</span>
+                    {price(PRO_ANNUAL_PRICE_FALLBACK)}{" "}
+                    <span className="pro-plan-card__note">· Save {annualSavingsPercent}%</span>
                   </p>
                 ) : (
-                  <p className="mt-1 text-cp-body font-bold text-ink-soft">{usd(PRO_MONTHLY_PRICE_FALLBACK)}</p>
+                  <p className="mt-1 text-cp-body font-bold text-ink-soft">{price(PRO_MONTHLY_PRICE_FALLBACK)}</p>
                 )}
                 <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
                   <li className="flex items-start gap-cp-2 text-cp-small font-semibold text-ink">

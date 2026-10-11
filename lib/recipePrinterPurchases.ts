@@ -29,6 +29,8 @@ import {
 import { isProOnlyCardSize } from "@/lib/printTemplates";
 import type { PrintCardSize, RecipePrintTemplate } from "@/types/recipe";
 import { revenueCatIdentityTransition } from "@/lib/purchaseAccess";
+import { localCurrenciesLive, type PricedProduct, type PriceSheet } from "@/lib/priceCurrency";
+import { setLivePriceSheet, visitorCurrency } from "@/lib/visitorCurrency";
 
 type PurchasesModule = typeof import("@revenuecat/purchases-js");
 
@@ -408,7 +410,65 @@ export async function loadRecipePrinterCustomerInfo(
 ): Promise<CustomerInfo | null> {
   const signedOut = userId.startsWith(REVENUECAT_ANONYMOUS_PREFIX);
   if (signedOut && !isKnownRecipePrinterCustomer()) return null;
-  return getPurchases(userId).then((purchases) => purchases.getCustomerInfo());
+  const purchases = await getPurchases(userId);
+  // Prices ride along with the entitlement read: every surface that learns who
+  // this customer is (account page, /print, the homepage banner) then quotes
+  // RevenueCat's real prices without each having to remember to ask.
+  void loadRecipePrinterPrices(purchases);
+  return purchases.getCustomerInfo();
+}
+
+let pricesRequested = false;
+
+/**
+ * RevenueCat's own prices for this customer, in the currency checkout will
+ * charge, published to every price on screen (`setLivePriceSheet`).
+ *
+ * Takes an already-configured SDK on purpose, so it can never be the reason a
+ * customer record exists. Asks for the same currency `offeringFor` asks for at
+ * checkout, and reports the currency RevenueCat answered in rather than the
+ * one requested: if a currency is missing from the dashboard, the page shows
+ * the dollars the customer will really be charged. Once per visit, and a
+ * failure just leaves the built-in table showing.
+ */
+async function loadRecipePrinterPrices(purchases: Purchases): Promise<void> {
+  if (!localCurrenciesLive() || pricesRequested) return;
+  pricesRequested = true;
+  try {
+    const { all } = await purchases.getOfferings({ currency: visitorCurrency() });
+    const price = (offeringId: string, packageId: string, productId: string) =>
+      findPackage(all[offeringId] ?? null, packageId, productId)?.webBillingProduct.price;
+    const prices: Record<PricedProduct, ReturnType<typeof price>> = {
+      pro_monthly: price(RECIPEPRINTER_PRO_OFFERING_ID, proPackageId("monthly"), proProductId("monthly")),
+      pro_annual: price(RECIPEPRINTER_PRO_OFFERING_ID, proPackageId("annual"), proProductId("annual")),
+      cookbook: price(
+        RECIPEPRINTER_COOKBOOK_OFFERING_ID,
+        RECIPEPRINTER_COOKBOOK_PACKAGE_ID,
+        RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
+      ),
+      cookbook_pro_first: price(
+        RECIPEPRINTER_COOKBOOK_OFFERING_ID,
+        RECIPEPRINTER_COOKBOOK_DISCOUNT_PACKAGE_ID,
+        RECIPEPRINTER_COOKBOOK_DISCOUNT_PRODUCT_ID,
+      ),
+    };
+    const found = Object.values(prices);
+    const currency = found[0]?.currency;
+    // All four or nothing, and all in one currency: a sheet that mixed
+    // RevenueCat's numbers with the table's could quote a saving or a discount
+    // that neither side actually offers.
+    if (!currency || found.some((entry) => entry?.currency !== currency)) return;
+    const sheet: PriceSheet = {
+      currency,
+      amounts: Object.fromEntries(
+        Object.entries(prices).map(([product, entry]) => [product, Math.round(entry!.amountMicros / 10_000)]),
+      ) as Record<PricedProduct, number>,
+    };
+    setLivePriceSheet(sheet);
+  } catch (error) {
+    pricesRequested = false;
+    console.warn("RecipePrinter: could not load live prices", error);
+  }
 }
 
 /**
@@ -472,9 +532,18 @@ export async function syncRecipePrinterCustomerAttributes({
   });
 }
 
-/** The named offering, falling back to whatever RevenueCat marks current. */
+/**
+ * The named offering, falling back to whatever RevenueCat marks current.
+ *
+ * The currency is always named, dollars included, and dollars are what it is
+ * until local currencies are switched on. Left to itself RevenueCat geolocates
+ * the customer and charges in their currency the moment a price for it exists
+ * in the dashboard, whatever the page quoted, and its idea of where someone is
+ * can differ from the country cookie the displayed price came from. Naming it
+ * is what makes the checkout charge the currency the paywall showed.
+ */
 async function offeringFor(purchases: Purchases, offeringId: string): Promise<Offering | null> {
-  const offerings = await purchases.getOfferings();
+  const offerings = await purchases.getOfferings({ currency: visitorCurrency() });
   return offerings.all[offeringId] ?? offerings.current ?? null;
 }
 
@@ -755,6 +824,21 @@ export function proSubscriptionDetails(customerInfo: CustomerInfo | null): ProSu
     willRenew: entitlement.willRenew,
     expiresAtMs: entitlement.expirationDate ? entitlement.expirationDate.getTime() : null,
   };
+}
+
+/**
+ * What this subscriber actually pays for Pro, in minor units, or null when
+ * RevenueCat does not say (a promotional grant, or the Firestore mirror
+ * standing in for a failed live read). Their plan is quoted from this and
+ * never from today's price list: someone who subscribed in dollars keeps
+ * paying dollars wherever they are now.
+ */
+export function proPaidPrice(
+  customerInfo: CustomerInfo | null,
+): { amount: number; currency: string } | null {
+  const productId = customerInfo?.entitlements.all[RECIPEPRINTER_PRO_ENTITLEMENT_ID]?.productIdentifier;
+  const price = productId ? customerInfo?.subscriptionsByProductIdentifier?.[productId]?.price : null;
+  return price ? { amount: Math.round(price.amountMicros / 10_000), currency: price.currency } : null;
 }
 
 function isPurchasesError(error: unknown): error is PurchasesError {

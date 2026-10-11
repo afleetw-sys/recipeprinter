@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { LANDING_IMAGE_QUALITY } from "@/lib/seoAssets";
+import { PriceText } from "@/components/PriceText";
 import { FEATURE_IMAGES, type FeatureCard } from "@/lib/seoAssets";
 
 // Declared in lib/seoAssets; re-exported because callers look for it here.
@@ -70,7 +71,9 @@ export function FeatureCards({
               <h3 className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">
                 {item.heading}
               </h3>
-              <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">{item.body}</p>
+              <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
+                <PriceText>{item.body}</PriceText>
+              </p>
             </div>
           </li>
         );
