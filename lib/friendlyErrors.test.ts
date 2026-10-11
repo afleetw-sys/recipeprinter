@@ -27,7 +27,7 @@ describe("user-facing errors", () => {
 
   it("does not expose raw backend messages for unknown failures", () => {
     expect(friendlyPurchaseSetupError(new Error("internal stack trace"))).toBe(
-      "We couldn't unlock that template. Please try again.",
+      "We couldn't finish that purchase. Please try again.",
     );
     expect(friendlyPhotoUploadError(new Error("internal stack trace"))).toBe(
       "We couldn't add that photo. Please try again.",

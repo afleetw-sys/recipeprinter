@@ -4,6 +4,7 @@ import {
   activeProLockReasons,
   authenticatedProManagementUrl,
   canUseCardSize,
+  captureImportStartsFresh,
   computeProLocks,
   hasMultiRecipeEntitlement,
   hasProEntitlement,
@@ -445,5 +446,51 @@ describe("authenticatedProManagementUrl", () => {
     ["the network failing", new Error("offline")],
   ])("%s is unknown, never 'no subscription'", async (_, response) => {
     expect(await answer(response)).toEqual({ kind: "unknown" });
+  });
+});
+
+/**
+ * A Pro member who bought "print multiple recipes at once" kept importing from
+ * a landing page and found one recipe on /print every time: each import wiped
+ * the one before (recording 01a12c3d, 2026-10-11). The import arriving from a
+ * landing page is replayed the moment the queue loads, which is before the
+ * purchase SDK has answered, so the page still read the member as free.
+ */
+describe("captureImportStartsFresh", () => {
+  const classic = {
+    cookbookMode: false,
+    template: "classic" as const,
+    selectedPremiumTemplate: null,
+    cardSize: "letter" as const,
+  };
+  const pro = customerWith({ pro: { productIdentifier: "pro_monthly" } });
+
+  test("only an account that can hold one recipe has its recipe replaced, whatever has loaded so far", () => {
+    const withOneRecipe = { ...classic, recipeCount: 1 };
+    // Free: the new import replaces the one before.
+    expect(
+      captureImportStartsFresh({ ...withOneRecipe, customerInfo: NO_ENTITLEMENTS, entitlementLoaded: true, rememberedPro: false }),
+    ).toBe(true);
+    // Pro, known: kept.
+    expect(
+      captureImportStartsFresh({ ...withOneRecipe, customerInfo: pro, entitlementLoaded: true, rememberedPro: true }),
+    ).toBe(false);
+    // Pro, but the purchase SDK hasn't answered yet: still kept.
+    for (const customerInfo of [null, NO_ENTITLEMENTS]) {
+      expect(
+        captureImportStartsFresh({ ...withOneRecipe, customerInfo, entitlementLoaded: false, rememberedPro: true }),
+      ).toBe(false);
+    }
+    // A remembered Pro the SDK has since said is over: replaced again.
+    expect(
+      captureImportStartsFresh({ ...withOneRecipe, customerInfo: NO_ENTITLEMENTS, entitlementLoaded: true, rememberedPro: true }),
+    ).toBe(true);
+    // Nothing on the page, or a cookbook: nothing to replace.
+    expect(
+      captureImportStartsFresh({ ...classic, recipeCount: 0, customerInfo: NO_ENTITLEMENTS, entitlementLoaded: true, rememberedPro: false }),
+    ).toBe(false);
+    expect(
+      captureImportStartsFresh({ ...withOneRecipe, cookbookMode: true, customerInfo: NO_ENTITLEMENTS, entitlementLoaded: true, rememberedPro: false }),
+    ).toBe(false);
   });
 });
