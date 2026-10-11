@@ -72,10 +72,7 @@ export function FrontDoorUpgradeButton() {
   return (
     <button
       type="button"
-      // The print page's bar is the workspace's near-white, and this button
-      // has no fill of its own. On the cream page it takes that same ground,
-      // so it is the same button in both places (Amelia, 2026-10-11).
-      className="btn btn-premium btn-header [&:not(:hover)]:bg-chrome"
+      className="btn btn-premium btn-header"
       onClick={() => requestUpgrade("topbar_button")}
     >
       <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />

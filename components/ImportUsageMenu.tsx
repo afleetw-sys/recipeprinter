@@ -7,11 +7,11 @@ import { importAllowanceLine } from "@/lib/freeImports";
 import { useImportUsage } from "@/lib/useImportUsage";
 
 // Beside the avatar the ring takes the avatar's own box (`.icon-button` at the
-// `data-rp-avatar` size: the same square, corner and hairline outline), so the
+// `data-rp-avatar` size: the same square, corner and hairline outline, with no fill), so the
 // two read as a pair of controls.
 const BUTTON_CLASS = {
-  header: "icon-button text-ink mx-px sm:-mx-0.5",
-  topbar: "icon-button text-ink",
+  header: "icon-button bg-transparent text-ink mx-px sm:-mx-0.5",
+  topbar: "icon-button bg-transparent text-ink",
   inline: "btn-ghost btn-compact w-[30px] px-0",
 } as const;
 const AVATAR_SIZE = { header: "header", topbar: "compact", inline: undefined } as const;
