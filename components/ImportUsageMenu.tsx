@@ -10,7 +10,7 @@ import { useImportUsage } from "@/lib/useImportUsage";
 // `data-rp-avatar` size: the same square, corner and hairline outline), so the
 // two read as a pair of controls.
 const BUTTON_CLASS = {
-  header: "icon-button mx-1 sm:mx-0",
+  header: "icon-button mx-px sm:-mx-0.5",
   topbar: "icon-button",
   inline: "btn-ghost btn-compact w-[30px] px-0",
 } as const;
@@ -40,7 +40,7 @@ export function ImportUsageMenu({
   /**
    * Where it sits. Beside the account button the ring sits in an outlined box
    * exactly the avatar's size, so the two read as a pair (Amelia, 2026-10-11):
-   * - `header`: `SiteHeader`, 32px, and 12px clear of its neighbours on each
+   * - `header`: `SiteHeader`, 32px, and 10px clear of its neighbours on each
    *   side (the bar's own gap plus this margin).
    * - `topbar`: the print page's phone bar, 30px, at that bar's own gap.
    * - `inline`: no box, by a dialog's title.
