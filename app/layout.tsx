@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { NoFocusZoom } from "@/components/NoFocusZoom";
+import { TranslatedPageGuard } from "@/components/TranslatedPageGuard";
 import { KeyboardInsetWatcher } from "@/components/KeyboardInsetWatcher";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { ActionTitles } from "@/components/ActionTitles";
@@ -259,6 +260,7 @@ export default function RootLayout({
       className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${berkshireSwash.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${karla.variable}`}
     >
       <body>
+        <TranslatedPageGuard />
         <KeyboardInsetWatcher />
         <NoFocusZoom />
         <AnalyticsProvider />
