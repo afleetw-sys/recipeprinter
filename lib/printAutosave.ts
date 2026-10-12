@@ -65,3 +65,23 @@ export function shouldFlushOnHide(state: FlushOnHideState, fingerprint: () => st
   if (state.lastSavedFingerprint === LOADED_BASELINE) return false;
   return fingerprint() !== state.lastSavedFingerprint;
 }
+
+/**
+ * Whether leaving through the logo should push a save to the account.
+ *
+ * It used to save unconditionally, so opening a book and going home again
+ * wrote it back unchanged: a write per visit, and a bumped revision that sent
+ * any other tab with the book open into a "newer version" conflict on its next
+ * save. Unlike a closing tab (`shouldFlushOnHide`), this page keeps running
+ * after a client navigation, so a save already under way still asks for one
+ * more: the queue then carries the newest snapshot behind it, which is how an
+ * edit made during that save reaches the account.
+ */
+export function shouldSaveOnLeave(
+  state: Pick<FlushOnHideState, "saveInFlight" | "saveQueued" | "lastSavedFingerprint">,
+  fingerprint: () => string,
+): boolean {
+  if (state.saveInFlight || state.saveQueued) return true;
+  if (state.lastSavedFingerprint === LOADED_BASELINE) return false;
+  return fingerprint() !== state.lastSavedFingerprint;
+}

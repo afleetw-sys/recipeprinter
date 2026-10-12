@@ -80,7 +80,9 @@ import {
   takeProUpgradeIntent,
 } from "@/lib/proUpgradeIntent";
 import type { ProBillingCycle } from "@/lib/proProduct";
-import { loadLocalProject } from "@/lib/localProjects";
+import { loadLocalProject, workingCopyAsProject } from "@/lib/localProjects";
+import { newerLocalCopy } from "@/lib/unsavedLocalCopy";
+import { forgetWorkingBase, markWorkingCopyEdited, rememberWorkingBase } from "@/lib/workingBase";
 import { printDocumentTitle } from "@/lib/printDocumentTitle";
 import { currentBrowserApp, printIsNative } from "@/lib/browserApp";
 import { runPrintAttempt, type PrintAttempt } from "@/lib/printAttempt";
@@ -218,7 +220,7 @@ import { markPostPrintDialogShown, shouldShowPostPrintDialog } from "@/lib/postP
 import { useToast } from "@/lib/useToast";
 import { printProjectFingerprint, type PendingSave } from "@/lib/printSave";
 import { writeProject as runSaveWrite } from "@/lib/printSaveWrite";
-import { autosaveVerdict, LOADED_BASELINE, shouldFlushOnHide } from "@/lib/printAutosave";
+import { autosaveVerdict, LOADED_BASELINE, shouldFlushOnHide, shouldSaveOnLeave } from "@/lib/printAutosave";
 import { readRailWidths, writeRailWidths, type RailWidthMode, type RailWidths } from "@/lib/railWidth";
 import { RailResizer } from "@/components/print/RailResizer";
 import { bookRecipeImage } from "@/lib/bookPhotos";
@@ -2786,7 +2788,16 @@ export default function PrintPage() {
 
     const printable = queue.items.some((item) => item.status === "ready" && item.recipe);
     goHome();
-    if (printable && autosaveEnabledForCurrentMode) void handleSaveProject();
+    if (!printable || !autosaveEnabledForCurrentMode) return;
+    const worthSaving = shouldSaveOnLeave(
+      {
+        saveInFlight: saveInFlightRef.current,
+        saveQueued: queuedSaveRef.current !== null,
+        lastSavedFingerprint: lastSavedFingerprintRef.current,
+      },
+      () => printProjectFingerprint(items, projectMeta.meta, currentLayoutSettings()),
+    );
+    if (worthSaving) void handleSaveProject();
   }
 
   // Best-effort push to Firestore when the tab is being hidden/closed, so a
@@ -2851,6 +2862,7 @@ export default function PrintPage() {
       // whose result is discarded a line later.
       const remote = await loadPrintProjectHead(cookPilotUser.uid, conflictProjectId);
       projectRevisionRef.current = Number(remote?.revision ?? 0);
+      rememberWorkingBase(conflictProjectId, projectRevisionRef.current);
       lastAttemptedFingerprintRef.current = null;
       // A conflict raised by ADOPTION leaves no save identity to advance — not
       // having one is what sent the save down that path — so the retry goes
@@ -3832,6 +3844,13 @@ export default function PrintPage() {
      * shelf exists.
      */
     const shelved = loadLocalProject(accountProjectId);
+    /**
+     * This tab's own working copy, when it is this very book: a tab reopened
+     * after closing recovers it from the device mirrors. Taken now, before
+     * anything below replaces it.
+     */
+    const workingCopy =
+      projectMeta.meta.projectId === accountProjectId ? workingCopyAsProject(queue.items, projectMeta.meta) : null;
 
     /**
      * Loads a project into the working copy.
@@ -3851,7 +3870,7 @@ export default function PrintPage() {
      *    is the point. Opening a shelved book while signed in files it to the
      *    account, which is the product's rule for cookbooks.
      */
-    const applyProject = (project: PrintProject, source: "account" | "shelf") => {
+    const applyProject = (project: PrintProject, source: "account" | "shelf" | "recovered", account?: PrintProject) => {
         // The deck now holds this project. Read during render to keep the
         // previous project (or an empty workspace) off screen until here.
         appliedProjectIdRef.current = accountProjectId;
@@ -3907,10 +3926,25 @@ export default function PrintPage() {
         setShowSourceUrl(project.settings.showSourceUrl);
         setShowDescription(project.settings.showDescription ?? true);
         setShowCutLines(project.settings.showCutLines);
+        if (source === "recovered" && account) {
+          // The device's copy is on screen; the account's document is still
+          // where it belongs. Take that document's identity and revision, and
+          // leave no baseline, so the autosave sees these edits for what they
+          // are and writes them up. See lib/unsavedLocalCopy.
+          projectRevisionRef.current = Number(account.revision ?? 0);
+          savedProjectIdRef.current = account.id;
+          setSavedProjectId(account.id);
+          rememberWorkingBase(account.id, projectRevisionRef.current);
+          markWorkingCopyEdited();
+          lastSavedFingerprintRef.current = null;
+          lastAttemptedFingerprintRef.current = null;
+          lastSavedCookbookModeRef.current = savedProjectOpensAsCookbook(account);
+        }
         if (source === "account") {
           projectRevisionRef.current = Number(project.revision ?? 0);
           savedProjectIdRef.current = project.id;
           setSavedProjectId(project.id);
+          rememberWorkingBase(project.id, projectRevisionRef.current);
           lastSavedFingerprintRef.current = LOADED_BASELINE;
           // Whatever this document loaded as IS the last thing it was saved
           // as — the same value just used to set `cookbookMode` above, so a
@@ -3945,6 +3979,16 @@ export default function PrintPage() {
         // The account copy is authoritative when it exists; the shelf is the
         // fallback for a book that hasn't been adopted into this account yet.
         if (project) {
+          // …unless this device holds that same version plus edits the account
+          // never received (the tab closed before autosave landed). Then the
+          // device copy opens, and saves itself. Freshest first: the live
+          // working copy, then what was filed on the way out.
+          const unsaved = newerLocalCopy(project, [workingCopy, shelved]);
+          if (unsaved) {
+            applyProject(unsaved, "recovered", project);
+            track("unsaved_edits_recovered", { source: unsaved === workingCopy ? "working_copy" : "shelf" });
+            return;
+          }
           applyProject(project, "account");
           return;
         }
@@ -4028,6 +4072,7 @@ export default function PrintPage() {
         if (cancelled || !head) return;
         projectRevisionRef.current = head.revision;
         savedProjectIdRef.current = head.id;
+        rememberWorkingBase(head.id, head.revision);
         setSavedProjectId(head.id);
         // The other reattach path (the `?project=` loader above) sets these
         // same three right after finding its match; this one didn't, which
@@ -4348,6 +4393,19 @@ export default function PrintPage() {
   ) : null;
 
 
+  // The moment the book changes, record that the working copy is ahead of its
+  // saved revision (lib/workingBase), so a tab closed before the autosave below
+  // lands still knows, when reopened, that its device copy holds edits. Before
+  // the autosave effect on purpose: that effect's first pass after a load turns
+  // LOADED_BASELINE into a real fingerprint, and the load itself is no edit.
+  useEffect(() => {
+    if (!savedProjectIdRef.current) return;
+    if (lastSavedFingerprintRef.current === LOADED_BASELINE || lastSavedFingerprintRef.current === null) return;
+    markWorkingCopyEdited();
+    // savedProjectIdRef/lastSavedFingerprintRef are read as of this change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, projectMeta.meta, cardSize, template, doubleSided, showPhoto, showSourceUrl, showCutLines, showDescription]);
+
   useEffect(() => {
     if (projectLoading || !projectAttachChecked || !items?.length) return;
     // A draft nobody asked to keep, or a mode nobody has saved yet. The
@@ -4441,6 +4499,7 @@ export default function PrintPage() {
       savedProjectIdRef.current = null;
       setSavedProjectId(null);
       projectRevisionRef.current = 0;
+      forgetWorkingBase();
       lastSavedFingerprintRef.current = null;
       lastAttemptedFingerprintRef.current = null;
       keptOnItsOwnRef.current = null;

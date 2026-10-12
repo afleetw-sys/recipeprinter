@@ -232,7 +232,7 @@ export default function ProjectsPage() {
       // redundant. Only ever after a SUCCESSFUL read — a failed one is the
       // absence of an answer, not proof the account has anything, and the whole
       // point of the shelf is that it doesn't lose books to a bad connection.
-      pruneLocalProjects(keep.map((project) => project.id));
+      pruneLocalProjects(keep);
       setLocalProjects(loadLocalProjects().map(summarizePrintProject));
       if (remove.length > 0) {
         void deleteDuplicateProjects(user.uid, remove).then((cleaned) => {

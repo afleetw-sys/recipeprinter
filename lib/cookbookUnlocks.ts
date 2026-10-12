@@ -221,12 +221,14 @@ export async function loadCookbookProjectUnlock(ownerUid: string, projectId: str
  * device short-circuits without touching the network at all.
  */
 export async function loadCookbookProjectUnlockIds(ownerUid: string): Promise<Set<string>> {
-  const [{ collection, getDocs }, { getDb }] = await Promise.all([
+  const [{ collection, getDocsFromServer }, { getDb }] = await Promise.all([
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
   const db = getDb();
-  const snapshot = await getDocs(collection(db, ...recipePrinterUnlocksPath(ownerUid))).catch(() => null);
+  // From the server, never the cache: offline, plain `getDocs` answers from an
+  // empty cache as if nothing had been bought, instead of failing.
+  const snapshot = await getDocsFromServer(collection(db, ...recipePrinterUnlocksPath(ownerUid))).catch(() => null);
   const ids = new Set<string>();
   snapshot?.forEach((entry) => ids.add(entry.id));
   markCookbookProjectsUnlockedLocal(Array.from(ids));

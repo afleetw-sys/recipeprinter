@@ -1,7 +1,7 @@
-import type { APIRequestContext, Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { expect, test } from "./guarded";
-import reply from "./fixtures/cookpilot-reply.json";
-import { firestoreRunning, grantCookbookUnlock, returningUser, savedProjectIds, signIn } from "./account";
+import { firestoreRunning, grantCookbookUnlock, savedProjectIds } from "./account";
+import { startCookbook } from "./workspace";
 
 /**
  * The paid cookbook, for a signed-in cook: it is kept without asking, it can't
@@ -10,41 +10,9 @@ import { firestoreRunning, grantCookbookUnlock, returningUser, savedProjectIds, 
  * (see e2e/account.ts); these cover everything either side of it.
  */
 
-const LINK = "https://www.wikipedia.org/recipes/lemon-herb-chicken";
-
 test.beforeEach(async ({ request }) => {
   test.skip(!(await firestoreRunning(request)), "needs the Firestore emulator, which needs Java");
 });
-
-/** Signs in, starts a cookbook from one link, and returns the project's id once it is on the account. */
-async function startCookbook(page: Page, request: APIRequestContext): Promise<{ uid: string; projectId: string }> {
-  const { email, uid } = await returningUser(request);
-  await signIn(page, email);
-
-  const tab = page.getByRole("tab", { name: /Cookbook/ });
-  // A tab pressed while the page is still settling after sign-in can be lost.
-  await expect(async () => {
-    await tab.click();
-    await expect(tab).toHaveAttribute("aria-selected", "true", { timeout: 1_000 });
-  }).toPass();
-  const field = page.getByPlaceholder("Paste a recipe link");
-  await field.fill(LINK);
-  await field.press("Enter");
-  await expect(page).toHaveURL(/\/print$/);
-  await page.getByRole("button", { name: "Take a look" }).click();
-  // This book already has its recipe, so Start lands on the book rather than
-  // asking for a first recipe.
-  await expect(page.locator("#recipe-add-dialog-title")).toHaveCount(0);
-  // The first match can be the page rail, which a phone keeps hidden.
-  await expect(page.getByText(reply.recipe.title).filter({ visible: true }).first()).toBeVisible();
-
-  let projectId = "";
-  await expect(async () => {
-    [projectId] = await savedProjectIds(request, uid);
-    expect(projectId).toBeTruthy();
-  }).toPass();
-  return { uid, projectId };
-}
 
 // "Buy & Print" until the book is paid for, on a desktop and a phone alike.
 const printButton = (page: Page) =>

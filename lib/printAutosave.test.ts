@@ -1,10 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  autosaveVerdict,
-  LOADED_BASELINE,
-  shouldFlushOnHide,
-  type FlushOnHideState,
-} from "@/lib/printAutosave";
+import { autosaveVerdict, LOADED_BASELINE, shouldFlushOnHide, type FlushOnHideState, shouldSaveOnLeave } from "@/lib/printAutosave";
 
 describe("autosaveVerdict", () => {
   it("does nothing when the book matches what was last saved", () => {
@@ -79,5 +74,27 @@ describe("shouldFlushOnHide", () => {
 describe("LOADED_BASELINE", () => {
   it("keeps the value stored fingerprints were compared against", () => {
     expect(LOADED_BASELINE).toBe("__loaded__");
+  });
+});
+
+describe("shouldSaveOnLeave", () => {
+  const idle = { saveInFlight: false, saveQueued: false };
+
+  it("doesn't save a book that hasn't changed since it was saved", () => {
+    expect(shouldSaveOnLeave({ ...idle, lastSavedFingerprint: "book" }, () => "book")).toBe(false);
+  });
+
+  it("doesn't save a book that was only opened", () => {
+    expect(shouldSaveOnLeave({ ...idle, lastSavedFingerprint: LOADED_BASELINE }, () => "book")).toBe(false);
+  });
+
+  it("saves a book edited since its last save", () => {
+    expect(shouldSaveOnLeave({ ...idle, lastSavedFingerprint: "book" }, () => "book, edited")).toBe(true);
+  });
+
+  it("asks for one more save behind one already under way, so an edit made during it isn't left behind", () => {
+    const fingerprint = () => "book";
+    expect(shouldSaveOnLeave({ saveInFlight: true, saveQueued: false, lastSavedFingerprint: "book" }, fingerprint)).toBe(true);
+    expect(shouldSaveOnLeave({ saveInFlight: false, saveQueued: true, lastSavedFingerprint: "book" }, fingerprint)).toBe(true);
   });
 });

@@ -204,8 +204,29 @@ describe("the on-device project shelf", () => {
   it("sweeps books the account already holds, and leaves the rest alone", () => {
     saveLocalProject(project({ id: "adopted" }));
     saveLocalProject(project({ id: "device-only" }));
-    pruneLocalProjects(["adopted"]);
+    pruneLocalProjects([{ id: "adopted", revision: 2 }]);
     expect(loadLocalProjects().map((entry) => entry.id)).toEqual(["device-only"]);
+  });
+
+  // A copy that recorded the revision it was edited from holds edits the
+  // account never received (the tab closed before autosave landed). Clearing
+  // it was what lost them; opening the book applies it instead.
+  it("keeps a copy holding edits made from the account's current version", () => {
+    saveLocalProject(project({ id: "edited", revision: 2 }));
+    pruneLocalProjects([{ id: "edited", revision: 2 }]);
+    expect(loadLocalProject("edited")).not.toBeNull();
+  });
+
+  it("still sweeps a copy edited from a version the account has moved past", () => {
+    saveLocalProject(project({ id: "stale", revision: 2 }));
+    pruneLocalProjects([{ id: "stale", revision: 3 }]);
+    expect(loadLocalProject("stale")).toBeNull();
+  });
+
+  it("still sweeps a copy that recorded no version (filed with nothing unsaved)", () => {
+    saveLocalProject(project({ id: "clean", revision: undefined }));
+    pruneLocalProjects([{ id: "clean", revision: 2 }]);
+    expect(loadLocalProject("clean")).toBeNull();
   });
 
   it("removes one book without disturbing its neighbours", () => {

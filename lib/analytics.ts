@@ -613,6 +613,12 @@ type EventProps = {
       from accounts already swept would mean something is still forking. */
   duplicate_projects_cleaned: { count: number };
 
+  /** Opening a saved book found this device holding edits the account never
+      received (the tab closed before autosave landed), so the device copy
+      opened instead and saved itself (lib/unsavedLocalCopy). Silent for the
+      cook; watched to know how often a close outruns a save. */
+  unsaved_edits_recovered: { source: "working_copy" | "shelf" };
+
   feedback_submitted: { type: FeedbackType };
 
   /** "Add yours" on the homepage's "Fresh off the printer" strip. Fires once

@@ -7,6 +7,8 @@ import {
   stampRecoveryOwner,
 } from "@/lib/recoveryMirror";
 import { PROJECT_META_STORAGE_KEY, readMeta } from "@/lib/project";
+import { readQueue } from "@/lib/queue";
+import { unsavedEditsBase } from "@/lib/workingBase";
 
 /* The working copy is mirrored to localStorage in two independent places — the
    recipes and the metadata around them — on two unrelated throttles. With two
@@ -98,6 +100,29 @@ describe("recovering a reopened tab", () => {
     expect(recovered.projectId).toBe("book-a");
     expect(recovered.cover?.title).toBe("Nana’s Kitchen");
     expect(recovered.sections[0]?.itemIds).toEqual(["r1", "r2"]);
+  });
+
+  it("restores the book in a fresh tab that recovers its recipes first", () => {
+    // One tab wrote both mirrors, and the saved version it was editing from,
+    // then closed.
+    asAnotherTab(() => {
+      local.setItem("recipeprinter:queue:recovery:v1", JSON.stringify([{ id: "r1", status: "ready", recipe: { title: "Rye" } }]));
+      stampRecoveryOwner(QUEUE_RECOVERY_OWNER_KEY);
+      local.setItem(META_RECOVERY_KEY, meta("book-a", "Nana’s Kitchen"));
+      stampRecoveryOwner(META_RECOVERY_OWNER_KEY);
+      local.setItem("recipeprinter:working-base:v1", JSON.stringify({ projectId: "book-a", revision: 7, unsaved: true }));
+      stampRecoveryOwner("recipeprinter:working-base:owner:v1");
+    });
+
+    // A fresh tab starts with nothing in sessionStorage, its owner id included.
+    session.clear();
+    // Whichever store hydrates first, the book comes back whole.
+    expect(readQueue()).toHaveLength(1);
+    const recovered = readMeta();
+    expect(recovered.projectId).toBe("book-a");
+    expect(recovered.cover?.title).toBe("Nana’s Kitchen");
+    // …along with the saved version it was edited from.
+    expect(unsavedEditsBase("book-a")).toBe(7);
   });
 
   it("drops an identity that belongs to another tab's recipes", () => {

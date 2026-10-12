@@ -13,6 +13,7 @@ import { readPrintSettings } from "@/lib/printSettings";
 import { uid } from "@/lib/ids";
 import { lookupProjectId, projectContentKey, rememberProjectId } from "@/lib/projectIdentity";
 import { isCookbookProjectUnlocked } from "@/lib/cookbookUnlocks";
+import { unsavedEditsBase } from "@/lib/workingBase";
 
 /**
  * Cookbooks kept on this device.
@@ -214,14 +215,21 @@ export function deleteLocalProject(projectId: string): void {
  * has the book. Mirrors the reasoning in `loadCookbookProjectUnlock`: a network
  * failure must not be allowed to delete anything.
  */
-export function pruneLocalProjects(accountProjectIds: readonly string[]): void {
+export function pruneLocalProjects(accountProjects: ReadonlyArray<{ id: string; revision?: number }>): void {
   const map = readAllForEdit();
   let changed = false;
-  for (const id of accountProjectIds) {
-    if (map[id]) {
-      delete map[id];
-      changed = true;
-    }
+  for (const { id, revision } of accountProjects) {
+    const local = map[id];
+    if (!local) continue;
+    // …except a copy holding edits the account never received: edited from the
+    // revision the account still holds, it is that book plus edits, and the
+    // only place they exist (the tab closed before autosave landed). Opening
+    // the book applies and saves it (lib/unsavedLocalCopy); after that the
+    // account is ahead of it, and the next visit here clears it as usual.
+    // (0 is what a copy with nothing unsaved is filed as: no account revision is 0.)
+    if (Number(local.revision ?? 0) > 0 && Number(local.revision) === Number(revision ?? 0)) continue;
+    delete map[id];
+    changed = true;
   }
   if (changed) writeAll(map);
 }
@@ -279,6 +287,35 @@ function filingProjectId(contentKey: string | null, ownId: string | undefined): 
 export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): string | null {
   const printable = items.filter((item) => item.status === "ready" && item.recipe);
   if (printable.length === 0) return null;
+  const isBook = Boolean(meta.cookbookMode || meta.stashedCookbook);
+  const contentKey = projectContentKey(printable, isBook);
+  // The content's existing project if it has one, otherwise this working
+  // copy's own id — unless a purchase is riding on either, in which case the
+  // working copy keeps its own. See `filingProjectId`.
+  const id = filingProjectId(contentKey, meta.projectId);
+  const project = assembleWorkingCopy(printable, meta, id);
+
+  if (!saveLocalProject(project)) return null;
+  // Never index a paid book. An entry here is an invitation for some later set
+  // of the same recipes to file straight over this document, and the one
+  // document that must not be written over by another book is the one somebody
+  // bought. Leaving it unindexed costs a duplicate at worst.
+  if (!isCookbookProjectUnlocked(project.id)) rememberProjectId(contentKey, project.id);
+  return project.id;
+}
+
+/**
+ * The working copy as the project it would be filed as, without filing it:
+ * what the `?project=` loader compares against the account copy to tell
+ * whether the device holds edits the account never received.
+ */
+export function workingCopyAsProject(items: QueueItem[], meta: ProjectMeta): PrintProject | null {
+  const printable = items.filter((item) => item.status === "ready" && item.recipe);
+  if (printable.length === 0 || !meta.projectId) return null;
+  return assembleWorkingCopy(printable, meta, meta.projectId);
+}
+
+function assembleWorkingCopy(printable: QueueItem[], meta: ProjectMeta, id: string): PrintProject {
 
   // Stored device preferences, passed through rather than validated here: they
   // were written from already-validated live state, and the `?project=` loader
@@ -304,14 +341,15 @@ export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): strin
     showCutLines: stored.showCutLines ?? false,
   });
 
-  const isBook = Boolean(meta.cookbookMode || meta.stashedCookbook);
-  const contentKey = projectContentKey(printable, isBook);
-  const project = assemblePrintProject({
+  return assemblePrintProject({
     ...fromMeta,
-    // The content's existing project if it has one, otherwise this working
-    // copy's own id — unless a purchase is riding on either, in which case the
-    // working copy keeps its own. See `filingProjectId`.
-    id: filingProjectId(contentKey, meta.projectId),
+    id,
+    // The account revision this copy was edited from, only while it holds
+    // edits the account never received. That is what lets a reopen open it
+    // instead of the older account copy (lib/unsavedLocalCopy), and Projects
+    // keep it rather than clear it away (`pruneLocalProjects`). Filed under any
+    // other id it describes nothing, so it is left out.
+    revision: id === meta.projectId ? (unsavedEditsBase(id) ?? undefined) : undefined,
     // No account behind this copy — that is the entire point of the shelf.
     // Adopting it into an account later fills this in (see
     // lib/anonymousProjectAdoption).
@@ -328,14 +366,6 @@ export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): strin
     ),
     sections: buildSections(printable, meta),
   });
-
-  if (!saveLocalProject(project)) return null;
-  // Never index a paid book. An entry here is an invitation for some later set
-  // of the same recipes to file straight over this document, and the one
-  // document that must not be written over by another book is the one somebody
-  // bought. Leaving it unindexed costs a duplicate at worst.
-  if (!isCookbookProjectUnlocked(project.id)) rememberProjectId(contentKey, project.id);
-  return project.id;
 }
 
 /**
