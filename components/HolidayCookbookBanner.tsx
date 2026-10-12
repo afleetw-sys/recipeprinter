@@ -10,21 +10,19 @@ import { useVisitorPrices } from "@/lib/visitorCurrency";
  * The seasonal nudge under the front door: start the book now so it is done
  * (printed, or sent off to a printer) before the holidays.
  *
- * A large panel with the finished product in it: a hardcover book stands in
- * the right-hand corner, cut off by the panel's bottom edge, so it reads as
- * part of the panel rather than a picture placed on it. The ground is a
- * faded warm blur over cream, flat, with no border or shadow.
+ * A large panel with the finished product in it: a photograph of a printed
+ * book fills the right-hand side. The ground is a faded warm blur over cream,
+ * flat, with no border or shadow.
  *
  * It does not start its own import. The button is the Cookbook tab's
  * "start with nothing" path, handed in by PrinterWorkspace, so there is one way
  * a book begins and the welcome dialog on /print pitches the price over the
  * book itself, as it does from the tab.
  */
-/** A hardcover mockup of a finished book, on a transparent background, so
-    it stands on the panel's own gradient. */
-const COOKBOOK_PEEK_IMAGE = "/images/cookbook-hardcover.webp";
-const COOKBOOK_PEEK_WIDTH = 800;
-const COOKBOOK_PEEK_HEIGHT = 1067;
+/** A photograph of a printed, spiral-bound book. */
+const COOKBOOK_PEEK_IMAGE = "/images/cookbook.jpeg";
+const COOKBOOK_PEEK_WIDTH = 3648;
+const COOKBOOK_PEEK_HEIGHT = 5472;
 
 export function HolidayCookbookBanner({
   onStart,
@@ -73,15 +71,15 @@ export function HolidayCookbookBanner({
           Start my cookbook
         </button>
       </div>
-      {/* The book, standing in the corner and cut off by the bottom edge. */}
+      {/* The book, beside the copy (above it on a phone). */}
       <div aria-hidden className="rp-cookbook-offer__peek pointer-events-none">
         <Image
           src={COOKBOOK_PEEK_IMAGE}
           alt=""
           width={COOKBOOK_PEEK_WIDTH}
           height={COOKBOOK_PEEK_HEIGHT}
-          sizes="(max-width: 767px) 60vw, 336px"
-          className="block h-auto w-full"
+          sizes="(max-width: 767px) 176px, 240px"
+          className="block h-full w-full object-cover"
         />
       </div>
     </section>
