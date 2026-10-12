@@ -220,9 +220,8 @@ async function readHtmlWithLimit(response: Response): Promise<string> {
   if (!response.body) return "";
 
   const reader = response.body.getReader();
-  const decoder = new TextDecoder();
+  const chunks: Uint8Array[] = [];
   let received = 0;
-  let html = "";
 
   while (true) {
     const { value, done } = await reader.read();
@@ -232,10 +231,33 @@ async function readHtmlWithLimit(response: Response): Promise<string> {
       await reader.cancel();
       throw new ParseHttpError("That recipe page is too large to import.", 413);
     }
-    html += decoder.decode(value, { stream: true });
+    chunks.push(value);
   }
 
-  return html + decoder.decode();
+  const bytes = new Uint8Array(received);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return decodeHtml(bytes);
+}
+
+/**
+ * A page's bytes as text, read the way CookPilot's own fetch reads them
+ * (`decodeHTMLBuffer`): UTF-8, and when the bytes are not valid UTF-8, Latin-1.
+ *
+ * This leg used to decode everything as UTF-8, so a windows-1252 page reached
+ * the shared parser as "Cr\ufffdme br\ufffdl\ufffde" and "\ufffd gousse de
+ * vanille", while the same page fetched by CookPilot read correctly. One page
+ * should not parse two ways depending on which of us fetched it.
+ */
+function decodeHtml(bytes: Uint8Array): string {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder("iso-8859-1").decode(bytes);
+  }
 }
 
 /**
@@ -351,6 +373,12 @@ type CookPilotServerOutcome =
    * out to the client — see the hook in `POST`.
    */
   | { kind: "blocked"; message: string }
+  /**
+   * The parser reached the page, read it, and says there is no recipe to take
+   * from it, in its own words: "the recipe is in the comments", "we couldn't
+   * find that page", "its caption doesn't list ingredients or steps". Final.
+   */
+  | { kind: "no_recipe"; message: string }
   /** Reached CookPilot, got nothing usable back. Already billed. */
   | { kind: "inconclusive" }
   /** Never called: no endpoint or secret on this deployment. Not billed. */
@@ -514,11 +542,27 @@ async function parseWithCookPilotServer(
   // which is more use than anything this route could substitute, so its
   // message is carried out rather than replaced.
   //
-  // It used to throw, which meant nothing after it ever ran. Now it returns,
-  // because there IS one thing left to try: our own request, shaped like a
-  // browser instead of like us. See the hook in `POST`.
+  // Returned rather than thrown so it can carry a `failure` out to the client.
+  // Our own fetch is NOT tried after it. A browser-shaped request from here was
+  // measured against forty recipe sites and got past none of the walls (see
+  // 959c6e6), and the reply does not yet say which 412 this is: a sign-in or a
+  // paywall cannot be recovered from any network.
   if (response.status === 412) {
     return { kind: "blocked", message: parserErrorMessage(data) ?? BLOCKED_REMEDY };
+  }
+  // `not-found` is the parser's own answer, as opposed to a 404 from the
+  // endpoint itself (a mistyped URL, a function that is not deployed), which
+  // carries no `code` and says nothing about the recipe page.
+  //
+  // It used to fall through like a timeout: we fetched the page ourselves and
+  // had the same parser read it a second time, without its AI tier, to arrive
+  // at "we couldn't find a complete recipe on that page". For a post whose
+  // caption says the recipe is in the comments, that threw away the one
+  // sentence that told the cook where to look, and fetched instagram.com from
+  // here to do it.
+  const said = parserErrorMessage(data);
+  if (response.status === 404 && said && (data as { code?: unknown }).code === "not-found") {
+    return { kind: "no_recipe", message: said };
   }
   if (response.status === 401 || response.status === 403) {
     throw new ParseHttpError(
@@ -648,6 +692,17 @@ export async function POST(request: Request) {
         parserExhausted: true,
         failure: "blocked",
         botWall: { vendor: "generic" },
+      });
+    }
+
+    if (cookPilot.kind === "no_recipe") {
+      // `no_recipe` for every one of these, including the page that does not
+      // exist: the parser's reply does not yet say which it was, and guessing
+      // from its wording is the kind of reading this route stopped doing.
+      return errorResponse(cookPilot.message, {
+        status: 422,
+        parserExhausted: true,
+        failure: "no_recipe",
       });
     }
 

@@ -196,3 +196,57 @@ describe("a source's notes", () => {
     expect(sourceNotesFromResponse({ recipeJSON: JSON.stringify(withNotes.recipe) })).toBe("Keeps for three days.");
   });
 });
+
+describe("the page a recipe was really read from", () => {
+  // A pin or a post that links out is only how the cook got there. CookPilot
+  // names the page it read (`parser.resolvedSourceURL`), and crediting the pin
+  // instead printed "pinterest.com" under a blog's recipe.
+  const body = (resolvedSourceURL: unknown) => ({
+    recipes: [{ title: "Chili", ingredientSections: [{ ingredients: [{ name: "beans" }] }], instructionSections: [] }],
+    parser: { source: "json-ld", resolvedSourceURL },
+  });
+
+  it("is the recipe's source, for every recipe of the response", () => {
+    const [recipe] = adaptCookPilotRecipes(body("https://www.realblog.org/chili"), "https://www.pinterest.com/pin/123/");
+    expect(recipe.sourceUrl).toBe("https://www.realblog.org/chili");
+    expect(recipe.sourceName).toBe("realblog.org");
+  });
+
+  it("leaves the pasted link standing when CookPilot names nothing usable", () => {
+    for (const unusable of [undefined, "", 7, "javascript:alert(1)", "/relative"]) {
+      const [recipe] = adaptCookPilotRecipes(body(unusable), "https://www.pinterest.com/pin/123/");
+      expect(recipe.sourceUrl).toBe("https://www.pinterest.com/pin/123/");
+    }
+  });
+});
+
+describe("an ingredient's printed line", () => {
+  // The line is what a card prints and all a saved project keeps, so it has
+  // to read as one ingredient whatever shape the parts arrive in.
+  const lineFor = (ingredient: Record<string, unknown>) =>
+    adaptCookPilotRecipes({
+      recipe: { title: "T", ingredientSections: [{ ingredients: [ingredient] }], instructionSections: [] },
+    })[0].ingredients[0];
+
+  it("says each part once and keeps a bracketed note in its brackets", () => {
+    const cases: Array<[Record<string, unknown>, string]> = [
+      [{ amount: "3", unit: "cloves", name: "3 cloves" }, "3 cloves"],
+      [{ amount: "3", unit: "Cloves", name: "3 cloves garlic" }, "3 cloves garlic"],
+      [{ amount: "2", name: "2 eggs" }, "2 eggs"],
+      [{ amount: "1", unit: "can", name: "crushed tomatoes", notes: "(28 ounce)" }, "1 can crushed tomatoes (28 ounce)"],
+      [{ amount: "2", unit: "tbsp", name: "butter", notes: "softened" }, "2 tbsp butter, softened"],
+      [{ amount: "1", name: "large onion", notes: "diced (about 2 cups)" }, "1 large onion, diced (about 2 cups)"],
+      [{ amount: "2", unit: "cups", name: "2% milk" }, "2 cups 2% milk"],
+      [{ name: "salt" }, "salt"],
+    ];
+    for (const [ingredient, line] of cases) expect(lineFor(ingredient).raw).toBe(line);
+  });
+
+  it("keeps the amount as the amount when the name only repeated it", () => {
+    expect(lineFor({ amount: "3", unit: "cloves", name: "3 cloves" })).toMatchObject({
+      amount: "3",
+      name: "cloves",
+      raw: "3 cloves",
+    });
+  });
+});

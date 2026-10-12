@@ -16,6 +16,13 @@
       "autoPort": true
     },
     {
+      "name": "recipeprinter-currencies",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "NEXT_PUBLIC_LOCAL_CURRENCIES=on NEXT_DIST_DIR=.next-preview npm run dev"],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
       "name": "pdf-renderer",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "pdf:dev"],
