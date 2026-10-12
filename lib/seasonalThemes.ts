@@ -30,11 +30,25 @@ export function isInSeason(season: ThemeSeason, date: Date): boolean {
 
 interface ArrangeableTheme {
   season?: ThemeSeason;
+  /** Part of the season in which the theme is featured. Without it, the
+      whole season is; outside it (but in season) the theme sits with the
+      rest of the Pro themes, untagged. */
+  featured?: ThemeSeason;
+}
+
+/** In season and in its featured window: tagged and led with in the picker. */
+export function isFeatured(theme: ArrangeableTheme, date: Date): boolean {
+  return (
+    theme.season !== undefined &&
+    isInSeason(theme.season, date) &&
+    (theme.featured === undefined || isInSeason(theme.featured, date))
+  );
 }
 
 export interface ArrangedThemes<T> {
-  /** The main grid: free themes, then in-season seasonal themes, then the
-      rest of the Pro themes, each group in its listed order. */
+  /** The main grid: free themes, then featured seasonal themes, then the
+      rest of the Pro themes (in-season ones outside their featured window
+      among them), each group in its listed order. */
   main: T[];
   /** Seasonal themes out of season, for the collapsed group. */
   offSeason: T[];
@@ -50,8 +64,10 @@ export function arrangeThemes<T extends ArrangeableTheme>(
   const pro: T[] = [];
   const offSeason: T[] = [];
   for (const theme of themes) {
-    if (theme.season) {
-      (isInSeason(theme.season, date) ? featured : offSeason).push(theme);
+    if (isFeatured(theme, date)) {
+      featured.push(theme);
+    } else if (theme.season && !isInSeason(theme.season, date)) {
+      offSeason.push(theme);
     } else {
       (isPremium(theme) ? pro : free).push(theme);
     }

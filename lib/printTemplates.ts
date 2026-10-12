@@ -54,6 +54,9 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
       lib/seasonalThemes). Its place in this list is its order within whichever
       group it lands in. */
   season?: ThemeSeason;
+  /** The part of its season a seasonal theme is featured; the whole season
+      when left out. */
+  featured?: ThemeSeason;
 }> = [
   { id: "classic", label: "Classic", detail: "Cornflower and slate, clean cookbook card" },
   { id: "pantry", label: "Pantry", detail: "Fine ruled lines with small ingredient sketches" },
@@ -72,7 +75,8 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
     id: "fall",
     label: "Fall",
     detail: "Cream stock, falling leaves and a pile of pumpkins",
-    season: { from: "11-01", to: "12-01" },
+    season: { from: "09-01", to: "12-01" },
+    featured: { from: "11-01", to: "12-01" },
   },
   {
     id: "halloween",

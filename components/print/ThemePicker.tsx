@@ -9,7 +9,7 @@ import {
 import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
 import { ProBadge } from "@/components/ProBadge";
 import { ChevronDownIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
-import { arrangeThemes, isInSeason } from "@/lib/seasonalThemes";
+import { arrangeThemes, isFeatured } from "@/lib/seasonalThemes";
 import { isPremiumTemplate } from "@/lib/premiumTemplates";
 import { hasTemplateOrProEntitlement } from "@/lib/recipePrinterPurchases";
 import { track } from "@/lib/analytics";
@@ -84,7 +84,7 @@ export function ThemePicker({
       !cookbookMode;
     // In season, a seasonal theme leads the Pro themes; the tag says why it's
     // up there.
-    const featured = option.season !== undefined && isInSeason(option.season, today);
+    const featured = isFeatured(option, today);
 
     // A real card renders <div>s, which aren't valid inside a
     // <button> (its content model is phrasing only) — so the option
