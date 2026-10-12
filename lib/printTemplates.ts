@@ -72,7 +72,7 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
     id: "fall",
     label: "Fall",
     detail: "Cream stock, falling leaves and a pile of pumpkins",
-    season: { from: "09-01", to: "11-30" },
+    season: { from: "11-01", to: "12-01" },
   },
   {
     id: "halloween",

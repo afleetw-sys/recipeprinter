@@ -10466,6 +10466,7 @@ textarea.recipe-card__toc-title {
 
 .recipe-template--fall .recipe-card__title {
   color: #c4501c;
+  font-size: calc(var(--recipe-card-title-size) * 1.12);
   font-weight: 700;
   font-variation-settings: "SOFT" 100;
   letter-spacing: -0.005em;
