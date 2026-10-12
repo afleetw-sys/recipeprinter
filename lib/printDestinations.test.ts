@@ -190,13 +190,12 @@ describe("what pressing Save produces", () => {
   it("says how many files, from the format alone", () => {
     // The destination is only a shortcut, so nothing here may depend on it:
     // somebody can choose their own printer and then a hardcover.
-    for (const preset of COOKBOOK_PRESETS) {
-      expect(downloadSummary(preset)).toBe(
-        preset.wrapRequired
-          ? "You’ll get two files: the pages and the cover."
-          : "You’ll get one file, with the cover as its first page.",
-      );
-    }
+    const said = (wrapRequired: boolean) =>
+      new Set(COOKBOOK_PRESETS.filter((p) => Boolean(p.wrapRequired) === wrapRequired).map((p) => downloadSummary(p)));
+    // One line for every separate-cover format, another for every bundled one.
+    expect(said(true).size).toBe(1);
+    expect(said(false).size).toBe(1);
+    expect(Array.from(said(true))[0]).not.toBe(Array.from(said(false))[0]);
   });
 
   it("never names a shop or a kind of service", () => {

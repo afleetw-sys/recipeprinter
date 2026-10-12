@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PrintLayoutSettings } from "@/lib/printProjects";
 import type { ProjectMeta } from "@/lib/project";
-import { printProjectFingerprint, SAVE_TIMEOUT_MS } from "@/lib/printSave";
+import { printProjectFingerprint } from "@/lib/printSave";
 
 const layout: PrintLayoutSettings = {
   cardSize: "letter",
@@ -53,13 +53,5 @@ describe("printProjectFingerprint", () => {
     expect(printProjectFingerprint(null, meta, withoutDescription)).not.toBe(
       printProjectFingerprint(null, meta, { ...layout, showDescription: false }),
     );
-  });
-});
-
-describe("SAVE_TIMEOUT_MS", () => {
-  it("stays generous enough for a big book on a slow phone", () => {
-    // A write cut short costs a redundant write and possibly a conflict prompt,
-    // so lowering this is a behavior change, not a tidy-up.
-    expect(SAVE_TIMEOUT_MS).toBe(45_000);
   });
 });

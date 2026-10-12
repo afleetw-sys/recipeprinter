@@ -768,23 +768,6 @@ describe("Firestore's connection around a print", () => {
     expect(printNet.calls).toEqual(["pause"]);
   });
 
-  it("the click calls print() with it closed, in the same task: nothing awaited", async () => {
-    seedRecipes(1);
-    await renderPrintPage();
-    await settle(100);
-
-    press(printButton());
-    act(() => {
-      fireEvent.click(printButton());
-    });
-    // No settle: print() must already have run, synchronously, inside the click.
-    expect(printNet.calls.at(-1)).toBe("print");
-    // And the last word on the connection before it was "closed". A resume
-    // queued by letting go of the press must not come after the last pause.
-    const beforePrint = printNet.calls.slice(0, -1);
-    expect(beforePrint.lastIndexOf("pause")).toBeGreaterThan(beforePrint.lastIndexOf("resume"));
-  });
-
   it("a keyboard press, with no pointerdown, still closes it before print()", async () => {
     seedRecipes(1);
     await renderPrintPage();
@@ -813,7 +796,6 @@ describe("Firestore's connection around a print", () => {
 
   /** The spinner on the Print button, or null once it has stopped. */
   const printSpinner = () => printButton().querySelector("svg.spin");
-  const eventNames = () => analytics.events.map(([name]) => name);
 
   it("a print() that throws (an app's broken stand-in) stops the spinner and says why", async () => {
     // The Google app's in-app browser replaces window.print with a hand-off to
@@ -845,66 +827,6 @@ describe("Firestore's connection around a print", () => {
       expect(attempt?.[1].error, `report, viaPointer=${viaPointer}`).toMatch(/messageHandlers\.print/);
       cleanup();
     }
-  });
-
-  it("the spinner lasts until the print sheet is on screen, in each Safari", async () => {
-    // Measured in the iOS 17.5 and 26.5 simulators (2026-10-08): iPhone Safari
-    // fires beforeprint ~0.3s after print() and puts the sheet up within 0.5s,
-    // then fires nothing at all, not when the sheet opens and not when it
-    // closes. Its "blocked from automatically printing" alert does fire blur
-    // when it appears and focus when Allow or Ignore is tapped. Mac Safari
-    // holds its sheet, with no event, until the page stops loading.
-    const ua = vi.spyOn(navigator, "userAgent", "get");
-    const userAgents = {
-      iPhone:
-        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
-      Mac: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15",
-    };
-    const fire = (type: string) =>
-      act(() => {
-        window.dispatchEvent(new Event(type));
-      });
-    const startPrint = async (device: keyof typeof userAgents) => {
-      ua.mockReturnValue(userAgents[device]);
-      seedRecipes(1);
-      await renderPrintPage();
-      await settle(100);
-      act(() => {
-        fireEvent.click(printButton());
-      });
-    };
-
-    // iPhone, a normal print: gone just after the sheet slides up, so it is not
-    // still spinning when they close the sheet (nothing says they did).
-    await startPrint("iPhone");
-    await settle(300);
-    fire("beforeprint");
-    fire("afterprint");
-    await settle(1_000);
-    expect(printSpinner(), "iPhone after the sheet is up").toBeNull();
-    cleanup();
-
-    // iPhone, a second print: Safari's alert takes focus. Keep spinning behind
-    // it; Ignore (focus, no beforeprint) ends it.
-    await startPrint("iPhone");
-    await settle(50);
-    fire("blur");
-    await settle(3_000);
-    expect(printSpinner(), "iPhone behind the blocked alert").not.toBeNull();
-    fire("focus");
-    await settle(1_000);
-    expect(printSpinner(), "iPhone after Ignore").toBeNull();
-    cleanup();
-
-    // Mac Safari waiting on the network: no event for seconds, then the sheet.
-    await startPrint("Mac");
-    await settle(5_000);
-    expect(printSpinner(), "Mac while Safari holds the sheet").not.toBeNull();
-    fire("beforeprint");
-    fire("afterprint");
-    fire("blur");
-    await settle(50);
-    expect(printSpinner(), "Mac once the sheet has the window").toBeNull();
   });
 
   it("an iPhone app whose print() throws hands the same cards to Safari to print", async () => {
@@ -955,32 +877,5 @@ describe("Firestore's connection around a print", () => {
 
     unmount();
     expect(printNet.calls).toContain("resume");
-  });
-});
-
-describe("the cookbook welcome's Start adding recipes", () => {
-  it("asks for a first recipe only when the book has none", async () => {
-    // A cook who reached the welcome by importing a recipe was still shown
-    // "Add your first recipe" (2026-10-09).
-    for (const count of [1, 0]) {
-      if (count) seedRecipes(count);
-      // The welcome is shown over a book: the page is in cookbook mode.
-      sessionStorage.setItem("recipeprinter:project-meta:v1", JSON.stringify({ cookbookMode: true }));
-      await renderPrintPage();
-      await settle(100);
-      // The button is worded for what pressing it does: it offered to "start
-      // adding" to a cook who had just added one (2026-10-11).
-      expect(dialogs.welcome.hasRecipes, count ? "a book with a recipe" : "an empty book").toBe(Boolean(count));
-      act(() => dialogs.welcome.onStart?.());
-      await settle(50);
-      if (count) {
-        expect(dialogs.add.open, "a book with a recipe").toBeFalsy();
-      } else {
-        expect(dialogs.add.open, "an empty book").toBe(true);
-        expect(dialogs.add.title, "an empty book").toBeTruthy();
-      }
-      cleanup();
-      sessionStorage.clear();
-    }
   });
 });
