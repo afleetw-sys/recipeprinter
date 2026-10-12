@@ -283,3 +283,25 @@ export function searchPageMessage(rawUrl: string): string | null {
 
   return null;
 }
+
+/**
+ * One link however it was pasted: no fragment, no tracking parameters, the
+ * host lowercased and no trailing slash. What tells two imports of the same
+ * recipe apart from two different recipes, for the queue and the meter alike.
+ */
+export function canonicalUrl(rawUrl: string): string | null {
+  try {
+    const url = new URL(normalizeImportURL(rawUrl));
+    url.hash = "";
+    for (const key of Array.from(url.searchParams.keys())) {
+      if (/^(utm_|fbclid$|gclid$|mc_cid$|mc_eid$)/i.test(key)) {
+        url.searchParams.delete(key);
+      }
+    }
+    url.hostname = url.hostname.toLowerCase();
+    url.pathname = url.pathname.replace(/\/+$/, "") || "/";
+    return url.toString();
+  } catch {
+    return null;
+  }
+}

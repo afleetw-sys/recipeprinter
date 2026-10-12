@@ -11,7 +11,7 @@ import { normalizeImportURL } from "@/lib/cookpilot";
 import { isPastedRecipeText } from "@/lib/importUrl";
 import { track } from "@/lib/analytics";
 import type { ImportTab, QueueItem } from "@/types/recipe";
-import { refuseImportIfSpent } from "@/lib/importMeter";
+import { handoffDedupeInput, refuseImportIfSpent } from "@/lib/importMeter";
 
 // Only the Paprika pages render this, but a static import put it in every SEO
 // page's bundle. Its `useSingleRecipeOnly` reaches CookPilotAuth (Firebase Auth
@@ -61,7 +61,8 @@ function useHandoff() {
     // Out of free imports: the upgrade dialog opens on this page instead of
     // sending the cook to /print to be refused there. Recipe-app picks aren't
     // counted against the allowance.
-    if (payload.kind !== "ready" && payload.kind !== "empty" && refuseImportIfSpent()) return;
+    if (payload.kind !== "ready" && payload.kind !== "empty" && (await refuseImportIfSpent(handoffDedupeInput(payload))))
+      return;
     setBusy(true);
     track("recipe_import_submitted", {
       surface: "capture",

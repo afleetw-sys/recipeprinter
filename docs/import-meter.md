@@ -163,8 +163,11 @@ also remove the copy and the cookbook cap, set `IMPORT_ALLOWANCE_LIVE = false` a
 - **A fixed 30 days, ending at midnight.** The 30 days start with the first import, and all 10
   come back together at 12:00 AM starting the day they end, in the cook's own time zone (the site
   sends it as `tz`). "Resets Nov 9" means from the first minute of Nov 9.
-- **Nothing gets through at the limit**, including a link imported before. With imports left, the
-  same link or text again doesn't use a second one.
+- **A repeat gets through, even at the limit** (Amelia, 2026-10-12; was refused until then). The
+  same link or text again within the 30 days uses nothing, so being out of imports doesn't stop it.
+  The meter has to check the dedupe key BEFORE the limit (CookPilot). RecipePrinter's own checks
+  (the homepage and SEO pages before `/print`, and rule E1) recognise repeats from the keys this
+  browser had counted (`recipeprinter:import-counted:v1`).
 - **A manual hold.** To keep one browser or account at "none left" until a date, add a timestamp
   field `holdUntil` to its document in `recipePrinterImportMeter` (`b_…` for a browser, `u_<uid>`
   for an account). It ends at midnight starting that date. Remove the field to lift it. A hold on

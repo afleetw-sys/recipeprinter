@@ -78,7 +78,7 @@ export function HolidayCookbookBanner({
           alt=""
           width={COOKBOOK_PEEK_WIDTH}
           height={COOKBOOK_PEEK_HEIGHT}
-          sizes="(max-width: 767px) 176px, 240px"
+          sizes="(max-width: 767px) 240px, 520px"
           className="block h-full w-full object-cover"
         />
       </div>
