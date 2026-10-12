@@ -148,6 +148,46 @@ const dmSans = localFont({
   preload: false,
 });
 
+// Fall's faces: Fraunces, a soft, chunky old-style serif (its SOFT axis
+// rounds the corners to sit with the woodcut art), over Figtree, a friendly
+// sans that stays legible at card sizes.
+const fraunces = localFont({
+  src: "./fonts/fraunces/fraunces-latin-soft-normal.woff2",
+  weight: "100 900",
+  variable: "--font-fraunces",
+  display: "swap",
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const figtree = localFont({
+  src: "./fonts/figtree/figtree-latin-wght-normal.woff2",
+  weight: "300 900",
+  variable: "--font-figtree",
+  display: "swap",
+  preload: false,
+});
+
+// Halloween's faces: Grenze Gotisch, a blackletter cut open enough to read as
+// a title, over Lora, a book serif with a tall x-height for small type.
+const grenzeGotisch = localFont({
+  src: "./fonts/grenze-gotisch/grenze-gotisch-latin-wght-normal.woff2",
+  weight: "100 900",
+  variable: "--font-grenze-gotisch",
+  display: "swap",
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
+const lora = localFont({
+  src: "./fonts/lora/lora-latin-wght-normal.woff2",
+  weight: "400 700",
+  variable: "--font-lora",
+  display: "swap",
+  preload: false,
+  adjustFontFallback: "Times New Roman",
+});
+
 // Quilt's face, title and body: Jost, a Futura-style geometric sans, for the
 // tiles' mid-century look.
 const jost = localFont({
@@ -255,7 +295,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${berkshireSwash.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${karla.variable}`}
+      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${berkshireSwash.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${fraunces.variable} ${figtree.variable} ${grenzeGotisch.variable} ${lora.variable} ${karla.variable}`}
     >
       <body>
         <TranslatedPageGuard />
