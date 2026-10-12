@@ -78,7 +78,15 @@ function withAnonId(data: unknown): unknown {
   }
 }
 
-export async function callCookPilotParser(name: string, data: unknown): Promise<unknown> {
+/**
+ * @param signal The import's deadline, when it has one. A callable can't be
+ *   cancelled once sent, so all this can do is not send the second one.
+ */
+export async function callCookPilotParser(
+  name: string,
+  data: unknown,
+  signal?: AbortSignal,
+): Promise<unknown> {
   const [{ httpsCallable }, { getFns }] = await Promise.all([
     import("firebase/functions"),
     import("@/lib/firebase/functions"),
@@ -94,11 +102,31 @@ export async function callCookPilotParser(name: string, data: unknown): Promise<
     // the cook about, not hiding behind more waiting.
     if (!isDroppedConnection(err)) throw err;
     await new Promise((resolve) => setTimeout(resolve, RETRY_AFTER_DROP_MS));
+    if (signal?.aborted) throw err;
     return (await callable(payload)).data;
   }
 }
 
 const RETRY_AFTER_DROP_MS = 1500;
+
+/**
+ * How long a link import may take, start to finish, once the meter has
+ * answered. One limit for the whole thing rather than one per request: the
+ * `/api/parse` fetch had none of its own, and the callable behind it allows
+ * 70 seconds, twice, and only starts counting once App Check has a token. Added
+ * together the spinner could stay up for about four minutes, long past the
+ * point anyone waits. They reloaded instead, and the reload reported an
+ * interrupted import, which told them nothing and told us less.
+ */
+export const URL_IMPORT_DEADLINE_MS = 75_000;
+
+function tookTooLong(meta?: ImportErrorMeta): ImportError {
+  return new ImportError(
+    "That took too long, so we stopped. Try it again, or paste the recipe text or upload a photo instead.",
+    "timeout",
+    meta,
+  );
+}
 
 /**
  * The SDK's answer when its fetch never got a response: status 0, which it
@@ -244,7 +272,11 @@ function isAuthOrAppCheckError(err: unknown): boolean {
   );
 }
 
-async function parseUrlLocally(url: string, importId?: string): Promise<LocalParseOutcome> {
+async function parseUrlLocally(
+  url: string,
+  signal: AbortSignal,
+  importId?: string,
+): Promise<LocalParseOutcome> {
   try {
     const response = await fetch("/api/parse", {
       method: "POST",
@@ -257,6 +289,7 @@ async function parseUrlLocally(url: string, importId?: string): Promise<LocalPar
         ...(importId ? { "x-rp-import-id": importId } : {}),
       },
       body: JSON.stringify({ url }),
+      signal,
     });
     const data = (await response.json()) as ParseResponse;
     if (data.success) return { recipes: data.recipes };
@@ -293,12 +326,16 @@ function shouldTryUrlFallback(outcome: LocalParseOutcome): boolean {
   return ![400, 413].includes(outcome.status);
 }
 
-async function parseUrlWithCookPilot(url: string, localError?: string): Promise<Recipe[]> {
+async function parseUrlWithCookPilot(
+  url: string,
+  signal: AbortSignal,
+  localError?: string,
+): Promise<Recipe[]> {
   try {
     // `multiRecipe` opts into roundup handling: CookPilot returns every recipe it
     // finds ({ recipes: [...] }) instead of only the single main one. A normal page
     // simply comes back as one, so `adaptCookPilotRecipes` always yields ≥1 here.
-    const data = await callCookPilotParser("parseRecipeFromURL", { url, multiRecipe: true });
+    const data = await callCookPilotParser("parseRecipeFromURL", { url, multiRecipe: true }, signal);
     const recipes = adaptCookPilotRecipes(data, url);
     if (recipes.length === 0) {
       throw new ImportError(
@@ -367,11 +404,34 @@ export async function parseUrlAll(rawUrl: string, opts?: { importId?: string }):
   const searchPage = searchPageMessage(url);
   if (searchPage) throw new ImportError(searchPage, "search_page");
 
-  const local = await parseUrlLocally(url, opts?.importId);
+  const deadline = new AbortController();
+  const timer = setTimeout(() => deadline.abort(), URL_IMPORT_DEADLINE_MS);
+  // Raced rather than only checked between steps, because the fallback is a
+  // callable and a callable can't be aborted: when the time is up we stop
+  // waiting for it, whatever it is still doing.
+  const expired = new Promise<never>((_resolve, reject) => {
+    deadline.signal.addEventListener("abort", () => reject(tookTooLong()), { once: true });
+  });
+  try {
+    return await Promise.race([parseUrlBeforeDeadline(url, deadline.signal, opts?.importId), expired]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function parseUrlBeforeDeadline(
+  url: string,
+  signal: AbortSignal,
+  importId?: string,
+): Promise<Recipe[]> {
+  const local = await parseUrlLocally(url, signal, importId);
   if (local.recipes && local.recipes.length > 0) return local.recipes;
+  // An aborted fetch looks exactly like a route we couldn't reach, which is
+  // the case the fallback exists for. Not this time: the import is over.
+  if (signal.aborted) throw tookTooLong(local.meta);
   if (shouldTryUrlFallback(local)) {
     try {
-      return await parseUrlWithCookPilot(url, local.error);
+      return await parseUrlWithCookPilot(url, signal, local.error);
     } catch (err) {
       // The route may have fingerprinted the wall before handing over. That
       // fact is still true whatever the fallback then made of the page, and
