@@ -3,6 +3,7 @@
 import {
   adaptCookPilotRecipe,
   adaptCookPilotRecipes,
+  cameFromALinkedPage,
   normalizeImportURL,
   sourceNotesFromResponse,
   sourceUrlFromResponse,
@@ -519,7 +520,10 @@ export function normalizeFractions(text: string): string {
     // punctuation to a parser.
     .replace(/\u2044/g, "/")
     .replace(
-      new RegExp(`(\\d?)\\s*([${Object.keys(VULGAR_FRACTIONS).join("")}])`, "g"),
+      // The whole number sits on the glyph's own line. `\s` here also took a
+      // line break, so "Serves 4" above "\u00bd cup olive oil" became one line,
+      // "Serves 4 1/2 cup olive oil", and the olive oil was read as a yield.
+      new RegExp(`(\\d?)[^\\S\\r\\n\\u2028\\u2029]*([${Object.keys(VULGAR_FRACTIONS).join("")}])`, "g"),
       (_match, lead: string, glyph: string) =>
         lead ? `${lead} ${VULGAR_FRACTIONS[glyph]}` : VULGAR_FRACTIONS[glyph],
     );
@@ -552,21 +556,68 @@ const NO_RECIPE_IN_TEXT =
 export async function parseText(rawText: string): Promise<Recipe> {
   const text = normalizeFractions(rawText);
   try {
-    const data = await callCookPilotParser("parseSocialRecipe", {
-      platform: "other",
-      caption: text,
-      transcript: text,
-    });
-    // A link pasted along with the text comes back as the recipe's source, so it
-    // lands in the link field instead of being typed at the end of the steps.
-    const recipe = adaptCookPilotRecipe(data, sourceUrlFromResponse(data));
-    if (!recipe) {
-      throw new ImportError(NO_RECIPE_IN_TEXT, "no_recipe");
+    const data = await readPastedText(text);
+    if (!cameFromALinkedPage(data)) return pastedRecipe(data, sourceUrlFromResponse(data));
+
+    // CookPilot could not read the paste strongly, followed a link in it, and
+    // answered with that page. The paste is the cook's own version and comes
+    // first: it is read again with nothing left to follow, and the link stays
+    // what it was, the recipe's source.
+    const sourceUrl = sourceUrlFromResponse(data);
+    const ownWords = withoutFollowableLinks(text);
+    if (holdsWords(ownWords)) {
+      const own = await readPastedText(ownWords).catch((err: unknown) => {
+        // "No recipe" is an answer about the paste. Anything else (the limit,
+        // a dropped connection) is not, and is the cook's to hear.
+        if (classifyError(err, "", "", "").code === "no_recipe") return null;
+        throw err;
+      });
+      if (own && !cameFromALinkedPage(own) && adaptCookPilotRecipe(own)) return pastedRecipe(own, sourceUrl);
     }
-    // Pasted text is the cook's own writing, so its notes section becomes the recipe's note.
-    const notes = sourceNotesFromResponse(data);
-    return notes ? { ...recipe, note: notes } : recipe;
+
+    // The paste holds no recipe of its own, only the way to one. That page is
+    // a website's recipe and is taken as one: credited to it, and none of its
+    // writing kept as the cook's note.
+    const [linked] = adaptCookPilotRecipes(data, sourceUrl);
+    if (!linked) throw new ImportError(NO_RECIPE_IN_TEXT, "no_recipe");
+    return linked;
   } catch (err) {
     throw friendlyError(err, COULD_NOT_READ_TEXT, NO_RECIPE_IN_TEXT);
   }
+}
+
+function readPastedText(text: string): Promise<unknown> {
+  return callCookPilotParser("parseSocialRecipe", {
+    platform: "other",
+    caption: text,
+    transcript: text,
+  });
+}
+
+/** The cook's own text as a recipe: its notes are theirs, so they are kept. */
+function pastedRecipe(data: unknown, sourceUrl: string | undefined): Recipe {
+  const recipe = adaptCookPilotRecipe(data, sourceUrl);
+  if (!recipe) {
+    throw new ImportError(NO_RECIPE_IN_TEXT, "no_recipe");
+  }
+  const notes = sourceNotesFromResponse(data);
+  return notes ? { ...recipe, note: notes } : recipe;
+}
+
+/** A letter or a digit in any script: more than punctuation is left. */
+function holdsWords(text: string): boolean {
+  return /[A-Za-z0-9]|[^\x00-\x7F]/.test(text);
+}
+
+/**
+ * The paste without the links CookPilot follows (`http(s)://` ones), and
+ * without any line that was nothing but a link.
+ */
+function withoutFollowableLinks(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => ({ line, cut: line.replace(/https?:\/\/\S+/gi, "").trimEnd() }))
+    .filter(({ line, cut }) => cut === line || holdsWords(cut))
+    .map(({ cut }) => cut)
+    .join("\n");
 }

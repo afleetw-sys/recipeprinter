@@ -67,14 +67,18 @@ function flattenIngredients(sections: unknown, recipeTitle?: string): RecipeIngr
       const name = asString(i.name);
       if (!name) continue;
       const amount = asString(i.amount);
-      const unit = asString(i.unit);
       const note = asString(i.notes) ?? asString(i.note);
+      // "3 cloves" arrives as amount 3, unit cloves, name "3 cloves": the line
+      // had nothing after its measure, so the measure word is the ingredient.
+      const nameIsTheQuantity = sameText(name, quantityText(amount, asString(i.unit)));
+      const unit = nameIsTheQuantity ? undefined : asString(i.unit);
+      const ingredientName = nameIsTheQuantity ? (asString(i.unit) ?? name) : name;
       out.push({
         amount,
         unit,
-        name,
+        name: ingredientName,
         note,
-        raw: ingredientRawLine(amount, unit, name, note),
+        raw: ingredientRawLine(amount, unit, ingredientName, note),
         section: title,
       });
     }
@@ -82,14 +86,36 @@ function flattenIngredients(sections: unknown, recipeTitle?: string): RecipeIngr
   return out;
 }
 
+function quantityText(amount: string | undefined, unit: string | undefined): string {
+  return [amount, unit].filter(Boolean).join(" ");
+}
+
+function sameText(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+/**
+ * The line a card prints, and all a saved project keeps of an ingredient.
+ *
+ * Built from the parts, each said once. A name that already opens with its own
+ * quantity ("3 cloves garlic" beside amount 3, unit cloves) is the whole line,
+ * or the card read "3 cloves 3 cloves garlic". A note the source wrote in
+ * brackets keeps them and needs no comma: "1 can crushed tomatoes (28 ounce)".
+ */
 function ingredientRawLine(
   amount: string | undefined,
   unit: string | undefined,
   name: string,
   note: string | undefined,
 ): string {
-  const quantity = [amount, unit].filter(Boolean).join(" ");
-  return [quantity, name].filter(Boolean).join(" ") + (note ? `, ${note}` : "");
+  const quantity = quantityText(amount, unit);
+  const opensWithQuantity =
+    quantity !== "" &&
+    name.toLowerCase().startsWith(quantity.toLowerCase()) &&
+    /^(?:\s|$)/.test(name.slice(quantity.length));
+  const line = opensWithQuantity ? name : [quantity, name].filter(Boolean).join(" ");
+  if (!note) return line;
+  return note.startsWith("(") ? `${line} ${note}` : `${line}, ${note}`;
 }
 
 function flattenInstructions(sections: unknown, recipeTitle?: string): RecipeInstruction[] {
@@ -117,7 +143,10 @@ function flattenInstructions(sections: unknown, recipeTitle?: string): RecipeIns
  * taken: it is printed in a book, and the print path drops anything else.
  */
 export function sourceUrlFromResponse(body: unknown): string | undefined {
-  const raw = (body as AnyRecord | null | undefined)?.sourceURL;
+  return absoluteHttpUrl((body as AnyRecord | null | undefined)?.sourceURL);
+}
+
+function absoluteHttpUrl(raw: unknown): string | undefined {
   if (typeof raw !== "string") return undefined;
   const trimmed = raw.trim();
   if (!/^https?:\/\//i.test(trimmed)) return undefined;
@@ -126,6 +155,26 @@ export function sourceUrlFromResponse(body: unknown): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * The page CookPilot actually read the recipe from (`parser.resolvedSourceURL`),
+ * when that is not the link it was given: a pin's destination, a link followed
+ * out of a caption. The recipe is that page's, so it is what a card credits; the
+ * pin was only how the cook got there. Undefined when the given link stands.
+ */
+export function resolvedSourceUrlFromResponse(body: unknown): string | undefined {
+  const parser = (body as AnyRecord | null | undefined)?.parser as AnyRecord | null | undefined;
+  return absoluteHttpUrl(parser?.resolvedSourceURL);
+}
+
+/**
+ * Whether CookPilot answered a paste with the page behind a link in it rather
+ * than with the paste (`parser.source`, set by its pasted-text pipeline).
+ */
+export function cameFromALinkedPage(body: unknown): boolean {
+  const parser = (body as AnyRecord | null | undefined)?.parser as AnyRecord | null | undefined;
+  return parser?.source === "social-outbound-link";
 }
 
 /**
@@ -234,7 +283,8 @@ export function withoutWebsiteDescription(recipe: Recipe): Recipe {
  * the image parser's envelope) falls back to the single adapter and is wrapped
  * as a one-element array — so a normal single-recipe response still yields one.
  */
-export function adaptCookPilotRecipes(body: unknown, sourceUrl?: string): Recipe[] {
+export function adaptCookPilotRecipes(body: unknown, givenUrl?: string): Recipe[] {
+  const sourceUrl = resolvedSourceUrlFromResponse(body) ?? givenUrl;
   // Only ever a web page's parse (the route and its callable fallback), so
   // the website's own description goes here, before anything can store it.
   if (body && typeof body === "object" && Array.isArray((body as AnyRecord).recipes)) {

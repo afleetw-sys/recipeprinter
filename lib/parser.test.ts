@@ -305,6 +305,64 @@ describe("parseText — CookPilot reads the paste", () => {
   });
 });
 
+describe("parseText — a paste with a link in it", () => {
+  // CookPilot follows a link in a paste it could not read strongly, and answers
+  // with the page behind it (`parser.source: "social-outbound-link"`). The
+  // cook's own version was replaced by the website's, notes and all.
+  const LINKED_PAGE = {
+    data: {
+      recipe: {
+        title: "The Blog's Classic Beef Stew",
+        description: "The blog's own introduction.",
+        notes: "The blogger's own notes.",
+        ingredientSections: [{ ingredients: [{ name: "celery", amount: "4", unit: "stalks" }] }],
+        instructionSections: [{ instructions: [{ text: "The blog's method." }] }],
+      },
+      sourceURL: "https://www.example-blog.org/stew",
+      parser: { source: "social-outbound-link" },
+    },
+  };
+  const PASTE_WITH_LINK =
+    "My version of the stew, no celery\nfrom https://www.example-blog.org/stew\n\n2 lb beef\n1 onion\n\nBrown the beef and simmer 3 hours.";
+
+  it("keeps the cook's recipe, and the link only as its source", async () => {
+    callable.mockResolvedValueOnce(LINKED_PAGE).mockResolvedValueOnce({
+      data: {
+        recipe: {
+          title: "My Version Of The Stew",
+          notes: "No celery.",
+          ingredientSections: [{ ingredients: [{ name: "beef", amount: "2", unit: "lb" }] }],
+          instructionSections: [{ instructions: [{ text: "Brown the beef and simmer 3 hours." }] }],
+        },
+        parser: { source: "social-ai" },
+      },
+    });
+
+    const recipe = await parseText(PASTE_WITH_LINK);
+
+    expect(recipe.title).toBe("My Version Of The Stew");
+    expect(recipe.note).toBe("No celery.");
+    expect(recipe.sourceUrl).toBe("https://www.example-blog.org/stew");
+    // Asked again with nothing left to follow.
+    expect(callable).toHaveBeenCalledTimes(2);
+    expect(JSON.stringify(callable.mock.calls[1][0])).not.toMatch(/https?:/);
+  });
+
+  it("takes the linked page as a website's recipe when the paste holds none of its own", async () => {
+    callable.mockResolvedValueOnce(LINKED_PAGE).mockRejectedValueOnce(
+      Object.assign(new Error("We couldn't find a recipe in this post"), { code: "functions/not-found" }),
+    );
+
+    const recipe = await parseText("You have to try this one\nhttps://www.example-blog.org/stew");
+
+    expect(recipe.title).toBe("The Blog's Classic Beef Stew");
+    expect(recipe.sourceUrl).toBe("https://www.example-blog.org/stew");
+    // A website's writing is never kept as the cook's.
+    expect(recipe.note).toBeUndefined();
+    expect(recipe.description).toBeUndefined();
+  });
+});
+
 // The route sees the actual response headers and body, so it is the only place
 // that can tell a bot wall from a paywall from a 404. These cover the client
 // half of that: preferring the route's answer over its own status guess, and
@@ -399,6 +457,19 @@ describe("normalizeFractions", () => {
   it("keeps a whole number apart from its fraction", () => {
     expect(normalizeFractions("1½ cups flour")).toBe("1 1/2 cups flour");
     expect(normalizeFractions("2 ¾ tsp salt")).toBe("2 3/4 tsp salt");
+  });
+
+  it("never reaches across a line break for its whole number", () => {
+    // "Serves 4" above "½ cup olive oil" came out as "Serves 4 1/2 cup olive
+    // oil": one line, read as a yield, and the olive oil was gone from a card
+    // that reported success.
+    for (const lineBreak of ["\n", "\r\n", "\n\n", "\u2028"]) {
+      for (const glyph of ["\u00bd", "\u2153", "\u00be", "\u215b"]) {
+        const lines = normalizeFractions(`Serves 4${lineBreak}${glyph} cup olive oil`).split(lineBreak);
+        expect(lines[0]).toBe("Serves 4");
+        expect(lines[lines.length - 1]).toMatch(/^\d\/\d cup olive oil$/);
+      }
+    }
   });
 
   it("handles the fraction slash", () => {
