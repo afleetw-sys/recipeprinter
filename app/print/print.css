@@ -3111,6 +3111,21 @@
   zoom: 1.4;
 }
 
+/* An in-season theme's tag: "Featured" before the Pro crown, in the crown's
+   own overlay chip (`.pro-badge--overlay` below), in white so the word reads
+   as a label and the gold stays the crown's. */
+.recipe-template-option__featured {
+  gap: 4px;
+  padding: 4px 6px;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.recipe-template-option__featured svg {
+  color: var(--cp-premium-bright);
+}
+
 /* The shared Pro indicator (components/ProBadge.tsx). The base
    `.pro-badge`/`.pro-badge__label` look now lives in globals.css — it isn't
    print-specific, and ProBadge itself renders outside /print too (e.g. the
@@ -5737,6 +5752,34 @@
   --recipe-card-keepout-h: 2.21in;
 }
 
+/* Fall: the page number keeps its right-hand place, above the pumpkins; the
+   chapter name stays on the plain foot to their left. Halloween is the mirror
+   image: the chapter name goes above the headstone and the page number stays
+   put. Cookbook pages grow each corner by that line, as Garden does. */
+.recipe-template--fall .recipe-book-folio {
+  bottom: calc(230 * var(--fall-u) + 0.08in);
+}
+
+.recipe-print-preview--card-6x4 .recipe-card-set.recipe-template--fall .recipe-card[data-in-book] {
+  --recipe-card-keepout-h: 1.1in;
+}
+
+.recipe-print-preview--letter .recipe-card-set.recipe-template--fall .recipe-card[data-in-book] {
+  --recipe-card-keepout-h: 1.39in;
+}
+
+.recipe-template--halloween .recipe-book-runhead {
+  bottom: calc(352 * var(--halloween-u) + 0.08in);
+}
+
+.recipe-print-preview--card-6x4 .recipe-card-set.recipe-template--halloween .recipe-card[data-in-book] {
+  --recipe-card-keepout-h: 1.44in;
+}
+
+.recipe-print-preview--letter .recipe-card-set.recipe-template--halloween .recipe-card[data-in-book] {
+  --recipe-card-keepout-h: 1.89in;
+}
+
 /* A page a recipe runs onto keeps only its theme's edge (see
    `TemplateDecoration`): Christmas's hats, Market's groceries and Garden's
    hills and tomatoes stay on the recipe's first page. With the art gone, the
@@ -5749,13 +5792,17 @@
 .recipe-template--market .recipe-card-page[data-edge-only] .recipe-book-runhead,
 .recipe-template--market .recipe-card-page[data-edge-only] .recipe-book-folio,
 .recipe-template--garden .recipe-card-page[data-edge-only] .recipe-book-runhead,
-.recipe-template--garden .recipe-card-page[data-edge-only] .recipe-book-folio {
+.recipe-template--garden .recipe-card-page[data-edge-only] .recipe-book-folio,
+.recipe-template--fall .recipe-card-page[data-edge-only] .recipe-book-folio,
+.recipe-template--halloween .recipe-card-page[data-edge-only] .recipe-book-runhead {
   bottom: 0.24in;
 }
 
 .recipe-print-preview .recipe-card-set.recipe-template--christmas .recipe-card.recipe-card--continued[data-in-book],
 .recipe-print-preview .recipe-card-set.recipe-template--market .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--continued[data-in-book] {
+.recipe-print-preview .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--continued[data-in-book],
+.recipe-print-preview .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--continued[data-in-book],
+.recipe-print-preview .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--continued[data-in-book] {
   --recipe-card-padding-bottom: 0.42in;
   --recipe-card-keepout-w: 0in;
   --recipe-card-keepout-h: 0in;
@@ -5763,8 +5810,20 @@
 
 .recipe-print-preview--letter .recipe-card-set.recipe-template--christmas .recipe-card.recipe-card--continued[data-in-book],
 .recipe-print-preview--letter .recipe-card-set.recipe-template--market .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview--letter .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--continued[data-in-book] {
+.recipe-print-preview--letter .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--continued[data-in-book],
+.recipe-print-preview--letter .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--continued[data-in-book],
+.recipe-print-preview--letter .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--continued[data-in-book] {
   --recipe-card-padding-bottom: 0.5in;
+}
+
+/* Fall's continued book pages have no leaves to clear, and Halloween's no
+   hand to wrap around. */
+.recipe-print-preview .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--continued[data-in-book] {
+  --recipe-card-padding-top: 0.16in;
+}
+
+.recipe-print-preview .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--continued[data-in-book] .recipe-card__method::before {
+  display: none;
 }
 
 .recipe-template--supper .recipe-book-runhead,
@@ -8186,7 +8245,9 @@ textarea.recipe-card__toc-title {
   .recipe-template--supper,
   .recipe-template--diner,
   .recipe-template--poster,
-  .recipe-template--christmas
+  .recipe-template--christmas,
+  .recipe-template--fall,
+  .recipe-template--halloween
 ) .recipe-card__footer {
   display: none;
 }
@@ -8203,7 +8264,9 @@ textarea.recipe-card__toc-title {
   .recipe-template--supper,
   .recipe-template--diner,
   .recipe-template--poster,
-  .recipe-template--christmas
+  .recipe-template--christmas,
+  .recipe-template--fall,
+  .recipe-template--halloween
 ) .recipe-card__footer:has(.recipe-card__footer-source) {
   display: flex;
 }
@@ -8220,7 +8283,9 @@ textarea.recipe-card__toc-title {
   .recipe-template--supper,
   .recipe-template--diner,
   .recipe-template--poster,
-  .recipe-template--christmas
+  .recipe-template--christmas,
+  .recipe-template--fall,
+  .recipe-template--halloween
 ) .recipe-card__footer-brand {
   display: none;
 }
@@ -9534,12 +9599,12 @@ textarea.recipe-card__toc-title {
 /* A smaller photo than the default on the newer themes, whose art already
    gives the card its picture: 0.72in on a 6x4 (Keepsake's size) and 1.3in on
    Full Page, against the default 0.92in / 1.7in. */
-.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster, .recipe-template--christmas) .recipe-card__header--with-photo .recipe-card__photo {
+.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster, .recipe-template--christmas, .recipe-template--fall, .recipe-template--halloween) .recipe-card__header--with-photo .recipe-card__photo {
   width: 0.72in;
   height: 0.72in;
 }
 
-.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster, .recipe-template--christmas) .recipe-card__header--with-photo .recipe-card__photo {
+.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster, .recipe-template--christmas, .recipe-template--fall, .recipe-template--halloween) .recipe-card__header--with-photo .recipe-card__photo {
   width: 1.3in;
   height: 1.3in;
 }
@@ -9642,7 +9707,9 @@ textarea.recipe-card__toc-title {
 .recipe-template--supper .recipe-card__header,
 .recipe-template--diner .recipe-card__header,
 .recipe-template--poster .recipe-card__header,
-.recipe-template--christmas .recipe-card__header {
+.recipe-template--christmas .recipe-card__header,
+.recipe-template--fall .recipe-card__header,
+.recipe-template--halloween .recipe-card__header {
   border-bottom: 0;
 }
 
@@ -10352,6 +10419,235 @@ textarea.recipe-card__toc-title {
   }
 }
 
+/* ── Fall (seasonal) ───────────────────────────────────────────────────────
+   Cream stock with the artist's two falling leaves in the top-left corner and
+   a pile of pumpkins and maple leaves in the bottom-right. Measured off her
+   2000-unit-wide mockup: `--fall-u` is one of those units at this card's
+   width. Each image is drawn to sit flush in its corner, so each is placed
+   at 0,0 from its corner at the mockup's size: leaves 217 units wide (art
+   132 tall), pumpkins 334 wide (art 230 tall, 323 wide).
+
+   The art never moves. The leaves stand over where the title starts, so
+   every face's top padding clears them; the pumpkins are a keep-out corner
+   (`--recipe-card-keepout-w/-h`, plain lengths for lib/faceMeasure), so only
+   the lines over them stop short and the rest of the card runs to the foot.
+   Set on the card itself so it beats the smaller padding a continued face
+   asks for. */
+.recipe-template--fall {
+  --recipe-bg: #f4edd8;
+  --recipe-ink: #3a2a1e;
+  --recipe-muted: #7a6450;
+  --recipe-accent: #91583b;
+  --recipe-accent-2: #91583b;
+  --recipe-bullet: #e8702a;
+  --recipe-line: rgba(145, 88, 59, 0.28);
+  --recipe-step-bg: #eadfc3;
+  --recipe-footer: #7a6450;
+  --recipe-radius: 0;
+  --recipe-title-font: var(--font-fraunces), Georgia, serif;
+  --fall-u: calc(var(--recipe-card-width) / 2000);
+  font-family: var(--font-figtree), system-ui, sans-serif;
+}
+
+.recipe-template--fall .recipe-card {
+  background-color: #f4edd8;
+  --recipe-card-padding-top: calc(132 * var(--fall-u) + 0.08in);
+}
+
+.recipe-print-preview--card-6x4 .recipe-template--fall .recipe-card {
+  --recipe-card-keepout-w: 1in;
+  --recipe-card-keepout-h: 0.74in;
+}
+
+.recipe-print-preview--letter .recipe-template--fall .recipe-card {
+  --recipe-card-keepout-w: 1.42in;
+  --recipe-card-keepout-h: 1.03in;
+}
+
+.recipe-template--fall .recipe-card__title {
+  color: #c4501c;
+  font-size: calc(var(--recipe-card-title-size) * 1.12);
+  font-weight: 700;
+  font-variation-settings: "SOFT" 100;
+  letter-spacing: -0.005em;
+}
+
+.recipe-template--fall .recipe-card__step-number {
+  color: #c4501c;
+}
+
+.recipe-template--fall .recipe-card__photo-img {
+  border-radius: 4px;
+}
+
+/* The source link sits on the bottom padding line, so it stops short of the
+   pumpkins too. */
+.recipe-template--fall .recipe-card__footer {
+  right: calc(var(--recipe-card-padding-x) + var(--recipe-card-keepout-w, 0in));
+}
+
+/* Hidden unless the card is Fall, like every template decoration (see
+   `.recipe-card__counter-band`). */
+.recipe-card__fall-leaves,
+.recipe-card__fall-pumpkins {
+  position: absolute;
+  display: none;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-template--fall .recipe-card__fall-leaves,
+.recipe-template--fall .recipe-card__fall-pumpkins {
+  display: block;
+}
+
+.recipe-card__fall-leaves {
+  top: 0;
+  left: 0;
+  width: calc(217 * var(--fall-u));
+}
+
+.recipe-card__fall-pumpkins {
+  right: 0;
+  bottom: 0;
+  width: calc(334 * var(--fall-u));
+}
+
+/* ── Halloween (seasonal) ──────────────────────────────────────────────────
+   Parchment stock, a headstone and jack-o'-lantern in the bottom-left corner
+   and a reaching hand at the right. Measured off the artist's 2000-unit-wide
+   mockup: `--halloween-u` is one of those units at this card's width.
+
+   The paper is her texture tinted to the mockup's parchment and mirrored four
+   ways in one JPEG (halloween-paper.jpg), so every edge meets its own
+   reflection and it tiles over a portrait Full Page with no seams. A plain
+   raster, not an SVG wrapping one, which Firefox prints blank (see
+   Christmas).
+
+   The headstone (540 units wide, art 532 x 352) is a keep-out corner on the
+   LEFT (`--recipe-card-keepout-side`), so only the lines over it stop short.
+   The hand (376 x 205) stands where the steps run, so it is not laid over the
+   card: it floats at the top-right of the steps and they wrap around it, one
+   step at a time. That needs the steps' lists to be plain blocks rather than
+   flex columns (a flex box beside a float narrows for its whole height), so
+   they take margins for the gap they had. Its own right margin reaches past
+   the card's padding to the card's edge, where the artist drew it. */
+.recipe-template--halloween {
+  --recipe-bg: #e4dac5;
+  --recipe-ink: #1f1b16;
+  --recipe-muted: #5e5446;
+  --recipe-accent: #b0501c;
+  --recipe-accent-2: #b0501c;
+  --recipe-bullet: #1f1b16;
+  --recipe-line: rgba(31, 27, 22, 0.22);
+  --recipe-step-bg: #1f1b16;
+  --recipe-footer: #5e5446;
+  --recipe-radius: 0;
+  --recipe-title-font: var(--font-creepster), Georgia, serif;
+  --halloween-u: calc(var(--recipe-card-width) / 2000);
+  font-family: var(--font-lora), Georgia, serif;
+}
+
+.recipe-template--halloween .recipe-card {
+  background-color: #e4dac5;
+  background-image: url("/images/halloween-paper.jpg");
+  background-size: calc(4000 * var(--halloween-u)) calc(2400 * var(--halloween-u));
+  background-repeat: repeat;
+  --recipe-card-keepout-side: left;
+}
+
+.recipe-print-preview--card-6x4 .recipe-template--halloween .recipe-card {
+  --recipe-card-keepout-w: 1.6in;
+  --recipe-card-keepout-h: 1.08in;
+}
+
+.recipe-print-preview--letter .recipe-template--halloween .recipe-card {
+  --recipe-card-keepout-w: 2.27in;
+  --recipe-card-keepout-h: 1.53in;
+}
+
+/* Creepster has one weight; a synthesised bold smears its drips. Its
+   letters are capitals at every case, and it is set well above the shared
+   title size so the drips read at card size. */
+.recipe-template--halloween .recipe-card__title {
+  color: #1f1b16;
+  font-size: calc(var(--recipe-card-title-size) * 1.3);
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: 0.02em;
+}
+
+.recipe-template--halloween .recipe-card__step-number {
+  color: #e4dac5;
+}
+
+/* A thin ink line round the photo, like the art's own outlines. Inside the
+   photo's box, so the frame keeps its size. */
+.recipe-template--halloween .recipe-card__photo-img {
+  box-sizing: border-box;
+  border: 0.75pt solid #1f1b16;
+  border-radius: 2px;
+}
+
+.recipe-template--halloween .recipe-card__footer {
+  left: calc(var(--recipe-card-padding-x) + var(--recipe-card-keepout-w, 0in));
+}
+
+.recipe-card__halloween-grave {
+  position: absolute;
+  display: none;
+  left: 0;
+  bottom: 0;
+  width: calc(540 * var(--halloween-u));
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-template--halloween .recipe-card__halloween-grave {
+  display: block;
+}
+
+.recipe-template--halloween .recipe-card__method::before {
+  content: "";
+  float: right;
+  width: calc(376 * var(--halloween-u));
+  height: calc(205 * var(--halloween-u));
+  margin: 0 calc(-1 * var(--recipe-card-padding-x)) 0.06in 0.08in;
+  background: url("/images/halloween-hand.png") no-repeat center / 100% 100%;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* On the back of a two-sided card the columns swap sides, so the steps may be
+   the LEFT column; the hand then stays inside them instead of reaching over
+   the ingredients. */
+.recipe-print-preview[data-double-sided="true"] .recipe-template--halloween .recipe-card--back .recipe-card__cols:not(.recipe-card__cols--single):not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only):not(.recipe-card__cols--method-only) .recipe-card__method::before {
+  margin-right: 0;
+}
+
+.recipe-template--halloween .recipe-card__method .recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe),
+.recipe-template--halloween .recipe-card__method ol {
+  display: block;
+}
+
+.recipe-template--halloween .recipe-card__method .recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe) > * + * {
+  margin-top: calc(var(--recipe-card-step-gap) * 0.3);
+}
+
+.recipe-print-preview--letter .recipe-template--halloween .recipe-card__method .recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe) > * + * {
+  margin-top: calc(var(--recipe-card-step-gap) * 1.5);
+}
+
+.recipe-template--halloween .recipe-card__method li + li {
+  margin-top: var(--recipe-card-step-gap);
+}
+
 /* ── A photo replaces the theme's decoration ──────────────────────────────
    On a cookbook's decorative pages, a photo IS the decoration: a cover, back
    cover, or dedication with a photo or collage (`data-cover-mode`), and a
@@ -10374,7 +10670,10 @@ textarea.recipe-card__toc-title {
     .recipe-card__poster-frame,
     .recipe-card__supper-frame,
     .recipe-card__supper-utensil,
-    .recipe-card__christmas-hats
+    .recipe-card__christmas-hats,
+    .recipe-card__fall-leaves,
+    .recipe-card__fall-pumpkins,
+    .recipe-card__halloween-grave
   ),
 .recipe-card.recipe-card--chapter-with-photo
   :is(
@@ -10389,7 +10688,10 @@ textarea.recipe-card__toc-title {
     .recipe-card__poster-frame,
     .recipe-card__supper-frame,
     .recipe-card__supper-utensil,
-    .recipe-card__christmas-hats
+    .recipe-card__christmas-hats,
+    .recipe-card__fall-leaves,
+    .recipe-card__fall-pumpkins,
+    .recipe-card__halloween-grave
   ) {
   display: none;
 }
