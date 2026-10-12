@@ -56,6 +56,8 @@ export interface StoredOpen {
   rewardDays: number;
   /** Set once a claim answered "check your email", so the reminder can say so. */
   pendingVerification?: boolean;
+  /** Set once the "A friend gave you Pro" dialog has been shown for this link. */
+  introShown?: boolean;
 }
 
 /** The claimable open, or null. An expired one is forgotten on read. */
