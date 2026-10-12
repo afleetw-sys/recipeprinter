@@ -2552,12 +2552,13 @@
     line-height: 1.1;
     letter-spacing: -0.025em;
   }
-  /* A photograph of a printed book, shown as it is. On a phone it sits above
-     the copy as a small portrait; desktop overrides the placement below. */
+  /* A photograph of a printed book. On a phone it sits above the copy as a
+     wide crop; desktop overrides the placement below. */
   .rp-cookbook-offer__peek {
     order: -1;
     justify-self: center;
-    width: 11rem;
+    width: 15rem;
+    aspect-ratio: 4 / 3;
     margin-top: 1.25rem;
     overflow: hidden;
     border-radius: var(--cp-radius-card);
@@ -2567,18 +2568,19 @@
       min-height: 19rem;
     }
     .rp-cookbook-offer__copy {
-      max-width: 58%;
+      max-width: 54%;
       padding: 2.25rem 2.5rem;
       align-self: center;
     }
-    /* Beside the copy: the panel's full height, flush with its right edge.
+    /* Beside the copy: the panel's full height, flush with its right edge,
+       landscape so the book reads wide (the photo's top and bottom crop away).
        The panel clips its own corners, so the photo needs none here. */
     .rp-cookbook-offer__peek {
       position: absolute;
       inset: 0 0 0 auto;
       width: auto;
-      max-width: 40%;
-      aspect-ratio: 2 / 3;
+      max-width: 46%;
+      aspect-ratio: 4 / 3;
       margin: 0;
       border-radius: 0;
     }
