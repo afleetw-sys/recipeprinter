@@ -10,6 +10,7 @@ import {
   importsKnownUnlimited,
   importsSpent,
   markImportsUnlimited,
+  meterDedupeInput,
   refreshImportUsage,
   refuseImportIfSpent,
   subscribeImportRefusal,
@@ -302,6 +303,49 @@ describe("out of free imports", () => {
   });
 });
 
+describe("a link or text already counted in the 30 days", () => {
+  // Importing it again uses nothing (decision D2), so being out of imports
+  // must not stop it: not at the homepage's check before /print, and not when
+  // the meter can't be reached. The meter's own answer is CookPilot's rule.
+  test.each([
+    {
+      method: "url",
+      parser: parseUrlAll,
+      start: (q: ReturnType<typeof useQueue>) => q.addUrl("https://example.com/borscht"),
+      again: { kind: "url", url: "example.com/borscht/?utm_source=pin" },
+      other: { kind: "url", url: "https://example.com/stew" },
+    },
+    {
+      method: "text",
+      parser: parseText,
+      start: (q: ReturnType<typeof useQueue>) => q.addText("Borscht\n2 beets\nSimmer."),
+      again: { kind: "text", text: " borscht 2 beets\n\nsimmer. " },
+      other: { kind: "text", text: "Stew\n1 onion" },
+    },
+  ] as const)("$method: still imports after the last free one is used", async ({ parser, start, again, other }) => {
+    const atLimit = { mode: "enforce", allowed: true, used: 10, limit: 10, nextFreeAt: Date.UTC(2099, 0, 1) };
+    callCookPilotParser.mockImplementation(async (_name: string, data: { op: string }) =>
+      data.op === "reserve" ? { ...atLimit, used: 9 } : { ok: true, ...atLimit },
+    );
+    const { result } = setup();
+    act(() => start(result.current));
+    await vi.waitFor(() => expect(importsSpent()).toBe(true));
+
+    const opened = vi.fn();
+    const stop = subscribeImportRefusal(opened);
+    expect(await refuseImportIfSpent(meterDedupeInput(other))).toBe(true);
+    expect(await refuseImportIfSpent(meterDedupeInput(again))).toBe(false);
+    expect(opened).toHaveBeenCalledTimes(1);
+    stop();
+
+    act(() => result.current.remove(result.current.items[0].id));
+    callCookPilotParser.mockRejectedValue(new Error("offline"));
+    act(() => start(result.current));
+    await vi.waitFor(() => expect(parser).toHaveBeenCalledTimes(2));
+    expect(onImportLimitReached).not.toHaveBeenCalled();
+  });
+});
+
 describe("an unbought cookbook's free size", () => {
   const onBookCapReached = vi.fn();
   function book(bookCap: number | null) {
@@ -360,11 +404,11 @@ describe("a page that hands imports off to /print", () => {
     }
     const opened = vi.fn();
     const stop = subscribeImportRefusal(opened);
-    expect(refuseImportIfSpent()).toBe(refuses);
+    expect(await refuseImportIfSpent()).toBe(refuses);
     expect(opened).toHaveBeenCalledTimes(refuses ? 1 : 0);
     stop();
     // With no banner on the page to open the dialog, the handoff goes ahead.
-    expect(refuseImportIfSpent()).toBe(false);
+    expect(await refuseImportIfSpent()).toBe(false);
   });
 });
 
@@ -407,7 +451,7 @@ describe("after buying Pro", () => {
     expect(rememberedImportUsage()).toBeNull();
     const opened = vi.fn();
     const stop = subscribeImportRefusal(opened);
-    expect(refuseImportIfSpent()).toBe(false);
+    expect(await refuseImportIfSpent()).toBe(false);
     expect(opened).not.toHaveBeenCalled();
     stop();
   });

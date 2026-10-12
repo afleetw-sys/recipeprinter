@@ -5,6 +5,8 @@ import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
 import { isProductionRuntime } from "@/lib/appEnvironment";
 import { useLocalFunctions } from "@/lib/firebase/emulators";
 import { IMPORT_ALLOWANCE_LIVE } from "@/lib/freeImports";
+import { normalizeImportURL } from "@/lib/cookpilot";
+import { canonicalUrl, unwrapRedirectUrl } from "@/lib/importUrl";
 import { localStore } from "@/lib/storage";
 
 /**
@@ -73,7 +75,13 @@ export interface MeterAnswer {
 export type Reservation =
   | { status: "skipped" }
   | { status: "reserved"; meterMs: number; result: MeterAnswer }
-  | { status: "unavailable"; meterMs: number; reason: "timeout" | "error" };
+  | {
+      status: "unavailable";
+      meterMs: number;
+      reason: "timeout" | "error";
+      /** This browser counted the same link or text within the 30 days. */
+      repeat?: boolean;
+    };
 
 export const SKIPPED: Reservation = { status: "skipped" };
 
@@ -198,6 +206,7 @@ export function clearImportsUnlimited(): void {
 export function resetImportUsageForTest(): void {
   remembered = undefined;
   unlimited = undefined;
+  pendingDedupeKeys.clear();
   listeners.clear();
 }
 
@@ -381,6 +390,65 @@ export function normalizedTextForDedupe(text: string): string {
 }
 
 /**
+ * What the meter dedupes a link or pasted text on. The queue and the pages
+ * that hand imports off to `/print` both ask here, so a link pasted on the
+ * homepage is recognised as the one imported on `/print` last week.
+ */
+export function meterDedupeInput(input: { kind: "url"; url: string } | { kind: "text"; text: string }): string {
+  if (input.kind === "text") return normalizedTextForDedupe(input.text);
+  const url = input.url.trim();
+  return canonicalUrl(unwrapRedirectUrl(url)) || unwrapRedirectUrl(normalizeImportURL(url));
+}
+
+/** `meterDedupeInput` for a payload handed to `/print`; none for photos. */
+export function handoffDedupeInput(payload: { kind: string; url?: string; text?: string }): string | undefined {
+  if (payload.kind === "url" && payload.url) return meterDedupeInput({ kind: "url", url: payload.url });
+  if (payload.kind === "text" && payload.text) return meterDedupeInput({ kind: "text", text: payload.text });
+  return undefined;
+}
+
+// ---- What this browser has already had counted -------------------------------
+
+/**
+ * The dedupe keys of imports this browser had counted, with when. A repeat
+ * uses nothing, so it imports even at the limit (D2), and the two checks made
+ * here rather than by the server need to know one when they see it: the page
+ * that would otherwise stop the cook before `/print`, and rule E1 when the
+ * meter can't be reached. The server's answer, when there is one, decides.
+ * Only the salted hashes the meter is sent anyway are kept.
+ */
+const COUNTED_STORAGE_KEY = "recipeprinter:import-counted:v1";
+const COUNTED_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const COUNTED_MAX = 50;
+
+type CountedImport = { k: string; at: number };
+
+function readCounted(nowMs: number): CountedImport[] {
+  try {
+    const parsed = JSON.parse(localStore.get(COUNTED_STORAGE_KEY) ?? "[]") as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (entry): entry is CountedImport =>
+        typeof entry?.k === "string" && typeof entry?.at === "number" && nowMs - entry.at < COUNTED_WINDOW_MS,
+    );
+  } catch {
+    return [];
+  }
+}
+
+function rememberCounted(key: string, nowMs: number): void {
+  const kept = readCounted(nowMs).filter((entry) => entry.k !== key);
+  localStore.set(COUNTED_STORAGE_KEY, JSON.stringify([...kept, { k: key, at: nowMs }].slice(-COUNTED_MAX)));
+}
+
+function countedBefore(key: string | undefined, nowMs: number): boolean {
+  return Boolean(key) && readCounted(nowMs).some((entry) => entry.k === key);
+}
+
+/** Each reserved import's dedupe key, until it settles. */
+const pendingDedupeKeys = new Map<string, string>();
+
+/**
  * Reserves this import with the meter. Never throws and never takes longer
  * than `IMPORT_METER_TIMEOUT_MS`: a missing, slow or broken meter comes back
  * as "unavailable" and the import goes ahead.
@@ -392,8 +460,10 @@ export async function reserveImport(input: {
 }): Promise<Reservation> {
   const startedAt = Date.now();
   const at: { stage: MeterStage } = { stage: "load" };
+  const keyed = input.dedupeInput ? dedupeKeyFor(input.dedupeInput) : Promise.resolve(undefined);
   const work = (async () => {
-    const dedupeKey = input.dedupeInput ? await dedupeKeyFor(input.dedupeInput) : undefined;
+    const dedupeKey = await keyed;
+    if (dedupeKey) pendingDedupeKeys.set(input.importId, dedupeKey);
     const data = await callMeter(
       {
         op: "reserve",
@@ -410,10 +480,15 @@ export async function reserveImport(input: {
   try {
     const result = await withTimeout(work, IMPORT_METER_TIMEOUT_MS);
     noteAnswer(result);
+    // A refused import never settles.
+    if (!result.allowed) pendingDedupeKeys.delete(input.importId);
     return { status: "reserved", meterMs: Date.now() - startedAt, result };
   } catch (err) {
     const reason = reportUnavailable("reserve", err, at.stage, work, startedAt);
-    return { status: "unavailable", meterMs: Date.now() - startedAt, reason };
+    // Hashing is local and quick, so it has always finished by the time the
+    // meter has been given up on.
+    const repeat = countedBefore(await keyed, Date.now());
+    return { status: "unavailable", meterMs: Date.now() - startedAt, reason, ...(repeat ? { repeat } : {}) };
   }
 }
 
@@ -424,6 +499,9 @@ export async function reserveImport(input: {
  * import boxes show next.
  */
 export function settleImport(importId: string, outcome: "success" | "failure"): void {
+  const dedupeKey = pendingDedupeKeys.get(importId);
+  pendingDedupeKeys.delete(importId);
+  if (dedupeKey && outcome === "success") rememberCounted(dedupeKey, Date.now());
   const startedAt = Date.now();
   const at: { stage: MeterStage } = { stage: "load" };
   const work = callMeter({ op: "settle", importId, outcome }, (stage) => (at.stage = stage));
@@ -478,7 +556,7 @@ export function importRefused(
   if (reservation.status === "reserved") {
     return reservation.result.mode === "enforce" && reservation.result.allowed === false;
   }
-  if (reservation.status !== "unavailable") return false;
+  if (reservation.status !== "unavailable" || reservation.repeat) return false;
   const last = readRemembered();
   if (!last || !last.enforcing) return false;
   const now = usageNow(last, nowMs);
@@ -516,10 +594,13 @@ export function subscribeImportRefusal(listener: () => void): () => void {
  * else, instead of walking them to an empty print page to be refused there
  * (Amelia, 2026-10-10). The dialog is opened by `FrontDoorUpgradeHost` on
  * that page; with none mounted to open it, this answers false and the
- * handoff goes ahead as before, to be refused on `/print`.
+ * handoff goes ahead as before, to be refused on `/print`. A link or text this
+ * browser already had counted (`meterDedupeInput`) goes ahead too: importing
+ * it again uses nothing.
  */
-export function refuseImportIfSpent(): boolean {
+export async function refuseImportIfSpent(dedupeInput?: string): Promise<boolean> {
   if (!importsSpent() || refusalListeners.size === 0) return false;
+  if (dedupeInput && countedBefore(await dedupeKeyFor(dedupeInput), Date.now())) return false;
   refusalListeners.forEach((listener) => listener());
   return true;
 }

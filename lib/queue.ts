@@ -7,7 +7,7 @@ import { ImportError, parseImages, parseText, parseUrlAll } from "@/lib/parser";
 import { captureFailedImportImages, recordFailedImport } from "@/lib/failedImportCapture";
 import { noteImported, noteRecipeEdited } from "@/lib/importCorrections";
 import { placeholderHostMessage } from "@/lib/friendlyErrors";
-import { unwrapRedirectUrl } from "@/lib/importUrl";
+import { canonicalUrl, unwrapRedirectUrl } from "@/lib/importUrl";
 import { prepareImageDataUrls } from "@/lib/imageImport";
 import { normalizeImportURL, withoutWebsiteDescription } from "@/lib/cookpilot";
 import { hostnameOf as rawHostnameOf } from "@/lib/url";
@@ -27,7 +27,7 @@ import {
   type ImportUsage,
   meterImportedFields,
   meterMsOf,
-  normalizedTextForDedupe,
+  meterDedupeInput,
   reserveImport,
   settleImport,
   type MeteredMethod,
@@ -353,23 +353,6 @@ export const __releaseLocalPhotosForTest = releaseLocalPhotos;
 
 function hostnameOf(url: string): string {
   return rawHostnameOf(normalizeImportURL(url)) ?? url;
-}
-
-function canonicalUrl(rawUrl: string): string | null {
-  try {
-    const url = new URL(normalizeImportURL(rawUrl));
-    url.hash = "";
-    for (const key of Array.from(url.searchParams.keys())) {
-      if (/^(utm_|fbclid$|gclid$|mc_cid$|mc_eid$)/i.test(key)) {
-        url.searchParams.delete(key);
-      }
-    }
-    url.hostname = url.hostname.toLowerCase();
-    url.pathname = url.pathname.replace(/\/+$/, "") || "/";
-    return url.toString();
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -1133,7 +1116,7 @@ export function useQueue() {
         // a redirect doorway; the query string is untouched.
         { source: "url", hostname: host, url: normalizedUrl },
         () => parseUrlAll(normalizedUrl, { importId: id }),
-        { failedText: normalizedUrl, meterExempt: opts?.meterExempt, dedupeInput: key || normalizedUrl },
+        { failedText: normalizedUrl, meterExempt: opts?.meterExempt, dedupeInput: meterDedupeInput({ kind: "url", url }) },
       );
     },
     [commit, focusItem, runParse],
@@ -1235,7 +1218,7 @@ export function useQueue() {
       void runParse(id, { source: "text" }, () => parseText(trimmed), {
         failedText: trimmed,
         meterExempt: opts?.meterExempt,
-        dedupeInput: normalizedTextForDedupe(trimmed),
+        dedupeInput: meterDedupeInput({ kind: "text", text: trimmed }),
       });
     },
     [commit, runParse],
