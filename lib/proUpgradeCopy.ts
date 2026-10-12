@@ -138,7 +138,7 @@ export function proUpgradeCopy(
       // Says what they still have before what they could buy: nothing they
       // made is locked, and waiting is a real option. Only when it's true: an
       // import sent from the homepage arrives on a fresh, empty project.
-      body: `${back}${hasRecipes ? "Your recipes are still here to edit and print. " : ""}Upgrade to Pro for unlimited recipe imports.`,
+      body: `${back}${hasRecipes ? "You can still edit and print the recipes you've imported. " : ""}Upgrade to Pro for unlimited recipe imports.`,
       benefits: PRO_BENEFITS,
       ctaLabel: "Unlock Pro",
     };
