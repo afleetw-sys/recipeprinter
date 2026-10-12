@@ -168,15 +168,14 @@ const figtree = localFont({
   preload: false,
 });
 
-// Halloween's faces: Grenze Gotisch, a blackletter cut open enough to read as
-// a title, over Lora, a book serif with a tall x-height for small type.
-const grenzeGotisch = localFont({
-  src: "./fonts/grenze-gotisch/grenze-gotisch-latin-wght-normal.woff2",
-  weight: "100 900",
-  variable: "--font-grenze-gotisch",
+// Halloween's faces: Creepster, a dripping horror-poster display face, over
+// Lora, a book serif with a tall x-height for small type.
+const creepster = localFont({
+  src: "./fonts/creepster/creepster-latin-400-normal.woff2",
+  weight: "400",
+  variable: "--font-creepster",
   display: "swap",
   preload: false,
-  adjustFontFallback: "Times New Roman",
 });
 
 const lora = localFont({
@@ -295,7 +294,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${berkshireSwash.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${fraunces.variable} ${figtree.variable} ${grenzeGotisch.variable} ${lora.variable} ${karla.variable}`}
+      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${berkshireSwash.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${fraunces.variable} ${figtree.variable} ${creepster.variable} ${lora.variable} ${karla.variable}`}
     >
       <body>
         <TranslatedPageGuard />

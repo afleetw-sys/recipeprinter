@@ -10545,7 +10545,7 @@ textarea.recipe-card__toc-title {
   --recipe-step-bg: #1f1b16;
   --recipe-footer: #5e5446;
   --recipe-radius: 0;
-  --recipe-title-font: var(--font-grenze-gotisch), Georgia, serif;
+  --recipe-title-font: var(--font-creepster), Georgia, serif;
   --halloween-u: calc(var(--recipe-card-width) / 2000);
   font-family: var(--font-lora), Georgia, serif;
 }
@@ -10568,13 +10568,15 @@ textarea.recipe-card__toc-title {
   --recipe-card-keepout-h: 1.53in;
 }
 
-/* Grenze's blackletter is narrow and short for its size, so it takes a
-   larger size to read as a title beside the other themes. */
+/* Creepster has one weight; a synthesised bold smears its drips. Its
+   letters are capitals at every case, so a touch larger than the shared
+   title size reads as a title without wrapping long names early. */
 .recipe-template--halloween .recipe-card__title {
   color: #1f1b16;
-  font-size: calc(var(--recipe-card-title-size) * 1.3);
-  font-weight: 600;
-  letter-spacing: 0;
+  font-size: calc(var(--recipe-card-title-size) * 1.15);
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: 0.02em;
 }
 
 .recipe-template--halloween .recipe-card__step-number {
