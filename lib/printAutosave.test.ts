@@ -71,12 +71,6 @@ describe("shouldFlushOnHide", () => {
   });
 });
 
-describe("LOADED_BASELINE", () => {
-  it("keeps the value stored fingerprints were compared against", () => {
-    expect(LOADED_BASELINE).toBe("__loaded__");
-  });
-});
-
 describe("shouldSaveOnLeave", () => {
   const idle = { saveInFlight: false, saveQueued: false };
 

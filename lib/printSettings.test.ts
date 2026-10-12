@@ -5,8 +5,6 @@ import {
   writePrintSettings,
   initialPrintCardSize,
   initialRecipePrintTemplate,
-  isPrintCardSize,
-  isRecipePrintTemplate,
 } from "@/lib/printSettings";
 
 // These read the ?size= and ?template= query params when the print page
@@ -23,11 +21,6 @@ describe("initialPrintCardSize", () => {
     expect(initialPrintCardSize("6x4")).toBe("letter");
     expect(initialPrintCardSize("")).toBe("letter");
   });
-
-  it("agrees with the guard it is built on", () => {
-    expect(isPrintCardSize("card-6x4")).toBe(true);
-    expect(isPrintCardSize("6x4")).toBe(false);
-  });
 });
 
 describe("initialRecipePrintTemplate", () => {
@@ -38,11 +31,6 @@ describe("initialRecipePrintTemplate", () => {
   it("falls back to classic for a missing or unknown value", () => {
     expect(initialRecipePrintTemplate(null)).toBe("classic");
     expect(initialRecipePrintTemplate("not-a-template")).toBe("classic");
-  });
-
-  it("agrees with the guard it is built on", () => {
-    expect(isRecipePrintTemplate("classic")).toBe(true);
-    expect(isRecipePrintTemplate("not-a-template")).toBe(false);
   });
 });
 

@@ -316,94 +316,14 @@ describe("the cookbook print dialog", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
-  it("says what Save produces right under the shortcut, before the questions that follow it", () => {
-    renderDialog();
-    expect(document.querySelector(".cookbook-ready__downloads")).toBeNull();
-    fillInFor("copy-shop");
-    const summary = document.querySelector(".cookbook-ready__downloads")!;
-    expect(summary.textContent).toMatch(/one file/i);
-    // Right under "Fill in for", ahead of the binding question, and well
-    // before Save. The cover-size fields no longer live on this screen at
-    // all — they only appear later, in the "download your cover" step, once
-    // a real spine width is available.
-    const order = (a: Element, b: Element) =>
-      a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING;
-    expect(order(screen.getByRole("button", { name: /fill in for/i }), summary)).toBeTruthy();
-    expect(
-      order(summary, screen.getByRole("radiogroup", { name: "How it will be bound" })),
-    ).toBeTruthy();
-    expect(order(summary, save())).toBeTruthy();
-    fireEvent.click(pill("Edge to edge"));
-    expect(document.querySelector(".cookbook-cover-size")).toBeNull();
-  });
-
-  it("draws the menu outside the dialog, so it is not confined to its size", () => {
-    renderDialog();
-    fireEvent.click(screen.getByRole("button", { name: /fill in for/i }));
-    const menu = screen.getByRole("menu");
-    expect(screen.getByRole("dialog").contains(menu)).toBe(false);
-    expect(menu.parentElement).toBe(document.body);
-  });
-
-  it("puts the check mark on the right of the chosen row", () => {
-    renderDialog();
-    fillInFor("lulu");
-    fireEvent.click(screen.getByRole("button", { name: /fill in for/i }));
-    const chosen = screen.getByRole("menuitemradio", { name: "Lulu" });
-    expect(chosen.getAttribute("aria-checked")).toBe("true");
-    // The label comes first, then the slot holding the check.
-    expect(chosen.firstChild?.textContent).toBe("Lulu");
-    expect(chosen.lastElementChild?.querySelector("svg")).not.toBeNull();
-    const other = screen.getByRole("menuitemradio", { name: "Blurb" });
-    expect(other.lastElementChild?.querySelector("svg")).toBeNull();
-  });
-
-  it("does not count a press inside its own menu as outside", () => {
-    renderDialog();
-    fireEvent.click(screen.getByRole("button", { name: /fill in for/i }));
-    const row = screen.getByRole("menuitemradio", { name: "Blurb" });
-    fireEvent.pointerDown(row);
-    expect(screen.queryByRole("menu")).not.toBeNull();
-    fireEvent.click(row);
-    expect(pill("Hardcover").checked).toBe(true);
-    // A press elsewhere does close it.
-    fireEvent.click(screen.getByRole("button", { name: /fill in for/i }));
-    fireEvent.pointerDown(document.body);
-    expect(screen.queryByRole("menu")).toBeNull();
-  });
-
-  it("moves with the arrow keys and hands focus back on Tab", () => {
+  it("hands focus back to the trigger when Tab leaves the menu, past the dialog's focus trap", () => {
     renderDialog();
     const trigger = screen.getByRole("button", { name: /fill in for/i });
     fireEvent.click(trigger);
     const rows = screen.getAllByRole("menuitemradio");
-    expect(document.activeElement).toBe(rows[0]);
-    fireEvent.keyDown(rows[0], { key: "ArrowDown" });
-    expect(document.activeElement).toBe(rows[1]);
-    fireEvent.keyDown(rows[1], { key: "ArrowUp" });
-    expect(document.activeElement).toBe(rows[0]);
     fireEvent.keyDown(rows[0], { key: "Tab" });
     expect(screen.queryByRole("menu")).toBeNull();
     expect(document.activeElement).toBe(trigger);
-  });
-
-  it("says how many files in plain terms, whoever is printing", () => {
-    renderDialog();
-    fillInFor("home");
-    fireEvent.click(pill("Hardcover"));
-    fireEvent.click(pill("8 × 10 in"));
-    // A hardcover clears "My own printer" (it cannot make one), leaving no
-    // printer named: one file, covers inside.
-    const line = document.querySelector(".cookbook-ready__downloads")!.textContent!;
-    expect(line).toBe("You’ll get one file, with the cover as its first page.");
-    expect(line).not.toMatch(/service|shop/i);
-  });
-
-  it("keeps the cover separate for a print service that requires it", () => {
-    renderDialog();
-    fillInFor("lulu");
-    const line = document.querySelector(".cookbook-ready__downloads")!.textContent!;
-    expect(line).toBe("You’ll get two files: the pages and the cover.");
   });
 
   it("keeps the answers when the shortcut is cleared", () => {

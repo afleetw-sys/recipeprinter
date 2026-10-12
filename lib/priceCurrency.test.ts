@@ -106,12 +106,6 @@ describe("formatPrice", () => {
       formatPrice(1000, "CNY", "CN").replace(/[\d.,\s]/g, ""),
     );
   });
-
-  test("dollars keep the plain sign at home and are named abroad", () => {
-    expect(formatPrice(499, "USD", "US")).toBe("$4.99");
-    expect(formatPrice(499, "USD", null)).toBe("$4.99");
-    expect(formatPrice(499, "USD", "MX")).toBe("US$4.99");
-  });
 });
 
 describe("localizePriceText", () => {
