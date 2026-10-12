@@ -72,10 +72,20 @@ async function expectEdits(page: Page) {
   await expect(page.getByRole("button", { name: "Garden", exact: true })).toHaveAttribute("aria-pressed", "true");
 }
 
-/** Leaves through the logo, then reopens the book from Projects. */
-async function leaveAndReopen(page: Page, projectId: string) {
+/**
+ * Leaves /print through the header logo and waits for the home page itself.
+ * The URL reads "/" before the trip is over (the logo unwinds any overlay's
+ * history entries first), and a `goto` sent in that gap is cancelled by it.
+ */
+async function leaveThroughLogo(page: Page) {
   await page.getByRole("link", { name: "RecipePrinter home" }).click();
   await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByPlaceholder("Paste a recipe link")).toBeVisible();
+}
+
+/** Leaves through the logo, then reopens the book from Projects. */
+async function leaveAndReopen(page: Page, projectId: string) {
+  await leaveThroughLogo(page);
   await page.goto("/projects");
   await page.locator(`a[href="/print?project=${projectId}"]`).click();
   await expect(page).toHaveURL(/\/print/);
@@ -168,8 +178,7 @@ test("an edit made just before leaving is kept", async ({ page, request }) => {
   await field(page, "Servings").fill("6");
   await field(page, "Servings").press("Tab");
   // Straight out, before any autosave interval could have passed.
-  await page.getByRole("link", { name: "RecipePrinter home" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await leaveThroughLogo(page);
 
   await onServer(request, book, (text) => /"servings":\s*\{\s*"(stringValue|integerValue)":\s*"6"/.test(text));
   await page.goto("/projects");
@@ -288,8 +297,7 @@ test("opening a book with no unsaved edits doesn't save it again", async ({ page
 
 test("a library that fails to load says so, instead of showing no projects", async ({ page, request }) => {
   await startCookbook(page, request);
-  await page.getByRole("link", { name: "RecipePrinter home" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await leaveThroughLogo(page);
 
   // Every Firestore request fails from here on, the way a dropped connection does.
   await page.route(/127\.0\.0\.1:8180/, (route) => route.abort("internetdisconnected"));
