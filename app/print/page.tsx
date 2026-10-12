@@ -158,7 +158,7 @@ import {
   getCookbookPreset,
   presetCardDims,
 } from "@/lib/cookbookPresets";
-import { track } from "@/lib/analytics";
+import { referralPromptsAllowed, track } from "@/lib/analytics";
 import {
   BookIcon,
   PagesIcon,
@@ -217,6 +217,15 @@ import {
 import { hasPendingImport, takePendingImport } from "@/lib/pendingImport";
 import { isIOSPrinter, isWebKitPrinter, printNeedsLiveGesture } from "@/lib/printGesture";
 import { markPostPrintDialogShown, shouldShowPostPrintDialog } from "@/lib/postPrintDialog";
+import {
+  REFERRALS_LIVE,
+  cachedReferralSummary,
+  capReached,
+  readPostPrintHistory,
+  recordPostPrintReferralShown,
+  shouldOfferReferralAfterPrint,
+} from "@/lib/referral";
+import { PostPrintInviteDialog } from "@/components/PostPrintInviteDialog";
 import { useToast } from "@/lib/useToast";
 import { printProjectFingerprint, type PendingSave } from "@/lib/printSave";
 import { writeProject as runSaveWrite } from "@/lib/printSaveWrite";
@@ -295,6 +304,7 @@ export default function PrintPage() {
       is how books saved before this already read. */
   const [showDescription, setShowDescription] = useState(true);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
+  const [showReferralInvite, setShowReferralInvite] = useState(false);
   const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
   // A cookbook started from the homepage is built HERE, behind the welcome
   // dialog: the page first renders as recipe cards, then swaps theme and
@@ -5109,7 +5119,27 @@ export default function PrintPage() {
       // can't stand in for "you exported a cookbook"). Only plain-card prints
       // get that nudge.
       if (cookbookMode) return;
-      if (!prompt) return;
+      if (!prompt) {
+        // The first print gets the dialog above; now and then after that, an
+        // invite to share RecipePrinter (lib/referral).
+        const summary = cachedReferralSummary();
+        if (
+          REFERRALS_LIVE &&
+          postPrintAction !== "none" &&
+          referralPromptsAllowed() &&
+          (!summary || summary.enabled) &&
+          shouldOfferReferralAfterPrint({
+            nowMs: Date.now(),
+            cookbookMode,
+            capReached: summary ? capReached(summary) : false,
+            history: readPostPrintHistory(),
+          })
+        ) {
+          recordPostPrintReferralShown();
+          window.setTimeout(() => setShowReferralInvite(true), 150);
+        }
+        return;
+      }
       markPostPrintDialogShown();
       window.setTimeout(() => setShowDonateDialog(true), 150);
     }
@@ -5982,6 +6012,7 @@ export default function PrintPage() {
         showAddRecipeDialog ||
         pendingDelete ||
         showDonateDialog ||
+        showReferralInvite ||
         showFeedbackDialog ||
         showCookPilotLogin
       ) {
@@ -5997,6 +6028,7 @@ export default function PrintPage() {
     showAddRecipeDialog,
     pendingDelete,
     showDonateDialog,
+    showReferralInvite,
     showFeedbackDialog,
     showCookPilotLogin,
     requestDeleteNavItem,
@@ -6918,6 +6950,12 @@ export default function PrintPage() {
       </main>
     </>
 
+      <PostPrintInviteDialog
+        open={showReferralInvite}
+        signedIn={Boolean(cookPilotUser)}
+        rewardDays={cachedReferralSummary()?.rewardDays ?? 7}
+        onClose={() => setShowReferralInvite(false)}
+      />
       <PrintDialogs
         showDonateDialog={showDonateDialog}
         onCloseDonateDialog={() => setShowDonateDialog(false)}

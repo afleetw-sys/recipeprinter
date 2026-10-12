@@ -5,6 +5,7 @@ import { NoFocusZoom } from "@/components/NoFocusZoom";
 import { TranslatedPageGuard } from "@/components/TranslatedPageGuard";
 import { KeyboardInsetWatcher } from "@/components/KeyboardInsetWatcher";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
+import { ReferralHostLoader } from "@/components/ReferralHostLoader";
 import { ActionTitles } from "@/components/ActionTitles";
 import {
   SITE_URL,
@@ -262,6 +263,7 @@ export default function RootLayout({
         <KeyboardInsetWatcher />
         <NoFocusZoom />
         <AnalyticsProvider />
+        <ReferralHostLoader />
         <ActionTitles />
         {children}
       </body>

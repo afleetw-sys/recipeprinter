@@ -11,6 +11,7 @@ import {
   sendPasswordResetEmail,
   getRedirectResult,
   onAuthStateChanged,
+  sendEmailVerification,
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
@@ -27,7 +28,7 @@ import {
   markAuthRedirectPending,
 } from "@/lib/authRedirect";
 import { purgeAnonymousUser as purgeAnonymousUserFor } from "@/lib/anonymousSession";
-import { identifyUser, track } from "@/lib/analytics";
+import { syncAnalyticsIdentity, track } from "@/lib/analytics";
 import {
   readCookPilotWasSignedIn,
   rememberCookPilotSignedIn,
@@ -217,11 +218,11 @@ function startAuthSubscription(): void {
     // A redirect result is still being read, so "no user" is "not yet".
     if (!nextUser && redirectInFlight) return;
     rememberCookPilotSignedIn(Boolean(nextUser));
+    // The one place a real CookPilot account becomes known, or stops being:
+    // identify the PostHog person (opaque Firebase uid, no PII), and end it on
+    // sign-out so the next person on a shared device isn't recorded as them.
+    syncAnalyticsIdentity(nextUser?.uid ?? null);
     if (nextUser) {
-      // The one place a real CookPilot account becomes known — identify the
-      // PostHog person here so first-/latest-touch attribution lands on the
-      // person. Uses the opaque Firebase uid, no PII.
-      identifyUser(nextUser.uid);
       // Account metadata is best-effort and must never hold the sign-in UI
       // hostage. Rules allow only these harmless timestamps; server-owned
       // purchases, entitlements, grants, and roles cannot be changed here.
@@ -313,6 +314,25 @@ export function refreshCookPilotAuthUser(): void {
  * error we retry with no continue URL, which falls back to Firebase's own
  * "password changed" page. Slightly less polished, still recovers the account.
  */
+/**
+ * Sends the "confirm your email" link for a password account. The same
+ * continue-URL fallback as the password reset below, for the same reason.
+ *
+ * The email itself is Firebase's template for the whole auth project, which
+ * CookPilot shares, so its wording is CookPilot's too.
+ */
+export async function sendCookPilotVerificationEmail(user: User): Promise<void> {
+  try {
+    await sendEmailVerification(user, { url: `${window.location.origin}/`, handleCodeInApp: false });
+  } catch (error) {
+    if ((error as { code?: string })?.code === "auth/unauthorized-continue-uri") {
+      await sendEmailVerification(user);
+      return;
+    }
+    throw error;
+  }
+}
+
 export async function sendCookPilotPasswordReset(email: string): Promise<void> {
   const auth = getFirebaseAuth();
   const normalized = email.trim().toLowerCase();
@@ -521,6 +541,11 @@ export function CookPilotLoginForm({
         );
         if (outcome === "already-signed-in") recovered = "already_signed_in";
         else if (outcome === "signed-in-existing") recovered = "signed_in_existing";
+        // A new password account gets its verification email straight away, in
+        // the background. Nothing waits on it and nothing asks for it: only a
+        // referral reward needs a verified address, and that is the one place
+        // that mentions it (see `CookPilotLoginDialog`'s "verify" reason).
+        else if (auth.currentUser) void sendCookPilotVerificationEmail(auth.currentUser).catch(() => undefined);
       } else {
         await signIn();
       }
@@ -739,7 +764,9 @@ export function CookPilotLoginDialog({
 }: {
   onClose: () => void;
   onAuthenticated?: () => void;
-  reason?: "default" | "purchase";
+  /** `verify_referral`: already signed in, with a friend's Pro waiting on a
+      confirmed email. Shows that one line and a way to resend, no form. */
+  reason?: "default" | "purchase" | "verify_referral";
   /**
    * Something the surface that opened this needs to say underneath it, usually
    * a way on for someone who is not going to sign in.
@@ -752,6 +779,7 @@ export function CookPilotLoginDialog({
   footer?: ReactNode;
 }) {
   const [busy, setBusy] = useState(false);
+  if (reason === "verify_referral") return <VerifyReferralEmail onClose={onClose} />;
   return (
     <Dialog
       onClose={onClose}
@@ -785,6 +813,46 @@ export function CookPilotLoginDialog({
       <CookPilotLoginForm onAuthenticated={onAuthenticated ?? onClose} onBusyChange={setBusy} />
 
       {footer && <div className="border-t border-line pt-cp-3">{footer}</div>}
+    </Dialog>
+  );
+}
+
+function VerifyReferralEmail({ onClose }: { onClose: () => void }) {
+  const [sent, setSent] = useState<"idle" | "sending" | "sent" | "failed">("idle");
+  const user = getFirebaseAuth().currentUser;
+  async function resend() {
+    if (!user) return;
+    setSent("sending");
+    try {
+      await sendCookPilotVerificationEmail(user);
+      setSent("sent");
+    } catch {
+      setSent("failed");
+    }
+  }
+  return (
+    <Dialog
+      onClose={onClose}
+      label="Confirm your email"
+      portal
+      className="no-print fixed inset-0 z-[var(--z-dialog)] flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
+      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[420px] rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:pb-cp-5 flex flex-col gap-cp-4 relative"
+    >
+      <button type="button" className="absolute right-3 top-3 icon-close-btn" onClick={onClose} aria-label="Close">
+        <XIcon size={ICON_SIZE.md} />
+      </button>
+      <div className="pr-cp-7">
+        <h3 className="font-extrabold tracking-[-0.02em] text-cp-dialog-title">Confirm your email</h3>
+        <p className="text-cp-small text-ink-soft mt-1">
+          Open the link we sent{user?.email ? ` to ${user.email}` : ""} and your friend&rsquo;s Pro days start.
+        </p>
+      </div>
+      <button type="button" className="btn btn-secondary w-full" disabled={sent === "sending"} onClick={() => void resend()}>
+        {sent === "sent" ? "Sent. Check your inbox" : sent === "sending" ? "Sending…" : "Send the link again"}
+      </button>
+      {sent === "failed" && (
+        <p className="text-cp-small text-ink-soft" role="status">That didn&rsquo;t send. Try again in a minute.</p>
+      )}
     </Dialog>
   );
 }

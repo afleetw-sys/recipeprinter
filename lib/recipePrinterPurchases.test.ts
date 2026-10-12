@@ -13,6 +13,7 @@ import {
   proSubscriptionDetails,
 } from "./recipePrinterPurchases";
 import { synthesizeCustomerInfoFromMirror } from "./proAccessFallback";
+import { meterGateFor } from "./importMeter";
 
 /**
  * A minimal `CustomerInfo` stand-in: every function under test only ever
@@ -59,6 +60,20 @@ describe("hasTemplateEntitlement / hasProEntitlement", () => {
   test("null customerInfo (never purchased) owns nothing", () => {
     expect(hasProEntitlement(null)).toBe(false);
     expect(hasTemplateEntitlement(null, "heirloom")).toBe(false);
+  });
+
+  test("Pro fetched while active stops counting once it expires, in a tab left open", () => {
+    // customerInfo is read once per identity, and `entitlements.active` was decided when it was
+    // fetched. A tab left open past the end of Pro (a canceled month, referral days, a one-month
+    // purchase) must lock Pro features and meter imports again without a reload.
+    const expired = new Date(Date.now() - 60_000);
+    for (const productIdentifier of ["pro_monthly", "pro_annual", "rc_promo_pro_custom"]) {
+      const stale = customerWith({ pro: { productIdentifier, expirationDate: expired, willRenew: false } });
+      expect([productIdentifier, hasProEntitlement(stale)]).toEqual([productIdentifier, false]);
+      expect(
+        meterGateFor({ method: "url", cookbookMode: false, clientPro: hasProEntitlement(stale), deployed: true }),
+      ).toBe("reserve");
+    }
   });
 });
 

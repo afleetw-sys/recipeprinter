@@ -6,6 +6,8 @@ import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { track, truncateReason } from "@/lib/analytics";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import { hasProEntitlement, purchaseRecipePrinterPro } from "@/lib/recipePrinterPurchases";
+import { cachedReferralSummary, referralPurchaseProps } from "@/lib/referral";
+import { announceProWelcome } from "@/lib/proWelcome";
 import type { ProBillingCycle } from "@/lib/proProduct";
 
 interface UseProPurchaseOptions {
@@ -107,7 +109,12 @@ export function useProPurchase({
         return;
       }
 
-      track("purchase_completed", { product: "pro", cycle, customerId: revenueCatUserId });
+      track("purchase_completed", {
+        product: "pro",
+        cycle,
+        customerId: revenueCatUserId,
+        ...referralPurchaseProps(cachedReferralSummary()),
+      });
 
       if (!hasProEntitlement(result.customerInfo)) {
         showErrorToast("Your purchase went through, but Pro isn't ready yet. Wait a moment, then try again.");
@@ -116,6 +123,7 @@ export function useProPurchase({
       }
 
       onFreshPurchase();
+      announceProWelcome({ kind: "purchased" });
       onSettled("purchased");
     } catch (error) {
       // See the same catch in usePremiumTemplatePurchase/useCookbookPurchase:

@@ -510,6 +510,10 @@ type EventProps = {
     cycle?: "monthly" | "annual";
     discount?: "pro_first";
     customerId?: string;
+    /** Referral facts, so paid conversion can be split by them (lib/referral). */
+    acquired_via_referral?: boolean;
+    had_referral_pro?: boolean;
+    referral_pro_active?: boolean;
   };
   purchase_cancelled: {
     product: PurchasedProduct;
@@ -621,12 +625,49 @@ type EventProps = {
 
   feedback_submitted: { type: FeedbackType };
 
+  /* The referral program (lib/referral.ts). Qualification, rewards and expiry
+     are sent by CookPilot itself (`referral_signup`, `referral_activated`,
+     `referral_reward_granted`, `referral_pro_expired`...), so they count even
+     when nobody has the app open. These are the moments only the page sees. */
+  /** An invite was offered: the account card, after a print, or when referral Pro ran out. */
+  referral_prompt_viewed: { placement: ReferralPlacement; cap_reached: boolean };
+  /** The invite link was copied or handed to the share sheet. */
+  referral_link_shared: { placement: ReferralPlacement; method: "copy" | "native_share" };
+  /** A friend's link was opened here. `first_touch` is false when an earlier link already holds credit. */
+  referral_link_opened: { first_touch: boolean; signed_in: boolean };
+  /** The choice offered when referral Pro ran out. */
+  referral_paywall_choice: { choice: "subscribe" | "invite" | "dismiss" };
+
   /** "Add yours" on the homepage's "Fresh off the printer" strip. Fires once
       the photo and doc have actually landed — see lib/gallerySubmissions. */
   gallery_photo_submitted: {};
 };
 
 export type AnalyticsEventName = keyof EventProps;
+
+export type ReferralPlacement = "account" | "post_print" | "expired_paywall";
+
+/** Who this person is to the referral program, on every event and on the person. */
+export function registerMembershipStatus(status: "free" | "referral_pro" | "paid_pro"): void {
+  enqueue((client) => {
+    client.register({ membership_status: status });
+    client.setPersonProperties({ membership_status: status });
+  });
+}
+
+/**
+ * Whether this person sees the referral program's own prompts (the account
+ * card, the after-print invite, the choice when referral Pro ends). Friends'
+ * links are honored for everyone either way.
+ *
+ * Read from the `referral-program` feature flag, so a holdout can be turned on
+ * in PostHog without a deploy. No flag, analytics off, or flags not loaded:
+ * shown. Only a person assigned `control` is held out.
+ */
+export function referralPromptsAllowed(): boolean {
+  if (!posthog) return true;
+  return posthog.getFeatureFlag("referral-program") !== "control";
+}
 
 /** Parser messages can be long and are for our eyes; keep them bounded. */
 export function truncateReason(value: unknown): string {
@@ -942,6 +983,27 @@ function beginLandingSession(): boolean {
  * exactly "attach to all future events", and it keeps attribution queryable on
  * the events themselves rather than only through a join to the person.
  */
+function registerFirstTouch(client: PostHog, a: Attribution): void {
+  const category = categoryOf(a.source);
+  client.register_once({
+    first_traffic_source: a.source,
+    first_traffic_source_category: category,
+    first_referrer: a.referrer,
+    first_landing_page: a.landingPage,
+    first_utm_source: a.utmSource,
+    first_utm_medium: a.utmMedium,
+    first_utm_campaign: a.utmCampaign,
+    first_gclid: a.gclid,
+    first_fbclid: a.fbclid,
+    traffic_source: a.source,
+    traffic_source_category: category,
+    is_ai_traffic: isAiTraffic(a.source),
+    latest_traffic_source: a.source,
+    latest_referrer: a.referrer,
+    latest_landing_page: a.landingPage,
+  });
+}
+
 function applyTrafficAttribution(client: PostHog, input: AttributionInput): void {
   const a = resolveAttribution(input);
   resolvedAttribution = a;
@@ -962,18 +1024,7 @@ function applyTrafficAttribution(client: PostHog, input: AttributionInput): void
   // only ever arrives direct still has a `traffic_source`. register_once never
   // overwrites, so real external sessions still advance the rolling fields via
   // register() below.
-  client.register_once({
-    first_traffic_source: a.source,
-    first_traffic_source_category: category,
-    first_referrer: a.referrer,
-    first_landing_page: a.landingPage,
-    first_utm_source: a.utmSource,
-    first_utm_medium: a.utmMedium,
-    first_utm_campaign: a.utmCampaign,
-    first_gclid: a.gclid,
-    first_fbclid: a.fbclid,
-    ...latest,
-  });
+  registerFirstTouch(client, a);
 
   // Latest-touch and the Landing Page event are per-session, not per-pageview.
   if (!beginLandingSession()) return;
@@ -1011,6 +1062,53 @@ export function track<K extends AnalyticsEventName>(
   props: EventProps[K],
 ): void {
   enqueue((client) => client.capture(name, props));
+}
+
+/**
+ * Keeps PostHog's person in step with who is signed in. Called from the one
+ * auth listener with the signed-in uid, or null when nobody is.
+ *
+ * Signing out ends the person. Without that, everything the next person did on
+ * a shared device (a family laptop, a library computer) was recorded against
+ * the account signed in before them, referral and purchase attribution
+ * included. A signed-out load that still carries a signed-in person (signed
+ * out while analytics hadn't loaded, or by an older build) is reset too. An
+ * ordinary anonymous visitor is left alone: resetting them would make a new
+ * person on every page load.
+ */
+export function syncAnalyticsIdentity(uid: string | null): void {
+  if (uid) {
+    identifyUser(uid);
+    return;
+  }
+  const wasIdentified = lastIdentifiedId !== null;
+  lastIdentifiedId = null;
+  enqueue((client) => {
+    if (!wasIdentified && client.get_property("$user_state") !== "identified") return;
+    resetPerson(client);
+  });
+}
+
+/** `reset()` clears every super and session property; put back the ones that
+    must outlive it, and never undo an opt-out. */
+function resetPerson(client: PostHog): void {
+  const optedOut = client.has_opted_out_capturing();
+  const internal = (client as PostHog & { get_session_property?: (name: string) => unknown })
+    .get_session_property?.("internal") === true;
+  client.reset();
+  if (optedOut) client.opt_out_capturing();
+  client.register_for_session({
+    browser_app: currentBrowserApp(),
+    ...(internal ? { internal: true } : {}),
+  });
+  if (resolvedAttribution) registerFirstTouch(client, resolvedAttribution);
+}
+
+/** Test seam: run the queue against a stand-in client. */
+export function setAnalyticsClientForTest(client: PostHog | null): void {
+  posthog = client;
+  loadStarted = client !== null;
+  lastIdentifiedId = null;
 }
 
 /**

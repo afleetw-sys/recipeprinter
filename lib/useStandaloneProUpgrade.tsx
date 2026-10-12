@@ -34,7 +34,13 @@ import { useProPurchase } from "@/lib/useProPurchase";
 export function useStandaloneProUpgrade(
   trigger: string,
   /** What the dialog says, when the trigger has its own wording. */
-  copy?: { title?: string; body?: string; benefits?: string[]; ctaLabel?: string },
+  copy?: {
+    title?: string;
+    body?: string;
+    benefits?: string[];
+    ctaLabel?: string;
+    referralChoice?: { inviteUrl: string; rewardDays: number };
+  },
 ): {
   openProUpgrade: () => void;
   /** Render this once, anywhere in the tree. */

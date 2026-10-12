@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   hasProEntitlement,
   hasTemplateOrProEntitlement,
@@ -11,6 +11,16 @@ import {
 import type { RecipePrinterMirroredEntitlement } from "./recipePrinterUserProfile";
 
 const NOW = Date.parse("2026-06-01T00:00:00Z");
+
+// `hasProEntitlement` checks an entitlement's end against the real clock (a tab
+// left open past the end of Pro), so the clock is held at NOW like everything else here.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 function mirrorEntry(overrides: Partial<RecipePrinterMirroredEntitlement> = {}): RecipePrinterMirroredEntitlement {
   return {
