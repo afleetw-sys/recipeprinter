@@ -212,14 +212,16 @@ export const CheckIcon = (p: IconProps) => (
 // A classic filled crown — three points topped with small jewels, sitting on
 // a rounded band — the "requires Pro" mark (ProBadge). The familiar
 // "king's crown" silhouette rather than an abstract shape, filled solid so
-// it stays legible at very small sizes.
+// it stays legible at very small sizes. Wider than tall (about 21 x 15) with
+// the outer points at the edges: an earlier draw was 16 x 18 with inward-
+// leaning needle points and read as tall and skinny.
 export const CrownIcon = (p: IconProps) => (
   <Base {...p} fill="currentColor" stroke="none">
-    <path d="M4 17L7 7L9.5 12L12 4L14.5 12L17 7L20 17Z" />
-    <rect x="4" y="16" width="16" height="3.5" rx="1.2" />
-    <circle cx="7" cy="6.3" r="1.5" />
-    <circle cx="12" cy="3.3" r="1.7" />
-    <circle cx="17" cy="6.3" r="1.5" />
+    <path d="M3.5 17L3 8.5L8 12.5L12 6.5L16 12.5L21 8.5L20.5 17Z" />
+    <rect x="3.5" y="16" width="17" height="3" rx="1" />
+    <circle cx="3" cy="7.8" r="1.4" />
+    <circle cx="12" cy="5.6" r="1.5" />
+    <circle cx="21" cy="7.8" r="1.4" />
   </Base>
 );
 
