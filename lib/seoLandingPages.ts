@@ -905,6 +905,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
     ],
     links: [
+      { href: "/handwritten-recipes-to-cookbook", label: "Turn scanned recipes into a cookbook" },
       { href: "/recipe-card-printer", label: "Recipe card printer" },
       { href: "/family-recipe-book", label: "Build a family recipe book" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
@@ -2378,6 +2379,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
     ],
     links: [
+      { href: "/handwritten-recipes-to-cookbook", label: "Turn scanned recipes into a cookbook" },
       { href: "/print-recipe-from-photo", label: "Print a recipe from a photo" },
       { href: "/preserve-family-recipes", label: "Preserve family recipes" },
       { href: "/family-recipe-book", label: "Family recipe book ideas" },
@@ -2595,7 +2597,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "make-your-own-cookbook",
-    contentUpdated: "2026-10-10",
+    contentUpdated: "2026-10-12",
     copyReviewed: "2026-10-06",
     imagesReviewed: "2026-10-06",
     primaryKeyword: "make your own cookbook",
@@ -2672,7 +2674,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         image: "bound-cookbook",
         imageAlt: "A finished homemade cookbook open to a full-page photograph and a recipe page.",
         body:
-          "Print at home on US Letter paper, or send the PDF to a print shop for spiral binding or a hardcover. Building and editing your cookbook is always free. When it's ready, pay $19.99 once to download the PDF, and download updated copies anytime at no extra cost.",
+          `Print at home on US Letter paper, or send the PDF to a print shop for spiral binding or a hardcover. Preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. When it's ready, pay $19.99 once to add as many recipes as you like and download the PDF, and download updated copies anytime at no extra cost.`,
       },
     ],
     faqHeading: "Questions about making your own cookbook",
@@ -2700,7 +2702,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does it cost?",
         answer:
-          "Building and editing are free. You pay $19.99 once per cookbook when you download the PDF. Printing and binding at a print shop are separate.",
+          `Previewing is free with up to ${FREE_COOKBOOK_RECIPES} recipes. You pay $19.99 once per cookbook to add more and download the PDF. Printing and binding at a print shop are separate.`,
       },
     ],
     links: [
@@ -2715,7 +2717,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "cookbook-maker",
-    contentUpdated: "2026-10-10",
+    contentUpdated: "2026-10-12",
     copyReviewed: "2026-10-06",
     imagesReviewed: "2026-10-06",
     primaryKeyword: "cookbook maker",
@@ -2785,11 +2787,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Download US Letter for a home printer, or full-bleed files for a coil-bound or hardcover book at US Letter or 8 × 10. Formats for print services come with a separate cover file sized to your book's spine, ready for services like Lulu.",
       },
       {
-        heading: "Build it free, pay $19.99 when you download",
+        heading: "Preview it free, pay $19.99 to download",
         image: "printed-cookbook",
         imageAlt: "A finished spiral-bound cookbook open to a formatted recipe and food photograph.",
         body:
-          "Building and editing your cookbook is always free. When it's ready, pay $19.99 once to download the PDF, and download updated copies anytime at no extra cost.",
+          `Preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. When it's ready, pay $19.99 once to add as many as you like and download the PDF, and download updated copies anytime at no extra cost.`,
         afterBody:
           "RecipePrinter creates the PDF; you can print it at home or send the finished file to a printing service of your choice. A free RecipePrinter account is required to download the cookbook.",
       },
@@ -2987,7 +2989,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "handwritten-recipes-to-cookbook",
-    contentUpdated: "2026-10-10",
+    contentUpdated: "2026-10-12",
     copyReviewed: "2026-10-02",
     primaryKeyword: "turn handwritten recipes into a cookbook",
     secondaryKeywords: [
@@ -3000,6 +3002,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "handwritten family recipe book",
       "recipe card cookbook",
       "family cookbook from handwritten recipes",
+      "scan recipes into a cookbook",
+      "make a cookbook from photos of recipes",
+      "recipe scanner for cookbook",
     ],
     shortLabel: "Handwritten recipe cookbook",
     pickerGroup: "output",
@@ -3011,12 +3016,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importPlaceholder:
       "Upload a photo or scan of a handwritten recipe card. Add the front and back together if the recipe continues onto both sides.",
     importSubmitLabel: "Start my cookbook",
-    title: "Turn Handwritten Recipes Into a Cookbook | RecipePrinter",
+    title: "Scan Handwritten Recipes Into a Cookbook | RecipePrinter",
     description:
       "Digitize handwritten recipe cards, clean up the recipe text, and turn family recipes into a cookbook you can edit, print, or export as a PDF.",
     h1: "Turn handwritten recipes into a cookbook",
     lede:
-      "Photograph or scan handwritten recipe cards, review the editable recipe text, and bring recipes from different generations together in one family cookbook.",
+      "Photograph or scan handwritten recipe cards, review the editable recipe text, and bring recipes from different generations together in one family cookbook. Magazine clippings, printouts, and pages from other cookbooks work the same way.",
     howToHeading: "How to turn handwritten recipes into a cookbook",
     howTo: [
       {
@@ -3093,6 +3098,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Yes. A cookbook can include handwritten recipe cards alongside recipes imported from websites, screenshots, photos, pasted text, and supported recipe apps.",
       },
       {
+        question: "Can I scan printed recipes too, like magazine clippings?",
+        answer:
+          "Yes. A clipping, a printout, or a page from another cookbook works the same way as a handwritten card: take a clear photo or scan, and RecipePrinter types it up as a recipe you can edit.",
+      },
+      {
         question: "How do I make a cookbook from handwritten recipe cards?",
         answer:
           "Digitize and review each recipe, add the finished recipes to a cookbook, organize them into chapters, customize the cover and pages, then export the completed cookbook as a PDF.",
@@ -3125,7 +3135,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "homemade-cookbook-gift",
-    contentUpdated: "2026-10-10",
+    contentUpdated: "2026-10-12",
     copyReviewed: "2026-10-06",
     imagesReviewed: "2026-10-06",
     primaryKeyword: "homemade cookbook gift",
@@ -3202,10 +3212,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         // Not `bound-cookbook`: the hero already shows that photo.
-        heading: "Build it free, pay when you download",
+        heading: "Preview it free, pay when you download",
         image: "printed-cookbook",
         body:
-          "Building and editing the cookbook is free, and so is every change: add recipes, fix mistakes, and rearrange chapters whenever you like. When it's ready, pay $19.99 once to download the PDF, and download updated copies anytime at no extra cost.",
+          `Preview the cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. When it's ready, pay $19.99 once to add as many recipes as you like and download the PDF. After that every change is free: add recipes, fix mistakes, and rearrange chapters whenever you like, and download updated copies at no extra cost.`,
       },
     ],
     faqHeading: "Homemade cookbook gift questions",
@@ -3278,7 +3288,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "recipe-book-gift",
-    contentUpdated: "2026-10-10",
+    contentUpdated: "2026-10-12",
     copyReviewed: "2026-10-02",
     primaryKeyword: "recipe book gift",
     secondaryKeywords: [
@@ -3286,7 +3296,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "personalized recipe book gift",
       "cookbook gift",
       "custom recipe book gift",
-      "recipe card gift",
     ],
     shortLabel: "A recipe book gift",
     pickerGroup: "output",
@@ -3298,18 +3307,18 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImage: "dedication-page",
     heroImageAlt: "A printed recipe book open to its dedication page, made as a gift.",
     importSubmitLabel: "Start my cookbook",
-    title: "Recipe Book Gift Ideas: Who It Suits and What to Include | RecipePrinter",
+    title: "Recipe Book Gift Ideas: What to Include and How to Make One | RecipePrinter",
     description:
-      "Ideas for a personalized recipe book gift: who it suits, what to put in it, and whether to give a bound book or a box of recipe cards.",
+      "Ideas for a personalized recipe book gift: what to put in it, how to gather recipes from family, and how to print it or give it as a PDF.",
     h1: "Recipe book gift ideas",
     anchor: "Personalized recipe book gift",
     lede:
-      "A recipe book makes a thoughtful gift for almost anyone who cooks. This page covers who it suits, what to put in it, and whether a bound book or a box of recipe cards fits them better.",
+      "A recipe book makes a thoughtful gift for anyone. Fill it with the dishes they love and the people behind them, write a dedication, and print it at home or send the PDF to a print shop.",
     howToHeading: "How to give a personalized recipe book",
     howTo: [
       {
-        name: "Choose a book or recipe cards",
-        text: "Pick a bound recipe book for a full collection, or a set of recipe cards for a smaller one they can keep adding to.",
+        name: "Start with who it's for",
+        text: "Think about the dishes they make, the ones they grew up with, and the people those recipes came from.",
       },
       {
         name: "Add the recipes",
@@ -3321,7 +3330,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print it or have it bound",
-        text: "Print it at home to wrap today, or send the PDF to a print shop for a bound copy.",
+        text: "Print it at home to give today, or send the PDF to a print shop for a bound copy.",
       },
     ],
     featureSections: [
@@ -3329,35 +3338,30 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Recipe book gift ideas for different occasions",
         image: "bound-cookbook",
         body:
-          "A personalized recipe book can work as a wedding gift, birthday gift, Mother's Day gift, anniversary gift, housewarming gift, or holiday present. The occasion matters less than choosing recipes that feel connected to the person receiving it.",
+          "A personalized recipe book fits a wedding, a birthday, Mother's Day, an anniversary, a housewarming, or the holidays. Whatever the occasion, fill it with the recipes that make you think of them.",
         afterBody:
           "The strongest recipe book gifts are usually specific: family recipes, favorite meals, recipes from someone they love, or dishes tied to traditions they want to keep.",
       },
       {
-        heading: "Give a recipe book or a box of recipe cards",
-        image: "card-in-box",
+        heading: "Give it a cover, chapters, and a dedication",
+        image: "organize-cookbook",
         body:
-          "A cookbook is useful when you want a cover, chapters, and a finished collection. A recipe box can work better for a smaller set of favorite recipes that someone can keep adding to over time.",
+          "Sort the recipes into chapters, put their name on the cover, and write a dedication up front. The table of contents and page numbers keep up as you add more.",
         afterBody:
-          "Cookbook export costs $19.99 per cookbook. 4x6 recipe cards are available with RecipePrinter Pro.",
+          `Preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes. You pay $19.99 once to add more and download the finished PDF.`,
       },
       {
-        heading: "Let family and friends contribute recipes",
+        heading: "Collect recipes from family and friends",
         image: "handwritten-card",
         body:
-          "Ask contributors to send whatever they already have: a photo of a handwritten card, a recipe link, screenshot, scan, or typed recipe. You can import each one into RecipePrinter, review the ingredients and instructions, and add the finished recipe to the book.",
+          "Ask everyone to text or email you whatever they already have: a photo of a handwritten card, a recipe link, a screenshot, or a typed recipe. You bring each one into RecipePrinter, check it over, and add it to the book.",
         afterBody:
-          "This makes it easier to create a group gift without asking everyone to rewrite their recipes in the same format.",
-      },
-      {
-        heading: "Keep updating the recipe book after you give it",
-        body:
-          "Editing stays free after you give it. Add recipes that arrive late, fix a mistake, and download an updated copy at no extra cost.",
+          "Nobody has to retype their recipe or sign up for anything.",
       },
       {
         // Text only: no existing photo shows the people this is about, and
         // the page already carries five.
-        heading: "Who makes a good recipe book gift for?",
+        heading: "Who a recipe book is a good gift for",
         body:
           "A personalized recipe book can work for parents, grandparents, newlyweds, adult children, siblings, friends, or anyone who has recipes worth collecting in one place.",
         afterBody:
@@ -3377,16 +3381,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Recipe books can make meaningful gifts for parents, grandparents, newlyweds, siblings, friends, or anyone with family recipes or favorite dishes they want to keep.",
       },
       {
-        question: "Can several people contribute recipes?",
+        question: "Can family members send me recipes for it?",
         answer:
-          "Yes. Contributors can send recipe links, screenshots, photos, scans of handwritten cards, or typed recipes. You can import each recipe, review it, and add it to the same cookbook.",
+          "Yes. They can send you links, screenshots, photos of handwritten cards, or typed recipes however they like, and you add each one to the book.",
         links: [{ href: "/family-recipe-book", label: "Create a family recipe book" }],
-      },
-      {
-        question: "Can I give recipe cards instead of a book?",
-        answer:
-          "Yes. Recipe cards can be a good choice for a smaller collection or a recipe box someone can keep adding to. 4x6 recipe cards are available with RecipePrinter Pro.",
-        links: [{ href: "/recipe-card-printer", label: "Make printable recipe cards" }],
       },
       {
         question: "Does RecipePrinter print and ship the recipe book?",
@@ -3397,7 +3395,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does a recipe book gift cost?",
         answer:
-          "Building it is free. You pay $19.99 once per recipe book when you download the PDF, and printing or binding at a print shop is separate.",
+          `You can preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes. You pay $19.99 once per recipe book to add more and download the PDF, and printing or binding at a print shop is separate.`,
       },
       {
         question: "Can I give it as a PDF instead of printing it?",
@@ -3408,7 +3406,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     links: [
       { href: "/homemade-cookbook-gift", label: "Make a homemade cookbook gift" },
       { href: "/family-recipe-book", label: "Create a family recipe book" },
-      { href: "/recipe-card-printer", label: "Make printable recipe cards" },
       { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
       { href: "/bridal-shower-recipe-book", label: "Bridal shower recipe book" },
       { href: "/christmas-recipe-book", label: "Make a family recipe book for Christmas" },
