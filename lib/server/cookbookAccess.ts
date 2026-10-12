@@ -96,9 +96,10 @@ async function readDocument(
 /**
  * Whether this account holds the unlock for this book.
  *
- * Checks the namespaced path and then the pre-namespace one, matching
- * `loadCookbookProjectUnlock` on the client — a customer who bought before the
- * paths moved must not be told they didn't.
+ * Reads only the namespaced path, as `loadCookbookProjectUnlock` does on the
+ * client. The pre-namespace path was retired on 2026-10-10 (found empty) and
+ * its rules refuse every read, so asking it turned each "not bought" into
+ * "couldn't ask".
  *
  * Throws rather than returning false when Firestore couldn't be reached at all,
  * so the caller can answer "try again" instead of "you didn't pay for this".
@@ -118,7 +119,6 @@ export async function hasCookbookUnlock(
     recipePrinterUnlockPath(uid, bookProjectId),
     idToken,
   );
-  if (namespaced === "found") return true;
   if (namespaced === "denied") {
     // Logged loudly on purpose. If this ever fires in production it is blocking
     // paying customers, and the only symptom they see is "try again" — so the
@@ -126,17 +126,7 @@ export async function hasCookbookUnlock(
     console.warn("cookbook-access: denied reading the namespaced unlock; check rules / App Check");
     throw new Error("Could not read the unlock document.");
   }
-
-  const legacy = await readDocument(
-    cfg.projectId,
-    ["users", uid, "cookbookUnlocks", bookProjectId],
-    idToken,
-  );
-  if (legacy === "denied") {
-    console.warn("cookbook-access: denied reading the legacy unlock; check rules / App Check");
-    throw new Error("Could not read the unlock document.");
-  }
-  return legacy === "found";
+  return namespaced === "found";
 }
 
 /** The book id inside a render request, if the payload carries a usable one. */
