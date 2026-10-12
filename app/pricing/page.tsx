@@ -6,6 +6,7 @@ import { Breadcrumb } from "@/components/seo/Breadcrumb";
 import { FaqCards } from "@/components/seo/FaqCards";
 import { PricingProButton } from "@/components/seo/PricingProButton";
 import { COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
+import { FREE_COOKBOOK_RECIPES } from "@/lib/freeImports";
 import {
   PRO_ANNUAL_PRICE_FALLBACK,
   PRO_MONTHLY_PRICE_FALLBACK,
@@ -38,6 +39,7 @@ const TRAIL = [
 ];
 
 const COOKBOOK_POINTS = [
+  `Preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes before you buy`,
   "Your own cover and chapters, with the table of contents built for you",
   "Keep editing after you buy, and export again any time",
   "Print-ready files for home, a copy shop, Lulu, or Blurb",

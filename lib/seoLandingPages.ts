@@ -2597,7 +2597,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "make-your-own-cookbook",
-    contentUpdated: "2026-10-10",
+    contentUpdated: "2026-10-12",
     copyReviewed: "2026-10-06",
     imagesReviewed: "2026-10-06",
     primaryKeyword: "make your own cookbook",
@@ -2674,7 +2674,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         image: "bound-cookbook",
         imageAlt: "A finished homemade cookbook open to a full-page photograph and a recipe page.",
         body:
-          "Print at home on US Letter paper, or send the PDF to a print shop for spiral binding or a hardcover. Building and editing your cookbook is always free. When it's ready, pay $19.99 once to download the PDF, and download updated copies anytime at no extra cost.",
+          `Print at home on US Letter paper, or send the PDF to a print shop for spiral binding or a hardcover. Preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. When it's ready, pay $19.99 once to add as many recipes as you like and download the PDF, and download updated copies anytime at no extra cost.`,
       },
     ],
     faqHeading: "Questions about making your own cookbook",
@@ -2702,7 +2702,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does it cost?",
         answer:
-          "Building and editing are free. You pay $19.99 once per cookbook when you download the PDF. Printing and binding at a print shop are separate.",
+          `Previewing is free with up to ${FREE_COOKBOOK_RECIPES} recipes. You pay $19.99 once per cookbook to add more and download the PDF. Printing and binding at a print shop are separate.`,
       },
     ],
     links: [
@@ -2717,7 +2717,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "cookbook-maker",
-    contentUpdated: "2026-10-10",
+    contentUpdated: "2026-10-12",
     copyReviewed: "2026-10-06",
     imagesReviewed: "2026-10-06",
     primaryKeyword: "cookbook maker",
@@ -2787,11 +2787,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Download US Letter for a home printer, or full-bleed files for a coil-bound or hardcover book at US Letter or 8 × 10. Formats for print services come with a separate cover file sized to your book's spine, ready for services like Lulu.",
       },
       {
-        heading: "Build it free, pay $19.99 when you download",
+        heading: "Preview it free, pay $19.99 to download",
         image: "printed-cookbook",
         imageAlt: "A finished spiral-bound cookbook open to a formatted recipe and food photograph.",
         body:
-          "Building and editing your cookbook is always free. When it's ready, pay $19.99 once to download the PDF, and download updated copies anytime at no extra cost.",
+          `Preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. When it's ready, pay $19.99 once to add as many as you like and download the PDF, and download updated copies anytime at no extra cost.`,
         afterBody:
           "RecipePrinter creates the PDF; you can print it at home or send the finished file to a printing service of your choice. A free RecipePrinter account is required to download the cookbook.",
       },
@@ -3135,7 +3135,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "homemade-cookbook-gift",
-    contentUpdated: "2026-10-10",
+    contentUpdated: "2026-10-12",
     copyReviewed: "2026-10-06",
     imagesReviewed: "2026-10-06",
     primaryKeyword: "homemade cookbook gift",
@@ -3212,10 +3212,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         // Not `bound-cookbook`: the hero already shows that photo.
-        heading: "Build it free, pay when you download",
+        heading: "Preview it free, pay when you download",
         image: "printed-cookbook",
         body:
-          "Building and editing the cookbook is free, and so is every change: add recipes, fix mistakes, and rearrange chapters whenever you like. When it's ready, pay $19.99 once to download the PDF, and download updated copies anytime at no extra cost.",
+          `Preview the cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. When it's ready, pay $19.99 once to add as many recipes as you like and download the PDF. After that every change is free: add recipes, fix mistakes, and rearrange chapters whenever you like, and download updated copies at no extra cost.`,
       },
     ],
     faqHeading: "Homemade cookbook gift questions",
@@ -3348,7 +3348,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         body:
           "Sort the recipes into chapters, put their name on the cover, and write a dedication up front. The table of contents and page numbers keep up as you add more.",
         afterBody:
-          "Building the book is free. You pay $19.99 once when you download the finished PDF.",
+          `Preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes. You pay $19.99 once to add more and download the finished PDF.`,
       },
       {
         heading: "Collect recipes from family and friends",
@@ -3395,7 +3395,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does a recipe book gift cost?",
         answer:
-          "Building it is free. You pay $19.99 once per recipe book when you download the PDF, and printing or binding at a print shop is separate.",
+          `You can preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes. You pay $19.99 once per recipe book to add more and download the PDF, and printing or binding at a print shop is separate.`,
       },
       {
         question: "Can I give it as a PDF instead of printing it?",
