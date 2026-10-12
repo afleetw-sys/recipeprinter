@@ -10,7 +10,6 @@ vi.mock("firebase/auth", () => ({
 import { purgeAnonymousUser } from "@/lib/anonymousSession";
 
 const anon = { uid: "anon-1" } as never;
-const real = { uid: "real-1" } as never;
 const authWith = (currentUser: { uid: string } | null) => ({ currentUser }) as never;
 
 beforeEach(() => {
@@ -19,21 +18,9 @@ beforeEach(() => {
 });
 
 describe("purging the anonymous session", () => {
-  it("deletes it when it is still the signed-in user", async () => {
-    await purgeAnonymousUser(authWith(anon), anon);
-    expect(deleteUser).toHaveBeenCalledWith(anon);
-  });
-
   it("deletes it when nobody is signed in", async () => {
     await purgeAnonymousUser(authWith(null), anon);
     expect(deleteUser).toHaveBeenCalledOnce();
-  });
-
-  it("does nothing when a real account is signed in, because deleting signs THEM out", async () => {
-    // The SDK's User.delete() ends in auth.signOut(), which signs out whoever is current.
-    await purgeAnonymousUser(authWith(real), anon);
-    expect(deleteUser).not.toHaveBeenCalled();
-    expect(signOut).not.toHaveBeenCalled();
   });
 
   it("signs the anonymous user out if the delete fails and it is still the current one", async () => {

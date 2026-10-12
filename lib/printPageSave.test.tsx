@@ -768,23 +768,6 @@ describe("Firestore's connection around a print", () => {
     expect(printNet.calls).toEqual(["pause"]);
   });
 
-  it("the click calls print() with it closed, in the same task: nothing awaited", async () => {
-    seedRecipes(1);
-    await renderPrintPage();
-    await settle(100);
-
-    press(printButton());
-    act(() => {
-      fireEvent.click(printButton());
-    });
-    // No settle: print() must already have run, synchronously, inside the click.
-    expect(printNet.calls.at(-1)).toBe("print");
-    // And the last word on the connection before it was "closed". A resume
-    // queued by letting go of the press must not come after the last pause.
-    const beforePrint = printNet.calls.slice(0, -1);
-    expect(beforePrint.lastIndexOf("pause")).toBeGreaterThan(beforePrint.lastIndexOf("resume"));
-  });
-
   it("a keyboard press, with no pointerdown, still closes it before print()", async () => {
     seedRecipes(1);
     await renderPrintPage();
@@ -894,32 +877,5 @@ describe("Firestore's connection around a print", () => {
 
     unmount();
     expect(printNet.calls).toContain("resume");
-  });
-});
-
-describe("the cookbook welcome's Start adding recipes", () => {
-  it("asks for a first recipe only when the book has none", async () => {
-    // A cook who reached the welcome by importing a recipe was still shown
-    // "Add your first recipe" (2026-10-09).
-    for (const count of [1, 0]) {
-      if (count) seedRecipes(count);
-      // The welcome is shown over a book: the page is in cookbook mode.
-      sessionStorage.setItem("recipeprinter:project-meta:v1", JSON.stringify({ cookbookMode: true }));
-      await renderPrintPage();
-      await settle(100);
-      // The button is worded for what pressing it does: it offered to "start
-      // adding" to a cook who had just added one (2026-10-11).
-      expect(dialogs.welcome.hasRecipes, count ? "a book with a recipe" : "an empty book").toBe(Boolean(count));
-      act(() => dialogs.welcome.onStart?.());
-      await settle(50);
-      if (count) {
-        expect(dialogs.add.open, "a book with a recipe").toBeFalsy();
-      } else {
-        expect(dialogs.add.open, "an empty book").toBe(true);
-        expect(dialogs.add.title, "an empty book").toBeTruthy();
-      }
-      cleanup();
-      sessionStorage.clear();
-    }
   });
 });

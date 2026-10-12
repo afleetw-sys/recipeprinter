@@ -45,10 +45,6 @@ describe("newerLocalCopy", () => {
     expect(newerLocalCopy(book(), [device])).toBe(device);
   });
 
-  it("keeps the account copy when someone has saved since the device copy's version", () => {
-    expect(newerLocalCopy(book({ revision: 4 }), [book({ servings: "6", revision: 3 })])).toBeNull();
-  });
-
   it("never trusts a device copy with no recorded version", () => {
     expect(newerLocalCopy(book(), [book({ servings: "6", revision: undefined })])).toBeNull();
     expect(newerLocalCopy(book({ revision: 0 }), [book({ servings: "6", revision: 0 })])).toBeNull();

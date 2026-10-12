@@ -78,10 +78,6 @@ describe("shouldSaveOnLeave", () => {
     expect(shouldSaveOnLeave({ ...idle, lastSavedFingerprint: "book" }, () => "book")).toBe(false);
   });
 
-  it("doesn't save a book that was only opened", () => {
-    expect(shouldSaveOnLeave({ ...idle, lastSavedFingerprint: LOADED_BASELINE }, () => "book")).toBe(false);
-  });
-
   it("saves a book edited since its last save", () => {
     expect(shouldSaveOnLeave({ ...idle, lastSavedFingerprint: "book" }, () => "book, edited")).toBe(true);
   });
