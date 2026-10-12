@@ -13,7 +13,8 @@ import { shareLink } from "@/lib/shareLink";
  */
 export function ReferralCard() {
   const [summary, setSummary] = useState<ReferralSummary | null>(null);
-  const [shared, setShared] = useState<"copy" | "native_share" | null>(null);
+  const [shared, setShared] = useState<"copy" | "native_share" | "manual" | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const viewedRef = useRef(false);
 
   useEffect(() => {
@@ -43,7 +44,13 @@ export function ReferralCard() {
 
   async function share() {
     const method = await shareLink(url, "Try RecipePrinter with me. We both get Pro for a week.");
-    if (!method) return;
+    if (!method) {
+      // No share sheet and no clipboard access: select the link so it can be copied by hand.
+      inputRef.current?.focus();
+      inputRef.current?.select();
+      setShared("manual");
+      return;
+    }
     track("referral_link_shared", { placement: "account", method });
     setShared(method);
   }
@@ -59,6 +66,7 @@ export function ReferralCard() {
 
       <div className="mt-cp-4 flex flex-col gap-cp-2 sm:flex-row">
         <input
+          ref={inputRef}
           readOnly
           value={url}
           aria-label="Your invite link"
@@ -67,10 +75,13 @@ export function ReferralCard() {
         />
         <button type="button" className="btn btn-secondary" onClick={() => void share()}>
           <LinkIcon size={ICON_SIZE.sm} />
-          {shared === "copy" ? "Copied" : shared ? "Shared" : "Share link"}
+          {shared === "copy" ? "Copied" : shared === "native_share" ? "Shared" : "Share link"}
         </button>
       </div>
 
+      {shared === "manual" && (
+        <p className="mt-cp-2 text-cp-small text-ink-soft" role="status">The link is selected. Copy it to share.</p>
+      )}
       <p className="mt-cp-3 text-cp-small text-ink-soft">
         {friends === 1 ? "1 friend joined" : `${friends} friends joined`}
         {" · "}

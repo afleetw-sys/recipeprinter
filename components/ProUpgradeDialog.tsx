@@ -99,6 +99,7 @@ export function ProUpgradeDialog({
 }) {
   const [step, setStep] = useState<"choice" | "plan" | "signin" | "decline">(referralChoice ? "choice" : "plan");
   const [invited, setInvited] = useState<"copy" | "native_share" | null>(null);
+  const [showLink, setShowLink] = useState(false);
   const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>("monthly");
   const [pendingCycle, setPendingCycle] = useState<ProBillingCycle | null>(null);
   const [formBusy, setFormBusy] = useState(false);
@@ -238,7 +239,10 @@ export function ProUpgradeDialog({
                 className="btn btn-secondary w-full"
                 onClick={async () => {
                   const method = await shareLink(referralChoice.inviteUrl, "Try RecipePrinter with me. We both get Pro for a week.");
-                  if (!method) return;
+                  if (!method) {
+                    setShowLink(true);
+                    return;
+                  }
                   if (!invited) track("referral_paywall_choice", { choice: "invite" });
                   track("referral_link_shared", { placement: "expired_paywall", method });
                   setInvited(method);
@@ -246,6 +250,16 @@ export function ProUpgradeDialog({
               >
                 {invited === "copy" ? "Link copied" : invited ? "Shared" : "Share invite link"}
               </button>
+              {showLink && !invited && (
+                <input
+                  readOnly
+                  autoFocus
+                  value={referralChoice.inviteUrl}
+                  aria-label="Your invite link"
+                  className="field w-full min-w-0 text-cp-small"
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+              )}
             </div>
           </div>
         </>

@@ -26,7 +26,11 @@ export const REFERRAL_CALLABLE = "recipePrinterReferral";
  * and both must be on. A friend's link is recorded and claimed either way,
  * and the server says no while it is off.
  */
-export const REFERRALS_LIVE = false;
+export const REFERRALS_LIVE =
+  false ||
+  // Local preview only: lets a dev server against the emulators show the
+  // program before launch. A deployed build never sets it.
+  process.env.NEXT_PUBLIC_REFERRALS_PREVIEW === "1";
 export const INVITE_COOKIE = "rp_invite";
 /** Long enough to cover the redirect and the first page load, nothing more. */
 export const INVITE_COOKIE_MAX_AGE_S = 60 * 60;

@@ -28,6 +28,7 @@ export function PostPrintInviteDialog({
   const [signingIn, setSigningIn] = useState(false);
   const [shared, setShared] = useState<"copy" | "native_share" | null>(null);
   const [busy, setBusy] = useState(false);
+  const [manualUrl, setManualUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -40,11 +41,13 @@ export function PostPrintInviteDialog({
     try {
       const summary = await loadReferralSummary("link");
       if (!summary.enabled || !summary.code) return;
-      const method = await shareLink(
-        inviteUrl(summary.code, window.location.origin),
-        "Try RecipePrinter with me. We both get Pro for a week.",
-      );
-      if (!method) return;
+      const url = inviteUrl(summary.code, window.location.origin);
+      const method = await shareLink(url, "Try RecipePrinter with me. We both get Pro for a week.");
+      if (!method) {
+        // No share sheet and no clipboard access: show the link to copy by hand.
+        setManualUrl(url);
+        return;
+      }
       track("referral_link_shared", { placement: "post_print", method });
       setShared(method);
     } catch (error) {
@@ -90,6 +93,16 @@ export function PostPrintInviteDialog({
           {shared === "copy" ? "Link copied" : shared ? "Shared" : signedIn ? "Share invite link" : "Get my invite link"}
         </button>
       </div>
+      {manualUrl && !shared && (
+        <input
+          readOnly
+          autoFocus
+          value={manualUrl}
+          aria-label="Your invite link"
+          className="field w-full min-w-0"
+          onFocus={(event) => event.currentTarget.select()}
+        />
+      )}
     </Dialog>
   );
 }
