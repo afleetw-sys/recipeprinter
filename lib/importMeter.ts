@@ -285,11 +285,75 @@ function browserTimeZone(): { tz?: string } {
   }
 }
 
-async function callMeter(data: Record<string, unknown>): Promise<unknown> {
+/**
+ * Where a meter call had got to when it was given up on.
+ *
+ * - `load`: fetching our own code, the parser and Firebase chunks.
+ * - `app_check`: waiting for an App Check token. The SDK puts no time limit
+ *   on this; a reCAPTCHA script that never loads waits forever.
+ * - `call`: the callable itself, which is the sign-in token, the request, and
+ *   the function answering it (a cold start lands here).
+ */
+export type MeterStage = "load" | "app_check" | "call";
+
+/**
+ * The App Check token the callable is about to ask for, asked for first so the
+ * wait has a name. The SDK caches it, so the callable's own request for it
+ * answers at once and nothing is fetched twice. Never throws: a token that
+ * can't be had is the callable's to deal with, exactly as before.
+ */
+async function appCheckTokenReady(): Promise<void> {
+  try {
+    const [{ getToken }, { getFirebaseApp }, { currentAppCheck }] = await Promise.all([
+      import("firebase/app-check"),
+      import("@/lib/firebase/client"),
+      import("@/lib/firebase/appCheck"),
+    ]);
+    getFirebaseApp();
+    const appCheck = currentAppCheck();
+    if (appCheck) await getToken(appCheck);
+  } catch {
+    /* The callable asks again and reports what it finds. */
+  }
+}
+
+async function callMeter(
+  data: Record<string, unknown>,
+  onStage: (stage: MeterStage) => void = () => {},
+): Promise<unknown> {
   // Through `callCookPilotParser`, like `loadImageImportQuota`, so the call
   // carries App Check and `rpAnonId` the same way every parser call does.
   const { callCookPilotParser } = await import("@/lib/parser");
+  onStage("app_check");
+  await appCheckTokenReady();
+  onStage("call");
   return callCookPilotParser(IMPORT_METER_CALLABLE, { ...data, ...browserTimeZone() });
+}
+
+/**
+ * Reports a meter call that didn't answer, and, when it was a timeout, how the
+ * abandoned call ended. The second event is what tells a slow answer from no
+ * answer: a cold start comes back a few seconds late and fine, a hang comes
+ * back a minute later as an error or never.
+ */
+function reportUnavailable(
+  op: "reserve" | "settle",
+  err: unknown,
+  stage: MeterStage,
+  work: Promise<unknown>,
+  startedAt: number,
+): "timeout" | "error" {
+  const reason = err instanceof MeterTimeout ? "timeout" : "error";
+  track("import_meter_unavailable", { op, reason, stage });
+  if (reason === "timeout") {
+    const late = (ok: boolean) =>
+      track("import_meter_late", { op, stage, ok, ms: Date.now() - startedAt });
+    work.then(
+      () => late(true),
+      () => late(false),
+    );
+  }
+  return reason;
 }
 
 /**
@@ -327,27 +391,28 @@ export async function reserveImport(input: {
   dedupeInput?: string;
 }): Promise<Reservation> {
   const startedAt = Date.now();
-  try {
-    const result = await withTimeout(
-      (async () => {
-        const dedupeKey = input.dedupeInput ? await dedupeKeyFor(input.dedupeInput) : undefined;
-        const data = await callMeter({
-          op: "reserve",
-          importId: input.importId,
-          method: input.method,
-          ...(dedupeKey ? { dedupeKey } : {}),
-        });
-        const parsed = parseAnswer(data);
-        if (!parsed) throw new Error("recipePrinterImportMeter returned an unexpected shape");
-        return parsed;
-      })(),
-      IMPORT_METER_TIMEOUT_MS,
+  const at: { stage: MeterStage } = { stage: "load" };
+  const work = (async () => {
+    const dedupeKey = input.dedupeInput ? await dedupeKeyFor(input.dedupeInput) : undefined;
+    const data = await callMeter(
+      {
+        op: "reserve",
+        importId: input.importId,
+        method: input.method,
+        ...(dedupeKey ? { dedupeKey } : {}),
+      },
+      (stage) => (at.stage = stage),
     );
+    const parsed = parseAnswer(data);
+    if (!parsed) throw new Error("recipePrinterImportMeter returned an unexpected shape");
+    return parsed;
+  })();
+  try {
+    const result = await withTimeout(work, IMPORT_METER_TIMEOUT_MS);
     noteAnswer(result);
     return { status: "reserved", meterMs: Date.now() - startedAt, result };
   } catch (err) {
-    const reason = err instanceof MeterTimeout ? "timeout" : "error";
-    track("import_meter_unavailable", { op: "reserve", reason });
+    const reason = reportUnavailable("reserve", err, at.stage, work, startedAt);
     return { status: "unavailable", meterMs: Date.now() - startedAt, reason };
   }
 }
@@ -359,16 +424,16 @@ export async function reserveImport(input: {
  * import boxes show next.
  */
 export function settleImport(importId: string, outcome: "success" | "failure"): void {
-  void withTimeout(callMeter({ op: "settle", importId, outcome }), IMPORT_METER_TIMEOUT_MS).then(
+  const startedAt = Date.now();
+  const at: { stage: MeterStage } = { stage: "load" };
+  const work = callMeter({ op: "settle", importId, outcome }, (stage) => (at.stage = stage));
+  void withTimeout(work, IMPORT_METER_TIMEOUT_MS).then(
     (data) => {
       const answer = parseAnswer(data);
       if (answer) noteAnswer(answer);
     },
     (err) => {
-      track("import_meter_unavailable", {
-        op: "settle",
-        reason: err instanceof MeterTimeout ? "timeout" : "error",
-      });
+      reportUnavailable("settle", err, at.stage, work, startedAt);
     },
   );
 }

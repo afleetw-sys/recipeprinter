@@ -87,3 +87,8 @@ export function ensureAppCheck(app: FirebaseApp): AppCheck | null {
     return null;
   }
 }
+
+/** The running instance, or null. Never starts one: `getFirebaseApp` decides that. */
+export function currentAppCheck(): AppCheck | null {
+  return (globalThis as AppCheckHost)[APP_CHECK_KEY] ?? null;
+}

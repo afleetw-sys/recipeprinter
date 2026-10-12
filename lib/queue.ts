@@ -379,6 +379,27 @@ function canonicalUrl(rawUrl: string): string | null {
 const liveParseIds = new Set<string>();
 const parseIsLive = (id: string): boolean => liveParseIds.has(id);
 
+/**
+ * How long a failed import waits on its debug capture before reporting the
+ * failure. The capture is a Storage upload and a Firestore write, and the
+ * event was awaited behind both: when either one stalled, the failure never
+ * reached analytics at all, so the slowest sessions were the ones we couldn't
+ * see.
+ */
+const FAILED_CAPTURE_WAIT_MS = 3_000;
+
+/** Resolves when `work` settles or `ms` passes, whichever is first. */
+function settledWithin(work: Promise<unknown>, ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    const done = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(done, ms);
+    work.then(done, done);
+  });
+}
+
 const INTERRUPTED_IMPORT_MESSAGE =
   "This import was interrupted before it finished. Add it again to import it.";
 
@@ -1017,7 +1038,7 @@ export function useQueue() {
         // (`search_page`), which is where "how often does this happen" belongs.
         const answeredFromTheUrl =
           Boolean(placeholder) || category === "search_page" || category === "joined_links";
-        let debugPath: string | null = null;
+        const captured: { debugPath: string | null } = { debugPath: null };
         if (!answeredFromTheUrl) {
           // Best-effort: stash the failed input and link the event to it. `await`
           // only to attach the path — capture never throws (see module).
@@ -1025,15 +1046,21 @@ export function useQueue() {
           // Bytes to Storage (only an image has any), then one row in
           // `debugInbox` either way, carrying the URL or the pasted text itself
           // and a pointer to those bytes.
-          debugPath = opts?.failedImages?.length
-            ? await captureFailedImportImages(opts.failedImages, captureMeta)
-            : null;
-          await recordFailedImport(captureMeta, {
-            payload: opts?.failedText,
-            imagePath: debugPath,
-            imageCount: opts?.failedImages?.length ?? 0,
-          });
+          const capture = (async () => {
+            captured.debugPath = opts?.failedImages?.length
+              ? await captureFailedImportImages(opts.failedImages, captureMeta)
+              : null;
+            await recordFailedImport(captureMeta, {
+              payload: opts?.failedText,
+              imagePath: captured.debugPath,
+              imageCount: opts?.failedImages?.length ?? 0,
+            });
+          })();
+          // The capture carries on by itself past this; only the event stops
+          // waiting, with whatever path had landed by then.
+          await settledWithin(capture, FAILED_CAPTURE_WAIT_MS);
         }
+        const { debugPath } = captured;
         track("recipe_import_failed", {
           ...outcome,
           reason,

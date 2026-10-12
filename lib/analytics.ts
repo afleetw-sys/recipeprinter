@@ -20,6 +20,7 @@ import type {
   RecipePrintTemplate,
 } from "@/types/recipe";
 import type { FeedbackType } from "@/lib/feedback";
+import type { MeterStage } from "@/lib/importMeter";
 import type { CookbookExportFailureStage } from "@/lib/cookbookPdfExport";
 
 /** Answers to the upgrade dialog's one-tap "Not upgrading today?" question. */
@@ -301,7 +302,18 @@ type EventProps = {
    * The import meter didn't answer in time or answered with an error, so the
    * import went ahead without it (it always fails open).
    */
-  import_meter_unavailable: { op: "reserve" | "settle"; reason: "timeout" | "error" };
+  import_meter_unavailable: {
+    op: "reserve" | "settle";
+    reason: "timeout" | "error";
+    /** What the call was waiting on when it was given up on (lib/importMeter). */
+    stage: MeterStage;
+  };
+  /**
+   * How a meter call that timed out ended once it was left to finish. `ok` and
+   * a few seconds is a slow answer (a cold start); an error near 70 seconds, or
+   * no event at all, is a call that was never going to answer.
+   */
+  import_meter_late: { op: "reserve" | "settle"; stage: MeterStage; ok: boolean; ms: number };
   /**
    * "Buy & add recipes" was pressed: an unbought cookbook's free preview was
    * full, so adding went to the cookbook checkout instead.

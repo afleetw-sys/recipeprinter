@@ -187,7 +187,10 @@ describe("a missing or slow meter imports normally", () => {
     act(() => start(result.current));
     await vi.waitFor(() => expect(result.current.items[0]?.status).toBe("ready"));
     expect(parser).toHaveBeenCalledTimes(1);
-    expect(track).toHaveBeenCalledWith("import_meter_unavailable", { op: "reserve", reason: "error" });
+    expect(track).toHaveBeenCalledWith(
+      "import_meter_unavailable",
+      expect.objectContaining({ op: "reserve", reason: "error" }),
+    );
   });
 
   test.each(METHODS)("$method: reserve takes longer than 5 seconds", async ({ start, parser }) => {
@@ -210,7 +213,10 @@ describe("a missing or slow meter imports normally", () => {
 
     await vi.advanceTimersByTimeAsync(1);
     await vi.waitFor(() => expect(parser).toHaveBeenCalledTimes(1));
-    expect(track).toHaveBeenCalledWith("import_meter_unavailable", { op: "reserve", reason: "timeout" });
+    expect(track).toHaveBeenCalledWith(
+      "import_meter_unavailable",
+      expect.objectContaining({ op: "reserve", reason: "timeout" }),
+    );
   });
 });
 
