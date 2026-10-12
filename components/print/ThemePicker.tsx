@@ -8,7 +8,7 @@ import {
 } from "@/components/RecipeCardPrint";
 import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
 import { ProBadge } from "@/components/ProBadge";
-import { ChevronDownIcon, ICON_SIZE } from "@/components/icons";
+import { ChevronDownIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
 import { arrangeThemes, isInSeason } from "@/lib/seasonalThemes";
 import { isPremiumTemplate } from "@/lib/premiumTemplates";
 import { hasTemplateOrProEntitlement } from "@/lib/recipePrinterPurchases";
@@ -122,11 +122,19 @@ export function ThemePicker({
             printing this template is actually requested (see the Print
             button below) — locked themes stay fully selectable and
             previewable here. */}
-        {(featured || locked) && (
-          <span className="recipe-template-option__badges">
-            {featured && <span className="recipe-template-option__featured">Featured</span>}
-            {locked && <ProBadge tooltip="This theme is Pro" />}
+        {/* A featured theme's tag is the word before the crown, in the
+            crown's own chip; a Pro subscriber sees the word alone. */}
+        {featured ? (
+          <span
+            className="pro-badge pro-badge--overlay recipe-template-option__featured"
+            aria-label={locked ? "Featured, this theme is Pro" : "Featured"}
+            title={locked ? "This theme is Pro" : undefined}
+          >
+            Featured
+            {locked && <CrownIcon size={ICON_SIZE.sm} />}
           </span>
+        ) : (
+          locked && <ProBadge tooltip="This theme is Pro" />
         )}
         <TemplateThumbnail template={option.id} />
       </div>
