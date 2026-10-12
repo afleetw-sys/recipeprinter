@@ -10,7 +10,6 @@ import {
   SITE_URL,
   SITE_NAME,
   SITE_DESCRIPTION,
-  SITE_KEYWORDS,
   PUBLISHER,
 } from "@/lib/seo";
 
@@ -188,7 +187,6 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
-  keywords: SITE_KEYWORDS,
   authors: [{ name: PUBLISHER.name, url: PUBLISHER.url }],
   creator: PUBLISHER.name,
   publisher: PUBLISHER.name,

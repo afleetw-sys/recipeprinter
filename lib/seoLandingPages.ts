@@ -2611,7 +2611,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "how many recipes in a cookbook",
     ],
     shortLabel: "Your own cookbook",
-    pickerGroup: "output",
     intent: "Organization SEO",
     startsCookbook: true,
     // A how-to search: the guide comes before the button.
@@ -2732,7 +2731,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "cookbook software",
     ],
     shortLabel: "Cookbook maker",
-    pickerGroup: "output",
     intent: "Organization SEO",
     startsCookbook: true,
     layout: "capture-first",
@@ -2744,6 +2742,22 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     h1: "Online cookbook maker",
     lede:
       "Bring recipes in from websites, screenshots, apps, or handwritten cards, organize them into chapters, design the cover, and export a print-ready PDF of your cookbook.",
+    // The cookbook hub. /features links here once instead of showing every
+    // cookbook page as an equal chip, and this row hands the visitor on to
+    // the page for the book they're making.
+    hub: {
+      label: "Guides by the cookbook you're making",
+      slugs: [
+        "make-your-own-cookbook",
+        "family-recipe-book",
+        "handwritten-recipes-to-cookbook",
+        "homemade-cookbook-gift",
+        "recipe-book-gift",
+        "christmas-recipe-book",
+        "bridal-shower-recipe-book",
+        "how-to-print-a-cookbook",
+      ],
+    },
     howToHeading: "How the cookbook maker works",
     howTo: [
       {
@@ -2875,7 +2889,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "cookbook printing at home",
     ],
     shortLabel: "A printed cookbook",
-    pickerGroup: "output",
     intent: "Organization SEO",
     startsCookbook: true,
     layout: "guide-first",
@@ -3007,7 +3020,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "recipe scanner for cookbook",
     ],
     shortLabel: "Handwritten recipe cookbook",
-    pickerGroup: "output",
     intent: "Preservation and Gift SEO",
     startsCookbook: true,
     layout: "capture-first",
@@ -3146,7 +3158,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "recipe book gift",
     ],
     shortLabel: "A cookbook gift",
-    pickerGroup: "output",
     intent: "Preservation and Gift SEO",
     startsCookbook: true,
     layout: "capture-first",
@@ -3298,7 +3309,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "custom recipe book gift",
     ],
     shortLabel: "A recipe book gift",
-    pickerGroup: "output",
     intent: "Preservation and Gift SEO",
     startsCookbook: true,
     layout: "capture-first",
@@ -3424,7 +3434,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "recipe book for Christmas",
     ],
     shortLabel: "A Christmas recipe book",
-    pickerGroup: "output",
     intent: "Preservation and Gift SEO",
     startsCookbook: true,
     layout: "capture-first",
@@ -3563,7 +3572,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "recipe book gift for bride",
     ],
     shortLabel: "A bridal shower recipe book",
-    pickerGroup: "output",
     intent: "Preservation and Gift SEO",
     layout: "capture-first",
     heroImage: "handwritten-card",

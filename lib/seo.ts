@@ -35,50 +35,6 @@ export const SITE_DESCRIPTION =
   "into printable recipe cards, pages, PDFs, and bound cookbooks worth keeping.";
 
 /**
- * Search intents we want the product to be the natural answer for. These are
- * surfaced as a meta keywords list and, more importantly, woven into the real
- * page copy and FAQ below, never stuffed.
- */
-export const SITE_KEYWORDS = [
-  "recipe printer",
-  "recipe printing tool",
-  "print recipes",
-  "print recipe online",
-  "print recipe from website",
-  "print recipe from URL",
-  "print recipe from social media",
-  "print recipe from social URL",
-  "print recipe from Facebook",
-  "print recipe from Instagram",
-  "print recipe from Instagram Reels",
-  "print recipe from TikTok",
-  "print recipe from YouTube",
-  "digitize recipe cards",
-  "print recipe from screenshot",
-  "print multiple recipes",
-  "convert online recipes to printable",
-  "printable recipe",
-  "printable recipe cards",
-  "printable recipe card generator",
-  "printable recipe cards 4x6",
-  "recipe card maker",
-  "print recipe without ads",
-  "print recipe without pictures",
-  "recipe PDF",
-  "convert recipe to PDF",
-  "make a cookbook",
-  "create a cookbook",
-  "cookbook maker",
-  "recipe book maker",
-  "print your own cookbook",
-  "family cookbook",
-  "organize recipes",
-  "recipe binder",
-  "Just the Recipe alternative",
-  "ReciScan alternative",
-];
-
-/**
  * The team behind RecipePrinter, used as publisher/provider in JSON-LD.
  * `profiles` are CookPilot's own accounts: they go out as `sameAs` on the
  * parentOrganization node, never on RecipePrinter's.
