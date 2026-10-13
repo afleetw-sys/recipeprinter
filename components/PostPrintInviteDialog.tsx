@@ -84,11 +84,11 @@ export function PostPrintInviteDialog({
       <button type="button" className="icon-close-btn absolute right-3 top-3" aria-label="Close" onClick={onClose}>
         <XIcon size={ICON_SIZE.md} />
       </button>
-      {/* The Pro colour (the crown's), so the reward reads as Pro at a glance. */}
+      {/* The warm accent, so the gifts stand apart from the dialog's ink. */}
       <div className="mt-cp-2 flex items-center justify-center gap-cp-3" aria-hidden>
-        <GiftIcon size={44} className="text-[var(--cp-premium-bright)]" />
+        <GiftIcon size={44} className="text-[var(--cp-accent-warm)]" />
         <SwapIcon size={ICON_SIZE.lg} className="text-ink-soft" />
-        <GiftIcon size={44} className="text-[var(--cp-premium-bright)]" />
+        <GiftIcon size={44} className="text-[var(--cp-accent-warm)]" />
       </div>
       <div>
         <h2 id="post-print-invite-title" className="text-cp-dialog-title font-extrabold tracking-tight">
@@ -99,37 +99,39 @@ export function PostPrintInviteDialog({
           recipes at once, free for {rewardDays} days.
         </p>
       </div>
-      <button
-        type="button"
-        className="btn btn-primary w-full"
-        disabled={busy}
-        onClick={() => (signedIn ? void share() : setSigningIn(true))}
-      >
-        {!signedIn
-          ? "Sign in to get your link"
-          : shared === "copy"
-            ? "Link copied"
-            : shared
-              ? "Shared"
-              : "Share your link"}
-      </button>
-      {manualUrl && !shared && (
-        <input
-          readOnly
-          autoFocus
-          value={manualUrl}
-          aria-label="Your invite link"
-          className="field w-full min-w-0"
-          onFocus={(event) => event.currentTarget.select()}
-        />
-      )}
-      {signedIn ? (
-        <Link href="/invites" className="text-cp-small text-ink-soft underline underline-offset-2" onClick={onClose}>
-          See your invites
-        </Link>
-      ) : (
-        <p className="text-cp-caption text-ink-soft">Sign in is required to track your referrals and rewards.</p>
-      )}
+      <div className="flex flex-col gap-cp-2">
+        <button
+          type="button"
+          className="btn btn-primary w-full"
+          disabled={busy}
+          onClick={() => (signedIn ? void share() : setSigningIn(true))}
+        >
+          {!signedIn
+            ? "Sign in to get your link"
+            : shared === "copy"
+              ? "Link copied"
+              : shared
+                ? "Shared"
+                : "Share your link"}
+        </button>
+        {manualUrl && !shared && (
+          <input
+            readOnly
+            autoFocus
+            value={manualUrl}
+            aria-label="Your invite link"
+            className="field w-full min-w-0"
+            onFocus={(event) => event.currentTarget.select()}
+          />
+        )}
+        {signedIn ? (
+          <Link href="/invites" className="text-cp-small text-ink-soft underline underline-offset-2" onClick={onClose}>
+            See your invites
+          </Link>
+        ) : (
+          <p className="text-cp-caption text-ink-soft">Rewards are tracked on your account.</p>
+        )}
+      </div>
     </Dialog>
   );
 }
