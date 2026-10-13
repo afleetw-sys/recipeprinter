@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LinkIcon, ICON_SIZE } from "@/components/icons";
 import { referralPromptsAllowed, track } from "@/lib/analytics";
-import { capReached, daysRemaining, inviteUrl, loadReferralSummary, type ReferralSummary } from "@/lib/referral";
+import { capReached, daysRemaining, inviteShareText, inviteUrl, loadReferralSummary, type ReferralSummary } from "@/lib/referral";
 import { shareLink } from "@/lib/shareLink";
 
 /**
@@ -41,9 +41,10 @@ export function ReferralCard() {
   if (!summary?.enabled || !summary.code) return null;
   const url = inviteUrl(summary.code, window.location.origin);
   const friends = summary.successfulReferrals;
+  const shareText = inviteShareText(summary.rewardDays);
 
   async function share() {
-    const method = await shareLink(url, "Try RecipePrinter with me. We both get Pro for a week.");
+    const method = await shareLink(url, shareText);
     if (!method) {
       // No share sheet and no clipboard access: select the link so it can be copied by hand.
       inputRef.current?.focus();

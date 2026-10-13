@@ -5,7 +5,7 @@ import { CookPilotLoginDialog } from "@/components/CookPilotAuth";
 import { Dialog } from "@/components/Dialog";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { track } from "@/lib/analytics";
-import { inviteUrl, loadReferralSummary } from "@/lib/referral";
+import { inviteShareText, inviteUrl, loadReferralSummary } from "@/lib/referral";
 import { shareLink } from "@/lib/shareLink";
 
 /**
@@ -42,7 +42,7 @@ export function PostPrintInviteDialog({
       const summary = await loadReferralSummary("link");
       if (!summary.enabled || !summary.code) return;
       const url = inviteUrl(summary.code, window.location.origin);
-      const method = await shareLink(url, "Try RecipePrinter with me. We both get Pro for a week.");
+      const method = await shareLink(url, inviteShareText(summary.rewardDays));
       if (!method) {
         // No share sheet and no clipboard access: show the link to copy by hand.
         setManualUrl(url);

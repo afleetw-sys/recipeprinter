@@ -21,6 +21,7 @@ import {
 } from "@/lib/proProduct";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
 import { shareLink } from "@/lib/shareLink";
+import { inviteShareText } from "@/lib/referral";
 
 const PRO_CYCLE_LABEL: Record<ProBillingCycle, string> = {
   annual: "Annual",
@@ -238,7 +239,7 @@ export function ProUpgradeDialog({
                 type="button"
                 className="btn btn-secondary w-full"
                 onClick={async () => {
-                  const method = await shareLink(referralChoice.inviteUrl, "Try RecipePrinter with me. We both get Pro for a week.");
+                  const method = await shareLink(referralChoice.inviteUrl, inviteShareText(referralChoice.rewardDays));
                   if (!method) {
                     setShowLink(true);
                     return;

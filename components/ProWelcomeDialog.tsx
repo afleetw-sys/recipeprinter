@@ -26,12 +26,13 @@ function copyFor(welcome: ProWelcome): { title: string; body: string } {
   case "referral_earned":
     return welcome.fulfillment === "extension"
       ? {
-        title: "A friend joined RecipePrinter",
-        body: `Thanks for sharing. Your next Pro bill moves ${welcome.days} days later.`,
+        title: `${welcome.days} more days of Pro`,
+        body: `Your invites earned these, so your next Pro bill moves ${welcome.days} days later. Thanks for sharing.`,
       }
       : {
         title: `${welcome.days} more days of Pro`,
-        body: "A friend joined RecipePrinter through your link. Thanks for sharing.",
+        // One friend or several: banked days arrive together on the next visit.
+        body: "Your invites earned these, and they start now. Thanks for sharing RecipePrinter.",
       };
   }
 }

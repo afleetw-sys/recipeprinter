@@ -6953,7 +6953,7 @@ export default function PrintPage() {
       <PostPrintInviteDialog
         open={showReferralInvite}
         signedIn={Boolean(cookPilotUser)}
-        rewardDays={cachedReferralSummary()?.rewardDays ?? 7}
+        rewardDays={cachedReferralSummary()?.rewardDays ?? 3}
         onClose={() => setShowReferralInvite(false)}
       />
       <PrintDialogs

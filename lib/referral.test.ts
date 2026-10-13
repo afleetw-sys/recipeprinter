@@ -16,6 +16,7 @@ import {
   POST_PRINT_GAP_MS,
   claimStoredOpen,
   membershipStatus,
+  readyToActivate,
   readStoredOpen,
   recordInviteFromCookie,
   referralPurchaseProps,
@@ -51,7 +52,7 @@ describe("the invite link", () => {
   });
 
   test("the first link wins until it can no longer be claimed; then a new one counts", async () => {
-    callable.answer.mockImplementation(() => ({ ok: true, openId: `open-${callable.calls.length}`, expiresAtMs: NOW + 30 * DAY, rewardDays: 7 }));
+    callable.answer.mockImplementation(() => ({ ok: true, openId: `open-${callable.calls.length}`, expiresAtMs: NOW + 30 * DAY, rewardDays: 3 }));
     expect(await recordInviteFromCookie(`${INVITE_COOKIE}=AAAAAAAA`, NOW)).toMatchObject({ recorded: true });
     expect(await recordInviteFromCookie(`other=1; ${INVITE_COOKIE}=BBBBBBBB`, NOW + DAY)).toEqual({
       recorded: false,
@@ -67,7 +68,7 @@ describe("the invite link", () => {
   });
 
   test("a link opened before a phone's sign-in redirect is still claimed after it", async () => {
-    callable.answer.mockResolvedValueOnce({ ok: true, openId: "open-1", expiresAtMs: Date.now() + 30 * DAY, rewardDays: 7 });
+    callable.answer.mockResolvedValueOnce({ ok: true, openId: "open-1", expiresAtMs: Date.now() + 30 * DAY, rewardDays: 3 });
     await recordInviteFromCookie(`${INVITE_COOKIE}=AAAAAAAA`);
     // The redirect reloads the page: only storage survives.
     vi.resetModules();
@@ -77,8 +78,8 @@ describe("the invite link", () => {
     expect(await reloaded.claimStoredOpen()).toEqual({ status: "pending_verification" });
     expect(reloaded.readStoredOpen()?.pendingVerification).toBe(true);
 
-    callable.answer.mockResolvedValueOnce({ status: "granted", days: 7 });
-    expect(await reloaded.claimStoredOpen()).toEqual({ status: "granted", days: 7 });
+    callable.answer.mockResolvedValueOnce({ status: "granted", days: 3 });
+    expect(await reloaded.claimStoredOpen()).toEqual({ status: "granted", days: 3 });
     expect(callable.calls.slice(1)).toEqual([{ op: "claim", openId: "open-1" }, { op: "claim", openId: "open-1" }]);
     // Claimed: nothing left to send again.
     expect(reloaded.readStoredOpen()).toBeNull();
@@ -101,9 +102,20 @@ describe("analytics facts", () => {
     expect(referralPurchaseProps(null, NOW)).toEqual({
       acquired_via_referral: false, had_referral_pro: false, referral_pro_active: false,
     });
-    expect(referralPurchaseProps({ referred: true, lifetimeDaysEarned: 7, promoEndsAtMs: NOW + DAY }, NOW)).toEqual({
+    expect(referralPurchaseProps({ referred: true, lifetimeDaysEarned: 3, promoEndsAtMs: NOW + DAY }, NOW)).toEqual({
       acquired_via_referral: true, had_referral_pro: true, referral_pro_active: true,
     });
+  });
+});
+
+describe("starting a referrer's banked days", () => {
+  test("only on an active visit: days waiting, a tab that's showing, and a real interaction", () => {
+    const ready = { bankedDays: 6, visible: true, interacted: true };
+    expect(readyToActivate(ready)).toBe(true);
+    expect(readyToActivate({ ...ready, bankedDays: 0 })).toBe(false);
+    // A background tab, or a page restored and checked with nobody touching it.
+    expect(readyToActivate({ ...ready, visible: false })).toBe(false);
+    expect(readyToActivate({ ...ready, interacted: false })).toBe(false);
   });
 });
 

@@ -44,6 +44,11 @@ export function normalizeInviteCode(raw: unknown): string | null {
   return CODE_PATTERN.test(code) ? code : null;
 }
 
+/** What goes with the link in a share sheet. */
+export function inviteShareText(rewardDays: number): string {
+  return `Try RecipePrinter with me. We both get ${rewardDays} days of Pro.`;
+}
+
 export function inviteUrl(code: string, origin: string): string {
   return `${origin.replace(/\/$/, "")}/invite/${code}`;
 }
@@ -134,6 +139,8 @@ export interface ReferralSummary {
     fulfillment: "promo" | "extension";
   } | null;
   referred: boolean;
+  /** Earned from friends and waiting for this account's next active visit. */
+  bankedDays: number;
   /** From the server's entitlement mirror, so nothing here reads RevenueCat. */
   proActive: boolean;
   proPaid: boolean;
@@ -292,6 +299,31 @@ export async function claimStoredOpen(nowMs = Date.now()): Promise<ClaimResult |
     // Granted, refused, or the program is off: there is nothing left to claim.
     forgetStoredOpen();
   }
+  return result;
+}
+
+export interface ActivationResult {
+  days: number;
+  fulfillment: "promo" | "extension" | null;
+  pending: number;
+}
+
+/**
+ * A referrer's banked days start on their next ACTIVE visit: a tab that is
+ * showing, after the person has touched or typed in it. Not on a background
+ * tab, not on a sign-in restored in the background, not from a script.
+ */
+export function readyToActivate(input: {
+  bankedDays: number;
+  visible: boolean;
+  interacted: boolean;
+}): boolean {
+  return input.bankedDays > 0 && input.visible && input.interacted;
+}
+
+export async function activateBankedRewards(): Promise<ActivationResult> {
+  const result = (await callReferral({ op: "activate" })) as ActivationResult;
+  if (lastSummary) lastSummary = { ...lastSummary, bankedDays: 0 };
   return result;
 }
 

@@ -9,6 +9,8 @@ import { announceProChanged, announceProWelcome, subscribeProWelcome, type ProWe
 import {
   INVITE_COOKIE,
   REFERRALS_LIVE,
+  activateBankedRewards,
+  readyToActivate,
   capReached,
   claimStoredOpen,
   expiredReferralToShow,
@@ -55,6 +57,7 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
   const [verifying, setVerifying] = useState(false);
   const [summary, setSummary] = useState<ReferralSummary | null>(null);
   const [expiredEnd, setExpiredEnd] = useState<number | null>(null);
+  const [bankedDays, setBankedDays] = useState(0);
   const claimingRef = useRef(false);
 
   useEffect(() => subscribeProWelcome(setWelcome), []);
@@ -136,6 +139,9 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
           if (!loaded.enabled) return;
           registerMembershipStatus(membershipStatus(loaded));
           const grant = unseenGrant(uid, loaded);
+          // Days friends earned while they were away start on this visit, once
+          // they actually use the page (the effect below).
+          if (loaded.bankedDays > 0) setBankedDays(loaded.bankedDays);
           if (grant) {
             markGrantSeen(uid, grant.atMs);
             announceProWelcome(
@@ -145,6 +151,7 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
             );
             return;
           }
+          if (loaded.bankedDays > 0) return;
           const ended = expiredReferralToShow(uid, loaded);
           if (ended !== null && referralPromptsAllowed()) {
             markExpirySeen(uid, ended);
@@ -166,6 +173,37 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
       alive = false;
     };
   }, [ready, uid]);
+
+  // Banked days start on an ACTIVE visit: the first touch, click or key in a
+  // tab that is showing and focused. Never from a background tab, the auth
+  // check that runs on load, or a page nobody is looking at.
+  useEffect(() => {
+    if (!uid || bankedDays <= 0) return;
+    let done = false;
+    const onInteract = () => {
+      if (done) return;
+      if (!readyToActivate({
+        bankedDays,
+        visible: document.visibilityState === "visible" && document.hasFocus(),
+        interacted: true,
+      })) return;
+      done = true;
+      remove();
+      setBankedDays(0);
+      activateBankedRewards()
+        .then((result) => {
+          if (result.days <= 0 || !result.fulfillment) return;
+          markGrantSeen(uid, Date.now());
+          announceProWelcome({ kind: "referral_earned", days: result.days, fulfillment: result.fulfillment });
+        })
+        // Nothing earned is lost: the server keeps it, and the next visit tries again.
+        .catch((error) => console.warn("RecipePrinter: could not start earned Pro days", error));
+    };
+    const events = ["pointerdown", "keydown"] as const;
+    const remove = () => events.forEach((name) => document.removeEventListener(name, onInteract, true));
+    events.forEach((name) => document.addEventListener(name, onInteract, true));
+    return remove;
+  }, [uid, bankedDays]);
 
   return (
     <>
