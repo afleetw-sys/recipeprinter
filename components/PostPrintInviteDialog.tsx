@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CookPilotLoginDialog } from "@/components/CookPilotAuth";
 import { Dialog } from "@/components/Dialog";
@@ -119,11 +118,7 @@ export function PostPrintInviteDialog({
             onFocus={(event) => event.currentTarget.select()}
           />
         )}
-        {signedIn ? (
-          <Link href="/invites" className="text-cp-small text-ink-soft underline underline-offset-2" onClick={onClose}>
-            See your invites
-          </Link>
-        ) : (
+        {!signedIn && (
           <p className="text-cp-caption text-ink-soft">You&rsquo;ll need to sign in to get your link and earn rewards.</p>
         )}
       </div>
