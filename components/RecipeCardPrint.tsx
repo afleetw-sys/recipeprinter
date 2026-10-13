@@ -1,7 +1,13 @@
 "use client";
 
 import { cleanSourceUrl } from "@/lib/sourceUrl";
-import { DEFAULT_RECIPE_HEADINGS, recipeHeading, type RecipeHeadingKind } from "@/lib/recipeHeadings";
+import {
+  DEFAULT_RECIPE_HEADINGS,
+  defaultHeadingsMatchRecipe,
+  defaultRecipeHeading,
+  recipeHeading,
+  type RecipeHeadingKind,
+} from "@/lib/recipeHeadings";
 import {
   memo,
   useMemo,
@@ -1008,9 +1014,12 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   function sectionLabel(kind: RecipeHeadingKind, suffix: ReactNode, addButton: ReactNode) {
     const target: RecipeCardEditTarget = { kind };
     const heading = recipeHeading(recipe, kind);
-    // The default heading is our English, not the recipe's; a cook's own is
-    // in whatever they typed, so it inherits the recipe's.
-    const headingLang = recipe[kind] === undefined ? appLang : undefined;
+    const defaultHeading = defaultRecipeHeading(kind, recipe.language);
+    // The default is in the recipe's language when lib/recipeHeadings has
+    // it, and our English when it doesn't. A cook's own heading is in
+    // whatever they typed, so it inherits the recipe's.
+    const defaultLang = defaultHeadingsMatchRecipe(recipe.language) ? undefined : appLang;
+    const headingLang = recipe[kind] === undefined ? defaultLang : undefined;
     if (canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, target)) {
       return (
         <h2 className="recipe-card__label">
@@ -1032,11 +1041,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         return (
           <h2
             className="recipe-card__label recipe-card__label--empty"
-            lang={appLang}
-            onClick={() => startEdit(target, DEFAULT_RECIPE_HEADINGS[kind])}
+            lang={defaultLang}
+            onClick={() => startEdit(target, defaultHeading)}
           >
             <span className="recipe-card__label-inline">
-              {DEFAULT_RECIPE_HEADINGS[kind]}
+              {defaultHeading}
               {suffix}
               {addButton}
             </span>
