@@ -84,10 +84,11 @@ export function PostPrintInviteDialog({
       <button type="button" className="icon-close-btn absolute right-3 top-3" aria-label="Close" onClick={onClose}>
         <XIcon size={ICON_SIZE.md} />
       </button>
-      <div className="mt-cp-2 flex items-center justify-center gap-cp-2" aria-hidden>
-        <GiftIcon size={28} />
-        <SwapIcon size={ICON_SIZE.md} className="text-ink-soft" />
-        <GiftIcon size={28} />
+      {/* The Pro colour (the crown's), so the reward reads as Pro at a glance. */}
+      <div className="mt-cp-2 flex items-center justify-center gap-cp-3" aria-hidden>
+        <GiftIcon size={44} className="text-[var(--cp-premium-bright)]" />
+        <SwapIcon size={ICON_SIZE.lg} className="text-ink-soft" />
+        <GiftIcon size={44} className="text-[var(--cp-premium-bright)]" />
       </div>
       <div>
         <h2 id="post-print-invite-title" className="text-cp-dialog-title font-extrabold tracking-tight">
