@@ -203,6 +203,23 @@ function recipeNodeFrom(root: AnyRecord): AnyRecord | null {
 }
 
 /**
+ * CookPilot's `language` as a canonical BCP 47 tag, or undefined. It sends one
+ * only when the page declared it or the model was sure, and null otherwise;
+ * anything that isn't a well-formed tag is treated as no answer, since it ends
+ * up in a `lang` attribute.
+ */
+export function recipeLanguageTag(raw: unknown): string | undefined {
+  if (typeof raw !== "string" || !raw.trim()) return undefined;
+  try {
+    const tag = Intl.getCanonicalLocales(raw.trim())[0];
+    // "english" is well-formed (a 5-8 letter subtag) and names no language.
+    return /^[a-z]{2,3}$/.test(new Intl.Locale(tag).language) ? tag : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Adapts CookPilot's parser output into a flat `Recipe`. `body` is the parsed
  * JSON from CookPilot; `sourceUrl` is the original import URL when known.
  */
@@ -223,6 +240,7 @@ export function adaptCookPilotRecipe(body: unknown, sourceUrl?: string): Recipe 
       image: bestRecipeImageFrom(flatNode.imageURL, flatNode.imageUrl, flatNode.image, flatNode.images),
       sourceUrl: cleanSourceUrl(flat.sourceUrl ?? sourceUrl),
       sourceName: flat.sourceName ?? (sourceUrl ? hostnameOf(sourceUrl) : undefined),
+      language: recipeLanguageTag(flatNode.language),
       ingredients: Array.isArray(flat.ingredients) ? flat.ingredients : [],
       instructions: Array.isArray(flat.instructions) ? flat.instructions : [],
     };
@@ -243,6 +261,7 @@ export function adaptCookPilotRecipe(body: unknown, sourceUrl?: string): Recipe 
     image: bestRecipeImageFrom(data.imageURL, data.imageUrl, data.image, data.images),
     sourceUrl: cleanSourceUrl(sourceUrl),
     sourceName: sourceUrl ? hostnameOf(sourceUrl) : undefined,
+    language: recipeLanguageTag(data.language),
     prepTime: asString(data.prepTime),
     cookTime: asString(data.cookTime),
     totalTime: asString(data.totalTime),

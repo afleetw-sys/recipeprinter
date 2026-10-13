@@ -49,9 +49,9 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   id: RecipePrintTemplate;
   label: string;
   detail: string;
-  /** A seasonal theme's yearly window to be featured: tagged and at the top
-      of the Pro themes (see lib/seasonalThemes). It is in the picker all year;
-      outside the window it takes its place in this list among the Pro themes. */
+  /** Makes this a seasonal theme, and is its yearly window to be featured:
+      tagged and at the top of the Pro themes (see lib/seasonalThemes).
+      Outside the window it is in the collapsed "Seasonal themes" group. */
   featured?: ThemeSeason;
 }> = [
   { id: "classic", label: "Classic", detail: "Cornflower and slate, clean cookbook card" },

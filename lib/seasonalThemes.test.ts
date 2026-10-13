@@ -36,14 +36,14 @@ describe("arrangeThemes", () => {
   const isPremium = (theme: { pro?: boolean }) => Boolean(theme.pro);
 
   it("features a theme at the top of the Pro themes during its dates", () => {
-    expect(arrangeThemes(themes, isPremium, day(12, 1)).map((t) => t.id)).toEqual([
-      "classic", "pantry", "christmas", "typewriter", "bistro",
-    ]);
+    const { main, seasonal } = arrangeThemes(themes, isPremium, day(12, 1));
+    expect(main.map((t) => t.id)).toEqual(["classic", "pantry", "christmas", "typewriter", "bistro"]);
+    expect(seasonal).toEqual([]);
   });
 
-  it("keeps a theme in its listed place outside its dates", () => {
-    expect(arrangeThemes(themes, isPremium, day(7, 1)).map((t) => t.id)).toEqual([
-      "classic", "pantry", "typewriter", "christmas", "bistro",
-    ]);
+  it("moves a seasonal theme to the seasonal group outside its dates", () => {
+    const { main, seasonal } = arrangeThemes(themes, isPremium, day(7, 1));
+    expect(main.map((t) => t.id)).toEqual(["classic", "pantry", "typewriter", "bistro"]);
+    expect(seasonal.map((t) => t.id)).toEqual(["christmas"]);
   });
 });

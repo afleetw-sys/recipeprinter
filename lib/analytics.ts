@@ -247,6 +247,12 @@ type EventProps = {
      */
     meter_used?: number;
     meter_limit?: number;
+    /**
+     * The recipe's language as a BCP 47 tag ("de", "pt-BR"), when CookPilot
+     * was sure of it. Absent means unknown, not English: photos and captions
+     * read without the model never report one.
+     */
+    language?: string;
   } & Partial<ImportContextProps>;
   /**
    * An import that succeeded but was then substantially rewritten by hand: the
