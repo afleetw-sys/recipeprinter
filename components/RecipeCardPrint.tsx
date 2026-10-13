@@ -3,8 +3,7 @@
 import { cleanSourceUrl } from "@/lib/sourceUrl";
 import {
   DEFAULT_RECIPE_HEADINGS,
-  defaultHeadingsMatchRecipe,
-  defaultRecipeHeading,
+  recipeCardWords,
   recipeHeading,
   type RecipeHeadingKind,
 } from "@/lib/recipeHeadings";
@@ -1006,19 +1005,18 @@ export const RecipeCardFace = memo(function RecipeCardFace({
    * reveal is on it comes back as a muted copy of the default, and clicking
    * that opens the default in the field: keep it, or type something else.
    */
-  // The card's own words ("Ingredients", "continued on back") are English.
-  // Marked only when the card says otherwise; with no language they inherit
-  // the page's `lang="en"` already.
-  const appLang = recipe.language ? "en" : undefined;
+  // The card's own words ("Ingredients", "on back") in the recipe's
+  // language, or ours with `lang="en"` when lib/recipeHeadings doesn't have
+  // it.
+  const cardWords = recipeCardWords(recipe.language);
 
   function sectionLabel(kind: RecipeHeadingKind, suffix: ReactNode, addButton: ReactNode) {
     const target: RecipeCardEditTarget = { kind };
     const heading = recipeHeading(recipe, kind);
-    const defaultHeading = defaultRecipeHeading(kind, recipe.language);
-    // The default is in the recipe's language when lib/recipeHeadings has
-    // it, and our English when it doesn't. A cook's own heading is in
-    // whatever they typed, so it inherits the recipe's.
-    const defaultLang = defaultHeadingsMatchRecipe(recipe.language) ? undefined : appLang;
+    const defaultHeading = cardWords[kind];
+    const defaultLang = cardWords.lang;
+    // A cook's own heading is in whatever they typed, so it inherits the
+    // recipe's language.
     const headingLang = recipe[kind] === undefined ? defaultLang : undefined;
     if (canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, target)) {
       return (
@@ -1289,7 +1287,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       data-in-book={cookbookMode ? "true" : undefined}
       /* The recipe's own language, when CookPilot was sure of it, so screen
          readers voice it and the browser picks the right glyphs and
-         hyphenation. The card's own words stay English: see `appLang`. */
+         hyphenation. The card's own words follow it too: see `cardWords`. */
       lang={recipe.language}
     >
       <div className="recipe-card__accent" aria-hidden />
@@ -1558,11 +1556,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 // this one (see `continueOnBack` in lib/usePrintSheets.tsx —
                 // duplex is the recipe-card path only), so "on back" sent the
                 // cook looking at the wrong side of the page.
-                <span className="recipe-card__continued-inline" lang={appLang}>
-                  {cookbookMode ? " (continued on the next page)" : " (continued on back)"}
+                <span className="recipe-card__continued-inline" lang={cardWords.lang}>
+                  {` (${cookbookMode ? cardWords.nextPage : cardWords.onBack})`}
                 </span>
               ) : (side === "back" || continued) && stepsBeganEarlier ? (
-                " continued"
+                <span className="recipe-card__continued-inline" lang={cardWords.lang}>
+                  {` (${cardWords.continued})`}
+                </span>
               ) : (
                 ""
               ),

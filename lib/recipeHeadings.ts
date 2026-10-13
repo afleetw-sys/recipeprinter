@@ -23,87 +23,107 @@ export const DEFAULT_RECIPE_HEADINGS: Record<RecipeHeadingKind, string> = {
 };
 
 /**
- * The default headings in the language a recipe is written in, so a German
- * recipe prints "Zutaten" and "Zubereitung". Each pair is the wording that
- * language's own cookbooks use, which is rarely a word-for-word "Steps".
+ * The words a card prints for itself, in the language the recipe is written
+ * in: the two default headings, and the notes after "Steps" when the method
+ * runs on. A German recipe prints "Zutaten", "Zubereitung (Rückseite)". Each
+ * is the wording that language's own cookbooks use, which is rarely a
+ * word-for-word "Steps".
  *
- * Keyed by language subtag, with a region only where the region changes the
- * word (Brazilian vs European Portuguese). A language that isn't here keeps
- * the English pair: a wrong translation on a printed card is worse than ours.
- * `recipe.language` is set only when CookPilot was sure (lib/cookpilot.ts).
+ * Keyed by language subtag, with a region or script only where it changes the
+ * words (Brazilian vs European Portuguese, Serbian Latin vs Cyrillic). A
+ * language that isn't here keeps the English row: a wrong translation on a
+ * printed card is worse than ours. `recipe.language` is set only when
+ * CookPilot was sure (lib/cookpilot.ts).
  */
-const LOCALIZED_HEADINGS: Record<string, readonly [ingredients: string, steps: string]> = {
-  ar: ["المكونات", "طريقة التحضير"],
-  bg: ["Продукти", "Начин на приготвяне"],
-  bs: ["Sastojci", "Priprema"],
-  ca: ["Ingredients", "Preparació"],
-  cs: ["Suroviny", "Postup"],
-  da: ["Ingredienser", "Fremgangsmåde"],
-  de: ["Zutaten", "Zubereitung"],
-  el: ["Υλικά", "Εκτέλεση"],
-  en: [DEFAULT_RECIPE_HEADINGS.ingredientsHeading, DEFAULT_RECIPE_HEADINGS.stepsHeading],
-  es: ["Ingredientes", "Preparación"],
-  et: ["Koostisosad", "Valmistamine"],
-  fa: ["مواد لازم", "طرز تهیه"],
-  fi: ["Ainekset", "Valmistus"],
-  fr: ["Ingrédients", "Préparation"],
-  he: ["מצרכים", "אופן ההכנה"],
-  hi: ["सामग्री", "विधि"],
-  hr: ["Sastojci", "Priprema"],
-  hu: ["Hozzávalók", "Elkészítés"],
-  id: ["Bahan", "Cara membuat"],
-  it: ["Ingredienti", "Preparazione"],
-  ja: ["材料", "作り方"],
-  ko: ["재료", "만드는 법"],
-  lt: ["Ingredientai", "Gaminimo eiga"],
-  lv: ["Sastāvdaļas", "Pagatavošana"],
-  ms: ["Bahan-bahan", "Cara memasak"],
-  nb: ["Ingredienser", "Fremgangsmåte"],
-  nl: ["Ingrediënten", "Bereiding"],
-  nn: ["Ingrediensar", "Framgangsmåte"],
-  no: ["Ingredienser", "Fremgangsmåte"],
-  pl: ["Składniki", "Przygotowanie"],
-  pt: ["Ingredientes", "Modo de preparo"],
-  "pt-pt": ["Ingredientes", "Preparação"],
-  ro: ["Ingrediente", "Mod de preparare"],
-  ru: ["Ингредиенты", "Приготовление"],
-  sk: ["Suroviny", "Postup"],
-  sl: ["Sestavine", "Priprava"],
-  sr: ["Састојци", "Припрема"],
-  "sr-latn": ["Sastojci", "Priprema"],
-  sv: ["Ingredienser", "Gör så här"],
-  th: ["ส่วนผสม", "วิธีทำ"],
-  tr: ["Malzemeler", "Hazırlanışı"],
-  uk: ["Інгредієнти", "Приготування"],
-  vi: ["Nguyên liệu", "Cách làm"],
-  zh: ["食材", "做法"],
+export interface RecipeCardWords {
+  ingredientsHeading: string;
+  stepsHeading: string;
+  /** After the steps heading on a card's front: the method runs on overleaf. */
+  onBack: string;
+  /** The same on a cookbook page, which runs on to the next leaf instead. */
+  nextPage: string;
+  /** After the steps heading where the method picks up again. */
+  continued: string;
+}
+
+type WordsRow = readonly [ingredients: string, steps: string, onBack: string, nextPage: string, continued: string];
+
+const ENGLISH: WordsRow = [
+  DEFAULT_RECIPE_HEADINGS.ingredientsHeading,
+  DEFAULT_RECIPE_HEADINGS.stepsHeading,
+  "on back",
+  "next page",
+  "continued",
+];
+
+const CARD_WORDS: Record<string, WordsRow> = {
+  ar: ["المكونات", "طريقة التحضير", "في الخلف", "الصفحة التالية", "تابع"],
+  bg: ["Продукти", "Начин на приготвяне", "на гърба", "следваща страница", "продължение"],
+  bs: ["Sastojci", "Priprema", "na poleđini", "sljedeća stranica", "nastavak"],
+  ca: ["Ingredients", "Preparació", "al dors", "pàgina següent", "continuació"],
+  cs: ["Suroviny", "Postup", "na zadní straně", "další strana", "pokračování"],
+  da: ["Ingredienser", "Fremgangsmåde", "på bagsiden", "næste side", "fortsat"],
+  de: ["Zutaten", "Zubereitung", "Rückseite", "nächste Seite", "Fortsetzung"],
+  el: ["Υλικά", "Εκτέλεση", "στο πίσω μέρος", "επόμενη σελίδα", "συνέχεια"],
+  en: ENGLISH,
+  es: ["Ingredientes", "Preparación", "al dorso", "página siguiente", "continuación"],
+  et: ["Koostisosad", "Valmistamine", "tagaküljel", "järgmine lehekülg", "järg"],
+  fa: ["مواد لازم", "طرز تهیه", "پشت صفحه", "صفحهٔ بعد", "ادامه"],
+  fi: ["Ainekset", "Valmistus", "kääntöpuolella", "seuraava sivu", "jatkuu"],
+  fr: ["Ingrédients", "Préparation", "au verso", "page suivante", "suite"],
+  he: ["מצרכים", "אופן ההכנה", "מעבר לדף", "בעמוד הבא", "המשך"],
+  hi: ["सामग्री", "विधि", "पीछे देखें", "अगला पृष्ठ", "जारी"],
+  hr: ["Sastojci", "Priprema", "na poleđini", "sljedeća stranica", "nastavak"],
+  hu: ["Hozzávalók", "Elkészítés", "a hátoldalon", "következő oldal", "folytatás"],
+  id: ["Bahan", "Cara membuat", "di balik", "halaman berikutnya", "lanjutan"],
+  it: ["Ingredienti", "Preparazione", "sul retro", "pagina seguente", "seguito"],
+  ja: ["材料", "作り方", "裏面へ", "次ページへ", "続き"],
+  ko: ["재료", "만드는 법", "뒷면", "다음 페이지", "계속"],
+  lt: ["Ingredientai", "Gaminimo eiga", "kitoje pusėje", "kitas puslapis", "tęsinys"],
+  lv: ["Sastāvdaļas", "Pagatavošana", "otrā pusē", "nākamā lappuse", "turpinājums"],
+  ms: ["Bahan-bahan", "Cara memasak", "di belakang", "halaman seterusnya", "sambungan"],
+  nb: ["Ingredienser", "Fremgangsmåte", "på baksiden", "neste side", "fortsettelse"],
+  nl: ["Ingrediënten", "Bereiding", "achterzijde", "volgende pagina", "vervolg"],
+  nn: ["Ingrediensar", "Framgangsmåte", "på baksida", "neste side", "framhald"],
+  no: ["Ingredienser", "Fremgangsmåte", "på baksiden", "neste side", "fortsettelse"],
+  pl: ["Składniki", "Przygotowanie", "na odwrocie", "następna strona", "ciąg dalszy"],
+  pt: ["Ingredientes", "Modo de preparo", "no verso", "próxima página", "continuação"],
+  "pt-pt": ["Ingredientes", "Preparação", "no verso", "página seguinte", "continuação"],
+  ro: ["Ingrediente", "Mod de preparare", "pe verso", "pagina următoare", "continuare"],
+  ru: ["Ингредиенты", "Приготовление", "на обороте", "следующая страница", "продолжение"],
+  sk: ["Suroviny", "Postup", "na zadnej strane", "ďalšia strana", "pokračovanie"],
+  sl: ["Sestavine", "Priprava", "na hrbtni strani", "naslednja stran", "nadaljevanje"],
+  sr: ["Састојци", "Припрема", "на полеђини", "следећа страна", "наставак"],
+  "sr-latn": ["Sastojci", "Priprema", "na poleđini", "sledeća strana", "nastavak"],
+  sv: ["Ingredienser", "Gör så här", "på baksidan", "nästa sida", "fortsättning"],
+  th: ["ส่วนผสม", "วิธีทำ", "ด้านหลัง", "หน้าถัดไป", "ต่อ"],
+  tr: ["Malzemeler", "Hazırlanışı", "arka yüzde", "sonraki sayfa", "devamı"],
+  uk: ["Інгредієнти", "Приготування", "на звороті", "наступна сторінка", "продовження"],
+  vi: ["Nguyên liệu", "Cách làm", "mặt sau", "trang sau", "tiếp theo"],
+  zh: ["食材", "做法", "见背面", "见下页", "续"],
 };
 
-function localizedHeadings(language: string | undefined) {
-  if (!language) return undefined;
+function cardWordsRow(language: string | undefined): WordsRow | undefined {
+  if (!language) return ENGLISH;
   const parts = language.toLowerCase().split("-");
   // "pt-PT" and "sr-Latn-RS" first, then the bare language.
-  return (
-    LOCALIZED_HEADINGS[`${parts[0]}-${parts[1]}`] ??
-    LOCALIZED_HEADINGS[`${parts[0]}-${parts[2]}`] ??
-    LOCALIZED_HEADINGS[parts[0]]
-  );
+  return CARD_WORDS[`${parts[0]}-${parts[1]}`] ?? CARD_WORDS[`${parts[0]}-${parts[2]}`] ?? CARD_WORDS[parts[0]];
+}
+
+/**
+ * The card's own words for a recipe in `language`, and the `lang` they are
+ * in: undefined when they match the recipe's, "en" when its language isn't
+ * in the table and the card falls back to ours.
+ */
+export function recipeCardWords(language: string | undefined): RecipeCardWords & { lang?: "en" } {
+  const row = cardWordsRow(language);
+  const [ingredientsHeading, stepsHeading, onBack, nextPage, continued] = row ?? ENGLISH;
+  return { ingredientsHeading, stepsHeading, onBack, nextPage, continued, ...(row ? {} : { lang: "en" }) };
 }
 
 /** The heading a recipe in `language` prints when the cook hasn't renamed it. */
 export function defaultRecipeHeading(kind: RecipeHeadingKind, language?: string): string {
-  const localized = localizedHeadings(language);
-  if (!localized) return DEFAULT_RECIPE_HEADINGS[kind];
-  return localized[kind === "ingredientsHeading" ? 0 : 1];
-}
-
-/**
- * Whether a recipe's default headings are in its own language. When they
- * aren't (a language missing above), they are English on a card that isn't,
- * and the card marks them `lang="en"`.
- */
-export function defaultHeadingsMatchRecipe(language: string | undefined): boolean {
-  return !language || localizedHeadings(language) !== undefined;
+  return recipeCardWords(language)[kind];
 }
 
 /** What the card prints for this heading. `""` means it is removed. */
