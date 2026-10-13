@@ -138,12 +138,11 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
           if (!alive) return;
           sessionStore.set(SUMMARY_SESSION_KEY(uid), "1");
           setSummary(loaded);
+          // Days already earned still start if the program has since been switched off.
+          if (loaded.bankedDays > 0) setBankedDays(loaded.bankedDays);
           if (!loaded.enabled) return;
           registerMembershipStatus(membershipStatus(loaded));
           const grant = unseenGrant(uid, loaded);
-          // Days friends earned while they were away start on this visit, once
-          // they actually use the page (the effect below).
-          if (loaded.bankedDays > 0) setBankedDays(loaded.bankedDays);
           if (grant) {
             markGrantSeen(uid, grant.atMs);
             announceProWelcome(
