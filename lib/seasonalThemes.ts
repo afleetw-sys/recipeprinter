@@ -1,10 +1,9 @@
 /**
- * Seasonal themes: themes that belong to part of the year.
+ * Seasonal themes: themes with a time of year.
  *
- * In season, a seasonal theme is featured at the top of the Pro themes. Out of
- * season it isn't hidden, only moved into a collapsed "Seasonal themes" group
- * at the end of the picker: nobody wants Christmas cards offered in July, but
- * a cook making a year-round cookbook still needs the Christmas page.
+ * Every theme is always in the picker. A seasonal theme's dates are only when
+ * it is featured: tagged and moved to the top of the Pro themes. Outside them
+ * it sits with the rest of the Pro themes in its listed place.
  *
  * Pure date logic, no React, so the picker's ordering can be tested directly.
  */
@@ -29,48 +28,28 @@ export function isInSeason(season: ThemeSeason, date: Date): boolean {
 }
 
 interface ArrangeableTheme {
-  season?: ThemeSeason;
-  /** Part of the season in which the theme is featured. Without it, the
-      whole season is; outside it (but in season) the theme sits with the
-      rest of the Pro themes, untagged. */
+  /** The yearly window the theme is featured. */
   featured?: ThemeSeason;
 }
 
-/** In season and in its featured window: tagged and led with in the picker. */
+/** In its featured window: tagged and led with in the picker. */
 export function isFeatured(theme: ArrangeableTheme, date: Date): boolean {
-  return (
-    theme.season !== undefined &&
-    isInSeason(theme.season, date) &&
-    (theme.featured === undefined || isInSeason(theme.featured, date))
-  );
+  return theme.featured !== undefined && isInSeason(theme.featured, date);
 }
 
-export interface ArrangedThemes<T> {
-  /** The main grid: free themes, then featured seasonal themes, then the
-      rest of the Pro themes (in-season ones outside their featured window
-      among them), each group in its listed order. */
-  main: T[];
-  /** Seasonal themes out of season, for the collapsed group. */
-  offSeason: T[];
-}
-
+/** The picker's grid: free themes, then featured themes, then the rest of the
+    Pro themes, each group in its listed order. */
 export function arrangeThemes<T extends ArrangeableTheme>(
   themes: readonly T[],
   isPremium: (theme: T) => boolean,
   date: Date,
-): ArrangedThemes<T> {
+): T[] {
   const free: T[] = [];
   const featured: T[] = [];
   const pro: T[] = [];
-  const offSeason: T[] = [];
   for (const theme of themes) {
-    if (isFeatured(theme, date)) {
-      featured.push(theme);
-    } else if (theme.season && !isInSeason(theme.season, date)) {
-      offSeason.push(theme);
-    } else {
-      (isPremium(theme) ? pro : free).push(theme);
-    }
+    if (isFeatured(theme, date)) featured.push(theme);
+    else (isPremium(theme) ? pro : free).push(theme);
   }
-  return { main: [...free, ...featured, ...pro], offSeason };
+  return [...free, ...featured, ...pro];
 }
