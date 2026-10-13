@@ -91,12 +91,7 @@ export function PostPrintInviteDialog({
           Invite a friend. You both get {rewardDays} days of Pro.
         </h2>
         <p className="mt-cp-2 text-cp-body text-ink-soft">
-          Invite a friend and you&rsquo;ll both enjoy {rewardDays} free days of{" "}
-          {/* Settings' Plan sets Basic beside Pro, so it answers "what's Pro?" */}
-          <Link href="/account#plan" className="font-semibold text-ink underline underline-offset-2" onClick={onClose}>
-            Pro
-          </Link>{" "}
-          when they join.
+          Unlock premium templates, 4×6 cards, and multi-recipe printing for free when your friend joins.
         </p>
       </div>
       <div className="flex flex-col gap-cp-2">
