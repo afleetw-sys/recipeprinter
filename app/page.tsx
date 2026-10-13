@@ -1,5 +1,5 @@
 import { SiteHeader } from "@/components/SiteHeader";
-import { FrontDoorImportUsage, FrontDoorUpgradeButton } from "@/components/FrontDoorUpgrade";
+import { FrontDoorUpgradeButton } from "@/components/FrontDoorUpgrade";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PrinterWorkspace } from "@/components/PrinterWorkspace";
 import { CommunityGallery } from "@/components/CommunityGallery";
@@ -27,13 +27,12 @@ export default function Home() {
       </a>
 
       {/* The same bar as /print, less Print: Upgrade beside the wordmark (on
-          a phone, on the right with the ring and the account, where /print's
-          mobile bar has it), the free-import ring to the left of the account. */}
+          a phone, on the right with the account, where /print's mobile bar
+          has it). */}
       <SiteHeader
         sticky
         chrome="page"
         lead={<FrontDoorUpgradeButton />}
-        actions={<FrontDoorImportUsage />}
       />
 
       <main id="rp-main" className="flex-1 px-cp-6">

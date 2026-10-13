@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { IconButton } from "@/components/Controls";
 import { AccountIcon, CheckIcon, ICON_SIZE, SpinnerIcon } from "@/components/icons";
+import { ImportUsageBadge } from "@/components/ImportUsageBadge";
 import { onCookPilotSignedInChange, readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
 
 /**
@@ -25,8 +26,8 @@ import { onCookPilotSignedInChange, readCookPilotWasSignedIn } from "@/lib/cookP
  *    going to need this.
  *  - No → don't fetch it at all until the avatar is actually clicked. A visitor
  *    who has never signed in has no account state to show, and the click is
- *    remembered and replayed (`activateOnReady`), so the sign-in dialog still
- *    opens from one press.
+ *    remembered and replayed (`activateOnReady`), so the menu still opens
+ *    from one press.
  *
  * The save status stays here rather than moving with the avatar button: it is
  * driven entirely by props from the print page and has no account dependency
@@ -226,6 +227,9 @@ export function AccountControl({
       )}
       {saveStatus && <SaveStatus status={saveStatus} onRetry={onRetry} />}
 
+      {/* One box for whichever avatar is on screen, so the usage badge sits on
+          its corner through the handover and is only ever mounted once. */}
+      <div className="relative flex items-center">
       {showMenu && (
         <AccountAvatarButton
           compact={compact}
@@ -249,8 +253,7 @@ export function AccountControl({
         <IconButton
           data-rp-avatar={compact === "header" ? "header" : compact ? "compact" : "full"}
           // Outlined, not filled (Amelia, 2026-10-11): a hairline box with an
-          // ink glyph and no fill, the same box as the free-import ring
-          // beside it.
+          // ink glyph and no fill.
           className="bg-transparent text-ink"
           aria-label="Open account or sign in"
           title="Open account or sign in"
@@ -262,6 +265,8 @@ export function AccountControl({
           <AccountIcon size={ICON_SIZE.md} />
         </IconButton>
       )}
+      <ImportUsageBadge />
+      </div>
     </div>
   );
 }
