@@ -28,8 +28,8 @@ const CARDS: Array<{ template: RecipePrintTemplate; recipe: Recipe }> = [
     template: "halloween",
     recipe: {
       title: "Pumpkin Bread",
-      // The theme's hand holds up the recipe photo; a pumpkin bread photo of
-      // Amelia's goes here (public/images), set as `image`.
+      // The theme's hand holds up the recipe photo.
+      image: "/images/pumpkin-bread.jpg",
       servings: 8,
       totalTime: "1 hr 10 min",
       ingredients: [{ name: "1 cup pumpkin" }, { name: "2 cups flour" }, { name: "1 tsp cinnamon" }],
