@@ -170,7 +170,7 @@ export function AccountProStatus({ user }: { user: User }) {
   });
 
   return (
-    <section className="mb-cp-7 rounded-xl border border-line bg-card p-cp-5">
+    <section id="plan" className="mb-cp-7 scroll-mt-cp-6 rounded-xl border border-line bg-card p-cp-5">
       <div>
         {/* The Basic/Pro comparison drops its card borders on mobile in favor
             of a plain divided list (see the grid below), so the heading needs

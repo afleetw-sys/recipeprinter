@@ -36,6 +36,13 @@ export default function AccountPage() {
   useEffect(() => {
     if (ready) setLoading(false);
   }, [ready]);
+  // A link to a section (the referral invite's "Pro" goes to #plan) arrives
+  // before the section exists, while this page is still loading, so the
+  // browser's own jump finds nothing. Jump once it's there.
+  useEffect(() => {
+    if (loading || !window.location.hash) return;
+    document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ block: "start" });
+  }, [loading]);
 
   return (
     <div className="min-h-screen bg-page text-ink">
@@ -76,7 +83,7 @@ export default function AccountPage() {
           {/* The plans are no secret, so they show signed out too. Upgrade
               asks for sign-in and stops there: the account that signs in may
               already have Pro, and its own Plan section says which. */}
-          <section className="mb-cp-7 rounded-xl border border-line bg-card p-cp-5">
+          <section id="plan" className="mb-cp-7 scroll-mt-cp-6 rounded-xl border border-line bg-card p-cp-5">
             <h2 className="border-b border-line pb-cp-3 text-cp-h2 font-extrabold text-ink sm:border-b-0 sm:pb-0">Plan</h2>
             <FreePlanCards onUpgrade={() => setLogin("upgrade")} />
           </section>

@@ -85,13 +85,18 @@ export function PostPrintInviteDialog({
       <button type="button" className="icon-close-btn absolute right-3 top-3" aria-label="Close" onClick={onClose}>
         <XIcon size={ICON_SIZE.md} />
       </button>
-      <ProThemeStack className="mt-cp-6 mb-cp-2" />
+      <ProThemeStack className="mt-cp-7 mb-cp-2" />
       <div>
         <h2 id="post-print-invite-title" className="text-cp-dialog-title font-extrabold tracking-tight">
           Give {rewardDays} days of Pro. Get {rewardDays} days, too.
         </h2>
         <p className="mt-cp-2 text-cp-body text-ink-soft">
-          Invite a friend and you&rsquo;ll both enjoy {rewardDays} free days of Pro when they join.
+          Invite a friend and you&rsquo;ll both enjoy {rewardDays} free days of{" "}
+          {/* Settings' Plan sets Basic beside Pro, so it answers "what's Pro?" */}
+          <Link href="/account#plan" className="font-semibold text-ink underline underline-offset-2" onClick={onClose}>
+            Pro
+          </Link>{" "}
+          when they join.
         </p>
       </div>
       <div className="flex flex-col gap-cp-2">
