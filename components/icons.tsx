@@ -64,14 +64,6 @@ export const GiftIcon = (p: IconProps) => (
   </Base>
 );
 
-// Two arrows passing each other: something exchanged both ways.
-export const SwapIcon = (p: IconProps) => (
-  <Base {...p}>
-    <path d="M5 9h14l-3.5-3.5" />
-    <path d="M19 15H5l3.5 3.5" />
-  </Base>
-);
-
 export const LinkIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M9 15l6-6" />

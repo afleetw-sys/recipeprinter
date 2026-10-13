@@ -4,14 +4,15 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CookPilotLoginDialog } from "@/components/CookPilotAuth";
 import { Dialog } from "@/components/Dialog";
-import { GiftIcon, ICON_SIZE, SwapIcon, XIcon } from "@/components/icons";
+import { ICON_SIZE, XIcon } from "@/components/icons";
+import { ProThemeStack } from "@/components/ProThemeStack";
 import { track } from "@/lib/analytics";
 import { inviteShareText, inviteUrl, loadReferralSummary } from "@/lib/referral";
 import { shareLink } from "@/lib/shareLink";
 
 /**
  * After a print, once per browser (lib/referral `shouldShowPostPrintInvite`):
- * "Give 3 days of Pro. Get 3 days of Pro." It takes the place the "Leave feedback" dialog had
+ * "Give 3 days of Pro. Get 3 days, too." It takes the place the "Leave feedback" dialog had
  * after a print, once the program is live.
  *
  * Signed out, the button signs in first, since a link belongs to an account,
@@ -84,19 +85,13 @@ export function PostPrintInviteDialog({
       <button type="button" className="icon-close-btn absolute right-3 top-3" aria-label="Close" onClick={onClose}>
         <XIcon size={ICON_SIZE.md} />
       </button>
-      {/* The warm accent, so the gifts stand apart from the dialog's ink. */}
-      <div className="mt-cp-2 flex items-center justify-center gap-cp-3" aria-hidden>
-        <GiftIcon size={44} className="text-[var(--cp-accent-warm)]" />
-        <SwapIcon size={ICON_SIZE.lg} className="text-ink-soft" />
-        <GiftIcon size={44} className="text-[var(--cp-accent-warm)]" />
-      </div>
+      <ProThemeStack className="mt-cp-6 mb-cp-2" />
       <div>
         <h2 id="post-print-invite-title" className="text-cp-dialog-title font-extrabold tracking-tight">
-          Give {rewardDays} days of Pro. Get {rewardDays} days of Pro.
+          Give {rewardDays} days of Pro. Get {rewardDays} days, too.
         </h2>
         <p className="mt-cp-2 text-cp-body text-ink-soft">
-          When a friend joins through your link, you both get every theme, 4×6 cards, and printing several
-          recipes at once, free for {rewardDays} days.
+          Invite a friend and you&rsquo;ll both enjoy {rewardDays} free days of Pro when they join.
         </p>
       </div>
       <div className="flex flex-col gap-cp-2">
@@ -107,7 +102,7 @@ export function PostPrintInviteDialog({
           onClick={() => (signedIn ? void share() : setSigningIn(true))}
         >
           {!signedIn
-            ? "Sign in to get your link"
+            ? "Get my referral link"
             : shared === "copy"
               ? "Link copied"
               : shared
@@ -129,7 +124,7 @@ export function PostPrintInviteDialog({
             See your invites
           </Link>
         ) : (
-          <p className="text-cp-caption text-ink-soft">Rewards are tracked on your account.</p>
+          <p className="text-cp-small text-ink-soft">Sign in to track your invites and rewards.</p>
         )}
       </div>
     </Dialog>
