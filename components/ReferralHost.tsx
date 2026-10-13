@@ -9,8 +9,10 @@ import { announceProChanged, announceProWelcome, subscribeProWelcome, type ProWe
 import {
   INVITE_COOKIE,
   REFERRALS_LIVE,
+  RECIPE_PRINTER_USE_EVENT,
   activateBankedRewards,
   readyToActivate,
+  referralSurface,
   capReached,
   claimStoredOpen,
   expiredReferralToShow,
@@ -153,7 +155,8 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
           }
           if (loaded.bankedDays > 0) return;
           const ended = expiredReferralToShow(uid, loaded);
-          if (ended !== null && referralPromptsAllowed()) {
+          // Not inside the Cookbook Builder: it waits for a card-printer visit.
+          if (ended !== null && referralPromptsAllowed() && referralSurface() !== "cookbook") {
             markExpirySeen(uid, ended);
             // The invite half needs a link; someone who joined through a
             // friend may never have made one.
@@ -174,21 +177,21 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
     };
   }, [ready, uid]);
 
-  // Banked days start on an ACTIVE visit: the first touch, click or key in a
-  // tab that is showing and focused. Never from a background tab, the auth
-  // check that runs on load, or a page nobody is looking at.
+  // Banked days start on real use of the card printer (lib/referral
+  // `readyToActivate`): a print, a download or a card import in a tab that's
+  // showing. Never from a click elsewhere, navigation, or the Cookbook Builder.
   useEffect(() => {
     if (!uid || bankedDays <= 0) return;
     let done = false;
-    const onInteract = () => {
+    const onUse = () => {
       if (done) return;
       if (!readyToActivate({
         bankedDays,
-        visible: document.visibilityState === "visible" && document.hasFocus(),
-        interacted: true,
+        trigger: "card_use",
+        visible: document.visibilityState === "visible",
+        surface: referralSurface(),
       })) return;
       done = true;
-      remove();
       setBankedDays(0);
       activateBankedRewards()
         .then((result) => {
@@ -196,13 +199,11 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
           markGrantSeen(uid, Date.now());
           announceProWelcome({ kind: "referral_earned", days: result.days, fulfillment: result.fulfillment });
         })
-        // Nothing earned is lost: the server keeps it, and the next visit tries again.
+        // Nothing earned is lost: the server keeps it for next time.
         .catch((error) => console.warn("RecipePrinter: could not start earned Pro days", error));
     };
-    const events = ["pointerdown", "keydown"] as const;
-    const remove = () => events.forEach((name) => document.removeEventListener(name, onInteract, true));
-    events.forEach((name) => document.addEventListener(name, onInteract, true));
-    return remove;
+    window.addEventListener(RECIPE_PRINTER_USE_EVENT, onUse);
+    return () => window.removeEventListener(RECIPE_PRINTER_USE_EVENT, onUse);
   }, [uid, bankedDays]);
 
   return (

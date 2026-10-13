@@ -13,14 +13,15 @@ vi.mock("@/lib/parser", () => ({
 import { GET as inviteRoute } from "@/app/invite/[code]/route";
 import {
   INVITE_COOKIE,
-  POST_PRINT_GAP_MS,
   claimStoredOpen,
   membershipStatus,
   readyToActivate,
   readStoredOpen,
   recordInviteFromCookie,
   referralPurchaseProps,
-  shouldOfferReferralAfterPrint,
+  markPostPrintInviteShown,
+  postPrintInviteShown,
+  shouldShowPostPrintInvite,
 } from "./referral";
 
 /**
@@ -109,25 +110,28 @@ describe("analytics facts", () => {
 });
 
 describe("starting a referrer's banked days", () => {
-  test("only on an active visit: days waiting, a tab that's showing, and a real interaction", () => {
-    const ready = { bankedDays: 6, visible: true, interacted: true };
-    expect(readyToActivate(ready)).toBe(true);
-    expect(readyToActivate({ ...ready, bankedDays: 0 })).toBe(false);
-    // A background tab, or a page restored and checked with nobody touching it.
-    expect(readyToActivate({ ...ready, visible: false })).toBe(false);
-    expect(readyToActivate({ ...ready, interacted: false })).toBe(false);
+  test("only on card-printer use in a tab that's showing, or when asked; never in the Cookbook Builder", () => {
+    const use = { bankedDays: 6, trigger: "card_use" as const, visible: true, surface: "cards" as const };
+    expect(readyToActivate(use)).toBe(true);
+    expect(readyToActivate({ ...use, bankedDays: 0 })).toBe(false);
+    expect(readyToActivate({ ...use, visible: false })).toBe(false);
+    expect(readyToActivate({ ...use, surface: "cookbook" })).toBe(false);
+    // "Start them now" on Invites is the person asking, wherever they are.
+    expect(readyToActivate({ ...use, trigger: "explicit", visible: false, surface: "cookbook" })).toBe(true);
+    expect(readyToActivate({ ...use, trigger: "explicit", bankedDays: 0 })).toBe(false);
   });
 });
 
 describe("the invite after printing", () => {
-  test("at most three times, two weeks apart, never in a cookbook or at the cap", () => {
-    const ask = (history: { count: number; lastShownAtMs: number } | null, extra = {}) =>
-      shouldOfferReferralAfterPrint({ nowMs: NOW, cookbookMode: false, capReached: false, history, ...extra });
-    expect(ask(null)).toBe(true);
-    expect(ask({ count: 1, lastShownAtMs: NOW - POST_PRINT_GAP_MS + DAY })).toBe(false);
-    expect(ask({ count: 1, lastShownAtMs: NOW - POST_PRINT_GAP_MS })).toBe(true);
-    expect(ask({ count: 3, lastShownAtMs: 0 })).toBe(false);
-    expect(ask(null, { cookbookMode: true })).toBe(false);
-    expect(ask(null, { capReached: true })).toBe(false);
+  test("once per browser, whatever came before; never in a cookbook or at the cap", () => {
+    // A browser that already saw the old "Leave feedback" dialog still gets this once.
+    window.localStorage.setItem("recipeprinter:post-print-dialog:last-shown:v1", "1");
+    const ask = (extra = {}) =>
+      shouldShowPostPrintInvite({ cookbookMode: false, capReached: false, alreadyShown: postPrintInviteShown(), ...extra });
+    expect(ask({ cookbookMode: true })).toBe(false);
+    expect(ask({ capReached: true })).toBe(false);
+    expect(ask()).toBe(true);
+    markPostPrintInviteShown();
+    expect(ask()).toBe(false);
   });
 });

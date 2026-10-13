@@ -1,18 +1,23 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CookPilotLoginDialog } from "@/components/CookPilotAuth";
 import { Dialog } from "@/components/Dialog";
-import { ICON_SIZE, XIcon } from "@/components/icons";
+import { GiftIcon, ICON_SIZE, SwapIcon, XIcon } from "@/components/icons";
 import { track } from "@/lib/analytics";
 import { inviteShareText, inviteUrl, loadReferralSummary } from "@/lib/referral";
 import { shareLink } from "@/lib/shareLink";
 
 /**
- * After a print, now and then (lib/referral `shouldOfferReferralAfterPrint`):
- * invite a friend. Same panel as the first-print "Ready for your counter"
- * dialog, which it never replaces. Signed out, the button signs in first,
- * since a link belongs to an account.
+ * After a print, once per browser (lib/referral `shouldShowPostPrintInvite`):
+ * "Give 3 days. Get 3 days." It takes the place the "Leave feedback" dialog had
+ * after a print, once the program is live.
+ *
+ * Signed out, the button signs in first, since a link belongs to an account,
+ * and then this dialog comes back with the link to share. Sharing needs the
+ * person's own tap (a share sheet or the clipboard won't open from anything
+ * else), so signing in never shares on its own.
  */
 export function PostPrintInviteDialog({
   open,
@@ -27,12 +32,13 @@ export function PostPrintInviteDialog({
 }) {
   const [signingIn, setSigningIn] = useState(false);
   const [shared, setShared] = useState<"copy" | "native_share" | null>(null);
-  const [busy, setBusy] = useState(false);
   const [manualUrl, setManualUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setShared(null);
+    setManualUrl(null);
     track("referral_prompt_viewed", { placement: "post_print", cap_reached: false });
   }, [open]);
 
@@ -61,10 +67,7 @@ export function PostPrintInviteDialog({
     return (
       <CookPilotLoginDialog
         onClose={() => setSigningIn(false)}
-        onAuthenticated={() => {
-          setSigningIn(false);
-          void share();
-        }}
+        onAuthenticated={() => setSigningIn(false)}
       />
     );
   }
@@ -74,25 +77,40 @@ export function PostPrintInviteDialog({
       open={open}
       onClose={onClose}
       labelledBy="post-print-invite-title"
-      className="print-success-dialog no-print"
-      backdropClassName="print-success-dialog__backdrop"
-      panelClassName="print-success-dialog__panel"
+      portal
+      className="no-print fixed inset-0 z-[var(--z-dialog)] flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
+      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[440px] rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:pb-cp-5 flex flex-col gap-cp-4 relative text-center"
     >
-      <button type="button" className="print-success-dialog__close icon-close-btn" aria-label="Close" onClick={onClose}>
+      <button type="button" className="icon-close-btn absolute right-3 top-3" aria-label="Close" onClick={onClose}>
         <XIcon size={ICON_SIZE.md} />
       </button>
-      <h2 id="post-print-invite-title">Know someone who&rsquo;d use this?</h2>
-      <p>Send them your link. When they sign up, you both get {rewardDays} days of Pro.</p>
-      <div className="print-success-dialog__actions">
-        <button
-          type="button"
-          className="btn btn-primary"
-          disabled={busy}
-          onClick={() => (signedIn ? void share() : setSigningIn(true))}
-        >
-          {shared === "copy" ? "Link copied" : shared ? "Shared" : signedIn ? "Share invite link" : "Get my invite link"}
-        </button>
+      <div className="mt-cp-2 flex items-center justify-center gap-cp-2" aria-hidden>
+        <GiftIcon size={28} />
+        <SwapIcon size={ICON_SIZE.md} className="text-ink-soft" />
+        <GiftIcon size={28} />
       </div>
+      <div>
+        <h2 id="post-print-invite-title" className="text-cp-dialog-title font-extrabold tracking-tight">
+          Give {rewardDays} days. Get {rewardDays} days.
+        </h2>
+        <p className="mt-cp-2 text-cp-body text-ink-soft">
+          Invite a friend to RecipePrinter and you&rsquo;ll both get {rewardDays} days of Pro when they join.
+        </p>
+      </div>
+      <button
+        type="button"
+        className="btn btn-primary w-full"
+        disabled={busy}
+        onClick={() => (signedIn ? void share() : setSigningIn(true))}
+      >
+        {!signedIn
+          ? "Sign in to get your link"
+          : shared === "copy"
+            ? "Link copied"
+            : shared
+              ? "Shared"
+              : "Share your link"}
+      </button>
       {manualUrl && !shared && (
         <input
           readOnly
@@ -102,6 +120,13 @@ export function PostPrintInviteDialog({
           className="field w-full min-w-0"
           onFocus={(event) => event.currentTarget.select()}
         />
+      )}
+      {signedIn ? (
+        <Link href="/invites" className="text-cp-small text-ink-soft underline underline-offset-2" onClick={onClose}>
+          See your invites
+        </Link>
+      ) : (
+        <p className="text-cp-small text-ink-soft">Sign in is required to track your referrals and rewards.</p>
       )}
     </Dialog>
   );

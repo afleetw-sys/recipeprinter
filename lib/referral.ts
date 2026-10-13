@@ -199,39 +199,32 @@ export function referralPurchaseProps(
 
 // ---- The invite after printing ----------------------------------------------
 
-const POST_PRINT_KEY = "recipeprinter:referral-post-print:v1";
-export const POST_PRINT_MAX_SHOWS = 3;
-export const POST_PRINT_GAP_MS = 14 * 24 * 60 * 60 * 1000;
-
-interface PostPrintHistory {
-  count: number;
-  lastShownAtMs: number;
-}
+/**
+ * A new key on purpose: it replaces the once-per-browser "Leave feedback"
+ * dialog, so every browser, including one that already saw that, sees this
+ * once.
+ */
+const POST_PRINT_INVITE_KEY = "recipeprinter:post-print-invite:v1";
 
 /**
- * Whether to mention inviting a friend after this print: at most three times
- * ever, at least two weeks apart, never in cookbook mode, and never once
+ * Whether this print gets the "Give 3 days. Get 3 days." dialog: once per
+ * browser, after a card print (a cookbook has its own screen), and never once
  * there's nothing left to earn.
  */
-export function shouldOfferReferralAfterPrint(input: {
-  nowMs: number;
+export function shouldShowPostPrintInvite(input: {
   cookbookMode: boolean;
   capReached: boolean;
-  history: PostPrintHistory | null;
+  alreadyShown: boolean;
 }): boolean {
-  if (input.cookbookMode || input.capReached) return false;
-  const history = input.history ?? { count: 0, lastShownAtMs: 0 };
-  if (history.count >= POST_PRINT_MAX_SHOWS) return false;
-  return input.nowMs - history.lastShownAtMs >= POST_PRINT_GAP_MS;
+  return !input.cookbookMode && !input.capReached && !input.alreadyShown;
 }
 
-export function readPostPrintHistory(): PostPrintHistory | null {
-  return localStore.getJson<PostPrintHistory>(POST_PRINT_KEY);
+export function postPrintInviteShown(): boolean {
+  return localStore.get(POST_PRINT_INVITE_KEY) !== null;
 }
 
-export function recordPostPrintReferralShown(nowMs = Date.now()): void {
-  const history = readPostPrintHistory() ?? { count: 0, lastShownAtMs: 0 };
-  localStore.setJson(POST_PRINT_KEY, { count: history.count + 1, lastShownAtMs: nowMs });
+export function markPostPrintInviteShown(): void {
+  localStore.set(POST_PRINT_INVITE_KEY, "1");
 }
 
 // ---- What's been celebrated --------------------------------------------------
@@ -308,17 +301,44 @@ export interface ActivationResult {
   pending: number;
 }
 
+// ---- When banked days start --------------------------------------------------
+
 /**
- * A referrer's banked days start on their next ACTIVE visit: a tab that is
- * showing, after the person has touched or typed in it. Not on a background
- * tab, not on a sign-in restored in the background, not from a script.
+ * Where the person is: the card printer, or the Cookbook Builder. Set by
+ * /print. For the first launch the program belongs to the card printer, so
+ * nothing referral-related is offered, or started, while building a cookbook.
+ */
+export type ReferralSurface = "cards" | "cookbook";
+let surface: ReferralSurface | null = null;
+export function setReferralSurface(next: ReferralSurface | null): void {
+  surface = next;
+}
+export function referralSurface(): ReferralSurface | null {
+  return surface;
+}
+
+/** Real use of the card printer: a print, a download, a recipe imported as a card. */
+export const RECIPE_PRINTER_USE_EVENT = "recipeprinter:recipe-printer-use";
+export function announceRecipePrinterUse(): void {
+  if (typeof window === "undefined" || surface === "cookbook") return;
+  window.dispatchEvent(new Event(RECIPE_PRINTER_USE_EVENT));
+}
+
+/**
+ * A referrer's banked days start when they use the card printer (print,
+ * download, or import a card) in a tab they're looking at, or when they ask
+ * for it ("Start them now" on Invites). Never from browsing, a click elsewhere,
+ * the Cookbook Builder, or a session nobody is using.
  */
 export function readyToActivate(input: {
   bankedDays: number;
+  trigger: "card_use" | "explicit";
   visible: boolean;
-  interacted: boolean;
+  surface: ReferralSurface | null;
 }): boolean {
-  return input.bankedDays > 0 && input.visible && input.interacted;
+  if (input.bankedDays <= 0) return false;
+  if (input.trigger === "explicit") return true;
+  return input.visible && input.surface !== "cookbook";
 }
 
 export async function activateBankedRewards(): Promise<ActivationResult> {

@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 // out of the index in its own layout: the root layout says `index: true`, so a
 // route with no layout of its own (as /projects and /account once were)
 // silently inherits it and gets indexed as an empty signed-out shell.
-const PRIVATE_ROUTES = ["print", "export", "print-check", "projects", "account"];
+const PRIVATE_ROUTES = ["print", "export", "print-check", "projects", "account", "invites"];
 
 // A glob rather than imports, so a route with no layout fails the assertion
 // below instead of failing to load.

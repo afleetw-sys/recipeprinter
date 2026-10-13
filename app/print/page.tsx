@@ -219,11 +219,13 @@ import { isIOSPrinter, isWebKitPrinter, printNeedsLiveGesture } from "@/lib/prin
 import { markPostPrintDialogShown, shouldShowPostPrintDialog } from "@/lib/postPrintDialog";
 import {
   REFERRALS_LIVE,
+  announceRecipePrinterUse,
   cachedReferralSummary,
+  setReferralSurface,
   capReached,
-  readPostPrintHistory,
-  recordPostPrintReferralShown,
-  shouldOfferReferralAfterPrint,
+  markPostPrintInviteShown,
+  postPrintInviteShown,
+  shouldShowPostPrintInvite,
 } from "@/lib/referral";
 import { PostPrintInviteDialog } from "@/components/PostPrintInviteDialog";
 import { useToast } from "@/lib/useToast";
@@ -734,6 +736,12 @@ export default function PrintPage() {
   const anyRecipeHasSourceUrl =
     items?.some((item) => Boolean(item.recipe?.sourceUrl)) ?? false;
   const cookbookMode = Boolean(projectMeta.meta.cookbookMode);
+  // Tells the referral program which side this is (lib/referral `setReferralSurface`):
+  // nothing referral-related is offered or started inside the Cookbook Builder.
+  useEffect(() => {
+    setReferralSurface(cookbookMode ? "cookbook" : "cards");
+    return () => setReferralSurface(null);
+  }, [cookbookMode]);
   // The cookbook's remembered export format (US Letter / 8×10 hardcover). This
   // is purely an EXPORT concern — it never changes how the book previews or how
   // recipes are measured; it just seeds the format the "Print your cookbook"
@@ -2199,6 +2207,8 @@ export default function PrintPage() {
 
   function printNow() {
     printRequestedRef.current = true;
+    // Card printing is the use that starts a referrer's earned days.
+    if (!cookbookMode) announceRecipePrinterUse();
     // A cookbook has one way out, so only cards remember Print as the habit.
     if (!cookbookMode) choosePrintPrimary("print");
     // Name the exported PDF after what is in it. The browser seeds the
@@ -3531,6 +3541,7 @@ export default function PrintPage() {
     }
     const recipeCount = items.filter((item) => item.recipe).length;
     choosePrintPrimary(output);
+    if (!cookbookMode) announceRecipePrinterUse();
     setCardDownloadBusy(true);
     try {
       await downloadCards({
@@ -4605,6 +4616,7 @@ export default function PrintPage() {
         !(items ?? []).some((existing) => existing.id === item.id),
     );
     if (newlyReady.length === 0) return;
+    if (!cookbookMode) announceRecipePrinterUse();
     setJobIds((current) => [...(current ?? []), ...newlyReady.map((item) => item.id)]);
     if (pendingAddSectionId && sections.some((section) => section.id === pendingAddSectionId)) {
       const insertAt = pendingAddIndex ?? itemIdsForSection(pendingAddSectionId).length;
@@ -5119,27 +5131,24 @@ export default function PrintPage() {
       // can't stand in for "you exported a cookbook"). Only plain-card prints
       // get that nudge.
       if (cookbookMode) return;
-      if (!prompt) {
-        // The first print gets the dialog above; now and then after that, an
-        // invite to share RecipePrinter (lib/referral).
-        const summary = cachedReferralSummary();
+      // Once the program is live, the dialog after a print is the invite
+      // ("Give 3 days. Get 3 days."), once per browser, in place of the
+      // feedback dialog. Until then, nothing here changes.
+      const summary = cachedReferralSummary();
+      if (REFERRALS_LIVE && postPrintAction !== "none" && referralPromptsAllowed() && (!summary || summary.enabled)) {
         if (
-          REFERRALS_LIVE &&
-          postPrintAction !== "none" &&
-          referralPromptsAllowed() &&
-          (!summary || summary.enabled) &&
-          shouldOfferReferralAfterPrint({
-            nowMs: Date.now(),
+          shouldShowPostPrintInvite({
             cookbookMode,
             capReached: summary ? capReached(summary) : false,
-            history: readPostPrintHistory(),
+            alreadyShown: postPrintInviteShown(),
           })
         ) {
-          recordPostPrintReferralShown();
+          markPostPrintInviteShown();
           window.setTimeout(() => setShowReferralInvite(true), 150);
         }
         return;
       }
+      if (!prompt) return;
       markPostPrintDialogShown();
       window.setTimeout(() => setShowDonateDialog(true), 150);
     }

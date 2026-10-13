@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "firebase/auth";
-import { AccountIcon, BookIcon, ICON_SIZE, LogoutIcon, SettingsIcon } from "@/components/icons";
+import { AccountIcon, BookIcon, GiftIcon, ICON_SIZE, LogoutIcon, SettingsIcon } from "@/components/icons";
+import { REFERRALS_LIVE } from "@/lib/referral";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadLocalProjects } from "@/lib/localProjects";
@@ -240,6 +241,16 @@ export default function AccountAvatarButton({
               </span>
             )}
           </Link>
+          {REFERRALS_LIVE && (
+            <Link
+              href="/invites"
+              className="flex items-center gap-2 rounded-lg px-cp-3 py-cp-2 text-cp-small font-semibold text-ink hover:bg-page"
+              onClick={closeMenu}
+            >
+              <GiftIcon size={ICON_SIZE.md} className="shrink-0 text-ink-soft" />
+              Invites
+            </Link>
+          )}
           <div className="mt-cp-1 border-t border-line pt-cp-1">
             <button
               type="button"

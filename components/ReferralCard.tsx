@@ -3,7 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import { LinkIcon, ICON_SIZE } from "@/components/icons";
 import { referralPromptsAllowed, track } from "@/lib/analytics";
-import { capReached, daysRemaining, inviteShareText, inviteUrl, loadReferralSummary, type ReferralSummary } from "@/lib/referral";
+import { useCookPilotAuth } from "@/components/CookPilotAuth";
+import { announceProWelcome } from "@/lib/proWelcome";
+import {
+  activateBankedRewards,
+  capReached,
+  daysRemaining,
+  inviteShareText,
+  inviteUrl,
+  loadReferralSummary,
+  markGrantSeen,
+  readyToActivate,
+  type ReferralSummary,
+} from "@/lib/referral";
 import { shareLink } from "@/lib/shareLink";
 
 /**
@@ -15,6 +27,8 @@ export function ReferralCard() {
   const [summary, setSummary] = useState<ReferralSummary | null>(null);
   const [shared, setShared] = useState<"copy" | "native_share" | "manual" | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { user } = useCookPilotAuth();
+  const [starting, setStarting] = useState(false);
   const viewedRef = useRef(false);
 
   useEffect(() => {
@@ -38,10 +52,33 @@ export function ReferralCard() {
     track("referral_prompt_viewed", { placement: "account", cap_reached: atCap });
   }, [summary, atCap]);
 
-  if (!summary?.enabled || !summary.code) return null;
+  if (!summary) return null;
+  if (!summary.enabled || !summary.code) {
+    return <p className="text-cp-body text-ink-soft">Invites aren&rsquo;t open yet.</p>;
+  }
   const url = inviteUrl(summary.code, window.location.origin);
   const friends = summary.successfulReferrals;
   const shareText = inviteShareText(summary.rewardDays);
+
+  /** "Start them now": the person asking, so it doesn't wait for a print. */
+  async function startNow() {
+    if (!summary || !user || !readyToActivate({
+      bankedDays: summary.bankedDays, trigger: "explicit", visible: true, surface: null,
+    })) return;
+    setStarting(true);
+    try {
+      const result = await activateBankedRewards();
+      if (result.days > 0 && result.fulfillment) {
+        markGrantSeen(user.uid, Date.now());
+        announceProWelcome({ kind: "referral_earned", days: result.days, fulfillment: result.fulfillment });
+      }
+      setSummary(await loadReferralSummary("link"));
+    } catch (error) {
+      console.warn("RecipePrinter: could not start earned Pro days", error);
+    } finally {
+      setStarting(false);
+    }
+  }
 
   async function share() {
     const method = await shareLink(url, shareText);
@@ -58,12 +95,24 @@ export function ReferralCard() {
 
   return (
     <section className="mb-cp-7 rounded-xl border border-line bg-card p-cp-5">
-      <h2 className="text-cp-h2 font-extrabold text-ink">Invite friends</h2>
+      <h2 className="text-cp-h2 font-extrabold text-ink">Your invite link</h2>
       <p className="mt-1 text-cp-body text-ink-soft">
         {atCap
           ? `You've earned the most Pro days you can from invites. Friends still get their ${summary.rewardDays}.`
           : `Give a friend ${summary.rewardDays} days of Pro. When they sign up, you get ${summary.rewardDays} days too.`}
       </p>
+
+      {summary.bankedDays > 0 && (
+        <div className="mt-cp-4 flex flex-col gap-cp-2 rounded-lg border border-line p-cp-3 sm:flex-row sm:items-center">
+          <p className="flex-1 text-cp-small text-ink">
+            <strong>{summary.bankedDays} days of Pro waiting.</strong>{" "}
+            They start the next time you print or download recipe cards.
+          </p>
+          <button type="button" className="btn btn-secondary btn-compact" disabled={starting} onClick={() => void startNow()}>
+            Start them now
+          </button>
+        </div>
+      )}
 
       <div className="mt-cp-4 flex flex-col gap-cp-2 sm:flex-row">
         <input
