@@ -10516,6 +10516,12 @@ textarea.recipe-card__toc-title {
   width: calc(334 * var(--fall-u));
 }
 
+/* The leaves are the cover's top edge; the shared accent band would lie over
+   them. */
+.recipe-template--fall .recipe-card__cover-band {
+  display: none;
+}
+
 /* ── Halloween (seasonal) ──────────────────────────────────────────────────
    Parchment stock, a headstone and jack-o'-lantern in the bottom-left corner
    and a reaching hand at the right. Measured off the artist's 2000-unit-wide
