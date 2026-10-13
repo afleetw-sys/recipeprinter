@@ -94,7 +94,7 @@ export function PostPrintInviteDialog({
           Unlock premium templates, 4×6 cards, and multi-recipe printing for free when your friend joins.
         </p>
       </div>
-      <div className="flex flex-col gap-cp-2">
+      <div className="mt-cp-2 flex flex-col gap-cp-2">
         <button
           type="button"
           className="btn btn-primary w-full"
