@@ -8403,13 +8403,13 @@ textarea.recipe-card__toc-title {
 /* ── Right-to-left recipes (Hebrew, Arabic, Persian, Urdu).
    The card carries `dir="rtl"` (lib/recipeHeadings `recipeTextDirection`), so
    its text, header and columns mirror on their own: ingredients on the right,
-   the photo on the left, bullets and step numbers at each line's right. What
-   must NOT mirror is the theme art, and it doesn't: decorations are placed
-   with physical left/right, the gutters that clear them (Bistro, Pantry,
-   Quilt) are physical padding, and keep-out corners are measured from line
-   rects (lib/faceMeasure), wherever the columns land. The one exception is
-   Halloween's hand, which belongs to the steps column rather than the card,
-   and mirrors with it (see the Halloween theme).
+   the photo on the left, bullets and step numbers at each line's right.
+   Corner art (Fall, Halloween, Garden) moves to the other side to
+   match, drawn exactly as it is, never flipped: see "Right-to-left corner
+   art" below. Edge strips stay where they are (Bistro's checker, Pantry's
+   margin and punch holes, Quilt's strip): in a book they mark the binding
+   side. Keep-out corners are measured from line rects (lib/faceMeasure), so
+   the measurer follows wherever the columns and art land.
 
    The two-sided back swaps its columns with `direction` (above), and then
    sets its columns' text back to left-to-right. Mirrored, that swap is the
@@ -10666,19 +10666,17 @@ textarea.recipe-card__toc-title {
 }
 
 /* A right-to-left card mirrors that: the steps are its LEFT column, so the
-   hand reaches in from the card's left edge, drawn the other way round. A
-   two-sided back swaps the columns again, steps on the right, and the hand
-   is the left-to-right front's. */
+   hand moves to the card's left edge (as drawn, never flipped). A two-sided
+   back swaps the columns again, steps on the right, and the hand is the
+   left-to-right front's. */
 .recipe-template--halloween .recipe-card[dir="rtl"] .recipe-card__cols:not(.recipe-card__cols--single):not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only):not(.recipe-card__cols--method-only) .recipe-card__method::before {
   float: left;
   margin: 0 0.08in 0.06in calc(-1 * var(--recipe-card-padding-x));
-  transform: scaleX(-1);
 }
 
 .recipe-print-preview[data-double-sided="true"] .recipe-template--halloween .recipe-card--back[dir="rtl"] .recipe-card__cols:not(.recipe-card__cols--single):not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only):not(.recipe-card__cols--method-only) .recipe-card__method::before {
   float: right;
   margin: 0 calc(-1 * var(--recipe-card-padding-x)) 0.06in 0.08in;
-  transform: none;
 }
 
 .recipe-template--halloween .recipe-card__method .recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe),
@@ -10713,6 +10711,80 @@ textarea.recipe-card__toc-title {
 
 .recipe-template--halloween .recipe-card__method li + li {
   margin-top: var(--recipe-card-step-gap);
+}
+
+/* ── Right-to-left corner art ────────────────────────────────────────────
+   On a right-to-left card (`dir="rtl"`, see "Right-to-left recipes") each
+   theme's corner art moves to the opposite side, as drawn: Halloween's
+   headstone to the bottom right, Fall's leaves to the top right and its
+   pumpkins to the bottom left, Garden's tomatoes to the bottom left.
+   (Supper's utensil is centred, so it has nowhere to go.) The keep-out corner and the footer's gap for the art move with it.
+   In a book the page number keeps its side (it belongs to the binding), so
+   the one that has to rise above the art changes instead; ScaledPage marks a
+   right-to-left page `data-dir="rtl"`. */
+.recipe-template--halloween .recipe-card[dir="rtl"] {
+  --recipe-card-keepout-side: right;
+}
+
+.recipe-template--halloween .recipe-card[dir="rtl"] .recipe-card__halloween-grave {
+  left: auto;
+  right: 0;
+}
+
+.recipe-template--halloween .recipe-card[dir="rtl"] .recipe-card__footer {
+  left: var(--recipe-card-padding-x);
+  right: calc(var(--recipe-card-padding-x) + var(--recipe-card-keepout-w, 0in));
+}
+
+.recipe-template--fall .recipe-card[dir="rtl"],
+.recipe-template--garden .recipe-card[dir="rtl"] {
+  --recipe-card-keepout-side: left;
+}
+
+.recipe-template--fall .recipe-card[dir="rtl"] .recipe-card__fall-leaves {
+  left: auto;
+  right: 0;
+}
+
+.recipe-template--fall .recipe-card[dir="rtl"] .recipe-card__fall-pumpkins,
+.recipe-template--garden .recipe-card[dir="rtl"] .recipe-card__garden-tomatoes {
+  right: auto;
+  left: 0;
+}
+
+.recipe-template--fall .recipe-card[dir="rtl"] .recipe-card__footer,
+.recipe-template--garden .recipe-card[dir="rtl"] .recipe-card__footer {
+  right: var(--recipe-card-padding-x);
+  left: calc(var(--recipe-card-padding-x) + var(--recipe-card-keepout-w, 0in));
+}
+
+/* Book furniture on a right-to-left page: whichever of the chapter name (left)
+   and page number (right) now sits over the art rises above it, and the other
+   goes back to the plain foot. A page a recipe runs onto has no corner art,
+   so both stay on the foot there. */
+.recipe-template--garden .recipe-card-page[data-dir="rtl"] .recipe-book-runhead {
+  bottom: calc(var(--garden-tomato-top) + 0.08in);
+}
+
+.recipe-template--garden .recipe-card-page[data-dir="rtl"] .recipe-book-folio {
+  bottom: var(--garden-foot);
+}
+
+.recipe-template--fall .recipe-card-page[data-dir="rtl"] .recipe-book-runhead {
+  bottom: calc(230 * var(--fall-u) + 0.08in);
+}
+
+.recipe-template--halloween .recipe-card-page[data-dir="rtl"] .recipe-book-folio {
+  bottom: calc(352 * var(--halloween-u) + 0.08in);
+}
+
+.recipe-template--fall .recipe-card-page[data-dir="rtl"] .recipe-book-folio,
+.recipe-template--halloween .recipe-card-page[data-dir="rtl"] .recipe-book-runhead,
+.recipe-template--garden .recipe-card-page[data-dir="rtl"][data-edge-only] .recipe-book-runhead,
+.recipe-template--garden .recipe-card-page[data-dir="rtl"][data-edge-only] .recipe-book-folio,
+.recipe-template--fall .recipe-card-page[data-dir="rtl"][data-edge-only] .recipe-book-runhead,
+.recipe-template--halloween .recipe-card-page[data-dir="rtl"][data-edge-only] .recipe-book-folio {
+  bottom: 0.24in;
 }
 
 /* ── A photo replaces the theme's decoration ──────────────────────────────

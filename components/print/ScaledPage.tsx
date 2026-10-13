@@ -28,6 +28,7 @@ import { ZoomControl } from "@/components/print/ZoomControl";
 import { PhotoPlaceholder } from "@/components/print/PhotoPlaceholder";
 import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
 import { PAGE_DIMS } from "@/lib/printGeometry";
+import { recipeTextDirection } from "@/lib/recipeHeadings";
 import {
   getCookbookPreset,
   presetCardDims,
@@ -606,6 +607,14 @@ export const ScaledPage = memo(function ScaledPage({
               data-edge-only={
                 cookbookMode && sheet.slots.some((slot) => slot?.kind === "recipe" && slot.isContinuation)
                   ? "true"
+                  : undefined
+              }
+              // A right-to-left recipe's corner art moves to the other side, so
+              // the book furniture over it changes (print.css, "Right-to-left
+              // corner art").
+              data-dir={
+                cookbookMode
+                  ? recipeTextDirection(sheet.slots.find((slot) => slot?.kind === "recipe")?.recipe?.language)
                   : undefined
               }
             >
