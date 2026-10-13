@@ -1460,7 +1460,6 @@ export default function PrintPage() {
     setEditingSectionTitle(title);
     setPendingFocusNavId(sectionId);
     setPendingRailChapterFocusId(sectionId);
-    showToast("Chapter added. Drag recipes beneath it to group them.");
   }
 
 
@@ -2518,7 +2517,6 @@ export default function PrintPage() {
       );
       projectMeta.setRailSortMode("title");
       track("cookbook_sorted", { mode: "title" });
-      showToast("Sorted A–Z");
       return;
     }
     if (customOrderUndo) projectMeta.setSectionStructure(customOrderUndo);
@@ -2576,10 +2574,6 @@ export default function PrintPage() {
       itemIdsForSection(sectionId).filter((itemId) => !moving.has(itemId)).length,
     );
     track("cookbook_recipes_moved_to_section", { count: ids.length, via: "tile_menu" });
-    // An untitled section has no name to say, so the toast just confirms the move.
-    const title = projectMeta.meta.sections.find((section) => section.id === sectionId)?.title?.trim();
-    const where = title ? ` to ${title}` : "";
-    showToast(ids.length > 1 ? `Moved ${ids.length} recipes${where}` : `Moved${where}`);
   }
 
   /** What this page has set up on screen, as the layout half of a project's
@@ -3514,7 +3508,7 @@ export default function PrintPage() {
       // automatically printing" alert, or silently drop it. The cards are
       // ready now, so say so and let the next tap print them for real.
       setToastTone("info");
-      setToastMessage("Your cards are ready — tap Print.");
+      setToastMessage("Your cards are ready. Tap Print.");
       return;
     }
     printNow();
@@ -6452,6 +6446,7 @@ export default function PrintPage() {
           width={organizeWide ? railWidths.organize : railWidths.pages}
           onCommit={commitRailWidth}
           onReset={resetRailWidth}
+          onCollapse={organizeWide ? exitOrganizeMode : undefined}
         />
         <RailResizer
           mode="settings"

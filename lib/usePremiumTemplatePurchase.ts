@@ -54,7 +54,6 @@ export function usePremiumTemplatePurchase({
   // lib/proAccessFallback.ts's `resolveEffectiveCustomerInfo`).
   const [customerInfoStatus, setCustomerInfoStatus] = useState<CustomerInfoLoadStatus>("idle");
   const [customerInfoLastVerifiedAtMs, setCustomerInfoLastVerifiedAtMs] = useState<number | null>(null);
-  const linkedCookPilotUidRef = useRef<string | null>(null);
   const revenueCatUserIdRef = useRef<string | null>(null);
   const identityRequestRef = useRef(0);
 
@@ -151,23 +150,13 @@ export function usePremiumTemplatePurchase({
     // purchased anonymously into the CookPilot account, then switches this
     // session to that identity so future purchases stay tied to it too.
     const uid = cookPilotUser.uid;
-    const alreadyLinkedInSession = linkedCookPilotUidRef.current === uid;
-    linkedCookPilotUidRef.current = uid;
     identifyRecipePrinterCustomer(uid)
-      .then(({ customerInfo: linkedInfo, alreadyLinked }) => {
+      .then(({ customerInfo: linkedInfo }) => {
         if (cancelled || identityRequestRef.current !== requestId) return;
         setRevenueCatIdentity(uid);
         setCustomerInfo(linkedInfo);
         setCustomerInfoStatus("ok");
         setCustomerInfoLastVerifiedAtMs(Date.now());
-        // Already linked in a prior visit (this is a page refresh, not a
-        // fresh sign-in) — restoring entitlements silently is enough, the
-        // toast would just be noise every time the page reloads.
-        if (alreadyLinked || alreadyLinkedInSession) return;
-        const hasAnyPremium = Object.keys(linkedInfo.entitlements.active).length > 0;
-        if (!hasAnyPremium) {
-          showToast("Signed in — no prior purchases found on this account.");
-        }
       })
       .catch((error) => {
         if (cancelled || identityRequestRef.current !== requestId) return;

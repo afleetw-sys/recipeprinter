@@ -1,8 +1,15 @@
 "use client";
 
 import { cleanSourceUrl } from "@/lib/sourceUrl";
-import { DEFAULT_RECIPE_HEADINGS, recipeHeading, type RecipeHeadingKind } from "@/lib/recipeHeadings";
 import {
+  DEFAULT_RECIPE_HEADINGS,
+  recipeCardWords,
+  recipeHeading,
+  recipeTextDirection,
+  type RecipeHeadingKind,
+} from "@/lib/recipeHeadings";
+import {
+  Fragment,
   memo,
   useMemo,
   useRef,
@@ -414,6 +421,31 @@ function ChristmasHats() {
   );
 }
 
+// Fall: the artist's two falling leaves in the top-left corner and a pile of
+// pumpkins and maple leaves in the bottom-right, each image drawn to sit flush
+// in its corner (public/images/leaves.png, pumpkins.png).
+function FallArt() {
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element -- fixed decorative art, not a photo to optimize */}
+      <img className="recipe-card__fall-leaves" src="/images/leaves.png" alt="" aria-hidden />
+      {/* eslint-disable-next-line @next/next/no-img-element -- fixed decorative art, not a photo to optimize */}
+      <img className="recipe-card__fall-pumpkins" src="/images/pumpkins.png" alt="" aria-hidden />
+    </>
+  );
+}
+
+// Halloween: the artist's headstone and jack-o'-lantern in the bottom-left
+// corner (public/images/halloween-pumpkin.png). The reaching hand is not here:
+// it sits beside the steps, which wrap around it (`.recipe-card__method` in
+// print.css), so it is layout, not an overlay.
+function HalloweenArt() {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- fixed decorative art, not a photo to optimize
+    <img className="recipe-card__halloween-grave" src="/images/halloween-pumpkin.png" alt="" aria-hidden />
+  );
+}
+
 // Supper: a deep red rounded frame with a utensil set into its bottom edge.
 // The utensil takes turns down the list (fork, spoon, knife) by the recipe's
 // place in it, so every face of one recipe carries the same one. Each image is
@@ -457,7 +489,8 @@ function SupperFrame({ index = 0 }: { index?: number }) {
  *   - a page a recipe runs onto keeps only the theme's EDGE (`edgeOnly`): the
  *     spine, frame, strip, ruled paper or top bar that holds the recipe
  *     together as one piece. The illustrations (Garden's hills and tomatoes,
- *     Christmas's hats, Market's groceries) stay on the first page;
+ *     Christmas's hats, Market's groceries, Fall's and Halloween's art) stay on
+ *     the first page;
  *   - the opening page, the contents and the chapter openers carry none, so
  *     their faces don't render this at all;
  *   - the back cover carries all of it, as the book's closing page.
@@ -487,6 +520,8 @@ function TemplateDecoration({
   if (template === "supper") return <SupperFrame index={recipeIndex} />;
   if (template === "poster") return <PosterArt />;
   if (template === "christmas") return edgeOnly ? null : <ChristmasHats />;
+  if (template === "fall") return edgeOnly ? null : <FallArt />;
+  if (template === "halloween") return edgeOnly ? null : <HalloweenArt />;
   return null;
 }
 
@@ -807,6 +842,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             {canEdit && inlineEdit ? (
               <input
                 className="recipe-card__inline-input recipe-card__fact-value"
+                dir="auto"
                 value={
                   sameTarget(inlineEdit.editingTarget, { kind: "cookTime" })
                     ? inlineEdit.value
@@ -835,6 +871,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             {canEdit && inlineEdit ? (
               <input
                 className="recipe-card__inline-input recipe-card__fact-value"
+                dir="auto"
                 value={
                   sameTarget(inlineEdit.editingTarget, { kind: "servings" })
                     ? inlineEdit.value
@@ -972,9 +1009,19 @@ export const RecipeCardFace = memo(function RecipeCardFace({
    * reveal is on it comes back as a muted copy of the default, and clicking
    * that opens the default in the field: keep it, or type something else.
    */
+  // The card's own words ("Ingredients", "on back") in the recipe's
+  // language, or ours with `lang="en"` when lib/recipeHeadings doesn't have
+  // it.
+  const cardWords = recipeCardWords(recipe.language);
+
   function sectionLabel(kind: RecipeHeadingKind, suffix: ReactNode, addButton: ReactNode) {
     const target: RecipeCardEditTarget = { kind };
     const heading = recipeHeading(recipe, kind);
+    const defaultHeading = cardWords[kind];
+    const defaultLang = cardWords.lang;
+    // A cook's own heading is in whatever they typed, so it inherits the
+    // recipe's language.
+    const headingLang = recipe[kind] === undefined ? defaultLang : undefined;
     if (canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, target)) {
       return (
         <h2 className="recipe-card__label">
@@ -996,10 +1043,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         return (
           <h2
             className="recipe-card__label recipe-card__label--empty"
-            onClick={() => startEdit(target, DEFAULT_RECIPE_HEADINGS[kind])}
+            lang={defaultLang}
+            onClick={() => startEdit(target, defaultHeading)}
           >
             <span className="recipe-card__label-inline">
-              {DEFAULT_RECIPE_HEADINGS[kind]}
+              {defaultHeading}
               {suffix}
               {addButton}
             </span>
@@ -1018,6 +1066,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     return (
       <h2
         className={`recipe-card__label ${canEdit ? "recipe-card__label--editable" : ""}`}
+        lang={headingLang}
         onClick={canEdit ? () => startEdit(target, heading) : undefined}
       >
         <span className="recipe-card__label-inline">
@@ -1240,6 +1289,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
          and the measurer renders with the same flag, so it measures the same
          page the book prints. */
       data-in-book={cookbookMode ? "true" : undefined}
+      /* The recipe's own language, when CookPilot was sure of it, so screen
+         readers voice it and the browser picks the right glyphs and
+         hyphenation. The card's own words follow it too: see `cardWords`.
+         A right-to-left recipe mirrors the card's text and columns; theme art
+         stays put (see "Right-to-left recipes" in app/print/print.css). */
+      lang={recipe.language}
+      dir={recipeTextDirection(recipe.language)}
     >
       <div className="recipe-card__accent" aria-hidden />
       <TemplateDecoration
@@ -1304,6 +1360,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 {(showEmpty || metaTime) && (
                   <input
                     className="recipe-card__inline-input recipe-card__inline-input--meta"
+                    dir="auto"
                     value={
                       sameTarget(inlineEdit.editingTarget, { kind: "cookTime" })
                         ? inlineEdit.value
@@ -1328,6 +1385,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 {(showEmpty || metaServes) && (
                   <input
                     className="recipe-card__inline-input recipe-card__inline-input--meta"
+                    dir="auto"
                     value={
                       sameTarget(inlineEdit.editingTarget, { kind: "servings" })
                         ? inlineEdit.value
@@ -1350,7 +1408,18 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 )}
               </p>
             ) : (
-              meta.length > 0 && <p className="recipe-card__meta">{meta.join("  ·  ")}</p>
+              // Each bit isolated, so "35 min" stays "35 min" on a right-to-left
+              // card and only the order of the bits mirrors.
+              meta.length > 0 && (
+                <p className="recipe-card__meta">
+                  {meta.map((bit, index) => (
+                    <Fragment key={bit}>
+                      {index > 0 && "  ·  "}
+                      <bdi>{bit}</bdi>
+                    </Fragment>
+                  ))}
+                </p>
+              )
             )}
             {/* Cookbook mode: the source link lives here, right under the meta
                 line, instead of in the footer where it competes with the page
@@ -1362,6 +1431,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
               canEdit && inlineEdit && (showEmpty || recipe.sourceUrl) ? (
                 <input
                   className="recipe-card__inline-input recipe-card__source-line"
+                  dir="auto"
                   value={
                     sameTarget(inlineEdit.editingTarget, { kind: "sourceUrl" })
                       ? inlineEdit.value
@@ -1507,11 +1577,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 // this one (see `continueOnBack` in lib/usePrintSheets.tsx —
                 // duplex is the recipe-card path only), so "on back" sent the
                 // cook looking at the wrong side of the page.
-                <span className="recipe-card__continued-inline">
-                  {cookbookMode ? " (continued on the next page)" : " (continued on back)"}
+                <span className="recipe-card__continued-inline" lang={cardWords.lang}>
+                  {cardWords.note(cookbookMode ? cardWords.nextPage : cardWords.onBack)}
                 </span>
               ) : (side === "back" || continued) && stepsBeganEarlier ? (
-                " continued"
+                <span className="recipe-card__continued-inline" lang={cardWords.lang}>
+                  {cardWords.note(cardWords.continued)}
+                </span>
               ) : (
                 ""
               ),
@@ -1615,6 +1687,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             canEdit && inlineEdit && (showEmpty || recipe.sourceUrl) ? (
               <input
                 className="recipe-card__inline-input recipe-card__footer-source"
+                dir="auto"
                 value={
                   sameTarget(inlineEdit.editingTarget, { kind: "sourceUrl" })
                     ? inlineEdit.value

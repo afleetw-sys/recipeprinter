@@ -49,11 +49,10 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   id: RecipePrintTemplate;
   label: string;
   detail: string;
-  /** A seasonal theme's yearly window: featured at the top of the Pro themes
-      in season, tucked into a collapsed group otherwise (see
-      lib/seasonalThemes). Its place in this list is its order within whichever
-      group it lands in. */
-  season?: ThemeSeason;
+  /** Makes this a seasonal theme, and is its yearly window to be featured:
+      tagged and at the top of the Pro themes (see lib/seasonalThemes).
+      Outside the window it is in the collapsed "Seasonal themes" group. */
+  featured?: ThemeSeason;
 }> = [
   { id: "classic", label: "Classic", detail: "Cornflower and slate, clean cookbook card" },
   { id: "pantry", label: "Pantry", detail: "Fine ruled lines with small ingredient sketches" },
@@ -69,9 +68,21 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
   { id: "keepsake", label: "Keepsake", detail: "Cream recipe-box card with classic family style" },
   { id: "quilt", label: "Quilt", detail: "Warm cream with a quilted strip of green and rust tiles" },
   {
+    id: "fall",
+    label: "Fall",
+    detail: "Cream stock, falling leaves and a pile of pumpkins",
+    featured: { from: "09-01", to: "12-01" },
+  },
+  {
+    id: "halloween",
+    label: "Halloween",
+    detail: "Parchment stock, a reaching hand and a jack-o'-lantern by a headstone",
+    featured: { from: "09-15", to: "11-03" },
+  },
+  {
     id: "christmas",
     label: "Christmas",
     detail: "Linen stock, a red title and a row of Santa hats",
-    season: { from: "11-01", to: "12-31" },
+    featured: { from: "11-01", to: "12-31" },
   },
 ];

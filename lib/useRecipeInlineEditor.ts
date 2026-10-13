@@ -263,7 +263,7 @@ export function applyRecipeTargetEdit(
   if (target.kind === "ingredientsHeading" || target.kind === "stepsHeading") {
     // Emptied is removed (`""`), the default typed back follows the default
     // again: see lib/recipeHeadings.ts.
-    return printableRecipe({ ...recipe, [target.kind]: storedRecipeHeading(target.kind, value) });
+    return printableRecipe({ ...recipe, [target.kind]: storedRecipeHeading(target.kind, value, recipe.language) });
   }
   const text = stripStepPrefix(trimmed);
   if (!text) {

@@ -57,6 +57,7 @@ export function printableRecipe(recipe: Recipe): Recipe {
     image: recipe.image,
     sourceUrl: recipe.sourceUrl,
     sourceName: recipe.sourceName,
+    language: recipe.language,
     prepTime: recipe.prepTime,
     cookTime: recipe.cookTime,
     totalTime: recipe.totalTime,
@@ -67,6 +68,11 @@ export function printableRecipe(recipe: Recipe): Recipe {
     ingredientsHeading: recipe.ingredientsHeading,
     stepsHeading: recipe.stepsHeading,
   };
+}
+
+/** `recipe_imported`'s `language`, when the parser knew it. */
+function languageOf(recipe: Recipe | undefined): { language?: string } {
+  return recipe?.language ? { language: recipe.language } : {};
 }
 
 function printableQueueItem(item: QueueItem): QueueItem {
@@ -992,9 +998,16 @@ export function useQueue() {
           ...meterMsOf(reservation),
           ...meterImportedFields(reservation),
         };
-        track("recipe_imported", { ...outcome, ...context, importId: id, ...landing });
-        rest.forEach(() =>
-          track("recipe_imported", { ...outcome, ...context, importId: id, extra: true, ...landing }),
+        track("recipe_imported", { ...outcome, ...context, importId: id, ...landing, ...languageOf(first) });
+        rest.forEach((recipe) =>
+          track("recipe_imported", {
+            ...outcome,
+            ...context,
+            importId: id,
+            extra: true,
+            ...landing,
+            ...languageOf(recipe),
+          }),
         );
       } catch (err) {
         settle("failure");
@@ -1268,7 +1281,12 @@ export function useQueue() {
       // No started/failed pair: there's no parse step that could fail.
       const landing = landingFields();
       nextRecipes.forEach((recipe) => {
-        track("recipe_imported", { source: recipe.method, ...importContextRef.current, ...landing });
+        track("recipe_imported", {
+          source: recipe.method,
+          ...importContextRef.current,
+          ...landing,
+          ...languageOf(recipe.recipe),
+        });
       });
       return nextRecipes.length;
     },
@@ -1290,8 +1308,9 @@ export function useQueue() {
       const extras = extraItemsFor(base, base.source, recipes);
       commit([...itemsRef.current, ...extras]);
       const landing = landingFields();
-      extras.forEach(() =>
+      extras.forEach((extra) =>
         track("recipe_imported", {
+          ...languageOf(extra.recipe),
           source: base.method,
           ...(base.method === "url" && base.source ? { hostname: base.source } : {}),
           ...importContextRef.current,

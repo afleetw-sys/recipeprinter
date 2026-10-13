@@ -85,22 +85,26 @@ function customLengthPx(el: HTMLElement, name: string): number {
 }
 
 /**
- * The card's bottom-right keep-out corner, if its template declares one: art
- * that stands taller than the rest of the card's foot but only across part of
- * its width (Garden's tomatoes over its low hills). A line of content whose
- * box reaches into that corner's columns has to stop above the corner's top;
- * everything else runs down to the card's normal limit. Declared in CSS as
- * `--recipe-card-keepout-w` / `--recipe-card-keepout-h`, measured from the
- * card's right and bottom edges. Returns null when there is none, which keeps
- * every other template measuring exactly as before.
+ * The card's bottom keep-out corner, if its template declares one: art that
+ * stands taller than the rest of the card's foot but only across part of its
+ * width (Garden's tomatoes over its low hills, Halloween's headstone). A line
+ * of content whose box reaches into that corner's columns has to stop above
+ * the corner's top; everything else runs down to the card's normal limit.
+ * Declared in CSS as `--recipe-card-keepout-w` / `--recipe-card-keepout-h`,
+ * measured from the card's bottom edge and its right edge, or its left edge
+ * when `--recipe-card-keepout-side` is `left`. Returns null when there is
+ * none, which keeps every other template measuring exactly as before.
  */
-function keepOutCorner(cardEl: HTMLElement): { left: number; top: number } | null {
+function keepOutCorner(cardEl: HTMLElement): { left: number; right: number; top: number } | null {
   const w = customLengthPx(cardEl, "--recipe-card-keepout-w");
   const h = customLengthPx(cardEl, "--recipe-card-keepout-h");
   if (w <= 0 || h <= 0) return null;
   const rect = cardEl.getBoundingClientRect();
   const scale = screenScale(cardEl);
-  return { left: rect.right - w * scale, top: rect.bottom - h * scale };
+  const top = rect.bottom - h * scale;
+  return getComputedStyle(cardEl).getPropertyValue("--recipe-card-keepout-side").trim() === "left"
+    ? { left: rect.left, right: rect.left + w * scale, top }
+    : { left: rect.right - w * scale, right: rect.right, top };
 }
 
 /**
@@ -127,7 +131,7 @@ export function colsOverflowPx(cardEl: HTMLElement): number {
   for (const leaf of realContentElements(cols, CONTENT_LEAF_SELECTOR)) {
     const rect = leaf.getBoundingClientRect();
     contentBottom = Math.max(contentBottom, rect.bottom);
-    if (corner && rect.right > corner.left) cornerOverrun = Math.max(cornerOverrun, rect.bottom - corner.top);
+    if (corner && rect.right > corner.left && rect.left < corner.right) cornerOverrun = Math.max(cornerOverrun, rect.bottom - corner.top);
   }
   // Several templates (and every 6x4 card, regardless of template) hide the
   // footer entirely via `display: none` when it has no source link to show

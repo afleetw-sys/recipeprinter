@@ -18,7 +18,12 @@ export const longRecipe = {
   })),
 };
 
-export async function openPrint(page: Page, size: string, recipe: { title: string } = longRecipe) {
+export async function openPrint(
+  page: Page,
+  size: string,
+  recipe: { title: string } = longRecipe,
+  template = "classic",
+) {
   const queue = [{ id: "r1", method: "text", source: "test", status: "ready", title: recipe.title, recipe }];
   // Only into a fresh tab, so a reload reads back what the page saved.
   await page.addInitScript((items) => {
@@ -26,7 +31,7 @@ export async function openPrint(page: Page, size: string, recipe: { title: strin
     sessionStorage.setItem("recipeprinter:queue:v1", items);
     sessionStorage.setItem("recipeprinter:print-job:current:v1", JSON.stringify({ ids: ["r1"] }));
   }, JSON.stringify(queue));
-  await page.goto(`/print?ids=r1&size=${size}&template=classic`);
+  await page.goto(`/print?ids=r1&size=${size}&template=${template}`);
   await expect(page.locator("#recipe-page-deck .recipe-card").first()).toBeVisible();
   await expect(page.locator(".recipe-print-shell--measuring")).toHaveCount(0);
 }

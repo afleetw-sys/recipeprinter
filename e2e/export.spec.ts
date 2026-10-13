@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./guarded";
 import fixture from "../monitoring/export-fixture.json";
+import { RECIPE_PRINT_TEMPLATE_OPTIONS } from "../lib/printTemplates";
 
 /**
  * The cookbook export page, driven exactly as the PDF renderer drives it: the
@@ -118,4 +119,39 @@ test("a chapter opener's photo sits centred on the page in every band theme", as
     if (Math.abs(left - right) > 1) misplaced.push(`${template}: ${left.toFixed(1)}px left, ${right.toFixed(1)}px right`);
   }
   expect(misplaced).toEqual([]);
+});
+
+// A cover's accent band runs along its top edge. Fall's leaves sit in that
+// corner, and the band was drawn over them. Every theme's front and back
+// cover: wherever the band shows, none of the theme's art is under it.
+test("a cover's band never lies over its theme's art", async ({ page }) => {
+  const covered: string[] = [];
+  for (const { id: template } of RECIPE_PRINT_TEMPLATE_OPTIONS) {
+    const book = structuredClone(fixture);
+    book.project.settings.template = template;
+    (book.project as { backCover?: unknown }).backCover = { title: "The end" };
+    await openExport(page, book);
+    covered.push(
+      ...(await page.$$eval(".recipe-card--cover", (covers) =>
+        covers.flatMap((cover) => {
+          const band = cover.querySelector(".recipe-card__cover-band");
+          const bandBox = band?.getBoundingClientRect();
+          if (!bandBox || bandBox.width === 0 || bandBox.height === 0) return [];
+          return Array.from(cover.querySelectorAll<HTMLImageElement>("img[aria-hidden]"))
+            .filter((art) => {
+              const box = art.getBoundingClientRect();
+              return (
+                box.width > 0 &&
+                box.left < bandBox.right &&
+                box.right > bandBox.left &&
+                box.top < bandBox.bottom &&
+                box.bottom > bandBox.top
+              );
+            })
+            .map((art) => `${cover.className.match(/cover-(front|back)/)?.[0]}: ${art.className}`);
+        }),
+      )).map((hit) => `${template} ${hit}`),
+    );
+  }
+  expect(covered).toEqual([]);
 });

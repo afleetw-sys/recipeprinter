@@ -12,6 +12,9 @@ export type RailWidthMode = "pages" | "organize" | "settings";
 export type RailWidths = Partial<Record<RailWidthMode, number>>;
 
 export const RAIL_MIN_WIDTH: Record<RailWidthMode, number> = { pages: 180, organize: 320, settings: 260 };
+/** Dragging the organizer narrower than this hands the rail back to the
+    page thumbnails, instead of leaving the organizer pinned at its minimum. */
+export const ORGANIZE_COLLAPSE_WIDTH = 260;
 /** The preview never gets narrower than this from a drag. */
 export const PREVIEW_MIN_WIDTH = 320;
 /** One arrow-key press on the divider. */

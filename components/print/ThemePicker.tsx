@@ -8,8 +8,8 @@ import {
 } from "@/components/RecipeCardPrint";
 import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
 import { ProBadge } from "@/components/ProBadge";
-import { ChevronDownIcon, ICON_SIZE } from "@/components/icons";
-import { arrangeThemes } from "@/lib/seasonalThemes";
+import { ChevronDownIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
+import { arrangeThemes, isFeatured } from "@/lib/seasonalThemes";
 import { isPremiumTemplate } from "@/lib/premiumTemplates";
 import { hasTemplateOrProEntitlement } from "@/lib/recipePrinterPurchases";
 import { track } from "@/lib/analytics";
@@ -35,10 +35,11 @@ interface ThemePickerProps {
  * The price/paywall only ever appears at print time (the Print button), never
  * here.
  *
- * Seasonal themes (see lib/seasonalThemes) lead the Pro themes while in
- * season. Out of season they sit in a collapsed "Seasonal themes" group at the
- * end, still one tap away for a year-round cookbook; it opens on its own when
- * the chosen theme is one of them, so the current theme never looks missing.
+ * Seasonal themes (see lib/seasonalThemes) lead the Pro themes during their
+ * featured dates, tagged "Featured" beside the crown. The rest of the year they
+ * sit in a collapsed "Seasonal themes" group at the end, still one tap away for
+ * a year-round cookbook; it opens on its own when the chosen theme is one of
+ * them, so the current theme never looks missing.
  */
 export function ThemePicker({
   cookbookMode,
@@ -48,16 +49,17 @@ export function ThemePicker({
   setToastMessage,
   setMobileDrawer,
 }: ThemePickerProps) {
-  const { main, offSeason } = arrangeThemes(
+  const today = new Date();
+  const { main, seasonal } = arrangeThemes(
     RECIPE_PRINT_TEMPLATE_OPTIONS,
     (option) => isPremiumTemplate(option.id),
-    new Date(),
+    today,
   );
-  const currentIsOffSeason = offSeason.some((option) => option.id === template);
-  const [seasonalOpen, setSeasonalOpen] = useState(currentIsOffSeason);
-  const showSeasonal = seasonalOpen || currentIsOffSeason;
+  const currentIsSeasonal = seasonal.some((option) => option.id === template);
+  const [seasonalOpen, setSeasonalOpen] = useState(currentIsSeasonal);
+  const showSeasonal = seasonalOpen || currentIsSeasonal;
 
-  // Opening the seasonal list adds themes below the fold of the settings
+  // Opening the seasonal group adds themes below the fold of the settings
   // panel, so the click looked like it did nothing. Bring the toggle to the top
   // of whatever is scrolling (the panel, or the phone drawer) so the themes it
   // just revealed sit right under it. Only for a click, never on load.
@@ -81,6 +83,9 @@ export function ThemePicker({
       premiumTemplate !== null &&
       !hasTemplateOrProEntitlement(customerInfo, option.id) &&
       !cookbookMode;
+    // During its featured dates, a seasonal theme leads the Pro themes; the
+    // tag says why it's up there.
+    const featured = isFeatured(option, today);
 
     // A real card renders <div>s, which aren't valid inside a
     // <button> (its content model is phrasing only) — so the option
@@ -118,7 +123,20 @@ export function ThemePicker({
             printing this template is actually requested (see the Print
             button below) — locked themes stay fully selectable and
             previewable here. */}
-        {locked && <ProBadge tooltip="This theme is Pro" />}
+        {/* A featured theme's tag is the word before the crown, in the
+            crown's own chip; a Pro subscriber sees the word alone. */}
+        {featured ? (
+          <span
+            className="pro-badge pro-badge--overlay recipe-template-option__featured"
+            aria-label={locked ? "Featured, this theme is Pro" : "Featured"}
+            title={locked ? "This theme is Pro" : undefined}
+          >
+            Featured
+            {locked && <CrownIcon size={ICON_SIZE.sm} />}
+          </span>
+        ) : (
+          locked && <ProBadge tooltip="This theme is Pro" />
+        )}
         <TemplateThumbnail template={option.id} />
       </div>
     );
@@ -128,7 +146,7 @@ export function ThemePicker({
     <div className="recipe-config-section recipe-config-section--template">
       <h3 className="recipe-config-label">Themes</h3>
       <div className="recipe-template-list">{main.map(renderOption)}</div>
-      {offSeason.length > 0 && (
+      {seasonal.length > 0 && (
         <>
           <button
             type="button"
@@ -146,7 +164,7 @@ export function ThemePicker({
           </button>
           {showSeasonal && (
             <div id="recipe-template-seasonal" className="recipe-template-list">
-              {offSeason.map(renderOption)}
+              {seasonal.map(renderOption)}
             </div>
           )}
         </>
