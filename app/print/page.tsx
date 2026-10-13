@@ -6433,6 +6433,7 @@ export default function PrintPage() {
           width={organizeWide ? railWidths.organize : railWidths.pages}
           onCommit={commitRailWidth}
           onReset={resetRailWidth}
+          onCollapse={organizeWide ? exitOrganizeMode : undefined}
         />
         <RailResizer
           mode="settings"

@@ -1,7 +1,13 @@
 "use client";
 
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { RAIL_KEY_STEP, clampRailWidth, type RailWidthMode } from "@/lib/railWidth";
+import {
+  ORGANIZE_COLLAPSE_WIDTH,
+  RAIL_KEY_STEP,
+  RAIL_MIN_WIDTH,
+  clampRailWidth,
+  type RailWidthMode,
+} from "@/lib/railWidth";
 
 const WIDTH_VAR: Record<RailWidthMode, string> = {
   pages: "--rail-user-w",
@@ -23,22 +29,30 @@ const LABEL: Record<RailWidthMode, string> = {
  * so the print page (thousands of nodes) does not re-render per pixel; the
  * width is handed to React once, on release. Arrow keys nudge it, and a
  * double-click puts the layout's own width back.
+ *
+ * The organizer has no squeezed state: drag it (or arrow it) past its minimum
+ * and `onCollapse` returns the rail to the page thumbnails. The drag's width
+ * is dropped, so the organizer reopens at the width it had before.
  */
 export function RailResizer({
   mode,
   width,
   onCommit,
   onReset,
+  onCollapse,
 }: {
   mode: RailWidthMode;
   /** The stored width for this mode, if the cook has set one. */
   width: number | undefined;
   onCommit: (mode: RailWidthMode, width: number) => void;
   onReset: (mode: RailWidthMode) => void;
+  /** Organizer only: leave organize mode when dragged past its minimum. */
+  onCollapse?: () => void;
 }) {
   const side = mode === "settings" ? "right" : "left";
   const [dragging, setDragging] = useState(false);
-  const drag = useRef<{ shell: HTMLElement; other: number; last: number } | null>(null);
+  const drag = useRef<{ shell: HTMLElement; other: number; last: number; initial: string } | null>(null);
+  const collapses = mode === "organize" && Boolean(onCollapse);
 
   /** This panel's width and the one across the preview from it. */
   const room = (shell: HTMLElement) => {
@@ -59,7 +73,12 @@ export function RailResizer({
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     const { ownWidth, otherWidth } = room(shell);
-    drag.current = { shell, other: otherWidth, last: ownWidth };
+    drag.current = {
+      shell,
+      other: otherWidth,
+      last: ownWidth,
+      initial: shell.style.getPropertyValue(WIDTH_VAR[mode]),
+    };
     shell.classList.add("recipe-print-shell--rail-resizing");
     setDragging(true);
   };
@@ -68,7 +87,20 @@ export function RailResizer({
     const current = drag.current;
     if (!current) return;
     const rect = current.shell.getBoundingClientRect();
-    const next = clampRailWidth(side === "left" ? event.clientX - rect.left : rect.right - event.clientX, mode, {
+    const wanted = side === "left" ? event.clientX - rect.left : rect.right - event.clientX;
+    if (collapses && wanted < ORGANIZE_COLLAPSE_WIDTH) {
+      drag.current = null;
+      if (current.initial) current.shell.style.setProperty(WIDTH_VAR[mode], current.initial);
+      else current.shell.style.removeProperty(WIDTH_VAR[mode]);
+      current.shell.classList.remove("recipe-print-shell--rail-resizing");
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      setDragging(false);
+      onCollapse?.();
+      return;
+    }
+    const next = clampRailWidth(wanted, mode, {
       shellWidth: rect.width,
       otherWidth: current.other,
     });
@@ -94,6 +126,11 @@ export function RailResizer({
     // The arrow moves the LINE, so on the right-hand panel it is reversed.
     const outward = (event.key === "ArrowRight") === (side === "left");
     const step = outward ? RAIL_KEY_STEP : -RAIL_KEY_STEP;
+    // Already at the minimum, one more press inward is the same as dragging past it.
+    if (collapses && !outward && ownWidth <= RAIL_MIN_WIDTH[mode] + 0.5) {
+      onCollapse?.();
+      return;
+    }
     onCommit(mode, clampRailWidth(ownWidth + step, mode, { shellWidth, otherWidth }));
   };
 
