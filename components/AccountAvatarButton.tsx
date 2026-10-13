@@ -4,8 +4,27 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "firebase/auth";
-import { AccountIcon, BookIcon, ICON_SIZE, LogoutIcon, SettingsIcon } from "@/components/icons";
-import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
+import {
+  AccountIcon,
+  AppleIcon,
+  BookIcon,
+  GaugeIcon,
+  GoogleIcon,
+  ICON_SIZE,
+  LogoutIcon,
+  SettingsIcon,
+} from "@/components/icons";
+import {
+  CookPilotLoginDialog,
+  appleProvider,
+  googleProvider,
+  prewarmCookPilotAuth,
+  signInWithTrackedProvider,
+  useCookPilotAuth,
+} from "@/components/CookPilotAuth";
+import { importAllowanceLine } from "@/lib/freeImports";
+import { friendlyAuthError } from "@/lib/friendlyErrors";
+import { useImportUsage } from "@/lib/useImportUsage";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadLocalProjects } from "@/lib/localProjects";
 import { summarizePrintProject } from "@/lib/printProjects";
@@ -15,8 +34,26 @@ import { navigateAfterOverlayHistory } from "@/lib/useBackDismiss";
 import { libraryProjects } from "@/lib/projectLibrary";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 import type { PrintProjectSummary } from "@/types/recipe";
-import type { User } from "firebase/auth";
+import type { AuthProvider, User } from "firebase/auth";
+import type { ReactNode } from "react";
 import { IconButton } from "@/components/Controls";
+
+const ROW_CLASS =
+  "flex w-full items-center gap-2 rounded-lg px-cp-3 py-cp-2 text-left text-cp-small font-semibold text-ink hover:bg-page";
+
+/**
+ * The one row a signed-out press can't simply follow: there is nothing on
+ * /projects without an account, so it asks for sign-in, saying what for, and
+ * the page follows once that is done. Settings goes straight to its page,
+ * which shows the plans and offers sign-in itself (Amelia, 2026-10-13).
+ */
+const DESTINATIONS = {
+  "/projects": {
+    title: "Sign in to see your projects",
+    body: "Your saved recipe cards and cookbooks open on this device or another one.",
+  },
+} as const;
+type Destination = keyof typeof DESTINATIONS;
 
 // Two initials from the signed-in identity — first+last of a display name, else
 // the first letter of the email — so a logged-in avatar shows who's signed in.
@@ -38,8 +75,10 @@ export function accountInitials(user: User): string {
 }
 
 /**
- * The account avatar: a two-item dropdown signed in, the sign-in dialog
- * signed out.
+ * The account avatar: one dropdown, signed in or not. Signed out it leads with
+ * the ways to sign in, and its rows say what an account holds (Amelia,
+ * 2026-10-13: people pressed the avatar, got a sign-in dialog they hadn't
+ * asked for, and closed it).
  *
  * Split out of AccountControl and loaded on demand, because this is the only
  * thing on a marketing page that needs Firebase. Everything here reaches
@@ -87,7 +126,10 @@ export default function AccountAvatarButton({
   const [open, setOpen] = useState(false);
   /** A press that landed before auth resolved, opened once it has. */
   const [openWhenReady, setOpenWhenReady] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
+  /** The sign-in dialog, and the page a row was headed for when it opened. */
+  const [login, setLogin] = useState<{ destination?: Destination } | null>(null);
+  const [providerBusy, setProviderBusy] = useState(false);
+  const [providerError, setProviderError] = useState<string | null>(null);
   const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
   /**
@@ -114,32 +156,69 @@ export default function AccountAvatarButton({
    */
   const projectCount = useProjectCount(user?.uid, open);
 
+  /** Pressing the avatar opens the dropdown, signed in or not. */
+  const pressAvatar = useCallback(() => setOpen((value) => !value), []);
+
+  // The provider buttons open a popup from the press itself, which a browser
+  // only allows if nothing has to be fetched first.
+  useEffect(() => {
+    if (open && ready && !user) void prewarmCookPilotAuth();
+  }, [open, ready, user]);
+
   /**
-   * What pressing the avatar does, in one place.
-   *
-   * Signed in it opens the dropdown — Settings or Projects, your call. Signed
-   * out there is no account to open, so it opens the way to having one; the
-   * sign-in dialog carries a link to any cookbook bought on this device (see
-   * `listed` above) rather than making a signed-out visitor navigate away
-   * from wherever they were to reach it.
+   * Signing in from here: the menu and dialog close, and a row that asked for
+   * sign-in on the way somewhere carries on to it. Only for a sign-in this
+   * button watched happen, so a returning visitor's restored session doesn't
+   * shut a menu they have just opened.
    */
-  const pressAvatar = useCallback(() => {
-    if (user) {
-      setOpen((value) => !value);
+  const uid = user?.uid;
+  const sawSignedOutRef = useRef(false);
+  const destinationRef = useRef<Destination | undefined>(undefined);
+  destinationRef.current = login?.destination;
+  useEffect(() => {
+    if (!ready) return;
+    if (!uid) {
+      sawSignedOutRef.current = true;
       return;
     }
-    setShowLogin(true);
-  }, [user]);
+    if (!sawSignedOutRef.current) return;
+    sawSignedOutRef.current = false;
+    const destination = destinationRef.current;
+    setOpen(false);
+    setLogin(null);
+    setProviderBusy(false);
+    setProviderError(null);
+    // The dialog's teardown pops the history entry it pushed; see
+    // `navigateAfterOverlayHistory` for why the navigation waits for that.
+    if (destination) navigateAfterOverlayHistory(() => router.push(destination));
+  }, [ready, uid, router]);
+
+  async function signInWith(provider: AuthProvider, method: "google" | "apple") {
+    setProviderBusy(true);
+    setProviderError(null);
+    try {
+      await signInWithTrackedProvider(provider, method, () => setProviderBusy(false));
+    } catch (err) {
+      setProviderError(
+        friendlyAuthError(
+          err,
+          method === "google"
+            ? "We couldn't sign in with Google. Please try again."
+            : "We couldn't sign in with Apple. Please try again.",
+        ),
+      );
+      setProviderBusy(false);
+    }
+  }
 
   // The click that arrived before this chunk did. Waits for `ready` so it can
-  // route to the same place the real button would have.
+  // do exactly what the real button would have.
   useEffect(() => {
     if (!activateOnReady || !ready) return;
-    pressAvatar();
+    // Opens, never toggles: a replayed press that ran twice would shut the
+    // menu it had just opened.
+    setOpen(true);
     onActivated?.();
-    // `pressAvatar` is not a dependency: it changes identity the moment auth
-    // resolves, and re-running this on that would replay the same press twice.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activateOnReady, ready, onActivated]);
 
   /* The avatar used to drop any press that arrived before auth resolved, which
@@ -151,8 +230,7 @@ export default function AccountAvatarButton({
   useEffect(() => {
     if (!openWhenReady || !ready) return;
     setOpenWhenReady(false);
-    pressAvatar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setOpen(true);
   }, [openWhenReady, ready]);
 
   const closeMenu = useCallback(() => setOpen(false), []);
@@ -171,7 +249,7 @@ export default function AccountAvatarButton({
       // the panel stayed paintable-over. `|| undefined` so the attribute is
       // absent (not `data-account-menu-open="false"`, which `:has([attr])`
       // would still match) whenever the panel is closed.
-      data-account-menu-open={open && user ? "" : undefined}
+      data-account-menu-open={open ? "" : undefined}
     >
       {/* One control, signed in or not — see the same button in
           `AccountControl`, which draws it while this chunk is still loading.
@@ -189,8 +267,11 @@ export default function AccountAvatarButton({
             ? "border border-transparent bg-[var(--cp-accent)] text-[var(--cp-on-accent)] font-bold tracking-tight"
             : "bg-transparent text-ink"
         }
-        aria-label={user ? "Open account menu" : "Sign in to RecipePrinter"}
-        title={user ? "Open account menu" : "Sign in to RecipePrinter"}
+        // Signed out it keeps the placeholder's name (see `AccountControl`), so
+        // the control is not renamed under someone as this chunk arrives.
+        aria-label={user ? "Open account menu" : "Open account or sign in"}
+        title={user ? "Open account menu" : "Open account or sign in"}
+        aria-expanded={open}
         aria-busy={openWhenReady || undefined}
         onClick={() => {
           if (!ready) {
@@ -208,7 +289,7 @@ export default function AccountAvatarButton({
         )}
       </IconButton>
 
-      {open && user && (
+      {open && ready && (
         // `z-[var(--z-menu)]`, not a bare Tailwind `z-50` — this panel sits
         // directly in the page's normal flow (SiteHeader isn't always
         // `sticky`, e.g. on /projects and /account, so it has no elevated
@@ -218,88 +299,151 @@ export default function AccountAvatarButton({
         // menu tier (above chrome, below dialogs — see the --z-* scale and
         // .cp-menu in globals.css) is unambiguously above anything a page's
         // own content ever declares.
-        <div className="absolute right-0 top-11 z-[var(--z-menu)] w-[min(220px,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-cp-2 shadow-cp-lg">
-          <Link
-            href="/account"
-            className="flex items-center gap-2 rounded-lg px-cp-3 py-cp-2 text-cp-small font-semibold text-ink hover:bg-page"
-            onClick={closeMenu}
-          >
+        <div
+          className={`absolute right-0 top-11 z-[var(--z-menu)] rounded-2xl border border-line bg-card p-cp-2 shadow-cp-lg ${
+            user ? "w-[min(220px,calc(100vw-2rem))]" : "w-[min(264px,calc(100vw-2rem))]"
+          }`}
+        >
+          {!user && (
+            /* The real buttons, not a "Sign in" row that opens a dialog: for
+               Google and Apple this is the whole of signing in, one press from
+               the avatar. Email needs fields, so it opens the dialog. */
+            <div className="mb-cp-1 flex flex-col gap-cp-2 border-b border-line px-cp-1 pb-cp-3 pt-cp-1">
+              <p className="px-cp-2 text-cp-small font-bold text-ink">Sign in or create an account</p>
+              <div className="grid grid-cols-2 gap-cp-2">
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-compact w-full"
+                  disabled={providerBusy}
+                  onClick={() => void signInWith(googleProvider, "google")}
+                >
+                  <GoogleIcon size={ICON_SIZE.md} />
+                  Google
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-compact w-full"
+                  disabled={providerBusy}
+                  onClick={() => void signInWith(appleProvider, "apple")}
+                >
+                  <AppleIcon size={ICON_SIZE.md} />
+                  Apple
+                </button>
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary btn-compact w-full"
+                disabled={providerBusy}
+                onClick={() => {
+                  closeMenu();
+                  setLogin({});
+                }}
+              >
+                Continue with email
+              </button>
+              {providerError && <p className="field-error px-cp-2" role="alert">{providerError}</p>}
+            </div>
+          )}
+          <MenuImportUsage />
+          <Link href="/account" className={ROW_CLASS} onClick={closeMenu}>
             <SettingsIcon size={ICON_SIZE.md} className="shrink-0 text-ink-soft" />
             Settings
           </Link>
-          <Link
-            href="/projects"
-            className="flex items-center gap-2 rounded-lg px-cp-3 py-cp-2 text-cp-small font-semibold text-ink hover:bg-page"
-            onClick={closeMenu}
+          <ProjectsRow
+            // A cookbook bought on this device without an account is already
+            // paid for, so its shelf is never behind sign-in (see `listed`).
+            open={!!user || listed.length > 0}
+            onNavigate={closeMenu}
+            onSignIn={() => {
+              closeMenu();
+              setLogin({ destination: "/projects" });
+            }}
           >
             <BookIcon size={ICON_SIZE.md} className="shrink-0 text-ink-soft" />
             <span className="flex-1">Projects</span>
-            {projectCount !== null && (
+            {user && projectCount !== null && (
               <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full border border-line bg-page px-1 text-cp-caption font-bold leading-none text-ink-soft">
                 {projectCount}
               </span>
             )}
-          </Link>
-          <div className="mt-cp-1 border-t border-line pt-cp-1">
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 rounded-lg px-cp-3 py-cp-2 text-left text-cp-small font-semibold text-ink hover:bg-page"
-              onClick={() => {
-                closeMenu();
-                // Settings is only a sign-in gate once you are signed out, so
-                // leaving from there goes home rather than straight to a prompt
-                // to sign back in. Anywhere else, you stay where you were.
-                if (window.location.pathname.startsWith("/account")) router.replace("/");
-                void signOut(getFirebaseAuth());
-              }}
-            >
-              <LogoutIcon size={ICON_SIZE.md} className="shrink-0 text-ink-soft" />
-              Sign out
-            </button>
-          </div>
+          </ProjectsRow>
+          {user && (
+            <div className="mt-cp-1 border-t border-line pt-cp-1">
+              <button
+                type="button"
+                className={ROW_CLASS}
+                onClick={() => {
+                  closeMenu();
+                  // Settings is only a sign-in gate once you are signed out, so
+                  // leaving from there goes home rather than straight to a prompt
+                  // to sign back in. Anywhere else, you stay where you were.
+                  if (window.location.pathname.startsWith("/account")) router.replace("/");
+                  void signOut(getFirebaseAuth());
+                }}
+              >
+                <LogoutIcon size={ICON_SIZE.md} className="shrink-0 text-ink-soft" />
+                Sign out
+              </button>
+            </div>
+          )}
         </div>
       )}
 
-      {showLogin && !user && (
+      {login && !user && (
         <CookPilotLoginDialog
-          onClose={() => setShowLogin(false)}
-          onAuthenticated={() => setShowLogin(false)}
-          /**
-           * The way on for someone who bought a cookbook without an account and
-           * is not going to make one now.
-           *
-           * Signing in is genuinely the better answer, because the unlock is
-           * recorded against a project id on this device and only an account
-           * carries it to another one. But a book that has been paid for cannot
-           * sit behind a form: this is the door that used to be the account
-           * menu, moved to the one screen a signed-out press now lands on.
-           */
-          footer={
-            listed.length > 0 ? (
-              <p className="text-center text-cp-small">
-                <Link
-                  href="/projects"
-                  className="text-ink-soft underline underline-offset-2"
-                  // Closes the dialog AND navigates, which is the collision
-                  // `navigateAfterOverlayHistory` exists for: the dialog's
-                  // teardown pops the history entry it pushed, and that pop
-                  // throws away a navigation started in the same click. Left to
-                  // the link alone, the press closed the dialog and went
-                  // nowhere.
-                  onClick={(event) => {
-                    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                    event.preventDefault();
-                    setShowLogin(false);
-                    navigateAfterOverlayHistory(() => router.push("/projects"));
-                  }}
-                >
-                  Open your cookbook without signing in
-                </Link>
-              </p>
-            ) : undefined
-          }
+          onClose={() => setLogin(null)}
+          // Not `onClose`: the row's destination is read once the account
+          // arrives (the effect above), and closing first would forget it.
+          onAuthenticated={() => undefined}
+          intro={login.destination ? DESTINATIONS[login.destination] : undefined}
         />
       )}
+    </div>
+  );
+}
+
+/** The Projects row: a link when there is a shelf to open, else the way to one. */
+function ProjectsRow({
+  open,
+  onNavigate,
+  onSignIn,
+  children,
+}: {
+  open: boolean;
+  onNavigate: () => void;
+  onSignIn: () => void;
+  children: ReactNode;
+}) {
+  if (open) {
+    return (
+      <Link href="/projects" className={ROW_CLASS} onClick={onNavigate}>
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" className={ROW_CLASS} onClick={onSignIn}>
+      {children}
+    </button>
+  );
+}
+
+/**
+ * The free-import count in words: what the ring on the avatar is a picture of.
+ * Its own component so the count is only read while the menu is open, and
+ * nothing for a Pro member, who has no count.
+ */
+function MenuImportUsage() {
+  const { hidden, usage } = useImportUsage();
+  if (hidden) return null;
+  const line = importAllowanceLine(usage);
+  return (
+    <div className="mb-cp-1 flex items-start gap-2 border-b border-line px-cp-3 pb-cp-3 pt-cp-2 text-cp-small">
+      <GaugeIcon size={ICON_SIZE.md} className="mt-px shrink-0 text-ink-soft" />
+      <div>
+        <p className="font-semibold text-ink">{line.lead}</p>
+        {line.detail && <p className="text-ink-soft">{line.detail}</p>}
+      </div>
     </div>
   );
 }

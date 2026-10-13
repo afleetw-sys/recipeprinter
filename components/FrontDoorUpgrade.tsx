@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
-import { ImportUsageMenu } from "@/components/ImportUsageMenu";
 import { CrownIcon, ICON_SIZE } from "@/components/icons";
 import {
   importsKnownUnlimited,
@@ -12,12 +11,11 @@ import {
 } from "@/lib/importMeter";
 
 /**
- * The homepage header's two Pro controls, the same pair `/print` carries in
- * its own header (Amelia, 2026-10-11): "Upgrade to Pro" beside the wordmark,
- * and the free-import ring to the left of the account. They replaced the usage
- * banner that sat under every import box.
+ * The homepage header's Pro control, the same one `/print` carries in its own
+ * header (Amelia, 2026-10-11): "Upgrade to Pro" beside the wordmark. The
+ * free-import count is a ring on the account avatar (`ImportUsageBadge`).
  *
- * Both open one dialog, held by `FrontDoorUpgradeHost`, which the import box
+ * It and the import box open one dialog, held by `FrontDoorUpgradeHost`, which the import box
  * mounts. They reach it through `requestUpgrade` rather than props because
  * they sit in different slots of a server-rendered header.
  */
@@ -79,9 +77,4 @@ export function FrontDoorUpgradeButton() {
       Upgrade to Pro
     </button>
   );
-}
-
-/** The free-import ring, to the left of the account. */
-export function FrontDoorImportUsage() {
-  return <ImportUsageMenu placement="header" onUpgrade={() => requestUpgrade("import_banner")} />;
 }

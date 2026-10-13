@@ -1,6 +1,6 @@
 /**
  * The free import allowance, in one place (docs/import-meter-plan.md, 8.1):
- * the numbers, the switch, and the line the free-import ring's menu shows.
+ * the numbers, the switch, and the line the account menu shows.
  */
 
 /** Card imports a free visitor gets per window. The window is fixed: it
@@ -44,7 +44,7 @@ export interface ImportAllowanceLine {
 }
 
 /**
- * What the free-import ring's menu tells a free cook: how many imports they've
+ * What the account menu tells a free cook: how many imports they've
  * used toward the limit, from the first one on, and when it resets. `usage`
  * is the server's count; without one the line states the allowance.
  */

@@ -36,6 +36,8 @@ export async function enterEmail(page: Page, email: string) {
   const account = page.getByRole("button", { name: "Open account or sign in" });
   await untilHydrated(account);
   await account.click();
+  // The avatar opens the account menu; email sign-in is one row of it.
+  await page.getByRole("button", { name: "Continue with email" }).click();
   const field = page.locator('input[type="email"]').first();
   await field.fill(email);
   await field.press("Enter");
