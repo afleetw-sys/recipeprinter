@@ -114,16 +114,16 @@ export function ReferralCard() {
           readOnly
           value={url}
           aria-label="Your invite link"
-          className="field min-w-0 flex-1"
+          className="field field--compact min-w-0 flex-1 font-normal"
           onFocus={(event) => event.currentTarget.select()}
         />
         <div className="flex gap-cp-2">
-          <button type="button" className="btn btn-secondary flex-1 sm:flex-none" onClick={() => void copy()}>
-            <LinkIcon size={ICON_SIZE.md} />
+          <button type="button" className="btn btn-secondary btn-compact flex-1 sm:flex-none" onClick={() => void copy()}>
+            <LinkIcon size={ICON_SIZE.sm} />
             {copied ? "Copied" : "Copy link"}
           </button>
           {canShare && (
-            <button type="button" className="btn btn-secondary flex-1 sm:flex-none" onClick={() => void share()}>
+            <button type="button" className="btn btn-secondary btn-compact flex-1 sm:flex-none" onClick={() => void share()}>
               Share
             </button>
           )}
