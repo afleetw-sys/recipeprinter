@@ -54,7 +54,7 @@ export function ProThemeStack({ className = "" }: { className?: string }) {
     // way its theme does, not inherit that.
     <div className={`mx-auto grid w-full max-w-[372px] grid-cols-3 gap-cp-2 text-left ${className}`} aria-hidden>
       {CARDS.map(({ template, recipe }) => (
-        <div key={template} className="overflow-hidden rounded-md border border-line bg-card">
+        <div key={template} className="overflow-hidden rounded-sm border border-line bg-card">
           <TemplateThumbnail template={template} recipe={recipe} />
         </div>
       ))}
