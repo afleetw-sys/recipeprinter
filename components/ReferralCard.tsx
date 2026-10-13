@@ -16,9 +16,8 @@ import { copyLink } from "@/lib/shareLink";
 /**
  * Invites, signed in: the reward first, two ways to pass the link on, and how
  * far along the lifetime cap this account is. A utility card, not a landing
- * page: one width with the other settings sections, no URL on show (Copy and
- * Share are all anyone does with it), and one layout for every plan, with only
- * the line under the headline changing.
+ * page: at most 640px wide, the link itself on show beside Copy and Share, and
+ * one layout for every plan, with only the line under the headline changing.
  *
  * Hidden while the program is switched off on the server, and for anyone the
  * `referral-program` flag holds out.
@@ -33,8 +32,9 @@ function rewardLine(summary: ReferralSummary): string {
 export function ReferralCard() {
   const [summary, setSummary] = useState<ReferralSummary | null>(null);
   const [copied, setCopied] = useState(false);
-  /** No clipboard access: the link, shown so it can be copied by hand. */
+  /** No clipboard access: the link is selected to copy by hand. */
   const [manual, setManual] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [canShare, setCanShare] = useState(false);
   const viewedRef = useRef(false);
 
@@ -73,6 +73,9 @@ export function ReferralCard() {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } else {
+      // No clipboard access: select the link so it can be copied by hand.
+      inputRef.current?.focus();
+      inputRef.current?.select();
       setManual(true);
     }
   }
@@ -101,26 +104,29 @@ export function ReferralCard() {
           : rewardLine(summary)}
       </p>
 
-      <div className="mt-cp-4 flex flex-wrap gap-cp-2">
-        <button type="button" className="btn btn-secondary" onClick={() => void copy()}>
-          <LinkIcon size={ICON_SIZE.md} />
-          {copied ? "Copied" : "Copy link"}
-        </button>
-        {canShare && (
-          <button type="button" className="btn btn-secondary" onClick={() => void share()}>
-            Share
-          </button>
-        )}
-      </div>
-      {manual && (
+      <div className="mt-cp-4 flex flex-col gap-cp-2 sm:flex-row">
         <input
+          ref={inputRef}
           readOnly
-          autoFocus
           value={url}
           aria-label="Your invite link"
-          className="field mt-cp-2 w-full min-w-0"
+          className="field min-w-0 flex-1"
           onFocus={(event) => event.currentTarget.select()}
         />
+        <div className="flex gap-cp-2">
+          <button type="button" className="btn btn-secondary flex-1 sm:flex-none" onClick={() => void copy()}>
+            <LinkIcon size={ICON_SIZE.md} />
+            {copied ? "Copied" : "Copy link"}
+          </button>
+          {canShare && (
+            <button type="button" className="btn btn-secondary flex-1 sm:flex-none" onClick={() => void share()}>
+              Share
+            </button>
+          )}
+        </div>
+      </div>
+      {manual && (
+        <p className="mt-cp-2 text-cp-small text-ink-soft" role="status">The link is selected. Copy it to share.</p>
       )}
 
       <div className="mt-cp-5 border-t border-line pt-cp-4">
