@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Dialog } from "@/components/Dialog";
 import { CrownIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import type { ProWelcome } from "@/lib/proWelcome";
@@ -15,7 +16,14 @@ function formatRenewal(ms: number): string {
  * RevenueCat reported it after the extension. Nothing here works a date out
  * itself: one calculated in the dialog could disagree with the account page.
  */
-function copyFor(welcome: ProWelcome): { title: string; body: string } {
+const COUNT_WORDS = ["", "A friend", "Two friends", "Three friends", "Four friends", "Five friends"];
+
+/** "A friend", "Two friends" ... spelled out while it reads naturally, then digits. */
+function friendsWho(friends = 1): string {
+  return COUNT_WORDS[friends] ?? `${friends} friends`;
+}
+
+function copyFor(welcome: ProWelcome): { title: string; body: ReactNode } {
   switch (welcome.kind) {
   case "purchased":
     return {
@@ -28,13 +36,19 @@ function copyFor(welcome: ProWelcome): { title: string; body: string } {
       body: `A friend shared RecipePrinter with you, so you both get ${welcome.days} days of Pro. Every theme and card size is yours to try.`,
     };
   case "referral_earned": {
-    const who = (welcome.friends ?? 1) > 1 ? `${welcome.friends} friends` : "A friend";
+    const who = friendsWho(welcome.friends);
     if (welcome.fulfillment === "extension") {
+      // A subscriber: say how much longer, and when they next pay, plainly.
       return {
-        title: "Your Pro just got longer",
-        body: welcome.renewsAtMs
-          ? `${who} signed up with your link, so your next Pro bill is now on ${formatRenewal(welcome.renewsAtMs)}.`
-          : `${who} signed up with your link, so your next Pro bill moves ${welcome.days} days later.`,
+        title: `Your Pro just got ${welcome.days} days longer!`,
+        body: welcome.renewsAtMs ? (
+          <>
+            {who} joined using your link. Your next Pro payment is{" "}
+            <strong className="text-ink">{formatRenewal(welcome.renewsAtMs)}</strong>.
+          </>
+        ) : (
+          `${who} joined using your link. Your next Pro payment moves ${welcome.days} days later.`
+        ),
       };
     }
     return {
