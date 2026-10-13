@@ -93,12 +93,12 @@ export function CookbookWelcomeDialog({
                 <span className="sr-only">now </span>
                 {usd(price)} one time
               </b>
-              <span>Your Pro membership takes 20% off your first cookbook. Pay when you download.</span>
+              <span>Your Pro membership takes 20% off your first cookbook. Preview up to 10 recipes free; buy it to download or add more.</span>
             </>
           ) : (
             <>
               <b>{usd(price)} one time</b>
-              <span>Pay when you download.</span>
+              <span>Preview up to 10 recipes free; buy it to download or add more.</span>
             </>
           )}
         </div>

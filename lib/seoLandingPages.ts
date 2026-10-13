@@ -510,7 +510,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     cookbookPitchHeading: "When one recipe becomes a collection",
     cookbookPitchBody:
-      "If you want to combine many recipes into something more permanent, RecipePrinter can also build them into a cookbook with chapters, a cover, and a table of contents. Cookbook exports are purchased separately.",
+      "If you want to combine many recipes into something more permanent, RecipePrinter can also build them into a cookbook with chapters, a cover, and a table of contents. Preview up to 10 recipes free; a separate cookbook purchase unlocks downloads and additional recipes.",
     faqHeading: "Recipe PDF questions",
     faqs: [
       {
@@ -702,7 +702,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "When the stack becomes a book",
         image: "bound-cookbook",
         body:
-          "Once enough recipes have earned a place, you can turn them into a cookbook. Sort them into chapters, design the cover, and arrange the pages, and RecipePrinter keeps the table of contents and page numbers up to date. Print it at home on US Letter or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook. Each cookbook is its own one-off purchase.",
+          "Once enough recipes have earned a place, you can turn them into a cookbook. Sort them into chapters, design the cover, and arrange the pages, and RecipePrinter keeps the table of contents and page numbers up to date. Preview up to 10 recipes free; a one-time purchase for that cookbook lets you download or print it and add more recipes.",
       },
     ],
     faqHeading: "Multiple recipe printing questions",
@@ -1457,7 +1457,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Print your whole Paprika library or just a few recipes",
         image: "bound-cookbook",
         body:
-          "Export a large Paprika collection and decide what to print after you open it in RecipePrinter. Choose just a few recipes, or use RecipePrinter Pro to print multiple recipes together for a recipe box or binder. The cookbook builder is a separate purchase for turning an imported collection into a cookbook.",
+          "Export a large Paprika collection and decide what to print after you open it in RecipePrinter. Choose just a few recipes, or use RecipePrinter Pro to print multiple recipes together for a recipe box or binder. In the cookbook builder, you can preview up to 10 recipes free; a separate purchase unlocks downloads and additional recipes.",
       },
     ],
     faqHeading: "Questions about printing recipes from Paprika",
@@ -1901,7 +1901,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     cookbookPitch: true,
     cookbookPitchHeading: "Turn handwritten family recipes into a cookbook",
     cookbookPitchBody:
-      "Once you have digitized the recipes worth keeping, you can bring them together into a family cookbook. Organize them into chapters, add a cover and table of contents, then print the finished collection or export it as a PDF. The cookbook builder is a separate one-off purchase.",
+      "Once you have digitized the recipes worth keeping, you can bring them together into a family cookbook. Organize them into chapters, add a cover and table of contents, and preview up to 10 recipes free. A separate one-time purchase lets you download or print the cookbook and add more recipes.",
     faqHeading: "Recipe card digitizing questions",
     faqs: [
       {
@@ -2034,7 +2034,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Do these have to become a cookbook?",
         answer:
-          "No. Printing one card and stopping there is enough. The bound cookbook with a cover and chapters is there if you ever want it, at $19.99 a cookbook.",
+          "No. Printing one card and stopping there is enough. If you make a bound cookbook with a cover and chapters, you can preview up to 10 recipes free; $19.99 unlocks downloads and unlimited recipes for that cookbook.",
       },
     ],
     links: [
@@ -2141,7 +2141,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does a cookbook cost?",
         answer:
-          "$19.99 for that cookbook, and it stays yours to edit and add to afterwards. After that it's whatever the printing costs: paper and ink at home, or whatever the print shop charges.",
+          "You can preview a cookbook with up to 10 recipes free. A one-time $19.99 purchase lets you download or print it, add more than 10 recipes, and keep editing that cookbook. Paper, ink, professional printing, and binding cost extra.",
       },
     ],
     links: [
@@ -2225,7 +2225,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         image: "bound-cookbook",
         imageAlt: "A finished cookbook ready for home or professional printing.",
         body:
-          "Cookbook export costs $19.99 per cookbook. That one-time purchase unlocks the cookbook and lets you keep editing it and export updated PDFs again later.",
+          "Start your cookbook free and preview it with up to 10 recipes. A one-time $19.99 purchase lets you download or print it, add more than 10 recipes, keep editing, and export updated PDFs whenever you want.",
         afterBody:
           "Print the finished PDF at home or send it to a professional printing service for binding or hardcover printing. RecipePrinter provides the finished file rather than printing or shipping physical books. If you change a recipe, reorder a chapter, or add a family note later, you can update the same purchased cookbook and export a new version without buying that cookbook again.",
       },
@@ -2250,7 +2250,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I export the cookbook as a PDF?",
         answer:
-          "Yes. Purchasing the cookbook unlocks PDF export for that cookbook. A free RecipePrinter account is required at download time so the purchase can be confirmed and kept with your cookbook.",
+          "Yes. Purchasing the cookbook unlocks PDF export and lets you add more than 10 recipes to that cookbook. A free RecipePrinter account is required at download time so the purchase can be confirmed and kept with your cookbook.",
       },
       {
         question: "Can I edit the cookbook after I make it?",
@@ -2260,7 +2260,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does it cost?",
         answer:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. Printing and binding from an outside printing service cost extra.",
+          "$19.99 per cookbook, one time, lets you download or print it and add more than 10 recipes. You can preview it free with up to 10 recipes first. Printing and binding from an outside service cost extra.",
       },
       {
         question: "Does RecipePrinter print and ship my cookbook?",
@@ -2355,11 +2355,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Choose a cover design and image that fits the cookbook.",
       },
       {
-        heading: "$19.99 for one editable cookbook",
+        heading: "Preview free, then $19.99 for one editable cookbook",
         image: "printed-cookbook",
         imageAlt: "A finished spiral-bound cookbook open to a formatted recipe and food photograph.",
         body:
-          "Cookbook export costs $19.99 per cookbook. That one-time purchase lets you keep editing that cookbook and export updated PDFs again later.",
+          "Start your cookbook free and preview it with up to 10 recipes. A one-time $19.99 purchase lets you download or print it, add more than 10 recipes, keep editing, and export updated PDFs whenever you want.",
         afterBody:
           "RecipePrinter creates the PDF; you can print it at home or send the finished file to a printing service of your choice. A free RecipePrinter account is required to download the cookbook.",
       },
@@ -2394,12 +2394,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Do I need RecipePrinter Pro?",
         answer:
-          "No. Cookbook purchases and RecipePrinter Pro are separate. Pro covers other RecipePrinter features and does not include cookbook export.",
+          "No. Cookbook purchases and RecipePrinter Pro are separate. Pro covers other RecipePrinter features and does not include cookbook export or recipes beyond the 10-recipe free preview. Either way, you can preview a cookbook with up to 10 recipes before you buy it.",
       },
       {
         question: "How much does the cookbook maker cost?",
         answer:
-          "Cookbook export is $19.99 per cookbook. The purchase lets you keep editing that cookbook and export updated PDFs again later.",
+          "$19.99 per cookbook, one time, lets you download or print it and add more than 10 recipes. You can preview it free with up to 10 recipes first, then keep editing and exporting updated PDFs later.",
       },
       {
         question: "Can I edit my cookbook after I buy it?",
@@ -2498,7 +2498,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         image: "bound-cookbook",
         imageAlt: "A finished family cookbook made from collected recipes.",
         body:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. After purchasing that cookbook, you can keep editing it, add newly found recipes, correct transcriptions, rearrange chapters, and export updated PDFs later.",
+          "You can preview a cookbook with up to 10 recipes free. A one-time $19.99 purchase lets you download or print it, add more than 10 recipes, and keep editing, correcting, rearranging, and exporting that cookbook later.",
       },
     ],
     faqHeading: "Handwritten recipe cookbook questions",
@@ -2531,7 +2531,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does it cost to make the cookbook?",
         answer:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase.",
+          "$19.99 per cookbook, one time, lets you download or print it and add more than 10 recipes. You can preview it free with up to 10 recipes first.",
       },
       {
         question: "Can I keep editing the cookbook after I buy it?",
@@ -2623,7 +2623,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Keep editing the cookbook until the gift is finished",
         image: "printed-cookbook",
         body:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. After purchasing that cookbook, you can keep editing it, add newly found recipes, correct mistakes, rearrange chapters, and export updated PDFs later.",
+          "You can preview a cookbook with up to 10 recipes free. A one-time $19.99 purchase lets you download or print it, add more than 10 recipes, and keep editing, correcting, rearranging, and exporting that cookbook later.",
       },
     ],
     faqHeading: "Homemade cookbook gift questions",
@@ -2659,7 +2659,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does a homemade cookbook cost?",
         answer:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. Outside printing or binding costs are not included.",
+          "$19.99 per cookbook, one time, lets you download or print it and add more than 10 recipes. You can preview it free with up to 10 recipes first. Outside printing or binding costs are not included.",
       },
       {
         question: "Can I make the cookbook as a Christmas or holiday gift?",
@@ -2745,7 +2745,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         body:
           "A cookbook is useful when you want a cover, chapters, and a finished collection. A recipe box can work better for a smaller set of favorite recipes that someone can keep adding to over time.",
         afterBody:
-          "Cookbook export costs $19.99 per cookbook. 4x6 recipe cards are available with RecipePrinter Pro.",
+          "You can preview a cookbook with up to 10 recipes free. A one-time $19.99 purchase lets you download or print it and add more than 10 recipes. 4x6 recipe cards are available with RecipePrinter Pro.",
       },
       {
         heading: "Let family and friends contribute recipes",
@@ -2803,7 +2803,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does a recipe book gift cost?",
         answer:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. Any outside printing or binding costs are additional.",
+          "$19.99 per cookbook, one time, lets you download or print it and add more than 10 recipes. You can preview it free with up to 10 recipes first. Any outside printing or binding costs are additional.",
       },
       {
         question: "Can I make a recipe book from family recipes?",
@@ -2901,7 +2901,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "RecipePrinter creates the finished cookbook PDF instead of manufacturing or shipping a physical book. That means there is no RecipePrinter production queue or shipping cutoff.",
         afterBody: [
           "You can print the PDF at home or send it to a professional printing service. If you plan to use an outside printer, check that company's current holiday production and delivery schedule.",
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. After purchasing that cookbook, you can keep editing it and export updated PDFs later.",
+          "You can preview a cookbook with up to 10 recipes free. A one-time $19.99 purchase lets you download or print it, add more than 10 recipes, and keep editing and exporting that cookbook later.",
         ],
       },
       {
@@ -2946,7 +2946,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does a Christmas recipe book cost?",
         answer:
-          "Cookbook export costs $19.99 per cookbook as a one-time purchase. Any outside printing or binding costs are additional.",
+          "$19.99 per cookbook, one time, lets you download or print it and add more than 10 recipes. You can preview it free with up to 10 recipes first. Any outside printing or binding costs are additional.",
       },
       {
         question: "Can I make more than one copy as Christmas gifts?",
@@ -3051,7 +3051,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           title: "Keeping them",
           rows: [
             { feature: "Saving recipes to come back to", us: "Unlimited with a free account", them: "20 free, then paid" },
-            { feature: "Bound cookbook with a cover and chapters", us: "$19.99 a cookbook, edits included", them: false },
+            { feature: "Bound cookbook with a cover and chapters", us: "10-recipe preview free; $19.99 to download or add more", them: false },
           ],
         },
         {
@@ -3071,7 +3071,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does each one cost?",
         answer:
-          "Just the Recipe is free to read recipes and to save up to 20; printing, unlimited saves and serving adjustments are on Premium. RecipePrinter is free to print full-page recipes, with no account and no limit. The recipe-card format — every theme, 4x6 cards, the card toolkit — is RecipePrinter Pro, $4.99 a month or $39.99 a year. Cookbooks are separate: $19.99 per book, paid once.",
+          "Just the Recipe is free to read recipes and to save up to 20; printing, unlimited saves and serving adjustments are on Premium. RecipePrinter is free to print full-page recipes, with no account and no limit. The recipe-card format — every theme, 4x6 cards, the card toolkit — is RecipePrinter Pro, $4.99 a month or $39.99 a year. Cookbooks are separate: preview up to 10 recipes free, then pay $19.99 per book once to download it or add more recipes.",
       },
       {
         question: "Can I bring my saved Just the Recipe recipes over?",
@@ -3156,7 +3156,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "Making a cookbook",
           rows: [
-            { feature: "A cookbook you print or export yourself", us: "$19.99 a cookbook", them: "PDF download" },
+            { feature: "A cookbook you print or export yourself", us: "10-recipe preview free; $19.99 to download or add more", them: "PDF download" },
             { feature: "Spiral or hardcover layout", us: "Letter spiral, 8 by 10 hardcover", them: "Coil, saddle stitch, perfect bound, hardcover" },
             { feature: "Updating the cookbook you paid for", us: "Free, any time", them: false },
           ],
@@ -3179,7 +3179,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does each one cost?",
         answer:
-          "ReciScan is free to use, with a $4.99 monthly subscription for covers and extras, and printed books starting at $18. RecipePrinter is free to print full-page recipes, with no account. The recipe-card format — every theme, 4x6 cards, and the card toolkit — is RecipePrinter Pro: $4.99 a month or $39.99 a year. A cookbook is separate: $19.99 for each one you build, paid once.",
+          "ReciScan is free to use, with a $4.99 monthly subscription for covers and extras, and printed books starting at $18. RecipePrinter is free to print full-page recipes, with no account. The recipe-card format — every theme, 4x6 cards, and the card toolkit — is RecipePrinter Pro: $4.99 a month or $39.99 a year. A cookbook is separate: preview up to 10 recipes free, then pay $19.99 once to download it or add more recipes.",
       },
       {
         question: "Can RecipePrinter send me a printed cookbook?",
