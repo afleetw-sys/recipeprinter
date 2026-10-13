@@ -102,7 +102,6 @@ export function useProPurchase({
 
       if (result.cancelled) {
         track("purchase_cancelled", { product: "pro", cycle, customerId: revenueCatUserId });
-        showToast("Checkout cancelled. Your recipe is still here.");
         onSettled("cancelled");
         return;
       }

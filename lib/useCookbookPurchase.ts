@@ -197,7 +197,6 @@ export function useCookbookPurchase({
           customerId: revenueCatUserId,
           ...(usingDiscount ? { discount: "pro_first" as const } : {}),
         });
-        showToast("Purchase cancelled. Your cookbook is still here when you're ready.");
         return;
       }
 
