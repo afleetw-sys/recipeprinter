@@ -10534,7 +10534,11 @@ textarea.recipe-card__toc-title {
    step at a time. That needs the steps' lists to be plain blocks rather than
    flex columns (a flex box beside a float narrows for its whole height), so
    they take margins for the gap they had. Its own right margin reaches past
-   the card's padding to the card's edge, where the artist drew it. */
+   the card's padding to the card's edge, where the artist drew it.
+
+   It holds up the photo, so it belongs to whichever section starts under it:
+   the steps when they are the right-hand column, the ingredients when they
+   run full width above the steps (stacked) or have the face to themselves. */
 .recipe-template--halloween {
   --recipe-bg: #e4dac5;
   --recipe-ink: #1f1b16;
@@ -10613,7 +10617,8 @@ textarea.recipe-card__toc-title {
   display: block;
 }
 
-.recipe-template--halloween .recipe-card__method::before {
+.recipe-template--halloween .recipe-card__cols:not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only) .recipe-card__method::before,
+.recipe-template--halloween :is(.recipe-card__cols--stacked, .recipe-card__cols--ingredients-only) .recipe-card__ingredients::before {
   content: "";
   float: right;
   width: calc(376 * var(--halloween-u));
@@ -10634,6 +10639,23 @@ textarea.recipe-card__toc-title {
 .recipe-template--halloween .recipe-card__method .recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe),
 .recipe-template--halloween .recipe-card__method ol {
   display: block;
+}
+
+.recipe-template--halloween :is(.recipe-card__cols--stacked, .recipe-card__cols--ingredients-only) .recipe-card__ingredients .recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe),
+.recipe-template--halloween :is(.recipe-card__cols--stacked, .recipe-card__cols--ingredients-only) .recipe-card__ingredients ul {
+  display: block;
+}
+
+.recipe-template--halloween :is(.recipe-card__cols--stacked, .recipe-card__cols--ingredients-only) .recipe-card__ingredients .recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe) > * + * {
+  margin-top: calc(var(--recipe-card-step-gap) * 0.3);
+}
+
+.recipe-print-preview--letter .recipe-template--halloween :is(.recipe-card__cols--stacked, .recipe-card__cols--ingredients-only) .recipe-card__ingredients .recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe) > * + * {
+  margin-top: calc(var(--recipe-card-step-gap) * 1.5);
+}
+
+.recipe-template--halloween :is(.recipe-card__cols--stacked, .recipe-card__cols--ingredients-only) .recipe-card__ingredients li + li {
+  margin-top: var(--recipe-card-ingredient-gap);
 }
 
 .recipe-template--halloween .recipe-card__method .recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe) > * + * {
