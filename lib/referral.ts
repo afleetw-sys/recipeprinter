@@ -168,6 +168,22 @@ export function daysRemaining(summary: Pick<ReferralSummary, "lifetimeDaysEarned
   return Math.max(0, summary.lifetimeCapDays - summary.lifetimeDaysEarned);
 }
 
+// ---- What the inviter already has (for the invite's wording) ----------------
+
+/**
+ * `paid`: a renewing subscription, so a reward moves their next payment later.
+ * `pro`: Pro with nothing renewing (referral days, a bought month), so a
+ * reward adds days. `free`: a reward is Pro they don't have yet.
+ */
+export type InviterPlan = "free" | "pro" | "paid";
+
+const RENEWING_PRO_PRODUCTS = new Set(["pro_monthly", "pro_annual"]);
+
+export function inviterPlan(input: { hasPro: boolean; productIdentifier?: string | null }): InviterPlan {
+  if (!input.hasPro) return "free";
+  return input.productIdentifier && RENEWING_PRO_PRODUCTS.has(input.productIdentifier) ? "paid" : "pro";
+}
+
 // ---- Membership, for analytics ----------------------------------------------
 
 export type MembershipStatus = "free" | "referral_pro" | "paid_pro";

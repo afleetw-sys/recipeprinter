@@ -72,7 +72,11 @@ export function ReferralCard() {
       <p className="mt-1 text-cp-body text-ink-soft">
         {atCap
           ? `You've earned the most Pro days you can from invites. Friends still get their ${summary.rewardDays}.`
-          : `Give a friend ${summary.rewardDays} days of Pro. When they sign up, you get ${summary.rewardDays} days too.`}
+          : summary.proPaid
+            ? `Give a friend ${summary.rewardDays} days of Pro. When they sign up, your next payment moves ${summary.rewardDays} days later.`
+            : summary.proActive
+              ? `Give a friend ${summary.rewardDays} days of Pro. When they sign up, ${summary.rewardDays} more days are added to yours.`
+              : `Give a friend ${summary.rewardDays} days of Pro. When they sign up, you get ${summary.rewardDays} days too.`}
       </p>
 
       <div className="mt-cp-4 flex flex-col gap-cp-2 sm:flex-row">

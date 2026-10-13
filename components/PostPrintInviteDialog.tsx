@@ -6,7 +6,7 @@ import { Dialog } from "@/components/Dialog";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { ProThemeStack } from "@/components/ProThemeStack";
 import { track } from "@/lib/analytics";
-import { inviteShareText, inviteUrl, loadReferralSummary } from "@/lib/referral";
+import { inviteShareText, inviteUrl, loadReferralSummary, type InviterPlan } from "@/lib/referral";
 import { shareLink } from "@/lib/shareLink";
 
 /**
@@ -23,11 +23,14 @@ export function PostPrintInviteDialog({
   open,
   signedIn,
   rewardDays,
+  plan,
   onClose,
 }: {
   open: boolean;
   signedIn: boolean;
   rewardDays: number;
+  /** What they have already: a Pro member isn't offered Pro, they're told what a friend adds. */
+  plan: InviterPlan;
   onClose: () => void;
 }) {
   const [signingIn, setSigningIn] = useState(false);
@@ -95,7 +98,11 @@ export function PostPrintInviteDialog({
           Invite a friend. You both get {rewardDays} days of Pro.
         </h2>
         <p className="mt-cp-2 text-cp-body text-ink-soft">
-          Unlock premium templates, 4×6 cards, and multi-recipe printing for free when your friend joins.
+          {plan === "paid"
+            ? `Your friend gets premium templates, 4×6 cards, and multi-recipe printing, and your next payment moves ${rewardDays} days later.`
+            : plan === "pro"
+              ? `Your friend gets premium templates, 4×6 cards, and multi-recipe printing, and ${rewardDays} more days are added to your Pro.`
+              : "Unlock premium templates, 4×6 cards, and multi-recipe printing for free when your friend joins."}
         </p>
       </div>
       <div className="mt-cp-2 flex flex-col gap-cp-2">

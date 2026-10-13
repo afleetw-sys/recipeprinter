@@ -221,6 +221,7 @@ import {
   cachedReferralSummary,
   setReferralSurface,
   capReached,
+  inviterPlan,
   markPostPrintInviteShown,
   postPrintInviteShown,
   shouldShowPostPrintInvite,
@@ -6925,6 +6926,10 @@ export default function PrintPage() {
         open={showReferralInvite}
         signedIn={Boolean(cookPilotUser)}
         rewardDays={cachedReferralSummary()?.rewardDays ?? 3}
+        plan={inviterPlan({
+          hasPro: hasProEntitlement(effectiveCustomerInfo.customerInfo),
+          productIdentifier: effectiveCustomerInfo.customerInfo?.entitlements.active.pro?.productIdentifier,
+        })}
         onClose={() => setShowReferralInvite(false)}
       />
       <PrintDialogs
