@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { ReferralCard } from "@/components/ReferralCard";
+import { DEFAULT_REWARD_DAYS } from "@/lib/referral";
 import { GiftIcon, ICON_SIZE, SpinnerIcon } from "@/components/icons";
 
 /**
@@ -36,21 +37,35 @@ export default function InvitesPage() {
         ) : (
           <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-4 py-cp-5 text-center sm:px-cp-6 sm:py-cp-7">
             <GiftIcon size={32} className="text-ink-soft" />
-            <h2 className="mt-cp-4 text-cp-h2 font-extrabold tracking-[-0.02em]">Give Pro. Get Pro.</h2>
+            {/* The same words as the invite after printing (PostPrintInviteDialog). */}
+            <h2 className="mt-cp-4 text-cp-h2 font-extrabold tracking-[-0.02em]">
+              Invite a friend. You both get {DEFAULT_REWARD_DAYS} days of Pro.
+            </h2>
             <p className="mt-cp-2 max-w-sm text-cp-body text-ink-soft leading-relaxed">
-              Invite a friend to RecipePrinter and you&rsquo;ll both get free days of Pro when they join. Sign in to
-              get your own link to share.
+              Unlock premium templates, 4×6 cards, and multi-recipe printing for free when your friend joins.
             </p>
             <button type="button" className="btn btn-primary mt-cp-5" onClick={() => setShowLogin(true)}>
-              Sign in to get your link
+              Get my referral link
             </button>
+            <p className="mt-cp-2 text-cp-caption text-ink-soft">
+              You&rsquo;ll need to sign in to get your link and earn rewards.
+            </p>
           </div>
         )}
       </main>
 
       <SiteFooter />
 
-      {showLogin && !user && <CookPilotLoginDialog onClose={() => setShowLogin(false)} onAuthenticated={() => setShowLogin(false)} />}
+      {showLogin && !user && (
+        <CookPilotLoginDialog
+          intro={{
+            title: "Create an account or sign in",
+            body: "You\u2019ll need to sign in to get your link and earn rewards.",
+          }}
+          onClose={() => setShowLogin(false)}
+          onAuthenticated={() => setShowLogin(false)}
+        />
+      )}
     </div>
   );
 }

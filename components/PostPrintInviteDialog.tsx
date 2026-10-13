@@ -66,6 +66,11 @@ export function PostPrintInviteDialog({
   if (signingIn) {
     return (
       <CookPilotLoginDialog
+        // Says why, in the same words as the note under "Get my referral link".
+        intro={{
+          title: "Create an account or sign in",
+          body: "You\u2019ll need to sign in to get your link and earn rewards.",
+        }}
         onClose={() => setSigningIn(false)}
         onAuthenticated={() => setSigningIn(false)}
       />

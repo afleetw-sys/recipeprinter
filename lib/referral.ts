@@ -19,6 +19,12 @@ import { localStore } from "@/lib/storage";
 export const REFERRAL_CALLABLE = "recipePrinterReferral";
 
 /**
+ * The reward to quote before an account exists to ask the server (signed-out
+ * copy). CookPilot's config is the real number; keep this in step with it.
+ */
+export const DEFAULT_REWARD_DAYS = 3;
+
+/**
  * The app's own switch for everything a person sees of the program before
  * they've been invited: the after-print invite, the session status read that
  * finds rewards and expiry. Off until launch, like `IMPORT_ALLOWANCE_LIVE`;

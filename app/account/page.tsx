@@ -6,7 +6,6 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { AccountPersonalDetails } from "@/components/AccountPersonalDetails";
 import { AccountProStatus } from "@/components/AccountProStatus";
-import { InvitesSettingsRow } from "@/components/InvitesSettingsRow";
 import { FreePlanCards } from "@/components/FreePlanCards";
 import { AccountIcon, ICON_SIZE, SpinnerIcon } from "@/components/icons";
 
@@ -60,7 +59,6 @@ export default function AccountPage() {
           <>
             <AccountPersonalDetails user={user} />
             <AccountProStatus user={user} />
-            <InvitesSettingsRow />
           </>
         ) : (
           /* Nothing here belongs to a signed-out visitor — no name, no email,
@@ -87,7 +85,6 @@ export default function AccountPage() {
             <h2 className="border-b border-line pb-cp-3 text-cp-h2 font-extrabold text-ink sm:border-b-0 sm:pb-0">Plan</h2>
             <FreePlanCards onUpgrade={() => setLogin("upgrade")} />
           </section>
-          <InvitesSettingsRow />
           </>
         )}
       </main>
