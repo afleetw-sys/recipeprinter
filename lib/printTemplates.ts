@@ -71,13 +71,13 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
     id: "fall",
     label: "Fall",
     detail: "Cream stock, falling leaves and a pile of pumpkins",
-    featured: { from: "11-01", to: "12-01" },
+    featured: { from: "09-01", to: "12-01" },
   },
   {
     id: "halloween",
     label: "Halloween",
     detail: "Parchment stock, a reaching hand and a jack-o'-lantern by a headstone",
-    featured: { from: "09-15", to: "10-31" },
+    featured: { from: "09-15", to: "11-03" },
   },
   {
     id: "christmas",
