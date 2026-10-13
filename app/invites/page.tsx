@@ -47,9 +47,6 @@ export default function InvitesPage() {
             <button type="button" className="btn btn-primary mt-cp-5" onClick={() => setShowLogin(true)}>
               Get my referral link
             </button>
-            <p className="mt-cp-2 text-cp-caption text-ink-soft">
-              You&rsquo;ll need to sign in to get your link and earn rewards.
-            </p>
           </div>
         )}
       </main>

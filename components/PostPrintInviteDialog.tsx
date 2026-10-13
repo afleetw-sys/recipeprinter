@@ -123,9 +123,6 @@ export function PostPrintInviteDialog({
             onFocus={(event) => event.currentTarget.select()}
           />
         )}
-        {!signedIn && (
-          <p className="text-cp-caption text-ink-soft">You&rsquo;ll need to sign in to get your link and earn rewards.</p>
-        )}
       </div>
     </Dialog>
   );
