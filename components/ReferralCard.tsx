@@ -23,9 +23,9 @@ import { copyLink } from "@/lib/shareLink";
  */
 function rewardLine(summary: ReferralSummary): string {
   const days = summary.rewardDays;
-  if (summary.proPaid) return `Every friend who joins pushes your next Pro payment back ${days} days.`;
-  if (summary.proActive) return `Every friend who joins adds ${days} days to your Pro.`;
-  return `Every friend who joins earns you ${days} days of Pro.`;
+  if (summary.proPaid) return `Every friend who signs up through your link pushes your next Pro payment back ${days} days.`;
+  if (summary.proActive) return `Every friend who signs up through your link adds ${days} days to your Pro.`;
+  return `Every friend who signs up through your link earns you ${days} days of Pro.`;
 }
 
 export function ReferralCard() {
