@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import {
   RECIPE_PRINT_TEMPLATE_OPTIONS,
@@ -8,7 +8,7 @@ import {
 } from "@/components/RecipeCardPrint";
 import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
 import { ProBadge } from "@/components/ProBadge";
-import { ChevronDownIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
+import { CrownIcon, ICON_SIZE } from "@/components/icons";
 import { arrangeThemes, isFeatured } from "@/lib/seasonalThemes";
 import { isPremiumTemplate } from "@/lib/premiumTemplates";
 import { hasTemplateOrProEntitlement } from "@/lib/recipePrinterPurchases";
@@ -35,10 +35,8 @@ interface ThemePickerProps {
  * The price/paywall only ever appears at print time (the Print button), never
  * here.
  *
- * Seasonal themes (see lib/seasonalThemes) lead the Pro themes while in
- * season, tagged "Featured" beside the crown. Out of season they sit in a collapsed "Seasonal themes" group at the
- * end, still one tap away for a year-round cookbook; it opens on its own when
- * the chosen theme is one of them, so the current theme never looks missing.
+ * Every theme is always here. A seasonal theme (see lib/seasonalThemes) leads
+ * the Pro themes during its featured dates, tagged "Featured" beside the crown.
  */
 export function ThemePicker({
   cookbookMode,
@@ -49,30 +47,11 @@ export function ThemePicker({
   setMobileDrawer,
 }: ThemePickerProps) {
   const today = new Date();
-  const { main, offSeason } = arrangeThemes(
+  const themes = arrangeThemes(
     RECIPE_PRINT_TEMPLATE_OPTIONS,
     (option) => isPremiumTemplate(option.id),
     today,
   );
-  const currentIsOffSeason = offSeason.some((option) => option.id === template);
-  const [seasonalOpen, setSeasonalOpen] = useState(currentIsOffSeason);
-  const showSeasonal = seasonalOpen || currentIsOffSeason;
-
-  // Opening the seasonal list adds themes below the fold of the settings
-  // panel, so the click looked like it did nothing. Bring the toggle to the top
-  // of whatever is scrolling (the panel, or the phone drawer) so the themes it
-  // just revealed sit right under it. Only for a click, never on load.
-  const seasonalToggleRef = useRef<HTMLButtonElement>(null);
-  const revealSeasonalRef = useRef(false);
-  useEffect(() => {
-    if (!showSeasonal || !revealSeasonalRef.current) return;
-    revealSeasonalRef.current = false;
-    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    seasonalToggleRef.current?.scrollIntoView({
-      block: "start",
-      behavior: reduceMotion ? "auto" : "smooth",
-    });
-  }, [showSeasonal]);
 
   function renderOption(option: (typeof RECIPE_PRINT_TEMPLATE_OPTIONS)[number]) {
     const premiumTemplate = isPremiumTemplate(option.id) ? option.id : null;
@@ -82,8 +61,8 @@ export function ThemePicker({
       premiumTemplate !== null &&
       !hasTemplateOrProEntitlement(customerInfo, option.id) &&
       !cookbookMode;
-    // In season, a seasonal theme leads the Pro themes; the tag says why it's
-    // up there.
+    // During its featured dates, a seasonal theme leads the Pro themes; the
+    // tag says why it's up there.
     const featured = isFeatured(option, today);
 
     // A real card renders <div>s, which aren't valid inside a
@@ -144,30 +123,7 @@ export function ThemePicker({
   return (
     <div className="recipe-config-section recipe-config-section--template">
       <h3 className="recipe-config-label">Themes</h3>
-      <div className="recipe-template-list">{main.map(renderOption)}</div>
-      {offSeason.length > 0 && (
-        <>
-          <button
-            type="button"
-            ref={seasonalToggleRef}
-            className="recipe-template-seasonal-toggle"
-            aria-expanded={showSeasonal}
-            aria-controls="recipe-template-seasonal"
-            onClick={() => {
-              revealSeasonalRef.current = !showSeasonal;
-              setSeasonalOpen(!showSeasonal);
-            }}
-          >
-            Seasonal themes
-            <ChevronDownIcon size={ICON_SIZE.sm} />
-          </button>
-          {showSeasonal && (
-            <div id="recipe-template-seasonal" className="recipe-template-list">
-              {offSeason.map(renderOption)}
-            </div>
-          )}
-        </>
-      )}
+      <div className="recipe-template-list">{themes.map(renderOption)}</div>
     </div>
   );
 }

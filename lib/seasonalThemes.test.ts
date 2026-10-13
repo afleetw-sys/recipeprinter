@@ -30,20 +30,20 @@ describe("arrangeThemes", () => {
     { id: "classic" },
     { id: "pantry" },
     { id: "typewriter", pro: true },
-    { id: "christmas", pro: true, season: { from: "11-01", to: "12-31" } },
+    { id: "christmas", pro: true, featured: { from: "11-01", to: "12-31" } },
     { id: "bistro", pro: true },
   ];
   const isPremium = (theme: { pro?: boolean }) => Boolean(theme.pro);
 
-  it("features an in-season theme at the top of the Pro themes", () => {
-    const { main, offSeason } = arrangeThemes(themes, isPremium, day(12, 1));
-    expect(main.map((t) => t.id)).toEqual(["classic", "pantry", "christmas", "typewriter", "bistro"]);
-    expect(offSeason).toEqual([]);
+  it("features a theme at the top of the Pro themes during its dates", () => {
+    expect(arrangeThemes(themes, isPremium, day(12, 1)).map((t) => t.id)).toEqual([
+      "classic", "pantry", "christmas", "typewriter", "bistro",
+    ]);
   });
 
-  it("moves an out-of-season theme out of the main grid", () => {
-    const { main, offSeason } = arrangeThemes(themes, isPremium, day(7, 1));
-    expect(main.map((t) => t.id)).toEqual(["classic", "pantry", "typewriter", "bistro"]);
-    expect(offSeason.map((t) => t.id)).toEqual(["christmas"]);
+  it("keeps a theme in its listed place outside its dates", () => {
+    expect(arrangeThemes(themes, isPremium, day(7, 1)).map((t) => t.id)).toEqual([
+      "classic", "pantry", "typewriter", "christmas", "bistro",
+    ]);
   });
 });
