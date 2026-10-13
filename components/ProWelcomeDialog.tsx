@@ -27,19 +27,21 @@ function copyFor(welcome: ProWelcome): { title: string; body: string } {
       title: `You're on Pro for ${welcome.days} days`,
       body: `A friend shared RecipePrinter with you, so you both get ${welcome.days} days of Pro. Every theme and card size is yours to try.`,
     };
-  case "referral_earned":
-    return welcome.fulfillment === "extension"
-      ? {
-        title: `${welcome.days} more days of Pro`,
+  case "referral_earned": {
+    const who = (welcome.friends ?? 1) > 1 ? `${welcome.friends} friends` : "A friend";
+    if (welcome.fulfillment === "extension") {
+      return {
+        title: "Your Pro just got longer",
         body: welcome.renewsAtMs
-          ? `Your invites earned these, so your next Pro bill is now on ${formatRenewal(welcome.renewsAtMs)}. Thanks for sharing.`
-          : `Your invites earned these, so your next Pro bill moves ${welcome.days} days later. Thanks for sharing.`,
-      }
-      : {
-        title: `${welcome.days} more days of Pro`,
-        // One friend or several: banked days arrive together on the next visit.
-        body: "Your invites earned these, and they start now. Thanks for sharing RecipePrinter.",
+          ? `${who} signed up with your link, so your next Pro bill is now on ${formatRenewal(welcome.renewsAtMs)}.`
+          : `${who} signed up with your link, so your next Pro bill moves ${welcome.days} days later.`,
       };
+    }
+    return {
+      title: "Your Pro starts now",
+      body: `${who} signed up with your link, so you have ${welcome.days} days of Pro, starting today.`,
+    };
+  }
   }
 }
 

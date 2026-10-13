@@ -219,7 +219,6 @@ import { isIOSPrinter, isWebKitPrinter, printNeedsLiveGesture } from "@/lib/prin
 import { markPostPrintDialogShown, shouldShowPostPrintDialog } from "@/lib/postPrintDialog";
 import {
   REFERRALS_LIVE,
-  announceRecipePrinterUse,
   cachedReferralSummary,
   setReferralSurface,
   capReached,
@@ -2207,8 +2206,6 @@ export default function PrintPage() {
 
   function printNow() {
     printRequestedRef.current = true;
-    // Card printing is the use that starts a referrer's earned days.
-    if (!cookbookMode) announceRecipePrinterUse();
     // A cookbook has one way out, so only cards remember Print as the habit.
     if (!cookbookMode) choosePrintPrimary("print");
     // Name the exported PDF after what is in it. The browser seeds the
@@ -3541,7 +3538,6 @@ export default function PrintPage() {
     }
     const recipeCount = items.filter((item) => item.recipe).length;
     choosePrintPrimary(output);
-    if (!cookbookMode) announceRecipePrinterUse();
     setCardDownloadBusy(true);
     try {
       await downloadCards({
@@ -4616,7 +4612,6 @@ export default function PrintPage() {
         !(items ?? []).some((existing) => existing.id === item.id),
     );
     if (newlyReady.length === 0) return;
-    if (!cookbookMode) announceRecipePrinterUse();
     setJobIds((current) => [...(current ?? []), ...newlyReady.map((item) => item.id)]);
     if (pendingAddSectionId && sections.some((section) => section.id === pendingAddSectionId)) {
       const insertAt = pendingAddIndex ?? itemIdsForSection(pendingAddSectionId).length;

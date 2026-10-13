@@ -17,6 +17,8 @@ export type ProWelcome =
     fulfillment: "promo" | "extension";
     /** A subscriber's next renewal after the extension, as RevenueCat reports it. */
     renewsAtMs?: number | null;
+    /** How many friends signed up, for "A friend" or "2 friends". */
+    friends?: number;
   };
 
 const listeners = new Set<(welcome: ProWelcome) => void>();

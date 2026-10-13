@@ -54,7 +54,7 @@ createServer((req, res) => {
         activated.add(who.user_id);
         // A subscriber renewing Nov 1 gets Nov 7 (two friends, 3 days each).
         return send(res, 200, { result: { days, fulfillment: days ? (paid ? "extension" : "promo") : null, pending: 0,
-          renewsAtMs: paid && days ? Date.parse("2026-11-07T15:00:00Z") : null } });
+          renewsAtMs: paid && days ? Date.parse("2026-11-07T15:00:00Z") : null, friends: days / 3 } });
       }
       return send(res, 200, { result: data.op === "link" ? { ...s, code: s.code ?? "AB3CD4EF" } : s });
     }

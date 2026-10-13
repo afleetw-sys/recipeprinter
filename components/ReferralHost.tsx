@@ -9,7 +9,7 @@ import { announceProChanged, announceProWelcome, subscribeProWelcome, type ProWe
 import {
   INVITE_COOKIE,
   REFERRALS_LIVE,
-  RECIPE_PRINTER_USE_EVENT,
+  REFERRAL_SURFACE_EVENT,
   activateBankedRewards,
   readyToActivate,
   referralSurface,
@@ -149,7 +149,13 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
             announceProWelcome(
               grant.role === "welcome"
                 ? { kind: "referral_welcome", days: grant.days }
-                : { kind: "referral_earned", days: grant.days, fulfillment: grant.fulfillment, renewsAtMs: grant.renewsAtMs },
+                : {
+                  kind: "referral_earned",
+                  days: grant.days,
+                  fulfillment: grant.fulfillment,
+                  renewsAtMs: grant.renewsAtMs,
+                  friends: Math.max(1, Math.round(grant.days / Math.max(1, loaded.rewardDays))),
+                },
             );
             return;
           }
@@ -177,17 +183,16 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
     };
   }, [ready, uid]);
 
-  // Banked days start on real use of the card printer (lib/referral
-  // `readyToActivate`): a print, a download or a card import in a tab that's
-  // showing. Never from a click elsewhere, navigation, or the Cookbook Builder.
+  // A friend signed up while they were away: their days start now, on this
+  // visit, by themselves. Only in a tab that's showing, and not inside the
+  // Cookbook Builder (they wait for the next card-printer page there).
   useEffect(() => {
     if (!uid || bankedDays <= 0) return;
     let done = false;
-    const onUse = () => {
+    const tryNow = () => {
       if (done) return;
       if (!readyToActivate({
         bankedDays,
-        trigger: "card_use",
         visible: document.visibilityState === "visible",
         surface: referralSurface(),
       })) return;
@@ -202,13 +207,19 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
             days: result.days,
             fulfillment: result.fulfillment,
             renewsAtMs: result.renewsAtMs,
+            friends: result.friends,
           });
         })
-        // Nothing earned is lost: the server keeps it for next time.
+        // Nothing earned is lost: the server keeps it, and the next visit tries again.
         .catch((error) => console.warn("RecipePrinter: could not start earned Pro days", error));
     };
-    window.addEventListener(RECIPE_PRINTER_USE_EVENT, onUse);
-    return () => window.removeEventListener(RECIPE_PRINTER_USE_EVENT, onUse);
+    tryNow();
+    document.addEventListener("visibilitychange", tryNow);
+    window.addEventListener(REFERRAL_SURFACE_EVENT, tryNow);
+    return () => {
+      document.removeEventListener("visibilitychange", tryNow);
+      window.removeEventListener(REFERRAL_SURFACE_EVENT, tryNow);
+    };
   }, [uid, bankedDays]);
 
   return (

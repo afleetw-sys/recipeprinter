@@ -110,15 +110,14 @@ describe("analytics facts", () => {
 });
 
 describe("starting a referrer's banked days", () => {
-  test("only on card-printer use in a tab that's showing, or when asked; never in the Cookbook Builder", () => {
-    const use = { bankedDays: 6, trigger: "card_use" as const, visible: true, surface: "cards" as const };
-    expect(readyToActivate(use)).toBe(true);
-    expect(readyToActivate({ ...use, bankedDays: 0 })).toBe(false);
-    expect(readyToActivate({ ...use, visible: false })).toBe(false);
-    expect(readyToActivate({ ...use, surface: "cookbook" })).toBe(false);
-    // "Start them now" on Invites is the person asking, wherever they are.
-    expect(readyToActivate({ ...use, trigger: "explicit", visible: false, surface: "cookbook" })).toBe(true);
-    expect(readyToActivate({ ...use, trigger: "explicit", bankedDays: 0 })).toBe(false);
+  test("by themselves on the next visit, in a tab that's showing, never inside the Cookbook Builder", () => {
+    const visit = { bankedDays: 6, visible: true, surface: "cards" as const };
+    expect(readyToActivate(visit)).toBe(true);
+    // Any RecipePrinter page that isn't the Cookbook Builder counts (the homepage has no surface).
+    expect(readyToActivate({ ...visit, surface: null })).toBe(true);
+    expect(readyToActivate({ ...visit, bankedDays: 0 })).toBe(false);
+    expect(readyToActivate({ ...visit, visible: false })).toBe(false);
+    expect(readyToActivate({ ...visit, surface: "cookbook" })).toBe(false);
   });
 });
 

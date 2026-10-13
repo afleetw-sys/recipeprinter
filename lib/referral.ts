@@ -302,6 +302,8 @@ export interface ActivationResult {
   pending: number;
   /** A subscriber's next renewal after the extension, from RevenueCat. */
   renewsAtMs: number | null;
+  /** How many friends' rewards started. */
+  friends: number;
 }
 
 // ---- When banked days start --------------------------------------------------
@@ -309,39 +311,30 @@ export interface ActivationResult {
 /**
  * Where the person is: the card printer, or the Cookbook Builder. Set by
  * /print. For the first launch the program belongs to the card printer, so
- * nothing referral-related is offered, or started, while building a cookbook.
+ * nothing referral-related is offered, or started, inside the Cookbook Builder.
  */
 export type ReferralSurface = "cards" | "cookbook";
+export const REFERRAL_SURFACE_EVENT = "recipeprinter:referral-surface";
 let surface: ReferralSurface | null = null;
 export function setReferralSurface(next: ReferralSurface | null): void {
   surface = next;
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(REFERRAL_SURFACE_EVENT));
 }
 export function referralSurface(): ReferralSurface | null {
   return surface;
 }
 
-/** Real use of the card printer: a print, a download, a recipe imported as a card. */
-export const RECIPE_PRINTER_USE_EVENT = "recipeprinter:recipe-printer-use";
-export function announceRecipePrinterUse(): void {
-  if (typeof window === "undefined" || surface === "cookbook") return;
-  window.dispatchEvent(new Event(RECIPE_PRINTER_USE_EVENT));
-}
-
 /**
- * A referrer's banked days start when they use the card printer (print,
- * download, or import a card) in a tab they're looking at, or when they ask
- * for it ("Start them now" on Invites). Never from browsing, a click elsewhere,
- * the Cookbook Builder, or a session nobody is using.
+ * A referrer's banked days start by themselves the next time they come to
+ * RecipePrinter: in a tab that's showing, anywhere but the Cookbook Builder
+ * (there they wait for the next card-printer page). There is no button for it.
  */
 export function readyToActivate(input: {
   bankedDays: number;
-  trigger: "card_use" | "explicit";
   visible: boolean;
   surface: ReferralSurface | null;
 }): boolean {
-  if (input.bankedDays <= 0) return false;
-  if (input.trigger === "explicit") return true;
-  return input.visible && input.surface !== "cookbook";
+  return input.bankedDays > 0 && input.visible && input.surface !== "cookbook";
 }
 
 export async function activateBankedRewards(): Promise<ActivationResult> {
