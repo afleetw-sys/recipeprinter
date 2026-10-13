@@ -5,9 +5,11 @@ import {
   DEFAULT_RECIPE_HEADINGS,
   recipeCardWords,
   recipeHeading,
+  recipeTextDirection,
   type RecipeHeadingKind,
 } from "@/lib/recipeHeadings";
 import {
+  Fragment,
   memo,
   useMemo,
   useRef,
@@ -840,6 +842,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             {canEdit && inlineEdit ? (
               <input
                 className="recipe-card__inline-input recipe-card__fact-value"
+                dir="auto"
                 value={
                   sameTarget(inlineEdit.editingTarget, { kind: "cookTime" })
                     ? inlineEdit.value
@@ -868,6 +871,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             {canEdit && inlineEdit ? (
               <input
                 className="recipe-card__inline-input recipe-card__fact-value"
+                dir="auto"
                 value={
                   sameTarget(inlineEdit.editingTarget, { kind: "servings" })
                     ? inlineEdit.value
@@ -1287,8 +1291,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       data-in-book={cookbookMode ? "true" : undefined}
       /* The recipe's own language, when CookPilot was sure of it, so screen
          readers voice it and the browser picks the right glyphs and
-         hyphenation. The card's own words follow it too: see `cardWords`. */
+         hyphenation. The card's own words follow it too: see `cardWords`.
+         A right-to-left recipe mirrors the card's text and columns; theme art
+         stays put (see "Right-to-left recipes" in app/print/print.css). */
       lang={recipe.language}
+      dir={recipeTextDirection(recipe.language)}
     >
       <div className="recipe-card__accent" aria-hidden />
       <TemplateDecoration
@@ -1353,6 +1360,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 {(showEmpty || metaTime) && (
                   <input
                     className="recipe-card__inline-input recipe-card__inline-input--meta"
+                    dir="auto"
                     value={
                       sameTarget(inlineEdit.editingTarget, { kind: "cookTime" })
                         ? inlineEdit.value
@@ -1377,6 +1385,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 {(showEmpty || metaServes) && (
                   <input
                     className="recipe-card__inline-input recipe-card__inline-input--meta"
+                    dir="auto"
                     value={
                       sameTarget(inlineEdit.editingTarget, { kind: "servings" })
                         ? inlineEdit.value
@@ -1399,7 +1408,18 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 )}
               </p>
             ) : (
-              meta.length > 0 && <p className="recipe-card__meta">{meta.join("  ·  ")}</p>
+              // Each bit isolated, so "35 min" stays "35 min" on a right-to-left
+              // card and only the order of the bits mirrors.
+              meta.length > 0 && (
+                <p className="recipe-card__meta">
+                  {meta.map((bit, index) => (
+                    <Fragment key={bit}>
+                      {index > 0 && "  ·  "}
+                      <bdi>{bit}</bdi>
+                    </Fragment>
+                  ))}
+                </p>
+              )
             )}
             {/* Cookbook mode: the source link lives here, right under the meta
                 line, instead of in the footer where it competes with the page
@@ -1411,6 +1431,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
               canEdit && inlineEdit && (showEmpty || recipe.sourceUrl) ? (
                 <input
                   className="recipe-card__inline-input recipe-card__source-line"
+                  dir="auto"
                   value={
                     sameTarget(inlineEdit.editingTarget, { kind: "sourceUrl" })
                       ? inlineEdit.value
@@ -1557,11 +1578,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 // duplex is the recipe-card path only), so "on back" sent the
                 // cook looking at the wrong side of the page.
                 <span className="recipe-card__continued-inline" lang={cardWords.lang}>
-                  {` (${cookbookMode ? cardWords.nextPage : cardWords.onBack})`}
+                  {cardWords.note(cookbookMode ? cardWords.nextPage : cardWords.onBack)}
                 </span>
               ) : (side === "back" || continued) && stepsBeganEarlier ? (
                 <span className="recipe-card__continued-inline" lang={cardWords.lang}>
-                  {` (${cardWords.continued})`}
+                  {cardWords.note(cardWords.continued)}
                 </span>
               ) : (
                 ""
@@ -1666,6 +1687,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             canEdit && inlineEdit && (showEmpty || recipe.sourceUrl) ? (
               <input
                 className="recipe-card__inline-input recipe-card__footer-source"
+                dir="auto"
                 value={
                   sameTarget(inlineEdit.editingTarget, { kind: "sourceUrl" })
                     ? inlineEdit.value

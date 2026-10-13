@@ -7928,7 +7928,7 @@ textarea.recipe-card__toc-title {
 
 .recipe-card__ingredients li {
   position: relative;
-  padding-left: 9pt;
+  padding-inline-start: 9pt;
   font-size: var(--recipe-card-body-size);
   line-height: 1.22;
 }
@@ -7936,7 +7936,7 @@ textarea.recipe-card__toc-title {
 .recipe-card__ingredients li::before {
   content: "";
   position: absolute;
-  left: 0;
+  inset-inline-start: 0;
   top: 4pt;
   width: 3pt;
   height: 3pt;
@@ -7988,7 +7988,7 @@ textarea.recipe-card__toc-title {
    hovered or focused, making touch insertion a deliberate two-step action. */
 .recipe-card__add-line {
   position: absolute;
-  right: 0;
+  inset-inline-end: 0;
   bottom: -10px;
   z-index: 5;
   display: inline-flex;
@@ -8360,6 +8360,29 @@ textarea.recipe-card__toc-title {
 .recipe-print-preview[data-double-sided="true"] .recipe-card--back .recipe-card__ingredients,
 .recipe-print-preview[data-double-sided="true"] .recipe-card--back .recipe-card__method {
   direction: ltr;
+}
+
+/* ── Right-to-left recipes (Hebrew, Arabic, Persian, Urdu).
+   The card carries `dir="rtl"` (lib/recipeHeadings `recipeTextDirection`), so
+   its text, header and columns mirror on their own: ingredients on the right,
+   the photo on the left, bullets and step numbers at each line's right. What
+   must NOT mirror is the theme art, and it doesn't: decorations are placed
+   with physical left/right, the gutters that clear them (Bistro, Pantry,
+   Quilt) are physical padding, and keep-out corners are measured from line
+   rects (lib/faceMeasure), wherever the columns land. The one exception is
+   Halloween's hand, which belongs to the steps column rather than the card,
+   and mirrors with it (see the Halloween theme).
+
+   The two-sided back swaps its columns with `direction` (above), and then
+   sets its columns' text back to left-to-right. Mirrored, that swap is the
+   other way round, and the text keeps the card's direction. */
+.recipe-print-preview[data-double-sided="true"] .recipe-card--back[dir="rtl"] .recipe-card__cols:not(.recipe-card__cols--single):not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only):not(.recipe-card__cols--method-only) {
+  direction: ltr;
+}
+
+.recipe-print-preview[data-double-sided="true"] .recipe-card--back[dir="rtl"] .recipe-card__ingredients,
+.recipe-print-preview[data-double-sided="true"] .recipe-card--back[dir="rtl"] .recipe-card__method {
+  direction: rtl;
 }
 
 .recipe-template--counter .recipe-card__step-number {
@@ -10602,6 +10625,22 @@ textarea.recipe-card__toc-title {
    the ingredients. */
 .recipe-print-preview[data-double-sided="true"] .recipe-template--halloween .recipe-card--back .recipe-card__cols:not(.recipe-card__cols--single):not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only):not(.recipe-card__cols--method-only) .recipe-card__method::before {
   margin-right: 0;
+}
+
+/* A right-to-left card mirrors that: the steps are its LEFT column, so the
+   hand reaches in from the card's left edge, drawn the other way round. A
+   two-sided back swaps the columns again, steps on the right, and the hand
+   is the left-to-right front's. */
+.recipe-template--halloween .recipe-card[dir="rtl"] .recipe-card__cols:not(.recipe-card__cols--single):not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only):not(.recipe-card__cols--method-only) .recipe-card__method::before {
+  float: left;
+  margin: 0 0.08in 0.06in calc(-1 * var(--recipe-card-padding-x));
+  transform: scaleX(-1);
+}
+
+.recipe-print-preview[data-double-sided="true"] .recipe-template--halloween .recipe-card--back[dir="rtl"] .recipe-card__cols:not(.recipe-card__cols--single):not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only):not(.recipe-card__cols--method-only) .recipe-card__method::before {
+  float: right;
+  margin: 0 calc(-1 * var(--recipe-card-padding-x)) 0.06in 0.08in;
+  transform: none;
 }
 
 .recipe-template--halloween .recipe-card__method .recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe),

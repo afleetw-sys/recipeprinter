@@ -110,15 +110,52 @@ function cardWordsRow(language: string | undefined): WordsRow | undefined {
   return CARD_WORDS[`${parts[0]}-${parts[1]}`] ?? CARD_WORDS[`${parts[0]}-${parts[2]}`] ?? CARD_WORDS[parts[0]];
 }
 
+// Chinese and Japanese set a note in full-width brackets with no space before
+// them: 作り方（続き）, not 作り方 (続き).
+const FULL_WIDTH_BRACKETS = new Set(["ja", "zh"]);
+
 /**
  * The card's own words for a recipe in `language`, and the `lang` they are
  * in: undefined when they match the recipe's, "en" when its language isn't
- * in the table and the card falls back to ours.
+ * in the table and the card falls back to ours. `note` brackets one of them
+ * the way that language does, ready to follow a heading.
  */
-export function recipeCardWords(language: string | undefined): RecipeCardWords & { lang?: "en" } {
+export function recipeCardWords(
+  language: string | undefined,
+): RecipeCardWords & { lang?: "en"; note: (text: string) => string } {
   const row = cardWordsRow(language);
   const [ingredientsHeading, stepsHeading, onBack, nextPage, continued] = row ?? ENGLISH;
-  return { ingredientsHeading, stepsHeading, onBack, nextPage, continued, ...(row ? {} : { lang: "en" }) };
+  const fullWidth = row !== undefined && FULL_WIDTH_BRACKETS.has(language?.toLowerCase().split("-")[0] ?? "");
+  return {
+    ingredientsHeading,
+    stepsHeading,
+    onBack,
+    nextPage,
+    continued,
+    note: fullWidth ? (text) => `（${text}）` : (text) => ` (${text})`,
+    ...(row ? {} : { lang: "en" }),
+  };
+}
+
+// Languages written right to left. A script subtag outranks the language
+// ("ku-Arab" is, "az-Latn" isn't), since several are written in both.
+const RTL_LANGUAGES = new Set(["ar", "arc", "ckb", "dv", "fa", "he", "iw", "ks", "ps", "sd", "ug", "ur", "yi"]);
+const RTL_SCRIPTS = new Set(["arab", "hebr", "syrc", "thaa", "nkoo", "adlm"]);
+const LTR_SCRIPTS = new Set(["latn", "cyrl"]);
+
+/**
+ * "rtl" for a recipe written right to left (Hebrew, Arabic, Persian, Urdu),
+ * which the card mirrors; undefined for everything else, which keeps the
+ * page's own left-to-right. Independent of the words table: an Urdu recipe is
+ * still mirrored when its headings fall back to English.
+ */
+export function recipeTextDirection(language: string | undefined): "rtl" | undefined {
+  if (!language) return undefined;
+  const [lang, ...rest] = language.toLowerCase().split("-");
+  const script = rest.find((part) => part.length === 4);
+  if (script && RTL_SCRIPTS.has(script)) return "rtl";
+  if (script && LTR_SCRIPTS.has(script)) return undefined;
+  return RTL_LANGUAGES.has(lang) ? "rtl" : undefined;
 }
 
 /** The heading a recipe in `language` prints when the cook hasn't renamed it. */
