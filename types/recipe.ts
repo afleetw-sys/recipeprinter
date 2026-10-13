@@ -89,6 +89,10 @@ export interface Recipe {
   image?: string;
   sourceUrl?: string;
   sourceName?: string;
+  /** The language the recipe is written in, as a BCP 47 tag ("de", "pt-BR").
+      CookPilot reports it only when it is sure, so absent means unknown, not
+      English. See `recipeLanguageTag` in lib/cookpilot.ts. */
+  language?: string;
 
   prepTime?: string;
   cookTime?: string;
