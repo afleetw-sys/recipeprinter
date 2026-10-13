@@ -3011,6 +3011,44 @@
   gap: 10px;
 }
 
+/* "Seasonal themes": opens the out-of-season group under the main grid (see
+   ThemePicker). Reads as the panel's own small uppercase labels, not a button
+   competing with the themes themselves. */
+.recipe-template-seasonal-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin: 14px 0 10px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.recipe-template-seasonal-toggle:hover {
+  color: var(--cp-ink);
+}
+
+.recipe-template-seasonal-toggle:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+  border-radius: 6px;
+}
+
+.recipe-template-seasonal-toggle svg {
+  transition: transform 150ms ease;
+}
+
+.recipe-template-seasonal-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
 .recipe-template-option {
   position: relative;
   display: block;
