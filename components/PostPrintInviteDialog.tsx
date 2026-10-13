@@ -11,7 +11,7 @@ import { shareLink } from "@/lib/shareLink";
 
 /**
  * After a print, once per browser (lib/referral `shouldShowPostPrintInvite`):
- * "Give 3 days. Get 3 days." It takes the place the "Leave feedback" dialog had
+ * "Give 3 days of Pro. Get 3 days of Pro." It takes the place the "Leave feedback" dialog had
  * after a print, once the program is live.
  *
  * Signed out, the button signs in first, since a link belongs to an account,
@@ -91,10 +91,11 @@ export function PostPrintInviteDialog({
       </div>
       <div>
         <h2 id="post-print-invite-title" className="text-cp-dialog-title font-extrabold tracking-tight">
-          Give {rewardDays} days. Get {rewardDays} days.
+          Give {rewardDays} days of Pro. Get {rewardDays} days of Pro.
         </h2>
         <p className="mt-cp-2 text-cp-body text-ink-soft">
-          Invite a friend to RecipePrinter and you&rsquo;ll both get {rewardDays} days of Pro when they join.
+          When a friend joins through your link, you both get every theme, 4×6 cards, and printing several
+          recipes at once, free for {rewardDays} days.
         </p>
       </div>
       <button
@@ -126,7 +127,7 @@ export function PostPrintInviteDialog({
           See your invites
         </Link>
       ) : (
-        <p className="text-cp-small text-ink-soft">Sign in is required to track your referrals and rewards.</p>
+        <p className="text-cp-caption text-ink-soft">Sign in is required to track your referrals and rewards.</p>
       )}
     </Dialog>
   );
