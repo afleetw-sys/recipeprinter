@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LinkIcon, ICON_SIZE } from "@/components/icons";
+import { CheckIcon, GiftIcon, LinkIcon, ICON_SIZE } from "@/components/icons";
 import { referralPromptsAllowed, track } from "@/lib/analytics";
 import {
   capReached,
-  daysRemaining,
   inviteShareText,
   inviteUrl,
   loadReferralSummary,
@@ -89,11 +88,16 @@ export function ReferralCard() {
     }
   }
 
-  // The lifetime cap in rewards (15 days of 3 is five), each filled once earned.
-  const segments = Math.max(1, Math.ceil(summary.lifetimeCapDays / summary.rewardDays));
-  const earned = Math.min(summary.lifetimeDaysEarned, summary.lifetimeCapDays);
-  const referralsLeft = Math.ceil(daysRemaining(summary) / summary.rewardDays);
+  // The lifetime cap, one tile per reward (15 days of 3 is five). Someone who
+  // joined through a friend's link already has their welcome in it, so it
+  // takes the first tile and the rest are friends.
+  const tiles = Math.max(1, Math.ceil(summary.lifetimeCapDays / summary.rewardDays));
+  const welcomeTiles = summary.referred ? 1 : 0;
+  const friendSlots = tiles - welcomeTiles;
   const friends = summary.successfulReferrals;
+  const friendsCounted = Math.min(friends, friendSlots);
+  const earned = Math.min(summary.lifetimeDaysEarned, summary.lifetimeCapDays);
+  const friendsLeft = Math.max(0, friendSlots - friendsCounted);
 
   return (
     <section className="mb-cp-7 max-w-[640px] rounded-xl border border-line bg-card p-cp-5">
@@ -130,31 +134,45 @@ export function ReferralCard() {
       )}
 
       <div className="mt-cp-5 border-t border-line pt-cp-4">
-        <h3 className="text-cp-small font-bold text-ink">Your rewards</h3>
-        <p className="mt-cp-1 text-cp-body text-ink">
-          {earned} of {summary.lifetimeCapDays} days earned
-        </p>
-        <div
-          className="mt-cp-2 flex gap-cp-1"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={summary.lifetimeCapDays}
-          aria-valuenow={earned}
-          aria-label="Pro days earned from invites"
-        >
-          {Array.from({ length: segments }, (_, i) => (
-            <span
-              key={i}
-              className={`h-2 flex-1 rounded-full ${
-                earned >= (i + 1) * summary.rewardDays ? "bg-[var(--cp-accent)]" : "bg-[var(--cp-line)]"
-              }`}
-            />
-          ))}
+        <div className="flex items-baseline justify-between gap-cp-3">
+          <h3 className="text-cp-body font-extrabold text-ink">Your referral rewards</h3>
+          <span className="text-cp-small text-ink-soft">
+            {friendsCounted} of {friendSlots} {friendSlots === 1 ? "friend" : "friends"}
+          </span>
         </div>
-        <p className="mt-cp-2 text-cp-small text-ink-soft">
-          {friends === 1 ? "1 friend joined" : `${friends} friends joined`}
-          {!atCap &&
-            ` · ${referralsLeft} more ${referralsLeft === 1 ? "referral" : "referrals"} to reach your maximum`}
+        <ol className="mt-cp-3 grid gap-cp-2" style={{ gridTemplateColumns: `repeat(${tiles}, minmax(0, 1fr))` }}>
+          {Array.from({ length: tiles }, (_, i) => {
+            const isWelcome = i < welcomeTiles;
+            const done = isWelcome || i - welcomeTiles < friendsCounted;
+            return (
+              <li
+                key={i}
+                className={`flex flex-col items-center gap-cp-1 rounded-lg border px-cp-1 py-cp-3 text-center ${
+                  done ? "border-line bg-card" : "border-transparent bg-[var(--cp-surface-strong)]"
+                }`}
+              >
+                {done ? (
+                  <span className="grid h-6 w-6 place-items-center rounded-full border-[1.5px] border-[var(--cp-accent)] text-[var(--cp-accent)]">
+                    <CheckIcon size={ICON_SIZE.sm} />
+                  </span>
+                ) : (
+                  <GiftIcon size={ICON_SIZE.lg} className="h-6 text-ink-soft" />
+                )}
+                <span className={`text-cp-small font-semibold ${done ? "text-ink" : "text-ink-soft"}`}>
+                  {isWelcome ? "Welcome" : `Friend ${i - welcomeTiles + 1}`}
+                </span>
+                <span className={`text-cp-small ${done ? "text-ink" : "text-ink-soft"}`}>+{summary.rewardDays} days</span>
+              </li>
+            );
+          })}
+        </ol>
+        <p className="mt-cp-4 text-cp-h2 font-extrabold text-ink">
+          {earned} {earned === 1 ? "day" : "days"} earned
+        </p>
+        <p className="mt-1 text-cp-body text-ink-soft">
+          {atCap || friendsLeft === 0
+            ? `You've earned all ${summary.lifetimeCapDays} days. Friends still get their ${summary.rewardDays}.`
+            : `Invite ${friendsLeft} more ${friendsLeft === 1 ? "friend" : "friends"} to earn all ${summary.lifetimeCapDays} days.`}
         </p>
       </div>
     </section>
