@@ -124,7 +124,7 @@ export function PostPrintInviteDialog({
             See your invites
           </Link>
         ) : (
-          <p className="text-cp-small text-ink-soft">Sign in to save and track your rewards.</p>
+          <p className="text-cp-small text-ink-soft">You&rsquo;ll need to sign in to get your link and earn rewards.</p>
         )}
       </div>
     </Dialog>
