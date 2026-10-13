@@ -12,7 +12,7 @@ import { shareLink } from "@/lib/shareLink";
 
 /**
  * After a print, once per browser (lib/referral `shouldShowPostPrintInvite`):
- * "Give 3 days of Pro. Get 3 days, too." It takes the place the "Leave feedback" dialog had
+ * "Invite a friend. You both get 3 days of Pro." It takes the place the "Leave feedback" dialog had
  * after a print, once the program is live.
  *
  * Signed out, the button signs in first, since a link belongs to an account,
@@ -88,7 +88,7 @@ export function PostPrintInviteDialog({
       <ProThemeStack className="mt-cp-7 mb-cp-2" />
       <div>
         <h2 id="post-print-invite-title" className="text-cp-dialog-title font-extrabold tracking-tight">
-          Give {rewardDays} days of Pro. Get {rewardDays} days, too.
+          Invite a friend. You both get {rewardDays} days of Pro.
         </h2>
         <p className="mt-cp-2 text-cp-body text-ink-soft">
           Invite a friend and you&rsquo;ll both enjoy {rewardDays} free days of{" "}
