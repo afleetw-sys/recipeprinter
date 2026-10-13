@@ -15,6 +15,8 @@
 //   capped…   15 of 15 days earned
 //   anything else: a fresh account.
 // Open /invite/AB3CD4EF in a signed-out window to arrive as an invited friend.
+// Importing a link works: any link gives the same sample recipe (photos and
+// pasted text don't, here).
 // Verification links land in the Auth emulator: GET
 // http://127.0.0.1:9199/emulator/v1/projects/demo-recipeprinter/oobCodes
 import { existsSync, readFileSync } from "node:fs";
@@ -33,6 +35,10 @@ Object.assign(env, {
   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000",
   NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:e2e",
   NEXT_PUBLIC_REFERRALS_PREVIEW: "1",
+  // Link imports go to the stand-in, which answers every link with a sample recipe.
+  COOKPILOT_RECIPE_PARSER_URL: "http://127.0.0.1:3211/parse-url",
+  COOKPILOT_SUPPLIED_HTML_PARSER_URL: "http://127.0.0.1:3211/parse-html",
+  RECIPEPRINTER_PARSER_SECRET: "referral-preview",
   NEXT_DIST_DIR: ".next-referral",
 });
 

@@ -5,6 +5,11 @@
 //   expired* referral Pro has run out                capped*  15 of 15 days earned, expired
 //   anything else: a fresh account
 import { createServer } from "node:http";
+import { readFileSync } from "node:fs";
+
+// Link imports: every link gets the same sample recipe (the Playwright fixture),
+// so nothing reaches the real parser or spends scraper quota.
+const parsedRecipe = readFileSync(new URL("../../e2e/fixtures/cookpilot-reply.json", import.meta.url), "utf8");
 const CORS = {
   "access-control-allow-origin": "*",
   "access-control-allow-headers": "content-type, authorization, x-firebase-appcheck, x-firebase-gmpid, x-firebase-client",
@@ -38,6 +43,10 @@ createServer((req, res) => {
     const data = JSON.parse(raw || "{}").data ?? {};
     const who = caller(req);
     console.log(req.url, JSON.stringify(data), who?.email ?? "-");
+    if (req.url === "/parse-url" || req.url === "/parse-html") {
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(parsedRecipe);
+    }
     if (req.url.endsWith("/checkUserProviders")) return send(res, 200, { result: { providers: [] } });
     if (req.url.endsWith("/recipePrinterReferral")) {
       if (data.op === "open") return send(res, 200, { result: { ok: true, openId: "stub-open-0001", expiresAtMs: Date.now() + 30 * DAY, rewardDays: 3 } });
