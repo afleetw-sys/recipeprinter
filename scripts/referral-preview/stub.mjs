@@ -1,7 +1,7 @@
 // Local stand-in for CookPilot's callables while checking the referral UI against the Auth
 // emulator. The signed-in account's email picks the scenario:
 //   verify*  first claim waits on email verification, the next is granted
-//   earned*  a friend joined while away (promo)      paid*    same, as a bill extension
+//   earned*  a friend joined while away (promo)      paid*    a subscriber with 6 days banked (Nov 1 -> Nov 7)
 //   expired* referral Pro has run out                capped*  15 of 15 days earned, expired
 //   anything else: a fresh account
 import { createServer } from "node:http";
@@ -24,8 +24,8 @@ function summary(who) {
   const base = { enabled: true, code: "AB3CD4EF", successfulReferrals: 0, lifetimeDaysEarned: 0, lifetimeCapDays: 15,
     rewardDays: 3, promoEndsAtMs: null, lastGrant: null, referred: false, proActive: false, proPaid: false, bankedDays: 0 };
   if (email.startsWith("earned")) return { ...base, successfulReferrals: 2, lifetimeDaysEarned: 6, bankedDays: activated.has(who.user_id) ? 0 : 6 };
-  if (email.startsWith("paid")) return { ...base, successfulReferrals: 1, lifetimeDaysEarned: 7, proActive: true, proPaid: true,
-    lastGrant: { atMs: now, days: 7, role: "referrer", fulfillment: "extension" } };
+  if (email.startsWith("paid")) return { ...base, successfulReferrals: 2, lifetimeDaysEarned: 6, proActive: true, proPaid: true,
+    bankedDays: activated.has(who.user_id) ? 0 : 6 };
   if (email.startsWith("expired")) return { ...base, code: null, lifetimeDaysEarned: 7, referred: true, promoEndsAtMs: now - DAY };
   if (email.startsWith("capped")) return { ...base, successfulReferrals: 1, lifetimeDaysEarned: 15, referred: true, promoEndsAtMs: now - DAY };
   return base;
@@ -49,9 +49,12 @@ createServer((req, res) => {
       const s = summary(who);
       // Like the real server, `link` always makes a code.
       if (data.op === "activate") {
-        const days = who.email?.startsWith("earned") && !activated.has(who.user_id) ? 6 : 0;
+        const paid = who.email?.startsWith("paid");
+        const days = (who.email?.startsWith("earned") || paid) && !activated.has(who.user_id) ? 6 : 0;
         activated.add(who.user_id);
-        return send(res, 200, { result: { days, fulfillment: days ? "promo" : null, pending: 0 } });
+        // A subscriber renewing Nov 1 gets Nov 7 (two friends, 3 days each).
+        return send(res, 200, { result: { days, fulfillment: days ? (paid ? "extension" : "promo") : null, pending: 0,
+          renewsAtMs: paid && days ? Date.parse("2026-11-07T15:00:00Z") : null } });
       }
       return send(res, 200, { result: data.op === "link" ? { ...s, code: s.code ?? "AB3CD4EF" } : s });
     }

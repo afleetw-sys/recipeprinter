@@ -11,7 +11,13 @@
 export type ProWelcome =
   | { kind: "purchased" }
   | { kind: "referral_welcome"; days: number }
-  | { kind: "referral_earned"; days: number; fulfillment: "promo" | "extension" };
+  | {
+    kind: "referral_earned";
+    days: number;
+    fulfillment: "promo" | "extension";
+    /** A subscriber's next renewal after the extension, as RevenueCat reports it. */
+    renewsAtMs?: number | null;
+  };
 
 const listeners = new Set<(welcome: ProWelcome) => void>();
 

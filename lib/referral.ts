@@ -137,6 +137,7 @@ export interface ReferralSummary {
     days: number;
     role: "welcome" | "referrer";
     fulfillment: "promo" | "extension";
+    renewsAtMs?: number;
   } | null;
   referred: boolean;
   /** Earned from friends and waiting for this account's next active visit. */
@@ -299,6 +300,8 @@ export interface ActivationResult {
   days: number;
   fulfillment: "promo" | "extension" | null;
   pending: number;
+  /** A subscriber's next renewal after the extension, from RevenueCat. */
+  renewsAtMs: number | null;
 }
 
 // ---- When banked days start --------------------------------------------------

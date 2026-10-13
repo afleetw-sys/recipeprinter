@@ -4,12 +4,16 @@ import { Dialog } from "@/components/Dialog";
 import { CrownIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import type { ProWelcome } from "@/lib/proWelcome";
 
+function formatRenewal(ms: number): string {
+  return new Date(ms).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+}
+
 /**
  * "You're on Pro": shown once when Pro starts, whichever way it started.
  *
- * No dates here on purpose. The account page shows when Pro ends, read from
- * RevenueCat; a date worked out in this dialog could disagree with it (a
- * bought month stacked on top, a renewal already pushed out).
+ * The only date shown is a subscriber's new renewal date, and only as
+ * RevenueCat reported it after the extension. Nothing here works a date out
+ * itself: one calculated in the dialog could disagree with the account page.
  */
 function copyFor(welcome: ProWelcome): { title: string; body: string } {
   switch (welcome.kind) {
@@ -27,7 +31,9 @@ function copyFor(welcome: ProWelcome): { title: string; body: string } {
     return welcome.fulfillment === "extension"
       ? {
         title: `${welcome.days} more days of Pro`,
-        body: `Your invites earned these, so your next Pro bill moves ${welcome.days} days later. Thanks for sharing.`,
+        body: welcome.renewsAtMs
+          ? `Your invites earned these, so your next Pro bill is now on ${formatRenewal(welcome.renewsAtMs)}. Thanks for sharing.`
+          : `Your invites earned these, so your next Pro bill moves ${welcome.days} days later. Thanks for sharing.`,
       }
       : {
         title: `${welcome.days} more days of Pro`,

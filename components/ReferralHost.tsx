@@ -149,7 +149,7 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
             announceProWelcome(
               grant.role === "welcome"
                 ? { kind: "referral_welcome", days: grant.days }
-                : { kind: "referral_earned", days: grant.days, fulfillment: grant.fulfillment },
+                : { kind: "referral_earned", days: grant.days, fulfillment: grant.fulfillment, renewsAtMs: grant.renewsAtMs },
             );
             return;
           }
@@ -197,7 +197,12 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
         .then((result) => {
           if (result.days <= 0 || !result.fulfillment) return;
           markGrantSeen(uid, Date.now());
-          announceProWelcome({ kind: "referral_earned", days: result.days, fulfillment: result.fulfillment });
+          announceProWelcome({
+            kind: "referral_earned",
+            days: result.days,
+            fulfillment: result.fulfillment,
+            renewsAtMs: result.renewsAtMs,
+          });
         })
         // Nothing earned is lost: the server keeps it for next time.
         .catch((error) => console.warn("RecipePrinter: could not start earned Pro days", error));

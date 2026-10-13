@@ -70,7 +70,12 @@ export function ReferralCard() {
       const result = await activateBankedRewards();
       if (result.days > 0 && result.fulfillment) {
         markGrantSeen(user.uid, Date.now());
-        announceProWelcome({ kind: "referral_earned", days: result.days, fulfillment: result.fulfillment });
+        announceProWelcome({
+            kind: "referral_earned",
+            days: result.days,
+            fulfillment: result.fulfillment,
+            renewsAtMs: result.renewsAtMs,
+          });
       }
       setSummary(await loadReferralSummary("link"));
     } catch (error) {
@@ -106,7 +111,9 @@ export function ReferralCard() {
         <div className="mt-cp-4 flex flex-col gap-cp-2 rounded-lg border border-line p-cp-3 sm:flex-row sm:items-center">
           <p className="flex-1 text-cp-small text-ink">
             <strong>{summary.bankedDays} days of Pro waiting.</strong>{" "}
-            They start the next time you print or download recipe cards.
+            {summary.proPaid
+              ? "They go on your next bill the next time you print or download recipe cards."
+              : "They start the next time you print or download recipe cards."}
           </p>
           <button type="button" className="btn btn-secondary btn-compact" disabled={starting} onClick={() => void startNow()}>
             Start them now
