@@ -18,7 +18,7 @@ const COOKBOOK_STEPS = [
 // a surprise. "Preview" (free) is always paired with what the purchase adds:
 // a cookbook is never "free up to 10 recipes" on its own.
 const PREVIEW_RULE = IMPORT_ALLOWANCE_LIVE
-  ? `Free to preview with up to ${FREE_COOKBOOK_RECIPES} recipes. Buy to download and add more.`
+  ? `Free to preview with up to ${FREE_COOKBOOK_RECIPES} recipes. Buy to download or add more.`
   : "Pay when you download.";
 
 export function CookbookWelcomeDialog({
