@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { AnchoredMenu } from "@/components/AnchoredMenu";
 import { CrownIcon, GaugeIcon, ICON_SIZE } from "@/components/icons";
 import { importAllowanceLine } from "@/lib/freeImports";
+import { rememberedImportUsage, usageNow } from "@/lib/importMeter";
 import { useImportUsage } from "@/lib/useImportUsage";
 
 // Beside the avatar the ring takes the avatar's own box (`.icon-button` at the
@@ -48,6 +49,7 @@ export function ImportUsageMenu({
   const { hidden, usage } = useImportUsage(enabled);
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement | null>(null);
+  const fill = useNewImportFill(usage?.used ?? null);
   if (hidden) return null;
   const line = importAllowanceLine(usage);
   const fraction = usage && usage.limit > 0 ? Math.min(usage.used, usage.limit) / usage.limit : 0;
@@ -69,7 +71,11 @@ export function ImportUsageMenu({
       >
         {/* Nothing used yet: an empty ring reads as a blank circle, so a gauge
             says "usage" until there is some to draw (Amelia, 2026-10-11). */}
-        {fraction > 0 ? <UsageRing fraction={fraction} size={18} /> : <GaugeIcon size={ICON_SIZE.md} />}
+        {fraction > 0 ? <UsageRing
+            fraction={fraction}
+            size={18}
+            fill={fill && usage ? { key: fill.key, from: Math.min(fill.fromUsed, usage.limit) / usage.limit } : null}
+          /> : <GaugeIcon size={ICON_SIZE.md} />}
       </button>
       {open && (
         <AnchoredMenu anchorRef={anchorRef} onClose={() => setOpen(false)} label="Free imports" align={align}>
@@ -96,11 +102,44 @@ export function ImportUsageMenu({
 }
 
 /**
+ * Set when an import has just been counted, so the ring can fill from where it
+ * was to the new count. Only an import made while the ring is on screen counts:
+ * the count this browser already remembered when the page loaded is the
+ * baseline, so a page load or the hydration swap from "no count" never animates.
+ */
+function useNewImportFill(used: number | null): { key: number; fromUsed: number } | null {
+  // Read on the client only, and never rendered, so the server's 0 can't mismatch.
+  const [baseline] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    const remembered = rememberedImportUsage();
+    return remembered ? usageNow(remembered, Date.now()).used : 0;
+  });
+  const [shown, setShown] = useState(baseline);
+  const [fill, setFill] = useState<{ key: number; fromUsed: number } | null>(null);
+  // No count yet (the first render, or a visitor who hasn't imported): nothing to compare.
+  if (used !== null && used !== shown) {
+    setShown(used);
+    // Only an increase animates. A reset to 0 just redraws.
+    setFill(used > shown ? { key: (fill?.key ?? 0) + 1, fromUsed: shown } : null);
+  }
+  return fill;
+}
+
+/**
  * The count as a ring that fills clockwise from the top: empty before the
  * first import, full at none left. Decorative: the button's name says the
  * same thing in words, so it is hidden from screen readers.
  */
-function UsageRing({ fraction, size = 14 }: { fraction: number; size?: number }) {
+function UsageRing({
+  fraction,
+  size = 14,
+  fill = null,
+}: {
+  fraction: number;
+  size?: number;
+  /** An import was just counted: fill from `from` to `fraction`. */
+  fill?: { key: number; from: number } | null;
+}) {
   const stroke = size >= 18 ? 3 : 2.5;
   const radius = (size - stroke) / 2;
   const length = 2 * Math.PI * radius;
@@ -117,6 +156,10 @@ function UsageRing({ fraction, size = 14 }: { fraction: number; size?: number })
       {/* Nothing drawn at zero: a round cap would leave a dot. */}
       {fraction > 0 && (
         <circle
+          // A new key per counted import restarts the fill animation.
+          key={fill?.key ?? 0}
+          className={fill ? "rp-usage-ring-fill" : undefined}
+          style={fill ? ({ "--rp-ring-from": `${length * (1 - fill.from)}px` } as CSSProperties) : undefined}
           cx={center}
           cy={center}
           r={radius}

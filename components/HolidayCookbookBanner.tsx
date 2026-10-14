@@ -49,7 +49,7 @@ export function HolidayCookbookBanner({
             Make your cookbook in time for the holidays
           </h2>
           <p className="mt-cp-3 text-cp-body-lg leading-relaxed text-ink-soft">
-            Build it at your own pace, then print at home or export it to any print shop.{" "}
+            Build your cookbook and print it anywhere.{" "}
             {discounted ? (
               // Just the price they will pay, no strikethrough: the welcome
               // dialog on /print does the explaining. "First" because the
