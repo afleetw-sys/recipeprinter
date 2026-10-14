@@ -86,7 +86,7 @@ export default function TermsPage() {
           Much of the Service is free and does not require an account. Some
           features are paid: RecipePrinter Pro is a subscription that includes
           additional print themes, 4 by 6 card printing, and other recipe-card
-          tools, and a cookbook export is a separate one-time purchase.
+          tools, and unlocking a cookbook is a separate one-time purchase.
         </p>
       </LegalSection>
 
@@ -256,23 +256,25 @@ export default function TermsPage() {
 
       <LegalSection id="purchases" index={9} title="Purchases and pricing">
         <p>
-          The Service offers two kinds of paid features. A cookbook export is a
+          The Service offers two kinds of paid features. A cookbook unlock is a
           one-time purchase that does not renew. RecipePrinter Pro is a
           subscription, billed monthly or annually until you cancel.
         </p>
         <LegalList>
           <li>
-            <strong>Cookbook purchases.</strong> A cookbook purchase unlocks the
-            cookbook export for the specific project it was purchased for. It is
-            not an account-wide entitlement, so each additional cookbook is a
-            separate purchase. This is shown at the point of sale.
+            <strong>Cookbook purchases.</strong> You may preview a cookbook with
+            up to 10 recipes without purchasing it. A cookbook purchase unlocks
+            PDF export and printing and lets you add more than 10 recipes to the
+            specific project it was purchased for. It is not an account-wide
+            entitlement, so each additional cookbook is a separate purchase.
+            This is shown at the point of sale.
           </li>
           <li>
             <strong>RecipePrinter Pro.</strong> Pro applies to your whole
             account and includes every print theme, 4 by 6 card printing, prints
             without RecipePrinter branding, and the other recipe-card tools for
             as long as the subscription is active.
-            Pro does not include cookbook exports, which remain a separate
+            Pro does not include cookbook unlocks, which remain a separate
             one-time purchase.
           </li>
           <li>
@@ -329,10 +331,11 @@ export default function TermsPage() {
           renewal, and we will issue a refund.
         </p>
         <p>
-          Because a cookbook export is a digital file delivered immediately, we
-          may decline a refund request where the file was generated and worked as
-          described. Canceling RecipePrinter Pro stops future charges but does
-          not by itself refund a billing period you have already paid for.
+          Because cookbook features can be unlocked and used immediately, we
+          may decline a refund request where the unlocked features or generated
+          file worked as described. Canceling RecipePrinter Pro stops future
+          charges but does not by itself refund a billing period you have
+          already paid for.
         </p>
         <p>
           Nothing in this section limits any refund or cancellation right you

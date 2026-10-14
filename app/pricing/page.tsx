@@ -53,7 +53,7 @@ const FAQS = [
   },
   {
     question: "What's the difference between Pro and a cookbook?",
-    answer: `Pro is a subscription for everyday printing: cards, themes, and printing in batches. A cookbook is a one-time ${COOKBOOK_PRICE_FALLBACK} purchase that lets you export one cookbook as print-ready files, and you don't need Pro to buy one. Pro members get 20% off their first cookbook.`,
+    answer: `Pro is a subscription for everyday printing: cards, themes, and printing in batches. You can preview a cookbook with up to ${FREE_COOKBOOK_RECIPES} recipes free; a one-time ${COOKBOOK_PRICE_FALLBACK} purchase lets you download or print it and add more recipes. You don't need Pro to buy one, and Pro members get 20% off their first cookbook.`,
   },
   {
     question: "Do I need an account?",
@@ -157,12 +157,12 @@ export default function PricingPage() {
             Making a cookbook?
           </h2>
           <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
-            Cookbooks are separate from both plans: a one-time purchase for each book you make, on
-            Free or Pro.
+            Cookbooks are separate from both plans: preview up to {FREE_COOKBOOK_RECIPES} recipes
+            free, then make a one-time purchase to download or add more, on Free or Pro.
           </p>
           <div className="mt-cp-6 flex flex-col rounded-2xl border border-line bg-card p-cp-6 text-left">
             <p className="text-cp-body font-bold text-ink">
-              {COOKBOOK_PRICE_FALLBACK} per cookbook, paid once
+              {COOKBOOK_PRICE_FALLBACK} per cookbook to download or add more
             </p>
             <PlanList items={COOKBOOK_POINTS} />
             <Link href="/make-your-own-cookbook" className="btn btn-secondary mt-cp-6 w-full">

@@ -52,11 +52,12 @@ export function HolidayCookbookBanner({
             Build your cookbook and print it anywhere.{" "}
             {discounted ? (
               // Just the price they will pay, no strikethrough: the welcome
-              // dialog on /print does the explaining. It names Pro so the
-              // lower price reads as a membership perk.
-              <>Preview 10 recipes free, then unlock unlimited recipes and PDF export for {price(COOKBOOK_DISCOUNT_PRICE_FALLBACK)} with Pro.</>
+              // dialog on /print does the explaining. "First" because the
+              // discount is on one book only, and it names Pro so the lower
+              // price reads as a membership perk.
+              <>Preview up to 10 recipes free, then {price(COOKBOOK_DISCOUNT_PRICE_FALLBACK)} to download or add more to your first cookbook with Pro.</>
             ) : (
-              <>Preview 10 recipes free, then unlock unlimited recipes and PDF export for {price(COOKBOOK_PRICE_FALLBACK)}.</>
+              <>Preview up to 10 recipes free, then {price(COOKBOOK_PRICE_FALLBACK)} to download or add more.</>
             )}
           </p>
         </div>
