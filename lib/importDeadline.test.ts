@@ -30,7 +30,7 @@ vi.mock("@/lib/firebase/functions", () => ({ getFns: () => ({}) }));
 vi.mock("@/lib/appEnvironment", () => ({ isProductionRuntime: () => true }));
 vi.mock("@/lib/analytics", () => ({ track, truncateReason: (e: unknown) => String(e) }));
 vi.mock("@/lib/failedImportCapture", () => ({
-  captureFailedImportImages: vi.fn(async () => null),
+  captureFailedImportImages: vi.fn(() => null),
   recordFailedImport,
 }));
 vi.mock("@/lib/importCorrections", () => ({ noteImported: vi.fn(), noteRecipeEdited: vi.fn() }));
