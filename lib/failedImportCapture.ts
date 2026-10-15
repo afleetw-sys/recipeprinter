@@ -1,5 +1,4 @@
 import { RECIPE_PRINTER_DEBUG_ROOT } from "./firebase/recipePrinterPaths";
-import { localStore } from "@/lib/storage";
 import { track } from "@/lib/analytics";
 
 // Firebase is reached through `await import` here, never statically. This
@@ -10,7 +9,14 @@ import { track } from "@/lib/analytics";
 // already dynamic for exactly this reason; the Storage and Auth halves were
 // not. Nothing here runs until an import has already failed, so paying for the
 // SDK at that point costs nobody anything.
-async function firebaseParts() {
+// Loaded once and shared: every failed import used to re-import all three.
+let firebasePartsLoad: ReturnType<typeof loadFirebaseParts> | null = null;
+function firebaseParts() {
+  firebasePartsLoad ??= loadFirebaseParts();
+  return firebasePartsLoad;
+}
+
+async function loadFirebaseParts() {
   const [storageSdk, storageAccessor, client] = await Promise.all([
     import("firebase/storage"),
     import("./firebase/storage"),
@@ -21,13 +27,15 @@ async function firebaseParts() {
     uploadBytes: storageSdk.uploadBytes,
     getFirebaseStorage: storageAccessor.getFirebaseStorage,
     getFirebaseAuth: client.getFirebaseAuth,
+    firebaseConfigured: client.firebaseConfigured,
   };
 }
 
 async function isFirebaseConfigured(): Promise<boolean> {
   try {
-    return (await import("./firebase/client")).firebaseConfigured();
+    return (await firebaseParts()).firebaseConfigured();
   } catch {
+    firebasePartsLoad = null;
     return false;
   }
 }
@@ -77,31 +85,12 @@ const DEBUG_INBOX_COLLECTION = "debugInbox";
    a genuine leak — deleting a row does not remove what its `imagePath` points
    at — and are knowingly left for now. See docs/failed-import-retention.md.
 
-   What this module does instead is write less: the daily budget below cuts what is
-   uploaded at all, without reducing what any failure can tell you. */
+   */
 
-/* Every failed photo import keeps its photos, whatever the bucket. They used to
-   be dropped for backend, network, timeout and rate-limit failures on the
-   theory that the photo could not explain those, which meant a cook's failed
-   photo simply was not there when someone went to look for it (2026-10-15).
-   The daily budget below is what bounds the storage. */
+/* Every failed photo import keeps its photos: no category is skipped and there
+   is no daily limit. Both existed to save storage, and both meant a cook's
+   failed photo was simply not there when someone went to look (2026-10-15). */
 
-/**
- * How many photo captures one browser may upload per day.
- *
- * Not a sample: the first few of anything are kept in full, and the row always
- * is. What this stops is the same failure being uploaded over and over, which
- * is a real shape rather than a hypothetical one — a photo the browser cannot
- * decode fails identically every time it is picked, and the honest response to
- * a failed import is to try it again. A cook working through one bad photo
- * could file it a dozen times before giving up, and the twelfth copy of the
- * same bytes has never taught anyone anything.
- *
- * Deliberately generous enough to cover a genuinely bad afternoon — several
- * different photos each failing once is exactly the case worth having whole.
- */
-const MAX_IMAGE_CAPTURES_PER_DAY = 6;
-const CAPTURE_BUDGET_KEY = "recipeprinter:debug-capture-budget:v1";
 // A hard cap so a pathological upload can't balloon: skip anything over this.
 const MAX_CAPTURE_BYTES = 12 * 1024 * 1024;
 // A Firestore document is capped at 1 MB, and a debug row that large is
@@ -109,58 +98,12 @@ const MAX_CAPTURE_BYTES = 12 * 1024 * 1024;
 // short enough that the collection stays browsable. Truncation is flagged on
 // the row rather than being silent.
 const MAX_TEXT_CAPTURE_CHARS = 20_000;
-// The caller awaits this only to attach the path to the failure event, so it
-// must not hang that event on a slow upload. If capture outruns this, the
-// uploads still finish in the background — we just don't report the path.
-// Generous, because the `debugInbox` row is written only after this settles
-// and takes its `imagePath` from it: a phone upload cut off at 15 s used to
-// land anyway and leave a row saying it had no photos.
-const CAPTURE_TIMEOUT_MS = 60_000;
-
 function currentUserEmail(getFirebaseAuth: () => { currentUser: { email: string | null } | null }): string {
   try {
     return getFirebaseAuth().currentUser?.email ?? "";
   } catch {
     return "";
   }
-}
-
-/** Captures already spent today, or null when the counter can't be read. */
-function capturesSpentToday(): number | null {
-  const today = new Date().toISOString().slice(0, 10);
-  try {
-    const budget = localStore.getJson<{ day?: string; count?: number }>(CAPTURE_BUDGET_KEY);
-    return budget?.day === today && typeof budget.count === "number" ? budget.count : 0;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Whether this browser may upload photographs for another capture today.
- *
- * Best-effort like everything else here: a browser whose storage cannot be read
- * gets the benefit of the doubt and captures, because losing a real diagnostic
- * to an unreadable counter is the worse of the two mistakes.
- */
-function imageCaptureBudgetLeft(): boolean {
-  const spent = capturesSpentToday();
-  return spent === null || spent < MAX_IMAGE_CAPTURES_PER_DAY;
-}
-
-/** Spends one capture from today's budget. Called only once an upload landed,
-    so a browser whose uploads are being refused never runs itself dry. */
-function spendImageCapture(): void {
-  const spent = capturesSpentToday();
-  if (spent === null) return;
-  localStore.setJson(CAPTURE_BUDGET_KEY, { day: new Date().toISOString().slice(0, 10), count: spent + 1 });
-}
-
-/** Checks the budget and, if there is room, spends one. */
-export function claimImageCaptureBudget(): boolean {
-  if (!imageCaptureBudgetLeft()) return false;
-  spendImageCapture();
-  return true;
 }
 
 /** A fresh, collision-resistant folder for one failed import, bucketed by category. */
@@ -216,52 +159,57 @@ function toBlob(input: Blob | string): Blob | null {
 }
 
 /**
- * Uploads the failed image(s) to Firebase Storage. Returns the folder path they
- * were written to (for the analytics event), or null if nothing was captured.
+ * Starts uploading the failed image(s) to Firebase Storage and returns, at
+ * once, the folder they are going to, or null when none of them can be
+ * uploaded (empty, unreadable as a data URL, or over the size cap).
+ *
+ * The path is decided BEFORE the upload so the `debugInbox` row never waits on
+ * it. A full-size phone photo on a cellular connection can take well over a
+ * minute; the row used to wait 15 s, give up on the path, and say there were no
+ * photos while they were still landing. The upload now runs as long as it
+ * takes, and a refusal is reported (see `reportCaptureFailure`).
+ *
  * Accepts original `File`s (decode failures) or compressed data-URL strings
  * (the exact payload sent to the parser on a "no recipe" failure).
  */
-export async function captureFailedImportImages(
+export function captureFailedImportImages(
   images: Array<Blob | string>,
   meta: FailedCaptureMeta,
-): Promise<string | null> {
-  if (typeof window === "undefined" || images.length === 0) return null;
-  // Before Firebase is even loaded: a capture that is not going to happen
-  // should not pull the Storage SDK to find out.
-  if (!imageCaptureBudgetLeft()) return null;
-  if (!(await isFirebaseConfigured())) return null;
+): string | null {
+  if (typeof window === "undefined") return null;
+  const blobs = images
+    .map((input, index) => ({ index, blob: toBlob(input) }))
+    .filter((entry): entry is { index: number; blob: Blob } =>
+      Boolean(entry.blob && entry.blob.size > 0 && entry.blob.size <= MAX_CAPTURE_BYTES));
+  if (blobs.length === 0) return null;
+  const folder = newCaptureFolder(meta.category);
+  void uploadCapture(folder, blobs, images.length, meta);
+  return folder;
+}
+
+async function uploadCapture(
+  folder: string,
+  blobs: Array<{ index: number; blob: Blob }>,
+  count: number,
+  meta: FailedCaptureMeta,
+): Promise<void> {
   try {
+    if (!(await isFirebaseConfigured())) return;
     const { ref, uploadBytes, getFirebaseStorage, getFirebaseAuth } = await firebaseParts();
-    const folder = newCaptureFolder(meta.category);
     const storage = getFirebaseStorage();
     const userEmail = currentUserEmail(getFirebaseAuth);
-
-    const uploads = images.map(async (input, i): Promise<boolean> => {
-      const blob = toBlob(input);
-      if (!blob || blob.size === 0 || blob.size > MAX_CAPTURE_BYTES) return false;
-      await uploadBytes(ref(storage, `${folder}/${i}.jpg`), blob, {
-        contentType: blob.type || "image/jpeg",
-        customMetadata: captureMetadata(meta, userEmail, {
-          index: String(i),
-          count: String(images.length),
+    const results = await Promise.allSettled(
+      blobs.map(({ index, blob }) =>
+        uploadBytes(ref(storage, `${folder}/${index}.jpg`), blob, {
+          contentType: blob.type || "image/jpeg",
+          customMetadata: captureMetadata(meta, userEmail, { index: String(index), count: String(count) }),
         }),
-      });
-      return true;
-    });
-
-    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), CAPTURE_TIMEOUT_MS));
-    const results = await Promise.race([Promise.allSettled(uploads), timeout]);
-    if (results === null) return null;
+      ),
+    );
     const rejected = results.find((r) => r.status === "rejected");
     if (rejected) reportCaptureFailure("upload", meta, rejected.reason);
-    // Only a photo that actually landed earns a path; skipped and refused
-    // uploads would otherwise point the inbox row at an empty folder.
-    if (!results.some((r) => r.status === "fulfilled" && r.value)) return null;
-    spendImageCapture();
-    return folder;
   } catch (err) {
     reportCaptureFailure("upload", meta, err);
-    return null;
   }
 }
 
