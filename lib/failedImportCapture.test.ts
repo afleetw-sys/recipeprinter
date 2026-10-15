@@ -1,7 +1,17 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { claimImageCaptureBudget, imageBytesWorthKeeping } from "@/lib/failedImportCapture";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { captureFailedImportImages, claimImageCaptureBudget } from "@/lib/failedImportCapture";
 
-/* The two gates in front of uploading a failed import's photographs.
+const uploadBytes = vi.fn();
+const track = vi.fn();
+vi.mock("firebase/storage", () => ({ ref: (_s: unknown, path: string) => path, uploadBytes: (...a: unknown[]) => uploadBytes(...a) }));
+vi.mock("@/lib/firebase/storage", () => ({ getFirebaseStorage: () => ({}) }));
+vi.mock("@/lib/firebase/client", () => ({
+  firebaseConfigured: () => true,
+  getFirebaseAuth: () => ({ currentUser: null }),
+}));
+vi.mock("@/lib/analytics", () => ({ track: (...a: unknown[]) => track(...a) }));
+
+/* What decides whether a failed import's photographs get uploaded.
    Everything past them talks to Firebase Storage; these do not, which is the
    point — a capture that is not going to happen should be decided before the
    SDK is loaded, not after.
@@ -34,24 +44,40 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-describe("which failures are worth keeping photographs for", () => {
-  it("keeps the photographs when the photographs are the suspect", () => {
-    // The browser could not decode it, or the parser read it and found nothing.
-    // Both are questions only the bytes can answer.
-    expect(imageBytesWorthKeeping("decode_failed")).toBe(true);
-    expect(imageBytesWorthKeeping("no_recipe")).toBe(true);
-    expect(imageBytesWorthKeeping("too_large")).toBe(true);
-    // An unrecognised bucket keeps its bytes: the default has to be to collect,
-    // or a new failure code silently stops being diagnosable.
-    expect(imageBytesWorthKeeping("something_new")).toBe(true);
-  });
+describe("a failed photo import keeps its photos", () => {
+  // Reported 2026-10-15: a cook's photo failed to import and nothing reached
+  // Storage. Photos were dropped for whole failure buckets, a rejected upload
+  // still used up the day's allowance, and a rejection was never reported.
+  it("uploads them whatever the failure was, and claims a path only when one landed", async () => {
+    const photo = new Blob([new Uint8Array([1, 2, 3])], { type: "image/jpeg" });
+    const categories = [
+      "no_recipe", "decode_failed", "too_large", "unknown",
+      "backend_unavailable", "network", "timeout", "rate_limited",
+    ];
+    for (const category of categories) {
+      memory.clear();
+      uploadBytes.mockReset().mockResolvedValue({});
+      const path = await captureFailedImportImages([photo], { source: "image", category, reason: "x" });
+      expect(path, category).toMatch(new RegExp(`/${category}/`));
+      expect(uploadBytes, category).toHaveBeenCalledTimes(1);
+    }
 
-  it("drops them when the backend was the problem and the photo was not", () => {
-    // Several megabytes to record "the parser was busy" — the row already says
-    // that, and says it for nothing.
-    expect(imageBytesWorthKeeping("rate_limited")).toBe(false);
-    expect(imageBytesWorthKeeping("backend_unavailable")).toBe(false);
-    expect(imageBytesWorthKeeping("timeout")).toBe(false);
+    // Rejected uploads (App Check, rules) land nothing: no path, the day's
+    // allowance is untouched, and the rejection is reported.
+    memory.clear();
+    track.mockReset();
+    uploadBytes.mockReset().mockRejectedValue(Object.assign(new Error("denied"), { code: "storage/unauthorized" }));
+    for (let i = 0; i < 8; i += 1) {
+      expect(await captureFailedImportImages([photo], { source: "image", category: "no_recipe", reason: "x" })).toBeNull();
+    }
+    expect(uploadBytes).toHaveBeenCalledTimes(8);
+    expect(track).toHaveBeenCalledWith("failed_import_capture_failed", expect.objectContaining({ errorCode: "storage/unauthorized" }));
+    expect(claimImageCaptureBudget()).toBe(true);
+
+    // Nothing uploadable (an empty placeholder file): no path pointing at an empty folder.
+    memory.clear();
+    uploadBytes.mockReset().mockResolvedValue({});
+    expect(await captureFailedImportImages([new Blob([])], { source: "image", category: "decode_failed", reason: "x" })).toBeNull();
   });
 });
 

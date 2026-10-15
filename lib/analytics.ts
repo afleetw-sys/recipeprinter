@@ -266,6 +266,18 @@ type EventProps = {
     minutes: number;
   };
   /**
+   * Stashing a failed import for debugging was itself refused: the photo upload
+   * to Storage (`upload`) or the `debugInbox` row (`inbox`). `errorCode` is the
+   * Firebase code, e.g. `storage/unauthorized` when App Check or rules said no.
+   * Without this a refused capture looks exactly like no failure at all.
+   */
+  failed_import_capture_failed: {
+    stage: "upload" | "inbox";
+    source: string;
+    category: string;
+    errorCode: string;
+  };
+  /**
    * Parsing threw. `reason` is the raw parser message, truncated; `category`
    * is the groupable bucket it fell into.
    */
