@@ -2,6 +2,7 @@ import { HomeLink } from "@/components/HomeLink";
 import type { ReactNode } from "react";
 import { LogoMark, Wordmark } from "@/components/Logo";
 import { AccountControl, type AccountSaveStatus } from "@/components/AccountControl";
+import { FrontDoorUpgradeButton } from "@/components/FrontDoorUpgrade";
 
 // Minimal top bar shared across every page, mirrors CookPilot's cp-topbar.
 // The logo is a home link so the product always feels like one focused utility,
@@ -76,6 +77,12 @@ export function SiteHeader({
          mismatch this component now avoids on purpose — every route gets the
          same chrome. On desktop it is 4px shorter than on a phone (Amelia,
          2026-10-11): a little less air above and below the 32px controls. */
+      /* The surface the bar sits on, for anything drawn over its edge that has
+         to cut itself out of it (the usage badge on the avatar). */
+      style={{
+        ["--rp-header-surface" as string]:
+          sticky && chrome === true ? "var(--cp-chrome-ground)" : "var(--cp-page)",
+      }}
       className={`no-print relative flex items-center justify-between gap-cp-3 sm:gap-cp-4 px-cp-4 sm:px-cp-6 flex-nowrap min-h-[59px] sm:min-h-[55px] ${
         sticky
           ? /* `--z-sticky` (globals.css), not a bare Tailwind number — this
@@ -116,7 +123,9 @@ export function SiteHeader({
         <HomeLink href={backHref ?? "/"} onNavigateHome={onNavigateHome}>
           {logo}
         </HomeLink>
-        {lead}
+        {/* "Upgrade to Pro" on every page unless the page brings its own (the
+            workspace) or asks for none (`lead={null}`, the error pages). */}
+        {lead === undefined ? <FrontDoorUpgradeButton /> : lead}
       </div>
       {/* Centred on the PAGE, not between its neighbours — absolutely
           positioned so the title holds still as the buttons beside it change

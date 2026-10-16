@@ -1,6 +1,6 @@
 "use client";
 
-import { formatImportReturnDate } from "@/lib/freeImports";
+import { formatImportReturnDate, importsNearlyOut } from "@/lib/freeImports";
 import { useImportUsage } from "@/lib/useImportUsage";
 
 /**
@@ -29,7 +29,9 @@ export function AccountImportAllowanceUsage() {
             aria-valuemax={limit}
             aria-valuenow={used}
           >
-            <div className="h-full rounded-full bg-[var(--cp-accent)]" style={{ width: `${(used / limit) * 100}%` }} />
+            <div
+              className={`h-full rounded-full ${importsNearlyOut(used, limit) ? "bg-[var(--cp-error)]" : "bg-[var(--cp-accent)]"}`}
+              style={{ width: `${(used / limit) * 100}%` }} />
           </div>
           <p className="mt-cp-1 text-cp-small text-ink-soft">
             {usage.nextFreeAt !== null

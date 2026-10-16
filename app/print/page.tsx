@@ -122,7 +122,6 @@ import {
   markImportsUnlimited,
   rememberedImportUsage,
 } from "@/lib/importMeter";
-import { ImportUsageMenu } from "@/components/ImportUsageMenu";
 import { PrintDownloadMenu } from "@/components/print/PrintDownloadMenu";
 import { CardExportError, downloadCards } from "@/lib/cardExport";
 import type { ExportOutput } from "@/types/export";
@@ -4822,16 +4821,6 @@ export default function PrintPage() {
    * see an "Upgrade to Pro" door standing open in a room where nothing is
    * actually locked.
    */
-  /**
-   * Upgrade pressed from the free-import count (the ring's menu in the
-   * header). It is there in every state, so only someone who is
-   * actually out of imports gets the "you've used your 10" wording; anyone
-   * else pressed Upgrade and gets the plain Pro dialog.
-   */
-  function openImportUpgrade() {
-    const usage = rememberedImportUsage();
-    openProUpgradeDialog(usage && usage.used >= usage.limit ? IMPORT_LIMIT_TRIGGER : "import_banner");
-  }
   function renderProUpgradeButton(size: "header" | "compact" = "compact") {
     if (cookbookMode || hasProEntitlement(effectiveCustomerInfo.customerInfo)) return null;
     return (
@@ -4841,18 +4830,10 @@ export default function PrintPage() {
         onClick={() => openProUpgradeDialog("topbar_button")}
       >
         <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-        Upgrade to Pro
+        {/* "Upgrade" alone on a phone, where the bar is tight. */}
+        <span>Upgrade<span className="max-sm:hidden"> to Pro</span></span>
       </button>
     );
-  }
-  /**
-   * How many free imports are used, as a ring that opens the details. Its own
-   * place in the header, to the left of the account, the same as on the
-   * homepage (Amelia, 2026-10-11). Shown to whoever sees Upgrade.
-   */
-  function renderImportUsageButton(placement: "header" | "topbar") {
-    if (cookbookMode || hasProEntitlement(effectiveCustomerInfo.customerInfo)) return null;
-    return <ImportUsageMenu placement={placement} onUpgrade={openImportUpgrade} />;
   }
 
   // Card-format print settings (behind the "Print settings" trigger). Cookbook
@@ -6365,9 +6346,6 @@ export default function PrintPage() {
                   />
                 )}
                 </span>
-                {/* Last, so it sits against the account: the same place it has
-                    on the homepage. */}
-                {renderImportUsageButton("header")}
               </>
           }
           onNavigateHome={() => handleNavigateHome()}
@@ -6539,12 +6517,7 @@ export default function PrintPage() {
         {/* Center: large preview of the selected page */}
         <PrintDeck
           saveControl={renderSaveControl()}
-          proUpgradeButton={
-            <>
-              {renderProUpgradeButton()}
-              {renderImportUsageButton("topbar")}
-            </>
-          }
+          proUpgradeButton={renderProUpgradeButton()}
           singleRecipePrintView={singleRecipePrintView}
           cookbookView={cookbookView}
           previewMeasuring={previewMeasuring}

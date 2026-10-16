@@ -88,6 +88,48 @@ export async function signInWithCookPilotProvider(provider: AuthProvider) {
   await signInWithPopup(auth, provider, browserPopupRedirectResolver);
 }
 
+/**
+ * Google or Apple, by whichever route this device takes. The one place the
+ * attempt, the outcome and the failure code are recorded for every way in (the
+ * form's buttons, its Google-only hand-off from the email step, and the account
+ * menu's own buttons), so they cannot drift apart.
+ *
+ * A redirect leaves the page, so it has no outcome here: what it returns is
+ * recorded by `resolveRedirectOnce` on the page that comes back.
+ *
+ * `handBack` gives the surface its controls back when someone closes the
+ * provider's window.
+ */
+export async function signInWithTrackedProvider(
+  provider: AuthProvider,
+  method: "google" | "apple",
+  handBack: () => void,
+) {
+  const via = shouldUseRedirectSignIn() ? "redirect" : "popup";
+  track("auth_attempted", { method, via });
+  // Firebase only learns a popup was closed by polling, then waits eight more
+  // seconds before rejecting, so awaiting it alone leaves the surface disabled
+  // for up to ten seconds after someone closes Google's window. Hand it back
+  // as soon as focus returns to this page instead (see lib/authPopup).
+  const stopWatching = via === "popup" ? watchForPopupReturn(handBack) : undefined;
+  try {
+    await signInWithCookPilotProvider(provider);
+    if (via === "popup") track("auth_succeeded", { method });
+  } catch (err) {
+    track("auth_failed", { method, code: authFailureCode(err) });
+    // Closing the window is a choice, not a failure: the surface is simply back.
+    // It arrives after the controls have already been handed back, or, where the
+    // browser never reports focus returning, is what hands them back.
+    if (isPopupDismissal(err)) {
+      handBack();
+      return;
+    }
+    throw err;
+  } finally {
+    stopWatching?.();
+  }
+}
+
 export function purgeAnonymousUser(user: User): Promise<void> {
   return purgeAnonymousUserFor(getFirebaseAuth(), user);
 }
@@ -407,40 +449,8 @@ export function CookPilotLoginForm({
     void prewarmCookPilotAuth();
   }, []);
 
-  /**
-   * Google or Apple, by whichever route this device takes. The one place the
-   * attempt, the outcome and the failure code are recorded for all three ways in
-   * (the buttons and the Google-only hand-off from the email step), so they
-   * cannot drift apart.
-   *
-   * A redirect leaves the page, so it has no outcome here: what it returns is
-   * recorded by `resolveRedirectOnce` on the page that comes back.
-   */
-  async function signInWithProvider(provider: AuthProvider, method: "google" | "apple") {
-    const via = shouldUseRedirectSignIn() ? "redirect" : "popup";
-    track("auth_attempted", { method, via });
-    // Firebase only learns a popup was closed by polling, then waits eight more
-    // seconds before rejecting, so awaiting it alone leaves this dialog disabled
-    // for up to ten seconds after someone closes Google's window. Hand the dialog
-    // back as soon as focus returns to this page instead (see lib/authPopup).
-    const stopWatching = via === "popup" ? watchForPopupReturn(() => setBusy(false)) : undefined;
-    try {
-      await signInWithCookPilotProvider(provider);
-      if (via === "popup") track("auth_succeeded", { method });
-    } catch (err) {
-      track("auth_failed", { method, code: authFailureCode(err) });
-      // Closing the window is a choice, not a failure: the form is simply back.
-      // It arrives after the dialog has already been handed back, or, where the
-      // browser never reports focus returning, is what hands it back.
-      if (isPopupDismissal(err)) {
-        setBusy(false);
-        return;
-      }
-      throw err;
-    } finally {
-      stopWatching?.();
-    }
-  }
+  const signInWithProvider = (provider: AuthProvider, method: "google" | "apple") =>
+    signInWithTrackedProvider(provider, method, () => setBusy(false));
 
   async function handleEmailContinue(event: FormEvent) {
     event.preventDefault();
@@ -751,11 +761,18 @@ export function CookPilotLoginDialog({
   onClose,
   onAuthenticated,
   reason = "default",
+  intro,
   footer,
 }: {
   onClose: () => void;
   onAuthenticated?: () => void;
   reason?: "default" | "purchase";
+  /**
+   * The heading and line above the form, when the surface that opened this
+   * knows why: the account menu's Projects, Invites and Settings rows each say
+   * what signing in gets you there. Same reasoning as `footer`.
+   */
+  intro?: { title: string; body: string };
   /**
    * Something the surface that opened this needs to say underneath it, usually
    * a way on for someone who is not going to sign in.
@@ -768,11 +785,13 @@ export function CookPilotLoginDialog({
   footer?: ReactNode;
 }) {
   const [busy, setBusy] = useState(false);
+  const title =
+    intro?.title ?? (reason === "purchase" ? "Save your cookbook and purchase" : "Create an account or sign in");
   return (
     <Dialog
       onClose={onClose}
       closeDisabled={busy}
-      label={reason === "purchase" ? "Save your cookbook and purchase" : "Create an account or sign in"}
+      label={title}
       portal
       className="fixed inset-0 z-[var(--z-dialog)] flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
       panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[420px] max-h-[88dvh] sm:max-h-none sm:h-auto rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:pb-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
@@ -789,12 +808,14 @@ export function CookPilotLoginDialog({
 
       <div className="pr-cp-7">
         <h3 className="font-extrabold tracking-[-0.02em] text-cp-dialog-title">
-          {reason === "purchase" ? "Save your cookbook and purchase" : "Create an account or sign in"}
+          {title}
         </h3>
         <p className="text-cp-small text-ink-soft mt-1">
-          {reason === "purchase"
+          {intro
+            ? intro.body
+            : reason === "purchase"
             ? "Signing in keeps this cookbook and its purchase with your account, so you can come back to it on this device or another one."
-            : "Sign in to open your saved Pro projects and cookbooks on this device or another one."}
+            : "Keep your recipe cards, cookbooks and purchases in one place, and pick up where you left off on any device."}
         </p>
       </div>
 

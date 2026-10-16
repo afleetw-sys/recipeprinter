@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 function NotFoundState() {
   return (
     <div className="h-full flex flex-col">
-      <SiteHeader backHref="/" sticky />
+      <SiteHeader backHref="/" sticky chrome="page" />
       <div className="flex-1 flex flex-col items-center justify-center gap-cp-4 text-center px-cp-6">
         <p className="font-bold text-cp-h2">We couldn&apos;t load this recipe link</p>
         <p className="text-ink-soft max-w-sm">

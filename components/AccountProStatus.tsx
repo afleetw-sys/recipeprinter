@@ -5,10 +5,9 @@ import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { CheckIcon, ClockIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
 import { ProBadge } from "@/components/ProBadge";
-import { SegmentedControl } from "@/components/Controls";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
-import { BASIC_BENEFITS, FREE_IMPORTS_BENEFIT, PRO_BENEFITS } from "@/lib/proUpgradeCopy";
-import { AccountImportAllowanceUsage } from "@/components/AccountImportAllowanceUsage";
+import { BASIC_BENEFITS, PRO_BENEFITS } from "@/lib/proUpgradeCopy";
+import { FreePlanCards } from "@/components/FreePlanCards";
 import { track } from "@/lib/analytics";
 import {
   authenticatedProManagementUrl,
@@ -20,12 +19,7 @@ import {
 import { useProPurchase } from "@/lib/useProPurchase";
 import { resolveEffectiveCustomerInfo, type CustomerInfoLoadStatus } from "@/lib/proAccessFallback";
 import { loadRecipePrinterUserProfile, type RecipePrinterMirroredEntitlement } from "@/lib/recipePrinterUserProfile";
-import {
-  PRO_ANNUAL_PRICE_FALLBACK,
-  PRO_MONTHLY_PRICE_FALLBACK,
-  PRO_PRICE_FALLBACKS,
-  type ProBillingCycle,
-} from "@/lib/proProduct";
+import { PRO_PRICE_FALLBACKS } from "@/lib/proProduct";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
 
 
@@ -58,11 +52,7 @@ export function AccountProStatus({ user }: { user: User }) {
   const [proMirrorSyncedAtMs, setProMirrorSyncedAtMs] = useState<number | null>(null);
   const [proInfoLoading, setProInfoLoading] = useState(false);
   const [proMessage, setProMessage] = useState<string | null>(null);
-  /** Only changes which price the Pro card quotes before you've bought
-      anything — `ProUpgradeDialog` still has its own cycle picker once
-      you're actually choosing. */
-  const [billingCycle, setBillingCycle] = useState<ProBillingCycle>("monthly");
-  const { label: price, format: formatPaid, annualSavingsPercent, currency } = useVisitorPrices();
+  const { label: price, format: formatPaid, currency } = useVisitorPrices();
 
   const refreshProCustomerInfo = useCallback(async () => {
     const [liveResult, mirrorResult] = await Promise.allSettled([
@@ -174,7 +164,7 @@ export function AccountProStatus({ user }: { user: User }) {
   });
 
   return (
-    <section className="mb-cp-7 rounded-xl border border-line bg-card p-cp-5">
+    <section id="plan" className="mb-cp-7 scroll-mt-24 rounded-xl border border-line bg-card p-cp-5">
       <div>
         {/* The Basic/Pro comparison drops its card borders on mobile in favor
             of a plain divided list (see the grid below), so the heading needs
@@ -335,89 +325,14 @@ export function AccountProStatus({ user }: { user: User }) {
           // repeating the same three lines, and then the real benefit list
           // `ProUpgradeDialog` itself leads with, so this and the dialog it
           // opens never disagree about what Pro includes.
-          <div className="mt-cp-3">
-            <div className="grid gap-0 sm:grid-cols-2 sm:gap-cp-3">
-              {/* `h-full flex-col` on the card plus `flex-1` on the benefit
-                  list is what keeps both buttons on one baseline regardless
-                  of which list is longer — the grid already stretches both
-                  cards to the tallest one, this just decides where the slack
-                  inside each card goes. */}
-              <div className="flex h-full flex-col border-line py-cp-3 sm:rounded-lg sm:border sm:p-cp-3">
-                <h3 className="text-cp-body font-extrabold text-ink">Basic</h3>
-                <p className="mt-1 text-cp-body font-bold text-ink-soft">Free</p>
-                <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
-                  {BASIC_BENEFITS.map((benefit) => (
-                    <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
-                      <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        {benefit}
-                        {/* The allowance's usage, under the line it counts
-                            against, on the card for the plan you're on. */}
-                        {benefit === FREE_IMPORTS_BENEFIT && <AccountImportAllowanceUsage />}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-
-                <button type="button" className="btn btn-primary btn-compact mt-cp-3 w-full" disabled>
-                  Your current plan
-                </button>
-              </div>
-              <div className="flex h-full flex-col border-t border-line py-cp-3 sm:rounded-lg sm:border sm:p-cp-3">
-                <div className="flex flex-wrap items-center justify-between gap-cp-2">
-                  <div className="flex items-center gap-2">
-                    <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-                    <h3 className="text-cp-body font-extrabold text-ink">Pro</h3>
-                  </div>
-                  <SegmentedControl
-                    label="Billing cycle"
-                    className="segmented-control--compact"
-                    value={billingCycle}
-                    onChange={(cycle) => {
-                      setBillingCycle(cycle);
-                      track("pro_plan_selected", { cycle });
-                    }}
-                    options={[
-                      { id: "monthly", label: "Monthly" },
-                      { id: "annual", label: "Annual" },
-                    ]}
-                  />
-                </div>
-                {billingCycle === "annual" ? (
-                  <p className="mt-1 text-cp-body font-bold text-ink-soft">
-                    {price(PRO_ANNUAL_PRICE_FALLBACK)}{" "}
-                    <span className="pro-plan-card__note">· Save {annualSavingsPercent}%</span>
-                  </p>
-                ) : (
-                  <p className="mt-1 text-cp-body font-bold text-ink-soft">{price(PRO_MONTHLY_PRICE_FALLBACK)}</p>
-                )}
-                <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
-                  <li className="flex items-start gap-cp-2 text-cp-small font-semibold text-ink">
-                    <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                    Everything in Basic
-                  </li>
-                  {PRO_BENEFITS.map((benefit) => (
-                    <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
-                      <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                      {benefit}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  type="button"
-                  className="btn btn-primary btn-compact mt-cp-3 w-full"
-                  disabled={proBusy}
-                  onClick={() => {
-                    track("paywall_viewed", { trigger: "account_menu" });
-                    track("pro_continue_clicked", { cycle: billingCycle });
-                    void purchaseProAndContinue(billingCycle, () => undefined);
-                  }}
-                >
-                  {proBusy ? "Opening checkout…" : "Upgrade"}
-                </button>
-              </div>
-            </div>
-          </div>
+          <FreePlanCards
+            busy={proBusy}
+            onUpgrade={(cycle) => {
+              track("paywall_viewed", { trigger: "account_menu" });
+              track("pro_continue_clicked", { cycle });
+              void purchaseProAndContinue(cycle, () => undefined);
+            }}
+          />
         )}
         {proMessage && <p className="mt-1 text-cp-small text-ink-soft">{proMessage}</p>}
       </div>

@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { AccountPersonalDetails } from "@/components/AccountPersonalDetails";
 import { AccountProStatus } from "@/components/AccountProStatus";
+import { FreePlanCards } from "@/components/FreePlanCards";
 import { AccountIcon, ICON_SIZE, SpinnerIcon } from "@/components/icons";
 
 /**
@@ -19,7 +20,8 @@ import { AccountIcon, ICON_SIZE, SpinnerIcon } from "@/components/icons";
  */
 export default function AccountPage() {
   const { user, ready } = useCookPilotAuth();
-  const [showLogin, setShowLogin] = useState(false);
+  /** The sign-in dialog, and whether Upgrade is what asked for it. */
+  const [login, setLogin] = useState<"account" | "upgrade" | null>(null);
   /**
    * Starts `true` on both server and client so the first render is identical
    * either way — `ready` itself comes from `useCookPilotAuth`'s module-level
@@ -33,10 +35,17 @@ export default function AccountPage() {
   useEffect(() => {
     if (ready) setLoading(false);
   }, [ready]);
+  // A link to a section (the referral invite's "Pro" goes to #plan) arrives
+  // before the section exists, while this page is still loading, so the
+  // browser's own jump finds nothing. Jump once it's there.
+  useEffect(() => {
+    if (loading || !window.location.hash) return;
+    document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ block: "start" });
+  }, [loading]);
 
   return (
     <div className="min-h-screen bg-page text-ink">
-      <SiteHeader />
+      <SiteHeader sticky chrome="page" />
       <main className="mx-auto w-full max-w-5xl px-cp-4 py-cp-5 sm:px-cp-6 sm:py-cp-7">
         <header className="mb-cp-7 flex flex-wrap items-start justify-between gap-cp-4">
           <div>
@@ -53,12 +62,11 @@ export default function AccountPage() {
           </>
         ) : (
           /* Nothing here belongs to a signed-out visitor — no name, no email,
-             no plan, no session to end — so this is a plain sign-in gate
-             rather than the graceful local-shelf fallback `/projects` shows.
-             Reachable only by a direct visit or a bookmark: the header avatar
-             opens the sign-in dialog straight away for a signed-out click
-             (see AccountAvatarButton), never routing here first. */
-          <div className="flex flex-col items-center rounded-xl border border-line bg-card px-cp-4 py-cp-5 text-center sm:px-cp-6 sm:py-cp-7">
+             no plan, no session to end — so the top of the page is the way to
+             sign in, where the personal details would be. The account menu's
+             Settings row lands here signed out too (see AccountAvatarButton). */
+          <>
+          <div className="mb-cp-7 flex flex-col items-center rounded-xl border border-line bg-card px-cp-4 py-cp-5 text-center sm:px-cp-6 sm:py-cp-7">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--cp-accent-warm)]">
               <AccountIcon size={28} className="text-[var(--cp-on-accent-warm)]" />
             </div>
@@ -66,16 +74,36 @@ export default function AccountPage() {
             <p className="mt-cp-2 max-w-sm text-cp-body text-ink-soft leading-relaxed">
               Your name, plan, and settings are tied to your account. Sign in and they’ll be right here.
             </p>
-            <button type="button" className="btn btn-primary mt-cp-5" onClick={() => setShowLogin(true)}>
+            <button type="button" className="btn btn-primary mt-cp-5" onClick={() => setLogin("account")}>
               Sign in
             </button>
           </div>
+          {/* The plans are no secret, so they show signed out too. Upgrade
+              asks for sign-in and stops there: the account that signs in may
+              already have Pro, and its own Plan section says which. */}
+          <section id="plan" className="mb-cp-7 scroll-mt-24 rounded-xl border border-line bg-card p-cp-5">
+            <h2 className="border-b border-line pb-cp-3 text-cp-h2 font-extrabold text-ink sm:border-b-0 sm:pb-0">Plan</h2>
+            <FreePlanCards onUpgrade={() => setLogin("upgrade")} />
+          </section>
+          </>
         )}
       </main>
 
       <SiteFooter />
 
-      {showLogin && !user && <CookPilotLoginDialog onClose={() => setShowLogin(false)} onAuthenticated={() => setShowLogin(false)} />}
+      {login && !user && (
+        <CookPilotLoginDialog
+          onClose={() => setLogin(null)}
+          intro={
+            login === "upgrade"
+              ? {
+                  title: "Sign in to upgrade",
+                  body: "Pro is kept with your account, so it's there on this device or another one.",
+                }
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 }

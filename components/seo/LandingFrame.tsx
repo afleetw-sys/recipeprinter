@@ -41,12 +41,15 @@ export function LandingCta({
   return (
     <Link
       href={href}
+      /* In the header on the narrowest phones (under 360px), just the printer
+         icon: the bar also holds the logo, "Upgrade" and the account. */
+      aria-label={compact ? label : undefined}
       className={`btn ${variant === "primary" ? "btn-primary" : "btn-secondary"}${
-        compact ? " btn-header" : ""
+        compact ? " btn-header max-[359px]:w-8 max-[359px]:px-0" : ""
       }`}
     >
       <PrintIcon size={ICON_SIZE.md} />
-      {label}
+      {compact ? <span className="max-[359px]:hidden">{label}</span> : label}
     </Link>
   );
 }
