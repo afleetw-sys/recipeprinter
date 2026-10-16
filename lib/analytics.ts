@@ -945,6 +945,27 @@ function beginLandingSession(): boolean {
   return true;
 }
 
+function registerFirstTouch(client: PostHog, a: Attribution): void {
+  const category = categoryOf(a.source);
+  client.register_once({
+    first_traffic_source: a.source,
+    first_traffic_source_category: category,
+    first_referrer: a.referrer,
+    first_landing_page: a.landingPage,
+    first_utm_source: a.utmSource,
+    first_utm_medium: a.utmMedium,
+    first_utm_campaign: a.utmCampaign,
+    first_gclid: a.gclid,
+    first_fbclid: a.fbclid,
+    traffic_source: a.source,
+    traffic_source_category: category,
+    is_ai_traffic: isAiTraffic(a.source),
+    latest_traffic_source: a.source,
+    latest_referrer: a.referrer,
+    latest_landing_page: a.landingPage,
+  });
+}
+
 /**
  * The whole attribution side effect, in one place (requirements 1–5):
  *   - first_* super properties via `register_once`, never overwritten.
@@ -980,18 +1001,7 @@ function applyTrafficAttribution(client: PostHog, input: AttributionInput): void
   // only ever arrives direct still has a `traffic_source`. register_once never
   // overwrites, so real external sessions still advance the rolling fields via
   // register() below.
-  client.register_once({
-    first_traffic_source: a.source,
-    first_traffic_source_category: category,
-    first_referrer: a.referrer,
-    first_landing_page: a.landingPage,
-    first_utm_source: a.utmSource,
-    first_utm_medium: a.utmMedium,
-    first_utm_campaign: a.utmCampaign,
-    first_gclid: a.gclid,
-    first_fbclid: a.fbclid,
-    ...latest,
-  });
+  registerFirstTouch(client, a);
 
   // Latest-touch and the Landing Page event are per-session, not per-pageview.
   if (!beginLandingSession()) return;
@@ -1108,4 +1118,52 @@ export function capturePageview(url: string): void {
  */
 export function capturePageleave(url: string): void {
   enqueue((client) => client.capture("$pageleave", { $current_url: url }));
+}
+
+
+/**
+ * Keeps PostHog's person in step with who is signed in. Called from the one
+ * auth listener with the signed-in uid, or null when nobody is.
+ *
+ * Signing out ends the person. Without that, everything the next person did on
+ * a shared device (a family laptop, a library computer) was recorded against
+ * the account signed in before them, purchase attribution included. A
+ * signed-out load that still carries a signed-in person (signed out while
+ * analytics hadn't loaded, or by an older build) is reset too. An ordinary
+ * anonymous visitor is left alone: resetting them would make a new person on
+ * every page load.
+ */
+export function syncAnalyticsIdentity(uid: string | null): void {
+  if (uid) {
+    identifyUser(uid);
+    return;
+  }
+  const wasIdentified = lastIdentifiedId !== null;
+  lastIdentifiedId = null;
+  enqueue((client) => {
+    if (!wasIdentified && client.get_property("$user_state") !== "identified") return;
+    resetPerson(client);
+  });
+}
+
+/** `reset()` clears every super and session property; put back the ones that
+    must outlive it, and never undo an opt-out. */
+function resetPerson(client: PostHog): void {
+  const optedOut = client.has_opted_out_capturing();
+  const internal = (client as PostHog & { get_session_property?: (name: string) => unknown })
+    .get_session_property?.("internal") === true;
+  client.reset();
+  if (optedOut) client.opt_out_capturing();
+  client.register_for_session({
+    browser_app: currentBrowserApp(),
+    ...(internal ? { internal: true } : {}),
+  });
+  if (resolvedAttribution) registerFirstTouch(client, resolvedAttribution);
+}
+
+/** Test seam: run the queue against a stand-in client. */
+export function setAnalyticsClientForTest(client: PostHog | null): void {
+  posthog = client;
+  loadStarted = client !== null;
+  lastIdentifiedId = null;
 }
