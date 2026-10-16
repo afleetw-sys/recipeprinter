@@ -9,7 +9,7 @@ const CONTACT_EMAIL = "recipeprinter@goodproblem.studio";
 // supporting content stays one click away and fully crawlable.
 export function SiteFooter({ isHome = false }: { isHome?: boolean }) {
   return (
-    <footer className="no-print mt-cp-7 border-t border-line px-cp-6 py-cp-6">
+    <footer className="site-footer no-print mt-cp-7 border-t border-line px-cp-6 py-cp-6">
       {/* One measure everywhere, and on the homepage it is the one the kitchen
           strip directly above it uses. The narrow `max-w-home` column belongs
           to the front door alone: a footer set to it sat visibly inside the
