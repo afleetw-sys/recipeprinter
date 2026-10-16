@@ -515,7 +515,8 @@ function extraItemsFor(base: QueueItem | undefined, fallbackSource: string, reci
 export interface AddImportOptions {
   /**
    * This import lands in a cookbook that is being built in the same tick, so
-   * `cookbookMode` isn't true yet: never meter it (see `meterGateFor`).
+   * `cookbookMode` isn't true yet: never meter it (see `meterGateFor`), and
+   * never hold it to the one-recipe card limit (see `addReadyRecipes`).
    */
   meterExempt?: boolean;
 }
@@ -1240,7 +1241,7 @@ export function useQueue() {
    * only thing this needs to know is that they are finished.
    */
   const addReadyRecipes = useCallback(
-    (recipes: QueueItem[]) => {
+    (recipes: QueueItem[], opts?: AddImportOptions) => {
       if (recipes.length === 0) return 0;
       const existingIds = new Set(itemsRef.current.map((item) => item.id));
       let nextRecipes = recipes.filter((recipe) => !existingIds.has(recipe.id));
@@ -1250,7 +1251,10 @@ export function useQueue() {
       // bites if a commit somehow arrives oversized anyway. Never drop
       // silently: whatever this trims, `onMultiRecipeBlocked` says so.
       const kept = withoutFailedIfSingle(itemsRef.current);
-      if (singleRecipeOnlyRef.current) {
+      // A pick handed over from the homepage's Cookbook tab arrives before the
+      // book is switched on, so the gate above still reads "cards". It is a
+      // book, and a book holds every recipe it was given (see `meterExempt`).
+      if (singleRecipeOnlyRef.current && !opts?.meterExempt) {
         const allowed = Math.max(0, 1 - kept.length);
         if (nextRecipes.length > allowed) {
           onMultiRecipeBlockedRef.current?.({ source: "library", foundCount: nextRecipes.length });

@@ -895,6 +895,16 @@ describe("adding recipes", () => {
     expect(dialogs.welcome.open).toBe(true);
   });
 
+  it("keeps every recipe picked from an app on the homepage's Cookbook tab", async () => {
+    const picked = [1, 2, 3].map((n) => ({ ...recipeItem(`pk-${n}`, `Picked ${n}`), method: "paprika" }));
+    sessionStorage.setItem("recipeprinter:pending-import:v1", JSON.stringify({ kind: "ready", recipes: picked }));
+    seedMeta({ cookbookIntent: true, cookbookBornFresh: true });
+    await renderPrintPage();
+    await settle(3000);
+    const queued = JSON.parse(sessionStorage.getItem("recipeprinter:queue:v1") ?? "[]") as { id: string }[];
+    expect(queued.map((item) => item.id)).toEqual(["pk-1", "pk-2", "pk-3"]);
+  });
+
   it("says a re-added recipe is already there in a toast, in cards and in a cookbook", async () => {
     const url = "https://example.com/bourbon-chicken";
     for (const cookbookMode of [false, true]) {

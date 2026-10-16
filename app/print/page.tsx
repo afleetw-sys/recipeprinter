@@ -4231,7 +4231,7 @@ export default function PrintPage() {
       if (startsFresh) queue.clear();
       if (pending.kind === "url") queue.addUrl(pending.url, importOptions);
       else if (pending.kind === "text") queue.addText(pending.text, importOptions);
-      else if (pending.kind === "ready") queue.addReadyRecipes(pending.recipes);
+      else if (pending.kind === "ready") queue.addReadyRecipes(pending.recipes, importOptions);
       // Files, not data URLs: the decode now happens HERE, inside `runParse`,
       // so the placeholder row goes up first and the photo is worked on in
       // front of the cook instead of behind a spinner on the page they left.
