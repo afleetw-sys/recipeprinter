@@ -50,6 +50,11 @@ function formatDate(ms: number | null): string | null {
  */
 export function AccountProStatus({ user }: { user: User }) {
   const uid = user.uid;
+  // Arrived from the usage count (`/account#plan`): this section only exists
+  // once sign-in has loaded, after the browser's own jump to the anchor.
+  useEffect(() => {
+    if (window.location.hash === "#plan") document.getElementById("plan")?.scrollIntoView();
+  }, []);
   const [proCustomerInfo, setProCustomerInfo] = useState<CustomerInfo | null>(null);
   const [proInfoStatus, setProInfoStatus] = useState<CustomerInfoLoadStatus>("idle");
   const [proInfoLastVerifiedAtMs, setProInfoLastVerifiedAtMs] = useState<number | null>(null);
@@ -174,7 +179,7 @@ export function AccountProStatus({ user }: { user: User }) {
   });
 
   return (
-    <section className="mb-cp-7 rounded-xl border border-line bg-card p-cp-5">
+    <section id="plan" className="mb-cp-7 scroll-mt-24 rounded-xl border border-line bg-card p-cp-5">
       <div>
         {/* The Basic/Pro comparison drops its card borders on mobile in favor
             of a plain divided list (see the grid below), so the heading needs

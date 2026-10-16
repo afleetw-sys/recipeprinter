@@ -22,6 +22,15 @@ export const IMPORT_ALLOWANCE_LIVE = true;
 // needs no account either (Amelia, 2026-10-10).
 export const FREE_IMPORTS_LINE = `${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days.`;
 
+/**
+ * Whether the count is drawn red: more than 8 of 10 used, like Claude's own
+ * usage display. One rule for the header ring and the Settings bar, so they
+ * can never disagree about how close someone is.
+ */
+export function importsNearlyOut(used: number, limit: number): boolean {
+  return limit > 0 && used / limit > 0.8;
+}
+
 /** "Oct 21": the day the free imports reset, in the cook's own locale. */
 export function formatImportReturnDate(ms: number): string {
   return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });

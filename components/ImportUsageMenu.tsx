@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState, type CSSProperties } from "react";
 import { AnchoredMenu } from "@/components/AnchoredMenu";
 import { CrownIcon, GaugeIcon, ICON_SIZE } from "@/components/icons";
-import { importAllowanceLine } from "@/lib/freeImports";
+import { importAllowanceLine, importsNearlyOut } from "@/lib/freeImports";
 import { rememberedImportUsage, usageNow } from "@/lib/importMeter";
 import { useImportUsage } from "@/lib/useImportUsage";
 
@@ -73,16 +74,24 @@ export function ImportUsageMenu({
             says "usage" until there is some to draw (Amelia, 2026-10-11). */}
         {fraction > 0 ? <UsageRing
             fraction={fraction}
+            nearlyOut={importsNearlyOut(usage?.used ?? 0, usage?.limit ?? 0)}
             size={18}
             fill={fill && usage ? { key: fill.key, from: Math.min(fill.fromUsed, usage.limit) / usage.limit } : null}
           /> : <GaugeIcon size={ICON_SIZE.md} />}
       </button>
       {open && (
         <AnchoredMenu anchorRef={anchorRef} onClose={() => setOpen(false)} label="Free imports" align={align}>
-          <div className="px-[9px] pb-cp-2 pt-[6px]">
+          {/* The count goes to the Plan section of Settings, where the free and
+              Pro plans sit side by side (Amelia, 2026-10-16). */}
+          <Link
+            href="/account#plan"
+            role="menuitem"
+            className="mb-cp-1 block rounded-lg px-[9px] pb-cp-2 pt-[6px] hover:bg-page"
+            onClick={() => setOpen(false)}
+          >
             <p className="text-cp-small font-bold text-ink">{line.lead}</p>
             {line.detail && <p className="text-cp-small text-ink-soft">{line.detail}</p>}
-          </div>
+          </Link>
           <button
             type="button"
             role="menuitem"
@@ -127,15 +136,18 @@ function useNewImportFill(used: number | null): { key: number; fromUsed: number 
 
 /**
  * The count as a ring that fills clockwise from the top: empty before the
- * first import, full at none left. Decorative: the button's name says the
+ * first import, full at none left, red when nearly out. Decorative: the button's name says the
  * same thing in words, so it is hidden from screen readers.
  */
 function UsageRing({
   fraction,
+  nearlyOut = false,
   size = 14,
   fill = null,
 }: {
   fraction: number;
+  /** Red past 8 of 10 (`importsNearlyOut`). */
+  nearlyOut?: boolean;
   size?: number;
   /** An import was just counted: fill from `from` to `fraction`. */
   fill?: { key: number; from: number } | null;
@@ -164,7 +176,7 @@ function UsageRing({
           cy={center}
           r={radius}
           fill="none"
-          stroke="var(--cp-accent)"
+          stroke={nearlyOut ? "var(--cp-error)" : "var(--cp-accent)"}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={length}
