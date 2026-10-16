@@ -4838,7 +4838,8 @@ export default function PrintPage() {
         onClick={() => openProUpgradeDialog("topbar_button")}
       >
         <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-        Upgrade to Pro
+        {/* "Upgrade" alone on a phone, where the bar is tight. */}
+        <span>Upgrade<span className="max-sm:hidden"> to Pro</span></span>
       </button>
     );
   }

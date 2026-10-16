@@ -24,7 +24,7 @@ export default function InvitesPage() {
 
   return (
     <div className="min-h-screen bg-page text-ink">
-      <SiteHeader />
+      <SiteHeader sticky chrome="page" />
       <main className="mx-auto w-full max-w-5xl px-cp-4 py-cp-5 sm:px-cp-6 sm:py-cp-7">
         <header className="mb-cp-7">
           <h1 className="text-cp-hero-sm font-extrabold tracking-[-0.04em] leading-[1.08]">Invites</h1>

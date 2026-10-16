@@ -45,7 +45,7 @@ export default function AccountPage() {
 
   return (
     <div className="min-h-screen bg-page text-ink">
-      <SiteHeader />
+      <SiteHeader sticky chrome="page" />
       <main className="mx-auto w-full max-w-5xl px-cp-4 py-cp-5 sm:px-cp-6 sm:py-cp-7">
         <header className="mb-cp-7 flex flex-wrap items-start justify-between gap-cp-4">
           <div>

@@ -11,8 +11,9 @@ import {
 } from "@/lib/importMeter";
 
 /**
- * The homepage header's Pro control, the same one `/print` carries in its own
- * header (Amelia, 2026-10-11): "Upgrade to Pro" beside the wordmark. The
+ * The header's Pro control on every page, the same one `/print` carries in its
+ * own header (Amelia, 2026-10-11; every page, 2026-10-16): "Upgrade to Pro"
+ * beside the wordmark. The
  * free-import count is a ring on the account avatar (`ImportUsageBadge`).
  *
  * It and the import box open one dialog, held by `FrontDoorUpgradeHost`, which the import box
@@ -66,15 +67,26 @@ export function FrontDoorUpgradeHost() {
     is Pro; in the page's HTML for everyone else, so it never pops in. */
 export function FrontDoorUpgradeButton() {
   const pro = useSyncExternalStore(subscribeImportUsage, importsKnownUnlimited, () => false);
+  // Every page's header carries this, but only pages with an import box mount
+  // `FrontDoorUpgradeHost`. Elsewhere (the guides, Settings, Projects) the
+  // button opens the same dialog itself.
+  const [ownSignal, setOwnSignal] = useState(0);
   if (pro) return null;
   return (
-    <button
-      type="button"
-      className="btn btn-premium btn-header"
-      onClick={() => requestUpgrade("topbar_button")}
-    >
-      <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-      Upgrade to Pro
-    </button>
+    <>
+      <button
+        type="button"
+        className="btn btn-premium btn-header"
+        onClick={() => {
+          if (hosts.size > 0) requestUpgrade("topbar_button");
+          else setOwnSignal((signal) => signal + 1);
+        }}
+      >
+        <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
+        {/* "Upgrade" alone on a phone, where the bar is tight. */}
+        <span>Upgrade<span className="max-sm:hidden"> to Pro</span></span>
+      </button>
+      {ownSignal > 0 && <FrontDoorUpgradeDialog openSignal={ownSignal} trigger="topbar_button" spent={false} />}
+    </>
   );
 }

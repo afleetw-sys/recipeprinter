@@ -448,15 +448,15 @@ function MenuImportUsage() {
   if (hidden) return null;
   const line = importAllowanceLine(usage);
   return (
-    <div className="mb-cp-1 flex items-start gap-2 border-b border-line px-cp-3 pb-cp-3 pt-cp-2 text-cp-small">
+    <div className="mb-cp-1 flex items-center gap-2 border-b border-line px-cp-3 pb-cp-3 pt-cp-2 text-cp-small">
       {/* Once an import is used, the same ring as the avatar's badge, so the
           two read as one thing. Before that, the plain usage icon. */}
       {usage && usage.used > 0 ? (
-        <span className="mt-px grid shrink-0 place-items-center" style={{ width: ICON_SIZE.md, height: ICON_SIZE.md }}>
+        <span className="grid shrink-0 place-items-center" style={{ width: ICON_SIZE.md, height: ICON_SIZE.md }}>
           <UsageRing used={usage.used} limit={usage.limit} size={ICON_SIZE.md} />
         </span>
       ) : (
-        <GaugeIcon size={ICON_SIZE.md} className="mt-px shrink-0 text-ink-soft" />
+        <GaugeIcon size={ICON_SIZE.md} className="shrink-0 text-ink-soft" />
       )}
       <div>
         <p className="font-semibold text-ink">{line.lead}</p>
