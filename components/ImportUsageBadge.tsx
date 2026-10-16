@@ -16,7 +16,7 @@ export function ImportUsageBadge() {
   if (hidden || !usage || usage.limit <= 0 || usage.used <= 0) return null;
   return (
     <span
-      className="pointer-events-none absolute -right-1.5 -top-1.5 grid h-[18px] w-[18px] place-items-center rounded-full bg-card"
+      className="pointer-events-none absolute -right-1.5 -top-1.5 grid h-[18px] w-[18px] place-items-center rounded-full"
       aria-hidden
     >
       <UsageRing used={usage.used} limit={usage.limit} />
