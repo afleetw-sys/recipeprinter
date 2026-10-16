@@ -220,7 +220,24 @@ export function hasTemplateEntitlement(
  * "access model" tests for every combination this must hold for.
  */
 export function hasProEntitlement(customerInfo: CustomerInfo | null): boolean {
-  return Boolean(customerInfo?.entitlements.active[RECIPEPRINTER_PRO_ENTITLEMENT_ID]);
+  const pro = customerInfo?.entitlements.active[RECIPEPRINTER_PRO_ENTITLEMENT_ID];
+  if (!pro) return false;
+  // `active` was decided when customerInfo was fetched, and a page reads it
+  // once per identity. Its own end date says whether it is still true now, so
+  // a tab left open past the end of Pro locks Pro features and meters imports
+  // again without a reload. A renewal the tab hasn't heard of yet is settled
+  // by the server: the meter's own check reads the webhook mirror.
+  const expiresAt = pro.expirationDate;
+  return !expiresAt || expiresAt.getTime() > Date.now();
+}
+
+/**
+ * When the cached Pro ends, so the page can fetch customerInfo again at that
+ * moment (one read, only then). Null when there's no Pro, or it never ends.
+ */
+export function proEntitlementEndsAt(customerInfo: CustomerInfo | null): Date | null {
+  const pro = customerInfo?.entitlements.active[RECIPEPRINTER_PRO_ENTITLEMENT_ID];
+  return pro?.expirationDate ?? null;
 }
 
 /**

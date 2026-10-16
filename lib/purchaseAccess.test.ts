@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   postPrintPrompt,
   purchaseGate,
@@ -63,6 +63,14 @@ describe("sign-out / sign-in and account switching (revenueCatIdentityTransition
 
 describe("purchaseGate driven end-to-end by resolveEffectiveCustomerInfo (fallback reliability)", () => {
   const NOW = Date.parse("2026-06-01T00:00:00Z");
+  // `hasProEntitlement` reads the real clock for an entitlement's end; hold it at NOW.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   function proLockedFor(mirroredEntitlements: Parameters<typeof resolveEffectiveCustomerInfo>[0]["mirroredEntitlements"]) {
     const effective = resolveEffectiveCustomerInfo({

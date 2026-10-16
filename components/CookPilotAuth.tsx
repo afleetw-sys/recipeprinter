@@ -27,7 +27,7 @@ import {
   markAuthRedirectPending,
 } from "@/lib/authRedirect";
 import { purgeAnonymousUser as purgeAnonymousUserFor } from "@/lib/anonymousSession";
-import { identifyUser, track } from "@/lib/analytics";
+import { syncAnalyticsIdentity, track } from "@/lib/analytics";
 import {
   readCookPilotWasSignedIn,
   rememberCookPilotSignedIn,
@@ -217,11 +217,11 @@ function startAuthSubscription(): void {
     // A redirect result is still being read, so "no user" is "not yet".
     if (!nextUser && redirectInFlight) return;
     rememberCookPilotSignedIn(Boolean(nextUser));
+    // The one place a real CookPilot account becomes known, or stops being:
+    // identify the PostHog person (opaque Firebase uid, no PII), and end it on
+    // sign-out so the next person on a shared device isn't recorded as them.
+    syncAnalyticsIdentity(nextUser?.uid ?? null);
     if (nextUser) {
-      // The one place a real CookPilot account becomes known — identify the
-      // PostHog person here so first-/latest-touch attribution lands on the
-      // person. Uses the opaque Firebase uid, no PII.
-      identifyUser(nextUser.uid);
       // Account metadata is best-effort and must never hold the sign-in UI
       // hostage. Rules allow only these harmless timestamps; server-owned
       // purchases, entitlements, grants, and roles cannot be changed here.

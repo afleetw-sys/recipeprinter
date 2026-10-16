@@ -12,6 +12,7 @@ import {
   loadRecipePrinterCustomerInfo,
   recipePrinterCustomerId,
   syncRecipePrinterCustomerAttributes,
+  proEntitlementEndsAt,
 } from "@/lib/recipePrinterPurchases";
 import type { CustomerInfoLoadStatus } from "@/lib/proAccessFallback";
 import type { QueueItem } from "@/types/recipe";
@@ -189,6 +190,34 @@ export function usePremiumTemplatePurchase({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revenueCatUserId]);
+
+  // Pro that ends while the page is open: one fresh read at that moment (and
+  // on coming back to a tab that was hidden through it), so Pro locks and the
+  // free-import count come back without a reload. `hasProEntitlement` already
+  // stops counting it at its end date; this only brings the page up to date.
+  const proEndsAtMs = proEntitlementEndsAt(customerInfo)?.getTime() ?? null;
+  useEffect(() => {
+    if (!revenueCatUserId || proEndsAtMs === null) return;
+    const refreshIfEnded = () => {
+      if (Date.now() < proEndsAtMs) return;
+      refreshCustomerInfo(revenueCatUserId).catch((error) => {
+        console.warn("RecipePrinter: could not refresh customer info after Pro ended", error);
+      });
+    };
+    // setTimeout can't wait longer than ~24 days; a later end is caught on
+    // the next visit instead.
+    const delay = proEndsAtMs - Date.now() + 5_000;
+    const timer = delay > 0 && delay < 2_000_000_000 ? window.setTimeout(refreshIfEnded, delay) : null;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshIfEnded();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      if (timer !== null) window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revenueCatUserId, proEndsAtMs]);
 
   return {
     revenueCatUserId,
