@@ -33,7 +33,7 @@ import {
   rememberCookPilotSignedIn,
 } from "@/lib/cookPilotSession";
 import { Dialog } from "@/components/Dialog";
-import { AppleIcon, CheckIcon, GoogleIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
+import { AppleIcon, CheckIcon, EyeIcon, EyeOffIcon, GoogleIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Shared RecipePrinter login: same Firebase project, same providers, same
@@ -382,6 +382,7 @@ export function CookPilotLoginForm({
   const [step, setStep] = useState<"email" | "password" | "create">("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusyState] = useState(false);
   const setBusy = (value: boolean) => {
     setBusyState(value);
@@ -661,19 +662,34 @@ export function CookPilotLoginForm({
               <label className="field-label" htmlFor="cookpilot-password">
                 {step === "create" ? "Create a password for" : "Password for"} {email.trim()}
               </label>
-              <input
-                id="cookpilot-password"
-                name="password"
-                className="field"
-                type="password"
-                autoComplete={step === "create" ? "new-password" : "current-password"}
-                autoFocus={autoFocus}
-                value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value);
-                  if (error) setError(null);
-                }}
-              />
+              <div className="relative">
+                <input
+                  id="cookpilot-password"
+                  name="password"
+                  className="field pr-12"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={step === "create" ? "new-password" : "current-password"}
+                  autoFocus={autoFocus}
+                  value={password}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    if (error) setError(null);
+                  }}
+                />
+                {/* Show or hide what's typed. Keeps the caret in the field (no
+                    focus change on press), so typing carries on either way. */}
+                <button
+                  type="button"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded text-ink-soft hover:text-ink"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  aria-controls="cookpilot-password"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => setShowPassword((value) => !value)}
+                >
+                  {showPassword ? <EyeOffIcon size={ICON_SIZE.lg} /> : <EyeIcon size={ICON_SIZE.lg} />}
+                </button>
+              </div>
               {error && <p className="field-error" role="alert">{error}</p>}
               {step === "create" && !error && (
                 <p className="mt-1 text-cp-caption leading-4 text-ink-soft">At least 6 characters.</p>
