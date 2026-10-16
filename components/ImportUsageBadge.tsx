@@ -1,5 +1,6 @@
 "use client";
 
+import { importsNearlyOut } from "@/lib/freeImports";
 import { useImportUsage } from "@/lib/useImportUsage";
 
 /**
@@ -26,13 +27,13 @@ export function ImportUsageBadge() {
 
 /**
  * The count as a ring that fills clockwise from the top: empty before the
- * first import, full at none left. It turns red once more than 8 of 10 are
- * used, like Claude's own usage ring. Decorative: the account menu says the
- * same thing in words, so it is hidden from screen readers.
+ * first import, full at none left. Red when nearly out (`importsNearlyOut`).
+ * Decorative: the account menu says the same thing in words, so it is hidden
+ * from screen readers.
  */
 export function UsageRing({ used, limit, size = 14 }: { used: number; limit: number; size?: number }) {
   const fraction = limit > 0 ? Math.min(used, limit) / limit : 0;
-  const nearlyOut = fraction > 0.8;
+  const nearlyOut = importsNearlyOut(used, limit);
   const stroke = size >= 18 ? 3 : 2.5;
   const radius = (size - stroke) / 2;
   const length = 2 * Math.PI * radius;
