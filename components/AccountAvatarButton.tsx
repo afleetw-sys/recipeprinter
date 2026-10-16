@@ -460,7 +460,7 @@ function MenuImportUsage() {
       )}
       <div>
         <p className="font-semibold text-ink">{line.lead}</p>
-        {line.detail && <p className="text-ink-soft">{line.detail}</p>}
+        {line.detail && <p className="text-cp-caption text-ink-soft">{line.detail}</p>}
       </div>
     </div>
   );
