@@ -55,7 +55,8 @@ export function RecipeBinderSections() {
             cookbook builder
           </Link>{" "}
           can add section pages, a table of contents, and page numbers before you print the
-          collection. The cookbook builder is a separate one-off purchase.
+          collection. You can preview a cookbook with up to 10 recipes free; a
+          separate one-time purchase lets you download or print it and add more.
         </p>
       </aside>
     </div>

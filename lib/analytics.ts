@@ -266,6 +266,18 @@ type EventProps = {
     minutes: number;
   };
   /**
+   * Stashing a failed import for debugging was itself refused: the photo upload
+   * to Storage (`upload`) or the `debugInbox` row (`inbox`). `errorCode` is the
+   * Firebase code, e.g. `storage/unauthorized` when App Check or rules said no.
+   * Without this a refused capture looks exactly like no failure at all.
+   */
+  failed_import_capture_failed: {
+    stage: "upload" | "inbox";
+    source: string;
+    category: string;
+    errorCode: string;
+  };
+  /**
    * Parsing threw. `reason` is the raw parser message, truncated; `category`
    * is the groupable bucket it fell into.
    */
@@ -974,21 +986,6 @@ function beginLandingSession(): boolean {
   return true;
 }
 
-/**
- * The whole attribution side effect, in one place (requirements 1–5):
- *   - first_* super properties via `register_once`, never overwritten.
- *   - the rolling "latest known source" fields (`traffic_source`,
- *     `traffic_source_category`, `latest_*`), which advance each new session
- *     but ONLY on a real external source (see below).
- *   - a "Landing Page" event once per session.
- *
- * Super properties (not `$set` person properties) are deliberate. They were
- * originally forced: under `person_profiles: "identified_only"` a `$set` from
- * an anonymous visitor was dropped outright. That is no longer true, but the
- * choice stands on its own — super properties attach to EVERY event, which is
- * exactly "attach to all future events", and it keeps attribution queryable on
- * the events themselves rather than only through a join to the person.
- */
 function registerFirstTouch(client: PostHog, a: Attribution): void {
   const category = categoryOf(a.source);
   client.register_once({
@@ -1010,6 +1007,21 @@ function registerFirstTouch(client: PostHog, a: Attribution): void {
   });
 }
 
+/**
+ * The whole attribution side effect, in one place (requirements 1–5):
+ *   - first_* super properties via `register_once`, never overwritten.
+ *   - the rolling "latest known source" fields (`traffic_source`,
+ *     `traffic_source_category`, `latest_*`), which advance each new session
+ *     but ONLY on a real external source (see below).
+ *   - a "Landing Page" event once per session.
+ *
+ * Super properties (not `$set` person properties) are deliberate. They were
+ * originally forced: under `person_profiles: "identified_only"` a `$set` from
+ * an anonymous visitor was dropped outright. That is no longer true, but the
+ * choice stands on its own — super properties attach to EVERY event, which is
+ * exactly "attach to all future events", and it keeps attribution queryable on
+ * the events themselves rather than only through a join to the person.
+ */
 function applyTrafficAttribution(client: PostHog, input: AttributionInput): void {
   const a = resolveAttribution(input);
   resolvedAttribution = a;

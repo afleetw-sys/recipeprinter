@@ -223,17 +223,17 @@ vi.mock("@/components/FeedbackButton", () => ({ FeedbackDialog: nullComponent })
 vi.mock("@/components/PrintDialogs", () => ({ PrintDialogs: nullComponent }));
 /** The latest props of the two dialogs the cookbook welcome hands between. */
 const dialogs = vi.hoisted(() => ({
-  add: {} as { open?: boolean; title?: string },
-  welcome: {} as { onStart?: () => void; hasRecipes?: boolean },
+  add: {} as { open?: boolean; title?: string; onAddUrl?: (url: string) => void },
+  welcome: {} as { open?: boolean; onStart?: () => void; hasRecipes?: boolean },
 }));
 vi.mock("@/components/AddRecipeDialog", () => ({
-  AddRecipeDialog: (props: { open?: boolean; title?: string }) => {
+  AddRecipeDialog: (props: typeof dialogs.add) => {
     dialogs.add = props;
     return null;
   },
 }));
 vi.mock("@/components/CookbookWelcomeDialog", () => ({
-  CookbookWelcomeDialog: (props: { onStart?: () => void }) => {
+  CookbookWelcomeDialog: (props: typeof dialogs.welcome) => {
     dialogs.welcome = props;
     return null;
   },
@@ -877,5 +877,53 @@ describe("Firestore's connection around a print", () => {
 
     unmount();
     expect(printNet.calls).toContain("resume");
+  });
+});
+
+describe("adding recipes", () => {
+  function seedMeta(meta: Record<string, unknown>) {
+    sessionStorage.setItem(
+      "recipeprinter:project-meta:v1",
+      JSON.stringify({ projectId: "fx-project", sections: [], ...meta }),
+    );
+  }
+
+  it("welcomes a cookbook started from the library's New cookbook", async () => {
+    seedMeta({ cookbookIntent: true, cookbookBornFresh: true });
+    await renderPrintPage();
+    await settle(3000);
+    expect(dialogs.welcome.open).toBe(true);
+  });
+
+  it("keeps every recipe picked from an app on the homepage's Cookbook tab", async () => {
+    const picked = [1, 2, 3].map((n) => ({ ...recipeItem(`pk-${n}`, `Picked ${n}`), method: "paprika" }));
+    sessionStorage.setItem("recipeprinter:pending-import:v1", JSON.stringify({ kind: "ready", recipes: picked }));
+    seedMeta({ cookbookIntent: true, cookbookBornFresh: true });
+    await renderPrintPage();
+    await settle(3000);
+    const queued = JSON.parse(sessionStorage.getItem("recipeprinter:queue:v1") ?? "[]") as { id: string }[];
+    expect(queued.map((item) => item.id)).toEqual(["pk-1", "pk-2", "pk-3"]);
+  });
+
+  it("says a re-added recipe is already there in a toast, in cards and in a cookbook", async () => {
+    const url = "https://example.com/bourbon-chicken";
+    for (const cookbookMode of [false, true]) {
+      cleanup();
+      sessionStorage.clear();
+      const item = { ...recipeItem("fx-bourbon", "Bourbon Chicken"), method: "url", originalUrl: url, source: url };
+      sessionStorage.setItem("recipeprinter:queue:v1", JSON.stringify([item, recipeItem("fx-2", "Fixture 2")]));
+      sessionStorage.setItem(
+        "recipeprinter:print-job:current:v1",
+        JSON.stringify({ ids: ["fx-bourbon", "fx-2"] }),
+      );
+      seedMeta({ cookbookMode });
+      await renderPrintPage();
+      await settle(100);
+      await act(async () => {
+        dialogs.add.onAddUrl!(url);
+      });
+      await settle(0);
+      expect(toastText() ?? "", cookbookMode ? "cookbook" : "cards").toContain("Bourbon Chicken");
+    }
   });
 });

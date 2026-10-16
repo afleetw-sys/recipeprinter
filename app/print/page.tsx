@@ -4249,7 +4249,7 @@ export default function PrintPage() {
       if (startsFresh) queue.clear();
       if (pending.kind === "url") queue.addUrl(pending.url, importOptions);
       else if (pending.kind === "text") queue.addText(pending.text, importOptions);
-      else if (pending.kind === "ready") queue.addReadyRecipes(pending.recipes);
+      else if (pending.kind === "ready") queue.addReadyRecipes(pending.recipes, importOptions);
       // Files, not data URLs: the decode now happens HERE, inside `runParse`,
       // so the placeholder row goes up first and the photo is worked on in
       // front of the cook instead of behind a spinner on the page they left.
@@ -4685,12 +4685,22 @@ export default function PrintPage() {
   // Mirror the home queue's cue here: scroll the deck to that recipe and shake
   // its rail row so it's obvious why nothing new appeared. Keyed on
   // `focusNonce` so a repeat import of the same recipe re-fires.
+  //
+  // And say so in a toast. The add dialog closes on submit, so a line inside
+  // it went away with it, and the shake happens on a rail the dialog was
+  // covering.
   useEffect(() => {
     if (queue.focusNonce === 0) return;
     const id = queue.focusedItemId;
-    if (!id || !(items ?? []).some((it) => it.id === id)) return;
+    const existing = (items ?? []).find((it) => it.id === id);
+    if (!id || !existing) return;
     setPendingFocusRecipeId(id);
     setRailShake({ recipeId: id, nonce: queue.focusNonce });
+    showToast(
+      `${existing.title || "That recipe"} is already in ${
+        projectMeta.meta.cookbookMode ? "this cookbook" : "your recipe cards"
+      }`,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queue.focusNonce]);
 
@@ -4939,9 +4949,10 @@ export default function PrintPage() {
     if (!projectMeta.meta.cookbookIntent) return;
     if (items === null || projectLoading || projectMeta.meta.cookbookMode) return;
     projectMeta.clearCookbookIntent();
-    // No `offerAfter`: pitching the cookbook to someone who just clicked
-    // "New cookbook" is asking a question they have already answered.
-    beginCookbookBuild();
+    // The same welcome the homepage's Cookbook tab gets, over the finished
+    // book. It is the cookbook's onboarding as well as its price, and a cook
+    // starting one from the library needs that as much as one from the home.
+    beginCookbookBuild({ offerAfter: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectMeta.meta.cookbookIntent, projectMeta.meta.cookbookMode, items === null, projectLoading]);
 
@@ -7063,8 +7074,6 @@ export default function PrintPage() {
         }}
         title={addingFirstRecipe ? "Add your first recipe" : undefined}
         items={queue.items}
-        focusedItemId={queue.focusedItemId}
-        focusNonce={queue.focusNonce}
         onAddUrl={queue.addUrl}
         onAddImageFiles={queue.addImageFiles}
         onAddText={queue.addText}

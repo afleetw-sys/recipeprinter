@@ -398,7 +398,7 @@ export const FAQ: FaqItem[] = [
     question: "Is RecipePrinter free?",
     group: "account",
     answer:
-      `Yes. You get ${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days, with no account required, and you can edit, customize and print your recipes as often as you like. RecipePrinter Pro is optional: it adds unlimited imports, 4 by 6 recipe cards, every theme, batch printing, and the full card toolkit for $4.99 a month or $39.99 a year. Making a cookbook? You can preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes; downloading it is $19.99 once, and then you can add as many recipes as you like.`,
+      `Yes. You get ${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days, with no account required, and you can edit, customize and print your recipes as often as you like. RecipePrinter Pro is optional: it adds unlimited imports, 4 by 6 recipe cards, every theme, batch printing, and the full card toolkit for $4.99 a month or $39.99 a year. Making a cookbook? You can preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes; a one-time $19.99 purchase lets you download or print it and add more recipes.`,
   },
   {
     question: "Is RecipePrinter a recipe app?",

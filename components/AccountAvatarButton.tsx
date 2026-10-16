@@ -348,7 +348,7 @@ export default function AccountAvatarButton({
               {providerError && <p className="field-error px-cp-2" role="alert">{providerError}</p>}
             </div>
           )}
-          <MenuImportUsage />
+          <MenuImportUsage onNavigate={closeMenu} />
           <Link href="/account" className={ROW_CLASS} onClick={closeMenu}>
             <SettingsIcon size={ICON_SIZE.md} className="shrink-0 text-ink-soft" />
             Settings
@@ -443,12 +443,19 @@ function ProjectsRow({
  * Its own component so the count is only read while the menu is open, and
  * nothing for a Pro member, who has no count.
  */
-function MenuImportUsage() {
+function MenuImportUsage({ onNavigate }: { onNavigate: () => void }) {
   const { hidden, usage } = useImportUsage();
   if (hidden) return null;
   const line = importAllowanceLine(usage);
   return (
-    <div className="mb-cp-1 flex items-center gap-2 border-b border-line px-cp-3 pb-cp-3 pt-cp-2 text-cp-small">
+    <div className="mb-cp-1 border-b border-line pb-cp-1">
+    {/* The count goes to the Plan section of Settings, where the free and Pro
+        plans sit side by side (Amelia, 2026-10-16). */}
+    <Link
+      href="/account#plan"
+      className="flex items-center gap-2 rounded-lg px-cp-3 pb-cp-2 pt-cp-2 text-cp-small hover:bg-page"
+      onClick={onNavigate}
+    >
       {/* Once an import is used, the same ring as the avatar's badge, so the
           two read as one thing. Before that, the plain usage icon. */}
       {usage && usage.used > 0 ? (
@@ -462,6 +469,7 @@ function MenuImportUsage() {
         <p className="font-semibold text-ink">{line.lead}</p>
         {line.detail && <p className="text-cp-caption text-ink-soft">{line.detail}</p>}
       </div>
+    </Link>
     </div>
   );
 }

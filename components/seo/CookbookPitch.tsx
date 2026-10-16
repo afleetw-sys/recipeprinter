@@ -58,7 +58,7 @@ export function cookbookPitchFeature({
     body: (
       <>
         {body ??
-          "Once enough recipes have earned a place, add them to a cookbook. Sort them into chapters and choose a cover, and RecipePrinter builds the table of contents and page numbers as you go. Then print it at home on US Letter or send the file to Lulu or Blurb for a hardcover or spiral bound cookbook. Each cookbook is its own one-off purchase."}{" "}
+          "Once enough recipes have earned a place, add them to a cookbook. Sort them into chapters and choose a cover, and RecipePrinter builds the table of contents and page numbers as you go. Preview up to 10 recipes free; a one-time purchase for that cookbook lets you download or print it and add more recipes."}{" "}
         <Link href="/family-recipe-book" className="font-bold text-ink hover:underline">
           Family recipe book ideas
         </Link>{" "}

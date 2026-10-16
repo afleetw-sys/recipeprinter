@@ -151,8 +151,14 @@ export function PaprikaImportSource({
   // (see the `key` on the call site), so there is no in-place swap to make.
   const [library] = useState<PaprikaLibrary | null>(() => cachedPaprikaLibrary());
   const [queryText, setQueryText] = useState("");
-  /** Queue ids ticked but not yet added — see lib/importSelection. */
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  /** Queue ids ticked but not yet added — see lib/importSelection.
+      A file with one recipe in it opens with that recipe ticked: there is
+      nothing to choose between, so the only step left is Add. */
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => {
+    const only = library?.entries.length === 1 ? paprikaImportSummary(library.entries[0]!) : null;
+    if (!only || locked || items.some((item) => item.id === only.queueId)) return new Set();
+    return new Set([only.queueId]);
+  });
   const [committing, setCommitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -296,7 +302,10 @@ export function PaprikaImportSource({
         commitLabel={commitLabel}
         commitLeavesPage={commitLeavesPage}
         onCommitEmpty={onCommitEmpty}
-        onUpgrade={onLockedTap}
+        /* "Choose a recipe, or upgrade to print several" means nothing to a
+           file with one recipe in it, so it is only offered when there is a
+           choice to make. */
+        onUpgrade={entries.length > 1 ? onLockedTap : undefined}
         committing={committing}
         locked={locked}
         singleSelect={singleSelect}

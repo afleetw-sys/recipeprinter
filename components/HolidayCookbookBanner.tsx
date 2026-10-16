@@ -49,15 +49,15 @@ export function HolidayCookbookBanner({
             Make your cookbook in time for the holidays
           </h2>
           <p className="mt-cp-3 text-cp-body-lg leading-relaxed text-ink-soft">
-            Build it at your own pace, then print at home or export it to any print shop.{" "}
+            Build your cookbook and print it anywhere.{" "}
             {discounted ? (
               // Just the price they will pay, no strikethrough: the welcome
               // dialog on /print does the explaining. "First" because the
               // discount is on one book only, and it names Pro so the lower
               // price reads as a membership perk.
-              <>{price(COOKBOOK_DISCOUNT_PRICE_FALLBACK)} for your first cookbook, with your Pro membership.</>
+              <>Preview up to 10 recipes free, then {price(COOKBOOK_DISCOUNT_PRICE_FALLBACK)} to download or add more to your first cookbook with Pro.</>
             ) : (
-              <>{price(COOKBOOK_PRICE_FALLBACK)} for unlimited recipes.</>
+              <>Preview up to 10 recipes free, then {price(COOKBOOK_PRICE_FALLBACK)} to download or add more.</>
             )}
           </p>
         </div>

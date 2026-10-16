@@ -55,7 +55,7 @@ const onProductionHost = vi.hoisted(() => ({ value: true }));
 vi.mock("@/lib/appEnvironment", () => ({ isProductionRuntime: () => onProductionHost.value }));
 vi.mock("@/lib/analytics", () => ({ track, truncateReason: (e: unknown) => String(e) }));
 vi.mock("@/lib/failedImportCapture", () => ({
-  captureFailedImportImages: vi.fn(async () => null),
+  captureFailedImportImages: vi.fn(() => null),
   recordFailedImport: vi.fn(async () => undefined),
 }));
 vi.mock("@/lib/importCorrections", () => ({ noteImported: vi.fn(), noteRecipeEdited: vi.fn() }));
