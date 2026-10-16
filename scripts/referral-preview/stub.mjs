@@ -3,6 +3,7 @@
 //   verify*  first claim waits on email verification, the next is granted
 //   earned*  a friend joined while away (promo)      paid*    a subscriber with 6 days banked (Nov 1 -> Nov 7)
 //   expired* referral Pro has run out                capped*  15 of 15 days earned, expired
+//   used*    9 of 10 free imports already used
 //   anything else: a fresh account
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
@@ -34,6 +35,33 @@ function summary(who) {
   if (email.startsWith("expired")) return { ...base, code: null, lifetimeDaysEarned: 7, referred: true, promoEndsAtMs: now - DAY };
   if (email.startsWith("capped")) return { ...base, successfulReferrals: 1, lifetimeDaysEarned: 15, referred: true, promoEndsAtMs: now - DAY };
   return base;
+}
+// The free-import meter, enforcing like production: 10 per 30 days, counted per
+// account (or per signed-out browser, by its rpAnonId). A `used…` email starts at 9 of 10.
+const LIMIT = 10;
+const meters = new Map();
+const pending = new Map();
+function meter(who, data) {
+  if (summary(who).proActive) return { ok: true, mode: "enforce", allowed: true, reason: "pro" };
+  const key = who?.user_id ?? data.rpAnonId ?? "signed-out";
+  let m = meters.get(key);
+  if (!m || (m.nextFreeAt && m.nextFreeAt <= Date.now())) {
+    m = { used: who?.email?.startsWith("used") ? 9 : 0, nextFreeAt: null };
+    if (m.used) m.nextFreeAt = Date.now() + 21 * DAY;
+    meters.set(key, m);
+  }
+  const usage = () => ({ used: m.used, limit: LIMIT, nextFreeAt: m.nextFreeAt });
+  if (data.op === "reserve") {
+    if (m.used >= LIMIT) return { ok: true, mode: "enforce", allowed: false, reason: "limit", ...usage() };
+    m.used += 1;
+    m.nextFreeAt ??= Date.now() + 30 * DAY;
+    pending.set(data.importId, key);
+  } else if (data.op === "settle" && data.outcome === "failure" && pending.get(data.importId) === key) {
+    m.used = Math.max(0, m.used - 1);
+    if (!m.used) m.nextFreeAt = null;
+  }
+  if (data.op === "settle") pending.delete(data.importId);
+  return { ok: true, mode: "enforce", allowed: true, ...usage() };
 }
 createServer((req, res) => {
   if (req.method === "OPTIONS") { res.writeHead(204, CORS); return res.end(); }
@@ -67,7 +95,7 @@ createServer((req, res) => {
       }
       return send(res, 200, { result: data.op === "link" ? { ...s, code: s.code ?? "AB3CD4EF" } : s });
     }
-    if (req.url.endsWith("/recipePrinterImportMeter")) return send(res, 200, { result: { ok: true, allowed: true, reason: "off", mode: "off" } });
+    if (req.url.endsWith("/recipePrinterImportMeter")) return send(res, 200, { result: meter(who, data) });
     send(res, 404, { error: { status: "NOT_FOUND", message: "stub" } });
   });
 }).listen(3211, "127.0.0.1", () => console.log("referral stub on :3211"));

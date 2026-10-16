@@ -13,6 +13,7 @@
 //   paid…     a subscriber whose friend joined
 //   expired…  referral Pro has run out (Subscribe / Invite choice)
 //   capped…   15 of 15 days earned
+//   used…     9 of 10 free imports used (the meter enforces 10 per 30 days)
 //   anything else: a fresh account.
 // Open /invite/AB3CD4EF in a signed-out window to arrive as an invited friend.
 // Importing a link works: any link gives the same sample recipe (photos and
