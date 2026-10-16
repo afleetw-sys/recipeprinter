@@ -134,9 +134,11 @@ const USD_PRICE_PRODUCTS = new Map(
 );
 
 // Our four dollar prices as they are typed in copy, not followed by another
-// digit and not already labelled "US$".
+// digit. A "US" in front is matched rather than looked behind for: lookbehind
+// is a SyntaxError in Safari before 16.4, and this runs at module load, so it
+// took down every page that imported this file (lib/browserSupport.test.ts).
 const USD_PRICE_PATTERN = new RegExp(
-  `(?<!US)(${Array.from(USD_PRICE_PRODUCTS.keys()).map((price) => price.replace(/[$.]/g, "\\$&")).join("|")})(?!\\d)`,
+  `(US)?(${Array.from(USD_PRICE_PRODUCTS.keys()).map((price) => price.replace(/[$.]/g, "\\$&")).join("|")})(?!\\d)`,
   "g",
 );
 
@@ -152,7 +154,9 @@ const USD_PRICE_PATTERN = new RegExp(
  * write theirs with a word joiner ("$⁠4.99") so it is left alone.
  */
 export function localizePriceText(text: string, sheet: PriceSheet, country: string | null): string {
-  return text.replace(USD_PRICE_PATTERN, (usdPrice) => {
+  return text.replace(USD_PRICE_PATTERN, (match, usLabel: string | undefined, usdPrice: string) => {
+    // Already labelled "US$": the visitor is being shown dollars on purpose.
+    if (usLabel) return match;
     const product = USD_PRICE_PRODUCTS.get(usdPrice);
     return product ? formatPrice(sheet.amounts[product], sheet.currency, country) : usdPrice;
   });
