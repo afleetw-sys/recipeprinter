@@ -20,8 +20,6 @@ export function AddRecipeDialog({
   open,
   onClose,
   items,
-  focusedItemId,
-  focusNonce,
   onAddUrl,
   onAddImageFiles,
   onAddText,
@@ -37,9 +35,6 @@ export function AddRecipeDialog({
   open: boolean;
   onClose: () => void;
   items: QueueItem[];
-  /** Set by the queue when an import matched a recipe that's already here. */
-  focusedItemId: string | null;
-  focusNonce: number;
   onAddUrl: (url: string) => void;
   onAddImageFiles: (files: File[], label: string) => void;
   onAddText: (text: string) => void;
@@ -72,7 +67,6 @@ export function AddRecipeDialog({
 }) {
   /** Filled in by the import panel; lets Add finish the entry in the form. */
   const commitImportRef = useRef<(() => boolean) | null>(null);
-  const [duplicateTitle, setDuplicateTitle] = useState<string | null>(null);
   /** A URL field needs one line; a paste box and a dropzone need a dialog. */
   const [mode, setMode] = useState<ImportTab>(lastSource);
   /**
@@ -87,21 +81,6 @@ export function AddRecipeDialog({
    * what needed to change.
    */
   const addsOnPick = mode === "apps";
-  const seenFocusNonceRef = useRef(focusNonce);
-
-  // A re-import of something already in the job doesn't add a second copy —
-  // the queue focuses the existing one and bumps `focusNonce`. On the deck
-  // that shows up as a shake on the rail row, which this dialog is sitting on
-  // top of, so say it here instead of letting the submit look ignored.
-  useEffect(() => {
-    if (!open || focusNonce === seenFocusNonceRef.current) return;
-    seenFocusNonceRef.current = focusNonce;
-    const existing = items.find((item) => item.id === focusedItemId);
-    setDuplicateTitle(existing?.title || "That recipe");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusNonce, open]);
-
-
   /**
    * Put the mirror back to what the sheet will next OPEN on.
    *
@@ -116,43 +95,28 @@ export function AddRecipeDialog({
    * the one-line URL input to the paste box's full 340px. The fix is not that
    * neither survives the close — it is that both land on the same answer, and
    * the answer is `lastSource`, which is also what the panel remounts with.
-   *
-   * The duplicate banner rides along for the same reason: it is keyed to
-   * whatever import last matched, not to what's currently on screen, so a
-   * stale "already in this project" line could otherwise sit under an
-   * unrelated tab after a close/reopen.
    */
   useEffect(() => {
-    if (!open) {
-      setMode(lastSource);
-      setDuplicateTitle(null);
-    }
+    if (!open) setMode(lastSource);
   }, [open, lastSource]);
-
-  function clearDuplicate() {
-    if (duplicateTitle) setDuplicateTitle(null);
-  }
 
   /* Which door this import came through, for `recipe_import_submitted`. Every
      import now finishes on this page, so the event's own `$current_url` cannot
      tell this dialog apart from the paste field at the end of the rail, or from
      a handoff off the home page. */
   function handleAddUrl(url: string) {
-    clearDuplicate();
     track("recipe_import_submitted", { surface: "dialog", source: "url" });
     onSourceUsed("url");
     onAddUrl(url);
   }
 
   function handleAddImageFiles(files: File[], label: string) {
-    clearDuplicate();
     track("recipe_import_submitted", { surface: "dialog", source: "image" });
     onSourceUsed("image");
     onAddImageFiles(files, label);
   }
 
   function handleAddText(text: string) {
-    clearDuplicate();
     track("recipe_import_submitted", { surface: "dialog", source: "text" });
     onSourceUsed("text");
     onAddText(text);
@@ -208,10 +172,7 @@ export function AddRecipeDialog({
           /* Read once per open: `Dialog` renders nothing while closed, so the
              panel is a fresh mount every time the sheet appears. */
           initialMode={lastSource}
-          onModeChange={(nextMode) => {
-            setMode(nextMode);
-            clearDuplicate();
-          }}
+          onModeChange={setMode}
           items={items}
           onAddUrl={handleAddUrl}
           onAddImageFiles={handleAddImageFiles}
@@ -232,12 +193,6 @@ export function AddRecipeDialog({
           librarySingleSelect={librarySingleSelect}
           onLibraryLockedTap={onLibraryLockedTap}
         />
-
-        {duplicateTitle && (
-          <p className="recipe-add-dialog__duplicate" role="status">
-            {duplicateTitle} is already in this project.
-          </p>
-        )}
 
       </div>
 

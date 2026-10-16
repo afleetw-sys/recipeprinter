@@ -8853,12 +8853,6 @@ textarea.recipe-card__toc-title {
   min-width: 0;
 }
 
-.recipe-add-dialog__duplicate {
-  margin-top: 14px;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-small);
-}
-
 /* Outside `__body` so it stays put while the added list scrolls. */
 .recipe-add-dialog__footer {
   flex: 0 0 auto;

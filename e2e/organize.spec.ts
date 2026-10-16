@@ -50,6 +50,10 @@ async function openOrganizer(page: Page) {
     );
   }, JSON.stringify(BOOK));
   await page.goto("/print");
+  // A new cookbook opens under its welcome; close it as a cook would.
+  await expect(page.locator(".cookbook-welcome")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".cookbook-welcome")).toHaveCount(0);
   await page.locator(".recipe-page-rail__organize").click();
   await expect(page.locator(".recipe-organize-bar")).toBeVisible();
   // Opening animates the panel's width; a menu opened mid-way is closed by it.
