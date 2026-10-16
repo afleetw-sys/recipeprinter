@@ -17,12 +17,16 @@ export const useFirebaseEmulators = process.env.NEXT_PUBLIC_FIREBASE_EMULATORS =
 export const useLocalFunctions =
   useFirebaseEmulators || process.env.NEXT_PUBLIC_FIREBASE_LOCAL_FUNCTIONS === "1";
 
-/** Must match firebase.e2e.json. */
+const port = (value: string | undefined, fallback: number) => Number(value) || fallback;
+
+/** Must match firebase.e2e.json, or for the referral preview its own
+    firebase.referral-preview.json (other ports, so it can run beside the tests). */
 export const FIREBASE_EMULATOR = {
   host: "127.0.0.1",
-  authPort: 9199,
-  firestorePort: 8180,
-  storagePort: 9299,
-  /** CookPilot's callables have no emulator; e2e/stubs/cookpilot.mjs answers them. */
-  functionsPort: 3211,
+  authPort: port(process.env.NEXT_PUBLIC_FIREBASE_AUTH_PORT, 9199),
+  firestorePort: port(process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_PORT, 8180),
+  storagePort: port(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_PORT, 9299),
+  /** CookPilot's callables have no emulator; e2e/stubs/cookpilot.mjs answers them. The
+      referral preview moves its own stand-in elsewhere so it can run beside the tests. */
+  functionsPort: port(process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_PORT, 3211),
 } as const;
