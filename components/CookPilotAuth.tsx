@@ -843,7 +843,7 @@ export function CookPilotLoginDialog({
             ? intro.body
             : reason === "purchase"
             ? "Signing in keeps this cookbook and its purchase with your account, so you can come back to it on this device or another one."
-            : "Sign in to open your saved Pro projects and cookbooks on this device or another one."}
+            : "Keep your recipe cards, cookbooks and purchases in one place, and pick up where you left off on any device."}
         </p>
       </div>
 
