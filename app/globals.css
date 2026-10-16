@@ -1355,7 +1355,7 @@
     font-size: var(--cp-fs-small);
   }
 
-  /* The free-import ring (`ImportUsageMenu`) filling to its new count when an
+  /* The free-import ring (`ImportUsageBadge`) filling to its new count when an
      import is counted. Only `from` is given, so it ends on the arc's own offset. */
   @keyframes rp-usage-ring-fill {
     from {

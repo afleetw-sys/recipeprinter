@@ -15,7 +15,7 @@ export function PageShell({
 }) {
   return (
     <div className="min-h-screen flex flex-col">
-      <SiteHeader backHref="/" />
+      <SiteHeader backHref="/" sticky chrome="page" />
       <main className="flex-1 px-cp-6">
         <article
           className={`${wide ? "max-w-[720px] lg:max-w-[1000px]" : "max-w-[720px]"} mx-auto pt-cp-6 sm:pt-cp-7 pb-cp-7`}

@@ -24,6 +24,7 @@ import {
 } from "@/components/CookPilotAuth";
 import { importAllowanceLine } from "@/lib/freeImports";
 import { friendlyAuthError } from "@/lib/friendlyErrors";
+import { UsageRing } from "@/components/ImportUsageBadge";
 import { useImportUsage } from "@/lib/useImportUsage";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadLocalProjects } from "@/lib/localProjects";
@@ -344,7 +345,7 @@ export default function AccountAvatarButton({
               {providerError && <p className="field-error px-cp-2" role="alert">{providerError}</p>}
             </div>
           )}
-          <MenuImportUsage />
+          <MenuImportUsage onNavigate={closeMenu} />
           <Link href="/account" className={ROW_CLASS} onClick={closeMenu}>
             <SettingsIcon size={ICON_SIZE.md} className="shrink-0 text-ink-soft" />
             Settings
@@ -429,21 +430,37 @@ function ProjectsRow({
 }
 
 /**
- * The free-import count in words: what the ring on the avatar is a picture of.
+ * The free-import count in words, beside the ring the avatar wears.
  * Its own component so the count is only read while the menu is open, and
  * nothing for a Pro member, who has no count.
  */
-function MenuImportUsage() {
+function MenuImportUsage({ onNavigate }: { onNavigate: () => void }) {
   const { hidden, usage } = useImportUsage();
   if (hidden) return null;
   const line = importAllowanceLine(usage);
   return (
-    <div className="mb-cp-1 flex items-start gap-2 border-b border-line px-cp-3 pb-cp-3 pt-cp-2 text-cp-small">
-      <GaugeIcon size={ICON_SIZE.md} className="mt-px shrink-0 text-ink-soft" />
+    <div className="mb-cp-1 border-b border-line pb-cp-1">
+    {/* The count goes to the Plan section of Settings, where the free and Pro
+        plans sit side by side (Amelia, 2026-10-16). */}
+    <Link
+      href="/account#plan"
+      className="flex items-center gap-2 rounded-lg px-cp-3 pb-cp-2 pt-cp-2 text-cp-small hover:bg-page"
+      onClick={onNavigate}
+    >
+      {/* Once an import is used, the same ring as the avatar's badge, so the
+          two read as one thing. Before that, the plain usage icon. */}
+      {usage && usage.used > 0 ? (
+        <span className="grid shrink-0 place-items-center" style={{ width: ICON_SIZE.md, height: ICON_SIZE.md }}>
+          <UsageRing used={usage.used} limit={usage.limit} size={ICON_SIZE.md} />
+        </span>
+      ) : (
+        <GaugeIcon size={ICON_SIZE.md} className="shrink-0 text-ink-soft" />
+      )}
       <div>
         <p className="font-semibold text-ink">{line.lead}</p>
-        {line.detail && <p className="text-ink-soft">{line.detail}</p>}
+        {line.detail && <p className="text-cp-caption text-ink-soft">{line.detail}</p>}
       </div>
+    </Link>
     </div>
   );
 }

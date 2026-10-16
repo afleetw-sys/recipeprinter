@@ -44,11 +44,6 @@ function formatDate(ms: number | null): string | null {
  */
 export function AccountProStatus({ user }: { user: User }) {
   const uid = user.uid;
-  // Arrived from the usage count (`/account#plan`): this section only exists
-  // once sign-in has loaded, after the browser's own jump to the anchor.
-  useEffect(() => {
-    if (window.location.hash === "#plan") document.getElementById("plan")?.scrollIntoView();
-  }, []);
   const [proCustomerInfo, setProCustomerInfo] = useState<CustomerInfo | null>(null);
   const [proInfoStatus, setProInfoStatus] = useState<CustomerInfoLoadStatus>("idle");
   const [proInfoLastVerifiedAtMs, setProInfoLastVerifiedAtMs] = useState<number | null>(null);

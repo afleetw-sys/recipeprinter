@@ -81,7 +81,7 @@ export default function AccountPage() {
           {/* The plans are no secret, so they show signed out too. Upgrade
               asks for sign-in and stops there: the account that signs in may
               already have Pro, and its own Plan section says which. */}
-          <section id="plan" className="mb-cp-7 scroll-mt-cp-6 rounded-xl border border-line bg-card p-cp-5">
+          <section id="plan" className="mb-cp-7 scroll-mt-24 rounded-xl border border-line bg-card p-cp-5">
             <h2 className="border-b border-line pb-cp-3 text-cp-h2 font-extrabold text-ink sm:border-b-0 sm:pb-0">Plan</h2>
             <FreePlanCards onUpgrade={() => setLogin("upgrade")} />
           </section>

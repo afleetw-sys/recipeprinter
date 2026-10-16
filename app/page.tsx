@@ -1,5 +1,4 @@
 import { SiteHeader } from "@/components/SiteHeader";
-import { FrontDoorUpgradeButton } from "@/components/FrontDoorUpgrade";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PrinterWorkspace } from "@/components/PrinterWorkspace";
 import { CommunityGallery } from "@/components/CommunityGallery";
@@ -28,11 +27,7 @@ export default function Home() {
       {/* The same bar as /print, less Print: Upgrade beside the wordmark (on
           a phone, on the right with the account, where /print's mobile bar
           has it). */}
-      <SiteHeader
-        sticky
-        chrome="page"
-        lead={<FrontDoorUpgradeButton />}
-      />
+      <SiteHeader sticky chrome="page" />
 
       <main id="rp-main" className="flex-1 px-cp-6">
         {/* Two measures, on purpose. The front door is a narrow centred column
