@@ -19,17 +19,20 @@ export function ImportUsageBadge() {
       className="pointer-events-none absolute -right-1.5 -top-1.5 grid h-[18px] w-[18px] place-items-center rounded-full bg-card"
       aria-hidden
     >
-      <UsageRing fraction={Math.min(usage.used, usage.limit) / usage.limit} />
+      <UsageRing used={usage.used} limit={usage.limit} />
     </span>
   );
 }
 
 /**
  * The count as a ring that fills clockwise from the top: empty before the
- * first import, full at none left. Decorative: the account menu says the
+ * first import, full at none left. It turns red once more than 8 of 10 are
+ * used, like Claude's own usage ring. Decorative: the account menu says the
  * same thing in words, so it is hidden from screen readers.
  */
-function UsageRing({ fraction, size = 14 }: { fraction: number; size?: number }) {
+export function UsageRing({ used, limit, size = 14 }: { used: number; limit: number; size?: number }) {
+  const fraction = limit > 0 ? Math.min(used, limit) / limit : 0;
+  const nearlyOut = fraction > 0.8;
   const stroke = size >= 18 ? 3 : 2.5;
   const radius = (size - stroke) / 2;
   const length = 2 * Math.PI * radius;
@@ -50,7 +53,7 @@ function UsageRing({ fraction, size = 14 }: { fraction: number; size?: number })
           cy={center}
           r={radius}
           fill="none"
-          stroke="var(--cp-accent)"
+          stroke={nearlyOut ? "var(--cp-error)" : "var(--cp-accent)"}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={length}

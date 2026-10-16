@@ -26,6 +26,7 @@ import {
 } from "@/components/CookPilotAuth";
 import { importAllowanceLine } from "@/lib/freeImports";
 import { friendlyAuthError } from "@/lib/friendlyErrors";
+import { UsageRing } from "@/components/ImportUsageBadge";
 import { useImportUsage } from "@/lib/useImportUsage";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadLocalProjects } from "@/lib/localProjects";
@@ -438,7 +439,7 @@ function ProjectsRow({
 }
 
 /**
- * The free-import count in words: what the ring on the avatar is a picture of.
+ * The free-import count in words, beside the ring the avatar wears.
  * Its own component so the count is only read while the menu is open, and
  * nothing for a Pro member, who has no count.
  */
@@ -448,7 +449,15 @@ function MenuImportUsage() {
   const line = importAllowanceLine(usage);
   return (
     <div className="mb-cp-1 flex items-start gap-2 border-b border-line px-cp-3 pb-cp-3 pt-cp-2 text-cp-small">
-      <GaugeIcon size={ICON_SIZE.md} className="mt-px shrink-0 text-ink-soft" />
+      {/* Once an import is used, the same ring as the avatar's badge, so the
+          two read as one thing. Before that, the plain usage icon. */}
+      {usage && usage.used > 0 ? (
+        <span className="mt-px grid shrink-0 place-items-center" style={{ width: ICON_SIZE.md, height: ICON_SIZE.md }}>
+          <UsageRing used={usage.used} limit={usage.limit} size={ICON_SIZE.md} />
+        </span>
+      ) : (
+        <GaugeIcon size={ICON_SIZE.md} className="mt-px shrink-0 text-ink-soft" />
+      )}
       <div>
         <p className="font-semibold text-ink">{line.lead}</p>
         {line.detail && <p className="text-ink-soft">{line.detail}</p>}
