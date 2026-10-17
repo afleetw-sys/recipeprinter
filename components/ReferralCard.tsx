@@ -108,13 +108,13 @@ export function ReferralCard() {
           : rewardLine(summary)}
       </p>
 
-      <div className="mt-cp-4 flex flex-col gap-cp-2 sm:flex-row">
+      <div className="mt-cp-4 flex flex-col gap-cp-2 sm:flex-row sm:items-center">
         <input
           ref={inputRef}
           readOnly
           value={url}
           aria-label="Your invite link"
-          className="field field--compact min-h-[34px] min-w-0 flex-1 font-normal"
+          className="field field--compact min-h-[38px] min-w-0 flex-1 font-normal"
           onFocus={(event) => event.currentTarget.select()}
         />
         <div className="flex gap-cp-2">
