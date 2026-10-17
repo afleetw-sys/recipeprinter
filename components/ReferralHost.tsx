@@ -47,6 +47,7 @@ import { useStandaloneProUpgrade } from "@/lib/useStandaloneProUpgrade";
  * account, on idle, and never for a signed-out visitor.
  */
 const SUMMARY_SESSION_KEY = (uid: string) => `recipeprinter:referral-summary-read:${uid}`;
+const SUMMARY_RECHECK_MS = 60_000;
 
 function whenIdle(run: () => void): void {
   if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(run, { timeout: 4_000 });
@@ -131,13 +132,16 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
   // on another device, or referral Pro that has run out.
   useEffect(() => {
     if (!REFERRALS_LIVE || !ready || !uid) return;
-    if (sessionStore.get(SUMMARY_SESSION_KEY(uid))) return;
+    // At most once a minute, so a reload (or coming back later in the same
+    // tab) still finds a friend who joined meanwhile. It used to be once per
+    // tab, which hid a friend's reward until a new tab.
+    if (Date.now() - Number(sessionStore.get(SUMMARY_SESSION_KEY(uid)) ?? 0) < SUMMARY_RECHECK_MS) return;
     let alive = true;
     whenIdle(() => {
       loadReferralSummary("status")
         .then((loaded) => {
           if (!alive) return;
-          sessionStore.set(SUMMARY_SESSION_KEY(uid), "1");
+          sessionStore.set(SUMMARY_SESSION_KEY(uid), String(Date.now()));
           setSummary(loaded);
           // Days already earned still start if the program has since been switched off.
           if (loaded.bankedDays > 0) setBankedDays(loaded.bankedDays);
