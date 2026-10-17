@@ -26,6 +26,7 @@ import {
   unseenGrant,
   type ReferralSummary,
 } from "@/lib/referral";
+import { clearImportsUnlimited } from "@/lib/importMeter";
 import { sessionStore } from "@/lib/storage";
 import { useStandaloneProUpgrade } from "@/lib/useStandaloneProUpgrade";
 
@@ -161,6 +162,9 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
           if (loaded.bankedDays > 0) return;
           const ended = expiredReferralToShow(uid, loaded);
           // Not inside the Cookbook Builder: it waits for a card-printer visit.
+          // Referral Pro has run out and nothing paid replaced it: this browser
+          // stops treating them as Pro, so "Upgrade to Pro" and the count return.
+          if (ended !== null && !loaded.proActive) clearImportsUnlimited();
           if (ended !== null && referralPromptsAllowed() && referralSurface() !== "cookbook") {
             markExpirySeen(uid, ended);
             // The invite half needs a link; someone who joined through a

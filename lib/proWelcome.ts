@@ -8,6 +8,8 @@
  * read it again instead of waiting for a reload.
  */
 
+import { markImportsUnlimited } from "@/lib/importMeter";
+
 export type ProWelcome =
   | { kind: "purchased" }
   | { kind: "referral_welcome"; days: number }
@@ -24,6 +26,10 @@ export type ProWelcome =
 const listeners = new Set<(welcome: ProWelcome) => void>();
 
 export function announceProWelcome(welcome: ProWelcome): void {
+  // Free days make them Pro on every page now, including the ones that never
+  // read the purchase SDK (the homepage's "Upgrade to Pro", the import count).
+  // An extension only moves a paid renewal, so nothing changes there.
+  if (welcome.kind !== "referral_earned" || welcome.fulfillment === "promo") markImportsUnlimited();
   listeners.forEach((listener) => listener(welcome));
   announceProChanged();
 }

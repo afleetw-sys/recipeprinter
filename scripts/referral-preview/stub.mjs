@@ -6,6 +6,7 @@
 //   used*    9 of 10 free imports already used
 //   anything else: a fresh account
 // Claiming an invite (/invite/AB3CD4EF signed out, then sign up) adds the 3 days from a friend.
+// An account that existed before the link was opened is refused, as the real rules refuse it.
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
 
@@ -21,6 +22,11 @@ const DAY = 864e5;
 const claims = new Map();
 // Accounts that joined through a friend's link, and when: they got 3 days, which count toward their cap.
 const invited = new Map();
+// Like the real claim rules (CookPilot decideClaim): an account this stand-in saw before the link
+// was opened already uses RecipePrinter and can't be referred; each opened link is claimed once.
+const firstSeen = new Map();
+const opens = new Map();
+let openCount = 0;
 const activated = new Set();
 const send = (res, status, body) => { res.writeHead(status, { "content-type": "application/json", ...CORS }); res.end(JSON.stringify(body)); };
 function caller(req) {
@@ -81,6 +87,7 @@ createServer((req, res) => {
   req.on("end", () => {
     const data = JSON.parse(raw || "{}").data ?? {};
     const who = caller(req);
+    if (who?.user_id && !firstSeen.has(who.user_id)) firstSeen.set(who.user_id, Date.now());
     console.log(req.url, JSON.stringify(data), who?.email ?? "-");
     if (req.url === "/parse-url" || req.url === "/parse-html") {
       res.writeHead(200, { "content-type": "application/json" });
@@ -88,11 +95,22 @@ createServer((req, res) => {
     }
     if (req.url.endsWith("/checkUserProviders")) return send(res, 200, { result: { providers: [] } });
     if (req.url.endsWith("/recipePrinterReferral")) {
-      if (data.op === "open") return send(res, 200, { result: { ok: true, openId: "stub-open-0001", expiresAtMs: Date.now() + 30 * DAY, rewardDays: 3 } });
+      if (data.op === "open") {
+        const openId = `stub-open-${++openCount}`;
+        opens.set(openId, { openedAtMs: Date.now(), claimedBy: null });
+        return send(res, 200, { result: { ok: true, openId, expiresAtMs: Date.now() + 30 * DAY, rewardDays: 3 } });
+      }
       if (data.op === "claim") {
+        const open = opens.get(data.openId);
+        const reject = (reason) => send(res, 200, { result: { status: "rejected", reason } });
+        if (!open) return reject("open_not_found");
+        if (open.claimedBy && open.claimedBy !== who.user_id) return reject("open_claimed");
+        if (invited.has(who.user_id)) return reject("already_referred");
+        if (firstSeen.get(who.user_id) < open.openedAtMs) return reject("existing_account");
         const n = (claims.get(who.user_id) ?? 0) + 1; claims.set(who.user_id, n);
         if (who.email?.startsWith("verify") && !who.email_verified) return send(res, 200, { result: { status: "pending_verification" } });
-        if (!invited.has(who.user_id)) invited.set(who.user_id, Date.now());
+        open.claimedBy = who.user_id;
+        invited.set(who.user_id, Date.now());
         return send(res, 200, { result: { status: "granted", days: 3 } });
       }
       const s = summary(who);
