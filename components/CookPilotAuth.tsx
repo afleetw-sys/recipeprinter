@@ -870,7 +870,7 @@ function VerifyReferralEmail({ onClose }: { onClose: () => void }) {
   return (
     <Dialog
       onClose={onClose}
-      label="Confirm your email"
+      label="Your Pro is waiting"
       portal
       className="no-print fixed inset-0 z-[var(--z-dialog)] flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
       panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[420px] rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:pb-cp-5 flex flex-col gap-cp-4 relative"
@@ -879,10 +879,12 @@ function VerifyReferralEmail({ onClose }: { onClose: () => void }) {
         <XIcon size={ICON_SIZE.md} />
       </button>
       <div className="pr-cp-7">
-        <h3 className="font-extrabold tracking-[-0.02em] text-cp-dialog-title">Confirm your email</h3>
+        <h3 className="font-extrabold tracking-[-0.02em] text-cp-dialog-title">Your Pro is waiting</h3>
         <p className="text-cp-small text-ink-soft mt-1">
-          Open the link we sent{user?.email ? ` to ${user.email}` : ""} and your friend&rsquo;s Pro days start.
+          Tap the link we just emailed{user?.email ? ` to ${user.email}` : ""} to confirm it&rsquo;s you. Your free
+          days of Pro start the moment you do.
         </p>
+        <p className="text-cp-caption text-ink-soft mt-cp-2">Can&rsquo;t find it? Check your spam or promotions folder.</p>
       </div>
       <button type="button" className="btn btn-secondary w-full" disabled={sent === "sending"} onClick={() => void resend()}>
         {sent === "sent" ? "Sent. Check your inbox" : sent === "sending" ? "Sending…" : "Send the link again"}
