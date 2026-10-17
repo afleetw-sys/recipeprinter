@@ -89,8 +89,8 @@ export function ReferralCard() {
   }
 
   // The lifetime cap, one tile per reward (15 days of 3 is five). Someone who
-  // joined through a friend's link already has their welcome in it, so it
-  // takes the first tile and the rest are friends.
+  // joined through a friend's link already has those days in it, so the first
+  // tile is that gift, "From a friend", and the rest are friends they invite.
   const tiles = Math.max(1, Math.ceil(summary.lifetimeCapDays / summary.rewardDays));
   const welcomeTiles = summary.referred ? 1 : 0;
   const friendSlots = tiles - welcomeTiles;
@@ -114,16 +114,16 @@ export function ReferralCard() {
           readOnly
           value={url}
           aria-label="Your invite link"
-          className="field field--compact min-w-0 flex-1 font-normal"
+          className="field field--compact min-h-[34px] min-w-0 flex-1 font-normal"
           onFocus={(event) => event.currentTarget.select()}
         />
         <div className="flex gap-cp-2">
-          <button type="button" className="btn btn-secondary btn-compact flex-1 sm:flex-none" onClick={() => void copy()}>
+          <button type="button" className="btn btn-secondary flex-1 sm:flex-none" onClick={() => void copy()}>
             <LinkIcon size={ICON_SIZE.sm} />
             {copied ? "Copied" : "Copy link"}
           </button>
           {canShare && (
-            <button type="button" className="btn btn-secondary btn-compact flex-1 sm:flex-none" onClick={() => void share()}>
+            <button type="button" className="btn btn-secondary flex-1 sm:flex-none" onClick={() => void share()}>
               Share
             </button>
           )}
@@ -152,14 +152,15 @@ export function ReferralCard() {
                 }`}
               >
                 {done ? (
+                  // The days a friend's invite gave you are a gift received, not one earned.
                   <span className="grid h-6 w-6 place-items-center rounded-full border-[1.5px] border-[var(--cp-accent)] text-[var(--cp-accent)]">
-                    <CheckIcon size={ICON_SIZE.sm} />
+                    {isWelcome ? <GiftIcon size={ICON_SIZE.sm} /> : <CheckIcon size={ICON_SIZE.sm} />}
                   </span>
                 ) : (
                   <GiftIcon size={ICON_SIZE.lg} className="h-6 text-ink-soft" />
                 )}
                 <span className={`text-cp-small font-semibold ${done ? "text-ink" : "text-ink-soft"}`}>
-                  {isWelcome ? "Welcome" : `Friend ${i - welcomeTiles + 1}`}
+                  {isWelcome ? "From a friend" : `Friend ${i - welcomeTiles + 1}`}
                 </span>
                 <span className={`text-cp-small ${done ? "text-ink" : "text-ink-soft"}`}>+{summary.rewardDays} days</span>
               </li>

@@ -5,6 +5,7 @@
 //   expired* referral Pro has run out                capped*  15 of 15 days earned, expired
 //   used*    9 of 10 free imports already used
 //   anything else: a fresh account
+// Claiming an invite (/invite/AB3CD4EF signed out, then sign up) adds the 3 days from a friend.
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
 
@@ -18,13 +19,15 @@ const CORS = {
 };
 const DAY = 864e5;
 const claims = new Map();
+// Accounts that joined through a friend's link, and when: they got 3 days, which count toward their cap.
+const invited = new Map();
 const activated = new Set();
 const send = (res, status, body) => { res.writeHead(status, { "content-type": "application/json", ...CORS }); res.end(JSON.stringify(body)); };
 function caller(req) {
   const token = (req.headers.authorization ?? "").replace(/^Bearer /, "");
   try { return JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString()); } catch { return null; }
 }
-function summary(who) {
+function scenario(who) {
   const email = who?.email ?? "";
   const now = Date.now();
   const base = { enabled: true, code: "AB3CD4EF", successfulReferrals: 0, lifetimeDaysEarned: 0, lifetimeCapDays: 15,
@@ -35,6 +38,14 @@ function summary(who) {
   if (email.startsWith("expired")) return { ...base, code: null, lifetimeDaysEarned: 7, referred: true, promoEndsAtMs: now - DAY };
   if (email.startsWith("capped")) return { ...base, successfulReferrals: 1, lifetimeDaysEarned: 15, referred: true, promoEndsAtMs: now - DAY };
   return base;
+}
+function summary(who) {
+  const s = scenario(who);
+  const at = invited.get(who?.user_id);
+  if (at === undefined) return s;
+  const welcomeEnds = at + 3 * DAY;
+  return { ...s, referred: true, lifetimeDaysEarned: s.lifetimeDaysEarned + 3,
+    promoEndsAtMs: Math.max(s.promoEndsAtMs ?? 0, welcomeEnds), proActive: s.proActive || welcomeEnds > Date.now() };
 }
 // The free-import meter, enforcing like production: 10 per 30 days, counted per
 // account (or per signed-out browser, by its rpAnonId). A `used…` email starts at 9 of 10.
@@ -81,6 +92,7 @@ createServer((req, res) => {
       if (data.op === "claim") {
         const n = (claims.get(who.user_id) ?? 0) + 1; claims.set(who.user_id, n);
         if (who.email?.startsWith("verify") && !who.email_verified) return send(res, 200, { result: { status: "pending_verification" } });
+        if (!invited.has(who.user_id)) invited.set(who.user_id, Date.now());
         return send(res, 200, { result: { status: "granted", days: 3 } });
       }
       const s = summary(who);
