@@ -35,12 +35,22 @@ export default function AccountPage() {
   useEffect(() => {
     if (ready) setLoading(false);
   }, [ready]);
-  // A link to a section (the referral invite's "Pro" goes to #plan) arrives
-  // before the section exists, while this page is still loading, so the
-  // browser's own jump finds nothing. Jump once it's there.
+  // A link to a section (the menu's usage count and the referral invite's
+  // "Pro" both go to #plan) arrives before the section exists, while this page
+  // is still loading, so the browser's own jump finds nothing. Settings shows
+  // from the top first, then scrolls down to the section, so it's clear where
+  // you've landed (Amelia, 2026-10-16). Reduced motion jumps instead.
   useEffect(() => {
     if (loading || !window.location.hash) return;
-    document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ block: "start" });
+    const target = document.getElementById(window.location.hash.slice(1));
+    if (!target) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0 });
+    const timer = window.setTimeout(
+      () => target.scrollIntoView({ block: "start", behavior: reduceMotion ? "auto" : "smooth" }),
+      reduceMotion ? 0 : 350,
+    );
+    return () => window.clearTimeout(timer);
   }, [loading]);
 
   return (
