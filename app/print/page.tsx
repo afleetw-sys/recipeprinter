@@ -6422,6 +6422,7 @@ export default function PrintPage() {
           onCommit={commitRailWidth}
           onReset={resetRailWidth}
           onCollapse={organizeWide ? exitOrganizeMode : undefined}
+          onExpand={!organizeWide && projectMeta.meta.cookbookMode ? enterOrganizeMode : undefined}
         />
         <RailResizer
           mode="settings"

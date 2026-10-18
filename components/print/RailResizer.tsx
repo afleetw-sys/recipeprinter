@@ -3,6 +3,7 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import {
   ORGANIZE_COLLAPSE_WIDTH,
+  ORGANIZE_EXPAND_WIDTH,
   RAIL_KEY_STEP,
   RAIL_MIN_WIDTH,
   clampRailWidth,
@@ -31,8 +32,11 @@ const LABEL: Record<RailWidthMode, string> = {
  * double-click puts the layout's own width back.
  *
  * The organizer has no squeezed state: drag it (or arrow it) past its minimum
- * and `onCollapse` returns the rail to the page thumbnails. The drag's width
- * is dropped, so the organizer reopens at the width it had before.
+ * and `onCollapse` returns the rail to the page thumbnails. Drag the page rail
+ * wide and `onExpand` opens the organizer. Either way the drag ends there and
+ * the switch animates on from where the line was let go, not from where the
+ * drag started, and the dragged width is dropped, so each mode reopens at the
+ * width it had before.
  */
 export function RailResizer({
   mode,
@@ -40,6 +44,7 @@ export function RailResizer({
   onCommit,
   onReset,
   onCollapse,
+  onExpand,
 }: {
   mode: RailWidthMode;
   /** The stored width for this mode, if the cook has set one. */
@@ -48,11 +53,20 @@ export function RailResizer({
   onReset: (mode: RailWidthMode) => void;
   /** Organizer only: leave organize mode when dragged past its minimum. */
   onCollapse?: () => void;
+  /** Page rail only: enter organize mode when dragged wide. */
+  onExpand?: () => void;
 }) {
   const side = mode === "settings" ? "right" : "left";
   const [dragging, setDragging] = useState(false);
-  const drag = useRef<{ shell: HTMLElement; other: number; last: number; initial: string } | null>(null);
+  const drag = useRef<{
+    shell: HTMLElement;
+    other: number;
+    last: number;
+    initial: string;
+    expandAt: number;
+  } | null>(null);
   const collapses = mode === "organize" && Boolean(onCollapse);
+  const expands = mode === "pages" && Boolean(onExpand);
 
   /** This panel's width and the one across the preview from it. */
   const room = (shell: HTMLElement) => {
@@ -78,6 +92,9 @@ export function RailResizer({
       other: otherWidth,
       last: ownWidth,
       initial: shell.style.getPropertyValue(WIDTH_VAR[mode]),
+      // A rail already saved wider than the threshold opens the organizer only
+      // when dragged wider still, not on the first pixel of any drag.
+      expandAt: Math.max(ORGANIZE_EXPAND_WIDTH, ownWidth + RAIL_KEY_STEP),
     };
     shell.classList.add("recipe-print-shell--rail-resizing");
     setDragging(true);
@@ -88,16 +105,25 @@ export function RailResizer({
     if (!current) return;
     const rect = current.shell.getBoundingClientRect();
     const wanted = side === "left" ? event.clientX - rect.left : rect.right - event.clientX;
-    if (collapses && wanted < ORGANIZE_COLLAPSE_WIDTH) {
+    const switchTo = collapses && wanted < ORGANIZE_COLLAPSE_WIDTH
+      ? onCollapse
+      : expands && wanted > current.expandAt
+        ? onExpand
+        : undefined;
+    if (switchTo) {
       drag.current = null;
-      if (current.initial) current.shell.style.setProperty(WIDTH_VAR[mode], current.initial);
-      else current.shell.style.removeProperty(WIDTH_VAR[mode]);
       current.shell.classList.remove("recipe-print-shell--rail-resizing");
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
       setDragging(false);
-      onCollapse?.();
+      // Switch first: the animation measures its start from the width on
+      // screen now, the dragged one. Only then drop that width. The other mode
+      // has taken the rail by now, so putting this mode's width back moves
+      // nothing on screen.
+      switchTo();
+      if (current.initial) current.shell.style.setProperty(WIDTH_VAR[mode], current.initial);
+      else current.shell.style.removeProperty(WIDTH_VAR[mode]);
       return;
     }
     const next = clampRailWidth(wanted, mode, {
@@ -129,6 +155,10 @@ export function RailResizer({
     // Already at the minimum, one more press inward is the same as dragging past it.
     if (collapses && !outward && ownWidth <= RAIL_MIN_WIDTH[mode] + 0.5) {
       onCollapse?.();
+      return;
+    }
+    if (expands && outward && ownWidth + step > ORGANIZE_EXPAND_WIDTH) {
+      onExpand?.();
       return;
     }
     onCommit(mode, clampRailWidth(ownWidth + step, mode, { shellWidth, otherWidth }));
