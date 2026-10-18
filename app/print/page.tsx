@@ -221,6 +221,7 @@ import { printProjectFingerprint, type PendingSave } from "@/lib/printSave";
 import { writeProject as runSaveWrite } from "@/lib/printSaveWrite";
 import { autosaveVerdict, LOADED_BASELINE, shouldFlushOnHide, shouldSaveOnLeave } from "@/lib/printAutosave";
 import { readRailWidths, writeRailWidths, type RailWidthMode, type RailWidths } from "@/lib/railWidth";
+import { organizeFlipProgress } from "@/lib/organizeFlip";
 import { RailResizer } from "@/components/print/RailResizer";
 import { bookRecipeImage } from "@/lib/bookPhotos";
 
@@ -2423,13 +2424,11 @@ export default function PrintPage() {
       setOrganizeAnimating(false);
     };
 
-    // Cubic-out easing shared by the width expansion and the tile FLIP.
-    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
     const start = performance.now();
 
     const frame = (nowTs: number) => {
-      const t = Math.min(1, (nowTs - start) / ORGANIZE_FLIP_MS);
-      const e = ease(t);
+      // One eased progress shared by the width expansion and the tile FLIP.
+      const e = organizeFlipProgress(nowTs, start, ORGANIZE_FLIP_MS);
       // Widen (or narrow) the panel columns for this frame.
       if (widthOk) {
         shell.style.gridTemplateColumns = fromCols
@@ -2454,7 +2453,7 @@ export default function PrintPage() {
         n.el.style.transformOrigin = "top left";
         n.el.style.transform = `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`;
       });
-      if (t < 1) {
+      if (e < 1) {
         organizeFlipRef.current = { raf: window.requestAnimationFrame(frame), finalize };
       } else {
         finalize();
@@ -6423,6 +6422,7 @@ export default function PrintPage() {
           onCommit={commitRailWidth}
           onReset={resetRailWidth}
           onCollapse={organizeWide ? exitOrganizeMode : undefined}
+          onExpand={!organizeWide && projectMeta.meta.cookbookMode ? enterOrganizeMode : undefined}
         />
         <RailResizer
           mode="settings"
