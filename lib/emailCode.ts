@@ -1,7 +1,6 @@
 "use client";
 
 import { withAnonId } from "@/lib/parser";
-import { sessionStore } from "@/lib/storage";
 
 /**
  * Email sign-in by a 6-digit code (CookPilot `recipePrinterEmailCodeSend` /
@@ -44,35 +43,4 @@ export function verifyEmailCode(email: string, code: string): Promise<VerifyCode
   return call("recipePrinterEmailCodeVerify", { email: normalizeEmail(email), code });
 }
 
-/**
- * The code step, written down so a reload (or iOS dropping the tab while the
- * cook is in Mail fetching the code) comes back to it instead of to an empty
- * email field. Session storage: it belongs to this tab, and it lasts only as
- * long as a code does.
- */
-const PENDING_KEY = "recipeprinter:email-code-pending:v1";
-const PENDING_TTL_MS = 10 * 60 * 1000;
-
-export interface PendingCode {
-  email: string;
-  hasPassword: boolean;
-  sentAtMs: number;
-}
-
-export function rememberPendingCode(pending: PendingCode): void {
-  sessionStore.setJson(PENDING_KEY, pending);
-}
-
-export function readPendingCode(now = Date.now()): PendingCode | null {
-  const pending = sessionStore.getJson<PendingCode>(PENDING_KEY);
-  if (!pending || typeof pending.email !== "string" || typeof pending.sentAtMs !== "number") return null;
-  if (now - pending.sentAtMs > PENDING_TTL_MS) {
-    forgetPendingCode();
-    return null;
-  }
-  return pending;
-}
-
-export function forgetPendingCode(): void {
-  sessionStore.remove(PENDING_KEY);
-}
+export { forgetPendingCode, readPendingCode, rememberPendingCode, type PendingCode } from "@/lib/emailCodePending";

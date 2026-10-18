@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "firebase/auth";
+import { readPendingCode } from "@/lib/emailCodePending";
 import {
   AccountIcon,
   AppleIcon,
@@ -236,6 +237,12 @@ export default function AccountAvatarButton({
     setOpenWhenReady(false);
     setOpen(true);
   }, [openWhenReady, ready]);
+
+  // A code was emailed before this page loaded: back to the sign-in dialog,
+  // which reopens on the code step (lib/emailCodePending).
+  useEffect(() => {
+    if (ready && !uid && readPendingCode()) setLogin((current) => current ?? {});
+  }, [ready, uid]);
 
   const closeMenu = useCallback(() => setOpen(false), []);
   useMenuDismiss(rootRef, closeMenu, { enabled: open, closeOnScroll: false });

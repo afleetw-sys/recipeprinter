@@ -6,6 +6,7 @@ import { IconButton } from "@/components/Controls";
 import { AccountIcon, CheckIcon, ICON_SIZE, SpinnerIcon } from "@/components/icons";
 import { ImportUsageBadge } from "@/components/ImportUsageBadge";
 import { onCookPilotSignedInChange, readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
+import { readPendingCode } from "@/lib/emailCodePending";
 
 /**
  * The header's right-hand side: save state, and the way in to your account.
@@ -170,6 +171,13 @@ export function AccountControl({
   const handleMenuMounted = useCallback(() => setMenuMounted(true), []);
   useEffect(() => {
     if (showMenu) return;
+    // An emailed code waiting to be typed (the page was reloaded, or the phone
+    // dropped the tab while they were in Mail): load the menu now, and it brings
+    // the sign-in dialog back on the code step.
+    if (readPendingCode()) {
+      setShowMenu(true);
+      return;
+    }
     // Only for a browser that has an account behind it. Everyone else waits
     // for a real click, which is what keeps auth off the content pages.
     if (!readCookPilotWasSignedIn()) return;

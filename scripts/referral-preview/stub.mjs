@@ -22,7 +22,9 @@ const CORS = {
 };
 const DAY = 864e5;
 // Emailed sign-in codes: printed here, and at GET /last-code?email=… (see e2e/stubs/emailCode.mjs).
-const codes = emailCodeStandIn({ authHost: "127.0.0.1:9198", projectId: "demo-recipeprinter" });
+// Ports can be moved (REFERRAL_STUB_PORT, REFERRAL_AUTH_PORT) to run a second preview beside one already up.
+const STUB_PORT = Number(process.env.REFERRAL_STUB_PORT ?? 3212);
+const codes = emailCodeStandIn({ authHost: `127.0.0.1:${process.env.REFERRAL_AUTH_PORT ?? 9198}`, projectId: "demo-recipeprinter" });
 const claims = new Map();
 // Accounts that joined through a friend's link, and when: they got 3 days, which count toward their cap.
 const invited = new Map();
@@ -177,4 +179,4 @@ createServer((req, res) => {
     if (req.url.endsWith("/recipePrinterImportMeter")) return send(res, 200, { result: meter(who, data) });
     send(res, 404, { error: { status: "NOT_FOUND", message: "stub" } });
   });
-}).listen(3212, "127.0.0.1", () => console.log("referral stub on :3212"));
+}).listen(STUB_PORT, "127.0.0.1", () => console.log(`referral stub on :${STUB_PORT}`));

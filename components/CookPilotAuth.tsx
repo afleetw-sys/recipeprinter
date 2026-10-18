@@ -1049,7 +1049,7 @@ function VerifyReferralEmail({ onClose, onVerified }: { onClose: () => void; onV
       <div className="pr-cp-7">
         <h3 className="font-extrabold tracking-[-0.02em] text-cp-dialog-title">Your Pro is waiting</h3>
         <p className="text-cp-small text-ink-soft mt-1">
-          We sent a 6-digit code to {email || "your email"}. Enter it and your free days of Pro start right away.
+          Confirm your email and your free days of Pro start right away.
         </p>
       </div>
       {failed ? (
