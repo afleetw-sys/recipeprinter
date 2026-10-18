@@ -12,7 +12,8 @@ import { sessionStore } from "@/lib/storage";
  * it on every page to decide whether to bring the sign-in dialog back.
  */
 const PENDING_KEY = "recipeprinter:email-code-pending:v1";
-const PENDING_TTL_MS = 10 * 60 * 1000;
+/** How long a code works (CookPilot CODE_TTL_MS), and so how long this record lasts. */
+export const CODE_LIFETIME_MS = 10 * 60 * 1000;
 
 export interface PendingCode {
   email: string;
@@ -27,7 +28,7 @@ export function rememberPendingCode(pending: PendingCode): void {
 export function readPendingCode(now = Date.now()): PendingCode | null {
   const pending = sessionStore.getJson<PendingCode>(PENDING_KEY);
   if (!pending || typeof pending.email !== "string" || typeof pending.sentAtMs !== "number") return null;
-  if (now - pending.sentAtMs > PENDING_TTL_MS) {
+  if (now - pending.sentAtMs > CODE_LIFETIME_MS) {
     forgetPendingCode();
     return null;
   }

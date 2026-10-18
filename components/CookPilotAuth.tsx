@@ -18,6 +18,7 @@ import {
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { ensureRecipePrinterAccount } from "@/lib/firebase/recipePrinterAccount";
 import { authFailureCode, friendlyAuthError } from "@/lib/friendlyErrors";
+import { CODE_LIFETIME_MS } from "@/lib/emailCodePending";
 import {
   forgetPendingCode,
   normalizeEmail,
@@ -39,7 +40,7 @@ import {
   rememberCookPilotSignedIn,
 } from "@/lib/cookPilotSession";
 import { Dialog } from "@/components/Dialog";
-import { AppleIcon, CheckIcon, EyeIcon, EyeOffIcon, GoogleIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
+import { AppleIcon, CheckIcon, ChevronLeftIcon, EyeIcon, EyeOffIcon, GoogleIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Shared RecipePrinter login: same Firebase project, same providers, same
@@ -400,6 +401,7 @@ function EmailCodeEntry({
   setBusy,
   onSent,
   onSignedIn,
+  back,
   children,
 }: {
   email: string;
@@ -410,6 +412,8 @@ function EmailCodeEntry({
   /** A new code went out. */
   onSent: (hasPassword: boolean) => void;
   onSignedIn: (created: boolean) => void;
+  /** A way back, above the field (right under the dialog's subtitle). */
+  back?: ReactNode;
   /** Extra ways out, under the button. */
   children?: ReactNode;
 }) {
@@ -483,6 +487,7 @@ function EmailCodeEntry({
         void submit(code);
       }}
     >
+      {back}
       <div>
         <label className="field-label" htmlFor="cookpilot-code">
           Enter the 6-digit code we sent to {email}
@@ -501,8 +506,11 @@ function EmailCodeEntry({
           disabled={busy}
           onChange={(event) => {
             const digits = event.target.value.replace(/\D/g, "").slice(0, 6);
+            // A refusal stays until the digits change: a change event that
+            // leaves them as they were (autofill, a password manager) isn't
+            // the cook trying again.
+            if (error && digits !== code && digits.length > 0) setError(null);
             setCode(digits);
-            if (error) setError(null);
             // A pasted or autofilled code goes straight in.
             if (digits.length === 6) void submit(digits);
           }}
@@ -695,11 +703,14 @@ export function CookPilotLoginForm({
     }
   }
 
-  /** From the password step back to a code: sends a fresh one. */
+  /**
+   * From the password step back to a code. The code already emailed still
+   * works for 10 minutes, so it's only sent again after that: a new code
+   * replaces the old one, and the cook may already be reading the first email.
+   */
   async function handleUseCode() {
     if (busy) return;
-    if (Date.now() - sentAtMs < RESEND_WAIT_MS) {
-      // The code from the email step is still the newest one.
+    if (sentAtMs > 0 && Date.now() - sentAtMs < CODE_LIFETIME_MS) {
       setError(null);
       setStep("code");
       return;
@@ -766,8 +777,16 @@ export function CookPilotLoginForm({
     setResetSent(false);
   }
 
+  // A back button, first thing under the dialog's subtitle on the code and
+  // password steps.
   const differentEmailButton = (
-    <button type="button" className="btn-ghost btn-compact w-full" onClick={differentEmail} disabled={busy}>
+    <button
+      type="button"
+      className="self-start -ml-1 inline-flex items-center gap-1 bg-transparent border-0 p-0 text-cp-small text-ink-soft hover:text-ink"
+      onClick={differentEmail}
+      disabled={busy}
+    >
+      <ChevronLeftIcon size={ICON_SIZE.md} />
       Use a different email
     </button>
   );
@@ -832,6 +851,7 @@ export function CookPilotLoginForm({
             setBusy={setBusy}
             onSent={(withPassword) => codeSent(normalizeEmail(email), withPassword)}
             onSignedIn={finish}
+            back={differentEmailButton}
           >
             {hasPassword && (
               <button
@@ -846,10 +866,10 @@ export function CookPilotLoginForm({
                 Use my password instead
               </button>
             )}
-            {differentEmailButton}
           </EmailCodeEntry>
         ) : (
           <form className="flex flex-col gap-cp-3" onSubmit={handlePasswordSubmit}>
+            {differentEmailButton}
             <input
               className="sr-only"
               type="email"
@@ -922,7 +942,6 @@ export function CookPilotLoginForm({
             <button type="button" className="btn-ghost btn-compact w-full" onClick={() => void handleUseCode()} disabled={busy}>
               Email me a code instead
             </button>
-            {differentEmailButton}
           </form>
         )}
 
