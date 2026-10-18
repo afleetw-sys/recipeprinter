@@ -3,17 +3,17 @@ import { PASSWORD, enterEmail, enterPassword, returningUser, signedIn } from "./
 
 /**
  * Email sign-in, end to end in the browser: the real sign-in dialog, the real
- * Firebase Auth SDK, against the Auth emulator. CookPilot's `checkUserProviders`
- * callable (which decides between "sign in" and "create an account") is the
- * local stand-in, which treats any email starting "returning" as an existing
- * password account. Google and Apple redirect sign-in need real providers and
+ * Firebase Auth SDK, against the Auth emulator. CookPilot's emailed-code
+ * callables are the local stand-in (stubs/emailCode.mjs), which reads the
+ * account from the emulator, so a password account is offered "Use my
+ * password instead". Google and Apple redirect sign-in need real providers and
  * are not covered here.
  */
 
 test("a returning user signs in with their password", async ({ page, request }) => {
   const { email } = await returningUser(request);
   await enterEmail(page, email);
-  await expect(page.getByText(`Password for ${email}`)).toBeVisible();
+  await expect(page.getByText(`Enter the 6-digit code we sent to ${email}`)).toBeVisible();
 
   await enterPassword(page, PASSWORD);
 

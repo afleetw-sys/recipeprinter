@@ -1,6 +1,6 @@
 // Local stand-in for CookPilot's callables while checking the referral UI against the Auth
 // emulator. The signed-in account's email picks the scenario:
-//   verify*  first claim waits on email verification, the next is granted
+//   verify*  an unverified password account: the claim waits until a code confirms it
 //   earned*  a friend joined while away (promo)      paid*    a subscriber with 6 days banked (Nov 1 -> Nov 7)
 //   expired* referral Pro has run out                capped*  15 of 15 days earned, expired
 //   used*    9 of 10 free imports already used
@@ -10,6 +10,7 @@
 // An account that existed before the link was opened is refused, as the real rules refuse it.
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
+import { emailCodeStandIn } from "../../e2e/stubs/emailCode.mjs";
 
 // Link imports: every link gets the same sample recipe (the Playwright fixture),
 // so nothing reaches the real parser or spends scraper quota.
@@ -20,6 +21,8 @@ const CORS = {
   "access-control-allow-methods": "POST, OPTIONS, GET",
 };
 const DAY = 864e5;
+// Emailed sign-in codes: printed here, and at GET /last-code?email=… (see e2e/stubs/emailCode.mjs).
+const codes = emailCodeStandIn({ authHost: "127.0.0.1:9198", projectId: "demo-recipeprinter" });
 const claims = new Map();
 // Accounts that joined through a friend's link, and when: they got 3 days, which count toward their cap.
 const invited = new Map();
@@ -108,6 +111,9 @@ function meter(who, data) {
 createServer((req, res) => {
   if (req.method === "OPTIONS") { res.writeHead(204, CORS); return res.end(); }
   if (req.method === "GET" && req.url === "/health") return send(res, 200, { ok: true });
+  if (req.method === "GET" && req.url.startsWith("/last-code")) {
+    return send(res, 200, { code: codes.lastCode(new URL(req.url, "http://stub").searchParams.get("email")) });
+  }
   let raw = ""; req.on("data", (c) => (raw += c));
   req.on("end", () => {
     const data = JSON.parse(raw || "{}").data ?? {};
@@ -118,7 +124,11 @@ createServer((req, res) => {
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(parsedRecipe);
     }
-    if (req.url.endsWith("/checkUserProviders")) return send(res, 200, { result: { providers: [] } });
+    if (/\/recipePrinterEmailCode(Send|Verify)$/.test(req.url)) {
+      codes.handle(req.url, data).then((result) => send(res, 200, { result }))
+        .catch((error) => send(res, 500, { error: { status: "INTERNAL", message: String(error) } }));
+      return;
+    }
     if (req.url.endsWith("/recipePrinterReferral")) {
       if (data.op === "open") {
         const openId = `stub-open-${++openCount}`;

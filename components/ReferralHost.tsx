@@ -112,6 +112,7 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
   }, [ready, uid]);
 
   // Waiting on a verified email: check again whenever they come back to the tab.
+  // Codes confirm it in the dialog; this is for a link emailed before codes.
   useEffect(() => {
     if (!uid || !readStoredOpen()?.pendingVerification) return;
     const onFocus = async () => {
@@ -231,7 +232,18 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
 
   return (
     <>
-      {verifying && uid && <CookPilotLoginDialog reason="verify_referral" onClose={() => setVerifying(false)} />}
+      {verifying && uid && (
+        <CookPilotLoginDialog
+          reason="verify_referral"
+          onClose={() => setVerifying(false)}
+          // Same account, now confirmed: the uid doesn't change, so the claim
+          // effect above won't run again by itself.
+          onAuthenticated={() => {
+            setVerifying(false);
+            void claim();
+          }}
+        />
+      )}
       {welcome && (
         <ProWelcomeDialog
           welcome={welcome}

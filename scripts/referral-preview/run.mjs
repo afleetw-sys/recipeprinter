@@ -7,8 +7,10 @@
 //   - this checkout's dev server on :3105, pointed at both, with every real
 //     key from .env.local blanked (no real Firebase, RevenueCat or PostHog).
 //
-// Sign up with any made-up email. The email picks what the stand-in plays:
-//   verify…   a password account that must confirm its email first
+// Sign in with any made-up email. Codes aren't emailed: the stand-in prints each one,
+// and http://127.0.0.1:3212/last-code?email=… shows it. The email picks what it plays:
+//   verify…   an older password account (password "verify-password") that must
+//             confirm its email by code before a friend's days start
 //   earned…   a referrer with 6 days banked from two friends
 //   paid…     a subscriber whose friend joined
 //   expired…  referral Pro has run out (Subscribe / Invite choice)
@@ -18,8 +20,6 @@
 // Open /invite/AB3CD4EF in a signed-out window to arrive as an invited friend.
 // Importing a link works: any link gives the same sample recipe (photos and
 // pasted text don't, here).
-// Verification links land in the Auth emulator: GET
-// http://127.0.0.1:9198/emulator/v1/projects/demo-recipeprinter/oobCodes
 import { existsSync, readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 
