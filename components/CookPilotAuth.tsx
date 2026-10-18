@@ -492,29 +492,48 @@ function EmailCodeEntry({
         <label className="field-label" htmlFor="cookpilot-code">
           Enter the 6-digit code we sent to {email}
         </label>
-        <input
-          id="cookpilot-code"
-          name="one-time-code"
-          className="field text-center tracking-[0.3em] text-cp-body-lg"
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          pattern="[0-9]*"
-          maxLength={6}
-          autoFocus={autoFocus}
-          value={code}
-          disabled={busy}
-          onChange={(event) => {
-            const digits = event.target.value.replace(/\D/g, "").slice(0, 6);
-            // A refusal stays until the digits change: a change event that
-            // leaves them as they were (autofill, a password manager) isn't
-            // the cook trying again.
-            if (error && digits !== code && digits.length > 0) setError(null);
-            setCode(digits);
-            // A pasted or autofilled code goes straight in.
-            if (digits.length === 6) void submit(digits);
-          }}
-        />
+        {/* Six boxes, one real input. The input lies over the boxes, invisible,
+            so typing, pasting and the phone's "code from Mail/Messages" fill all
+            work as for any field; the boxes only draw what it holds. */}
+        <div className="code-field">
+          <input
+            id="cookpilot-code"
+            name="one-time-code"
+            className="code-field__input"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]*"
+            maxLength={6}
+            autoFocus={autoFocus}
+            value={code}
+            // Read-only, not disabled, while a code is checked: disabling drops
+            // focus, and after a refusal the cook should be able to just retype.
+            readOnly={busy}
+            aria-invalid={error ? true : undefined}
+            onChange={(event) => {
+              const digits = event.target.value.replace(/\D/g, "").slice(0, 6);
+              // A refusal stays until the digits change: a change event that
+              // leaves them as they were (autofill, a password manager) isn't
+              // the cook trying again.
+              if (error && digits !== code && digits.length > 0) setError(null);
+              setCode(digits);
+              // A pasted or autofilled code goes straight in.
+              if (digits.length === 6) void submit(digits);
+            }}
+          />
+          <div className="code-field__slots" aria-hidden="true">
+            {Array.from({ length: 6 }, (_, i) => (
+              <span
+                key={i}
+                className="code-field__slot"
+                data-active={i === Math.min(code.length, 5) ? "" : undefined}
+              >
+                {code[i] ?? ""}
+              </span>
+            ))}
+          </div>
+        </div>
         {error ? (
           <p className="field-error" role="alert">{error}</p>
         ) : (

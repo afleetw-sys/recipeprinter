@@ -1801,6 +1801,55 @@
     border-color: var(--cp-accent);
     outline: none;
   }
+  /* The 6-digit sign-in code (CookPilotAuth's EmailCodeEntry): six boxes drawn
+     under one invisible input that covers them, so paste and one-time-code
+     autofill behave as in any field. Boxes take `.field`'s look; the box the
+     next digit goes in takes its focus border. */
+  .code-field {
+    position: relative;
+  }
+  .code-field__input {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: transparent;
+    color: transparent;
+    caret-color: transparent;
+    font-size: var(--cp-fs-body-lg);
+    outline: none;
+  }
+  .code-field__input::selection {
+    background: transparent;
+  }
+  .code-field__slots {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .code-field__slot {
+    @apply rounded transition-[border-color,background-color] duration-150;
+    display: grid;
+    place-items: center;
+    height: 52px;
+    border: 1px solid var(--cp-line);
+    background: color-mix(in srgb, var(--cp-card) 78%, var(--cp-page));
+    color: var(--cp-ink);
+    font-size: var(--cp-fs-body-lg);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .code-field__input:focus ~ .code-field__slots .code-field__slot {
+    background: var(--cp-card);
+  }
+  .code-field__input:focus ~ .code-field__slots .code-field__slot[data-active] {
+    border-color: var(--cp-accent);
+  }
+  .code-field__input[aria-invalid="true"] ~ .code-field__slots .code-field__slot {
+    border-color: var(--cp-error);
+  }
   textarea.field {
     min-height: 140px;
     resize: vertical;
