@@ -1428,14 +1428,17 @@ export const RecipeCardFace = memo(function RecipeCardFace({
               // Editable in place when there is a link; behind the reveal when
               // there is not, so an empty "Add link" placeholder never sits on
               // a page that is meant to be showing what prints.
-              canEdit && inlineEdit && (showEmpty || recipe.sourceUrl) ? (
+              // "A link" is what prints (`source`), not any text in the field: the
+              // measurer lays out the read-only card, so showing more here grows
+              // the footer past the space pagination left for it.
+              canEdit && inlineEdit && (showEmpty || source) ? (
                 <input
                   className="recipe-card__inline-input recipe-card__source-line"
                   dir="auto"
                   value={
                     sameTarget(inlineEdit.editingTarget, { kind: "sourceUrl" })
                       ? inlineEdit.value
-                      : source ?? recipe.sourceUrl ?? ""
+                      : source ?? ""
                   }
                   placeholder="Add link"
                   aria-label="Source link"
@@ -1684,14 +1687,14 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             <span className="recipe-card__footer-brand">Printed with RecipePrinter</span>
           )}
           {showSourceUrl && showHeader && (
-            canEdit && inlineEdit && (showEmpty || recipe.sourceUrl) ? (
+            canEdit && inlineEdit && (showEmpty || source) ? (
               <input
                 className="recipe-card__inline-input recipe-card__footer-source"
                 dir="auto"
                 value={
                   sameTarget(inlineEdit.editingTarget, { kind: "sourceUrl" })
                     ? inlineEdit.value
-                    : source ?? recipe.sourceUrl ?? ""
+                    : source ?? ""
                 }
                 placeholder="Add link"
                 aria-label="Source link"
