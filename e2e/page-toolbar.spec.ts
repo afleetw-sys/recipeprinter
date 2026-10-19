@@ -146,3 +146,57 @@ test("the page toolbar stays on screen while a zoomed-in page is scrolled", asyn
     }
   }
 });
+
+/**
+ * The bar belongs to the deck, not the page's edges. It was boxed to the page's
+ * own width, so a small or zoomed-out page squeezed it: the tip wrapped and
+ * buttons went into More with empty canvas either side. Wherever the deck has
+ * the room, the bar is one row however small the page, and never past the
+ * deck's edges.
+ */
+test("the page toolbar can be wider than a small page", async ({ page, isMobile }) => {
+  test.skip(isMobile, "a phone's bar is already the screen's width");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await importLink(page);
+  await bar(page).locator(".recipe-page-toolbar__btn--fields").click();
+  await expect(bar(page).locator(".recipe-page-toolbar__hint")).toBeVisible();
+  const deck = page.locator("#recipe-page-deck");
+  const box = await deck.boundingBox();
+  if (!box) throw new Error("no deck");
+
+  // Pinch out, a step at a time, down to the smallest page.
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  for (let step = 0; step < 4; step += 1) {
+    await page.keyboard.down("Control");
+    for (let i = 0; i < 3; i += 1) await page.mouse.wheel(0, 100);
+    await page.keyboard.up("Control");
+    await expect(async () => {
+      const m = await page.evaluate(() => {
+        const toolbar = document.querySelector<HTMLElement>(".recipe-page-slide.is-active .recipe-page-toolbar")!;
+        const card = document.querySelector(".recipe-page-slide.is-active .recipe-page-scaler")!.getBoundingClientRect();
+        const deckRect = document.querySelector("#recipe-page-deck")!.getBoundingClientRect();
+        const groups = (Array.from(toolbar.children) as HTMLElement[]).filter(
+          (child) => child.getClientRects().length > 0 && getComputedStyle(child).visibility !== "hidden",
+        );
+        return {
+          card: card.width,
+          bar: toolbar.getBoundingClientRect().toJSON(),
+          deck: deckRect.toJSON(),
+          // One row: no group starts below another group's bottom edge.
+          rows:
+            groups.some((group) =>
+              groups.some((other) => group.getBoundingClientRect().top >= other.getBoundingClientRect().bottom - 0.5),
+            )
+              ? 2
+              : 1,
+          collapsed: toolbar.querySelector("[data-overflowed]") !== null,
+        };
+      });
+      // The deck has room for everything on one row at this width.
+      expect(m.rows, `one row beside a ${Math.round(m.card)}px page`).toBe(1);
+      expect(m.collapsed).toBe(false);
+      expect(m.bar.left).toBeGreaterThanOrEqual(m.deck.left - 0.5);
+      expect(m.bar.right).toBeLessThanOrEqual(m.deck.right + 0.5);
+    }).toPass({ timeout: 5_000 });
+  }
+});

@@ -1613,7 +1613,7 @@
    until the page itself leaves. Zero height, so the page lays out exactly as
    it did. */
 .recipe-page-canvas__controls {
-  --controls-w: min(100%, max(var(--preview-w, 100%), 420px));
+  --controls-w: max(100%, var(--deck-visible-w, 0px));
   --controls-gap: 16px;
   position: sticky;
   /* Less the deck's top padding (`--deck-pad-top`, measured): a sticky offset
@@ -1624,9 +1624,10 @@
   justify-content: center;
   align-items: flex-end;
   height: 0;
-  /* At least wide enough for a full row of controls, and never wider than the
-     canvas. Tied strictly to the page width, a small page forced the bar to
-     wrap even with plenty of empty canvas either side of it. Centred on the
+  /* As wide as the part of the deck on screen (`--deck-visible-w`, measured
+     by PageToolbar), or the page if that is wider. Tied to the page, a small or
+     zoomed-out page squeezed the bar to its own width, wrapping it or pushing
+     buttons into More with empty canvas either side. Centred on the
      page (plus a spread half's offset) with margins, not a transform: sticky
      works from the laid-out box, and a transform would move the bar away from
      where the browser thinks it is. */

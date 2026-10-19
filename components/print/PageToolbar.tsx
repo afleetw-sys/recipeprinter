@@ -109,6 +109,9 @@ export function PageToolbar({ children }: { children: ReactNode }) {
         : Infinity;
     const room = Math.min(shell.clientWidth, visible);
     shell.style.setProperty("--toolbar-room", `${room}px`);
+    // And the shell's own width: the bar may be wider than a small page, out
+    // to the deck's edges (see `.recipe-page-canvas__controls`).
+    if (Number.isFinite(visible)) shell.style.setProperty("--deck-visible-w", `${visible}px`);
     // A sticky offset counts from inside the deck's padding, which is not one
     // value: it centres the first page, or is fixed for a lone recipe.
     shell.style.setProperty("--deck-pad-top", deckStyle?.paddingTop ?? "0px");
