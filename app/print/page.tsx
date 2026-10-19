@@ -6666,8 +6666,15 @@ export default function PrintPage() {
           {/* One tip for the whole deck, just above the tools, rather than one
               hanging under each page. Recipe cards only: a cookbook shows none.
               Only with a page to act on, since every tip is about one. */}
-          {!cookbookMode && recipeCount > 0 && (
-            <EditTips editing={Boolean(activeInlineEdit?.editingTarget)} />
+          {/* While the empty fields are showing, a cookbook gets the line too:
+              it is where the phone says where to tap, instead of the page
+              toolbar growing a second row to say it. */}
+          {(!cookbookMode || showEmptyFields) && recipeCount > 0 && (
+            <EditTips
+              editing={Boolean(activeInlineEdit?.editingTarget)}
+              revealing={showEmptyFields && !activeInlineEdit?.editingTarget}
+              surface={cookbookMode ? "page" : "card"}
+            />
           )}
           {/* No way into a cookbook here on purpose. Building a book — covers,
               chapters, page layouts, the organizer — is not something the phone

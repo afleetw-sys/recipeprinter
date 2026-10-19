@@ -113,7 +113,10 @@ export function PageToolbar({ children }: { children: ReactNode }) {
     // value: it centres the first page, or is fixed for a lone recipe.
     shell.style.setProperty("--deck-pad-top", deckStyle?.paddingTop ?? "0px");
 
-    if (itemCount === 0 || bar.querySelector(":scope > .recipe-page-toolbar__hint")) {
+    // Only a hint that is shown: the reveal's is hidden on a phone, where the
+    // bar has to stay one row and collapse into More like any other.
+    const hint = bar.querySelector<HTMLElement>(":scope > .recipe-page-toolbar__hint");
+    if (itemCount === 0 || (hint && hint.getClientRects().length > 0)) {
       setCollapsedCount(0);
       return;
     }

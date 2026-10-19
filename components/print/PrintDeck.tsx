@@ -816,7 +816,10 @@ export function PrintDeck(props: PrintDeckProps) {
               not anything in the toolbar. Each one reads "Add servings", "Add
               link" and so on, so the tip only has to point at them. */}
           {showFieldsButton && editing && (
-            <div className="recipe-page-toolbar__group recipe-page-toolbar__hint" role="note">
+            <div
+              className="recipe-page-toolbar__group recipe-page-toolbar__hint recipe-page-toolbar__hint--reveal"
+              role="note"
+            >
               <InfoIcon size={ICON_SIZE.sm} aria-hidden />
               <span>
                 <span className="recipe-page-toolbar__hint-fine">Click</span>
