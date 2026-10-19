@@ -19,6 +19,7 @@ import { localStore, sessionStore } from "@/lib/storage";
 import { releaseImportPreview, setImportPreview } from "@/lib/importPreviews";
 import { fitBookRoom } from "@/lib/cookbookFreeSize";
 import { storeImportedPhoto, withImportedPhoto } from "@/lib/importedPhoto";
+import { noteCardImport } from "@/lib/referral";
 import {
   SKIPPED,
   importRefused,
@@ -999,6 +1000,7 @@ export function useQueue() {
           ...meterImportedFields(reservation),
         };
         track("recipe_imported", { ...outcome, ...context, importId: id, ...landing, ...languageOf(first) });
+        if (!cookbookModeRef.current) noteCardImport();
         rest.forEach((recipe) =>
           track("recipe_imported", {
             ...outcome,

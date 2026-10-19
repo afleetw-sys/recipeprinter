@@ -225,6 +225,9 @@ import {
   markPostPrintInviteShown,
   postPrintInviteShown,
   shouldShowPostPrintInvite,
+  CARD_IMPORTED_EVENT,
+  INVITE_AFTER_IMPORTS,
+  cardImportCount,
 } from "@/lib/referral";
 import { PostPrintInviteDialog } from "@/components/PostPrintInviteDialog";
 import { useToast } from "@/lib/useToast";
@@ -2203,6 +2206,43 @@ export default function PrintPage() {
     setRenderAllPages(false);
   }
 
+
+  /** The referral program is live for this person and its prompts may show. */
+  function referralInviteAllowed(): boolean {
+    const summary = cachedReferralSummary();
+    return REFERRALS_LIVE && referralPromptsAllowed() && (!summary || summary.enabled);
+  }
+
+  /**
+   * "Give 3 days. Get 3 days.", once per browser, after the first card print
+   * or the second card import, whichever comes first (Amelia, 2026-10-19).
+   */
+  function offerReferralInvite(delayMs: number) {
+    const summary = cachedReferralSummary();
+    if (
+      !shouldShowPostPrintInvite({
+        cookbookMode,
+        capReached: summary ? capReached(summary) : false,
+        alreadyShown: postPrintInviteShown(),
+      })
+    ) {
+      return;
+    }
+    markPostPrintInviteShown();
+    window.setTimeout(() => setShowReferralInvite(true), delayMs);
+  }
+
+  // The second card import offers the invite too, after the card has had a
+  // moment on screen.
+  useEffect(() => {
+    if (cookbookMode) return;
+    const onImported = () => {
+      if (cardImportCount() >= INVITE_AFTER_IMPORTS && referralInviteAllowed()) offerReferralInvite(1200);
+    };
+    window.addEventListener(CARD_IMPORTED_EVENT, onImported);
+    return () => window.removeEventListener(CARD_IMPORTED_EVENT, onImported);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cookbookMode]);
 
   function printNow() {
     printRequestedRef.current = true;
@@ -5115,18 +5155,8 @@ export default function PrintPage() {
       // Once the program is live, the dialog after a print is the invite
       // ("Give 3 days. Get 3 days."), once per browser, in place of the
       // feedback dialog. Until then, nothing here changes.
-      const summary = cachedReferralSummary();
-      if (REFERRALS_LIVE && postPrintAction !== "none" && referralPromptsAllowed() && (!summary || summary.enabled)) {
-        if (
-          shouldShowPostPrintInvite({
-            cookbookMode,
-            capReached: summary ? capReached(summary) : false,
-            alreadyShown: postPrintInviteShown(),
-          })
-        ) {
-          markPostPrintInviteShown();
-          window.setTimeout(() => setShowReferralInvite(true), 150);
-        }
+      if (REFERRALS_LIVE && postPrintAction !== "none" && referralInviteAllowed()) {
+        offerReferralInvite(150);
         return;
       }
       if (!prompt) return;

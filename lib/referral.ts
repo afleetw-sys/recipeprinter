@@ -230,9 +230,9 @@ export function referralPurchaseProps(
 const POST_PRINT_INVITE_KEY = "recipeprinter:post-print-invite:v1";
 
 /**
- * Whether this print gets the "Give 3 days. Get 3 days." dialog: once per
- * browser, after a card print (a cookbook has its own screen), and never once
- * there's nothing left to earn.
+ * Whether the "Give 3 days. Get 3 days." dialog shows now: once per browser,
+ * after a card print or a second card import (a cookbook has its own screen),
+ * and never once there's nothing left to earn.
  */
 export function shouldShowPostPrintInvite(input: {
   cookbookMode: boolean;
@@ -240,6 +240,25 @@ export function shouldShowPostPrintInvite(input: {
   alreadyShown: boolean;
 }): boolean {
   return !input.cookbookMode && !input.capReached && !input.alreadyShown;
+}
+
+/**
+ * Card imports this browser has made, for offering the invite after the
+ * second one (Amelia, 2026-10-19: "after second import or first print",
+ * whichever comes first, still once per browser). Cookbook imports don't count.
+ */
+const CARD_IMPORTS_KEY = "recipeprinter:card-imports:v1";
+export const CARD_IMPORTED_EVENT = "recipeprinter:card-imported";
+export const INVITE_AFTER_IMPORTS = 2;
+
+export function noteCardImport(): void {
+  const count = Number(localStore.get(CARD_IMPORTS_KEY) ?? 0) + 1;
+  localStore.set(CARD_IMPORTS_KEY, String(count));
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(CARD_IMPORTED_EVENT));
+}
+
+export function cardImportCount(): number {
+  return Number(localStore.get(CARD_IMPORTS_KEY) ?? 0);
 }
 
 export function postPrintInviteShown(): boolean {

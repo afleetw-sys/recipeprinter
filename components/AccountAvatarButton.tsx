@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { signOut } from "firebase/auth";
 import { readPendingCode } from "@/lib/emailCodePending";
 import {
@@ -16,7 +16,7 @@ import {
   LogoutIcon,
   SettingsIcon,
 } from "@/components/icons";
-import { REFERRALS_LIVE } from "@/lib/referral";
+import { REFERRALS_LIVE, readStoredOpen, referralVersion, subscribeReferral } from "@/lib/referral";
 import {
   CookPilotLoginDialog,
   appleProvider,
@@ -320,6 +320,7 @@ export default function AccountAvatarButton({
                Google and Apple this is the whole of signing in, one press from
                the avatar. Email needs fields, so it opens the dialog. */
             <div className="mb-cp-1 flex flex-col gap-cp-2 border-b border-line px-cp-1 pb-cp-3 pt-cp-1">
+              <WaitingFriendGift />
               <p className="px-cp-2 text-cp-small font-bold text-ink">Sign in or create an account</p>
               <div className="grid grid-cols-2 gap-cp-2">
                 <button
@@ -477,6 +478,26 @@ function MenuImportUsage({ onNavigate }: { onNavigate: () => void }) {
         {line.detail && <p className="text-cp-caption text-ink-soft">{line.detail}</p>}
       </div>
     </Link>
+    </div>
+  );
+}
+
+/**
+ * A friend's invite this browser opened and put off ("Maybe later"): the days
+ * are still waiting, so the signed-out menu says so above the sign-in buttons
+ * until they claim it or the invite runs out (Amelia, 2026-10-19).
+ */
+function WaitingFriendGift() {
+  const version = useSyncExternalStore(subscribeReferral, referralVersion, () => 0);
+  const [open, setOpen] = useState<ReturnType<typeof readStoredOpen>>(null);
+  useEffect(() => setOpen(readStoredOpen()), [version]);
+  if (!REFERRALS_LIVE || !open?.introShown || open.pendingVerification) return null;
+  return (
+    <div className="flex items-start gap-2 rounded-lg bg-[var(--cp-accent-soft)] px-cp-2 py-cp-2 text-cp-small">
+      <GiftIcon size={ICON_SIZE.md} className="mt-px shrink-0 text-[var(--cp-accent)]" />
+      <p className="text-ink">
+        <span className="font-semibold">A friend gave you {open.rewardDays} days of Pro.</span> Sign in to start them.
+      </p>
     </div>
   );
 }
