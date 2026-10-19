@@ -556,6 +556,7 @@ export function PrintDeck(props: PrintDeckProps) {
     };
     const missingNames = missingFieldNames();
     const pageHasHiddenFields = (): boolean => missingNames.length > 0;
+    const pageNoun = projectMeta.meta.cookbookMode ? "page" : "card";
     // Four names is what fits a phone's pill on two lines; any more collapse
     // into a count. A blank recipe would otherwise list six.
     const fieldsLabel =
@@ -807,6 +808,26 @@ export function PrintDeck(props: PrintDeckProps) {
               >
                 <ChevronRightIcon size={ICON_SIZE.md} />
               </button>
+            </div>
+          )}
+          {/* What to do once the empty fields are showing. The button used to
+              just turn into "Done", and people pressed it and then kept looking
+              for where the link or servings go: the new fields are on the page,
+              not anything in the toolbar. Each one reads "Add servings", "Add
+              link" and so on, so the tip only has to point at them. */}
+          {showFieldsButton && editing && (
+            <div
+              className="recipe-page-toolbar__group recipe-page-toolbar__hint recipe-page-toolbar__hint--reveal"
+              role="note"
+            >
+              <InfoIcon size={ICON_SIZE.sm} aria-hidden />
+              <span>
+                <span className="recipe-page-toolbar__hint-fine">Click</span>
+                <span className="recipe-page-toolbar__hint-touch">Tap</span>
+                {missingNames.length > 0
+                  ? ` any \u201cAdd\u201d on the ${pageNoun} to fill it in.`
+                  : ` any line on the ${pageNoun} to edit it.`}
+              </span>
             </div>
           )}
           {showFieldsButton && (
