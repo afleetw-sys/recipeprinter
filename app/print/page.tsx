@@ -5478,6 +5478,9 @@ export default function PrintPage() {
             hint: !cookbookMode && option.id === "card" ? "The photo in this card's header" : option.hint,
           }),
         )}
+        // A card's None / In card only means something once there is a photo,
+        // so its dialog leads with the photo.
+        placementBelow={!cookbookMode}
         onPlacementChange={(mode) => {
           if (cookbookMode) return setRecipePhotoMode(recipeId, mode as PhotoStyle);
           // The only card there is IS every card, and "Every recipe" is not

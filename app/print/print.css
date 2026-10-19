@@ -1827,6 +1827,12 @@
 .recipe-page-toolbar__hint svg {
   flex: none;
 }
+/* "Click" with a mouse, "Tap" on a touch screen. */
+.recipe-page-toolbar__hint-touch { display: none; }
+@media (pointer: coarse) {
+  .recipe-page-toolbar__hint-fine { display: none; }
+  .recipe-page-toolbar__hint-touch { display: inline; }
+}
 
 .recipe-page-toolbar__group:first-child { padding-left: 0; }
 .recipe-page-toolbar__group:last-child { padding-right: 0; }
@@ -5957,7 +5963,8 @@
   gap: 20px;
 }
 .image-picker__heading h2,
-.image-picker__existing h3 {
+.image-picker__existing h3,
+.image-picker__placement--below h3 {
   margin: 0;
   font-family: inherit;
   color: var(--cp-ink);
@@ -5979,6 +5986,10 @@
    source, so both live in one dialog. */
 .image-picker__placement {
   margin-top: 20px;
+}
+/* Under the photos (recipe cards): spaced and headed like the photos section. */
+.image-picker__placement--below {
+  margin-top: 24px;
 }
 .image-picker__placement-row {
   display: grid;
@@ -6038,7 +6049,8 @@
 .image-picker__existing {
   margin-top: 24px;
 }
-.image-picker__existing h3 {
+.image-picker__existing h3,
+.image-picker__placement--below h3 {
   margin-bottom: 10px;
   font-size: var(--cp-fs-caption);
   font-weight: 800;

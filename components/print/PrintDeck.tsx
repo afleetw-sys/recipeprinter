@@ -809,6 +809,20 @@ export function PrintDeck(props: PrintDeckProps) {
               </button>
             </div>
           )}
+          {/* What to do once the empty fields are showing. The button used to
+              just turn into "Done", and people pressed it and then kept looking
+              for where the link or servings go: the new fields are faint words
+              on the page, not anything in the toolbar. */}
+          {showFieldsButton && editing && (
+            <div className="recipe-page-toolbar__group recipe-page-toolbar__hint" role="note">
+              <InfoIcon size={ICON_SIZE.sm} aria-hidden />
+              <span>
+                <span className="recipe-page-toolbar__hint-fine">Click</span>
+                <span className="recipe-page-toolbar__hint-touch">Tap</span> the faded words on the{" "}
+                {projectMeta.meta.cookbookMode ? "page" : "card"} to fill them in.
+              </span>
+            </div>
+          )}
           {showFieldsButton && (
             <div className="recipe-page-toolbar__group recipe-page-toolbar__group--fields">
               <button

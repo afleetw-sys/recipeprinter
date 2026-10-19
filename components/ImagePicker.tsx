@@ -38,6 +38,7 @@ export function ImagePicker({
   placement,
   placementOptions,
   onPlacementChange,
+  placementBelow = false,
   openSignal,
   onOpenSignalConsumed,
   onOpenChange,
@@ -64,6 +65,11 @@ export function ImagePicker({
   placement?: string;
   placementOptions?: Array<{ id: string; label: string; hint?: string }>;
   onPlacementChange?: (id: string) => void;
+  /** Photos first, then the placement row. A recipe card's only placements
+      are None and In card, which mean nothing until there is a photo to show
+      or hide, so it leads with the photo. A cookbook page keeps placement on
+      top: In page and Full page are a real layout choice made first. */
+  placementBelow?: boolean;
   /** Opens the dialog from outside. Choosing "In page" or "Full page" for a
       recipe that has no photo yet is a request for a photo, so the thing that
       asks for one opens by itself instead of leaving a placement set to
@@ -109,8 +115,8 @@ export function ImagePicker({
   const [error, setError] = useState<string | null>(null);
   const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
   // Recipe-photo mode: placement (None/In-page/Full-page) on top, then the
-  // source (this recipe's photo vs a custom one). `none` = no photo, so the
-  // source section collapses.
+  // source (this recipe's photo vs a custom one), or the other way round with
+  // `placementBelow`. `none` = no photo, so the source section collapses.
   const recipeMode = Boolean(placementOptions && onPlacementChange);
   // Always surface the currently-chosen photo as a selectable tile, even when it
   // isn't one of the passed candidates — e.g. a section cover / cover photo the
@@ -297,7 +303,9 @@ export function ImagePicker({
   const headingDescription = gridMode
     ? undefined
     : recipeMode
-      ? "Set the placement, then pick a photo or drag one in."
+      ? placementBelow
+        ? "Pick a photo or drag one in."
+        : "Set the placement, then pick a photo or drag one in."
       : // Deliberately not "in this cookbook": this dialog is the
         // photo control for plain recipe cards too now, where there
         // is no cookbook to have a photo in.
@@ -310,6 +318,30 @@ export function ImagePicker({
   const closeSheet = () => {
     if (!uploading) setOpen(false);
   };
+
+  // Its own piece so it can sit above the photos or below them.
+  const placementSection =
+    recipeMode && placementOptions ? (
+      <section
+        className={`image-picker__placement ${placementBelow ? "image-picker__placement--below" : ""}`}
+        aria-label="Where the photo goes"
+      >
+        {placementBelow && <h3>On this card</h3>}
+        <div className="image-picker__placement-row" role="group">
+          {placementOptions.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              className={`image-picker__placement-btn ${placement === option.id ? "is-active" : ""}`}
+              aria-pressed={placement === option.id}
+              onClick={() => onPlacementChange?.(option.id)}
+            >
+              <span className="image-picker__placement-label">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+    ) : null;
 
   // Shared by both chromes below: the drop veil, the placement row (recipe
   // mode only), the photo grid (or the "hidden" note in its place), and any
@@ -331,27 +363,11 @@ export function ImagePicker({
         </div>
       )}
 
-      {recipeMode && placementOptions && (
-        <section className="image-picker__placement" aria-label="Where the photo goes">
-            <div className="image-picker__placement-row" role="group">
-              {placementOptions.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  className={`image-picker__placement-btn ${placement === option.id ? "is-active" : ""}`}
-                  aria-pressed={placement === option.id}
-                  onClick={() => onPlacementChange?.(option.id)}
-                >
-                  <span className="image-picker__placement-label">{option.label}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
+      {!placementBelow && placementSection}
 
         {placementNone ? (
           <p className="image-picker__placement-note">
-            This recipe&rsquo;s photo is hidden. Pick a placement above to show it.
+            This recipe&rsquo;s photo is hidden. Pick a placement {placementBelow ? "below" : "above"} to show it.
           </p>
         ) : (
         <>
@@ -471,6 +487,7 @@ export function ImagePicker({
         </section>
         </>
         )}
+        {placementBelow && placementSection}
         {error && <p className="field-error" role="alert">{error}</p>}
     </>
   );
