@@ -22,7 +22,6 @@ const PRODUCT = "products/recipePrinter/users";
 
 /** A password account in the Auth emulator, unique per test so tests can run in parallel. */
 export async function returningUser(request: APIRequestContext): Promise<{ email: string; uid: string }> {
-  // The CookPilot stand-in treats an email starting "returning" as an existing account.
   const email = `returning-${crypto.randomUUID()}@example.test`;
   const response = await request.post(`${AUTH}/accounts:signUp?key=e2e-fake-api-key`, {
     data: { email, password: PASSWORD, returnSecureToken: true },
@@ -44,6 +43,8 @@ export async function enterEmail(page: Page, email: string) {
 }
 
 export async function enterPassword(page: Page, password: string) {
+  // Email sign-in starts with an emailed code; a password account can switch.
+  await page.getByRole("button", { name: "Use my password instead" }).click();
   await page.locator('input[type="password"]').fill(password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }

@@ -216,6 +216,20 @@ import {
 import { hasPendingImport, takePendingImport } from "@/lib/pendingImport";
 import { isIOSPrinter, isWebKitPrinter, printNeedsLiveGesture } from "@/lib/printGesture";
 import { markPostPrintDialogShown, shouldShowPostPrintDialog } from "@/lib/postPrintDialog";
+import {
+  REFERRALS_LIVE,
+  cachedReferralSummary,
+  setReferralSurface,
+  capReached,
+  inviterPlan,
+  markPostPrintInviteShown,
+  postPrintInviteShown,
+  shouldShowPostPrintInvite,
+  CARD_IMPORTED_EVENT,
+  INVITE_AFTER_IMPORTS,
+  cardImportCount,
+} from "@/lib/referral";
+import { PostPrintInviteDialog } from "@/components/PostPrintInviteDialog";
 import { useToast } from "@/lib/useToast";
 import { printProjectFingerprint, type PendingSave } from "@/lib/printSave";
 import { writeProject as runSaveWrite } from "@/lib/printSaveWrite";
@@ -295,6 +309,7 @@ export default function PrintPage() {
       is how books saved before this already read. */
   const [showDescription, setShowDescription] = useState(true);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
+  const [showReferralInvite, setShowReferralInvite] = useState(false);
   const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
   // A cookbook started from the homepage is built HERE, behind the welcome
   // dialog: the page first renders as recipe cards, then swaps theme and
@@ -724,6 +739,18 @@ export default function PrintPage() {
   const anyRecipeHasSourceUrl =
     items?.some((item) => Boolean(item.recipe?.sourceUrl)) ?? false;
   const cookbookMode = Boolean(projectMeta.meta.cookbookMode);
+  // Referral prompts are delayed so the newly imported card can settle. A
+  // homepage cookbook begins life as cards while its project metadata is
+  // being built, so the render that schedules the prompt can still read
+  // `false` here. Read the current mode when the timer actually fires.
+  const cookbookModeRef = useRef(cookbookMode);
+  cookbookModeRef.current = cookbookMode;
+  // Tells the referral program which side this is (lib/referral `setReferralSurface`):
+  // nothing referral-related is offered or started inside the Cookbook Builder.
+  useEffect(() => {
+    setReferralSurface(cookbookMode ? "cookbook" : "cards");
+    return () => setReferralSurface(null);
+  }, [cookbookMode]);
   // The cookbook's remembered export format (US Letter / 8×10 hardcover). This
   // is purely an EXPORT concern — it never changes how the book previews or how
   // recipes are measured; it just seeds the format the "Print your cookbook"
@@ -2185,6 +2212,45 @@ export default function PrintPage() {
     setRenderAllPages(false);
   }
 
+
+  /** The referral program is live for this person and its prompts may show. */
+  function referralInviteAllowed(): boolean {
+    const summary = cachedReferralSummary();
+    return REFERRALS_LIVE && (!summary || summary.enabled);
+  }
+
+  /**
+   * "Give 3 days. Get 3 days.", once per browser, after the first card print
+   * or the second card import, whichever comes first (Amelia, 2026-10-19).
+   */
+  function offerReferralInvite(delayMs: number) {
+    window.setTimeout(() => {
+      const summary = cachedReferralSummary();
+      if (
+        !shouldShowPostPrintInvite({
+          cookbookMode: cookbookModeRef.current,
+          capReached: summary ? capReached(summary) : false,
+          alreadyShown: postPrintInviteShown(),
+        })
+      ) {
+        return;
+      }
+      markPostPrintInviteShown();
+      setShowReferralInvite(true);
+    }, delayMs);
+  }
+
+  // The second card import offers the invite too, after the card has had a
+  // moment on screen.
+  useEffect(() => {
+    if (cookbookMode) return;
+    const onImported = () => {
+      if (cardImportCount() >= INVITE_AFTER_IMPORTS && referralInviteAllowed()) offerReferralInvite(1200);
+    };
+    window.addEventListener(CARD_IMPORTED_EVENT, onImported);
+    return () => window.removeEventListener(CARD_IMPORTED_EVENT, onImported);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cookbookMode]);
 
   function printNow() {
     printRequestedRef.current = true;
@@ -5094,6 +5160,13 @@ export default function PrintPage() {
       // can't stand in for "you exported a cookbook"). Only plain-card prints
       // get that nudge.
       if (cookbookMode) return;
+      // Once the program is live, the dialog after a print is the invite
+      // ("Give 3 days. Get 3 days."), once per browser, in place of the
+      // feedback dialog. Until then, nothing here changes.
+      if (REFERRALS_LIVE && postPrintAction !== "none" && referralInviteAllowed()) {
+        offerReferralInvite(150);
+        return;
+      }
       if (!prompt) return;
       markPostPrintDialogShown();
       window.setTimeout(() => setShowDonateDialog(true), 150);
@@ -5996,6 +6069,7 @@ export default function PrintPage() {
         showAddRecipeDialog ||
         pendingDelete ||
         showDonateDialog ||
+        showReferralInvite ||
         showFeedbackDialog ||
         showCookPilotLogin
       ) {
@@ -6011,6 +6085,7 @@ export default function PrintPage() {
     showAddRecipeDialog,
     pendingDelete,
     showDonateDialog,
+    showReferralInvite,
     showFeedbackDialog,
     showCookPilotLogin,
     requestDeleteNavItem,
@@ -6933,6 +7008,16 @@ export default function PrintPage() {
       </main>
     </>
 
+      <PostPrintInviteDialog
+        open={showReferralInvite}
+        signedIn={Boolean(cookPilotUser)}
+        rewardDays={cachedReferralSummary()?.rewardDays ?? 3}
+        plan={inviterPlan({
+          hasPro: hasProEntitlement(effectiveCustomerInfo.customerInfo),
+          productIdentifier: effectiveCustomerInfo.customerInfo?.entitlements.active.pro?.productIdentifier,
+        })}
+        onClose={() => setShowReferralInvite(false)}
+      />
       <PrintDialogs
         showDonateDialog={showDonateDialog}
         onCloseDonateDialog={() => setShowDonateDialog(false)}

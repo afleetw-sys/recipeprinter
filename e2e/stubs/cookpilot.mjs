@@ -7,25 +7,27 @@
 //                     CookPilot's real parser on a fixture recipe page.
 //   POST /parse-html  like recipePrinterParseSuppliedHTML: always "no recipe",
 //                     so a test notices if the route ever falls through to it.
-//   POST /<project>/<region>/checkUserProviders
-//                     CookPilot's callable, in the callable wire format, since
-//                     the browser reaches it through connectFunctionsEmulator.
-//                     An email starting "returning" has a password account (the
-//                     tests create it in the Auth emulator); any other is new.
+//   POST /<project>/<region>/recipePrinterEmailCodeSend, …Verify
+//                     CookPilot's emailed sign-in code callables, in the callable
+//                     wire format, since the browser reaches them through
+//                     connectFunctionsEmulator. See ./emailCode.mjs.
+//   GET  /last-code?email=…  the code the last send "emailed" to that address.
 //   GET  /health      for Playwright's readiness wait.
 
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
+import { emailCodeStandIn } from "./emailCode.mjs";
 
 const PORT = Number(process.env.COOKPILOT_STUB_PORT ?? 3211);
 const SECRET = process.env.RECIPEPRINTER_PARSER_SECRET ?? "e2e-parser-secret";
+const codes = emailCodeStandIn({ authHost: "127.0.0.1:9199", projectId: "demo-recipeprinter" });
 const reply = readFileSync(new URL("../fixtures/cookpilot-reply.json", import.meta.url), "utf8");
 
 // The browser calls the callable cross-origin (app on :3210, this on :3211).
 const CORS = {
   "access-control-allow-origin": "*",
   "access-control-allow-headers": "content-type, authorization, x-firebase-appcheck, x-firebase-gmpid, x-firebase-client",
-  "access-control-allow-methods": "POST, OPTIONS",
+  "access-control-allow-methods": "POST, OPTIONS, GET",
 };
 
 function send(res, status, body) {
@@ -39,12 +41,18 @@ createServer((req, res) => {
     res.writeHead(204, CORS);
     return res.end();
   }
-  if (req.method === "POST" && req.url?.endsWith("/checkUserProviders")) {
+  if (req.method === "GET" && req.url?.startsWith("/last-code")) {
+    const email = new URL(req.url, "http://stub").searchParams.get("email");
+    return send(res, 200, { code: codes.lastCode(email) });
+  }
+  if (req.method === "POST" && /\/recipePrinterEmailCode(Send|Verify)$/.test(req.url ?? "")) {
     let raw = "";
     req.on("data", (chunk) => (raw += chunk));
     req.on("end", () => {
-      const email = String(JSON.parse(raw || "{}")?.data?.email ?? "").toLowerCase();
-      send(res, 200, { result: { providers: email.startsWith("returning") ? ["password"] : [] } });
+      codes
+        .handle(req.url, JSON.parse(raw || "{}")?.data ?? {})
+        .then((result) => send(res, 200, { result }))
+        .catch((error) => send(res, 500, { error: { status: "INTERNAL", message: String(error) } }));
     });
     return;
   }

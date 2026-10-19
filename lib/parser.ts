@@ -70,7 +70,7 @@ export class ImportError extends Error {
 // callers still authenticate normally — the backend prefers the uid and ignores
 // this field. Best-effort: if the id can't be read, we send the payload as-is and
 // the backend falls back to its shared public bucket rather than failing.
-function withAnonId(data: unknown): unknown {
+export function withAnonId(data: unknown): unknown {
   if (!data || typeof data !== "object" || Array.isArray(data)) return data;
   try {
     return { ...(data as Record<string, unknown>), rpAnonId: anonymousOwnerId() };

@@ -440,28 +440,33 @@ type EventProps = {
    *  signing in. */
   auth_started_from_upgrade: { trigger: string };
   /** The email step got its answer. `outcome` is what the form did next, and the
-   *  address itself is never sent. `error` carries the Firebase code. */
+   *  address itself is never sent. `error` carries the Firebase code. Since
+   *  sign-in codes: `code` is a code sent to an address with no password (new or
+   *  a code account; the server doesn't say which), `password` one sent to an
+   *  address that also has a password. The code is never sent either. */
   auth_email_checked: {
-    outcome: "new" | "password" | "google_only" | "apple_only" | "error";
+    outcome: "new" | "password" | "code" | "google_only" | "apple_only" | "rate_limited" | "error";
     errorCode?: string;
   };
   /** A sign-in or sign-up was attempted. `via` is only there for Google and
    *  Apple: a redirect leaves the page, so this is the denominator for
    *  `auth_redirect_returned`. */
   auth_attempted: {
-    method: "email_create" | "email_signin" | "google" | "apple";
+    method: "email_code" | "email_create" | "email_signin" | "google" | "apple";
     via?: "popup" | "redirect";
   };
   /** It worked. `recovered` says the create was refused because the account
    *  already existed and the person was signed in anyway. */
   auth_succeeded: {
-    method: "email_create" | "email_signin" | "google" | "apple";
+    method: "email_code" | "email_create" | "email_signin" | "google" | "apple";
     recovered?: "already_signed_in" | "signed_in_existing";
+    /** `email_code` only: the code made a new account. */
+    created?: boolean;
   };
   /** It did not. Just the Firebase code (`auth/invalid-credential`), never a
    *  message, which can carry what was typed. */
   auth_failed: {
-    method: "email_create" | "email_signin" | "google" | "apple";
+    method: "email_code" | "email_create" | "email_signin" | "google" | "apple";
     code: string;
   };
   /** The page that a Google/Apple redirect came back to has read its result.
@@ -528,6 +533,10 @@ type EventProps = {
     cycle?: "monthly" | "annual";
     discount?: "pro_first";
     customerId?: string;
+    /** Referral facts, so paid conversion can be split by them (lib/referral). */
+    acquired_via_referral?: boolean;
+    had_referral_pro?: boolean;
+    referral_pro_active?: boolean;
   };
   purchase_cancelled: {
     product: PurchasedProduct;
@@ -639,12 +648,35 @@ type EventProps = {
 
   feedback_submitted: { type: FeedbackType };
 
+  /* The referral program (lib/referral.ts). Qualification, rewards and expiry
+     are sent by CookPilot itself (`referral_signup`, `referral_activated`,
+     `referral_reward_granted`, `referral_pro_expired`...), so they count even
+     when nobody has the app open. These are the moments only the page sees. */
+  /** An invite was offered: the account card, after a print, or when referral Pro ran out. */
+  referral_prompt_viewed: { placement: ReferralPlacement; cap_reached: boolean };
+  /** The invite link was copied or handed to the share sheet. */
+  referral_link_shared: { placement: ReferralPlacement; method: "copy" | "native_share" };
+  /** A friend's link was opened here. `first_touch` is false when an earlier link already holds credit. */
+  referral_link_opened: { first_touch: boolean; signed_in: boolean };
+  /** The choice offered when referral Pro ran out. */
+  referral_paywall_choice: { choice: "subscribe" | "invite" | "dismiss" };
+
   /** "Add yours" on the homepage's "Fresh off the printer" strip. Fires once
       the photo and doc have actually landed — see lib/gallerySubmissions. */
   gallery_photo_submitted: {};
 };
 
 export type AnalyticsEventName = keyof EventProps;
+
+export type ReferralPlacement = "account" | "post_print" | "expired_paywall";
+
+/** Who this person is to the referral program, on every event and on the person. */
+export function registerMembershipStatus(status: "free" | "referral_pro" | "paid_pro"): void {
+  enqueue((client) => {
+    client.register({ membership_status: status });
+    client.setPersonProperties({ membership_status: status });
+  });
+}
 
 /** Parser messages can be long and are for our eyes; keep them bounded. */
 export function truncateReason(value: unknown): string {
@@ -1042,6 +1074,53 @@ export function track<K extends AnalyticsEventName>(
 }
 
 /**
+ * Keeps PostHog's person in step with who is signed in. Called from the one
+ * auth listener with the signed-in uid, or null when nobody is.
+ *
+ * Signing out ends the person. Without that, everything the next person did on
+ * a shared device (a family laptop, a library computer) was recorded against
+ * the account signed in before them, referral and purchase attribution
+ * included. A signed-out load that still carries a signed-in person (signed
+ * out while analytics hadn't loaded, or by an older build) is reset too. An
+ * ordinary anonymous visitor is left alone: resetting them would make a new
+ * person on every page load.
+ */
+export function syncAnalyticsIdentity(uid: string | null): void {
+  if (uid) {
+    identifyUser(uid);
+    return;
+  }
+  const wasIdentified = lastIdentifiedId !== null;
+  lastIdentifiedId = null;
+  enqueue((client) => {
+    if (!wasIdentified && client.get_property("$user_state") !== "identified") return;
+    resetPerson(client);
+  });
+}
+
+/** `reset()` clears every super and session property; put back the ones that
+    must outlive it, and never undo an opt-out. */
+function resetPerson(client: PostHog): void {
+  const optedOut = client.has_opted_out_capturing();
+  const internal = (client as PostHog & { get_session_property?: (name: string) => unknown })
+    .get_session_property?.("internal") === true;
+  client.reset();
+  if (optedOut) client.opt_out_capturing();
+  client.register_for_session({
+    browser_app: currentBrowserApp(),
+    ...(internal ? { internal: true } : {}),
+  });
+  if (resolvedAttribution) registerFirstTouch(client, resolvedAttribution);
+}
+
+/** Test seam: run the queue against a stand-in client. */
+export function setAnalyticsClientForTest(client: PostHog | null): void {
+  posthog = client;
+  loadStarted = client !== null;
+  lastIdentifiedId = null;
+}
+
+/**
  * Ties this browser's events to a stable person (the CookPilot account uid) and
  * copies the attribution onto the PostHog PERSON — first-touch via `$set_once`
  * (never overwritten), latest-touch via `$set`. Super properties already put
@@ -1118,52 +1197,4 @@ export function capturePageview(url: string): void {
  */
 export function capturePageleave(url: string): void {
   enqueue((client) => client.capture("$pageleave", { $current_url: url }));
-}
-
-
-/**
- * Keeps PostHog's person in step with who is signed in. Called from the one
- * auth listener with the signed-in uid, or null when nobody is.
- *
- * Signing out ends the person. Without that, everything the next person did on
- * a shared device (a family laptop, a library computer) was recorded against
- * the account signed in before them, purchase attribution included. A
- * signed-out load that still carries a signed-in person (signed out while
- * analytics hadn't loaded, or by an older build) is reset too. An ordinary
- * anonymous visitor is left alone: resetting them would make a new person on
- * every page load.
- */
-export function syncAnalyticsIdentity(uid: string | null): void {
-  if (uid) {
-    identifyUser(uid);
-    return;
-  }
-  const wasIdentified = lastIdentifiedId !== null;
-  lastIdentifiedId = null;
-  enqueue((client) => {
-    if (!wasIdentified && client.get_property("$user_state") !== "identified") return;
-    resetPerson(client);
-  });
-}
-
-/** `reset()` clears every super and session property; put back the ones that
-    must outlive it, and never undo an opt-out. */
-function resetPerson(client: PostHog): void {
-  const optedOut = client.has_opted_out_capturing();
-  const internal = (client as PostHog & { get_session_property?: (name: string) => unknown })
-    .get_session_property?.("internal") === true;
-  client.reset();
-  if (optedOut) client.opt_out_capturing();
-  client.register_for_session({
-    browser_app: currentBrowserApp(),
-    ...(internal ? { internal: true } : {}),
-  });
-  if (resolvedAttribution) registerFirstTouch(client, resolvedAttribution);
-}
-
-/** Test seam: run the queue against a stand-in client. */
-export function setAnalyticsClientForTest(client: PostHog | null): void {
-  posthog = client;
-  loadStarted = client !== null;
-  lastIdentifiedId = null;
 }

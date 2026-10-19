@@ -20,6 +20,8 @@ import {
   type ProBillingCycle,
 } from "@/lib/proProduct";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
+import { shareLink } from "@/lib/shareLink";
+import { inviteShareText } from "@/lib/referral";
 
 const PRO_CYCLE_LABEL: Record<ProBillingCycle, string> = {
   annual: "Annual",
@@ -71,6 +73,7 @@ export function ProUpgradeDialog({
   body,
   benefits = PRO_BENEFITS,
   ctaLabel = "Unlock Pro and continue",
+  referralChoice,
 }: {
   onClose: () => void;
   /** Starts checkout for `cycle` — called immediately for a signed-in cook,
@@ -90,8 +93,14 @@ export function ProUpgradeDialog({
   /** Same benefits as `PRO_BENEFITS`, reordered to lead with what opened this. */
   benefits?: string[];
   ctaLabel?: string;
+  /** When referral Pro has just run out: open on a choice between subscribing
+      and inviting a friend, side by side and equally weighted, before plans.
+      Every other opening of this dialog is unchanged. */
+  referralChoice?: { inviteUrl: string; rewardDays: number };
 }) {
-  const [step, setStep] = useState<"plan" | "signin" | "decline">("plan");
+  const [step, setStep] = useState<"choice" | "plan" | "signin" | "decline">(referralChoice ? "choice" : "plan");
+  const [invited, setInvited] = useState<"copy" | "native_share" | null>(null);
+  const [showLink, setShowLink] = useState(false);
   const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>("monthly");
   const [pendingCycle, setPendingCycle] = useState<ProBillingCycle | null>(null);
   const [formBusy, setFormBusy] = useState(false);
@@ -147,6 +156,11 @@ export function ProUpgradeDialog({
   }
 
   function handleClose() {
+    if (step === "choice") {
+      if (!invited) track("referral_paywall_choice", { choice: "dismiss" });
+      onClose();
+      return;
+    }
     const mayAsk =
       seenBefore &&
       askedOnAccount !== null &&
@@ -189,7 +203,68 @@ export function ProUpgradeDialog({
         <XIcon size={ICON_SIZE.md} />
       </button>
 
-      {step === "decline" ? (
+      {step === "choice" && referralChoice ? (
+        <>
+          <div className="pr-8">
+            <h2 id="pro-upgrade-title" className="text-cp-dialog-title font-extrabold tracking-tight">
+              Your Pro days are up
+            </h2>
+            <p className="mt-1 text-cp-body text-ink-soft">Everything you made is still here. Two ways to keep Pro:</p>
+          </div>
+          {/* Two equal cards, same weight and the same button style, so
+              neither reads as the one we want picked. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-cp-3">
+            <div className="rounded-xl border border-line p-cp-4 flex flex-col gap-cp-2">
+              <h3 className="text-cp-body font-extrabold">Subscribe to Pro</h3>
+              <p className="text-cp-small text-ink-soft flex-1">
+                {price(PRO_PRICE_FALLBACKS.monthly)}, or {price(PRO_PRICE_FALLBACKS.annual)}. Pro keeps going right away.
+              </p>
+              <button
+                type="button"
+                className="btn btn-secondary w-full"
+                onClick={() => {
+                  track("referral_paywall_choice", { choice: "subscribe" });
+                  setStep("plan");
+                }}
+              >
+                Choose a plan
+              </button>
+            </div>
+            <div className="rounded-xl border border-line p-cp-4 flex flex-col gap-cp-2">
+              <h3 className="text-cp-body font-extrabold">Invite a friend</h3>
+              <p className="text-cp-small text-ink-soft flex-1">
+                You both get {referralChoice.rewardDays} days of Pro once they sign up. Sending the link doesn&rsquo;t add days on its own.
+              </p>
+              <button
+                type="button"
+                className="btn btn-secondary w-full"
+                onClick={async () => {
+                  const method = await shareLink(referralChoice.inviteUrl, inviteShareText(referralChoice.rewardDays));
+                  if (!method) {
+                    setShowLink(true);
+                    return;
+                  }
+                  if (!invited) track("referral_paywall_choice", { choice: "invite" });
+                  track("referral_link_shared", { placement: "expired_paywall", method });
+                  setInvited(method);
+                }}
+              >
+                {invited === "copy" ? "Link copied" : invited ? "Shared" : "Share invite link"}
+              </button>
+              {showLink && !invited && (
+                <input
+                  readOnly
+                  autoFocus
+                  value={referralChoice.inviteUrl}
+                  aria-label="Your invite link"
+                  className="field w-full min-w-0 text-cp-small"
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+              )}
+            </div>
+          </div>
+        </>
+      ) : step === "decline" ? (
         <>
           <div className="pr-8">
             <h2 id="pro-upgrade-title" className="text-cp-dialog-title font-extrabold tracking-tight">

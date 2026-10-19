@@ -42,7 +42,14 @@ const TEMPLATE_THUMB_SIZE: PrintCardSize = "card-6x4";
 // kept legible by enlarging its type inside the card (print.css) rather than
 // by zooming the card itself.
 
-export function TemplateThumbnail({ template }: { template: RecipePrintTemplate }) {
+export function TemplateThumbnail({
+  template,
+  recipe = THUMB_RECIPE,
+}: {
+  template: RecipePrintTemplate;
+  /** Another short sample, where several previews sit together (the referral invite). */
+  recipe?: Recipe;
+}) {
   const dims = PAGE_DIMS[TEMPLATE_THUMB_SIZE];
   const ref = useRef<HTMLDivElement | null>(null);
   // Fit the fixed-size real card to whatever width the picker cell happens to
@@ -85,14 +92,14 @@ export function TemplateThumbnail({ template }: { template: RecipePrintTemplate 
             >
               <div className="recipe-card-page recipe-card-page--front">
                 <RecipeCardFace
-                  recipe={THUMB_RECIPE}
-                  ingredients={THUMB_RECIPE.ingredients}
-                  instructions={THUMB_RECIPE.instructions}
+                  recipe={recipe}
+                  ingredients={recipe.ingredients}
+                  instructions={recipe.instructions}
                   side="front"
                   showHeader
                   layout="standard"
                   hasBackFace={false}
-                  showImage={false}
+                  showImage={Boolean(recipe.image)}
                   template={template}
                 />
               </div>

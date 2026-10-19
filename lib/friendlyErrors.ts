@@ -110,6 +110,16 @@ export function friendlyAuthError(error: unknown, fallback = "We couldn't sign y
   if (code.includes("too-many-requests")) {
     return "Too many attempts. Please wait a bit and try again.";
   }
+  // The emailed-code callables (lib/emailCode).
+  if (code === "functions/resource-exhausted") {
+    return "We've sent a few codes already. Try again in a few minutes.";
+  }
+  if (code === "functions/permission-denied") {
+    return "That account has been turned off. Please contact us and we'll sort it out.";
+  }
+  if (code === "functions/unavailable" && message.includes("couldn't be sent")) {
+    return "We couldn't send the code just now. Try again in a minute.";
+  }
   if (isNetworkFailure(code, message)) {
     return "We couldn't connect. Check your internet connection and try again.";
   }

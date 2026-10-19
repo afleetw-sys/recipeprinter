@@ -24,8 +24,8 @@ export const FREE_IMPORTS_LINE = `${FREE_IMPORTS_PER_WINDOW} free recipe imports
 
 /**
  * Whether the count is drawn red: more than 8 of 10 used, like Claude's own
- * usage display. One rule for the header ring and the Settings bar, so they
- * can never disagree about how close someone is.
+ * usage display. One rule for the avatar ring, the menu and the Settings bar,
+ * so they can never disagree about how close someone is.
  */
 export function importsNearlyOut(used: number, limit: number): boolean {
   return limit > 0 && used / limit > 0.8;

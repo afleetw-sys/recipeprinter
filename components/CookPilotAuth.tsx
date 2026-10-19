@@ -2,15 +2,14 @@
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
-  EmailAuthProvider,
   GoogleAuthProvider,
   browserPopupRedirectResolver,
   type AuthProvider,
   OAuthProvider,
-  createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   getRedirectResult,
   onAuthStateChanged,
+  signInWithCustomToken,
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
@@ -19,7 +18,15 @@ import {
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { ensureRecipePrinterAccount } from "@/lib/firebase/recipePrinterAccount";
 import { authFailureCode, friendlyAuthError } from "@/lib/friendlyErrors";
-import { createAccountOrRecover, isEmailInUseError } from "@/lib/signUpRecovery";
+import { CODE_LIFETIME_MS } from "@/lib/emailCodePending";
+import {
+  forgetPendingCode,
+  normalizeEmail,
+  readPendingCode,
+  rememberPendingCode,
+  sendEmailCode,
+  verifyEmailCode,
+} from "@/lib/emailCode";
 import { isPopupDismissal, watchForPopupReturn } from "@/lib/authPopup";
 import {
   clearAuthRedirectPending,
@@ -33,7 +40,7 @@ import {
   rememberCookPilotSignedIn,
 } from "@/lib/cookPilotSession";
 import { Dialog } from "@/components/Dialog";
-import { AppleIcon, CheckIcon, EyeIcon, EyeOffIcon, GoogleIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
+import { AppleIcon, CheckIcon, ChevronLeftIcon, EyeIcon, EyeOffIcon, GoogleIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Shared RecipePrinter login: same Firebase project, same providers, same
@@ -326,10 +333,6 @@ export function refreshCookPilotAuthUser(): void {
   publishAuthState({ user: getFirebaseAuth().currentUser });
 }
 
-/** Which sign-in providers an email is already registered with, from CookPilot's own
- * `checkUserProviders` callable (Firebase Auth's provider list isn't usable here since
- * the project has email-enumeration protection on). Mirrors the iOS app's
- * `AuthFlowLogic.stepAfterEmailSubmit`. */
 /**
  * Sends a password-reset email.
  *
@@ -341,9 +344,8 @@ export function refreshCookPilotAuthUser(): void {
  *
  * Two things worth knowing about the behaviour:
  *
- * The project has email-enumeration protection on (it is why
- * `checkEmailProviders` exists as a callable instead of reading Firebase's own
- * provider list). With it on, this resolves the same way whether or not an
+ * The project has email-enumeration protection on (it is why the email step
+ * asks a callable instead of reading Firebase's own provider list). With it on, this resolves the same way whether or not an
  * account exists — so the UI must never say "we sent you a link", only that one
  * is on the way IF there is an account. Anything more specific would hand back
  * the enumeration oracle the protection removes.
@@ -372,33 +374,202 @@ export async function sendCookPilotPasswordReset(email: string): Promise<void> {
   }
 }
 
-export async function checkEmailProviders(email: string): Promise<string[]> {
-  // Both halves dynamic, together, the shape every other callable site uses
-  // (lib/parser). `httpsCallable` was a
-  // STATIC import, which pulled `firebase/functions` into this chunk anyway, so
-  // the `await import` beside it bought nothing and the prewarm in the form was
-  // overlapping a download that had already happened.
-  const [{ httpsCallable }, { getFns }] = await Promise.all([
-    import("firebase/functions"),
-    import("@/lib/firebase/functions"),
-  ]);
-  // No sign-in of any kind first. This used to borrow an anonymous Firebase user
-  // just to be allowed to ask, which cost a sign-in and a delete in front of the
-  // password field, and a delete that could land late and sign the real account
-  // out. The callable accepts an App Check attestation instead, and every request
-  // from `getFns()` already carries one (see lib/firebase/appCheck).
-  const checkUserProviders = httpsCallable<{ email: string }, { providers: string[] | null }>(
-    getFns(),
-    "checkUserProviders",
-  );
-  const { data } = await checkUserProviders({ email });
-  return data.providers ?? [];
+
+/** "Send a new code" waits this long after a send, as the server does. */
+const RESEND_WAIT_MS = 30_000;
+
+function useNow(active: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, [active]);
+  return now;
 }
 
 /**
- * The interactive half of RecipePrinter's sign-in: the email/password/create
- * steps and the Google/Apple buttons, with no heading, no close button, and
- * no `Dialog` wrapper of its own.
+ * The 6-digit code field and what goes with it: checking the code, signing in
+ * with the token it earns, and sending a new one. Shared by the sign-in form and
+ * the referral's "Your Pro is waiting" step, so the two can't drift apart.
+ */
+function EmailCodeEntry({
+  email,
+  sentAtMs,
+  autoFocus,
+  busy,
+  setBusy,
+  onSent,
+  onSignedIn,
+  back,
+  children,
+}: {
+  email: string;
+  sentAtMs: number;
+  autoFocus: boolean;
+  busy: boolean;
+  setBusy: (busy: boolean) => void;
+  /** A new code went out. */
+  onSent: (hasPassword: boolean) => void;
+  onSignedIn: (created: boolean) => void;
+  /** A way back, above the field (right under the dialog's subtitle). */
+  back?: ReactNode;
+  /** Extra ways out, under the button. */
+  children?: ReactNode;
+}) {
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [resent, setResent] = useState(false);
+  const submittingRef = useRef(false);
+  const now = useNow(true);
+  const waitSec = Math.max(0, Math.ceil((sentAtMs + RESEND_WAIT_MS - now) / 1000));
+
+  async function submit(value: string) {
+    if (submittingRef.current) return;
+    if (!/^\d{6}$/.test(value)) {
+      setError("Enter the 6 digits from the email.");
+      return;
+    }
+    submittingRef.current = true;
+    setBusy(true);
+    setError(null);
+    track("auth_attempted", { method: "email_code" });
+    try {
+      const result = await verifyEmailCode(email, value);
+      if (result.status === "ok") {
+        await signInWithCustomToken(getFirebaseAuth(), result.token);
+        forgetPendingCode();
+        track("auth_succeeded", { method: "email_code", created: result.created });
+        onSignedIn(result.created);
+        return;
+      }
+      track("auth_failed", { method: "email_code", code: `code/${result.status}` });
+      setCode("");
+      setError(
+        result.status === "wrong"
+          ? `That code didn't match. ${result.attemptsLeft} ${result.attemptsLeft === 1 ? "try" : "tries"} left.`
+          : "That code has expired. Send a new one to keep going.",
+      );
+    } catch (err) {
+      track("auth_failed", { method: "email_code", code: authFailureCode(err) });
+      setError(friendlyAuthError(err, "We couldn't sign you in. Please try again."));
+    } finally {
+      submittingRef.current = false;
+      setBusy(false);
+    }
+  }
+
+  async function resend() {
+    if (busy || waitSec > 0) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await sendEmailCode(email);
+      if (result.status === "sent") {
+        setCode("");
+        setResent(true);
+        onSent(result.hasPassword);
+      } else if (result.status === "rate_limited") {
+        setError("We've sent a few codes already. Try again in a few minutes.");
+      }
+    } catch (err) {
+      setError(friendlyAuthError(err, "We couldn't send a new code. Please try again."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form
+      className="flex flex-col gap-cp-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void submit(code);
+      }}
+    >
+      {back}
+      <div>
+        <label className="field-label" htmlFor="cookpilot-code">
+          Enter the 6-digit code we sent to {email}
+        </label>
+        {/* Six boxes, one real input. The input lies over the boxes, invisible,
+            so typing, pasting and the phone's "code from Mail/Messages" fill all
+            work as for any field; the boxes only draw what it holds. */}
+        <div className="code-field">
+          <input
+            id="cookpilot-code"
+            name="one-time-code"
+            className="code-field__input"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]*"
+            maxLength={6}
+            autoFocus={autoFocus}
+            value={code}
+            // Read-only, not disabled, while a code is checked: disabling drops
+            // focus, and after a refusal the cook should be able to just retype.
+            readOnly={busy}
+            aria-invalid={error ? true : undefined}
+            onChange={(event) => {
+              const digits = event.target.value.replace(/\D/g, "").slice(0, 6);
+              // A refusal stays until the digits change: a change event that
+              // leaves them as they were (autofill, a password manager) isn't
+              // the cook trying again.
+              if (error && digits !== code && digits.length > 0) setError(null);
+              setCode(digits);
+              // A pasted or autofilled code goes straight in.
+              if (digits.length === 6) void submit(digits);
+            }}
+          />
+          <div className="code-field__slots" aria-hidden="true">
+            {Array.from({ length: 6 }, (_, i) => (
+              <span
+                key={i}
+                className="code-field__slot"
+                data-active={i === Math.min(code.length, 5) ? "" : undefined}
+              >
+                {code[i] ?? ""}
+              </span>
+            ))}
+          </div>
+        </div>
+        {error ? (
+          <p className="field-error" role="alert">{error}</p>
+        ) : (
+          <p className="mt-1 text-cp-caption leading-4 text-ink-soft" role="status">
+            {resent ? "A new code is on its way. " : ""}It can take a minute to arrive. Check your spam folder if
+            it&rsquo;s not there.
+          </p>
+        )}
+      </div>
+      <button type="submit" className="btn btn-primary w-full" disabled={busy}>
+        {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
+        Continue
+      </button>
+      <button
+        type="button"
+        className="btn-ghost btn-compact w-full"
+        onClick={() => void resend()}
+        disabled={busy || waitSec > 0}
+      >
+        {waitSec > 0 ? `Send a new code in ${waitSec}s` : "Send a new code"}
+      </button>
+      {children}
+    </form>
+  );
+}
+
+/**
+ * The interactive half of RecipePrinter's sign-in: the email, code and password
+ * steps and the Google/Apple buttons, with no heading, no close button, and no
+ * `Dialog` wrapper of its own.
+ *
+ * An email address signs in with a 6-digit code (lib/emailCode): it makes the
+ * account if there isn't one, verified from the start, so nobody new ever picks
+ * a password. An account that already has a password can still use it ("Use my
+ * password instead"). Google- and Apple-only addresses go to their provider, as
+ * before.
  *
  * Split out of `CookPilotLoginDialog` so a caller that needs sign-in to
  * happen *inside* a modal it already owns — the Pro upgrade dialog
@@ -421,8 +592,10 @@ export function CookPilotLoginForm({
       to know about dialogs at all. */
   onBusyChange?: (busy: boolean) => void;
 }) {
-  const [step, setStep] = useState<"email" | "password" | "create">("email");
+  const [step, setStep] = useState<"email" | "code" | "password">("email");
   const [email, setEmail] = useState("");
+  const [hasPassword, setHasPassword] = useState(false);
+  const [sentAtMs, setSentAtMs] = useState(0);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusyState] = useState(false);
@@ -435,7 +608,7 @@ export function CookPilotLoginForm({
   const [resetSent, setResetSent] = useState(false);
   // Signed in, and the host has been told. The form is finished: some hosts (the
   // Pro upgrade dialog) keep it mounted while they carry on with checkout, and a
-  // form left showing its "Create account" button is one a person presses again.
+  // form left showing its "Continue" button is one a person presses again.
   const [signedIn, setSignedIn] = useState(false);
   // Read synchronously, unlike `busy`, which only changes on the next render: two
   // submits in the same tick (a doubled Enter, a double tap) would both see
@@ -447,34 +620,52 @@ export function CookPilotLoginForm({
     // email instead of starting it after Continue is pressed.
     void import("@/lib/firebase/functions");
     void prewarmCookPilotAuth();
+    // Back from Mail (a reload, or a tab the phone dropped) to the code step.
+    const pending = readPendingCode();
+    if (pending && !getFirebaseAuth().currentUser) {
+      setEmail(pending.email);
+      setHasPassword(pending.hasPassword);
+      setSentAtMs(pending.sentAtMs);
+      setStep("code");
+    }
   }, []);
 
   const signInWithProvider = (provider: AuthProvider, method: "google" | "apple") =>
     signInWithTrackedProvider(provider, method, () => setBusy(false));
 
+  function codeSent(to: string, withPassword: boolean) {
+    const at = Date.now();
+    rememberPendingCode({ email: to, hasPassword: withPassword, sentAtMs: at });
+    setHasPassword(withPassword);
+    setSentAtMs(at);
+    setStep("code");
+  }
+
+  function finish() {
+    setSignedIn(true);
+    onAuthenticated();
+  }
+
   async function handleEmailContinue(event: FormEvent) {
     event.preventDefault();
     if (busy || signedIn || submittingRef.current) return;
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
     if (!normalizedEmail) {
       setError("Enter your email address.");
       return;
     }
 
+    submittingRef.current = true;
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
-      const providers = await checkEmailProviders(normalizedEmail);
+      const result = await sendEmailCode(normalizedEmail);
 
-      if (
-        providers.includes(GoogleAuthProvider.PROVIDER_ID) &&
-        !providers.includes(EmailAuthProvider.PROVIDER_ID)
-      ) {
+      if (result.status === "use_provider" && result.provider === "google") {
         track("auth_email_checked", { outcome: "google_only" });
-        // This account only has Google sign-in set up, so a password will
-        // never work for it. Send them straight into the Google flow, the
-        // same redirect the iOS app does for this case.
+        // This account only has Google sign-in set up, so send them straight
+        // into the Google flow, the same redirect the iOS app does for this case.
         try {
           await signInWithProvider(googleProvider, "google");
         } catch (err) {
@@ -482,23 +673,24 @@ export function CookPilotLoginForm({
         }
         return;
       }
-
-      if (
-        providers.includes("apple.com") &&
-        !providers.includes(GoogleAuthProvider.PROVIDER_ID) &&
-        !providers.includes(EmailAuthProvider.PROVIDER_ID)
-      ) {
+      if (result.status === "use_provider") {
         track("auth_email_checked", { outcome: "apple_only" });
         setNotice("This account uses Sign in with Apple. Close this and tap Continue with Apple instead.");
         return;
       }
+      if (result.status === "rate_limited") {
+        track("auth_email_checked", { outcome: "rate_limited" });
+        setError("We've sent a few codes already. Try again in a few minutes.");
+        return;
+      }
 
-      track("auth_email_checked", { outcome: providers.length === 0 ? "new" : "password" });
-      setStep(providers.length === 0 ? "create" : "password");
+      track("auth_email_checked", { outcome: result.hasPassword ? "password" : "code" });
+      codeSent(normalizedEmail, result.hasPassword);
     } catch (err) {
       track("auth_email_checked", { outcome: "error", errorCode: authFailureCode(err) });
-      setError(friendlyAuthError(err, "We couldn't verify that email. Please try again."));
+      setError(friendlyAuthError(err, "We couldn't send a code to that email. Please try again."));
     } finally {
+      submittingRef.current = false;
       setBusy(false);
     }
   }
@@ -514,49 +706,16 @@ export function CookPilotLoginForm({
     submittingRef.current = true;
     setBusy(true);
     setError(null);
-    const auth = getFirebaseAuth();
-    const normalizedEmail = email.trim().toLowerCase();
-    const method = step === "create" ? "email_create" : "email_signin";
+    const method = "email_signin";
     track("auth_attempted", { method });
     try {
-      const signIn = () => signInWithEmailAndPassword(auth, normalizedEmail, password);
-      let recovered: "already_signed_in" | "signed_in_existing" | undefined;
-      if (step === "create") {
-        const outcome = await createAccountOrRecover(
-          {
-            create: () => createUserWithEmailAndPassword(auth, normalizedEmail, password),
-            signIn,
-            currentUserEmail: () => (auth.currentUser?.isAnonymous ? null : auth.currentUser?.email),
-          },
-          normalizedEmail,
-        );
-        if (outcome === "already-signed-in") recovered = "already_signed_in";
-        else if (outcome === "signed-in-existing") recovered = "signed_in_existing";
-      } else {
-        await signIn();
-      }
-      track("auth_succeeded", { method, ...(recovered ? { recovered } : {}) });
-      setSignedIn(true);
-      onAuthenticated();
+      await signInWithEmailAndPassword(getFirebaseAuth(), normalizeEmail(email), password);
+      forgetPendingCode();
+      track("auth_succeeded", { method });
+      finish();
     } catch (err) {
       track("auth_failed", { method, code: authFailureCode(err) });
-      if (step === "create" && isEmailInUseError(err)) {
-        // A real existing account, and not one this password opens. Move to the
-        // step that fits, so the way forward (sign in, or reset the password) is
-        // right there instead of in a message telling them to go and find it.
-        setStep("password");
-        setPassword("");
-        setError("That email already has an account. Enter its password to sign in.");
-        return;
-      }
-      setError(
-        friendlyAuthError(
-          err,
-          step === "create"
-            ? "We couldn't create your account. Please try again."
-            : "We couldn't sign in. Please try again.",
-        ),
-      );
+      setError(friendlyAuthError(err, "We couldn't sign in. Please try again."));
     } finally {
       submittingRef.current = false;
       setBusy(false);
@@ -564,10 +723,34 @@ export function CookPilotLoginForm({
   }
 
   /**
-   * Offered only on the `password` step, which is reached only when
-   * `checkEmailProviders` has already said this email HAS a password account —
-   * so it never has to guess, and never asks someone with a Google-only account
-   * to reset a password they don't have.
+   * From the password step back to a code. The code already emailed still
+   * works for 10 minutes, so it's only sent again after that: a new code
+   * replaces the old one, and the cook may already be reading the first email.
+   */
+  async function handleUseCode() {
+    if (busy) return;
+    if (sentAtMs > 0 && Date.now() - sentAtMs < CODE_LIFETIME_MS) {
+      setError(null);
+      setStep("code");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await sendEmailCode(email);
+      if (result.status === "sent") codeSent(normalizeEmail(email), result.hasPassword);
+      else if (result.status === "rate_limited") setError("We've sent a few codes already. Try again in a few minutes.");
+    } catch (err) {
+      setError(friendlyAuthError(err, "We couldn't send a code. Please try again."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /**
+   * Offered only on the `password` step, which is reached only when the server
+   * has said this email HAS a password, so it never asks someone without one
+   * to reset it.
    */
   async function handleForgotPassword() {
     if (busy) return;
@@ -604,6 +787,28 @@ export function CookPilotLoginForm({
       setBusy(false);
     }
   }
+
+  function differentEmail() {
+    forgetPendingCode();
+    setStep("email");
+    setPassword("");
+    setError(null);
+    setResetSent(false);
+  }
+
+  // A back button, first thing under the dialog's subtitle on the code and
+  // password steps.
+  const differentEmailButton = (
+    <button
+      type="button"
+      className="self-start -ml-1 inline-flex items-center gap-1 bg-transparent border-0 p-0 text-cp-small text-ink-soft hover:text-ink"
+      onClick={differentEmail}
+      disabled={busy}
+    >
+      <ChevronLeftIcon size={ICON_SIZE.md} />
+      Use a different email
+    </button>
+  );
 
   return (
     <>
@@ -656,21 +861,47 @@ export function CookPilotLoginForm({
               </button>
             </div>
           </form>
+        ) : step === "code" ? (
+          <EmailCodeEntry
+            email={normalizeEmail(email)}
+            sentAtMs={sentAtMs}
+            autoFocus={autoFocus}
+            busy={busy}
+            setBusy={setBusy}
+            onSent={(withPassword) => codeSent(normalizeEmail(email), withPassword)}
+            onSignedIn={finish}
+            back={differentEmailButton}
+          >
+            {hasPassword && (
+              <button
+                type="button"
+                className="btn-ghost btn-compact w-full"
+                onClick={() => {
+                  setError(null);
+                  setStep("password");
+                }}
+                disabled={busy}
+              >
+                Use my password instead
+              </button>
+            )}
+          </EmailCodeEntry>
         ) : (
           <form className="flex flex-col gap-cp-3" onSubmit={handlePasswordSubmit}>
+            {differentEmailButton}
             <input
               className="sr-only"
               type="email"
               name="username"
               autoComplete="username"
-              value={email.trim().toLowerCase()}
+              value={normalizeEmail(email)}
               readOnly
               tabIndex={-1}
               aria-hidden="true"
             />
             <div>
               <label className="field-label" htmlFor="cookpilot-password">
-                {step === "create" ? "Create a password for" : "Password for"} {email.trim()}
+                Password for {email.trim()}
               </label>
               <div className="relative">
                 <input
@@ -678,7 +909,7 @@ export function CookPilotLoginForm({
                   name="password"
                   className="field pr-12"
                   type={showPassword ? "text" : "password"}
-                  autoComplete={step === "create" ? "new-password" : "current-password"}
+                  autoComplete="current-password"
                   autoFocus={autoFocus}
                   value={password}
                   onChange={(event) => {
@@ -701,49 +932,34 @@ export function CookPilotLoginForm({
                 </button>
               </div>
               {error && <p className="field-error" role="alert">{error}</p>}
-              {step === "create" && !error && (
-                <p className="mt-1 text-cp-caption leading-4 text-ink-soft">At least 6 characters.</p>
-              )}
-              {step === "password" && (
-                <div className="mt-2">
-                  {resetSent ? (
-                    /* Deliberately conditional — "if there's an account". The
-                       project has email-enumeration protection on, and a flat
-                       "we sent it" would confirm the address exists, which is
-                       the exact thing that protection removes. */
-                    <p className="text-cp-caption text-ink-soft" role="status">
-                      If there’s an account for {email.trim()}, a reset link is on its way. It can
-                      take a minute, and it might land in spam.
-                    </p>
-                  ) : (
-                    <button
-                      type="button"
-                      className="text-cp-caption text-ink-soft underline underline-offset-2 bg-transparent border-0 p-0"
-                      onClick={handleForgotPassword}
-                      disabled={busy}
-                    >
-                      Forgot your password?
-                    </button>
-                  )}
-                </div>
-              )}
+              <div className="mt-2">
+                {resetSent ? (
+                  /* Deliberately conditional — "if there's an account". The
+                     project has email-enumeration protection on, and a flat
+                     "we sent it" would confirm the address exists, which is
+                     the exact thing that protection removes. */
+                  <p className="text-cp-caption text-ink-soft" role="status">
+                    If there’s an account for {email.trim()}, a reset link is on its way. It can
+                    take a minute, and it might land in spam.
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    className="text-cp-caption text-ink-soft underline underline-offset-2 bg-transparent border-0 p-0"
+                    onClick={handleForgotPassword}
+                    disabled={busy}
+                  >
+                    Forgot your password?
+                  </button>
+                )}
+              </div>
             </div>
             <button type="submit" className="btn btn-primary w-full" disabled={busy}>
               {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
-              {step === "create" ? "Create account" : "Sign in"}
+              Sign in
             </button>
-            <button
-              type="button"
-              className="btn-ghost btn-compact w-full"
-              onClick={() => {
-                setStep("email");
-                setPassword("");
-                setError(null);
-                setResetSent(false);
-              }}
-              disabled={busy}
-            >
-              Use a different email
+            <button type="button" className="btn-ghost btn-compact w-full" onClick={() => void handleUseCode()} disabled={busy}>
+              Email me a code instead
             </button>
           </form>
         )}
@@ -765,8 +981,12 @@ export function CookPilotLoginDialog({
   footer,
 }: {
   onClose: () => void;
+  /** For `verify_referral`, called once the code has confirmed the address. */
   onAuthenticated?: () => void;
-  reason?: "default" | "purchase";
+  /** `verify_referral`: already signed in (an older password account whose
+      address was never confirmed), with a friend's Pro waiting on it. Shows
+      that one line and a code field, no form. */
+  reason?: "default" | "purchase" | "verify_referral";
   /**
    * The heading and line above the form, when the surface that opened this
    * knows why: the account menu's Projects, Invites and Settings rows each say
@@ -785,6 +1005,7 @@ export function CookPilotLoginDialog({
   footer?: ReactNode;
 }) {
   const [busy, setBusy] = useState(false);
+  if (reason === "verify_referral") return <VerifyReferralEmail onClose={onClose} onVerified={onAuthenticated ?? onClose} />;
   const title =
     intro?.title ?? (reason === "purchase" ? "Save your cookbook and purchase" : "Create an account or sign in");
   return (
@@ -822,6 +1043,70 @@ export function CookPilotLoginDialog({
       <CookPilotLoginForm onAuthenticated={onAuthenticated ?? onClose} onBusyChange={setBusy} />
 
       {footer && <div className="border-t border-line pt-cp-3">{footer}</div>}
+    </Dialog>
+  );
+}
+
+/**
+ * A friend's Pro is waiting on an address this account never confirmed: an
+ * older password account (code accounts are confirmed from the start). A code
+ * confirms it. Links emailed before codes existed still work too, through
+ * ReferralHost's focus check.
+ */
+function VerifyReferralEmail({ onClose, onVerified }: { onClose: () => void; onVerified: () => void }) {
+  const email = getFirebaseAuth().currentUser?.email ?? "";
+  const [sentAtMs, setSentAtMs] = useState(0);
+  const [failed, setFailed] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const sentRef = useRef(false);
+
+  useEffect(() => {
+    if (sentRef.current || !email) return;
+    sentRef.current = true;
+    sendEmailCode(email)
+      .then((result) => {
+        if (result.status === "sent") setSentAtMs(Date.now());
+        // Rate limited: a code went out moments ago, and that one still works.
+        else if (result.status === "rate_limited") setSentAtMs(Date.now());
+      })
+      .catch((err) => setFailed(friendlyAuthError(err, "We couldn't send the code. Please try again.")));
+  }, [email]);
+
+  return (
+    <Dialog
+      onClose={onClose}
+      closeDisabled={busy}
+      label="Your Pro is waiting"
+      portal
+      className="no-print fixed inset-0 z-[var(--z-dialog)] flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
+      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[420px] rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:pb-cp-5 flex flex-col gap-cp-4 relative"
+    >
+      <button type="button" className="absolute right-3 top-3 icon-close-btn" onClick={onClose} aria-label="Close" disabled={busy}>
+        <XIcon size={ICON_SIZE.md} />
+      </button>
+      <div className="pr-cp-7">
+        <h3 className="font-extrabold tracking-[-0.02em] text-cp-dialog-title">Your Pro is waiting</h3>
+        <p className="text-cp-small text-ink-soft mt-1">
+          Confirm your email and your free days of Pro start right away.
+        </p>
+      </div>
+      {failed ? (
+        <p className="text-cp-small text-ink-soft" role="status">{failed}</p>
+      ) : sentAtMs > 0 ? (
+        <EmailCodeEntry
+          email={email}
+          sentAtMs={sentAtMs}
+          autoFocus
+          busy={busy}
+          setBusy={setBusy}
+          onSent={() => setSentAtMs(Date.now())}
+          onSignedIn={onVerified}
+        />
+      ) : (
+        <div className="flex justify-center py-cp-2" role="status" aria-label="Sending the code">
+          <SpinnerIcon size={ICON_SIZE.md} />
+        </div>
+      )}
     </Dialog>
   );
 }

@@ -2,18 +2,21 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { signOut } from "firebase/auth";
+import { readPendingCode } from "@/lib/emailCodePending";
 import {
   AccountIcon,
   AppleIcon,
   BookIcon,
   GaugeIcon,
+  GiftIcon,
   GoogleIcon,
   ICON_SIZE,
   LogoutIcon,
   SettingsIcon,
 } from "@/components/icons";
+import { REFERRALS_LIVE, readStoredOpen, referralVersion, subscribeReferral, warmReferralBackend } from "@/lib/referral";
 import {
   CookPilotLoginDialog,
   appleProvider,
@@ -45,8 +48,9 @@ const ROW_CLASS =
 /**
  * The one row a signed-out press can't simply follow: there is nothing on
  * /projects without an account, so it asks for sign-in, saying what for, and
- * the page follows once that is done. Settings goes straight to its page,
- * which shows the plans and offers sign-in itself (Amelia, 2026-10-13).
+ * the page follows once that is done. Settings and Invites go straight to
+ * their pages, which say what is there and offer sign-in themselves (Amelia,
+ * 2026-10-13: "they could at least see why they would invite").
  */
 const DESTINATIONS = {
   "/projects": {
@@ -234,6 +238,12 @@ export default function AccountAvatarButton({
     setOpen(true);
   }, [openWhenReady, ready]);
 
+  // A code was emailed before this page loaded: back to the sign-in dialog,
+  // which reopens on the code step (lib/emailCodePending).
+  useEffect(() => {
+    if (ready && !uid && readPendingCode()) setLogin((current) => current ?? {});
+  }, [ready, uid]);
+
   const closeMenu = useCallback(() => setOpen(false), []);
   useMenuDismiss(rootRef, closeMenu, { enabled: open, closeOnScroll: false });
 
@@ -343,6 +353,7 @@ export default function AccountAvatarButton({
                 Continue with email
               </button>
               {providerError && <p className="field-error px-cp-2" role="alert">{providerError}</p>}
+              <WaitingFriendGift />
             </div>
           )}
           <MenuImportUsage onNavigate={closeMenu} />
@@ -368,6 +379,12 @@ export default function AccountAvatarButton({
               </span>
             )}
           </ProjectsRow>
+          {REFERRALS_LIVE && (
+            <Link href="/invites" className={ROW_CLASS} onClick={closeMenu}>
+              <GiftIcon size={ICON_SIZE.md} className="shrink-0 text-ink-soft" />
+              Invites
+            </Link>
+          )}
           {user && (
             <div className="mt-cp-1 border-t border-line pt-cp-1">
               <button
@@ -461,6 +478,31 @@ function MenuImportUsage({ onNavigate }: { onNavigate: () => void }) {
         {line.detail && <p className="text-cp-caption text-ink-soft">{line.detail}</p>}
       </div>
     </Link>
+    </div>
+  );
+}
+
+/**
+ * A friend's invite this browser opened and put off ("Maybe later"): the days
+ * are still waiting, so the signed-out menu says so under the sign-in buttons
+ * until they claim it or the invite runs out (Amelia, 2026-10-19).
+ */
+function WaitingFriendGift() {
+  const version = useSyncExternalStore(subscribeReferral, referralVersion, () => 0);
+  const [open, setOpen] = useState<ReturnType<typeof readStoredOpen>>(null);
+  useEffect(() => setOpen(readStoredOpen()), [version]);
+  const showing = REFERRALS_LIVE && Boolean(open?.introShown) && !open?.pendingVerification;
+  // They're likely about to sign in: wake the referral function now.
+  useEffect(() => {
+    if (showing && open) warmReferralBackend(open.openId);
+  }, [showing, open]);
+  if (!showing || !open) return null;
+  return (
+    <div className="flex items-start gap-2 rounded-lg bg-[var(--cp-accent-soft)] px-cp-2 py-cp-2 text-cp-small">
+      <GiftIcon size={ICON_SIZE.md} className="mt-px shrink-0 text-[var(--cp-accent)]" />
+      <p className="text-ink">
+        <span className="font-semibold">A friend gave you {open.rewardDays} days of Pro.</span> Sign in to start them.
+      </p>
     </div>
   );
 }

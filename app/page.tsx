@@ -2,6 +2,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PrinterWorkspace } from "@/components/PrinterWorkspace";
 import { CommunityGallery } from "@/components/CommunityGallery";
+import { InviteWelcome } from "@/components/InviteWelcome";
 import { homeJsonLd } from "@/lib/seo";
 
 // The homepage is a focused utility: understand what RecipePrinter does and
@@ -76,6 +77,7 @@ export default function Home() {
             <p className="mt-cp-3 mx-auto max-w-[38rem] text-ink-soft text-cp-body-lg leading-relaxed">
               Turn web and social recipe links into printable recipe cards for your kitchen.
             </p>
+            <InviteWelcome />
           </div>
 
           {/* The tool itself (interactive, client). It no longer finishes

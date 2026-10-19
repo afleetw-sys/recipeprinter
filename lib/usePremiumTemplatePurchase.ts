@@ -15,6 +15,7 @@ import {
   proEntitlementEndsAt,
 } from "@/lib/recipePrinterPurchases";
 import type { CustomerInfoLoadStatus } from "@/lib/proAccessFallback";
+import { PRO_CHANGED_EVENT } from "@/lib/proWelcome";
 import type { QueueItem } from "@/types/recipe";
 
 interface UsePremiumTemplatePurchaseOptions {
@@ -188,6 +189,20 @@ export function usePremiumTemplatePurchase({
     refreshCustomerInfo(revenueCatUserId).catch((error) => {
       console.warn("RecipePrinter: could not refresh customer info", error);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revenueCatUserId]);
+
+  // Pro granted or extended from outside this page's own purchase (a referral
+  // reward on sign-in): read it again now rather than at the next reload.
+  useEffect(() => {
+    if (!revenueCatUserId) return;
+    const onProChanged = () => {
+      refreshCustomerInfo(revenueCatUserId).catch((error) => {
+        console.warn("RecipePrinter: could not refresh customer info after a Pro change", error);
+      });
+    };
+    window.addEventListener(PRO_CHANGED_EVENT, onProChanged);
+    return () => window.removeEventListener(PRO_CHANGED_EVENT, onProChanged);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revenueCatUserId]);
 

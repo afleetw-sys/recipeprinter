@@ -53,6 +53,17 @@ export const GaugeIcon = (p: IconProps) => (
   </Base>
 );
 
+// A wrapped present: a referral reward, given or received.
+export const GiftIcon = (p: IconProps) => (
+  <Base {...p}>
+    <rect x="3.5" y="8.5" width="17" height="4" rx="1" />
+    <path d="M5 12.5V19a1.5 1.5 0 001.5 1.5h11A1.5 1.5 0 0019 19v-6.5" />
+    <path d="M12 8.5v12" />
+    <path d="M12 8.5c-1.5-3.5-5.5-4-5.5-1.5 0 1.5 2.5 1.5 5.5 1.5z" />
+    <path d="M12 8.5c1.5-3.5 5.5-4 5.5-1.5 0 1.5-2.5 1.5-5.5 1.5z" />
+  </Base>
+);
+
 // An open eye: "show what's typed" on a password field.
 export const EyeIcon = (p: IconProps) => (
   <Base {...p}>

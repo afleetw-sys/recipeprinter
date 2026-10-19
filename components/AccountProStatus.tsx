@@ -17,6 +17,7 @@ import {
   proSubscriptionDetails,
 } from "@/lib/recipePrinterPurchases";
 import { useProPurchase } from "@/lib/useProPurchase";
+import { PRO_CHANGED_EVENT } from "@/lib/proWelcome";
 import { resolveEffectiveCustomerInfo, type CustomerInfoLoadStatus } from "@/lib/proAccessFallback";
 import { loadRecipePrinterUserProfile, type RecipePrinterMirroredEntitlement } from "@/lib/recipePrinterUserProfile";
 import { PRO_PRICE_FALLBACKS } from "@/lib/proProduct";
@@ -89,7 +90,12 @@ export function AccountProStatus({ user }: { user: User }) {
       void refreshProCustomerInfo();
     }
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    // And when a referral reward lands while this page is open.
+    window.addEventListener(PRO_CHANGED_EVENT, onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener(PRO_CHANGED_EVENT, onFocus);
+    };
   }, [refreshProCustomerInfo]);
 
   const effectiveProInfo = useMemo(
