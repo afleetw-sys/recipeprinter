@@ -330,6 +330,12 @@ interface PrintDeckProps {
  * focus that happens once. Only the focused page has real inputs (every other
  * page draws its link as text), so the first match is the right one.
  */
+/** "link", "link or time", "link, time or servings". */
+function listWithOr(names: string[]): string {
+  if (names.length <= 1) return names.join("");
+  return `${names.slice(0, -1).join(", ")} or ${names[names.length - 1]}`;
+}
+
 function focusSourceLinkField() {
   let tries = 0;
   const attempt = () => {
@@ -556,6 +562,7 @@ export function PrintDeck(props: PrintDeckProps) {
     };
     const missingNames = missingFieldNames();
     const pageHasHiddenFields = (): boolean => missingNames.length > 0;
+    const pageNoun = projectMeta.meta.cookbookMode ? "page" : "card";
     // Four names is what fits a phone's pill on two lines; any more collapse
     // into a count. A blank recipe would otherwise list six.
     const fieldsLabel =
@@ -811,15 +818,18 @@ export function PrintDeck(props: PrintDeckProps) {
           )}
           {/* What to do once the empty fields are showing. The button used to
               just turn into "Done", and people pressed it and then kept looking
-              for where the link or servings go: the new fields are faint words
-              on the page, not anything in the toolbar. */}
+              for where the link or servings go: the new fields are on the page,
+              not anything in the toolbar. It names what is still missing (the
+              list the button showed), so it shrinks as they fill each one in. */}
           {showFieldsButton && editing && (
             <div className="recipe-page-toolbar__group recipe-page-toolbar__hint" role="note">
               <InfoIcon size={ICON_SIZE.sm} aria-hidden />
               <span>
                 <span className="recipe-page-toolbar__hint-fine">Click</span>
-                <span className="recipe-page-toolbar__hint-touch">Tap</span> the faded words on the{" "}
-                {projectMeta.meta.cookbookMode ? "page" : "card"} to fill them in.
+                <span className="recipe-page-toolbar__hint-touch">Tap</span>
+                {missingNames.length > 0
+                  ? ` on the ${pageNoun} where you want to add the ${listWithOr(missingNames.slice(0, 4))}.`
+                  : ` any line on the ${pageNoun} to edit it.`}
               </span>
             </div>
           )}

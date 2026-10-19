@@ -1602,21 +1602,48 @@
 
 /* Floats above the card by default: for every slide but the first, there's
    already a previous card above it in the scroll list, so the overlap has
-   somewhere safe to sit. */
+   somewhere safe to sit.
+
+   Sticky rather than absolute, so a page zoomed in past the deck keeps its bar.
+   Absolute, the bar was pinned to the page's top edge and scrolled off with it:
+   reading the middle of a zoomed card meant scrolling back up to reach Photo,
+   link or Done. Now the shell is a zero-height line at the page's top edge with
+   the bar drawn above it, and the line sticks far enough down the deck
+   (`--toolbar-h`, measured by PageToolbar) for the whole bar to stay in view
+   until the page itself leaves. Zero height, so the page lays out exactly as
+   it did. */
 .recipe-page-canvas__controls {
-  position: absolute;
-  bottom: calc(100% + 16px);
-  left: calc(50% + var(--preview-offset, 0px));
+  --controls-w: min(100%, max(var(--preview-w, 100%), 420px));
+  --controls-gap: 16px;
+  position: sticky;
+  /* Less the deck's top padding (`--deck-pad-top`, measured): a sticky offset
+     counts from inside the scroll container's padding. */
+  top: calc(var(--toolbar-h, 36px) + var(--controls-gap) + 8px - var(--deck-pad-top, 0px));
   z-index: 3;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-end;
+  height: 0;
   /* At least wide enough for a full row of controls, and never wider than the
      canvas. Tied strictly to the page width, a small page forced the bar to
-     wrap even with plenty of empty canvas either side of it. */
-  width: min(100%, max(var(--preview-w, 100%), 420px));
-  transform: translateX(-50%);
+     wrap even with plenty of empty canvas either side of it. Centred on the
+     page (plus a spread half's offset) with margins, not a transform: sticky
+     works from the laid-out box, and a transform would move the bar away from
+     where the browser thinks it is. */
+  width: var(--controls-w);
+  margin-left: calc((100% - var(--controls-w)) / 2 + var(--preview-offset, 0px));
   pointer-events: none;
+}
+
+/* Sideways too: a page zoomed wider than the deck keeps its bar on screen
+   while it pans, rather than leaving it centred over a part of the page that
+   is out of view. */
+.recipe-page-canvas__controls > .recipe-page-toolbar {
+  position: sticky;
+  left: 8px;
+  right: 8px;
+  max-width: var(--toolbar-room, 100%);
+  margin-bottom: var(--controls-gap);
 }
 
 /* ── The page toolbar ────────────────────────────────────────────────────────
@@ -3897,17 +3924,18 @@
      control always floats here (even for the first slide) — there's no
      sticky header above it to collide with, and nothing to push down. */
   .recipe-page-canvas__controls {
-    top: auto;
-    bottom: calc(100% + 10px);
-    left: 50%;
+    --controls-gap: 10px;
     z-index: 6;
+    /* The slide is a centring grid here; the margin above does the centring. */
+    justify-self: start;
     /* The screen's width, not the page's. Held to the page, a cookbook page
        (a spread's half, ~170px on a phone) wrapped its toolbar onto two or
        three lines, taller than the 72px the deck keeps clear above a page, so
        its top line slid under the header. Pages are centred in the deck, so
-       a bar centred on the page is centred on the screen. */
-    width: calc(100vw - 32px);
-    transform: translateX(-50%);
+       a bar centred on the page is centred on the screen.
+       Never narrower than the page, either: zoomed past the screen, the bar
+       needs the page's whole width to slide along as it pans. */
+    --controls-w: max(100%, calc(100vw - 32px));
   }
 
   .recipe-config-panel {
