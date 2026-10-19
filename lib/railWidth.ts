@@ -15,6 +15,10 @@ export const RAIL_MIN_WIDTH: Record<RailWidthMode, number> = { pages: 180, organ
 /** Dragging the organizer narrower than this hands the rail back to the
     page thumbnails, instead of leaving the organizer pinned at its minimum. */
 export const ORGANIZE_COLLAPSE_WIDTH = 260;
+/** Dragging the page rail wider than this (in a cookbook) opens the organizer,
+    the same handoff in the other direction. The gap to the collapse width
+    keeps the two from catching each other. */
+export const ORGANIZE_EXPAND_WIDTH = 360;
 /** The preview never gets narrower than this from a drag. */
 export const PREVIEW_MIN_WIDTH = 320;
 /** One arrow-key press on the divider. */
