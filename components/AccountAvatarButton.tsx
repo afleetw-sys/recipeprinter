@@ -16,7 +16,7 @@ import {
   LogoutIcon,
   SettingsIcon,
 } from "@/components/icons";
-import { REFERRALS_LIVE, readStoredOpen, referralVersion, subscribeReferral } from "@/lib/referral";
+import { REFERRALS_LIVE, readStoredOpen, referralVersion, subscribeReferral, warmReferralBackend } from "@/lib/referral";
 import {
   CookPilotLoginDialog,
   appleProvider,
@@ -320,7 +320,6 @@ export default function AccountAvatarButton({
                Google and Apple this is the whole of signing in, one press from
                the avatar. Email needs fields, so it opens the dialog. */
             <div className="mb-cp-1 flex flex-col gap-cp-2 border-b border-line px-cp-1 pb-cp-3 pt-cp-1">
-              <WaitingFriendGift />
               <p className="px-cp-2 text-cp-small font-bold text-ink">Sign in or create an account</p>
               <div className="grid grid-cols-2 gap-cp-2">
                 <button
@@ -354,6 +353,7 @@ export default function AccountAvatarButton({
                 Continue with email
               </button>
               {providerError && <p className="field-error px-cp-2" role="alert">{providerError}</p>}
+              <WaitingFriendGift />
             </div>
           )}
           <MenuImportUsage onNavigate={closeMenu} />
@@ -484,14 +484,19 @@ function MenuImportUsage({ onNavigate }: { onNavigate: () => void }) {
 
 /**
  * A friend's invite this browser opened and put off ("Maybe later"): the days
- * are still waiting, so the signed-out menu says so above the sign-in buttons
+ * are still waiting, so the signed-out menu says so under the sign-in buttons
  * until they claim it or the invite runs out (Amelia, 2026-10-19).
  */
 function WaitingFriendGift() {
   const version = useSyncExternalStore(subscribeReferral, referralVersion, () => 0);
   const [open, setOpen] = useState<ReturnType<typeof readStoredOpen>>(null);
   useEffect(() => setOpen(readStoredOpen()), [version]);
-  if (!REFERRALS_LIVE || !open?.introShown || open.pendingVerification) return null;
+  const showing = REFERRALS_LIVE && Boolean(open?.introShown) && !open?.pendingVerification;
+  // They're likely about to sign in: wake the referral function now.
+  useEffect(() => {
+    if (showing && open) warmReferralBackend(open.openId);
+  }, [showing, open]);
+  if (!showing || !open) return null;
   return (
     <div className="flex items-start gap-2 rounded-lg bg-[var(--cp-accent-soft)] px-cp-2 py-cp-2 text-cp-small">
       <GiftIcon size={ICON_SIZE.md} className="mt-px shrink-0 text-[var(--cp-accent)]" />

@@ -5,7 +5,17 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { Dialog } from "@/components/Dialog";
 import { CrownIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
-import { readStoredOpen, referralVersion, storeOpen, subscribeReferral, type StoredOpen } from "@/lib/referral";
+import {
+  INVITE_COOKIE,
+  readStoredOpen,
+  recordInviteFromCookie,
+  referralVersion,
+  storeOpen,
+  subscribeReferral,
+  type StoredOpen,
+  warmReferralBackend,
+} from "@/lib/referral";
+import { track } from "@/lib/analytics";
 
 const CookPilotLoginDialog = dynamic(
   () => import("@/components/CookPilotAuth").then((m) => m.CookPilotLoginDialog),
@@ -23,9 +33,18 @@ export function InviteWelcome() {
   const [open, setOpen] = useState<StoredOpen | null>(null);
   const [signingIn, setSigningIn] = useState(false);
 
+  // Keep a friend's link from the cookie right here, the moment the page is
+  // up, instead of after Firebase and the referral code load.
+  useEffect(() => {
+    if (!document.cookie.includes(`${INVITE_COOKIE}=`)) return;
+    const outcome = recordInviteFromCookie(document.cookie);
+    if (outcome) track("referral_link_opened", { first_touch: outcome.recorded, signed_in: readCookPilotWasSignedIn() });
+  }, []);
+
   useEffect(() => {
     const stored = readStoredOpen();
     if (stored && !stored.introShown && !stored.pendingVerification && !readCookPilotWasSignedIn()) {
+      warmReferralBackend(stored.openId);
       setOpen(stored);
       storeOpen({ ...stored, introShown: true });
     }

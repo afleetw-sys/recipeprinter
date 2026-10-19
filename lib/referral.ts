@@ -307,18 +307,37 @@ async function callReferral(data: Record<string, unknown>): Promise<unknown> {
   return callCookPilotParser(REFERRAL_CALLABLE, data);
 }
 
-/** Records a friend's link left by the invite route, if this browser has none yet. */
-export async function recordInviteFromCookie(cookie: string, nowMs = Date.now()): Promise<
-  { recorded: true; open: StoredOpen } | { recorded: false; firstTouch: boolean } | null
-> {
+let warmed = false;
+
+/**
+ * Wakes the referral function while a friend is still signing up, so the
+ * claim that follows doesn't also wait for a cold start, and has Firebase and
+ * an App Check token ready in the page. "open" is a no-op on the server. Once
+ * per page; failures don't matter.
+ */
+export function warmReferralBackend(code: string): void {
+  if (warmed) return;
+  warmed = true;
+  void callReferral({ op: "open", code }).catch(() => undefined);
+}
+
+/**
+ * Keeps the friend's link the invite route left in a cookie, for claiming at
+ * sign-in. Local and immediate: the backend's "open" step only echoed the code
+ * back with the attribution window, so waiting on Firebase, App Check and a
+ * function call just held up the "A friend gave you Pro" dialog (Amelia,
+ * 2026-10-19). The claim checks everything that matters.
+ */
+const ATTRIBUTION_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export function recordInviteFromCookie(cookie: string, nowMs = Date.now()):
+  { recorded: true; open: StoredOpen } | { recorded: false; firstTouch: boolean } | null {
   const code = readInviteCookie(cookie);
   if (!code) return null;
   clearInviteCookie();
   if (!shouldRecordOpen(nowMs)) return { recorded: false, firstTouch: false };
-  const answer = (await callReferral({ op: "open", code })) as
-    { ok: true; openId: string; expiresAtMs: number; rewardDays: number } | { ok: false; reason: string };
-  if (!answer || !answer.ok) return { recorded: false, firstTouch: true };
-  const open = { openId: answer.openId, expiresAtMs: answer.expiresAtMs, rewardDays: answer.rewardDays };
+  const open = { openId: code, expiresAtMs: nowMs + ATTRIBUTION_DAYS * DAY_MS, rewardDays: DEFAULT_REWARD_DAYS };
   storeOpen(open);
   return { recorded: true, open };
 }

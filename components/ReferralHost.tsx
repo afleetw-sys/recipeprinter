@@ -69,19 +69,13 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
 
   useEffect(() => subscribeProWelcome(setWelcome), []);
 
-  // A friend's link, left by app/invite/[code]/route.ts.
+  // A friend's link, left by app/invite/[code]/route.ts. The homepage's
+  // InviteWelcome normally keeps it first; this covers any other landing.
   useEffect(() => {
     if (!ready || !document.cookie.includes(`${INVITE_COOKIE}=`)) return;
-    recordInviteFromCookie(document.cookie)
-      .then((outcome) => {
-        if (!outcome) return;
-        track("referral_link_opened", {
-          first_touch: outcome.recorded,
-          signed_in: Boolean(getFirebaseAuth().currentUser && !getFirebaseAuth().currentUser?.isAnonymous),
-        });
-      })
-      .catch((error) => console.warn("RecipePrinter: could not record the invite", error));
-  }, [ready]);
+    const outcome = recordInviteFromCookie(document.cookie);
+    if (outcome) track("referral_link_opened", { first_touch: outcome.recorded, signed_in: Boolean(uid) });
+  }, [ready, uid]);
 
   // Signed in from "Get my referral link": straight to /invites, where the
   // link is ready to copy (lib/referral, goToInvitesAfterSignIn).

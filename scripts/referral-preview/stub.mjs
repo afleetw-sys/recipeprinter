@@ -138,13 +138,15 @@ createServer((req, res) => {
         return send(res, 200, { result: { ok: true, openId, expiresAtMs: Date.now() + 30 * DAY, rewardDays: 3 } });
       }
       if (data.op === "claim") {
-        const open = opens.get(data.openId);
+        // The app now keeps the link itself and sends the code (as `openId`), like the real backend.
+        const code = String(data.code ?? data.openId ?? "").toUpperCase();
+        const open = { referrerUid: ownerOf.get(code) ?? null, claimedBy: null };
         const reject = (reason) => send(res, 200, { result: { status: "rejected", reason } });
-        if (!open) return reject("open_not_found");
-        if (open.claimedBy && open.claimedBy !== who.user_id) return reject("open_claimed");
+        if (!code) return reject("bad_code");
         if (invited.has(who.user_id)) return reject("already_referred");
         if (open.referrerUid === who.user_id) return reject("self_referral");
-        if (firstSeen.get(who.user_id) < open.openedAtMs) return reject("existing_account");
+        // New to RecipePrinter: this stand-in first saw the account moments ago (at sign-up).
+        if (Date.now() - firstSeen.get(who.user_id) > 10 * 60_000) return reject("existing_account");
         const n = (claims.get(who.user_id) ?? 0) + 1; claims.set(who.user_id, n);
         if (who.email?.startsWith("verify") && !who.email_verified) return send(res, 200, { result: { status: "pending_verification" } });
         open.claimedBy = who.user_id;
