@@ -51,9 +51,15 @@ function copyFor(welcome: ProWelcome): { title: string; body: ReactNode } {
         ),
       };
     }
+    // Same words as the subscriber's version, with the day it runs to.
     return {
-      title: "Your Pro starts now",
-      body: `${who} signed up with your link, so you have ${welcome.days} days of Pro, starting today.`,
+      title: `You earned ${welcome.days} days of Pro`,
+      body: (
+        <>
+          {who} joined using your link. Every theme and card size is yours until{" "}
+          <strong className="text-ink">{formatRenewal(Date.now() + welcome.days * 24 * 60 * 60 * 1000)}</strong>.
+        </>
+      ),
     };
   }
   }
