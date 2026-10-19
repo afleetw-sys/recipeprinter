@@ -27,13 +27,13 @@ export const DEFAULT_REWARD_DAYS = 3;
 /**
  * The app's own switch for everything a person sees of the program before
  * they've been invited: the after-print invite, the session status read that
- * finds rewards and expiry. Off until launch, like `IMPORT_ALLOWANCE_LIVE`;
+ * finds rewards and expiry. On since launch (Amelia, 2026-10-19), like `IMPORT_ALLOWANCE_LIVE`;
  * CookPilot's `recipePrinterConfig/referrals.enabled` is the server's switch,
  * and both must be on. A friend's link is recorded and claimed either way,
  * and the server says no while it is off.
  */
 export const REFERRALS_LIVE =
-  false ||
+  true ||
   // Local preview only: lets a dev server against the emulators show the
   // program before launch. A deployed build never sets it.
   process.env.NEXT_PUBLIC_REFERRALS_PREVIEW === "1";
