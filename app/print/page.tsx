@@ -739,6 +739,12 @@ export default function PrintPage() {
   const anyRecipeHasSourceUrl =
     items?.some((item) => Boolean(item.recipe?.sourceUrl)) ?? false;
   const cookbookMode = Boolean(projectMeta.meta.cookbookMode);
+  // Referral prompts are delayed so the newly imported card can settle. A
+  // homepage cookbook begins life as cards while its project metadata is
+  // being built, so the render that schedules the prompt can still read
+  // `false` here. Read the current mode when the timer actually fires.
+  const cookbookModeRef = useRef(cookbookMode);
+  cookbookModeRef.current = cookbookMode;
   // Tells the referral program which side this is (lib/referral `setReferralSurface`):
   // nothing referral-related is offered or started inside the Cookbook Builder.
   useEffect(() => {
@@ -2218,18 +2224,20 @@ export default function PrintPage() {
    * or the second card import, whichever comes first (Amelia, 2026-10-19).
    */
   function offerReferralInvite(delayMs: number) {
-    const summary = cachedReferralSummary();
-    if (
-      !shouldShowPostPrintInvite({
-        cookbookMode,
-        capReached: summary ? capReached(summary) : false,
-        alreadyShown: postPrintInviteShown(),
-      })
-    ) {
-      return;
-    }
-    markPostPrintInviteShown();
-    window.setTimeout(() => setShowReferralInvite(true), delayMs);
+    window.setTimeout(() => {
+      const summary = cachedReferralSummary();
+      if (
+        !shouldShowPostPrintInvite({
+          cookbookMode: cookbookModeRef.current,
+          capReached: summary ? capReached(summary) : false,
+          alreadyShown: postPrintInviteShown(),
+        })
+      ) {
+        return;
+      }
+      markPostPrintInviteShown();
+      setShowReferralInvite(true);
+    }, delayMs);
   }
 
   // The second card import offers the invite too, after the card has had a
