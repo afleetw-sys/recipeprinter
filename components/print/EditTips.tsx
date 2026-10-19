@@ -50,7 +50,18 @@ function thisLoadNumber(): number {
  * Quiet by construction: one italic line that takes no pointer events, so it
  * can never eat a tap meant for the page.
  */
-export function EditTips({ editing }: { editing: boolean }) {
+export function EditTips({
+  editing,
+  revealing = false,
+  surface = "card",
+}: {
+  editing: boolean;
+  /** The empty fields are showing and none is open: the one thing worth saying
+      is where they are. On a phone this says it in place of the page
+      toolbar's own tip, which would make the bar two rows tall. */
+  revealing?: boolean;
+  surface?: "card" | "page";
+}) {
   // Unknown until mounted: `localStorage` does not exist on the server, so the
   // load number can only be read on the client, and a strip that renders with
   // the wrong tip and then swaps is worse than one that appears.
@@ -67,8 +78,8 @@ export function EditTips({ editing }: { editing: boolean }) {
     <div className="recipe-edit-tips no-print" role="note">
       {/* Keyed on the text so the line plays its fade-in when it changes, which
           it does once: when a field is opened or closed and the two lists swap. */}
-      <span key={`${editing}-${load}`} className="recipe-edit-tips__text">
-        {tips[load % tips.length]}
+      <span key={`${editing}-${revealing}-${load}`} className="recipe-edit-tips__text">
+        {revealing ? `Tap any \u201cAdd\u201d on the ${surface} to fill it in.` : tips[load % tips.length]}
       </span>
     </div>
   );

@@ -94,16 +94,39 @@ export function PageToolbar({ children }: { children: ReactNode }) {
       prevBottom = child.offsetTop + child.offsetHeight;
     }
     bar.toggleAttribute("data-wrapped", wrapped);
+    // How far down the shell has to stick for the whole bar, drawn above it,
+    // to stay on screen while a zoomed-in page scrolls (see
+    // `.recipe-page-canvas__controls`). A bar that wraps is taller.
+    shell.style.setProperty("--toolbar-h", `${bar.offsetHeight}px`);
+    // The room is the shell, or the part of the deck on screen if that is
+    // narrower: zoomed in, the shell is as wide as the page, and a bar sized
+    // to it ran off the side of the deck.
+    const deck = shell.closest<HTMLElement>(".recipe-page-deck");
+    const deckStyle = deck ? getComputedStyle(deck) : null;
+    const visible =
+      deck && deckStyle
+        ? deck.clientWidth - parseFloat(deckStyle.paddingLeft) - parseFloat(deckStyle.paddingRight) - 16
+        : Infinity;
+    const room = Math.min(shell.clientWidth, visible);
+    shell.style.setProperty("--toolbar-room", `${room}px`);
+    // And the shell's own width: the bar may be wider than a small page, out
+    // to the deck's edges (see `.recipe-page-canvas__controls`).
+    if (Number.isFinite(visible)) shell.style.setProperty("--deck-visible-w", `${visible}px`);
+    // A sticky offset counts from inside the deck's padding, which is not one
+    // value: it centres the first page, or is fixed for a lone recipe.
+    shell.style.setProperty("--deck-pad-top", deckStyle?.paddingTop ?? "0px");
 
-    if (itemCount === 0 || bar.querySelector(":scope > .recipe-page-toolbar__hint")) {
+    // Only a hint that is shown: the reveal's is hidden on a phone, where the
+    // bar has to stay one row and collapse into More like any other.
+    const hint = bar.querySelector<HTMLElement>(":scope > .recipe-page-toolbar__hint");
+    if (itemCount === 0 || (hint && hint.getClientRects().length > 0)) {
       setCollapsedCount(0);
       return;
     }
 
     bar.setAttribute("data-measuring", "");
     const style = getComputedStyle(bar);
-    const available =
-      shell.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    const available = room - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
     const groups = Array.from(bar.children) as HTMLElement[];
     const more = moreGroupRef.current;
     const moreWidth = more ? more.getBoundingClientRect().width : 0;
@@ -141,11 +164,13 @@ export function PageToolbar({ children }: { children: ReactNode }) {
     const bar = ref.current;
     const shell = bar?.parentElement;
     if (!bar || !shell) return;
-    // The shell's width is the room there is: the screen, zoom and the deck's
-    // own sizing all arrive as a resize of it. The mutation watch covers a
+    // The shell's width (or the deck's, zoomed in) is the room there is: the
+    // screen, zoom and the deck's own sizing all arrive as a resize of one. The mutation watch covers a
     // label changing at the same width ("Add time" becoming "Done").
     const resize = new ResizeObserver(() => measureRef.current());
     resize.observe(shell);
+    const deck = shell.closest(".recipe-page-deck");
+    if (deck) resize.observe(deck);
     const mutation = new MutationObserver(() => measureRef.current());
     mutation.observe(bar, { childList: true, subtree: true, characterData: true });
     return () => {
