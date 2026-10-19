@@ -5927,6 +5927,32 @@ export default function PrintPage() {
     [items, photoModeFor, cookbookMode, showPhoto, showSourceUrl, queue.updateRecipe, projectMeta.setItemPhotoMode],
   );
 
+  /**
+   * The room the phone layout keeps under the deck for the fixed bottom bar,
+   * read off the bar itself. It was a guessed height (132px, 156 with the tip
+   * line), which left a band of empty grey above a bar that was shorter, and
+   * would have hidden the page's foot behind one that is taller (the home
+   * indicator's safe area pads it). On the page root, where the shell and the
+   * toast read it. Zero on desktop, where the bar is not shown and nothing
+   * reads it.
+   */
+  const mobileBarObserverRef = useRef<ResizeObserver | null>(null);
+  const mobileBarRef = useCallback((bar: HTMLDivElement | null) => {
+    mobileBarObserverRef.current?.disconnect();
+    mobileBarObserverRef.current = null;
+    const root = bar?.closest<HTMLElement>(".recipe-print-page");
+    if (!bar || !root) return;
+    const update = () =>
+      root.style.setProperty("--rp-mobile-bar-reserve", `${bar.getBoundingClientRect().height}px`);
+    update();
+    // Not in jsdom (the page's own tests) or very old browsers, which keep the
+    // first measurement.
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(update);
+    observer.observe(bar);
+    mobileBarObserverRef.current = observer;
+  }, []);
+
   const { showEmptyFields, toggleShowEmptyFields, activeInlineEdit } = useRecipeInlineEditor({
     items,
     updateRecipe: updateRecipeAndRevealPhoto,
@@ -6636,7 +6662,7 @@ export default function PrintPage() {
           cardSettingsFields={renderPrintSettingsFields()}
         />
 
-        <div className="recipe-mobile-actions no-print">
+        <div ref={mobileBarRef} className="recipe-mobile-actions no-print">
           {/* One tip for the whole deck, just above the tools, rather than one
               hanging under each page. Recipe cards only: a cookbook shows none.
               Only with a page to act on, since every tip is about one. */}

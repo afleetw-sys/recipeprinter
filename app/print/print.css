@@ -3312,17 +3312,11 @@
     display: none;
   }
 
-  /* The room kept clear under the deck for the fixed action bar. The bar is
-     ~121px; with the one-line tip in it (recipe cards) it is ~24px taller,
-     and the shell and the toast both read this so neither of
-     them sits behind it. */
-  .recipe-print-page {
-    --rp-mobile-bar-reserve: 132px;
-  }
-
-  .recipe-print-page:has(.recipe-mobile-actions .recipe-edit-tips) {
-    --rp-mobile-bar-reserve: 156px;
-  }
+  /* The room kept clear under the deck for the fixed action bar,
+     `--rp-mobile-bar-reserve`, is the bar's measured height (set on
+     `.recipe-print-page` by the print page). The shell and the toast both read
+     it so neither of them sits behind the bar. The 132px fallbacks only cover
+     the first paint, before it is measured. */
 
   .recipe-print-shell {
     display: grid;
