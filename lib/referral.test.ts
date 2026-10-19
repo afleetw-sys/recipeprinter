@@ -52,25 +52,24 @@ describe("the invite link", () => {
     expect(junk.headers.get("location")).toBe("https://www.recipeprinter.com/");
   });
 
-  test("the first link wins until it can no longer be claimed; then a new one counts", async () => {
-    callable.answer.mockImplementation(() => ({ ok: true, openId: `open-${callable.calls.length}`, expiresAtMs: NOW + 30 * DAY, rewardDays: 3 }));
-    expect(await recordInviteFromCookie(`${INVITE_COOKIE}=AAAAAAAA`, NOW)).toMatchObject({ recorded: true });
-    expect(await recordInviteFromCookie(`other=1; ${INVITE_COOKIE}=BBBBBBBB`, NOW + DAY)).toEqual({
+  test("the first link wins until it can no longer be claimed; then a new one counts", () => {
+    // Kept locally, with no call: the code is what the claim sends.
+    expect(recordInviteFromCookie(`${INVITE_COOKIE}=AAAAAAAA`, NOW)).toMatchObject({ recorded: true });
+    expect(recordInviteFromCookie(`other=1; ${INVITE_COOKIE}=BBBBBBBB`, NOW + DAY)).toEqual({
       recorded: false,
       firstTouch: false,
     });
-    expect(callable.calls).toHaveLength(1);
-    expect(readStoredOpen(NOW + DAY)?.openId).toBe("open-1");
+    expect(callable.calls).toHaveLength(0);
+    expect(readStoredOpen(NOW + DAY)?.openId).toBe("AAAAAAAA");
 
     // Thirty days on, the first is gone and the next link records.
     expect(readStoredOpen(NOW + 31 * DAY)).toBeNull();
-    expect(await recordInviteFromCookie(`${INVITE_COOKIE}=BBBBBBBB`, NOW + 31 * DAY)).toMatchObject({ recorded: true });
-    expect(callable.calls.map((c) => c.code)).toEqual(["AAAAAAAA", "BBBBBBBB"]);
+    expect(recordInviteFromCookie(`${INVITE_COOKIE}=BBBBBBBB`, NOW + 31 * DAY)).toMatchObject({ recorded: true });
+    expect(readStoredOpen(NOW + 31 * DAY)?.openId).toBe("BBBBBBBB");
   });
 
   test("a link opened before a phone's sign-in redirect is still claimed after it", async () => {
-    callable.answer.mockResolvedValueOnce({ ok: true, openId: "open-1", expiresAtMs: Date.now() + 30 * DAY, rewardDays: 3 });
-    await recordInviteFromCookie(`${INVITE_COOKIE}=AAAAAAAA`);
+    recordInviteFromCookie(`${INVITE_COOKIE}=AAAAAAAA`);
     // The redirect reloads the page: only storage survives.
     vi.resetModules();
     const reloaded = await import("./referral");
@@ -81,7 +80,7 @@ describe("the invite link", () => {
 
     callable.answer.mockResolvedValueOnce({ status: "granted", days: 3 });
     expect(await reloaded.claimStoredOpen()).toEqual({ status: "granted", days: 3 });
-    expect(callable.calls.slice(1)).toEqual([{ op: "claim", openId: "open-1" }, { op: "claim", openId: "open-1" }]);
+    expect(callable.calls).toEqual([{ op: "claim", openId: "AAAAAAAA" }, { op: "claim", openId: "AAAAAAAA" }]);
     // Claimed: nothing left to send again.
     expect(reloaded.readStoredOpen()).toBeNull();
     expect(await claimStoredOpen()).toBeNull();
