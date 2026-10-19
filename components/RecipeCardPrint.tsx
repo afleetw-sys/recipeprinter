@@ -1366,7 +1366,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                         ? inlineEdit.value
                         : metaTime
                     }
-                    placeholder="Cook time"
+                    placeholder="Add time"
                     aria-label="Cook time"
                     onFocus={() =>
                       startEdit(
@@ -1393,7 +1393,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                           ? `Serves ${metaServes}`
                           : ""
                     }
-                    placeholder="Servings"
+                    placeholder="Add servings"
                     aria-label="Servings"
                     onFocus={() =>
                       startEdit(
@@ -2028,7 +2028,7 @@ export const DividerFace = memo(function DividerFace({
         {openerField({
           name: "subtitle",
           value: inlineEdit?.subtitle ?? subtitle ?? "",
-          placeholder: "Section subtitle",
+          placeholder: "Add subtitle",
           ariaLabel: "Section subtitle",
           className: "recipe-card__chapter-subtitle",
           onChange: (value) => inlineEdit?.onSubtitleChange?.(value),
@@ -2050,7 +2050,7 @@ export const DividerFace = memo(function DividerFace({
           // the recipes' names lives in the page toolbar, with the rest of the
           // app's chrome: a control in here would be drawn at the card's print
           // scale, which is a third of a legible size.
-          placeholder: introRemoved ? "Section description" : derivedIntro,
+          placeholder: introRemoved ? "Add description" : derivedIntro,
           ariaLabel: "Chapter description",
           className: "recipe-card__chapter-intro",
           // Two rows, unlike the lines above it: `field-sizing: content` grows
@@ -2320,7 +2320,7 @@ export const CoverFace = memo(function CoverFace({
             // same as the body and signature below it. Only a page that has
             // never been touched carries real text here (toggleDedication
             // seeds it), so this never surprises a fresh page with blankness.
-            placeholder: "Opening page heading",
+            placeholder: "Add heading",
             ariaLabel: "Opening page heading",
             className: "recipe-card__cover-dedication-label",
             onChange: (value) => set({ title: value }),
@@ -2328,7 +2328,7 @@ export const CoverFace = memo(function CoverFace({
           {coverField({
             name: "dedication-text",
             value: draft.blurb ?? "",
-            placeholder: "For the ones who taught us to cook, and who made every table feel like home.",
+            placeholder: "Add message",
             ariaLabel: "Dedication",
             className: "recipe-card__cover-blurb recipe-card__cover-dedication-text",
             rows: 3,
@@ -2337,7 +2337,7 @@ export const CoverFace = memo(function CoverFace({
           {coverField({
             name: "dedication-signature",
             value: draft.author ?? "",
-            placeholder: "— The Smith Family (optional)",
+            placeholder: "Add signature",
             ariaLabel: "Dedication signature",
             className: "recipe-card__cover-from recipe-card__cover-dedication-sign",
             onChange: (value) => set({ author: value || undefined }),
@@ -2422,7 +2422,7 @@ export const CoverFace = memo(function CoverFace({
           {coverField({
             name: "back-blurb",
             value: draft.blurb ?? "",
-            placeholder: "A closing line…",
+            placeholder: "Add closing line",
             ariaLabel: "Back cover blurb",
             className: "recipe-card__cover-blurb",
             rows: 3,
@@ -2431,7 +2431,7 @@ export const CoverFace = memo(function CoverFace({
           {coverField({
             name: "back-credit",
             value: draft.author ?? "",
-            placeholder: "From the kitchen of…",
+            placeholder: "Add credit",
             ariaLabel: "Back cover credit",
             className: "recipe-card__cover-from",
             onChange: (value) => set({ author: value || undefined }),
@@ -2516,7 +2516,7 @@ export const CoverFace = memo(function CoverFace({
         {coverField({
           name: "cover-kicker",
           value: draft.subtitle ?? "",
-          placeholder: "A family cookbook",
+          placeholder: "Add subtitle",
           ariaLabel: "Cover kicker",
           className: "recipe-card__cover-subtitle",
           onChange: (value) => set({ subtitle: value || undefined }),
@@ -2524,7 +2524,7 @@ export const CoverFace = memo(function CoverFace({
         {coverField({
           name: "cover-title",
           value: draft.title,
-          placeholder: "Cover title",
+          placeholder: "Add title",
           ariaLabel: "Cover title",
           className: "recipe-card__cover-title",
           as: "h1",
@@ -2535,7 +2535,7 @@ export const CoverFace = memo(function CoverFace({
         {coverField({
           name: "cover-byline",
           value: draft.author ?? "",
-          placeholder: "Compiled by the Smith family",
+          placeholder: "Add author",
           ariaLabel: "Cover byline",
           className: "recipe-card__cover-author",
           onChange: (value) => set({ author: value || undefined }),
@@ -2543,7 +2543,7 @@ export const CoverFace = memo(function CoverFace({
         {coverField({
           name: "cover-edition",
           value: draft.edition ?? "",
-          placeholder: "Edition or year (optional)",
+          placeholder: "Add edition",
           ariaLabel: "Cover edition or year",
           className: "recipe-card__cover-edition",
           onChange: (value) => set({ edition: value || undefined }),

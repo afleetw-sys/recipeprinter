@@ -330,12 +330,6 @@ interface PrintDeckProps {
  * focus that happens once. Only the focused page has real inputs (every other
  * page draws its link as text), so the first match is the right one.
  */
-/** "link", "link or time", "link, time or servings". */
-function listWithOr(names: string[]): string {
-  if (names.length <= 1) return names.join("");
-  return `${names.slice(0, -1).join(", ")} or ${names[names.length - 1]}`;
-}
-
 function focusSourceLinkField() {
   let tries = 0;
   const attempt = () => {
@@ -819,8 +813,8 @@ export function PrintDeck(props: PrintDeckProps) {
           {/* What to do once the empty fields are showing. The button used to
               just turn into "Done", and people pressed it and then kept looking
               for where the link or servings go: the new fields are on the page,
-              not anything in the toolbar. It names what is still missing (the
-              list the button showed), so it shrinks as they fill each one in. */}
+              not anything in the toolbar. Each one reads "Add servings", "Add
+              link" and so on, so the tip only has to point at them. */}
           {showFieldsButton && editing && (
             <div className="recipe-page-toolbar__group recipe-page-toolbar__hint" role="note">
               <InfoIcon size={ICON_SIZE.sm} aria-hidden />
@@ -828,7 +822,7 @@ export function PrintDeck(props: PrintDeckProps) {
                 <span className="recipe-page-toolbar__hint-fine">Click</span>
                 <span className="recipe-page-toolbar__hint-touch">Tap</span>
                 {missingNames.length > 0
-                  ? ` on the ${pageNoun} where you want to add the ${listWithOr(missingNames.slice(0, 4))}.`
+                  ? ` any \u201cAdd\u201d on the ${pageNoun} to fill it in.`
                   : ` any line on the ${pageNoun} to edit it.`}
               </span>
             </div>
