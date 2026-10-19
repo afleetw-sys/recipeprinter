@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { ProWelcomeDialog } from "@/components/ProWelcomeDialog";
 import { getFirebaseAuth } from "@/lib/firebase/client";
@@ -15,6 +16,7 @@ import {
   referralSurface,
   capReached,
   claimStoredOpen,
+  takeGoToInvitesAfterSignIn,
   expiredReferralToShow,
   inviteUrl,
   loadReferralSummary,
@@ -56,6 +58,7 @@ function whenIdle(run: () => void): void {
 
 export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWelcome | null }) {
   const { user, ready } = useCookPilotAuth();
+  const router = useRouter();
   const uid = user?.uid ?? null;
   const [welcome, setWelcome] = useState<ProWelcome | null>(initialWelcome);
   const [verifying, setVerifying] = useState(false);
@@ -79,6 +82,13 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
       })
       .catch((error) => console.warn("RecipePrinter: could not record the invite", error));
   }, [ready]);
+
+  // Signed in from "Get my referral link": straight to /invites, where the
+  // link is ready to copy (lib/referral, goToInvitesAfterSignIn).
+  useEffect(() => {
+    if (!ready || !uid) return;
+    if (takeGoToInvitesAfterSignIn() && window.location.pathname !== "/invites") router.push("/invites");
+  }, [ready, uid, router]);
 
   // Claiming, once there is an account.
   async function claim() {

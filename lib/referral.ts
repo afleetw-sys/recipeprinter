@@ -1,4 +1,4 @@
-import { localStore } from "@/lib/storage";
+import { localStore, sessionStore } from "@/lib/storage";
 
 /**
  * The client half of the referral program (CookPilot `recipePrinterReferral`;
@@ -389,4 +389,31 @@ export async function loadReferralSummary(op: "link" | "status"): Promise<Referr
   lastSummary = summary;
   notify();
   return summary;
+}
+
+// ---- Signing in to get a link ------------------------------------------------
+
+/**
+ * "Get my referral link" signed out: sign in, then land on /invites with the
+ * link ready, instead of back in the dialog to press it again (Amelia,
+ * 2026-10-19). Kept in the tab's session so it survives a phone's sign-in
+ * redirect, and only for a few minutes so an abandoned sign-in never
+ * navigates someone later.
+ */
+const INVITES_AFTER_SIGN_IN_KEY = "recipeprinter:invites-after-sign-in:v1";
+const INVITES_AFTER_SIGN_IN_MS = 10 * 60_000;
+
+export function goToInvitesAfterSignIn(nowMs = Date.now()): void {
+  sessionStore.set(INVITES_AFTER_SIGN_IN_KEY, String(nowMs));
+}
+
+export function cancelGoToInvitesAfterSignIn(): void {
+  sessionStore.remove(INVITES_AFTER_SIGN_IN_KEY);
+}
+
+/** Whether a sign-in just finished that should land on /invites; clears it either way. */
+export function takeGoToInvitesAfterSignIn(nowMs = Date.now()): boolean {
+  const at = Number(sessionStore.get(INVITES_AFTER_SIGN_IN_KEY) ?? 0);
+  sessionStore.remove(INVITES_AFTER_SIGN_IN_KEY);
+  return at > 0 && nowMs - at < INVITES_AFTER_SIGN_IN_MS;
 }

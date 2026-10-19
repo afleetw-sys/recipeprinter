@@ -6,7 +6,14 @@ import { Dialog } from "@/components/Dialog";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { ProThemeStack } from "@/components/ProThemeStack";
 import { track } from "@/lib/analytics";
-import { inviteShareText, inviteUrl, loadReferralSummary, type InviterPlan } from "@/lib/referral";
+import {
+  cancelGoToInvitesAfterSignIn,
+  goToInvitesAfterSignIn,
+  inviteShareText,
+  inviteUrl,
+  loadReferralSummary,
+  type InviterPlan,
+} from "@/lib/referral";
 import { shareLink } from "@/lib/shareLink";
 
 /**
@@ -74,8 +81,15 @@ export function PostPrintInviteDialog({
           title: "Create an account or sign in",
           body: "You\u2019ll need to sign in to get your link and earn rewards.",
         }}
-        onClose={() => setSigningIn(false)}
-        onAuthenticated={() => setSigningIn(false)}
+        onClose={() => {
+          cancelGoToInvitesAfterSignIn();
+          setSigningIn(false);
+        }}
+        // ReferralHost takes them to /invites, here or after a phone's redirect.
+        onAuthenticated={() => {
+          setSigningIn(false);
+          onClose();
+        }}
       />
     );
   }
@@ -110,7 +124,11 @@ export function PostPrintInviteDialog({
           type="button"
           className="btn btn-primary w-full"
           disabled={busy}
-          onClick={() => (signedIn ? void share() : setSigningIn(true))}
+          onClick={() => {
+            if (signedIn) return void share();
+            goToInvitesAfterSignIn();
+            setSigningIn(true);
+          }}
         >
           {!signedIn
             ? "Get my referral link"
