@@ -157,7 +157,7 @@ import {
   getCookbookPreset,
   presetCardDims,
 } from "@/lib/cookbookPresets";
-import { referralPromptsAllowed, track } from "@/lib/analytics";
+import { track } from "@/lib/analytics";
 import {
   BookIcon,
   PagesIcon,
@@ -2210,7 +2210,7 @@ export default function PrintPage() {
   /** The referral program is live for this person and its prompts may show. */
   function referralInviteAllowed(): boolean {
     const summary = cachedReferralSummary();
-    return REFERRALS_LIVE && referralPromptsAllowed() && (!summary || summary.enabled);
+    return REFERRALS_LIVE && (!summary || summary.enabled);
   }
 
   /**

@@ -678,20 +678,6 @@ export function registerMembershipStatus(status: "free" | "referral_pro" | "paid
   });
 }
 
-/**
- * Whether this person sees the referral program's own prompts (the account
- * card, the after-print invite, the choice when referral Pro ends). Friends'
- * links are honored for everyone either way.
- *
- * Read from the `referral-program` feature flag, so a holdout can be turned on
- * in PostHog without a deploy. No flag, analytics off, or flags not loaded:
- * shown. Only a person assigned `control` is held out.
- */
-export function referralPromptsAllowed(): boolean {
-  if (!posthog) return true;
-  return posthog.getFeatureFlag("referral-program") !== "control";
-}
-
 /** Parser messages can be long and are for our eyes; keep them bounded. */
 export function truncateReason(value: unknown): string {
   const text =

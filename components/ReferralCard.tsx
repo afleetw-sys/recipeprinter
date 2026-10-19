@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CheckIcon, GiftIcon, LinkIcon, ICON_SIZE } from "@/components/icons";
-import { referralPromptsAllowed, track } from "@/lib/analytics";
+import { track } from "@/lib/analytics";
 import {
   capReached,
   inviteShareText,
@@ -39,7 +39,6 @@ export function ReferralCard() {
 
   useEffect(() => {
     setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
-    if (!referralPromptsAllowed()) return;
     let alive = true;
     // `link` makes the code the first time, so the card always has one to show.
     loadReferralSummary("link")

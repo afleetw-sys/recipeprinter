@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { CookPilotLoginDialog, useCookPilotAuth } from "@/components/CookPilotAuth";
 import { ProWelcomeDialog } from "@/components/ProWelcomeDialog";
 import { getFirebaseAuth } from "@/lib/firebase/client";
-import { referralPromptsAllowed, registerMembershipStatus, track } from "@/lib/analytics";
+import { registerMembershipStatus, track } from "@/lib/analytics";
 import { announceProChanged, announceProWelcome, subscribeProWelcome, type ProWelcome } from "@/lib/proWelcome";
 import {
   INVITE_COOKIE,
@@ -170,7 +170,7 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
           // Referral Pro has run out and nothing paid replaced it: this browser
           // stops treating them as Pro, so "Upgrade to Pro" and the count return.
           if (ended !== null && !loaded.proActive) clearImportsUnlimited();
-          if (ended !== null && referralPromptsAllowed() && referralSurface() !== "cookbook") {
+          if (ended !== null && referralSurface() !== "cookbook") {
             markExpirySeen(uid, ended);
             // The invite half needs a link; someone who joined through a
             // friend may never have made one.
