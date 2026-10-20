@@ -3463,8 +3463,13 @@
        scroll on a phone, with the last one half off the edge to say so. */
     flex: 0 1 92px;
     width: 92px;
-    min-width: 80px;
-    padding: 10px 4px;
+    /* Never narrower than its own label: a longer one widens the tile instead
+       of running past both edges. The labels are sized to our English words,
+       and a browser translating the page doesn't keep to them ("Add more" is
+       "Füge mehr hinzu" in German). The 80px floor lives on the icon box,
+       because `min-width` can't say "the larger of 80px and the content". */
+    min-width: max-content;
+    padding: 10px 8px;
     white-space: nowrap;
     border: 0;
     border-radius: 14px;
@@ -3485,6 +3490,9 @@
 
   .recipe-mobile-toolbar__btn-icon {
     position: relative;
+    /* The tile's 80px floor, less its padding (see `min-width` above). The
+       icon is centred in it, so the box being wide moves nothing. */
+    min-width: 64px;
     display: grid;
     place-items: center;
     color: inherit;
