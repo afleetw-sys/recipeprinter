@@ -48,3 +48,41 @@ test("the deck reaches the phone's bottom bar, with no band between them", async
     await page.keyboard.press("Escape");
   }
 });
+
+/**
+ * A tool's label is never wider than its tile. The tiles were a fixed 92px with
+ * no wrapping, sized to our English words, so a browser translating the page
+ * ("Add more" became "Füge mehr hinzu" in German) ran the label out past both
+ * edges of its tile. Translation swaps the words in place, which is what this
+ * does, to every tile, at every phone width.
+ */
+test("every phone tool's label fits inside its tile, whatever its length", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 800 });
+  await importLink(page);
+  await expect(page.locator(".recipe-mobile-toolbar__btn").first()).toBeVisible();
+
+  const overflowing = () =>
+    page.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLElement>(".recipe-mobile-toolbar__btn")).flatMap((tile) => {
+        const label = Array.from(tile.childNodes).find((node) => node.nodeType === Node.TEXT_NODE && node.textContent!.trim());
+        if (!label) return [];
+        const range = document.createRange();
+        range.selectNodeContents(label);
+        const words = range.getBoundingClientRect();
+        const box = tile.getBoundingClientRect();
+        return words.left < box.left || words.right > box.right ? [label.textContent!.trim()] : [];
+      }),
+    );
+
+  await page.evaluate(() => {
+    for (const tile of Array.from(document.querySelectorAll(".recipe-mobile-toolbar__btn"))) {
+      const label = Array.from(tile.childNodes).find((node) => node.nodeType === Node.TEXT_NODE && node.textContent!.trim());
+      if (label) label.textContent = "Füge mehr hinzu";
+    }
+  });
+
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: 800 });
+    expect(await overflowing(), `${width}px`).toEqual([]);
+  }
+});
