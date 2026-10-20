@@ -553,6 +553,22 @@ const NO_RECIPE_IN_TEXT =
   "We couldn't pick a recipe out of that text. Adding an Ingredients heading and an " +
   "Instructions heading above each part usually gets it read.";
 
+/**
+ * A paste that is only a title: one short line, no link. Plenty of cooks paste
+ * just the name and fill the rest in on /print, so the Text import (and only
+ * that one) takes it as a card with a title and nothing else. CookPilot would
+ * answer "no recipe" after spending a model call on it, so it is never asked.
+ * Not a reading of the text: the line is kept exactly as typed.
+ */
+const TITLE_ONLY_MAX_LENGTH = 100;
+
+export function titleOnlyPaste(rawText: string): string | null {
+  const text = rawText.trim();
+  if (!text || text.includes("\n") || text.length > TITLE_ONLY_MAX_LENGTH) return null;
+  if (/https?:\/\/|www\./i.test(text)) return null;
+  return text;
+}
+
 export async function parseText(rawText: string): Promise<Recipe> {
   const text = normalizeFractions(rawText);
   try {

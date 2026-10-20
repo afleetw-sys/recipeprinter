@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ImportMethod, QueueItem, Recipe } from "@/types/recipe";
 import { track, truncateReason, type ImportContextProps } from "@/lib/analytics";
-import { ImportError, parseImages, parseText, parseUrlAll } from "@/lib/parser";
+import { ImportError, parseImages, parseText, parseUrlAll, titleOnlyPaste } from "@/lib/parser";
 import { captureFailedImportImages, recordFailedImport } from "@/lib/failedImportCapture";
 import { noteImported, noteRecipeEdited } from "@/lib/importCorrections";
 import { placeholderHostMessage } from "@/lib/friendlyErrors";
@@ -1228,9 +1228,15 @@ export function useQueue() {
         addedAt: Date.now(),
       };
       commit([...withoutFailedIfSingle(itemsRef.current), item]);
-      void runParse(id, { source: "text" }, () => parseText(trimmed), {
+      // Just a title: a card to fill in on the page, not an import. Nothing
+      // is parsed, so nothing is counted against the free imports.
+      const title = titleOnlyPaste(trimmed);
+      const work = title
+        ? async (): Promise<Recipe> => ({ title, ingredients: [], instructions: [] })
+        : () => parseText(trimmed);
+      void runParse(id, { source: "text" }, work, {
         failedText: trimmed,
-        meterExempt: opts?.meterExempt,
+        meterExempt: opts?.meterExempt || title !== null,
         dedupeInput: meterDedupeInput({ kind: "text", text: trimmed }),
       });
     },
