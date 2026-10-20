@@ -231,7 +231,8 @@ const POST_PRINT_INVITE_KEY = "recipeprinter:post-print-invite:v1";
 
 /**
  * Whether the "Give 3 days. Get 3 days." dialog shows now: once per browser,
- * after a card print or a second card import (a cookbook has its own screen),
+ * after a card export (Print or a PDF/PNG/JPG download) or a second card
+ * import (a cookbook has its own screen),
  * and never once there's nothing left to earn.
  */
 export function shouldShowPostPrintInvite(input: {

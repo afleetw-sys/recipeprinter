@@ -2220,8 +2220,9 @@ export default function PrintPage() {
   }
 
   /**
-   * "Give 3 days. Get 3 days.", once per browser, after the first card print
-   * or the second card import, whichever comes first (Amelia, 2026-10-19).
+   * "Give 3 days. Get 3 days.", once per browser, after the first card export
+   * (Print, PDF, PNG or JPG) or the second card import, whichever comes first
+   * (Amelia, 2026-10-19/20).
    */
   function offerReferralInvite(delayMs: number) {
     window.setTimeout(() => {
@@ -3593,6 +3594,9 @@ export default function PrintPage() {
         revenueCatUserId,
       });
       track("card_download_started", { output, recipeCount });
+      // A download is an export like Print: the same one-time invite, whichever
+      // of print, download or a second import comes first.
+      if (referralInviteAllowed()) offerReferralInvite(600);
     } catch (error) {
       const failure = error instanceof CardExportError ? error : null;
       track("card_download_failed", {
