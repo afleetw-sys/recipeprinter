@@ -132,3 +132,62 @@ describe("ImagePicker grid selection", () => {
     expect(onGridChange).toHaveBeenCalledWith([]);
   });
 });
+
+/**
+ * A recipe card's None / In card switch only says whether the card shows its
+ * photo. With no photo there is nothing to show or hide, so the switch is not
+ * offered at all. A cookbook page keeps its placements without a photo: they
+ * decide the page layout before a photo is found.
+ */
+describe("ImagePicker placement without a photo", () => {
+  const options = [
+    { id: "none", label: "None" },
+    { id: "card", label: "In card" },
+  ];
+  for (const placement of ["none", "card"]) {
+    it(`a card with no photo offers no placement (placement ${placement})`, () => {
+      render(
+        <ImagePicker
+          current={undefined}
+          images={[]}
+          onSelect={() => {}}
+          placement={placement}
+          placementOptions={options}
+          placementBelow
+          onPlacementChange={() => {}}
+          openSignal={1}
+        />,
+      );
+      expect(screen.queryByRole("group")).toBe(null);
+    });
+  }
+
+  it("a card with a photo, and a cookbook page without one, still offer it", () => {
+    const { unmount } = render(
+      <ImagePicker
+        current="https://example.com/a.jpg"
+        images={["https://example.com/a.jpg"]}
+        onSelect={() => {}}
+        placement="card"
+        placementOptions={options}
+        placementBelow
+        onPlacementChange={() => {}}
+        openSignal={1}
+      />,
+    );
+    expect(screen.queryByRole("group")).not.toBe(null);
+    unmount();
+    render(
+      <ImagePicker
+        current={undefined}
+        images={[]}
+        onSelect={() => {}}
+        placement="none"
+        placementOptions={options}
+        onPlacementChange={() => {}}
+        openSignal={1}
+      />,
+    );
+    expect(screen.queryByRole("group")).not.toBe(null);
+  });
+});

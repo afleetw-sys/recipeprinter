@@ -319,9 +319,12 @@ export function ImagePicker({
     if (!uploading) setOpen(false);
   };
 
-  // Its own piece so it can sit above the photos or below them.
+  // Its own piece so it can sit above the photos or below them. A card's
+  // None / In card (`placementBelow`) only shows or hides its photo, so with no
+  // photo it isn't offered. A cookbook page keeps it: its placement sets the
+  // page layout before there is a photo.
   const placementSection =
-    recipeMode && placementOptions ? (
+    recipeMode && placementOptions && (current || !placementBelow) ? (
       <section
         className={`image-picker__placement ${placementBelow ? "image-picker__placement--below" : ""}`}
         aria-label="Where the photo goes"
