@@ -41,6 +41,7 @@ import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PageSettings, type PageType } from "@/components/print/PageSettings";
 import { photoDialogKey } from "@/lib/photoOpenGesture";
 import { isBookPage, isRecipeEntry } from "@/lib/bookPages";
+import { coverSideOf, pageDeletionFor } from "@/lib/pageDeletion";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import { PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
@@ -1479,9 +1480,7 @@ export default function PrintPage() {
 
 
   function coverSideFromNavItem(navItem: NavItem): "front" | "back" | "dedication" {
-    if (navItem.recipeId === "cover-back") return "back";
-    if (navItem.recipeId === "cover-dedication") return "dedication";
-    return "front";
+    return coverSideOf(navItem);
   }
 
   function defaultCover(): CoverConfig {
@@ -1995,62 +1994,60 @@ export default function PrintPage() {
   );
 
   const requestDeleteNavItem = useCallback((navItem: NavItem) => {
-    if (navItem.kind === "recipe") {
-      const item = items?.find((candidate) => candidate.id === navItem.recipeId && candidate.recipe);
-      setPendingDelete({
-        kind: "recipe",
-        id: navItem.recipeId,
-        title: item?.recipe?.title || item?.title || "this recipe",
-      });
-      return;
+    // Which page this is, decided in one tested place (lib/pageDeletion): a
+    // kind not listed there used to fall through to "the front cover".
+    const deletion = pageDeletionFor(navItem);
+    switch (deletion.kind) {
+      case "recipe": {
+        const item = items?.find((candidate) => candidate.id === deletion.recipeId && candidate.recipe);
+        setPendingDelete({
+          kind: "recipe",
+          id: deletion.recipeId,
+          title: item?.recipe?.title || item?.title || "this recipe",
+        });
+        return;
+      }
+      case "recipe-photo-page":
+        // The full-page photo goes; the photo itself stays, back in the recipe's
+        // own page. Nothing is lost, so no confirm, like a chapter's photo page.
+        setRecipePhotoMode(deletion.recipeId, "card");
+        return;
+      case "chapter":
+        setPendingDelete({
+          kind: "section",
+          id: deletion.sectionId,
+          title: sectionTitleForId(deletion.sectionId),
+          recipeIds: itemIdsForSection(deletion.sectionId),
+        });
+        return;
+      case "chapter-photo-page":
+        // The facing page's OWN delete, not the chapter's: clearing it drops
+        // the art (photo/collage/caption), which collapses the leaf away, like
+        // picking "None" in its photo dialog. No confirm: re-added in a click.
+        setArtPhoto(deletion.sectionId, "none");
+        setArtCaption(deletion.sectionId, undefined);
+        return;
+      case "book-page": {
+        // A blank or image page of the book's own: nothing to lose but the page.
+        const id = deletion.pageId;
+        setJobIds((current) => (current ?? []).filter((jid) => jid !== id));
+        queue.remove(id);
+        return;
+      }
+      case "contents":
+        // Generated from the book, so nothing of the cook's to lose: it goes
+        // without a confirm and comes back whole from the rail's "Add".
+        projectMeta.setTableOfContents(false);
+        return;
+      case "cover":
+        setPendingDelete({
+          kind: "cover",
+          side: deletion.side,
+          title: navItem.label || (deletion.side === "front" ? "cover" : "back cover"),
+        });
+        return;
     }
-    if (navItem.kind === "divider") {
-      setPendingDelete({
-        kind: "section",
-        id: navItem.recipeId,
-        title: sectionTitleForId(navItem.recipeId),
-        recipeIds: itemIdsForSection(navItem.recipeId),
-      });
-      return;
-    }
-    if (navItem.kind === "section-photo") {
-      // This is the facing page's OWN delete, not the chapter's — clearing it
-      // just drops the art (photo/collage/caption), which collapses the leaf
-      // away, exactly like picking "None" in its photo dialog. No confirm: a
-      // lost photo is a much smaller loss than a lost chapter, re-added in one
-      // click, and every other photo removal in this app already works this
-      // way. Falling through to the generic cover-delete branch below would be
-      // wrong here — `coverSideFromNavItem` defaults to "front" for anything
-      // it doesn't recognize, which would have deleted the book's FRONT COVER
-      // instead of this page's art.
-      setArtPhoto(navItem.recipeId, "none");
-      setArtCaption(navItem.recipeId, undefined);
-      return;
-    }
-    if (navItem.kind === "blank") {
-      // A blank page holds nothing to lose, so it goes without a confirm, the
-      // way the contents does.
-      const id = navItem.recipeId;
-      setJobIds((current) => (current ?? []).filter((jid) => jid !== id));
-      queue.remove(id);
-      return;
-    }
-    if (navItem.kind === "toc") {
-      // The contents is generated from the book, so there is nothing of the
-      // cook's to lose: it goes without a confirm and comes back whole from
-      // the rail's "Add table of contents". This used to fall through to the
-      // cover branch below, which read it as the FRONT cover and offered to
-      // delete that instead.
-      projectMeta.setTableOfContents(false);
-      return;
-    }
-    const side = coverSideFromNavItem(navItem);
-    setPendingDelete({
-      kind: "cover",
-      side,
-      title: navItem.label || (side === "front" ? "cover" : "back cover"),
-    });
-    // `queue.remove` is stable (useCallback over a stable commit).
+    // `queue.remove` and `setRecipePhotoMode` read current state when called.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, itemIdsForSection, sectionTitleForId, setArtPhoto, setArtCaption, projectMeta]);
 
