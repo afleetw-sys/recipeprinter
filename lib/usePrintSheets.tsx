@@ -1112,7 +1112,10 @@ export function usePrintSheets({
         }
       }
 
-      if (tableOfContents && tocEntries.length > 0) {
+      // Built even before there is anything to list. A new book shows where
+      // its contents will go (the face says so on screen) instead of a page
+      // appearing out of nowhere when the first recipe lands.
+      if (tableOfContents) {
         // A long book's contents runs onto as many pages as it needs. The page
         // is `overflow: hidden`, so anything past the first page's bottom edge
         // used to be silently clipped — recipes with no listing at all.

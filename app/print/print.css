@@ -5612,6 +5612,14 @@
   font-size: 0.155in;
   color: var(--recipe-ink);
 }
+/* An empty book's contents: one muted line where the list will be, set at
+   recipe-line size so the page reads as the same page it will become. */
+.recipe-card__toc-empty {
+  margin: 0.075in 0;
+  font-size: 0.155in;
+  font-style: italic;
+  color: var(--recipe-muted);
+}
 .recipe-card__toc-recipe-name {
   white-space: nowrap;
   overflow: hidden;

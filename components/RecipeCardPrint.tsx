@@ -2674,6 +2674,13 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
             {titleText}
           </h1>
         )}
+        {entries.length === 0 && !continued && (
+          // Screen only: a book with nothing in it yet still shows where its
+          // contents go. Never printed, so an empty book prints a clean page.
+          <p className="recipe-card__toc-empty no-print">
+            Your recipes and chapters will be listed here as you add them.
+          </p>
+        )}
         <ol className="recipe-card__toc-list">
           {entries.map((entry, index) =>
             entry.kind === "chapter" ? (
