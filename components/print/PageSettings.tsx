@@ -131,11 +131,20 @@ export function PageSettings({
               </SelectTile>
             ))}
           </div>
+          {/* Said before the choice, not after: "Full image" sounds like a
+              photo on the page, and it is the page. */}
+          {pageType.options.includes("image") && type !== "image" && (
+            <p className="recipe-page-settings__note">
+              Full image replaces everything on the page, text included, with one image. Use it for a page
+              you&apos;ve already designed somewhere else.
+            </p>
+          )}
           {type === "image" && (
             <>
               {imagePicker}
               <p className="recipe-page-settings__note">
-                Your image fills the page, with nothing from the theme on it.
+                Your image fills the whole page and nothing else is printed. Your text is saved, so switching
+                back to Theme design brings it back.
               </p>
             </>
           )}
