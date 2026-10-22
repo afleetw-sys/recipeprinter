@@ -1056,6 +1056,12 @@
     margin-top: 0;
     font-size: var(--cp-fs-body-lg);
   }
+  /* Two buttons don't fit side by side at phone width, so they stack full
+     width, the way forward on top where the thumb lands first. */
+  .cookbook-welcome__actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
   .cookbook-welcome__actions .btn {
     flex: 1 1 auto;
   }

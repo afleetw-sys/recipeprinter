@@ -28,6 +28,7 @@ export function CookbookWelcomeDialog({
   fullPrice,
   hasRecipes,
   onStart,
+  onLookAround,
   onClose,
 }: {
   open: boolean;
@@ -42,6 +43,8 @@ export function CookbookWelcomeDialog({
       instead of asking for a first recipe, and the button says so. */
   hasRecipes: boolean;
   onStart: () => void;
+  /** Close onto the empty book without opening Add recipes. */
+  onLookAround: () => void;
   /** Dismiss and stay in the book: the X, Escape and the backdrop. */
   onClose: () => void;
 }) {
@@ -116,6 +119,15 @@ export function CookbookWelcomeDialog({
           )}
         </div>
         <div className="cookbook-welcome__actions">
+          {/* An empty book can be looked over before anything goes in it: the
+              way out, left of the way forward. A book that already has a
+              recipe needs no second door, since its main button already just
+              shows the book ("Take a look"). */}
+          {!hasRecipes && (
+            <button type="button" className="btn btn-secondary" onClick={onLookAround}>
+              Look around first
+            </button>
+          )}
           <button type="button" className="btn btn-primary" onClick={onStart}>
             {hasRecipes ? "Take a look" : "Start adding recipes"}
           </button>

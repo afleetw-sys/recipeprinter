@@ -7026,7 +7026,13 @@ export default function PrintPage() {
           // The X, Escape and the backdrop only dismiss the panel. The cook
           // just watched this book get built; closing the thing sitting on top
           // of it is not a decision to throw it away.
-          track("cookbook_onboarding_dismissed", { price: cookbookPrice });
+          track("cookbook_onboarding_dismissed", { price: cookbookPrice, via: "close" });
+          setShowCookbookOfferDialog(false);
+        }}
+        onLookAround={() => {
+          // Same as closing, but chosen: told apart so the funnel can show
+          // whether people who look first come back to add a recipe.
+          track("cookbook_onboarding_dismissed", { price: cookbookPrice, via: "look_around" });
           setShowCookbookOfferDialog(false);
         }}
         onStart={() => {
