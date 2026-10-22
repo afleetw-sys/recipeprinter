@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Checkbox, SelectTile } from "@/components/Controls";
+import { ICON_SIZE, TrashIcon } from "@/components/icons";
 import { Select } from "@/components/Select";
 import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
 import type { PhotoStyle } from "@/lib/project";
@@ -42,6 +43,8 @@ export interface RecipePageSettings {
   chapterId?: string;
   chapters: Array<{ id: string; title: string }>;
   onChapterChange: (sectionId: string) => void;
+  /** Moves the recipe into a chapter made for it. */
+  onNewChapter?: () => void;
 }
 
 /** A chapter opener's own settings. */
@@ -70,6 +73,7 @@ export function PageSettings({
   chapter,
   emptyLines,
   onChoosePhoto,
+  remove,
 }: {
   page: NavItem | null;
   /** What to call this page when its kind alone is too broad. */
@@ -86,6 +90,8 @@ export function PageSettings({
   emptyLines?: { shown: boolean; onToggle: () => void } | null;
   /** Opens the page's photo dialog (the same one its toolbar opens). */
   onChoosePhoto?: () => void;
+  /** The page's own Delete, named for what it removes. */
+  remove?: { label: string; onRemove: () => void } | null;
 }) {
   if (!page) {
     return (
@@ -112,6 +118,11 @@ export function PageSettings({
           <span className="recipe-config-label" id="recipe-page-type-label">
             Page type
           </span>
+          {pageType.options.includes("image") && (
+            <p className="recipe-page-settings__note">
+              Full image shows only your image, no text. For pages designed elsewhere.
+            </p>
+          )}
           <div
             className="recipe-page-settings__choices"
             style={{ gridTemplateColumns: `repeat(${pageType.options.length}, 1fr)` }}
@@ -131,21 +142,10 @@ export function PageSettings({
               </SelectTile>
             ))}
           </div>
-          {/* Said before the choice, not after: "Full image" sounds like a
-              photo on the page, and it is the page. */}
-          {pageType.options.includes("image") && type !== "image" && (
-            <p className="recipe-page-settings__note">
-              Full image replaces everything on the page, text included, with one image. Use it for a page
-              you&apos;ve already designed somewhere else.
-            </p>
-          )}
           {type === "image" && (
             <>
               {imagePicker}
-              <p className="recipe-page-settings__note">
-                Your image fills the whole page and nothing else is printed. Your text is saved, so switching
-                back to Theme design brings it back.
-              </p>
+              <p className="recipe-page-settings__note">Your text is kept if you switch back.</p>
             </>
           )}
           {type === "blank" && <p className="recipe-page-settings__note">Prints with nothing on it.</p>}
@@ -229,24 +229,34 @@ export function PageSettings({
             />
           </div>
 
-          {/* Only once there is somewhere else to put it. */}
-          {recipe.chapters.length > 1 && (
-            <label className="recipe-config-section">
-              <span className="recipe-config-label">Chapter</span>
-              <Select
-                variant="compact"
-                value={recipe.chapterId ?? ""}
-                onChange={(event) => recipe.onChapterChange(event.target.value)}
-              >
-                {recipe.chapters.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.title}
-                  </option>
-                ))}
-              </Select>
-            </label>
-          )}
+          <label className="recipe-config-section">
+            <span className="recipe-config-label">Chapter</span>
+            <Select
+              variant="compact"
+              value={recipe.chapterId ?? ""}
+              onChange={(event) => {
+                if (event.target.value === NEW_CHAPTER) recipe.onNewChapter?.();
+                else recipe.onChapterChange(event.target.value);
+              }}
+            >
+              {recipe.chapters.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.title}
+                </option>
+              ))}
+              {recipe.onNewChapter && <option value={NEW_CHAPTER}>New chapter…</option>}
+            </Select>
+          </label>
         </>
+      )}
+
+      {onChoosePhoto && !recipe && !coverPhoto && !pageType && page.kind !== "toc" && (
+        <div className="recipe-config-section">
+          <span className="recipe-config-label">Photo</span>
+          <button type="button" className="btn btn-secondary btn-compact" onClick={onChoosePhoto}>
+            Choose photo
+          </button>
+        </div>
       )}
 
       {chapter && (
@@ -280,9 +290,20 @@ export function PageSettings({
           The contents is made from your chapters and recipes, so it updates as you change them.
         </p>
       )}
+
+      {remove && (
+        <div className="recipe-config-section recipe-page-settings__remove">
+          <button type="button" className="btn btn-ghost btn-ghost--danger btn-compact" onClick={remove.onRemove}>
+            <TrashIcon size={ICON_SIZE.sm} />
+            {remove.label}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
+
+const NEW_CHAPTER = "__new-chapter";
 
 function pageKindName(kind: NavItem["kind"]): string {
   switch (kind) {

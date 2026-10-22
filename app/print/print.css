@@ -2746,6 +2746,12 @@
 .recipe-page-settings .btn {
   align-self: flex-start;
 }
+/* The page's own Delete, last and set apart by a hairline, as the toolbar
+   keeps its Delete in a group of its own. */
+.recipe-page-settings__remove {
+  padding-top: 14px;
+  border-top: 1px solid var(--cp-line);
+}
 .recipe-page-settings__choices {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

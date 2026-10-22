@@ -5622,6 +5622,30 @@ export default function PrintPage() {
         }
         pageType={pageType}
         imagePicker={imagePicker}
+        remove={
+          page
+            ? {
+                // Named for what goes, as the toolbar's Delete is.
+                label:
+                  page.kind === "recipe"
+                    ? "Delete recipe"
+                    : page.kind === "divider"
+                      ? "Delete chapter"
+                      : page.kind === "image" || page.kind === "section-photo"
+                        ? "Remove photo page"
+                        : page.kind === "blank"
+                          ? "Delete page"
+                          : page.kind === "toc"
+                            ? "Remove contents"
+                            : coverSide === "back"
+                              ? "Remove back cover"
+                              : coverSide === "dedication"
+                                ? "Remove opening page"
+                                : "Remove cover",
+                onRemove: () => requestDeleteNavItem(page),
+              }
+            : null
+        }
         coverPhoto={
           coverSide && coverNow
             ? {
@@ -5685,6 +5709,7 @@ export default function PrintPage() {
                   title: section.title?.trim() || "Ungrouped",
                 })),
                 onChapterChange: (sectionId) => moveRecipeToSection(recipeItem.id, sectionId),
+                onNewChapter: () => moveRecipeToNewSection(recipeItem.id),
               }
             : null
         }
