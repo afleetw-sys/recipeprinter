@@ -131,7 +131,6 @@ export function PrintSetupControls({
           arrive, since it is what every photo added afterwards inherits. */}
       {cookbookMode && (
         <div className="recipe-config-section recipe-config-section--photos">
-          <span className="recipe-config-label">Every recipe</span>
           {/* No book-wide Description switch. Imports no longer bring a
               website's description (see `withoutWebsiteDescription` in
               lib/cookpilot.ts), so every note is one the cook wrote, and

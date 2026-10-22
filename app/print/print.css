@@ -2674,7 +2674,7 @@
    put while either tab scrolls. Inset like the scroll area's content. */
 .recipe-config-panel__tabs {
   flex: 0 0 auto;
-  padding: 4px 8px 0;
+  padding: 12px 8px 0;
 }
 /* Level with the collapse button pinned in the panel's top-right corner
    (`.recipe-panel-toggle`, 32px tall), and kept clear of it. */
@@ -2688,12 +2688,38 @@
   font-weight: 800;
   letter-spacing: -0.01em;
 }
+/* A recessed track with the chosen tab raised out of it, so both halves read
+   as one control (the bare shared pill left "Page" as loose text). Flat: a
+   hairline, no shadow. */
 .recipe-config-panel__tabs .segmented-control {
   width: 100%;
+  padding: 3px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--cp-ink) 5%, var(--cp-card));
+}
+.recipe-config-panel__tabs .segmented-control__thumb {
+  top: 3px;
+  bottom: 3px;
+  border: 1px solid var(--cp-line);
+  border-radius: 9px;
+  background: var(--cp-card);
 }
 .recipe-config-panel__tabs .segmented-control__option {
   flex: 1 1 0;
   justify-content: center;
+  padding: 8px 12px;
+  border-radius: 9px;
+}
+.recipe-config-panel__tabs .segmented-control__option:not(.is-active) {
+  color: var(--cp-ink-soft);
+}
+.recipe-config-panel__tabs .segmented-control__option:not(.is-active):hover {
+  color: var(--cp-ink);
+}
+/* Under the tabs, the settings start a step below them rather than the
+   panel's usual top padding, which was set for a panel with nothing above. */
+.recipe-config-panel__tabs + .recipe-config-panel__scroll {
+  padding-top: 16px;
 }
 
 /* The Page tab: which page, then its settings. */
