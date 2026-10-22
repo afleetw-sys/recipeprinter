@@ -124,7 +124,7 @@ export function CookbookWelcomeDialog({
               recipe needs no second door, since its main button already just
               shows the book ("Take a look"). */}
           {!hasRecipes && (
-            <button type="button" className="btn btn-secondary" onClick={onLookAround}>
+            <button type="button" className="btn btn-ghost" onClick={onLookAround}>
               Look around first
             </button>
           )}
