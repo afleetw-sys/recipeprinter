@@ -155,3 +155,37 @@ test("a cover's band never lies over its theme's art", async ({ page }) => {
   }
   expect(covered).toEqual([]);
 });
+
+// The contents page set its heading at a fixed 0.8in / 0.85in while a recipe
+// page uses its theme's own padding, so turning from the contents to a recipe
+// the heading jumped down and in. In every theme, the contents heading starts
+// where a recipe's title does. Left out: Poster, whose title sits in a block of
+// its own, and Counter, whose photo-less titles drop 0.5in to clear a band the
+// contents page doesn't draw.
+test("the contents heading starts where a recipe title does, in every theme", async ({ page }) => {
+  const misplaced: string[] = [];
+  for (const { id: template } of RECIPE_PRINT_TEMPLATE_OPTIONS) {
+    if (template === "poster" || template === "counter") continue;
+    const book = structuredClone(fixture);
+    book.project.settings.template = template;
+    await openExport(page, book);
+    const [toc, title] = await page.evaluate(() => {
+      const fromPage = (el: Element) => {
+        const sheet = el.closest(".recipe-card-page")!.getBoundingClientRect();
+        const box = el.getBoundingClientRect();
+        return { top: (box.top - sheet.top) / 96, left: (box.left - sheet.left) / 96 };
+      };
+      return [
+        fromPage(document.querySelector(".recipe-card__toc-kicker")!),
+        fromPage(document.querySelector(".recipe-card__title")!),
+      ];
+    });
+    if (Math.abs(toc.top - title.top) > 0.06 || Math.abs(toc.left - title.left) > 0.06) {
+      misplaced.push(
+        `${template}: contents at ${toc.top.toFixed(2)}in down, ${toc.left.toFixed(2)}in in; ` +
+          `recipe title at ${title.top.toFixed(2)}in, ${title.left.toFixed(2)}in`,
+      );
+    }
+  }
+  expect(misplaced).toEqual([]);
+});

@@ -5529,8 +5529,14 @@
      edges than any other page in the book (a full-page recipe sits at 0.6in /
      0.5in) and read as a short list stranded in the middle of the sheet.
      `PAGE_PADDING_Y_IN` in lib/tocPagination.ts is this number; keep the two
-     in step or the page budget stops matching the page. */
-  padding: 0.8in 0.85in;
+     in step or the page budget stops matching the page.
+
+     The heading starts where a recipe's title does: the theme's own top and
+     side padding, not a fixed 0.8in / 0.85in that set it lower and further in
+     than the page you turn to next. The bottom takes whatever the top doesn't,
+     so the two still add up to the 1.6in the page budget counts on. */
+  padding: var(--recipe-card-padding-top) var(--recipe-card-padding-x)
+    calc(1.6in - var(--recipe-card-padding-top));
   overflow: hidden;
 }
 .recipe-card__toc-content {
