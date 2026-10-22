@@ -6383,9 +6383,13 @@ export default function PrintPage() {
                     sentence as Print, and the avatar goes back to being only
                     the account. See `renderSaveControl`'s own doc comment
                     for why the control and the state are one thing. Shared
-                    with the mobile topbar (PrintDeck.tsx). Only once there is
-                    something to save. */}
-                {items?.length ? renderSaveControl("header") : null}
+                    with the mobile topbar (PrintDeck.tsx), and gated the same
+                    way: `renderSaveControl` already decides when there is
+                    something to save (a cookbook always, cards from two). An
+                    extra "has a recipe" check here hid Save on an empty book
+                    on desktop only, leaving a signed-out cook no way to keep
+                    it. */}
+                {renderSaveControl("header")}
 
                 {/* Print is always here, as it is on a phone's bottom bar:
                     the page is for printing, and a button that appears only
