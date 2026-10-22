@@ -63,8 +63,8 @@ export function CookbookWelcomeDialog({
         <XIcon size={ICON_SIZE.md} />
       </button>
       <div className="cookbook-welcome__visual" aria-hidden>
-        {/* next/image, not a raw <img>: the source is a 2.4 MB PNG and this
-            dialog only mounts when it opens, so a raw tag started that download
+        {/* next/image, not a raw <img>: the source is a full-size photo and
+            this dialog only mounts when it opens, so a raw tag started that download
             at the exact moment the cook is being asked to pay — an empty panel
             on any connection that isn't fast. Served through the optimizer it
             arrives as WebP/AVIF at the ~460px the panel actually shows.
@@ -74,10 +74,10 @@ export function CookbookWelcomeDialog({
             add a beat. The existing `width/height/object-fit` CSS still drives
             the layout — the width/height props are only the intrinsic ratio. */}
         <Image
-          src="/images/cookbook-onboarding-hero.jpg"
+          src="/images/cookbook-welcome-souvlaki.jpg"
           alt=""
-          width={1536}
-          height={1024}
+          width={1333}
+          height={2000}
           sizes="(max-width: 720px) 100vw, 460px"
           priority
         />
