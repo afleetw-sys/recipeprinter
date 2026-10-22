@@ -3198,8 +3198,8 @@ export default function PrintPage() {
     showToast,
     showErrorToast,
     clearToast,
-    // Cookbook protection is handled by the persistent banner in cookbook
-    // mode. Do not interrupt a newly purchased book with a login modal.
+    // Buying needs an account, so a newly purchased book is already kept.
+    // Do not interrupt it with a login modal.
     onFreshPurchase: () => undefined,
     // Optimistic: the real, webhook-confirmed timestamp lands in Firestore
     // asynchronously regardless, but a second cookbook purchase attempted
@@ -3806,6 +3806,10 @@ export default function PrintPage() {
   // that relationship ever changes).
   const nothingToPrint = navItems.length === 0 && spreads.length === 0;
   const printBlocked = proBusy || cookbookPurchaseBusy || nothingToPrint;
+  // A cookbook with no recipes yet has nothing worth buying, so Buy & Print
+  // steps back to a secondary button until the first one lands. A brand-new
+  // book should point at Add recipes, not at checkout.
+  const printEmphasis = cookbookMode && recipeCount === 0 ? "btn-secondary" : "btn-primary";
   // `printAwaitingBrowser` is the second or so between asking to print and
   // knowing whether the browser took it. Nothing is on screen during that gap
   // when the answer turns out to be no, and a button that looks untouched is
@@ -6356,10 +6360,10 @@ export default function PrintPage() {
       }`}
     >
       {measurers}
-      {/* Header + the back-up bar share one grid row so the bar pushes the
-          editor down instead of stealing the deck's `1fr` row (which left it
-          floating mid-page). `.recipe-print-page` is a two-row grid — keep it
-          to two children. */}
+      {/* The header sits in its own wrapper so `.recipe-print-page` stays a
+          two-row grid (topbar, then the deck's `1fr` row). Keep it to two
+          children. A signed-out cook is asked to make an account when they
+          press Save, not by a standing bar here. */}
       <div className="recipe-print-topbar">
         <SiteHeader
           sticky
@@ -6402,7 +6406,7 @@ export default function PrintPage() {
                 ) : (
                 <button
                   type="button"
-                  className="btn btn-primary btn-header"
+                  className={`btn ${printEmphasis} btn-header`}
                   disabled={printBlocked}
                   onPointerDown={pressPrint}
                   onPointerEnter={warmPrint}
@@ -6457,49 +6461,6 @@ export default function PrintPage() {
           }
           onNavigateHome={() => handleNavigateHome()}
         />
-
-        {/* One-line "back up your cookbook" bar under the toolbar, shown to any
-            signed-out owner. Not dismissable on purpose: a book that lives only
-            in this browser stays worth saying so about until they make an
-            account.
-
-            This used to be gated on `!cookbookLocked`, so it only appeared once
-            a book had been PAID for — which is both the smallest audience and
-            the latest possible moment. Every unsaved book is worth keeping, and
-            asking here, while the cook is in the middle of building one, is a
-            far better moment than the one we were reaching for otherwise: a
-            modal at the door on the way out, making an account the price of
-            keeping their work. This says the same thing without holding
-            anything hostage — the book is on the device's shelf either way (see
-            lib/localProjects), and an account is how it stops being only there. */}
-        {projectMeta.meta.cookbookMode && !cookPilotUser && (
-          <div className="recipe-protect-bar no-print" role="status">
-            <span className="recipe-protect-bar__text">
-              {cookbookLocked
-                ? "Your cookbook is saved only on this device. Create a free account so you don’t lose it."
-                : "Your cookbook and your purchase are saved only on this device. Create a free account to keep them."}
-            </span>
-            <button
-              type="button"
-              className="btn btn-secondary btn-compact recipe-protect-bar__action"
-              onClick={() => {
-                track("protect_prompt_clicked", { source: "cookbook_banner" });
-                // This bar says "create an account to KEEP them", so making one
-                // has to be what keeps them. Arming the same intent a press on
-                // Save arms means signing in from here files the book, and —
-                // since this is a phone banner as much as a desktop one, and a
-                // phone signs in by redirect — that promise survives the page
-                // being destroyed on the way to Google. See `lib/saveIntent`.
-                saveAfterLoginRef.current = true;
-                rememberSaveIntent(cookbookProjectId);
-                setCookPilotLoginReason("purchase");
-                setShowCookPilotLogin(true);
-              }}
-            >
-              Create free account
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Print preview / printed content */}
@@ -6901,8 +6862,9 @@ export default function PrintPage() {
             /* The SAME button the desktop header uses, widened — not a
                hand-rolled one that happens to look similar. The custom class
                only carries the full-width shape now; every colour, radius and
-               weight comes from `.btn-primary`, so the two can never drift. */
-            className="btn btn-primary recipe-mobile-actions__print"
+               weight comes from the same `.btn` emphasis class
+               (`printEmphasis`), so the two can never drift. */
+            className={`btn ${printEmphasis} recipe-mobile-actions__print`}
             onPointerDown={pressPrint}
             onClick={handleMobilePrint}
             disabled={printBlocked}

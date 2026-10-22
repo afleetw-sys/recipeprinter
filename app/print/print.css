@@ -2723,47 +2723,6 @@
   text-transform: uppercase;
 }
 
-/* One-line "back up your cookbook" bar, sits directly under the sticky header
-   for a signed-out owner. Full-width, accent-soft, a single sentence + the
-   shared .btn call-to-action — an un-backed-up purchase lives only in this
-   browser, so it's a standing nudge, not a card in the settings panel. */
-.recipe-protect-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px clamp(16px, 4vw, 24px);
-  border-bottom: 1px solid color-mix(in srgb, var(--cp-accent-warm) 32%, transparent);
-  background: var(--cp-accent-warm-soft);
-  color: var(--cp-ink);
-}
-
-.recipe-protect-bar__text {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-size: var(--cp-fs-small);
-  font-weight: 650;
-}
-
-/* Drawn in the banner's own hue rather than in page-primary black. This bar is
-   a standing note about where the book lives, not the page's climax — and the
-   climax, Buy & Print, is a black button sitting directly above it. Two of
-   those stacked made the quieter message look like the louder one. Accent
-   outline on the accent tint keeps the whole bar one calm object while leaving
-   the action plainly clickable. */
-.recipe-protect-bar__action {
-  /* Cornflower on a clay banner, on purpose. The bar is the message; this is
-     the button that resolves it, and a button is something you act on. */
-  border-color: color-mix(in srgb, var(--cp-accent) 55%, transparent);
-  background: var(--cp-card);
-  color: var(--cp-accent);
-}
-
-.recipe-protect-bar__action:hover:not(:disabled) {
-  border-color: var(--cp-accent);
-  background: var(--cp-card);
-  color: var(--cp-accent);
-}
-
 /* Book-wide "Photos" style (cookbook Print setup) — three visual tiles, each a
    tiny page illustration so the choice reads at a glance. */
 .recipe-photo-style {
@@ -3323,7 +3282,7 @@
     overscroll-behavior: contain;
   }
 
-  /* The desktop header (now wrapped with the back-up bar in .recipe-print-topbar)
+  /* The desktop header (wrapped in .recipe-print-topbar)
      is replaced by the mobile top bar below 821px. */
   .recipe-print-page > .recipe-print-topbar {
     display: none;
