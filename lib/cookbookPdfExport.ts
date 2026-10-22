@@ -289,6 +289,7 @@ async function materializeBookPhotos(project: PrintProject): Promise<PrintProjec
       cover: project.cover,
       backCover: project.backCover,
       dedication: project.dedication,
+      frontMatter: project.frontMatter,
       itemPlacements: project.itemPlacements,
       // The cover-wrap render strips this out again (`coverWrapProject`), but
       // the interior carries it, and an export is a document like any other.
