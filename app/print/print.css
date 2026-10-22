@@ -2752,33 +2752,101 @@
   padding-top: 14px;
   border-top: 1px solid var(--cp-line);
 }
-.recipe-page-settings__choices {
+.recipe-page-settings__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* How the page looks: tiles with a small picture of the finished page, the
+   same frame and selected state as the recipe Photos tiles. Four options sit
+   two by two so each label has room. */
+.recipe-page-look {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
 }
-/* The photo tiles' frame, without a picture: same border, radius and
-   selected state, so the two choices read as the same kind of control. */
-.recipe-page-settings__choice {
+.recipe-page-look--grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+.recipe-page-look__tile {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 38px;
-  padding: 8px 6px;
+  gap: 7px;
+  padding: 10px 6px 8px;
   border: 1px solid var(--cp-line);
   border-radius: 10px;
   background: var(--cp-card);
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 600;
   cursor: pointer;
 }
-.recipe-page-settings__choice.is-active {
+.recipe-page-look__tile.is-active {
   border-color: var(--cp-selected-border);
   background: var(--cp-selected-fill);
   box-shadow: var(--cp-selected-ring);
 }
+.recipe-page-look__label {
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+}
+/* Words over a picture: the lines sit low and light, as a title over a photo. */
+.recipe-look-preview--over {
+  position: relative;
+  justify-content: flex-end;
+}
+.recipe-look-preview--over .recipe-photo-preview__line {
+  position: relative;
+  height: 3px;
+  background: var(--cp-card);
+}
+/* Just a picture: a sun over the photo, so it reads as an image, not words. */
+.recipe-look-preview__sun {
+  width: 7px;
+  height: 7px;
+  margin: 2px 0 0 2px;
+  border-radius: 50%;
+  background: var(--cp-card);
+}
+.recipe-look-preview--collage {
+  border-color: var(--cp-accent);
+}
+.recipe-look-preview__cells {
+  position: absolute;
+  inset: 2px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+.recipe-look-preview__cells > span {
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--cp-accent) 55%, var(--cp-card));
+}
+.recipe-look-preview__cells--band {
+  position: static;
+  height: 13px;
+  margin: -1px -1px 2px;
+}
 
+/* The page's words, one labelled field each. */
+.recipe-page-fields {
+  gap: 10px;
+}
+.recipe-page-fields__row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.recipe-page-fields__input {
+  width: 100%;
+}
+textarea.recipe-page-fields__input {
+  resize: vertical;
+  min-height: 64px;
+  line-height: 1.4;
+}
 .recipe-config-section {
   display: flex;
   flex-direction: column;

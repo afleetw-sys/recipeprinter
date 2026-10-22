@@ -38,10 +38,14 @@ import { MobileStructureSheet, type MobileBookSheet } from "@/components/print/M
 import { EditTips } from "@/components/print/EditTips";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
-import { PageSettings, type PageType } from "@/components/print/PageSettings";
+import { PageSettings, type LookOption, type PageField } from "@/components/print/PageSettings";
 import { photoDialogKey } from "@/lib/photoOpenGesture";
 import { isBookPage, isRecipeEntry } from "@/lib/bookPages";
 import { coverSideOf, pageDeletionFor } from "@/lib/pageDeletion";
+import type { RecipeCardEditTarget } from "@/lib/recipeCardLayout";
+import { formatRecipeTime } from "@/lib/time";
+import { composeNote } from "@/lib/recipeNote";
+import { chapterIntroFromRecipes, chapterRecipeTitles } from "@/lib/chapterIntro";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import { PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
@@ -59,6 +63,7 @@ import {
   type ProjectMeta,
   type PhotoStyle,
   sectionHasArtPage,
+  resolveCardPhotoMode,
 } from "@/lib/project";
 import { type CookbookScaffoldPatch } from "@/lib/projectCopy";
 import { materializeProjectPhotos } from "@/lib/photoStorage";
@@ -102,7 +107,7 @@ import {
   verifyPrintPass,
   withPrintPass,
 } from "@/lib/printHandoff";
-import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
+import { applyRecipeTargetEdit, useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
 import { useRailSelection } from "@/lib/useRailSelection";
 import { PAGE_DIMS } from "@/lib/printGeometry";
@@ -211,6 +216,7 @@ import type {
   QueueItem,
   Recipe,
   Section,
+  SlotPhotoMode,
 } from "@/types/recipe";
 import { postPrintPrompt, purchaseGate, type PostPrintAction } from "@/lib/purchaseAccess";
 import { isCookbookProjectUnlocked } from "@/lib/cookbookUnlocks";
@@ -277,6 +283,56 @@ const FULL_CARD_DECK_MAX_PAGES = 80;
  * scope, so it runs once, ahead of the first render.
  */
 const ARRIVED_BY_HANDOFF = seedPrintHandoff();
+
+/** The Look tiles each kind of page offers (see `renderPageSettings`). */
+const COVER_LOOKS: LookOption[] = [
+  { id: "typographic", label: "Just text", preview: "text" },
+  { id: "photo", label: "Text on a photo", preview: "text-on-photo" },
+  { id: "collage", label: "Text on a collage", preview: "text-on-collage" },
+  { id: "own-image", label: "Your own image", preview: "own-image" },
+];
+const OWN_PAGE_LOOKS: LookOption[] = [
+  { id: "blank", label: "Blank", preview: "blank" },
+  { id: "own-image", label: "Your own image", preview: "own-image" },
+];
+const CHAPTER_LOOKS: LookOption[] = [
+  { id: "none", label: "Just text", preview: "text" },
+  { id: "photo", label: "With a photo", preview: "text-with-photo" },
+  { id: "grid", label: "With a collage", preview: "text-with-collage" },
+];
+const RECIPE_LOOKS: LookOption[] = [
+  { id: "none", label: "None", preview: "recipe-none" },
+  { id: "card", label: "In page", preview: "recipe-in-page" },
+  { id: "full", label: "Full page", preview: "recipe-full-page" },
+];
+
+/** A cover-like page's name, as the rail shows it. */
+function coverName(side: "front" | "back" | "dedication"): string {
+  return side === "front" ? "Front cover" : side === "back" ? "Back cover" : "Dedication";
+}
+
+/** The page's own Delete, named for what goes, as its toolbar button is. */
+function removeLabelFor(page: NavItem): string {
+  switch (page.kind) {
+    case "recipe":
+      return "Delete recipe";
+    case "divider":
+      return "Delete chapter";
+    case "image":
+    case "section-photo":
+      return "Remove photo page";
+    case "blank":
+      return "Delete page";
+    case "toc":
+      return "Remove contents";
+    case "cover":
+      return page.recipeId === "cover-back"
+        ? "Remove back cover"
+        : page.recipeId === "cover-dedication"
+          ? "Remove dedication"
+          : "Remove cover";
+  }
+}
 
 export default function PrintPage() {
   useEffect(() => {
@@ -5542,177 +5598,309 @@ export default function PrintPage() {
   }
 
   /**
-   * The panel's Page tab for the page the deck is on: what kind of page it is,
-   * for the pages a cook can make their own, then that kind's settings. The
-   * recipe and cover photos are still chosen in the toolbar's own dialog,
-   * which the buttons here open rather than mounting a second copy.
+   * The panel's Page tab for the page the deck is on. Every kind of page is
+   * laid out the same way (see components/print/PageSettings): its name, how
+   * it looks as picture tiles, its words as fields, its switches, where it
+   * lives, and removing it. Anything the page's toolbar or inline editing can
+   * do is here too, through the same setters, so the two can't disagree.
    */
   function renderPageSettings() {
     const page = activeNavItem;
-    const photoKey = page ? photoDialogKey(page, () => coverSideFromNavItem(page)) : null;
-    const onChoosePhoto = photoKey ? () => openPhotoDialog(photoKey) : undefined;
-    const recipeItem =
-      page?.kind === "recipe" ? items?.find((item) => item.id === page.recipeId && item.recipe) : undefined;
-    const placement = recipeItem ? projectMeta.meta.itemPlacements?.[recipeItem.id] : undefined;
-    const linkShown = recipeItem ? recipeLinkOn(showSourceUrl, true, placement) : false;
-    const coverSide = page?.kind === "cover" ? coverSideFromNavItem(page) : null;
-    const coverNow = coverSide ? coverForSide(coverSide) : undefined;
-    const ownPage = page?.kind === "blank" ? items?.find((item) => item.id === page.recipeId) : undefined;
-    const chapterSection =
-      page?.kind === "divider" ? sections.find((section) => section.id === page.recipeId) : undefined;
-    const pageImageKey = coverSide ? `page-image:${coverSide}` : ownPage ? `page-image:${ownPage.id}` : null;
+    if (!page) return <PageSettings page={null} name="" />;
+    const photoKey = photoDialogKey(page, () => coverSideFromNavItem(page));
+    const choosePhoto = photoKey ? () => openPhotoDialog(photoKey) : undefined;
+    const remove = { label: removeLabelFor(page), onRemove: () => requestDeleteNavItem(page) };
+    const photoButton = (label: string) =>
+      choosePhoto ? (
+        <button type="button" className="btn btn-secondary btn-compact" onClick={choosePhoto}>
+          {label}
+        </button>
+      ) : null;
 
-    // The page's own image, chosen here: it is the whole page, so it has no
-    // placement to offer, only which picture.
-    const pageImage = coverNow?.pageImageUrl ?? ownPage?.pageImageUrl;
-    const setPageImage = (url: string | undefined) => {
-      if (coverSide && coverNow) setCoverForSide(coverSide, { ...coverNow, pageImageUrl: url });
-      else if (ownPage) queue.updateBookPage(ownPage.id, { pageImageUrl: url });
-    };
-    const imagePicker = pageImageKey ? (
-      <ImagePicker
-        current={pageImage}
-        images={Array.from(new Set([...(pageImage ? [pageImage] : []), ...coverPhotoCandidates]))}
-        onSelect={setPageImage}
-        label={pageImage ? "Change image" : "Choose image"}
-        className="btn btn-secondary btn-compact"
-        openSignal={photoDialogSignal(pageImageKey)}
-        onOpenSignalConsumed={() => clearPhotoDialogSignal(pageImageKey)}
-      />
-    ) : null;
-
-    const pageType = coverSide && coverNow
-      ? {
-          value: (coverNow.pageType ?? "design") as PageType,
-          // A front cover is never blank: the book has to have a front.
-          options: (coverSide === "front" ? ["design", "image"] : ["design", "image", "blank"]) as PageType[],
-          onChange: (type: PageType) => {
-            setCoverForSide(coverSide, { ...coverNow, pageType: type === "design" ? undefined : type });
-            if (type === "image" && !coverNow.pageImageUrl && pageImageKey) openPhotoDialog(pageImageKey);
-          },
-        }
-      : ownPage
-        ? {
-            value: (ownPage.pageKind === "image" ? "image" : "blank") as PageType,
-            options: ["blank", "image"] as PageType[],
-            onChange: (type: PageType) => {
-              queue.updateBookPage(ownPage.id, {
-                pageKind: type === "image" ? "image" : "blank",
-                title: type === "image" ? "Image page" : "Blank page",
-              });
-              if (type === "image" && !ownPage.pageImageUrl && pageImageKey) openPhotoDialog(pageImageKey);
+    // ── Covers and the dedication ──────────────────────────────────────────
+    if (page.kind === "cover") {
+      const side = coverSideFromNavItem(page);
+      const cover = coverForSide(side);
+      if (!cover) return <PageSettings page={page} name={coverName(side)} remove={remove} />;
+      const set = (patch: Partial<CoverConfig>) => setCoverForSide(side, { ...cover, ...patch });
+      const ownImage = cover.pageType === "image";
+      const layout =
+        cover.layout ?? (cover.gridImages?.length ? "collage" : cover.imageUrl ? "photo" : "typographic");
+      const look = ownImage ? "own-image" : cover.pageType === "blank" ? null : layout;
+      const imageKey = `page-image:${side}`;
+      const fields: PageField[] =
+        side === "front"
+          ? [
+              { id: "title", label: "Title", value: cover.title, placeholder: "Our Favorite Recipes", onCommit: (v) => set({ title: v }) },
+              { id: "subtitle", label: "Subtitle", value: cover.subtitle ?? "", onCommit: (v) => set({ subtitle: v || undefined }) },
+              { id: "author", label: "Author", value: cover.author ?? "", onCommit: (v) => set({ author: v || undefined }) },
+              { id: "edition", label: "Edition", value: cover.edition ?? "", placeholder: "2026 Family Edition", onCommit: (v) => set({ edition: v || undefined }) },
+            ]
+          : side === "dedication"
+            ? [
+                { id: "heading", label: "Heading", value: cover.title, onCommit: (v) => set({ title: v }) },
+                { id: "message", label: "Message", value: cover.blurb ?? "", multiline: true, onCommit: (v) => set({ blurb: v || undefined }) },
+                { id: "signature", label: "Signature", value: cover.author ?? "", onCommit: (v) => set({ author: v || undefined }) },
+              ]
+            : [
+                { id: "closing", label: "Closing line", value: cover.blurb ?? "", multiline: true, onCommit: (v) => set({ blurb: v || undefined }) },
+                { id: "credit", label: "Credit", value: cover.author ?? "", onCommit: (v) => set({ author: v || undefined }) },
+              ];
+      return (
+        <PageSettings
+          page={page}
+          name={coverName(side)}
+          look={{
+            label: "Look",
+            value: look,
+            options: COVER_LOOKS,
+            onChange: (id) => {
+              if (id === "own-image") {
+                set({ pageType: "image" });
+                if (!cover.pageImageUrl) openPhotoDialog(imageKey);
+                return;
+              }
+              const nextLayout = id as "typographic" | "photo" | "collage";
+              set({ pageType: undefined, layout: nextLayout });
+              // Nothing to show yet: go straight to choosing it.
+              const missing =
+                nextLayout === "photo" ? !cover.imageUrl : nextLayout === "collage" ? !cover.gridImages?.length : false;
+              if (missing) openPhotoDialog(`cover:${side}`);
             },
+          }}
+          lookAction={
+            ownImage
+              ? renderPageImagePicker(imageKey, cover.pageImageUrl, (url) => set({ pageImageUrl: url }))
+              : look === "photo"
+                ? photoButton("Change photo")
+                : look === "collage"
+                  ? photoButton("Change photos")
+                  : null
           }
-        : null;
+          // Your own image has no words on it; they are kept for going back.
+          fields={ownImage ? undefined : fields}
+          remove={remove}
+        />
+      );
+    }
 
+    // ── The book's own pages ───────────────────────────────────────────────
+    if (page.kind === "blank") {
+      const ownPage = items?.find((item) => item.id === page.recipeId);
+      if (!ownPage) return null;
+      const imageKey = `page-image:${ownPage.id}`;
+      const isImage = ownPage.pageKind === "image";
+      return (
+        <PageSettings
+          page={page}
+          name={isImage ? "Image page" : "Blank page"}
+          look={{
+            label: "Look",
+            value: isImage ? "own-image" : "blank",
+            options: OWN_PAGE_LOOKS,
+            onChange: (id) => {
+              const toImage = id === "own-image";
+              queue.updateBookPage(ownPage.id, {
+                pageKind: toImage ? "image" : "blank",
+                title: toImage ? "Image page" : "Blank page",
+              });
+              if (toImage && !ownPage.pageImageUrl) openPhotoDialog(imageKey);
+            },
+          }}
+          lookAction={
+            isImage
+              ? renderPageImagePicker(imageKey, ownPage.pageImageUrl, (url) =>
+                  queue.updateBookPage(ownPage.id, { pageImageUrl: url }),
+                )
+              : null
+          }
+          remove={remove}
+        />
+      );
+    }
+
+    // ── Chapter openers ────────────────────────────────────────────────────
+    if (page.kind === "divider") {
+      const section = sections.find((candidate) => candidate.id === page.recipeId);
+      if (!section) return null;
+      const mode = resolveCardPhotoMode(section, photoStyle);
+      return (
+        <PageSettings
+          page={page}
+          name="Chapter"
+          title={sectionDisplayTitle(section) || section.title}
+          look={{
+            label: "Look",
+            value: mode === "grid" ? "grid" : mode === "photo" ? "photo" : "none",
+            options: CHAPTER_LOOKS,
+            onChange: (id) => {
+              projectMeta.updateSection(section.id, { cardPhotoMode: id as SlotPhotoMode });
+              if (id !== "none" && !section.cardPhotoUrl && bookSectionImages(section).length === 0) {
+                openPhotoDialog(`card:${section.id}`);
+              }
+            },
+          }}
+          lookAction={mode === "none" ? null : photoButton(mode === "grid" ? "Change photos" : "Change photo")}
+          fields={[
+            {
+              id: "title",
+              label: "Title",
+              value: section.title ?? "",
+              onCommit: (v) => projectMeta.updateSection(section.id, { title: v || undefined, titleOverride: undefined }),
+            },
+            {
+              id: "subtitle",
+              label: "Subtitle",
+              value: section.subtitle ?? "",
+              onCommit: (v) => projectMeta.updateSection(section.id, { subtitle: v || undefined }),
+            },
+            {
+              id: "intro",
+              label: "Description",
+              value: section.intro ?? "",
+              multiline: true,
+              // What the page prints until the cook writes their own.
+              placeholder: chapterIntroFromRecipes(chapterRecipeTitles(section.items)),
+              onCommit: (v) => projectMeta.setSectionIntro(section.id, v),
+            },
+          ]}
+          toggles={[
+            {
+              id: "numbered",
+              label: "Number this chapter",
+              checked: Boolean(section.numberAsChapter),
+              onChange: (on) => projectMeta.updateSection(section.id, { numberAsChapter: on || undefined }),
+            },
+            {
+              id: "facing",
+              label: "Photo page beside it",
+              checked: sectionHasArtPage(section, bookSectionImages(section), photoStyle),
+              onChange: (on) => {
+                if (on) {
+                  projectMeta.setArtPhoto(section.id, "photo", {
+                    photoUrl: section.artPhotoUrl ?? bookSectionImages(section)[0],
+                  });
+                } else {
+                  setArtPhoto(section.id, "none");
+                  setArtCaption(section.id, undefined);
+                }
+              },
+            },
+          ]}
+          remove={remove}
+        />
+      );
+    }
+
+    // ── The contents ───────────────────────────────────────────────────────
+    if (page.kind === "toc") {
+      return (
+        <PageSettings
+          page={page}
+          name="Contents"
+          fields={
+            page.continued
+              ? undefined
+              : [
+                  { id: "kicker", label: "Label", value: projectMeta.meta.tocKicker ?? "", placeholder: "Contents", onCommit: (v) => projectMeta.setTocKicker(v) },
+                  { id: "heading", label: "Heading", value: projectMeta.meta.tocTitle ?? "", placeholder: "What's inside", onCommit: (v) => projectMeta.setTocTitle(v) },
+                ]
+          }
+          note="The list is made from your chapters and recipes, so it updates as you change them."
+          remove={remove}
+        />
+      );
+    }
+
+    // ── A chapter's photo page, or a recipe's full-page photo ──────────────
+    if (page.kind === "section-photo" || page.kind === "image") {
+      const section = page.kind === "section-photo" ? sections.find((candidate) => candidate.id === page.recipeId) : undefined;
+      return (
+        <PageSettings
+          page={page}
+          name="Photo page"
+          title={page.label}
+          look={null}
+          fields={
+            section
+              ? [{ id: "caption", label: "Caption", value: section.artCaption ?? "", onCommit: (v) => setArtCaption(section.id, v || undefined) }]
+              : undefined
+          }
+          note={page.kind === "image" ? "This photo faces its recipe. Removing the page puts the photo back on the recipe." : undefined}
+          remove={remove}
+        />
+      );
+    }
+
+    // ── Recipes ────────────────────────────────────────────────────────────
+    const recipeItem = items?.find((item) => item.id === page.recipeId && item.recipe);
+    const recipe = recipeItem?.recipe;
+    if (!recipeItem || !recipe) return <PageSettings page={page} name="Recipe" remove={remove} />;
+    const placement = projectMeta.meta.itemPlacements?.[recipeItem.id];
+    // Written through the page's own inline edit, so a field typed here is
+    // stored exactly as the same field typed on the page would be.
+    const edit = (target: RecipeCardEditTarget) => (value: string) =>
+      queue.updateRecipe(recipeItem.id, applyRecipeTargetEdit(recipe, target, value, showDescription));
+    const photoMode = photoModeFor(recipeItem.id);
     return (
       <PageSettings
         page={page}
-        onChoosePhoto={onChoosePhoto}
-        kindLabel={
-          coverSide === "front"
-            ? "Front cover"
-            : coverSide === "back"
-              ? "Back cover"
-              : coverSide === "dedication"
-                ? "Opening page"
-                : ownPage
-                  ? "Your page"
-                  : undefined
-        }
-        pageType={pageType}
-        imagePicker={imagePicker}
-        remove={
-          page
-            ? {
-                // Named for what goes, as the toolbar's Delete is.
-                label:
-                  page.kind === "recipe"
-                    ? "Delete recipe"
-                    : page.kind === "divider"
-                      ? "Delete chapter"
-                      : page.kind === "image" || page.kind === "section-photo"
-                        ? "Remove photo page"
-                        : page.kind === "blank"
-                          ? "Delete page"
-                          : page.kind === "toc"
-                            ? "Remove contents"
-                            : coverSide === "back"
-                              ? "Remove back cover"
-                              : coverSide === "dedication"
-                                ? "Remove opening page"
-                                : "Remove cover",
-                onRemove: () => requestDeleteNavItem(page),
-              }
-            : null
-        }
-        coverPhoto={
-          coverSide && coverNow
-            ? {
-                // What the design shows when nothing has been chosen: a collage
-                // if it has one, a photo if it has one, otherwise just words.
-                value:
-                  coverNow.layout ??
-                  (coverNow.gridImages?.length ? "collage" : coverNow.imageUrl ? "photo" : "typographic"),
-                onChange: (layout) => {
-                  setCoverForSide(coverSide, { ...coverNow, layout });
-                  // Nothing to show yet: go straight to choosing it.
-                  const missing =
-                    layout === "photo" ? !coverNow.imageUrl : layout === "collage" ? !coverNow.gridImages?.length : false;
-                  if (missing) openPhotoDialog(`cover:${coverSide}`);
-                },
-              }
-            : null
-        }
-        emptyLines={
-          page && (page.kind === "recipe" || page.kind === "cover" || page.kind === "divider") && !page.continued
-            ? { shown: showEmptyFields, onToggle: toggleShowEmptyFields }
-            : null
-        }
-        chapter={
-          chapterSection
-            ? {
-                numbered: Boolean(chapterSection.numberAsChapter),
-                onNumberedChange: (numbered) =>
-                  projectMeta.updateSection(chapterSection.id, { numberAsChapter: numbered || undefined }),
-                hasFacingPage: sectionHasArtPage(chapterSection, bookSectionImages(chapterSection), photoStyle),
-                onFacingPageChange: (on) => {
-                  if (on) {
-                    projectMeta.setArtPhoto(chapterSection.id, "photo", {
-                      photoUrl: chapterSection.artPhotoUrl ?? bookSectionImages(chapterSection)[0],
-                    });
-                  } else {
-                    setArtPhoto(chapterSection.id, "none");
-                    setArtCaption(chapterSection.id, undefined);
-                  }
-                },
-              }
-            : null
-        }
-        recipe={
-          recipeItem
-            ? {
-                photoMode: photoModeFor(recipeItem.id),
-                onPhotoModeChange: (mode) => setRecipePhotoMode(recipeItem.id, mode),
-                hasPhoto: Boolean(bookImageOf(recipeItem)),
-                hasLink: Boolean(recipeItem.recipe?.sourceUrl),
-                linkShown,
-                // Choosing what the book already does drops the override, so
-                // the recipe follows the book again (as the toolbar's toggle).
-                onLinkShownChange: (shown) =>
-                  projectMeta.setItemPlacement(recipeItem.id, {
-                    showSourceUrl: shown === showSourceUrl ? undefined : shown,
-                  }),
-                chapterId: projectMeta.meta.sections.find((section) => section.itemIds.includes(recipeItem.id))?.id,
-                chapters: projectMeta.meta.sections.map((section) => ({
-                  id: section.id,
-                  title: section.title?.trim() || "Ungrouped",
-                })),
-                onChapterChange: (sectionId) => moveRecipeToSection(recipeItem.id, sectionId),
-                onNewChapter: () => moveRecipeToNewSection(recipeItem.id),
-              }
-            : null
-        }
+        name="Recipe"
+        title={recipe.title}
+        look={{
+          label: "Photo",
+          value: photoMode,
+          options: RECIPE_LOOKS,
+          onChange: (id) => setRecipePhotoMode(recipeItem.id, id as PhotoStyle),
+        }}
+        lookAction={photoMode === "none" ? null : photoButton(bookImageOf(recipeItem) ? "Change photo" : "Add photo")}
+        fields={[
+          { id: "title", label: "Title", value: recipe.title, onCommit: edit({ kind: "title" }) },
+          { id: "time", label: "Time", value: formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) ?? "", placeholder: "45 min", onCommit: edit({ kind: "cookTime" }) },
+          { id: "servings", label: "Servings", value: String(recipe.servings ?? recipe.yield ?? ""), placeholder: "Serves 4", onCommit: edit({ kind: "servings" }) },
+          { id: "note", label: "Note", value: composeNote(recipe.description, recipe.note, showDescription), multiline: true, onCommit: edit({ kind: "description" }) },
+          { id: "link", label: "Link", value: recipe.sourceUrl ?? "", placeholder: "https://", onCommit: edit({ kind: "sourceUrl" }) },
+        ]}
+        toggles={[
+          {
+            id: "link-shown",
+            label: "Show the link on the page",
+            checked: Boolean(recipe.sourceUrl) && recipeLinkOn(showSourceUrl, true, placement),
+            disabled: !recipe.sourceUrl,
+            // Choosing what the book already does drops the override, so the
+            // recipe follows the book again (as the toolbar's toggle does).
+            onChange: (shown) =>
+              projectMeta.setItemPlacement(recipeItem.id, {
+                showSourceUrl: shown === showSourceUrl ? undefined : shown,
+              }),
+          },
+        ]}
+        chapter={{
+          value: projectMeta.meta.sections.find((section) => section.itemIds.includes(recipeItem.id))?.id ?? "",
+          options: projectMeta.meta.sections.map((section) => ({
+            id: section.id,
+            title: section.title?.trim() || "No chapter",
+          })),
+          onChange: (sectionId) => moveRecipeToSection(recipeItem.id, sectionId),
+          onNewChapter: () => moveRecipeToNewSection(recipeItem.id),
+        }}
+        remove={remove}
+      />
+    );
+  }
+
+  /** The picker for a page that is the cook's own image: which picture, and
+      nothing else, since the image is the whole page. */
+  function renderPageImagePicker(key: string, current: string | undefined, onPick: (url: string | undefined) => void) {
+    return (
+      <ImagePicker
+        current={current}
+        images={Array.from(new Set([...(current ? [current] : []), ...coverPhotoCandidates]))}
+        onSelect={onPick}
+        label={current ? "Change image" : "Choose image"}
+        className="btn btn-secondary btn-compact"
+        openSignal={photoDialogSignal(key)}
+        onOpenSignalConsumed={() => clearPhotoDialogSignal(key)}
       />
     );
   }

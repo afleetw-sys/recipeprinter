@@ -1,298 +1,180 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Checkbox, SelectTile } from "@/components/Controls";
 import { ICON_SIZE, TrashIcon } from "@/components/icons";
 import { Select } from "@/components/Select";
-import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
-import type { PhotoStyle } from "@/lib/project";
 import type { NavItem } from "@/lib/usePrintSheets";
 
 /**
- * What a page IS. "design": the theme lays it out, with its words and any
- * photo. "image": the cook's own image, edge to edge, nothing else (a cover
- * they designed themselves). "blank": nothing at all. Changing it changes the
- * page, not a detail on it; the words stay stored, so going back to the
- * design hands them back.
- */
-export type PageType = "design" | "image" | "blank";
-
-const PAGE_TYPE_LABELS: Record<PageType, string> = {
-  design: "Theme design",
-  image: "Full image",
-  blank: "Blank",
-};
-
-/** A theme-designed cover's or opening page's photo. */
-export type CoverPhoto = "typographic" | "photo" | "collage";
-
-const COVER_PHOTO_OPTIONS: Array<{ id: CoverPhoto; label: string }> = [
-  { id: "typographic", label: "None" },
-  { id: "photo", label: "Photo" },
-  { id: "collage", label: "Collage" },
-];
-
-/** What the selected recipe page can change about itself. */
-export interface RecipePageSettings {
-  photoMode: PhotoStyle;
-  onPhotoModeChange: (mode: PhotoStyle) => void;
-  hasPhoto: boolean;
-  hasLink: boolean;
-  linkShown: boolean;
-  onLinkShownChange: (shown: boolean) => void;
-  chapterId?: string;
-  chapters: Array<{ id: string; title: string }>;
-  onChapterChange: (sectionId: string) => void;
-  /** Moves the recipe into a chapter made for it. */
-  onNewChapter?: () => void;
-}
-
-/** A chapter opener's own settings. */
-export interface ChapterPageSettings {
-  numbered: boolean;
-  onNumberedChange: (numbered: boolean) => void;
-  hasFacingPage: boolean;
-  onFacingPageChange: (on: boolean) => void;
-}
-
-/**
- * The right panel's Page tab: the page the deck is on, and what it can be.
+ * The right panel's Page tab: everything the page in front of the cook can do,
+ * in the order they'd reach for it.
  *
- * Top to bottom: which page this is; what kind of page it is, for the pages a
- * cook might make their own (covers, the opening page, the book's own pages);
- * then only the settings that kind has. Quick actions (delete, move) stay in
- * the floating bar over the page, which a phone still needs.
+ *   1. Which page this is, in the rail's own words.
+ *   2. How it looks: one choice, shown as small pictures of the finished page.
+ *   3. Its words, as plain fields that write to the page as they type.
+ *   4. Its switches, then where it lives, then removing it.
+ *
+ * The print page decides what each kind of page offers (see `renderPageSettings`
+ * in app/print/page.tsx); this only lays it out, so every page reads the same.
  */
+
+/** A small picture of the finished page, for a Look tile. */
+export type LookPreviewKind =
+  | "text"
+  | "text-on-photo"
+  | "text-on-collage"
+  | "text-with-photo"
+  | "text-with-collage"
+  | "own-image"
+  | "blank"
+  | "recipe-none"
+  | "recipe-in-page"
+  | "recipe-full-page";
+
+export interface LookOption {
+  id: string;
+  label: string;
+  preview: LookPreviewKind;
+}
+
+export interface PageField {
+  id: string;
+  label: string;
+  value: string;
+  placeholder?: string;
+  multiline?: boolean;
+  onCommit: (value: string) => void;
+}
+
+export interface PageToggle {
+  id: string;
+  label: string;
+  hint?: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+}
+
 export function PageSettings({
   page,
-  kindLabel,
-  pageType,
-  imagePicker,
-  coverPhoto,
-  recipe,
+  name,
+  title,
+  look,
+  lookAction,
+  fields,
+  toggles,
   chapter,
-  emptyLines,
-  onChoosePhoto,
+  note,
   remove,
 }: {
   page: NavItem | null;
-  /** What to call this page when its kind alone is too broad. */
-  kindLabel?: string;
-  /** For pages that can be made into another kind: which kinds, and which. */
-  pageType?: { value: PageType; options: PageType[]; onChange: (type: PageType) => void } | null;
-  /** The control that picks a "Full image" page's image. */
-  imagePicker?: ReactNode;
-  /** A theme-designed cover's or opening page's photo. */
-  coverPhoto?: { value: CoverPhoto; onChange: (photo: CoverPhoto) => void } | null;
-  recipe?: RecipePageSettings | null;
-  chapter?: ChapterPageSettings | null;
-  /** The toolbar's "Add …" reveal: the page's empty lines, shown to fill in. */
-  emptyLines?: { shown: boolean; onToggle: () => void } | null;
-  /** Opens the page's photo dialog (the same one its toolbar opens). */
-  onChoosePhoto?: () => void;
-  /** The page's own Delete, named for what it removes. */
+  /** What this page is called, as the rail calls it. */
+  name: string;
+  /** Its own title, when that says more than its name (a recipe's, a chapter's). */
+  title?: string;
+  look?: { label: string; value: string | null; options: LookOption[]; onChange: (id: string) => void } | null;
+  /** The control that goes with the chosen look: choosing its photo or image. */
+  lookAction?: ReactNode;
+  fields?: PageField[];
+  toggles?: PageToggle[];
+  chapter?: {
+    value: string;
+    options: Array<{ id: string; title: string }>;
+    onChange: (sectionId: string) => void;
+    onNewChapter?: () => void;
+  } | null;
+  note?: string;
   remove?: { label: string; onRemove: () => void } | null;
 }) {
   if (!page) {
-    return (
-      <div className="recipe-config-section">
-        <p className="recipe-page-settings__note">Select a page to see its settings.</p>
-      </div>
-    );
+    return <p className="recipe-page-settings__note">Select a page to see its settings.</p>;
   }
-
-  const type = pageType?.value ?? "design";
-  const designed = type === "design";
 
   return (
     <div className="recipe-page-settings">
-      <div className="recipe-config-section">
-        <span className="recipe-config-label">{kindLabel ?? pageKindName(page.kind)}</span>
-        {page.label && page.label !== kindLabel && page.kind !== "blank" && (
-          <p className="recipe-page-settings__title">{page.label}</p>
-        )}
+      <div className="recipe-page-settings__head">
+        <span className="recipe-config-label">{name}</span>
+        {title && title !== name && <p className="recipe-page-settings__title">{title}</p>}
       </div>
 
-      {pageType && (
+      {look && (
         <div className="recipe-config-section">
-          <span className="recipe-config-label" id="recipe-page-type-label">
-            Page type
+          <span className="recipe-config-label" id="recipe-page-look-label">
+            {look.label}
           </span>
-          {pageType.options.includes("image") && (
-            <p className="recipe-page-settings__note">
-              Full image shows only your image, no text. For pages designed elsewhere.
-            </p>
-          )}
           <div
-            className="recipe-page-settings__choices"
-            style={{ gridTemplateColumns: `repeat(${pageType.options.length}, 1fr)` }}
+            className={`recipe-page-look ${look.options.length === 4 ? "recipe-page-look--grid" : ""}`}
+            style={look.options.length === 4 ? undefined : { gridTemplateColumns: `repeat(${look.options.length}, 1fr)` }}
             role="radiogroup"
-            aria-labelledby="recipe-page-type-label"
+            aria-labelledby="recipe-page-look-label"
           >
-            {pageType.options.map((option) => (
-              <SelectTile key={option} selected={type === option} className="recipe-page-settings__choice">
+            {look.options.map((option) => (
+              <SelectTile key={option.id} selected={look.value === option.id} className="recipe-page-look__tile">
                 <input
                   type="radio"
-                  name="recipe-page-type"
+                  name="recipe-page-look"
                   className="sr-only"
-                  checked={type === option}
-                  onChange={() => pageType.onChange(option)}
+                  checked={look.value === option.id}
+                  onChange={() => look.onChange(option.id)}
                 />
-                <span>{PAGE_TYPE_LABELS[option]}</span>
+                <LookPreview kind={option.preview} />
+                <span className="recipe-page-look__label">{option.label}</span>
               </SelectTile>
             ))}
           </div>
-          {type === "image" && (
-            <>
-              {imagePicker}
-              <p className="recipe-page-settings__note">Your text is kept if you switch back.</p>
-            </>
-          )}
-          {type === "blank" && <p className="recipe-page-settings__note">Prints with nothing on it.</p>}
+          {lookAction}
         </div>
       )}
 
-      {designed && coverPhoto && (
+      {fields && fields.length > 0 && (
+        <div className="recipe-config-section recipe-page-fields">
+          {fields.map((field) => (
+            <PageTextField key={`${page.recipeId}:${field.id}`} field={field} />
+          ))}
+        </div>
+      )}
+
+      {toggles && toggles.length > 0 && (
         <div className="recipe-config-section">
-          <span className="recipe-config-label" id="recipe-page-cover-photo-label">
-            Photo
-          </span>
-          <div
-            className="recipe-page-settings__choices"
-            role="radiogroup"
-            aria-labelledby="recipe-page-cover-photo-label"
-          >
-            {COVER_PHOTO_OPTIONS.map((option) => (
-              <SelectTile
-                key={option.id}
-                selected={coverPhoto.value === option.id}
-                className="recipe-page-settings__choice"
-              >
-                <input
-                  type="radio"
-                  name="recipe-page-cover-photo"
-                  className="sr-only"
-                  checked={coverPhoto.value === option.id}
-                  onChange={() => coverPhoto.onChange(option.id)}
-                />
-                <span>{option.label}</span>
-              </SelectTile>
-            ))}
-          </div>
-          {coverPhoto.value !== "typographic" && onChoosePhoto && (
-            <button type="button" className="btn btn-secondary btn-compact" onClick={onChoosePhoto}>
-              {coverPhoto.value === "collage" ? "Choose photos" : "Choose photo"}
-            </button>
-          )}
-        </div>
-      )}
-
-      {recipe && (
-        <>
-          <div className="recipe-config-section">
-            <span className="recipe-config-label" id="recipe-page-photo-label">
-              Photo
-            </span>
-            <div className="recipe-photo-style" role="radiogroup" aria-labelledby="recipe-page-photo-label">
-              {PHOTO_STYLE_OPTIONS.map((option) => (
-                <SelectTile
-                  key={option.id}
-                  selected={recipe.photoMode === option.id}
-                  className="recipe-photo-style__tile"
-                >
-                  <input
-                    type="radio"
-                    name="recipe-page-photo-style"
-                    className="sr-only"
-                    checked={recipe.photoMode === option.id}
-                    onChange={() => recipe.onPhotoModeChange(option.id)}
-                  />
-                  <PhotoStylePreview id={option.id} />
-                  <span className="recipe-photo-style__tile-label">{option.short}</span>
-                </SelectTile>
-              ))}
-            </div>
-            {onChoosePhoto && (
-              <button type="button" className="btn btn-secondary btn-compact" onClick={onChoosePhoto}>
-                {recipe.hasPhoto ? "Change photo" : "Add photo"}
-              </button>
-            )}
-          </div>
-
-          <div className="recipe-config-section">
+          {toggles.map((toggle) => (
             <Checkbox
-              label="Recipe link"
-              hint={recipe.hasLink ? undefined : "This recipe has no link yet."}
-              checked={recipe.hasLink && recipe.linkShown}
-              disabled={!recipe.hasLink}
-              onChange={(event) => recipe.onLinkShownChange(event.target.checked)}
+              key={toggle.id}
+              label={toggle.label}
+              hint={toggle.hint}
+              checked={toggle.checked}
+              disabled={toggle.disabled}
+              onChange={(event) => toggle.onChange(event.target.checked)}
             />
-          </div>
-
-          <label className="recipe-config-section">
-            <span className="recipe-config-label">Chapter</span>
-            <Select
-              variant="compact"
-              value={recipe.chapterId ?? ""}
-              onChange={(event) => {
-                if (event.target.value === NEW_CHAPTER) recipe.onNewChapter?.();
-                else recipe.onChapterChange(event.target.value);
-              }}
-            >
-              {recipe.chapters.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.title}
-                </option>
-              ))}
-              {recipe.onNewChapter && <option value={NEW_CHAPTER}>New chapter…</option>}
-            </Select>
-          </label>
-        </>
-      )}
-
-      {onChoosePhoto && !recipe && !coverPhoto && !pageType && page.kind !== "toc" && (
-        <div className="recipe-config-section">
-          <span className="recipe-config-label">Photo</span>
-          <button type="button" className="btn btn-secondary btn-compact" onClick={onChoosePhoto}>
-            Choose photo
-          </button>
+          ))}
         </div>
       )}
 
       {chapter && (
-        <div className="recipe-config-section">
-          <Checkbox
-            label="Number this chapter"
-            checked={chapter.numbered}
-            onChange={(event) => chapter.onNumberedChange(event.target.checked)}
-          />
-          <Checkbox
-            label="Photo page beside it"
-            checked={chapter.hasFacingPage}
-            onChange={(event) => chapter.onFacingPageChange(event.target.checked)}
-          />
-        </div>
+        <label className="recipe-config-section">
+          <span className="recipe-config-label">Chapter</span>
+          <Select
+            variant="compact"
+            value={chapter.value}
+            onChange={(event) => {
+              if (event.target.value === NEW_CHAPTER) chapter.onNewChapter?.();
+              else chapter.onChange(event.target.value);
+            }}
+          >
+            {chapter.options.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.title}
+              </option>
+            ))}
+            {chapter.onNewChapter && <option value={NEW_CHAPTER}>New chapter…</option>}
+          </Select>
+        </label>
       )}
 
-      {designed && emptyLines && (
-        <div className="recipe-config-section">
-          <Checkbox
-            label="Show empty lines"
-            hint="Lines this page can hold, ready to fill in on the page."
-            checked={emptyLines.shown}
-            onChange={() => emptyLines.onToggle()}
-          />
-        </div>
-      )}
-
-      {page.kind === "toc" && (
-        <p className="recipe-page-settings__note">
-          The contents is made from your chapters and recipes, so it updates as you change them.
-        </p>
-      )}
+      {note && <p className="recipe-page-settings__note">{note}</p>}
 
       {remove && (
-        <div className="recipe-config-section recipe-page-settings__remove">
+        <div className="recipe-page-settings__remove">
           <button type="button" className="btn btn-ghost btn-ghost--danger btn-compact" onClick={remove.onRemove}>
             <TrashIcon size={ICON_SIZE.sm} />
             {remove.label}
@@ -305,20 +187,112 @@ export function PageSettings({
 
 const NEW_CHAPTER = "__new-chapter";
 
-function pageKindName(kind: NavItem["kind"]): string {
-  switch (kind) {
-    case "recipe":
-      return "Recipe page";
-    case "divider":
-      return "Chapter opener";
-    case "cover":
-      return "Cover";
-    case "toc":
-      return "Contents";
-    case "image":
-    case "section-photo":
-      return "Photo page";
-    case "blank":
-      return "Your page";
+/**
+ * One line of the page's words. It keeps its own draft and writes to the page
+ * a beat after typing stops (and on leaving the field), rather than on every
+ * key: each write re-lays-out the book, and the page's own inline fields avoid
+ * that for the same reason. A change made on the page comes back in here once
+ * this field is not the one being typed in.
+ */
+function PageTextField({ field }: { field: PageField }) {
+  const [draft, setDraft] = useState(field.value);
+  const focused = useRef(false);
+  const timer = useRef<number | undefined>(undefined);
+  const latest = useRef(field);
+  latest.current = field;
+
+  useEffect(() => {
+    if (!focused.current) setDraft(field.value);
+  }, [field.value]);
+
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  const commit = (value: string) => {
+    window.clearTimeout(timer.current);
+    timer.current = undefined;
+    if (value !== latest.current.value) latest.current.onCommit(value);
+  };
+  const change = (value: string) => {
+    setDraft(value);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => commit(value), 400);
+  };
+  const shared = {
+    id: `page-field-${field.id}`,
+    className: "field field--compact recipe-page-fields__input",
+    value: draft,
+    placeholder: field.placeholder,
+    onFocus: () => {
+      focused.current = true;
+    },
+    onBlur: () => {
+      focused.current = false;
+      commit(draft);
+    },
+  };
+
+  return (
+    <label className="recipe-page-fields__row" htmlFor={shared.id}>
+      <span className="recipe-config-sublabel">{field.label}</span>
+      {field.multiline ? (
+        <textarea {...shared} rows={3} onChange={(event) => change(event.target.value)} />
+      ) : (
+        <input {...shared} type="text" onChange={(event) => change(event.target.value)} />
+      )}
+    </label>
+  );
+}
+
+/**
+ * A tiny page for each Look: grey lines are words, a filled block is a photo.
+ * Built from the same parts as the recipe photo tiles' previews, so every
+ * picture in the panel is drawn the same way.
+ */
+function LookPreview({ kind }: { kind: LookPreviewKind }) {
+  const lines = (
+    <>
+      <span className="recipe-photo-preview__line" />
+      <span className="recipe-photo-preview__line" />
+      <span className="recipe-photo-preview__line recipe-photo-preview__line--short" />
+    </>
+  );
+  if (kind === "recipe-full-page") {
+    return (
+      <span className="recipe-photo-preview recipe-photo-preview--spread" aria-hidden>
+        <span className="recipe-photo-preview__page recipe-photo-preview__page--photo" />
+        <span className="recipe-photo-preview__page">{lines}</span>
+      </span>
+    );
   }
+  const pageClass =
+    kind === "own-image"
+      ? "recipe-photo-preview__page recipe-photo-preview__page--photo"
+      : kind === "text-on-photo"
+        ? "recipe-photo-preview__page recipe-photo-preview__page--photo recipe-look-preview--over"
+        : kind === "text-on-collage"
+          ? "recipe-photo-preview__page recipe-look-preview--collage recipe-look-preview--over"
+          : "recipe-photo-preview__page";
+  return (
+    <span className="recipe-photo-preview" aria-hidden>
+      <span className={pageClass}>
+        {kind === "text-on-collage" && (
+          <span className="recipe-look-preview__cells">
+            <span />
+            <span />
+            <span />
+            <span />
+          </span>
+        )}
+        {(kind === "recipe-in-page" || kind === "text-with-photo") && <span className="recipe-photo-preview__photo" />}
+        {kind === "text-with-collage" && (
+          <span className="recipe-look-preview__cells recipe-look-preview__cells--band">
+            <span />
+            <span />
+          </span>
+        )}
+        {kind === "own-image" && <span className="recipe-look-preview__sun" />}
+        {kind !== "own-image" && kind !== "blank" && lines}
+      </span>
+    </span>
+  );
 }
