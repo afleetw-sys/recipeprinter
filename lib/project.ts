@@ -922,6 +922,7 @@ export function useProjectMeta() {
           | "artCaption"
           | "intro"
           | "showOpener"
+          | "numberAsChapter"
         >
       >,
     ) => {

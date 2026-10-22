@@ -2748,6 +2748,32 @@
 .recipe-page-settings .btn {
   align-self: flex-start;
 }
+.recipe-page-settings__layouts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+/* The photo tiles' frame, without a picture: same border, radius and
+   selected state, so the two choices read as the same kind of control. */
+.recipe-page-settings__layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 6px;
+  border: 1px solid var(--cp-line);
+  border-radius: 10px;
+  background: var(--cp-card);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 600;
+  cursor: pointer;
+}
+.recipe-page-settings__layout.is-active {
+  border-color: var(--cp-selected-border);
+  background: var(--cp-selected-fill);
+  box-shadow: var(--cp-selected-ring);
+}
 
 .recipe-config-section {
   display: flex;

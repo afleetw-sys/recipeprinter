@@ -57,6 +57,7 @@ import {
   useProjectMeta,
   type ProjectMeta,
   type PhotoStyle,
+  sectionHasArtPage,
 } from "@/lib/project";
 import { type CookbookScaffoldPatch } from "@/lib/projectCopy";
 import { materializeProjectPhotos } from "@/lib/photoStorage";
@@ -5553,10 +5554,67 @@ export default function PrintPage() {
       page?.kind === "recipe" ? items?.find((item) => item.id === page.recipeId && item.recipe) : undefined;
     const placement = recipeItem ? projectMeta.meta.itemPlacements?.[recipeItem.id] : undefined;
     const linkShown = recipeItem ? recipeLinkOn(showSourceUrl, true, placement) : false;
+    const coverSide = page?.kind === "cover" ? coverSideFromNavItem(page) : null;
+    const coverNow = coverSide ? coverForSide(coverSide) : undefined;
+    const frontMatter = projectMeta.meta.frontMatter;
+    const chapterSection =
+      page?.kind === "divider" ? sections.find((section) => section.id === page.recipeId) : undefined;
     return (
       <PageSettings
         page={page}
         onChoosePhoto={onChoosePhoto}
+        kindLabel={
+          coverSide === "front" ? "Front cover" : coverSide === "back" ? "Back cover" : coverSide === "dedication" ? "Opening page" : undefined
+        }
+        emptyLines={
+          page && (page.kind === "recipe" || page.kind === "cover" || page.kind === "divider") && !page.continued
+            ? { shown: showEmptyFields, onToggle: toggleShowEmptyFields }
+            : null
+        }
+        cover={
+          coverSide && coverNow
+            ? {
+                // What the page prints when nothing has been chosen: a collage
+                // if it has one, a photo if it has one, otherwise its words.
+                layout:
+                  coverNow.layout ??
+                  (coverNow.gridImages?.length ? "collage" : coverNow.imageUrl ? "photo" : "typographic"),
+                onLayoutChange: (layout) => {
+                  setCoverForSide(coverSide, { ...coverNow, layout });
+                  // Nothing to show yet: go straight to choosing it.
+                  const missing = layout === "photo" ? !coverNow.imageUrl : layout === "collage" ? !coverNow.gridImages?.length : false;
+                  if (missing) openPhotoDialog(`cover:${coverSide}`);
+                },
+                ...(coverSide === "dedication" && frontMatter
+                  ? {
+                      frontMatterKind: frontMatter.kind,
+                      onFrontMatterKindChange: (kind: "dedication" | "introduction") =>
+                        projectMeta.setFrontMatter({ ...frontMatter, kind }),
+                    }
+                  : {}),
+              }
+            : null
+        }
+        chapter={
+          chapterSection
+            ? {
+                numbered: Boolean(chapterSection.numberAsChapter),
+                onNumberedChange: (numbered) =>
+                  projectMeta.updateSection(chapterSection.id, { numberAsChapter: numbered || undefined }),
+                hasFacingPage: sectionHasArtPage(chapterSection, bookSectionImages(chapterSection), photoStyle),
+                onFacingPageChange: (on) => {
+                  if (on) {
+                    projectMeta.setArtPhoto(chapterSection.id, "photo", {
+                      photoUrl: chapterSection.artPhotoUrl ?? bookSectionImages(chapterSection)[0],
+                    });
+                  } else {
+                    setArtPhoto(chapterSection.id, "none");
+                    setArtCaption(chapterSection.id, undefined);
+                  }
+                },
+              }
+            : null
+        }
         recipe={
           recipeItem
             ? {
