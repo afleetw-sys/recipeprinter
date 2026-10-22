@@ -1347,6 +1347,16 @@ export function useQueue() {
     return page.id;
   }, [commit]);
 
+  /** Turns one of the book's own pages into another kind (blank, image) or
+      gives it its image. Only those pages: a recipe is never touched here. */
+  const updateBookPage = useCallback(
+    (id: string, changes: Partial<Pick<QueueItem, "pageKind" | "pageImageUrl" | "title">>) => {
+      if (!isBookPage(itemsRef.current.find((it) => it.id === id))) return;
+      patch(id, changes);
+    },
+    [patch],
+  );
+
   const remove = useCallback(
     (id: string) => {
       const going = itemsRef.current.find((it) => it.id === id);
@@ -1389,6 +1399,7 @@ export function useQueue() {
     addText,
     addReadyRecipes,
     addBlankPage,
+    updateBookPage,
     addWithheldRecipes,
     adoptUploadedPhotos,
     remove,

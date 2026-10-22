@@ -38,7 +38,7 @@ import { MobileStructureSheet, type MobileBookSheet } from "@/components/print/M
 import { EditTips } from "@/components/print/EditTips";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
-import { PageSettings } from "@/components/print/PageSettings";
+import { PageSettings, type PageType } from "@/components/print/PageSettings";
 import { photoDialogKey } from "@/lib/photoOpenGesture";
 import { isBookPage, isRecipeEntry } from "@/lib/bookPages";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
@@ -1846,6 +1846,8 @@ export default function PrintPage() {
           imageUrl: frontMatter.imageUrl,
           gridImages: frontMatter.gridImages,
           layout: frontMatter.layout,
+          pageType: frontMatter.pageType,
+          pageImageUrl: frontMatter.pageImageUrl,
           template,
         };
       }
@@ -1870,6 +1872,8 @@ export default function PrintPage() {
               imageUrl: cover.imageUrl,
               gridImages: cover.gridImages,
               layout: cover.layout,
+              pageType: cover.pageType,
+              pageImageUrl: cover.pageImageUrl,
             }
           : undefined,
       );
@@ -5541,10 +5545,10 @@ export default function PrintPage() {
   }
 
   /**
-   * The panel's Page tab for the page the deck is on. The same choices the
-   * page's toolbar offers, laid out as settings: a recipe's photo placement,
-   * link and chapter. The photo itself is still chosen in the toolbar's own
-   * dialog, which "Change photo" opens rather than mounting a second copy.
+   * The panel's Page tab for the page the deck is on: what kind of page it is,
+   * for the pages a cook can make their own, then that kind's settings. The
+   * recipe and cover photos are still chosen in the toolbar's own dialog,
+   * which the buttons here open rather than mounting a second copy.
    */
   function renderPageSettings() {
     const page = activeNavItem;
@@ -5556,43 +5560,92 @@ export default function PrintPage() {
     const linkShown = recipeItem ? recipeLinkOn(showSourceUrl, true, placement) : false;
     const coverSide = page?.kind === "cover" ? coverSideFromNavItem(page) : null;
     const coverNow = coverSide ? coverForSide(coverSide) : undefined;
-    const frontMatter = projectMeta.meta.frontMatter;
+    const ownPage = page?.kind === "blank" ? items?.find((item) => item.id === page.recipeId) : undefined;
     const chapterSection =
       page?.kind === "divider" ? sections.find((section) => section.id === page.recipeId) : undefined;
+    const pageImageKey = coverSide ? `page-image:${coverSide}` : ownPage ? `page-image:${ownPage.id}` : null;
+
+    // The page's own image, chosen here: it is the whole page, so it has no
+    // placement to offer, only which picture.
+    const pageImage = coverNow?.pageImageUrl ?? ownPage?.pageImageUrl;
+    const setPageImage = (url: string | undefined) => {
+      if (coverSide && coverNow) setCoverForSide(coverSide, { ...coverNow, pageImageUrl: url });
+      else if (ownPage) queue.updateBookPage(ownPage.id, { pageImageUrl: url });
+    };
+    const imagePicker = pageImageKey ? (
+      <ImagePicker
+        current={pageImage}
+        images={Array.from(new Set([...(pageImage ? [pageImage] : []), ...coverPhotoCandidates]))}
+        onSelect={setPageImage}
+        label={pageImage ? "Change image" : "Choose image"}
+        className="btn btn-secondary btn-compact"
+        openSignal={photoDialogSignal(pageImageKey)}
+        onOpenSignalConsumed={() => clearPhotoDialogSignal(pageImageKey)}
+      />
+    ) : null;
+
+    const pageType = coverSide && coverNow
+      ? {
+          value: (coverNow.pageType ?? "design") as PageType,
+          // A front cover is never blank: the book has to have a front.
+          options: (coverSide === "front" ? ["design", "image"] : ["design", "image", "blank"]) as PageType[],
+          onChange: (type: PageType) => {
+            setCoverForSide(coverSide, { ...coverNow, pageType: type === "design" ? undefined : type });
+            if (type === "image" && !coverNow.pageImageUrl && pageImageKey) openPhotoDialog(pageImageKey);
+          },
+        }
+      : ownPage
+        ? {
+            value: (ownPage.pageKind === "image" ? "image" : "blank") as PageType,
+            options: ["blank", "image"] as PageType[],
+            onChange: (type: PageType) => {
+              queue.updateBookPage(ownPage.id, {
+                pageKind: type === "image" ? "image" : "blank",
+                title: type === "image" ? "Image page" : "Blank page",
+              });
+              if (type === "image" && !ownPage.pageImageUrl && pageImageKey) openPhotoDialog(pageImageKey);
+            },
+          }
+        : null;
+
     return (
       <PageSettings
         page={page}
         onChoosePhoto={onChoosePhoto}
         kindLabel={
-          coverSide === "front" ? "Front cover" : coverSide === "back" ? "Back cover" : coverSide === "dedication" ? "Opening page" : undefined
+          coverSide === "front"
+            ? "Front cover"
+            : coverSide === "back"
+              ? "Back cover"
+              : coverSide === "dedication"
+                ? "Opening page"
+                : ownPage
+                  ? "Your page"
+                  : undefined
+        }
+        pageType={pageType}
+        imagePicker={imagePicker}
+        coverPhoto={
+          coverSide && coverNow
+            ? {
+                // What the design shows when nothing has been chosen: a collage
+                // if it has one, a photo if it has one, otherwise just words.
+                value:
+                  coverNow.layout ??
+                  (coverNow.gridImages?.length ? "collage" : coverNow.imageUrl ? "photo" : "typographic"),
+                onChange: (layout) => {
+                  setCoverForSide(coverSide, { ...coverNow, layout });
+                  // Nothing to show yet: go straight to choosing it.
+                  const missing =
+                    layout === "photo" ? !coverNow.imageUrl : layout === "collage" ? !coverNow.gridImages?.length : false;
+                  if (missing) openPhotoDialog(`cover:${coverSide}`);
+                },
+              }
+            : null
         }
         emptyLines={
           page && (page.kind === "recipe" || page.kind === "cover" || page.kind === "divider") && !page.continued
             ? { shown: showEmptyFields, onToggle: toggleShowEmptyFields }
-            : null
-        }
-        cover={
-          coverSide && coverNow
-            ? {
-                // What the page prints when nothing has been chosen: a collage
-                // if it has one, a photo if it has one, otherwise its words.
-                layout:
-                  coverNow.layout ??
-                  (coverNow.gridImages?.length ? "collage" : coverNow.imageUrl ? "photo" : "typographic"),
-                onLayoutChange: (layout) => {
-                  setCoverForSide(coverSide, { ...coverNow, layout });
-                  // Nothing to show yet: go straight to choosing it.
-                  const missing = layout === "photo" ? !coverNow.imageUrl : layout === "collage" ? !coverNow.gridImages?.length : false;
-                  if (missing) openPhotoDialog(`cover:${coverSide}`);
-                },
-                ...(coverSide === "dedication" && frontMatter
-                  ? {
-                      frontMatterKind: frontMatter.kind,
-                      onFrontMatterKindChange: (kind: "dedication" | "introduction") =>
-                        projectMeta.setFrontMatter({ ...frontMatter, kind }),
-                    }
-                  : {}),
-              }
             : null
         }
         chapter={

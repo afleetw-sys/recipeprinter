@@ -1,10 +1,35 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Checkbox, SelectTile } from "@/components/Controls";
 import { Select } from "@/components/Select";
 import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
 import type { PhotoStyle } from "@/lib/project";
 import type { NavItem } from "@/lib/usePrintSheets";
+
+/**
+ * What a page IS. "design": the theme lays it out, with its words and any
+ * photo. "image": the cook's own image, edge to edge, nothing else (a cover
+ * they designed themselves). "blank": nothing at all. Changing it changes the
+ * page, not a detail on it; the words stay stored, so going back to the
+ * design hands them back.
+ */
+export type PageType = "design" | "image" | "blank";
+
+const PAGE_TYPE_LABELS: Record<PageType, string> = {
+  design: "Theme design",
+  image: "Full image",
+  blank: "Blank",
+};
+
+/** A theme-designed cover's or opening page's photo. */
+export type CoverPhoto = "typographic" | "photo" | "collage";
+
+const COVER_PHOTO_OPTIONS: Array<{ id: CoverPhoto; label: string }> = [
+  { id: "typographic", label: "None" },
+  { id: "photo", label: "Photo" },
+  { id: "collage", label: "Collage" },
+];
 
 /** What the selected recipe page can change about itself. */
 export interface RecipePageSettings {
@@ -19,17 +44,6 @@ export interface RecipePageSettings {
   onChapterChange: (sectionId: string) => void;
 }
 
-export type PageLayout = "typographic" | "photo" | "collage";
-
-/** A cover's or the opening page's own settings. */
-export interface CoverPageSettings {
-  layout: PageLayout;
-  onLayoutChange: (layout: PageLayout) => void;
-  /** The opening page only: what kind of page it is. */
-  frontMatterKind?: "dedication" | "introduction";
-  onFrontMatterKindChange?: (kind: "dedication" | "introduction") => void;
-}
-
 /** A chapter opener's own settings. */
 export interface ChapterPageSettings {
   numbered: boolean;
@@ -38,39 +52,38 @@ export interface ChapterPageSettings {
   onFacingPageChange: (on: boolean) => void;
 }
 
-const LAYOUT_OPTIONS: Array<{ id: PageLayout; label: string }> = [
-  { id: "typographic", label: "Words" },
-  { id: "photo", label: "Photo" },
-  { id: "collage", label: "Collage" },
-];
-
 /**
- * The right panel's Page tab: the settings of the page the deck is on.
+ * The right panel's Page tab: the page the deck is on, and what it can be.
  *
- * Settings only. The quick actions (delete, move, the photo dialog's own
- * button) stay in the floating bar over the page, which a phone still needs
- * because it has no panel. Here they are laid out the way the Book tab lays
- * out the same choices for every recipe, so a recipe's photo tiles read as the
- * per-page version of the book's.
+ * Top to bottom: which page this is; what kind of page it is, for the pages a
+ * cook might make their own (covers, the opening page, the book's own pages);
+ * then only the settings that kind has. Quick actions (delete, move) stay in
+ * the floating bar over the page, which a phone still needs.
  */
 export function PageSettings({
   page,
+  kindLabel,
+  pageType,
+  imagePicker,
+  coverPhoto,
   recipe,
-  cover,
   chapter,
   emptyLines,
-  kindLabel,
   onChoosePhoto,
 }: {
   page: NavItem | null;
+  /** What to call this page when its kind alone is too broad. */
+  kindLabel?: string;
+  /** For pages that can be made into another kind: which kinds, and which. */
+  pageType?: { value: PageType; options: PageType[]; onChange: (type: PageType) => void } | null;
+  /** The control that picks a "Full image" page's image. */
+  imagePicker?: ReactNode;
+  /** A theme-designed cover's or opening page's photo. */
+  coverPhoto?: { value: CoverPhoto; onChange: (photo: CoverPhoto) => void } | null;
   recipe?: RecipePageSettings | null;
-  cover?: CoverPageSettings | null;
   chapter?: ChapterPageSettings | null;
   /** The toolbar's "Add …" reveal: the page's empty lines, shown to fill in. */
   emptyLines?: { shown: boolean; onToggle: () => void } | null;
-  /** What to call this page when its kind alone is too broad: the three
-      cover-like pages share one kind. */
-  kindLabel?: string;
   /** Opens the page's photo dialog (the same one its toolbar opens). */
   onChoosePhoto?: () => void;
 }) {
@@ -82,92 +95,93 @@ export function PageSettings({
     );
   }
 
+  const type = pageType?.value ?? "design";
+  const designed = type === "design";
+
   return (
-    <div className="recipe-config-section recipe-page-settings">
-      <span className="recipe-config-label">{kindLabel ?? pageKindName(page.kind)}</span>
-      {page.label && page.kind !== "blank" && page.label !== kindLabel && (
-        <p className="recipe-page-settings__title">{page.label}</p>
-      )}
+    <div className="recipe-page-settings">
+      <div className="recipe-config-section">
+        <span className="recipe-config-label">{kindLabel ?? pageKindName(page.kind)}</span>
+        {page.label && page.label !== kindLabel && page.kind !== "blank" && (
+          <p className="recipe-page-settings__title">{page.label}</p>
+        )}
+      </div>
 
-      {cover?.onFrontMatterKindChange && (
-        <label className="recipe-page-settings__field">
-          <span className="recipe-config-sublabel">Page</span>
-          <Select
-            variant="compact"
-            value={cover.frontMatterKind ?? "dedication"}
-            onChange={(event) =>
-              cover.onFrontMatterKindChange?.(event.target.value as "dedication" | "introduction")
-            }
-          >
-            <option value="dedication">Dedication</option>
-            <option value="introduction">Introduction</option>
-          </Select>
-        </label>
-      )}
-
-      {cover && (
-        <div className="recipe-photo-style-group">
-          <span className="recipe-config-sublabel" id="recipe-page-layout-label">
-            Layout
+      {pageType && (
+        <div className="recipe-config-section">
+          <span className="recipe-config-label" id="recipe-page-type-label">
+            Page type
           </span>
           <div
-            className="recipe-page-settings__layouts"
+            className="recipe-page-settings__choices"
+            style={{ gridTemplateColumns: `repeat(${pageType.options.length}, 1fr)` }}
             role="radiogroup"
-            aria-labelledby="recipe-page-layout-label"
+            aria-labelledby="recipe-page-type-label"
           >
-            {LAYOUT_OPTIONS.map((option) => (
+            {pageType.options.map((option) => (
+              <SelectTile key={option} selected={type === option} className="recipe-page-settings__choice">
+                <input
+                  type="radio"
+                  name="recipe-page-type"
+                  className="sr-only"
+                  checked={type === option}
+                  onChange={() => pageType.onChange(option)}
+                />
+                <span>{PAGE_TYPE_LABELS[option]}</span>
+              </SelectTile>
+            ))}
+          </div>
+          {type === "image" && (
+            <>
+              {imagePicker}
+              <p className="recipe-page-settings__note">
+                Your image fills the page, with nothing from the theme on it.
+              </p>
+            </>
+          )}
+          {type === "blank" && <p className="recipe-page-settings__note">Prints with nothing on it.</p>}
+        </div>
+      )}
+
+      {designed && coverPhoto && (
+        <div className="recipe-config-section">
+          <span className="recipe-config-label" id="recipe-page-cover-photo-label">
+            Photo
+          </span>
+          <div
+            className="recipe-page-settings__choices"
+            role="radiogroup"
+            aria-labelledby="recipe-page-cover-photo-label"
+          >
+            {COVER_PHOTO_OPTIONS.map((option) => (
               <SelectTile
                 key={option.id}
-                selected={cover.layout === option.id}
-                className="recipe-page-settings__layout"
+                selected={coverPhoto.value === option.id}
+                className="recipe-page-settings__choice"
               >
                 <input
                   type="radio"
-                  name="recipe-page-layout"
+                  name="recipe-page-cover-photo"
                   className="sr-only"
-                  checked={cover.layout === option.id}
-                  onChange={() => cover.onLayoutChange(option.id)}
+                  checked={coverPhoto.value === option.id}
+                  onChange={() => coverPhoto.onChange(option.id)}
                 />
                 <span>{option.label}</span>
               </SelectTile>
             ))}
           </div>
-          {cover.layout !== "typographic" && onChoosePhoto && (
+          {coverPhoto.value !== "typographic" && onChoosePhoto && (
             <button type="button" className="btn btn-secondary btn-compact" onClick={onChoosePhoto}>
-              {cover.layout === "collage" ? "Choose photos" : "Choose photo"}
+              {coverPhoto.value === "collage" ? "Choose photos" : "Choose photo"}
             </button>
           )}
         </div>
       )}
 
-      {chapter && (
-        <>
-          <Checkbox
-            label="Number this chapter"
-            checked={chapter.numbered}
-            onChange={(event) => chapter.onNumberedChange(event.target.checked)}
-          />
-          <Checkbox
-            label="Photo page beside it"
-            checked={chapter.hasFacingPage}
-            onChange={(event) => chapter.onFacingPageChange(event.target.checked)}
-          />
-        </>
-      )}
-
-      {emptyLines && (
-        <Checkbox
-          label="Show empty lines"
-          hint="The lines this page can hold, ready to fill in on the page."
-          checked={emptyLines.shown}
-          onChange={() => emptyLines.onToggle()}
-        />
-      )}
-
       {recipe && (
         <>
-          <div className="recipe-photo-style-group">
-            <span className="recipe-config-sublabel" id="recipe-page-photo-label">
+          <div className="recipe-config-section">
+            <span className="recipe-config-label" id="recipe-page-photo-label">
               Photo
             </span>
             <div className="recipe-photo-style" role="radiogroup" aria-labelledby="recipe-page-photo-label">
@@ -196,27 +210,28 @@ export function PageSettings({
             )}
           </div>
 
-          <Checkbox
-            label="Recipe link"
-            hint={recipe.hasLink ? undefined : "This recipe has no link yet."}
-            checked={recipe.hasLink && recipe.linkShown}
-            disabled={!recipe.hasLink}
-            onChange={(event) => recipe.onLinkShownChange(event.target.checked)}
-          />
+          <div className="recipe-config-section">
+            <Checkbox
+              label="Recipe link"
+              hint={recipe.hasLink ? undefined : "This recipe has no link yet."}
+              checked={recipe.hasLink && recipe.linkShown}
+              disabled={!recipe.hasLink}
+              onChange={(event) => recipe.onLinkShownChange(event.target.checked)}
+            />
+          </div>
 
-          {/* Only once there is somewhere else to put it. Making a chapter is
-              Organize's and the page toolbar's job. */}
+          {/* Only once there is somewhere else to put it. */}
           {recipe.chapters.length > 1 && (
-            <label className="recipe-page-settings__field">
-              <span className="recipe-config-sublabel">Chapter</span>
+            <label className="recipe-config-section">
+              <span className="recipe-config-label">Chapter</span>
               <Select
                 variant="compact"
                 value={recipe.chapterId ?? ""}
                 onChange={(event) => recipe.onChapterChange(event.target.value)}
               >
-                {recipe.chapters.map((chapter) => (
-                  <option key={chapter.id} value={chapter.id}>
-                    {chapter.title}
+                {recipe.chapters.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.title}
                   </option>
                 ))}
               </Select>
@@ -225,16 +240,30 @@ export function PageSettings({
         </>
       )}
 
-      {!recipe && !cover && onChoosePhoto && page.kind !== "toc" && page.kind !== "blank" && (
-        <button type="button" className="btn btn-secondary btn-compact" onClick={onChoosePhoto}>
-          Photo
-        </button>
+      {chapter && (
+        <div className="recipe-config-section">
+          <Checkbox
+            label="Number this chapter"
+            checked={chapter.numbered}
+            onChange={(event) => chapter.onNumberedChange(event.target.checked)}
+          />
+          <Checkbox
+            label="Photo page beside it"
+            checked={chapter.hasFacingPage}
+            onChange={(event) => chapter.onFacingPageChange(event.target.checked)}
+          />
+        </div>
       )}
 
-      {page.kind === "blank" && (
-        <p className="recipe-page-settings__note">
-          Prints with nothing on it, for notes or to start what follows on a new page.
-        </p>
+      {designed && emptyLines && (
+        <div className="recipe-config-section">
+          <Checkbox
+            label="Show empty lines"
+            hint="Lines this page can hold, ready to fill in on the page."
+            checked={emptyLines.shown}
+            onChange={() => emptyLines.onToggle()}
+          />
+        </div>
       )}
 
       {page.kind === "toc" && (
@@ -260,6 +289,6 @@ function pageKindName(kind: NavItem["kind"]): string {
     case "section-photo":
       return "Photo page";
     case "blank":
-      return "Blank page";
+      return "Your page";
   }
 }

@@ -2722,9 +2722,12 @@
   padding-top: 16px;
 }
 
-/* The Page tab: which page, then its settings. */
+/* The Page tab: which page, what kind of page, then that kind's settings,
+   each a section spaced as the Book tab spaces its own. */
 .recipe-page-settings {
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 .recipe-page-settings__title {
   margin: -4px 0 0;
@@ -2740,22 +2743,17 @@
   font-size: var(--cp-fs-caption);
   line-height: 1.45;
 }
-.recipe-page-settings__field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
 .recipe-page-settings .btn {
   align-self: flex-start;
 }
-.recipe-page-settings__layouts {
+.recipe-page-settings__choices {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
 }
 /* The photo tiles' frame, without a picture: same border, radius and
    selected state, so the two choices read as the same kind of control. */
-.recipe-page-settings__layout {
+.recipe-page-settings__choice {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2769,7 +2767,7 @@
   font-weight: 600;
   cursor: pointer;
 }
-.recipe-page-settings__layout.is-active {
+.recipe-page-settings__choice.is-active {
   border-color: var(--cp-selected-border);
   background: var(--cp-selected-fill);
   box-shadow: var(--cp-selected-ring);
@@ -5624,6 +5622,41 @@
   border-radius: 0.06in;
   overflow: hidden;
   background: none;
+}
+
+/* ── A page the cook made themselves ──────────────────────────────────────
+   Their own image edge to edge, or a blank: plain paper, none of the theme's
+   framing, padding or decoration, whatever the theme does to its covers. The
+   selector carries the theme scope's weight so it outranks theme cover rules. */
+.recipe-card-set .recipe-card.recipe-card--cover.recipe-card--own-page {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  box-shadow: none;
+  background: #fff;
+}
+.recipe-card-set .recipe-card.recipe-card--cover.recipe-card--own-page::before,
+.recipe-card-set .recipe-card.recipe-card--cover.recipe-card--own-page::after {
+  content: none;
+  display: none;
+}
+.recipe-card--own-page .recipe-card__cover-photo {
+  background: #fff;
+}
+.recipe-card--own-page .recipe-card__cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.recipe-card__own-page-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--cp-ink-soft);
+  font-size: 0.16in;
 }
 
 /* ── Table of contents ────────────────────────────────────────────────────

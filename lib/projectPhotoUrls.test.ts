@@ -21,6 +21,7 @@ const cover = (name: string): CoverConfig => ({
   template: "heirloom",
   imageUrl: `${name}-image`,
   gridImages: [`${name}-grid-1`, `${name}-grid-2`],
+  pageImageUrl: `${name}-own-page`,
 });
 
 /** The opening page as books store it now (`frontMatter`), not the legacy
@@ -30,6 +31,7 @@ const openingPage = (name: string): CookbookFrontMatter => ({
   heading: name,
   imageUrl: `${name}-image`,
   gridImages: [`${name}-grid-1`],
+  pageImageUrl: `${name}-own-page`,
 });
 
 /** Every field that can hold a photo, each carrying a distinct, nameable URL. */
@@ -72,6 +74,7 @@ function bookWithPhotoEverywhere(): ProjectPhotos {
           { id: "r1", recipe: { title: "Sourdough", image: "recipe-photo-1" } },
           { id: "r2", recipe: { title: "Rye", image: "recipe-photo-2" } },
           { id: "r3", recipe: { title: "No photo" } },
+          { id: "p1", pageKind: "image", pageImageUrl: "image-page" },
         ] as Section["items"],
       } as Section,
     ],
@@ -102,6 +105,11 @@ const EVERY_PHOTO = [
   // export sent its photo to the renderer as a dead `blob:` URL.
   "opening-image", "opening-grid-1",
   "stash-opening-image", "stash-opening-grid-1",
+  // A page that is just the cook's own image, on covers, the opening page and
+  // the book's own image pages.
+  "cover-own-page", "back-own-page", "dedication-own-page", "opening-own-page",
+  "stash-cover-own-page", "stash-back-own-page", "stash-dedication-own-page", "stash-opening-own-page",
+  "image-page",
 ];
 
 describe("every field of a book that can hold a photo", () => {

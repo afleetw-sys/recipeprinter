@@ -368,6 +368,9 @@ export interface BlankSheetSlot {
       is theirs, so it is listed, can be deleted, carries a page number, and
       reads as an ordinary page to the spread rules. */
   pageId?: string;
+  /** A page of the cook's that is their own image rather than a blank. */
+  pageImageUrl?: string;
+  pageIsImage?: boolean;
 }
 
 export type SheetSlot =
@@ -895,7 +898,13 @@ export function usePrintSheets({
         flush();
         out.push({
           id: `sheet-page-${item.id}`,
-          slots: [{ kind: "blank", id: item.id, pageId: item.id }],
+          slots: [{
+            kind: "blank",
+            id: item.id,
+            pageId: item.id,
+            pageIsImage: item.pageKind === "image",
+            pageImageUrl: item.pageKind === "image" ? item.pageImageUrl : undefined,
+          }],
           backGroupNeeded: false,
         });
       }
@@ -1250,8 +1259,8 @@ export function usePrintSheets({
               recipeId: slot.pageId,
               sheetIndex,
               slotIndex,
-              label: "Blank page",
-              pageLabel: "Blank page",
+              label: slot.pageIsImage ? "Image page" : "Blank page",
+              pageLabel: slot.pageIsImage ? "Image page" : "Blank page",
               flip: false,
             },
           ]);
