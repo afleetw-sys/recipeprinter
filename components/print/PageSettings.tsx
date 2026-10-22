@@ -23,9 +23,7 @@ import type { NavItem } from "@/lib/usePrintSheets";
 export type LookPreviewKind =
   | "text"
   | "text-on-photo"
-  | "text-on-collage"
   | "text-with-photo"
-  | "text-with-collage"
   | "own-image"
   | "blank"
   | "recipe-none"
@@ -104,8 +102,8 @@ export function PageSettings({
             {look.label}
           </span>
           <div
-            className={`recipe-page-look ${look.options.length === 4 ? "recipe-page-look--grid" : ""}`}
-            style={look.options.length === 4 ? undefined : { gridTemplateColumns: `repeat(${look.options.length}, 1fr)` }}
+            className="recipe-page-look"
+            style={{ gridTemplateColumns: `repeat(${look.options.length}, 1fr)` }}
             role="radiogroup"
             aria-labelledby="recipe-page-look-label"
           >
@@ -269,27 +267,11 @@ function LookPreview({ kind }: { kind: LookPreviewKind }) {
       ? "recipe-photo-preview__page recipe-photo-preview__page--photo"
       : kind === "text-on-photo"
         ? "recipe-photo-preview__page recipe-photo-preview__page--photo recipe-look-preview--over"
-        : kind === "text-on-collage"
-          ? "recipe-photo-preview__page recipe-look-preview--collage recipe-look-preview--over"
-          : "recipe-photo-preview__page";
+        : "recipe-photo-preview__page";
   return (
     <span className="recipe-photo-preview" aria-hidden>
       <span className={pageClass}>
-        {kind === "text-on-collage" && (
-          <span className="recipe-look-preview__cells">
-            <span />
-            <span />
-            <span />
-            <span />
-          </span>
-        )}
         {(kind === "recipe-in-page" || kind === "text-with-photo") && <span className="recipe-photo-preview__photo" />}
-        {kind === "text-with-collage" && (
-          <span className="recipe-look-preview__cells recipe-look-preview__cells--band">
-            <span />
-            <span />
-          </span>
-        )}
         {kind === "own-image" && <span className="recipe-look-preview__sun" />}
         {kind !== "own-image" && kind !== "blank" && lines}
       </span>

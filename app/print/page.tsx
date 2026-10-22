@@ -285,10 +285,11 @@ const FULL_CARD_DECK_MAX_PAGES = 80;
 const ARRIVED_BY_HANDOFF = seedPrintHandoff();
 
 /** The Look tiles each kind of page offers (see `renderPageSettings`). */
+// One photo or several is a choice made in the photo picker, not a separate
+// look: a collage is a photo page with more photos in it.
 const COVER_LOOKS: LookOption[] = [
   { id: "typographic", label: "Just text", preview: "text" },
   { id: "photo", label: "Text on a photo", preview: "text-on-photo" },
-  { id: "collage", label: "Text on a collage", preview: "text-on-collage" },
   { id: "own-image", label: "Your own image", preview: "own-image" },
 ];
 const OWN_PAGE_LOOKS: LookOption[] = [
@@ -298,7 +299,6 @@ const OWN_PAGE_LOOKS: LookOption[] = [
 const CHAPTER_LOOKS: LookOption[] = [
   { id: "none", label: "Just text", preview: "text" },
   { id: "photo", label: "With a photo", preview: "text-with-photo" },
-  { id: "grid", label: "With a collage", preview: "text-with-collage" },
 ];
 const RECIPE_LOOKS: LookOption[] = [
   { id: "none", label: "None", preview: "recipe-none" },
@@ -5626,7 +5626,9 @@ export default function PrintPage() {
       const ownImage = cover.pageType === "image";
       const layout =
         cover.layout ?? (cover.gridImages?.length ? "collage" : cover.imageUrl ? "photo" : "typographic");
-      const look = ownImage ? "own-image" : cover.pageType === "blank" ? null : layout;
+      // A collage is "Text on a photo" with more photos in it.
+      const look = ownImage ? "own-image" : cover.pageType === "blank" ? null : layout === "typographic" ? "typographic" : "photo";
+      const hasPhotos = Boolean(cover.imageUrl || cover.gridImages?.length);
       const imageKey = `page-image:${side}`;
       const fields: PageField[] =
         side === "front"
@@ -5660,22 +5662,19 @@ export default function PrintPage() {
                 if (!cover.pageImageUrl) openPhotoDialog(imageKey);
                 return;
               }
-              const nextLayout = id as "typographic" | "photo" | "collage";
+              // Back to a photo page keeps the collage it had, if it had one.
+              const nextLayout = id === "photo" ? (cover.gridImages?.length ? "collage" : "photo") : "typographic";
               set({ pageType: undefined, layout: nextLayout });
               // Nothing to show yet: go straight to choosing it.
-              const missing =
-                nextLayout === "photo" ? !cover.imageUrl : nextLayout === "collage" ? !cover.gridImages?.length : false;
-              if (missing) openPhotoDialog(`cover:${side}`);
+              if (id === "photo" && !hasPhotos) openPhotoDialog(`cover:${side}`);
             },
           }}
           lookAction={
             ownImage
               ? renderPageImagePicker(imageKey, cover.pageImageUrl, (url) => set({ pageImageUrl: url }))
               : look === "photo"
-                ? photoButton("Change photo")
-                : look === "collage"
-                  ? photoButton("Change photos")
-                  : null
+                ? photoButton(hasPhotos ? "Change photos" : "Choose photos")
+                : null
           }
           // Your own image has no words on it; they are kept for going back.
           fields={ownImage ? undefined : fields}
@@ -5731,16 +5730,18 @@ export default function PrintPage() {
           title={sectionDisplayTitle(section) || section.title}
           look={{
             label: "Look",
-            value: mode === "grid" ? "grid" : mode === "photo" ? "photo" : "none",
+            // One photo or a collage: both are "With a photo".
+            value: mode === "none" ? "none" : "photo",
             options: CHAPTER_LOOKS,
             onChange: (id) => {
-              projectMeta.updateSection(section.id, { cardPhotoMode: id as SlotPhotoMode });
-              if (id !== "none" && !section.cardPhotoUrl && bookSectionImages(section).length === 0) {
+              const next: SlotPhotoMode = id === "none" ? "none" : section.cardGridImages?.length ? "grid" : "photo";
+              projectMeta.updateSection(section.id, { cardPhotoMode: next });
+              if (next !== "none" && !section.cardPhotoUrl && bookSectionImages(section).length === 0) {
                 openPhotoDialog(`card:${section.id}`);
               }
             },
           }}
-          lookAction={mode === "none" ? null : photoButton(mode === "grid" ? "Change photos" : "Change photo")}
+          lookAction={mode === "none" ? null : photoButton("Change photos")}
           fields={[
             {
               id: "title",

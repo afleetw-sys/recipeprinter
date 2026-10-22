@@ -2759,15 +2759,11 @@
 }
 
 /* How the page looks: tiles with a small picture of the finished page, the
-   same frame and selected state as the recipe Photos tiles. Four options sit
-   two by two so each label has room. */
+   same frame and selected state as the recipe Photos tiles. */
 .recipe-page-look {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-}
-.recipe-page-look--grid {
-  grid-template-columns: repeat(2, 1fr);
 }
 .recipe-page-look__tile {
   display: flex;
@@ -2810,26 +2806,6 @@
   border-radius: 50%;
   background: var(--cp-card);
 }
-.recipe-look-preview--collage {
-  border-color: var(--cp-accent);
-}
-.recipe-look-preview__cells {
-  position: absolute;
-  inset: 2px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
-}
-.recipe-look-preview__cells > span {
-  border-radius: 1px;
-  background: color-mix(in srgb, var(--cp-accent) 55%, var(--cp-card));
-}
-.recipe-look-preview__cells--band {
-  position: static;
-  height: 13px;
-  margin: -1px -1px 2px;
-}
-
 /* The page's words, one labelled field each. */
 .recipe-page-fields {
   gap: 10px;
