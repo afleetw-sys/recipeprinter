@@ -405,12 +405,13 @@
   animation: print-success-pop 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .cookbook-welcome__panel {
-  width: min(780px, calc(100vw - 48px));
+  width: min(820px, calc(100vw - 48px));
   display: grid;
   /* The copy sets the dialog's height; the photo is a narrower column that
      fills whatever height that is, so the dialog is never taller than its
-     words need. */
-  grid-template-columns: minmax(260px, 0.72fr) minmax(380px, 1fr);
+     words need. The copy gets the width, so the title and each step sit on
+     one line instead of wrapping the dialog taller. */
+  grid-template-columns: minmax(220px, 0.5fr) minmax(400px, 1fr);
   align-items: stretch;
   gap: 0;
   padding: 0;
@@ -428,7 +429,7 @@
   display: grid;
   align-content: center;
   gap: 1.35rem;
-  padding: clamp(2rem, 3.6vw, 3rem);
+  padding: clamp(1.75rem, 2.6vw, 2.25rem);
 }
 .cookbook-welcome__lede {
   display: grid;
