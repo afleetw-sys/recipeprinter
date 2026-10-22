@@ -38,6 +38,8 @@ import { MobileStructureSheet, type MobileBookSheet } from "@/components/print/M
 import { EditTips } from "@/components/print/EditTips";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
+import { PageSettings } from "@/components/print/PageSettings";
+import { photoDialogKey } from "@/lib/photoOpenGesture";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import { PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
@@ -5510,6 +5512,51 @@ export default function PrintPage() {
     setPhotoStyleTip(null);
   }
 
+  /**
+   * The panel's Page tab for the page the deck is on. The same choices the
+   * page's toolbar offers, laid out as settings: a recipe's photo placement,
+   * link and chapter. The photo itself is still chosen in the toolbar's own
+   * dialog, which "Change photo" opens rather than mounting a second copy.
+   */
+  function renderPageSettings() {
+    const page = activeNavItem;
+    const photoKey = page ? photoDialogKey(page, () => coverSideFromNavItem(page)) : null;
+    const onChoosePhoto = photoKey ? () => openPhotoDialog(photoKey) : undefined;
+    const recipeItem =
+      page?.kind === "recipe" ? items?.find((item) => item.id === page.recipeId && item.recipe) : undefined;
+    const placement = recipeItem ? projectMeta.meta.itemPlacements?.[recipeItem.id] : undefined;
+    const linkShown = recipeItem ? recipeLinkOn(showSourceUrl, true, placement) : false;
+    return (
+      <PageSettings
+        page={page}
+        onChoosePhoto={onChoosePhoto}
+        recipe={
+          recipeItem
+            ? {
+                photoMode: photoModeFor(recipeItem.id),
+                onPhotoModeChange: (mode) => setRecipePhotoMode(recipeItem.id, mode),
+                hasPhoto: Boolean(bookImageOf(recipeItem)),
+                hasLink: Boolean(recipeItem.recipe?.sourceUrl),
+                linkShown,
+                // Choosing what the book already does drops the override, so
+                // the recipe follows the book again (as the toolbar's toggle).
+                onLinkShownChange: (shown) =>
+                  projectMeta.setItemPlacement(recipeItem.id, {
+                    showSourceUrl: shown === showSourceUrl ? undefined : shown,
+                  }),
+                chapterId: projectMeta.meta.sections.find((section) => section.itemIds.includes(recipeItem.id))?.id,
+                chapters: projectMeta.meta.sections.map((section) => ({
+                  id: section.id,
+                  title: section.title?.trim() || "Ungrouped",
+                })),
+                onChapterChange: (sectionId) => moveRecipeToSection(recipeItem.id, sectionId),
+              }
+            : null
+        }
+      />
+    );
+  }
+
   // The per-recipe photo placement toggle (cookbook): an always-present
   // None / In-page / Full-page switch that sits next to the Edit button, so
   // placement is one click away in every mode (not only when the photo is off).
@@ -6704,6 +6751,7 @@ export default function PrintPage() {
           setToastMessage={setToastMessage}
           hasPrintSettingsFields={hasPrintSettingsFields}
           cardSettingsFields={renderPrintSettingsFields()}
+          pageSettings={cookbookMode ? renderPageSettings() : undefined}
         />
 
         <div ref={mobileBarRef} className="recipe-mobile-actions no-print">

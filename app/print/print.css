@@ -2670,6 +2670,59 @@
 
    Nothing here touches the deck. The page being printed is the work, not the
    chrome around it, and it stays exactly the size it was. */
+/* A cookbook's Book / Page switch, above the scrolling settings so it stays
+   put while either tab scrolls. Inset like the scroll area's content. */
+.recipe-config-panel__tabs {
+  flex: 0 0 auto;
+  padding: 4px 8px 0;
+}
+/* Level with the collapse button pinned in the panel's top-right corner
+   (`.recipe-panel-toggle`, 32px tall), and kept clear of it. */
+.recipe-config-panel__title {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  margin: 8px 0 0;
+  padding: 0 44px 0 8px;
+  color: var(--cp-ink);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.recipe-config-panel__tabs .segmented-control {
+  width: 100%;
+}
+.recipe-config-panel__tabs .segmented-control__option {
+  flex: 1 1 0;
+  justify-content: center;
+}
+
+/* The Page tab: which page, then its settings. */
+.recipe-page-settings {
+  gap: 10px;
+}
+.recipe-page-settings__title {
+  margin: -4px 0 0;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body);
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.recipe-page-settings__note {
+  margin: 0;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  line-height: 1.45;
+}
+.recipe-page-settings__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.recipe-page-settings .btn {
+  align-self: flex-start;
+}
+
 .recipe-config-section {
   display: flex;
   flex-direction: column;
