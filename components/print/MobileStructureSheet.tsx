@@ -15,6 +15,8 @@ interface MobileStructureSheetProps {
   sections: Section[];
   toggleDedication: () => void;
   toggleCover: (side: "front" | "back") => void;
+  /** Adds a blank page after the page being looked at. */
+  onAddBlankPage?: () => void;
   bookPhotoStyle: PhotoStyle | null;
   applyBookPhotoStyle: (mode: PhotoStyle) => void;
   /** Set when the cook has been choosing the same photo layout recipe by
@@ -76,10 +78,16 @@ export function MobileStructureSheet({
   setBookSheet,
   structureSheetOpen,
   setStructureSheetOpen,
+  onAddBlankPage,
 }: MobileStructureSheetProps) {
     if (!projectMeta.meta.cookbookMode) return null;
     const orderedIds = sections.flatMap((section) => section.items.map((item) => item.id));
     const recipeCount = orderedIds.length;
+    // The subtitle counts recipes; a blank page is a page, not a recipe.
+    const bookRecipeCount = sections.reduce(
+      (count, section) => count + section.items.filter((item) => !item.pageKind).length,
+      0,
+    );
     const metaSections = projectMeta.meta.sections;
     return (
       <>
@@ -112,6 +120,19 @@ export function MobileStructureSheet({
                   checked={Boolean(projectMeta.meta.backCover)}
                   onChange={() => toggleCover("back")}
               />
+              {onAddBlankPage && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-compact"
+                  onClick={() => {
+                    setBookSheet(null);
+                    onAddBlankPage();
+                  }}
+                >
+                  <PlusIcon size={ICON_SIZE.sm} />
+                  Add blank page
+                </button>
+              )}
             </div>
         </MobileSheet>
 
@@ -174,7 +195,7 @@ export function MobileStructureSheet({
           title="Organize"
           subtitle={
             <>
-              {recipeCount} {recipeCount === 1 ? "recipe" : "recipes"} ·{" "}
+              {bookRecipeCount} {bookRecipeCount === 1 ? "recipe" : "recipes"} ·{" "}
               {namedSectionCount(sections)}{" "}
               {namedSectionCount(sections) === 1 ? "chapter" : "chapters"}
             </>

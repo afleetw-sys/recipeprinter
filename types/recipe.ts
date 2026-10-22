@@ -260,6 +260,12 @@ export interface QueueItem {
   /** Best-known title, falls back to the source until parsing resolves. */
   title: string;
   recipe?: Recipe;
+  /** Not a recipe: a page of the book's own (see lib/bookPages.ts). A blank
+      page travels with the recipes, in a chapter's order, so it saves,
+      reorders and exports with them. It never has a `recipe`, which is
+      otherwise what an import still running looks like, so anything asking
+      "is this a recipe yet?" checks `isBookPage` first. */
+  pageKind?: "blank";
   error?: string;
   /** The failure's bucket, for surfaces too small for `error`'s full sentence
       (the toast). Absent on items that failed before this was recorded. */

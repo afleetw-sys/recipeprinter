@@ -40,6 +40,7 @@ import { MobileSheet } from "@/components/print/MobileSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PageSettings } from "@/components/print/PageSettings";
 import { photoDialogKey } from "@/lib/photoOpenGesture";
+import { isBookPage, isRecipeEntry } from "@/lib/bookPages";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import { PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
@@ -1638,7 +1639,7 @@ export default function PrintPage() {
         setPendingFocusNavId("cover-front");
       }
       track("cookbook_workspace_entered", {
-        recipeCount: items?.length ?? 0,
+        recipeCount: items?.filter(isRecipeEntry).length ?? 0,
         template: bookTemplate ?? template,
       });
       if (!offerAfter) {
@@ -1652,7 +1653,7 @@ export default function PrintPage() {
       // hanging for a second and a half before anything happened.
       window.setTimeout(() => {
         void untilBookSettled().then(() => {
-          track("cookbook_welcome_shown", { price: cookbookPrice, recipeCount: items?.length ?? 0 });
+          track("cookbook_welcome_shown", { price: cookbookPrice, recipeCount: items?.filter(isRecipeEntry).length ?? 0 });
           setBookHiddenUntilBuilt(false);
           setShowCookbookOfferDialog(true);
         });
@@ -2021,6 +2022,14 @@ export default function PrintPage() {
       setArtCaption(navItem.recipeId, undefined);
       return;
     }
+    if (navItem.kind === "blank") {
+      // A blank page holds nothing to lose, so it goes without a confirm, the
+      // way the contents does.
+      const id = navItem.recipeId;
+      setJobIds((current) => (current ?? []).filter((jid) => jid !== id));
+      queue.remove(id);
+      return;
+    }
     if (navItem.kind === "toc") {
       // The contents is generated from the book, so there is nothing of the
       // cook's to lose: it goes without a confirm and comes back whole from
@@ -2036,6 +2045,8 @@ export default function PrintPage() {
       side,
       title: navItem.label || (side === "front" ? "cover" : "back cover"),
     });
+    // `queue.remove` is stable (useCallback over a stable commit).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, itemIdsForSection, sectionTitleForId, setArtPhoto, setArtCaption, projectMeta]);
 
   const requestDeleteSection = useCallback((sectionId: string) => {
@@ -3262,7 +3273,9 @@ export default function PrintPage() {
   const hasInFlightImport = queue.items.some(
     (item) => item.status === "parsing" && isOursToAwait(item.id),
   );
-  const recipeCount = (items?.length ?? 0) + (hasInFlightImport ? 1 : 0);
+  // Recipes only: the book's own pages (a blank page) never count toward a
+  // free preview or anything else measured in recipes.
+  const recipeCount = (items?.filter(isRecipeEntry).length ?? 0) + (hasInFlightImport ? 1 : 0);
   const { themeLocked, cardSizeLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked } =
     computeProLocks({
       customerInfo: effectiveCustomerInfo.customerInfo,
@@ -3690,7 +3703,7 @@ export default function PrintPage() {
       track("cookbook_export_ready", {
         preset: presetId,
         files: 1,
-        recipeCount: items?.length ?? 0,
+        recipeCount: items?.filter(isRecipeEntry).length ?? 0,
         ...(cookbookProjectId ? { cookbookId: cookbookProjectId } : {}),
       });
       track("cookbook_export_download_started", { preset: presetId, role: "pages" });
@@ -4191,10 +4204,11 @@ export default function PrintPage() {
       (idsFromUrl.length > 0 ? idsFromUrl : readCurrentPrintJobIds()) ??
       fullQueue.filter((it) => it.status === "ready").map((it) => it.id);
     // Preserve the order from the current print job, keeping only ids that
-    // resolve to a ready recipe — the same set `items` would project.
+    // resolve to a ready recipe or one of the book's own pages — the same set
+    // `items` would project (see `projectPrintJob`).
     const printIds = ids.filter((id) => {
       const it = byId.get(id);
-      return Boolean(it && it.status === "ready" && it.recipe);
+      return Boolean(it && it.status === "ready" && (it.recipe || isBookPage(it)));
     });
     setJobIds(printIds);
     // queue.items is read as an intentional snapshot (see above), not a trigger.
@@ -5319,6 +5333,19 @@ export default function PrintPage() {
       return;
     }
     openAddRecipeDialogAt(navItem);
+  }
+  /**
+   * A blank page, straight after the page being looked at, where a recipe
+   * added from here would go (`addRecipeTarget`). Not an import and not a
+   * recipe, so no paywall or free-preview cap applies.
+   */
+  function addBlankPage(navItem: NavItem | null = activeNavItem) {
+    const target = addRecipeTarget(navItem, sections);
+    const id = queue.addBlankPage();
+    setJobIds((current) => [...(current ?? []), id]);
+    const sectionId = target?.sectionId ?? sections[0]?.id;
+    if (sectionId) moveProjectItem(id, sectionId, target?.index ?? itemIdsForSection(sectionId).length);
+    setPendingFocusRecipeId(id);
   }
   function openAddRecipeDialogAt(navItem: NavItem | null) {
     const target = addRecipeTarget(navItem, sections);
@@ -6625,6 +6652,7 @@ export default function PrintPage() {
           setShowAddRecipeDialog={setShowAddRecipeDialog}
           openAddRecipeBelow={openAddRecipeBelow}
           addSectionDivider={addSectionDivider}
+          addBlankPage={() => addBlankPage()}
           makeSectionFromSelection={makeSectionFromSelection}
           moveRecipesToSection={moveRecipesToSection}
           railSortMode={railSortMode}
@@ -6941,6 +6969,7 @@ export default function PrintPage() {
           sections={sections}
           toggleDedication={toggleDedication}
           toggleCover={toggleCover}
+          onAddBlankPage={() => addBlankPage()}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
           photoStyleTip={photoStyleTip?.surface === "sheet" ? photoStyleTip : null}
@@ -7148,7 +7177,7 @@ export default function PrintPage() {
           setCookbookCoverPending(null);
           setCookbookExportError(null);
         }}
-        recipeCount={items?.length ?? 0}
+        recipeCount={items?.filter(isRecipeEntry).length ?? 0}
         exportingPreset={exportingPreset}
         exportProgress={cookbookExportProgress}
         exportError={cookbookExportError}

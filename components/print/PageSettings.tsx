@@ -49,7 +49,7 @@ export function PageSettings({
   return (
     <div className="recipe-config-section recipe-page-settings">
       <span className="recipe-config-label">{pageKindName(page.kind)}</span>
-      {page.label && <p className="recipe-page-settings__title">{page.label}</p>}
+      {page.label && page.kind !== "blank" && <p className="recipe-page-settings__title">{page.label}</p>}
 
       {recipe && (
         <>
@@ -118,6 +118,12 @@ export function PageSettings({
         </button>
       )}
 
+      {page.kind === "blank" && (
+        <p className="recipe-page-settings__note">
+          Prints with nothing on it, for notes or to start what follows on a new page.
+        </p>
+      )}
+
       {page.kind === "toc" && (
         <p className="recipe-page-settings__note">
           The contents is made from your chapters and recipes, so it updates as you change them.
@@ -140,5 +146,7 @@ function pageKindName(kind: NavItem["kind"]): string {
     case "image":
     case "section-photo":
       return "Photo page";
+    case "blank":
+      return "Blank page";
   }
 }

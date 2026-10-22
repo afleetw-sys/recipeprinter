@@ -568,7 +568,10 @@ export function PrintDeck(props: PrintDeckProps) {
 
     // Whether this KIND of page has an edit/reveal button at all.
     const editable =
-      navItem.kind !== "image" && navItem.kind !== "section-photo" && !navItem.continued;
+      navItem.kind !== "image" &&
+      navItem.kind !== "section-photo" &&
+      navItem.kind !== "blank" &&
+      !navItem.continued;
     // Whether to actually offer it. Separate from `editable` on purpose: the
     // first decides whether the page has text to work on, the second whether
     // there is anything left for the button to reveal.
@@ -745,7 +748,8 @@ export function PrintDeck(props: PrintDeckProps) {
 
     // The art pages have no text and no reveal, but they DO have a photo — and
     // the toolbar is the only place their photo can be changed from now.
-    if (!navItem.flip && !editable && !photoControl && !linkControl && !addImagePageButton) {
+    // A blank page has only its Delete, and still needs a bar to hold it.
+    if (navItem.kind !== "blank" && !navItem.flip && !editable && !photoControl && !linkControl && !addImagePageButton) {
       return null;
     }
     return (
@@ -1114,7 +1118,8 @@ export function PrintDeck(props: PrintDeckProps) {
     const spread = spreads.find((candidate) => candidate.left === sheetIndex && !candidate.single);
     if (!spread) return false;
     if (spread.right === null) return spreads[spreads.length - 1] === spread;
-    return Boolean(sheets[spread.right]?.slots.some((slot) => slot?.kind === "blank"));
+    // A filler blank only: a blank page the cook added is theirs, not room.
+    return Boolean(sheets[spread.right]?.slots.some((slot) => slot?.kind === "blank" && !slot.pageId));
   };
   const openPhotoOnClick = (navItem: NavItem, active: boolean) => (event: ReactMouseEvent) => {
     const press = photoPointerStart.current;
@@ -1173,7 +1178,8 @@ export function PrintDeck(props: PrintDeckProps) {
     const opener = sheets[spread.left]?.slots.find((slot) => slot?.kind === "divider");
     if (!opener || opener.id !== pendingAddAfterRecipeId) return null;
     const facesEmpty =
-      spread.right === null || Boolean(sheets[spread.right]?.slots.some((slot) => slot?.kind === "blank"));
+      spread.right === null ||
+      Boolean(sheets[spread.right]?.slots.some((slot) => slot?.kind === "blank" && !slot.pageId));
     return facesEmpty ? (parsingImports[0] ?? null) : null;
   })();
   /** The loading page itself: the photo being read, or what is being fetched. */

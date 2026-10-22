@@ -72,9 +72,11 @@ function line(names: string[], rest: number): string {
  * item carries its own `title` until parsing resolves the recipe's.
  */
 export function chapterRecipeTitles(
-  items: readonly { title?: string; recipe?: { title?: string } }[],
+  items: readonly { title?: string; recipe?: { title?: string }; pageKind?: string }[],
 ): string[] {
   return items
+    // The book's own pages (a blank page) are not recipes to list.
+    .filter((item) => !item.pageKind)
     .map((item) => item.recipe?.title?.trim() || item.title?.trim())
     .filter((title): title is string => Boolean(title));
 }
