@@ -44,6 +44,7 @@ export function ImagePicker({
   onOpenChange,
   label = "Choose photo",
   className = "",
+  hideTrigger = false,
 }: {
   current?: string;
   images: string[];
@@ -91,6 +92,9 @@ export function ImagePicker({
   onOpenChange?: (open: boolean) => void;
   label?: string;
   className?: string;
+  /** No button of its own: the caller draws one in its own style and opens
+      the dialog with `openSignal` (the settings panel's plain buttons). */
+  hideTrigger?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const onOpenChangeRef = useRef(onOpenChange);
@@ -511,6 +515,7 @@ export function ImagePicker({
 
   return (
     <>
+      {!hideTrigger && (
       <button
         type="button"
         className={`image-picker__trigger no-print ${className}`}
@@ -527,6 +532,7 @@ export function ImagePicker({
         <ImageIcon size={ICON_SIZE.md} />
         <span>{label}</span>
       </button>
+      )}
 
       {isMobile ? (
         <MobileSheet

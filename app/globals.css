@@ -1871,6 +1871,13 @@
     resize: vertical;
     line-height: 1.55;
   }
+  /* The compact modifier drops vertical padding because a one-line field gets
+     its height from min-height. A textarea has no such height to centre in, so
+     without padding its first line (and the caret) sat against the top edge. */
+  textarea.field.field--compact {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
   /* Compact field/select variant (e.g. the print-size dropdown) — one named
      modifier instead of per-call !important overrides on .field. */
   /* "Compact" means one height across the app's chrome. This was 40px while

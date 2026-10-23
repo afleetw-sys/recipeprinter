@@ -5720,7 +5720,12 @@ export default function PrintPage() {
             ownImage ? (
               renderPageImagePicker(imageKey, content.pageImageUrl, (url) => set({ pageImageUrl: url }))
             ) : look === "photo" ? (
+              <>
+              <button type="button" className="btn btn-secondary btn-compact" onClick={() => openPhotoDialog(photosKey)}>
+                {hasPhotos ? "Change photos" : "Choose photos"}
+              </button>
               <ImagePicker
+                hideTrigger
                 current={content.imageUrl}
                 images={coverPhotoCandidates}
                 gridImages={(content.gridImages ?? []).filter(Boolean)}
@@ -5736,11 +5741,10 @@ export default function PrintPage() {
                     layout: urls.length ? "collage" : "typographic",
                   })
                 }
-                label={hasPhotos ? "Change photos" : "Choose photos"}
-                className="btn btn-secondary btn-compact"
                 openSignal={photoDialogSignal(photosKey)}
                 onOpenSignalConsumed={() => clearPhotoDialogSignal(photosKey)}
               />
+              </>
             ) : null
           }
           fields={
@@ -5932,16 +5936,22 @@ export default function PrintPage() {
   /** The picker for a page that is the cook's own image: which picture, and
       nothing else, since the image is the whole page. */
   function renderPageImagePicker(key: string, current: string | undefined, onPick: (url: string | undefined) => void) {
+    // The panel's own plain button, like every other button in it; the picker
+    // draws no trigger and opens on the signal.
     return (
-      <ImagePicker
-        current={current}
-        images={Array.from(new Set([...(current ? [current] : []), ...coverPhotoCandidates]))}
-        onSelect={onPick}
-        label={current ? "Change image" : "Choose image"}
-        className="btn btn-secondary btn-compact"
-        openSignal={photoDialogSignal(key)}
-        onOpenSignalConsumed={() => clearPhotoDialogSignal(key)}
-      />
+      <>
+        <button type="button" className="btn btn-secondary btn-compact" onClick={() => openPhotoDialog(key)}>
+          {current ? "Change image" : "Choose image"}
+        </button>
+        <ImagePicker
+          hideTrigger
+          current={current}
+          images={Array.from(new Set([...(current ? [current] : []), ...coverPhotoCandidates]))}
+          onSelect={onPick}
+          openSignal={photoDialogSignal(key)}
+          onOpenSignalConsumed={() => clearPhotoDialogSignal(key)}
+        />
+      </>
     );
   }
 
