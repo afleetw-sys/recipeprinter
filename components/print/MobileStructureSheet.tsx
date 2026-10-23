@@ -38,7 +38,8 @@ interface MobileStructureSheetProps {
 }
 
 /** Which of the book-wide sheets is open, from the bottom bar's tiles. */
-export type MobileBookSheet = "extras" | "recipes" | null;
+/** "page": the selected page's settings, the desktop panel's Page tab. */
+export type MobileBookSheet = "extras" | "recipes" | "page" | null;
 
 /**
  * The mobile cookbook sheets. Desktop uses the page rail and the Book

@@ -171,6 +171,7 @@ import { track } from "@/lib/analytics";
 import {
   BookIcon,
   PagesIcon,
+  SettingsIcon,
   PagePlusIcon,
   CheckIcon,
   CrownIcon,
@@ -217,6 +218,7 @@ import type {
   Recipe,
   Section,
   SlotPhotoMode,
+  BookPageContent,
 } from "@/types/recipe";
 import { postPrintPrompt, purchaseGate, type PostPrintAction } from "@/lib/purchaseAccess";
 import { isCookbookProjectUnlocked } from "@/lib/cookbookUnlocks";
@@ -290,10 +292,6 @@ const ARRIVED_BY_HANDOFF = seedPrintHandoff();
 const COVER_LOOKS: LookOption[] = [
   { id: "typographic", label: "Just text", preview: "text" },
   { id: "photo", label: "Text on a photo", preview: "text-on-photo" },
-  { id: "own-image", label: "Your own image", preview: "own-image" },
-];
-const OWN_PAGE_LOOKS: LookOption[] = [
-  { id: "blank", label: "Blank", preview: "blank" },
   { id: "own-image", label: "Your own image", preview: "own-image" },
 ];
 const CHAPTER_LOOKS: LookOption[] = [
@@ -5684,34 +5682,75 @@ export default function PrintPage() {
     }
 
     // ── The book's own pages ───────────────────────────────────────────────
+    // A themed page like the dedication: blank until the cook puts words or a
+    // photo on it, or makes it their own image.
     if (page.kind === "blank") {
       const ownPage = items?.find((item) => item.id === page.recipeId);
       if (!ownPage) return null;
+      const content: BookPageContent = ownPage.pageContent ?? {};
+      const set = (patch: BookPageContent) =>
+        queue.updateBookPage(ownPage.id, { pageContent: { ...content, ...patch } });
+      const ownImage = content.pageType === "image";
+      const hasPhotos = Boolean(content.imageUrl || content.gridImages?.length);
+      const layout =
+        content.layout ?? (content.gridImages?.length ? "collage" : content.imageUrl ? "photo" : "typographic");
+      const look = ownImage ? "own-image" : layout === "typographic" ? "typographic" : "photo";
       const imageKey = `page-image:${ownPage.id}`;
-      const isImage = ownPage.pageKind === "image";
+      const photosKey = `page-photos:${ownPage.id}`;
       return (
         <PageSettings
           page={page}
-          name={isImage ? "Image page" : "Blank page"}
+          name="Page"
+          title={content.title?.trim() || undefined}
           look={{
             label: "Look",
-            value: isImage ? "own-image" : "blank",
-            options: OWN_PAGE_LOOKS,
+            value: look,
+            options: COVER_LOOKS,
             onChange: (id) => {
-              const toImage = id === "own-image";
-              queue.updateBookPage(ownPage.id, {
-                pageKind: toImage ? "image" : "blank",
-                title: toImage ? "Image page" : "Blank page",
-              });
-              if (toImage && !ownPage.pageImageUrl) openPhotoDialog(imageKey);
+              if (id === "own-image") {
+                set({ pageType: "image" });
+                if (!content.pageImageUrl) openPhotoDialog(imageKey);
+                return;
+              }
+              set({ pageType: undefined, layout: id === "photo" ? (content.gridImages?.length ? "collage" : "photo") : "typographic" });
+              if (id === "photo" && !hasPhotos) openPhotoDialog(photosKey);
             },
           }}
           lookAction={
-            isImage
-              ? renderPageImagePicker(imageKey, ownPage.pageImageUrl, (url) =>
-                  queue.updateBookPage(ownPage.id, { pageImageUrl: url }),
-                )
-              : null
+            ownImage ? (
+              renderPageImagePicker(imageKey, content.pageImageUrl, (url) => set({ pageImageUrl: url }))
+            ) : look === "photo" ? (
+              <ImagePicker
+                current={content.imageUrl}
+                images={coverPhotoCandidates}
+                gridImages={(content.gridImages ?? []).filter(Boolean)}
+                // Reached only by the "None" tile: clears the photos outright.
+                onSelect={(url) => {
+                  if (url !== undefined) return;
+                  set({ imageUrl: undefined, gridImages: undefined, layout: "typographic" });
+                }}
+                onGridChange={(urls) =>
+                  set({
+                    gridImages: urls.length ? urls : undefined,
+                    imageUrl: undefined,
+                    layout: urls.length ? "collage" : "typographic",
+                  })
+                }
+                label={hasPhotos ? "Change photos" : "Choose photos"}
+                className="btn btn-secondary btn-compact"
+                openSignal={photoDialogSignal(photosKey)}
+                onOpenSignalConsumed={() => clearPhotoDialogSignal(photosKey)}
+              />
+            ) : null
+          }
+          fields={
+            ownImage
+              ? undefined
+              : [
+                  { id: "heading", label: "Heading", value: content.title ?? "", onCommit: (v) => set({ title: v || undefined }) },
+                  { id: "message", label: "Message", value: content.blurb ?? "", multiline: true, onCommit: (v) => set({ blurb: v || undefined }) },
+                  { id: "signature", label: "Signature", value: content.author ?? "", onCommit: (v) => set({ author: v || undefined }) },
+                ]
           }
           remove={remove}
         />
@@ -7174,6 +7213,27 @@ export default function PrintPage() {
                 Organize
               </button>
             )}
+            {/* The page in front of the cook, as the desktop panel's Page tab
+                has it: a phone has no panel, so without this a page's look
+                and words could only be reached from its toolbar. */}
+            {cookbookMode && activeNavItem && (
+              <button
+                type="button"
+                className={`recipe-mobile-toolbar__btn ${bookSheet === "page" ? "is-active" : ""}`}
+                aria-pressed={bookSheet === "page"}
+                aria-haspopup="dialog"
+                onClick={() => {
+                  setSizeMenuOpen(false);
+                  setStructureSheetOpen(false);
+                  setBookSheet((open) => (open === "page" ? null : "page"));
+                }}
+              >
+                <span className="recipe-mobile-toolbar__btn-icon">
+                  <SettingsIcon size={ICON_SIZE.lg} />
+                </span>
+                This page
+              </button>
+            )}
             {cookbookMode && (
               <button
                 type="button"
@@ -7309,6 +7369,17 @@ export default function PrintPage() {
           structureSheetOpen={structureSheetOpen}
           setStructureSheetOpen={setStructureSheetOpen}
         />
+
+        {cookbookMode && (
+          <MobileSheet
+            open={bookSheet === "page"}
+            onClose={() => setBookSheet(null)}
+            title="This page"
+            className="recipe-structure-sheet recipe-page-sheet"
+          >
+            {bookSheet === "page" && renderPageSettings()}
+          </MobileSheet>
+        )}
 
         {/* Cards' "Every recipe": the same two checkboxes the desktop panel's
             group holds (see PrintSetupControls). A cookbook's sheet lives in

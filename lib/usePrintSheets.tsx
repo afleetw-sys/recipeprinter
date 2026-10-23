@@ -1,6 +1,7 @@
 "use client";
 
 import { isBookPage } from "@/lib/bookPages";
+import type { BookPageContent } from "@/types/recipe";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   assembleSpreads,
@@ -368,9 +369,9 @@ export interface BlankSheetSlot {
       is theirs, so it is listed, can be deleted, carries a page number, and
       reads as an ordinary page to the spread rules. */
   pageId?: string;
-  /** A page of the cook's that is their own image rather than a blank. */
-  pageImageUrl?: string;
-  pageIsImage?: boolean;
+  /** What the cook has put on that page; empty, it prints as a blank page in
+      the book's theme. */
+  pageContent?: BookPageContent;
 }
 
 export type SheetSlot =
@@ -898,13 +899,7 @@ export function usePrintSheets({
         flush();
         out.push({
           id: `sheet-page-${item.id}`,
-          slots: [{
-            kind: "blank",
-            id: item.id,
-            pageId: item.id,
-            pageIsImage: item.pageKind === "image",
-            pageImageUrl: item.pageKind === "image" ? item.pageImageUrl : undefined,
-          }],
+          slots: [{ kind: "blank", id: item.id, pageId: item.id, pageContent: item.pageContent }],
           backGroupNeeded: false,
         });
       }
@@ -1259,8 +1254,8 @@ export function usePrintSheets({
               recipeId: slot.pageId,
               sheetIndex,
               slotIndex,
-              label: slot.pageIsImage ? "Image page" : "Blank page",
-              pageLabel: slot.pageIsImage ? "Image page" : "Blank page",
+              label: slot.pageContent?.title?.trim() || "Blank page",
+              pageLabel: "Page",
               flip: false,
             },
           ]);

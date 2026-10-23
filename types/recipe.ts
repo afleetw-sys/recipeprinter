@@ -265,9 +265,12 @@ export interface QueueItem {
       reorders and exports with them. It never has a `recipe`, which is
       otherwise what an import still running looks like, so anything asking
       "is this a recipe yet?" checks `isBookPage` first. */
-  pageKind?: "blank" | "image";
-  /** What an `"image"` page shows, edge to edge. */
-  pageImageUrl?: string;
+  pageKind?: "blank";
+  /** What the cook has put on one of the book's own pages. It starts empty, a
+      blank page in the book's theme, and takes the same things a dedication
+      does: a heading, a message and a signature, over the paper or a photo, or
+      their own image instead (see `BookPageContent`). */
+  pageContent?: BookPageContent;
   error?: string;
   /** The failure's bucket, for surfaces too small for `error`'s full sentence
       (the toast). Absent on items that failed before this was recorded. */
@@ -450,6 +453,12 @@ export interface CoverConfig {
       design's `imageUrl`, so neither choice overwrites the other. */
   pageImageUrl?: string;
 }
+
+/** A book page's own words and pictures, in the shape a dedication keeps them,
+    so it is drawn by the same themed page. */
+export type BookPageContent = Partial<
+  Pick<CoverConfig, "title" | "blurb" | "author" | "imageUrl" | "gridImages" | "layout" | "pageType" | "pageImageUrl">
+>;
 
 export interface CookbookFrontMatter {
   kind: "dedication" | "introduction";

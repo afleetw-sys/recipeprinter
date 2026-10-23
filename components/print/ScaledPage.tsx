@@ -480,9 +480,12 @@ export const ScaledPage = memo(function ScaledPage({
   // has to render as a PAGE — an empty sheet that drew nothing would simply not
   // be in the file, which is the opposite of what it is for.
   if (anySlot.kind === "blank") {
-    // A page the cook turned into their own image prints as cover art does:
-    // the whole sheet, bled, through the same face a cover's own image uses.
-    const ownImage = anySlot.pageIsImage;
+    // A page the cook added is one of the book's own themed pages, drawn by the
+    // same face as the dedication: the theme's paper, and whatever words or
+    // photo they put on it. Empty, it is a blank page that matches the book.
+    // It prints as cover art does, the whole sheet, bled. A blank closing a
+    // spread gap (no `pageId`) stays plain.
+    const ownPage = Boolean(anySlot.pageId);
     return (
       <div
         className="recipe-page-scaler"
@@ -490,7 +493,7 @@ export const ScaledPage = memo(function ScaledPage({
       >
         <div className="recipe-page-scaler__inner">
           <div
-            className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${ownImage ? presetArtClass : presetSafeClass}`}
+            className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${ownPage ? presetArtClass : presetSafeClass}`}
             style={cardVars}
             data-double-sided="false"
           >
@@ -500,12 +503,11 @@ export const ScaledPage = memo(function ScaledPage({
                   isLastSheet ? "recipe-card-page--no-break" : ""
                 }`}
               >
-                {ownImage && (
+                {ownPage && (
                   <CoverFace
-                    cover={{ title: "", template, pageType: "image", pageImageUrl: anySlot.pageImageUrl }}
-                    side="back"
+                    cover={{ title: "", template, ...anySlot.pageContent }}
+                    side="dedication"
                     template={template}
-                    showDecoration={false}
                   />
                 )}
               </div>

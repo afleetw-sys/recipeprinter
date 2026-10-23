@@ -74,7 +74,11 @@ function bookWithPhotoEverywhere(): ProjectPhotos {
           { id: "r1", recipe: { title: "Sourdough", image: "recipe-photo-1" } },
           { id: "r2", recipe: { title: "Rye", image: "recipe-photo-2" } },
           { id: "r3", recipe: { title: "No photo" } },
-          { id: "p1", pageKind: "image", pageImageUrl: "image-page" },
+          {
+            id: "p1",
+            pageKind: "blank",
+            pageContent: { imageUrl: "book-page-photo", gridImages: ["book-page-grid-1"], pageImageUrl: "image-page" },
+          },
         ] as Section["items"],
       } as Section,
     ],
@@ -109,7 +113,7 @@ const EVERY_PHOTO = [
   // the book's own image pages.
   "cover-own-page", "back-own-page", "dedication-own-page", "opening-own-page",
   "stash-cover-own-page", "stash-back-own-page", "stash-dedication-own-page", "stash-opening-own-page",
-  "image-page",
+  "image-page", "book-page-photo", "book-page-grid-1",
 ];
 
 describe("every field of a book that can hold a photo", () => {

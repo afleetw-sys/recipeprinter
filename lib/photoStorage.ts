@@ -307,10 +307,18 @@ async function visitPlacements(
 /** The recipe's own photo. Left strictly alone — same object back — when the
     visit does not change it, so a walk that moved nothing allocates nothing. */
 async function visitItem(item: QueueItem, visit: VisitPhotoUrl): Promise<QueueItem> {
-  // A book's own image page carries its picture on the item itself.
-  if (item.pageImageUrl) {
-    const next = await visitOne(item.pageImageUrl, ART, visit);
-    return next === item.pageImageUrl ? item : { ...item, pageImageUrl: next };
+  // A book's own page carries its pictures on the item itself.
+  if (item.pageContent) {
+    const content = item.pageContent;
+    const [imageUrl, gridImages, pageImageUrl] = await Promise.all([
+      visitOne(content.imageUrl, ART, visit),
+      visitList(content.gridImages, visit),
+      visitOne(content.pageImageUrl, ART, visit),
+    ]);
+    if (imageUrl === content.imageUrl && gridImages === content.gridImages && pageImageUrl === content.pageImageUrl) {
+      return item;
+    }
+    return { ...item, pageContent: { ...content, imageUrl, gridImages, pageImageUrl } };
   }
   const image = item.recipe?.image;
   if (!image) return item;

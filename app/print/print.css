@@ -2763,6 +2763,10 @@
   /* The panel's own ground, not white: it only has to hide what scrolls under. */
   background: var(--cp-chrome-ground);
 }
+/* In the phone's sheet, the sheet's own ground. */
+.recipe-page-sheet .recipe-page-settings__remove {
+  background: var(--cp-card);
+}
 .recipe-page-settings__head {
   display: flex;
   flex-direction: column;
