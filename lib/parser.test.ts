@@ -20,6 +20,11 @@ vi.mock("firebase/functions", () => ({
 vi.mock("@/lib/firebase/functions", () => ({ getFns: () => ({}) }));
 vi.mock("@/lib/anonymousOwner", () => ({ anonymousOwnerId: () => "anon-test" }));
 
+/** Whether this browser can get an App Check token. Gets one unless a test says otherwise. */
+const appCheckToken = vi.hoisted(() => vi.fn());
+vi.mock("firebase/app-check", () => ({ getToken: appCheckToken }));
+vi.mock("@/lib/firebase/appCheck", () => ({ currentAppCheck: () => ({}) }));
+
 const COOKPILOT_RESULT = {
   data: {
     recipe: {
@@ -44,6 +49,8 @@ function routeReplies(status: number, body: Record<string, unknown>) {
 beforeEach(() => {
   callable.mockReset();
   callable.mockResolvedValue(COOKPILOT_RESULT);
+  appCheckToken.mockReset();
+  appCheckToken.mockResolvedValue({ token: "valid" });
 });
 
 afterEach(() => {
@@ -615,4 +622,36 @@ describe("a dropped connection when the cook's own connection is fine", () => {
       expect(failure.meta?.errorDetail).toContain("internal");
     }
   }, 10_000);
+});
+
+describe("a refusal because this browser couldn't pass App Check", () => {
+  // 2026-10-22, 12:20 UTC: a cook's browser got no App Check token (reCAPTCHA
+  // failed on their connection), so the SDK sent every call without one and
+  // CookPilot answered 401. They read "Something went wrong on our end", and
+  // only got through two minutes later from another IP. That message is only
+  // honest for a refusal App Check can't explain.
+  const refused = () => Object.assign(new Error("Unauthenticated"), { code: "functions/unauthenticated" });
+  const imports: Array<[string, () => Promise<unknown>]> = [
+    ["pasted text", () => parseText("Ingredients\n2 cups flour\nInstructions\nBake it.")],
+    ["photos", () => parseImages(["data:image/jpeg;base64,AAAA"])],
+  ];
+
+  it.each(imports)("%s: its own bucket only when App Check can't get a token", async (_, run) => {
+    for (const [tokenFails, expected] of [
+      [true, "security_check"],
+      [false, "backend_unavailable"],
+    ] as const) {
+      callable.mockReset();
+      callable.mockRejectedValue(refused());
+      appCheckToken.mockReset();
+      if (tokenFails) appCheckToken.mockRejectedValue(Object.assign(new Error("throttled"), { code: "appCheck/throttled" }));
+      else appCheckToken.mockResolvedValue({ token: "valid" });
+
+      const failure = (await run().catch((err: unknown) => err)) as ImportError;
+
+      expect(failure).toBeInstanceOf(ImportError);
+      expect(failure.code).toBe(expected);
+      expect(failure.meta?.errorDetail).toContain("Unauthenticated");
+    }
+  });
 });
