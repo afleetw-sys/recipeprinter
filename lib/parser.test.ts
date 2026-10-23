@@ -580,3 +580,39 @@ describe("parseImages when the failure isn't the photos' fault", () => {
     expect(failure.meta?.errorDetail).toContain(raw.message);
   });
 });
+
+describe("a dropped connection when the cook's own connection is fine", () => {
+  // 2026-10-22, 21:23 to 22:26 UTC: Google turned away every request to
+  // CookPilot's functions in 0s, preflights included. A failed preflight
+  // reaches the page exactly as no signal does, so the cook was told to check
+  // their signal, pressed again, and was told the same thing. Whether our own
+  // site still answers is the difference: it does when the fault is ours.
+  const dropped = () => Object.assign(new Error("internal"), { code: "functions/internal" });
+  const imports: Array<[string, () => Promise<unknown>]> = [
+    ["pasted text", () => parseText("Ingredients\n2 cups flour\nInstructions\nBake it.")],
+    ["photos", () => parseImages(["data:image/jpeg;base64,AAAA"])],
+  ];
+
+  it.each(imports)("%s: blames our side only when our own site still answers", async (_, run) => {
+    for (const [siteAnswers, expected] of [
+      [true, "backend_unavailable"],
+      [false, "network"],
+    ] as const) {
+      callable.mockReset();
+      callable.mockRejectedValue(dropped());
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => {
+          if (!siteAnswers) throw new TypeError("Failed to fetch");
+          return { ok: true, status: 200 };
+        }),
+      );
+
+      const failure = (await run().catch((err: unknown) => err)) as ImportError;
+
+      expect(failure).toBeInstanceOf(ImportError);
+      expect(failure.code).toBe(expected);
+      expect(failure.meta?.errorDetail).toContain("internal");
+    }
+  }, 10_000);
+});

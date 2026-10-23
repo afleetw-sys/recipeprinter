@@ -104,11 +104,50 @@ export async function callCookPilotParser(
     if (!isDroppedConnection(err)) throw err;
     await new Promise((resolve) => setTimeout(resolve, RETRY_AFTER_DROP_MS));
     if (signal?.aborted) throw err;
-    return (await callable(payload)).data;
+    try {
+      return (await callable(payload)).data;
+    } catch (again) {
+      if (isDroppedConnection(again) && (await ownSiteAnswers())) throw new ParserUnreachable(again);
+      throw again;
+    }
   }
 }
 
 const RETRY_AFTER_DROP_MS = 1500;
+
+/**
+ * A callable that got no answer twice while our own site answered fine: the
+ * fault is between us and CookPilot, not in the cook's signal.
+ *
+ * The page can't tell these apart from the error alone. On 2026-10-22 Google
+ * refused every request to CookPilot's functions for an hour, preflights
+ * included, and a refused preflight reaches the page exactly as no signal
+ * does. So it read "check your signal" to cooks on working connections.
+ */
+class ParserUnreachable extends Error {
+  readonly code: string;
+  constructor(cause: unknown) {
+    const { code, message } = errorParts(cause);
+    super(`${message} (own site reachable)`);
+    this.code = code;
+  }
+}
+
+const OWN_SITE_PROBE_MS = 3000;
+
+/** Whether this site's own static favicon still loads, uncached. Never throws. */
+async function ownSiteAnswers(): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), OWN_SITE_PROBE_MS);
+  try {
+    const response = await fetch("/favicon.ico", { method: "HEAD", cache: "no-store", signal: controller.signal });
+    return response.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /**
  * How long a link import may take, start to finish, once the meter has
@@ -225,6 +264,9 @@ function classifyError(
     return new ImportError("We couldn't find that page. Check the link and try again.", "not_found");
   }
   if (isAuthOrAppCheckError(err)) {
+    return new ImportError(unavailableCopy, "backend_unavailable");
+  }
+  if (err instanceof ParserUnreachable) {
     return new ImportError(unavailableCopy, "backend_unavailable");
   }
   // Already retried once in callCookPilotParser. A crash falls through to the

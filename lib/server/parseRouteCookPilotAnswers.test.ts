@@ -115,3 +115,24 @@ describe("/api/parse reading a page that is not UTF-8", () => {
     }
   });
 });
+
+describe("/api/parse when neither reader answered at all", () => {
+  // 2026-10-22: every CookPilot function answered a bare 500 for an hour. The
+  // route took the parser's 500 as inconclusive, fetched the Instagram reel
+  // itself, got a bare 500 from the second reader too, and told the cook there
+  // was no complete recipe on a page nobody had read.
+  it("says the fault is ours, not the page's", async () => {
+    const bare500 = () => new Response("Internal Server Error", { status: 500 });
+    for (const parserDown of [bare500, () => { throw new TypeError("fetch failed"); }]) {
+      network((url) => {
+        if (url === PARSER || url === SUPPLIED) return parserDown();
+        return new Response("<html><body>a reel</body></html>", { status: 200, headers: { "content-type": "text/html" } });
+      });
+
+      const { body } = await importLink("https://www.instagram.com/reel/DezODG1iNLy/");
+
+      expect(body.success).toBe(false);
+      expect(body.failure).toBe("backend_unavailable");
+    }
+  });
+});
