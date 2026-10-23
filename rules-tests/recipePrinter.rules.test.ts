@@ -12,6 +12,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  increment,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -259,7 +260,7 @@ describe("debugInbox drop box", () => {
     await assertSucceeds(setDoc(doc(guest, "debugInbox/guest-row"), row));
   });
 
-  test("nothing filed here can be read, changed or removed by a client", async () => {
+  test("nothing filed here can be read, edited or removed by a client", async () => {
     await environment.withSecurityRulesDisabled(async (admin) => {
       await setDoc(doc(admin.firestore(), "debugInbox/existing"), row);
     });
@@ -267,6 +268,39 @@ describe("debugInbox drop box", () => {
     await assertFails(getDoc(doc(guest, "debugInbox/existing")));
     await assertFails(updateDoc(doc(guest, "debugInbox/existing"), { reason: "changed" }));
     await assertFails(deleteDoc(doc(guest, "debugInbox/existing")));
+  });
+
+  // Retrying the same URL or text made a new row every time, so one broken
+  // page filled the inbox. A repeat now lands on the same row and counts.
+  test("a repeat counts on its row by exactly one, and changes nothing else", async () => {
+    await environment.withSecurityRulesDisabled(async (admin) => {
+      await setDoc(doc(admin.firestore(), "debugInbox/repeated"), {
+        ...row,
+        occurrenceCount: 1,
+        lastFailedAt: serverTimestamp(),
+      });
+      await setDoc(doc(admin.firestore(), "debugInbox/cookpilot-row"), {
+        ...row,
+        product: "cookpilot",
+        occurrenceCount: 1,
+        lastFailedAt: serverTimestamp(),
+      });
+    });
+    const guest = environment.unauthenticatedContext().firestore();
+    const repeated = doc(guest, "debugInbox/repeated");
+    const bump = { occurrenceCount: increment(1), lastFailedAt: serverTimestamp() };
+
+    await assertSucceeds(updateDoc(repeated, { ...bump, reason: "timed out", category: "timeout" }));
+    // A first write starts at one, and a re-create cannot reset the count.
+    await assertFails(setDoc(doc(guest, "debugInbox/starts-high"), { ...row, occurrenceCount: 5 }));
+    await assertFails(setDoc(repeated, { ...row, occurrenceCount: 1, lastFailedAt: serverTimestamp() }));
+
+    await assertFails(updateDoc(repeated, { ...bump, occurrenceCount: increment(2) }));
+    await assertFails(updateDoc(repeated, { ...bump, lastFailedAt: new Date(0) }));
+    await assertFails(updateDoc(repeated, { ...bump, payload: "https://example.org/other" }));
+    await assertFails(updateDoc(repeated, { ...bump, createdAt: serverTimestamp() }));
+    await assertFails(updateDoc(repeated, { ...bump, reason: "x".repeat(501) }));
+    await assertFails(updateDoc(doc(guest, "debugInbox/cookpilot-row"), bump));
   });
 
   // Free document storage is the failure mode a create-only rule invites.
