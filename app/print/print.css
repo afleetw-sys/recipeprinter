@@ -7517,12 +7517,14 @@ textarea.recipe-card__toc-title {
 /* An empty field, which only exists while the reveal is on. It used to be the
    card's own muted grey at 70%, and on a phone, at the card's print scale,
    that was a few pale pixels nobody could find after pressing "Add link, time,
-   servings". It reads as the app's, not the card's: accent words ("Add
-   servings") on the accent tint, a chip to tap. Never printed, since an empty
-   field is never drawn outside the reveal. */
+   servings". It reads as the app's, not the card's: a chip to tap, in the
+   app's soft grey on a grey tint (a tint of the ink, so it stays grey on any
+   theme's paper). It was the accent blue, the colour of a selection, which
+   made a prompt to fill in look like something already chosen. Never printed,
+   since an empty field is never drawn outside the reveal. */
 .recipe-card__inline-input::placeholder,
 .recipe-card__inline-textarea::placeholder {
-  color: var(--cp-accent);
+  color: var(--cp-ink-soft);
   opacity: 1;
 }
 .recipe-card__inline-input:placeholder-shown,
@@ -7531,8 +7533,8 @@ textarea.recipe-card__toc-title {
 .recipe-card__opener-field--empty,
 .recipe-card__headnote--empty {
   border-radius: 3px;
-  background: var(--cp-selected-fill);
-  box-shadow: 0 0 0 2px var(--cp-selected-fill);
+  background: color-mix(in srgb, var(--cp-ink) 8%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cp-ink) 8%, transparent);
 }
 /* The link field is the width of its line, and an empty one drew the chip
    across the whole card. Empty, it is as wide as "Add link". */
@@ -8208,14 +8210,14 @@ textarea.recipe-card__toc-title {
 
 .recipe-card__cover-field--empty,
 .recipe-card__opener-field--empty {
-  color: var(--cp-accent);
+  color: var(--cp-ink-soft);
   cursor: pointer;
 }
 
 /* The one placeholder that IS shown rather than typed into: the prompt for a
    note this recipe does not have. Only ever rendered while the reveal is on. */
 .recipe-card__headnote--empty {
-  color: var(--cp-accent);
+  color: var(--cp-ink-soft);
   cursor: pointer;
 }
 
