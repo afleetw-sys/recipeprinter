@@ -107,13 +107,25 @@ service cloud.firestore {
     // still here are the ones NOT yet dealt with and a clock would delete
     // exactly the wrong half. See docs/failed-import-retention.md.
     match /debugInbox/{docId} {
-      allow read, update, delete: if false;
+      allow read, delete: if false;
       allow create: if request.resource.data.product == "recipeprinter"
         && request.resource.data.keys().hasOnly([
           "product", "source", "category", "reason", "payload", "payloadTruncated",
           "payloadLength", "imagePath", "imageCount", "user", "userAgent", "createdAt",
-          "expiresAt"
+          "expiresAt", "occurrenceCount", "lastFailedAt"
         ])
+        // A URL or text failure lives at an id derived from what failed, so a
+        // retry lands on the same row and counts instead of adding one. A row
+        // starts at one. Optional, because an app already in the field writes
+        // neither field and rules deploy first.
+        && (
+          !request.resource.data.keys().hasAny(["occurrenceCount"])
+          || request.resource.data.occurrenceCount == 1
+        )
+        && (
+          !request.resource.data.keys().hasAny(["lastFailedAt"])
+          || request.resource.data.lastFailedAt == request.time
+        )
         && request.resource.data.keys().hasAll(["product", "source", "category", "createdAt"])
         // `expiresAt` is tolerated and, today, never sent. Rows here are a
         // to-do list worked through by hand, so nothing puts a clock on them —
@@ -139,6 +151,20 @@ service cloud.firestore {
         && request.resource.data.category.size() <= 40
         && request.resource.data.payload is string
         && request.resource.data.payload.size() <= 20000
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() <= 500;
+
+      // The repeat of an existing row: one more, now, and the latest reason.
+      // Nothing else moves, so the payload that names the bug, and when it
+      // was first seen, are fixed once written. CookPilot shares this
+      // collection, and its rows are never ours to touch.
+      allow update: if resource.data.product == "recipeprinter"
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["occurrenceCount", "lastFailedAt", "reason", "category"])
+        && request.resource.data.occurrenceCount == resource.data.occurrenceCount + 1
+        && request.resource.data.lastFailedAt == request.time
+        && request.resource.data.category is string
+        && request.resource.data.category.size() <= 40
         && request.resource.data.reason is string
         && request.resource.data.reason.size() <= 500;
     }

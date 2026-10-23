@@ -98,6 +98,14 @@ const MAX_CAPTURE_BYTES = 12 * 1024 * 1024;
 // short enough that the collection stays browsable. Truncation is flagged on
 // the row rather than being silent.
 const MAX_TEXT_CAPTURE_CHARS = 20_000;
+function currentUserId(getFirebaseAuth: () => { currentUser: { uid: string } | null }): string {
+  try {
+    return getFirebaseAuth().currentUser?.uid ?? "";
+  } catch {
+    return "";
+  }
+}
+
 function currentUserEmail(getFirebaseAuth: () => { currentUser: { email: string | null } | null }): string {
   try {
     return getFirebaseAuth().currentUser?.email ?? "";
@@ -220,6 +228,11 @@ async function uploadCapture(
  * the URL that would not parse, the text that was pasted, or a note that the
  * bytes are in Storage at `imagePath`.
  *
+ * One row per failing input, not per attempt. A URL or text failure lives at
+ * an id derived from what failed (see `repeatableRowId`), so retrying it bumps
+ * `occurrenceCount` on the row already there instead of adding another. Each
+ * photo attempt has photos of its own and keeps getting a fresh row.
+ *
  * Best-effort like everything else here — it is awaited only so the caller can
  * report success, and a rejection is swallowed rather than surfaced to a cook
  * who is already looking at a failed import.
@@ -231,21 +244,25 @@ export async function recordFailedImport(
   if (typeof window === "undefined") return false;
   if (!(await isFirebaseConfigured())) return false;
   try {
-    const [{ addDoc, collection, serverTimestamp }, { getDb }, { getFirebaseAuth }] =
-      await Promise.all([
-        import("firebase/firestore"),
-        import("./firebase/db"),
-        import("./firebase/client"),
-      ]);
+    const [
+      { addDoc, collection, doc, increment, serverTimestamp, setDoc, updateDoc },
+      { getDb },
+      { getFirebaseAuth },
+    ] = await Promise.all([
+      import("firebase/firestore"),
+      import("./firebase/db"),
+      import("./firebase/client"),
+    ]);
     const raw = detail.payload?.trim() ?? "";
     const truncated = raw.length > MAX_TEXT_CAPTURE_CHARS;
-    await addDoc(collection(getDb(), DEBUG_INBOX_COLLECTION), {
+    const reason = meta.reason.slice(0, 500);
+    const row = {
       // Two products share this collection and this Firestore. Without it a
       // RecipePrinter failure is indistinguishable from a CookPilot one.
       product: "recipeprinter",
       source: meta.source,
       category: meta.category,
-      reason: meta.reason.slice(0, 500),
+      reason,
       payload: truncated ? raw.slice(0, MAX_TEXT_CAPTURE_CHARS) : raw,
       payloadTruncated: truncated,
       payloadLength: raw.length,
@@ -255,18 +272,57 @@ export async function recordFailedImport(
       user: currentUserEmail(getFirebaseAuth),
       userAgent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 300) : "",
       createdAt: serverTimestamp(),
+      occurrenceCount: 1,
+      lastFailedAt: serverTimestamp(),
       // No `expiresAt`. It was briefly written here to drive a Firestore TTL
       // policy, which was the wrong idea for a collection that is worked
       // through by hand — and a field promising an expiry that nothing
       // enforces is worse than no field, because the person reading these rows
       // would reasonably believe it. `firestore.rules` still tolerates one, so
       // a future backstop needs no rules deploy ahead of it.
-    });
+    };
+    const inbox = collection(getDb(), DEBUG_INBOX_COLLECTION);
+    const id = await repeatableRowId(meta.source, currentUserId(getFirebaseAuth), raw);
+    if (!id) {
+      await addDoc(inbox, row);
+      return true;
+    }
+    const ref = doc(inbox, id);
+    try {
+      await setDoc(ref, row);
+    } catch {
+      // Rows can't be read, so "it's already there" shows up as the rules
+      // refusing a second create. Count the repeat on it instead.
+      await updateDoc(ref, {
+        occurrenceCount: increment(1),
+        lastFailedAt: serverTimestamp(),
+        reason,
+        category: meta.category,
+      });
+    }
     return true;
   } catch (err) {
     reportCaptureFailure("inbox", meta, err);
     return false;
   }
+}
+
+/**
+ * The document id a URL or text failure is filed under, or null for a failure
+ * that should always get a row of its own (photos, or a browser with no
+ * `crypto.subtle`).
+ *
+ * The same input from the same account maps to the same row. Guests share an
+ * empty identity, so two guests failing on one URL share a row too, which is
+ * right: it's one bug.
+ */
+async function repeatableRowId(source: string, identity: string, payload: string): Promise<string | null> {
+  if (source !== "url" && source !== "text") return null;
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) return null;
+  const bytes = new TextEncoder().encode(`recipeprinter\n${source}\n${identity}\n${payload}`);
+  const digest = new Uint8Array(await subtle.digest("SHA-256", bytes));
+  return Array.from(digest, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /** A refused capture (App Check, rules, quota) used to look exactly like no
