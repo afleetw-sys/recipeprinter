@@ -67,6 +67,8 @@ type ProFeature =
  *   - too_large: the image was still over budget after resizing.
  *   - backend_unavailable: auth / App Check / Functions config failure, or the
  *     function itself crashed. `errorDetail` carries the raw error.
+ *   - security_check: refused because this browser can't get an App Check
+ *     token (reCAPTCHA failing behind a VPN or blocker).
  *   - network: the request never got an answer (the connection dropped).
  *   - timeout: the parser ran past its deadline.
  *   - unknown: anything we didn't classify.

@@ -384,6 +384,9 @@ type CookPilotServerOutcome =
   /** Never called: no endpoint or secret on this deployment. Not billed. */
   | { kind: "unconfigured" };
 
+/** Our side failed and the page was never read: the cook has the other two ways in. */
+const LINK_UNAVAILABLE = "We couldn't import this link right now. Paste the recipe text or upload screenshots instead.";
+
 const INCONCLUSIVE: CookPilotServerOutcome = { kind: "inconclusive" };
 const UNCONFIGURED: CookPilotServerOutcome = { kind: "unconfigured" };
 
@@ -565,10 +568,7 @@ async function parseWithCookPilotServer(
     return { kind: "no_recipe", message: said };
   }
   if (response.status === 401 || response.status === 403) {
-    throw new ParseHttpError(
-      "We couldn't import this link right now. Paste the recipe text or upload screenshots instead.",
-      503,
-    );
+    throw new ParseHttpError(LINK_UNAVAILABLE, 503);
   }
   if (response.status === 429) {
     throw new ParseHttpError(
@@ -778,6 +778,15 @@ export async function POST(request: Request) {
         failure: "blocked",
         botWall: { vendor: shared.verdict.vendor },
       });
+    }
+
+    // Neither reader gave any answer, so nobody read the page and "no recipe
+    // on that page" would be a guess about it. On 2026-10-22 every CookPilot
+    // function answered a bare 500 for an hour and this told cooks their
+    // links had no recipe.
+    if (cookPilot.kind === "inconclusive" && shared.kind === "unavailable") {
+      console.warn(`parse: no reader answered  host=${url.hostname}`);
+      return errorResponse(LINK_UNAVAILABLE, { status: 503, parserExhausted, failure: "backend_unavailable" });
     }
 
     return errorResponse(

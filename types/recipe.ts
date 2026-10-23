@@ -226,6 +226,9 @@ export type ImportFailureCode =
   | "decode_failed"
   | "too_large"
   | "backend_unavailable"
+  // CookPilot refused the call and this browser can't get an App Check token
+  // (reCAPTCHA failing on its connection). Not our outage, not the input.
+  | "security_check"
   // The request never got an answer: the connection dropped on the way.
   | "network"
   | "timeout"

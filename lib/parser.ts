@@ -98,17 +98,92 @@ export async function callCookPilotParser(
   try {
     return (await callable(payload)).data;
   } catch (err) {
+    if (errorParts(err).code.includes("unauthenticated") && (await appCheckFails())) {
+      throw new SecurityCheckFailed(err);
+    }
     // A phone dropping signal for a moment is the usual cause, and the second
     // try usually lands. Once only: anything that fails twice is worth telling
     // the cook about, not hiding behind more waiting.
     if (!isDroppedConnection(err)) throw err;
     await new Promise((resolve) => setTimeout(resolve, RETRY_AFTER_DROP_MS));
     if (signal?.aborted) throw err;
-    return (await callable(payload)).data;
+    try {
+      return (await callable(payload)).data;
+    } catch (again) {
+      if (isDroppedConnection(again) && (await ownSiteAnswers())) throw new ParserUnreachable(again);
+      throw again;
+    }
   }
 }
 
 const RETRY_AFTER_DROP_MS = 1500;
+
+/**
+ * A 401 from a browser that can't get an App Check token. When reCAPTCHA fails
+ * on the cook's connection (a VPN or blocker, on 2026-10-22), the Functions SDK
+ * sends the call without the App Check header and CookPilot refuses it. The
+ * page can't see why from the 401 alone, but it can ask App Check: a token it
+ * can't get now is one it couldn't get a moment ago. A 401 with a working token
+ * is something else and stays "on our end".
+ */
+class SecurityCheckFailed extends Error {
+  readonly code: string;
+  constructor(cause: unknown) {
+    const { code, message } = errorParts(cause);
+    super(`${message} (no App Check token)`);
+    this.code = code;
+  }
+}
+
+/** Whether App Check can't produce a token for this browser. Never throws. */
+async function appCheckFails(): Promise<boolean> {
+  try {
+    const [{ getToken }, { currentAppCheck }] = await Promise.all([
+      import("firebase/app-check"),
+      import("@/lib/firebase/appCheck"),
+    ]);
+    const appCheck = currentAppCheck();
+    if (!appCheck) return false;
+    await getToken(appCheck);
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * A callable that got no answer twice while our own site answered fine: the
+ * fault is between us and CookPilot, not in the cook's signal.
+ *
+ * The page can't tell these apart from the error alone. On 2026-10-22 Google
+ * refused every request to CookPilot's functions for an hour, preflights
+ * included, and a refused preflight reaches the page exactly as no signal
+ * does. So it read "check your signal" to cooks on working connections.
+ */
+class ParserUnreachable extends Error {
+  readonly code: string;
+  constructor(cause: unknown) {
+    const { code, message } = errorParts(cause);
+    super(`${message} (own site reachable)`);
+    this.code = code;
+  }
+}
+
+const OWN_SITE_PROBE_MS = 3000;
+
+/** Whether this site's own static favicon still loads, uncached. Never throws. */
+async function ownSiteAnswers(): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), OWN_SITE_PROBE_MS);
+  try {
+    const response = await fetch("/favicon.ico", { method: "HEAD", cache: "no-store", signal: controller.signal });
+    return response.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /**
  * How long a link import may take, start to finish, once the meter has
@@ -169,6 +244,10 @@ function friendlyError(
 /** Our side failed, so there's nothing for the cook to change but the moment. */
 const UNAVAILABLE_COPY = "Something went wrong on our end. Try again in a minute.";
 
+const SECURITY_CHECK_COPY =
+  "This browser couldn't complete our security check, so the import didn't go through. " +
+  "A VPN or content blocker can cause this. Try turning it off, then import again.";
+
 function classifyError(
   err: unknown,
   fallback: string,
@@ -224,7 +303,13 @@ function classifyError(
   if (/HTTP\s*404/.test(message)) {
     return new ImportError("We couldn't find that page. Check the link and try again.", "not_found");
   }
+  if (err instanceof SecurityCheckFailed) {
+    return new ImportError(SECURITY_CHECK_COPY, "security_check");
+  }
   if (isAuthOrAppCheckError(err)) {
+    return new ImportError(unavailableCopy, "backend_unavailable");
+  }
+  if (err instanceof ParserUnreachable) {
     return new ImportError(unavailableCopy, "backend_unavailable");
   }
   // Already retried once in callCookPilotParser. A crash falls through to the
