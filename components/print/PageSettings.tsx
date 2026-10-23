@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Checkbox, SelectTile } from "@/components/Controls";
-import { ICON_SIZE, TrashIcon } from "@/components/icons";
-import { Select } from "@/components/Select";
+import { ChevronDownIcon, ICON_SIZE, TrashIcon } from "@/components/icons";
+import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
 import type { NavItem } from "@/lib/usePrintSheets";
 
 /**
@@ -40,7 +40,6 @@ export interface PageField {
   id: string;
   label: string;
   value: string;
-  placeholder?: string;
   multiline?: boolean;
   onCommit: (value: string) => void;
 }
@@ -76,12 +75,9 @@ export function PageSettings({
   lookAction?: ReactNode;
   fields?: PageField[];
   toggles?: PageToggle[];
-  chapter?: {
-    value: string;
-    options: Array<{ id: string; title: string }>;
-    onChange: (sectionId: string) => void;
-    onNewChapter?: () => void;
-  } | null;
+  /** Which chapter a recipe is in, moved with the same menu its toolbar's
+      Move button and the rail's right-click open. */
+  chapter?: ChapterChoice | null;
   note?: string;
   remove?: { label: string; onRemove: () => void } | null;
 }) {
@@ -148,26 +144,7 @@ export function PageSettings({
         </div>
       )}
 
-      {chapter && (
-        <label className="recipe-config-section">
-          <span className="recipe-config-label">Chapter</span>
-          <Select
-            variant="compact"
-            value={chapter.value}
-            onChange={(event) => {
-              if (event.target.value === NEW_CHAPTER) chapter.onNewChapter?.();
-              else chapter.onChange(event.target.value);
-            }}
-          >
-            {chapter.options.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.title}
-              </option>
-            ))}
-            {chapter.onNewChapter && <option value={NEW_CHAPTER}>New chapter…</option>}
-          </Select>
-        </label>
-      )}
+      {chapter && <ChapterPicker chapter={chapter} what={title} />}
 
       {note && <p className="recipe-page-settings__note">{note}</p>}
 
@@ -183,7 +160,54 @@ export function PageSettings({
   );
 }
 
-const NEW_CHAPTER = "__new-chapter";
+export interface ChapterChoice {
+  currentId: string;
+  currentTitle: string;
+  options: Array<{ id: string; title: string }>;
+  onMove: (sectionId: string) => void;
+  onNewChapter?: () => void;
+}
+
+/**
+ * The recipe's chapter, as a field that opens the book's own Move menu: the
+ * one the toolbar's Move button and the rail's right-click open, New chapter
+ * included, so there is one way to move a recipe wherever it is started from.
+ */
+function ChapterPicker({ chapter, what }: { chapter: ChapterChoice; what?: string }) {
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
+  return (
+    <div className="recipe-config-section">
+      <span className="recipe-config-label">Chapter</span>
+      <button
+        type="button"
+        className="field field--compact recipe-page-chapter"
+        aria-haspopup="menu"
+        aria-expanded={Boolean(menuAt)}
+        onClick={(event) => {
+          if (menuAt) {
+            setMenuAt(null);
+            return;
+          }
+          const rect = event.currentTarget.getBoundingClientRect();
+          setMenuAt({ x: rect.left, y: rect.bottom + 6 });
+        }}
+      >
+        <span>{chapter.currentTitle}</span>
+        <ChevronDownIcon size={ICON_SIZE.sm} />
+      </button>
+      {menuAt && (
+        <MoveToSectionMenu
+          anchor={menuAt}
+          heading={`Move ${what ? `“${what}”` : "this recipe"} to`}
+          sections={chapter.options.filter((option) => option.id !== chapter.currentId)}
+          onMove={chapter.onMove}
+          onNewSection={chapter.onNewChapter}
+          onClose={() => setMenuAt(null)}
+        />
+      )}
+    </div>
+  );
+}
 
 /**
  * One line of the page's words. It keeps its own draft and writes to the page
@@ -219,7 +243,6 @@ function PageTextField({ field }: { field: PageField }) {
     id: `page-field-${field.id}`,
     className: "field field--compact recipe-page-fields__input",
     value: draft,
-    placeholder: field.placeholder,
     onFocus: () => {
       focused.current = true;
     },

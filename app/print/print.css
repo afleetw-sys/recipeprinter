@@ -2821,6 +2821,25 @@
   border-radius: 50%;
   background: var(--cp-card);
 }
+/* The recipe's chapter: a full-width field that opens the Move menu. */
+.recipe-page-chapter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding-right: 10px;
+  color: var(--cp-ink);
+  text-align: left;
+  cursor: pointer;
+}
+.recipe-page-chapter > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* The page's words, one labelled field each. */
 .recipe-page-fields {
   gap: 10px;

@@ -45,7 +45,6 @@ import { coverSideOf, pageDeletionFor } from "@/lib/pageDeletion";
 import type { RecipeCardEditTarget } from "@/lib/recipeCardLayout";
 import { formatRecipeTime } from "@/lib/time";
 import { composeNote } from "@/lib/recipeNote";
-import { chapterIntroFromRecipes, chapterRecipeTitles } from "@/lib/chapterIntro";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import { PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
@@ -5631,10 +5630,10 @@ export default function PrintPage() {
       const fields: PageField[] =
         side === "front"
           ? [
-              { id: "title", label: "Title", value: cover.title, placeholder: "Our Favorite Recipes", onCommit: (v) => set({ title: v }) },
+              { id: "title", label: "Title", value: cover.title, onCommit: (v) => set({ title: v }) },
               { id: "subtitle", label: "Subtitle", value: cover.subtitle ?? "", onCommit: (v) => set({ subtitle: v || undefined }) },
               { id: "author", label: "Author", value: cover.author ?? "", onCommit: (v) => set({ author: v || undefined }) },
-              { id: "edition", label: "Edition", value: cover.edition ?? "", placeholder: "2026 Family Edition", onCommit: (v) => set({ edition: v || undefined }) },
+              { id: "edition", label: "Edition", value: cover.edition ?? "", onCommit: (v) => set({ edition: v || undefined }) },
             ]
           : side === "dedication"
             ? [
@@ -5803,8 +5802,6 @@ export default function PrintPage() {
               label: "Description",
               value: section.intro ?? "",
               multiline: true,
-              // What the page prints until the cook writes their own.
-              placeholder: chapterIntroFromRecipes(chapterRecipeTitles(section.items)),
               onCommit: (v) => projectMeta.setSectionIntro(section.id, v),
             },
           ]}
@@ -5846,8 +5843,8 @@ export default function PrintPage() {
             page.continued
               ? undefined
               : [
-                  { id: "kicker", label: "Label", value: projectMeta.meta.tocKicker ?? "", placeholder: "Contents", onCommit: (v) => projectMeta.setTocKicker(v) },
-                  { id: "heading", label: "Heading", value: projectMeta.meta.tocTitle ?? "", placeholder: "What's inside", onCommit: (v) => projectMeta.setTocTitle(v) },
+                  { id: "kicker", label: "Label", value: projectMeta.meta.tocKicker ?? "", onCommit: (v) => projectMeta.setTocKicker(v) },
+                  { id: "heading", label: "Heading", value: projectMeta.meta.tocTitle ?? "", onCommit: (v) => projectMeta.setTocTitle(v) },
                 ]
           }
           note="The list is made from your chapters and recipes, so it updates as you change them."
@@ -5900,10 +5897,10 @@ export default function PrintPage() {
         lookAction={photoMode === "none" ? null : photoButton(bookImageOf(recipeItem) ? "Change photo" : "Add photo")}
         fields={[
           { id: "title", label: "Title", value: recipe.title, onCommit: edit({ kind: "title" }) },
-          { id: "time", label: "Time", value: formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) ?? "", placeholder: "45 min", onCommit: edit({ kind: "cookTime" }) },
-          { id: "servings", label: "Servings", value: String(recipe.servings ?? recipe.yield ?? ""), placeholder: "Serves 4", onCommit: edit({ kind: "servings" }) },
+          { id: "time", label: "Time", value: formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) ?? "", onCommit: edit({ kind: "cookTime" }) },
+          { id: "servings", label: "Servings", value: String(recipe.servings ?? recipe.yield ?? ""), onCommit: edit({ kind: "servings" }) },
           { id: "note", label: "Note", value: composeNote(recipe.description, recipe.note, showDescription), multiline: true, onCommit: edit({ kind: "description" }) },
-          { id: "link", label: "Link", value: recipe.sourceUrl ?? "", placeholder: "https://", onCommit: edit({ kind: "sourceUrl" }) },
+          { id: "link", label: "Link", value: recipe.sourceUrl ?? "", onCommit: edit({ kind: "sourceUrl" }) },
         ]}
         toggles={[
           {
@@ -5919,15 +5916,21 @@ export default function PrintPage() {
               }),
           },
         ]}
-        chapter={{
-          value: projectMeta.meta.sections.find((section) => section.itemIds.includes(recipeItem.id))?.id ?? "",
-          options: projectMeta.meta.sections.map((section) => ({
+        chapter={(() => {
+          const options = projectMeta.meta.sections.map((section) => ({
             id: section.id,
             title: section.title?.trim() || "No chapter",
-          })),
-          onChange: (sectionId) => moveRecipeToSection(recipeItem.id, sectionId),
-          onNewChapter: () => moveRecipeToNewSection(recipeItem.id),
-        }}
+          }));
+          const currentId =
+            projectMeta.meta.sections.find((section) => section.itemIds.includes(recipeItem.id))?.id ?? "";
+          return {
+            currentId,
+            currentTitle: options.find((option) => option.id === currentId)?.title ?? "No chapter",
+            options,
+            onMove: (sectionId: string) => moveRecipeToSection(recipeItem.id, sectionId),
+            onNewChapter: () => moveRecipeToNewSection(recipeItem.id),
+          };
+        })()}
         remove={remove}
       />
     );
