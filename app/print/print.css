@@ -2750,22 +2750,12 @@
 }
 /* The page's own Delete, last and set apart by a hairline, as the toolbar
    keeps its Delete in a group of its own. */
-/* At the foot of the panel: below everything when the settings are short, and
-   held at the bottom edge while they scroll when they are long, so removing
-   the page is always in the same place. */
+/* Last, after everything else: at the foot of the panel when the settings are
+   short, and simply at their end, scrolled to, when they are long. */
 .recipe-page-settings__remove {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
   margin-top: auto;
-  padding: 12px 0 14px;
+  padding-top: 12px;
   border-top: 1px solid var(--cp-line);
-  /* The panel's own ground, not white: it only has to hide what scrolls under. */
-  background: var(--cp-chrome-ground);
-}
-/* In the phone's sheet, the sheet's own ground. */
-.recipe-page-sheet .recipe-page-settings__remove {
-  background: var(--cp-card);
 }
 .recipe-page-settings__head {
   display: flex;
