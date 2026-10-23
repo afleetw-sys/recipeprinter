@@ -263,6 +263,17 @@ export interface QueueItem {
   /** Best-known title, falls back to the source until parsing resolves. */
   title: string;
   recipe?: Recipe;
+  /** Not a recipe: a page of the book's own (see lib/bookPages.ts). A blank
+      page travels with the recipes, in a chapter's order, so it saves,
+      reorders and exports with them. It never has a `recipe`, which is
+      otherwise what an import still running looks like, so anything asking
+      "is this a recipe yet?" checks `isBookPage` first. */
+  pageKind?: "blank";
+  /** What the cook has put on one of the book's own pages. It starts empty, a
+      blank page in the book's theme, and takes the same things a dedication
+      does: a heading, a message and a signature, over the paper or a photo, or
+      their own image instead (see `BookPageContent`). */
+  pageContent?: BookPageContent;
   error?: string;
   /** The failure's bucket, for surfaces too small for `error`'s full sentence
       (the toast). Absent on items that failed before this was recorded. */
@@ -435,7 +446,22 @@ export interface CoverConfig {
   /** Front-cover treatment. `photo` (default) fills the page with the image and
       sets the title over a scrim; `band` puts the title on a solid lower band. */
   style?: "photo" | "band";
+  /** What kind of page this is. Unset: the theme's design, its words over an
+      optional photo. "image": the cook's own image edge to edge, with no theme
+      and no text (a cover they designed themselves, say). "blank": nothing.
+      The words are kept either way, so going back to the design hands them
+      back. */
+  pageType?: "image" | "blank";
+  /** What a `pageType: "image"` page shows. Its own field, apart from the
+      design's `imageUrl`, so neither choice overwrites the other. */
+  pageImageUrl?: string;
 }
+
+/** A book page's own words and pictures, in the shape a dedication keeps them,
+    so it is drawn by the same themed page. */
+export type BookPageContent = Partial<
+  Pick<CoverConfig, "title" | "blurb" | "author" | "imageUrl" | "gridImages" | "layout" | "pageType" | "pageImageUrl">
+>;
 
 export interface CookbookFrontMatter {
   kind: "dedication" | "introduction";
@@ -456,6 +482,15 @@ export interface CookbookFrontMatter {
       `CoverConfig.layout` on purpose — this travels through that shape on its
       way to and from the shared cover editor and `CoverFace`. */
   layout?: "typographic" | "photo" | "collage";
+  /** What kind of page this is. Unset: the theme's design, its words over an
+      optional photo. "image": the cook's own image edge to edge, with no theme
+      and no text (a cover they designed themselves, say). "blank": nothing.
+      The words are kept either way, so going back to the design hands them
+      back. */
+  pageType?: "image" | "blank";
+  /** What a `pageType: "image"` page shows. Its own field, apart from the
+      design's `imageUrl`, so neither choice overwrites the other. */
+  pageImageUrl?: string;
 }
 
 export interface PrintProjectSettings {

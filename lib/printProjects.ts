@@ -33,7 +33,8 @@ function coverThumbsOf(sections: Section[]): string[] {
 }
 
 function recipeCountOf(sections: Section[]): number {
-  return sections.reduce((count, section) => count + section.items.length, 0);
+  // Recipes only: a book's blank pages are not recipes in it.
+  return sections.reduce((count, section) => count + section.items.filter((item) => !item.pageKind).length, 0);
 }
 
 /** Splits a project into the document that gets listed and the one that does not. */

@@ -621,7 +621,7 @@ type EventProps = {
   cookbook_workspace_entered: { recipeCount: number; template: RecipePrintTemplate };
   /** The offer dialog was dismissed without building — the price-reveal back-out
       at the offer stage, before any cookbook is built. */
-  cookbook_onboarding_dismissed: { price?: string };
+  cookbook_onboarding_dismissed: { price?: string; via?: "close" | "look_around" };
   /** Switched back from a cookbook to plain recipe cards — how sticky the mode
       is (build one, then bail?). `recipeCount` for consistent segmentation. */
   cookbook_cover_layout_selected: { layout: "photo" | "collage" | "typographic" };

@@ -2167,6 +2167,40 @@ export const CoverFace = memo(function CoverFace({
     inlineEdit?.onChange({ ...draft, ...patch });
   }
 
+  // A page the cook made themselves: their own image edge to edge, or nothing.
+  // No theme, no band, no words. It wears the side's classes so it is sized and
+  // printed as the page it stands in for, and `data-cover-mode="photo"` so the
+  // export's photo-finish rules (the home-printer inset) treat its image as
+  // they treat any cover photo.
+  if (draft.pageType) {
+    const own = draft.pageType === "image" ? draft.pageImageUrl : undefined;
+    const sideClass =
+      side === "front"
+        ? "recipe-card--cover-front"
+        : side === "dedication"
+          ? "recipe-card--cover-back recipe-card--cover-dedication"
+          : "recipe-card--cover-back";
+    return (
+      <article
+        className={`recipe-card recipe-card--cover ${sideClass} recipe-card--own-page`}
+        data-cover-mode={own ? "photo" : "none"}
+        data-cover-text="none"
+        data-own-page={draft.pageType}
+        data-preview-hidden={previewHidden ? "true" : undefined}
+      >
+        {own ? (
+          <div className="recipe-card__cover-photo" aria-hidden>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img referrerPolicy="no-referrer" src={own} alt="" className="recipe-card__cover-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+            <span className="photo-unavailable-message">Photo unavailable</span>
+          </div>
+        ) : draft.pageType === "image" ? (
+          <p className="recipe-card__own-page-empty no-print">Choose an image for this page.</p>
+        ) : null}
+      </article>
+    );
+  }
+
   /**
    * One cover line: text you can click into, a field while you are in it, and
    * — when there is nothing written and nothing to click — a prompt that only
@@ -2673,6 +2707,13 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
           >
             {titleText}
           </h1>
+        )}
+        {entries.length === 0 && !continued && (
+          // Screen only: a book with nothing in it yet still shows where its
+          // contents go. Never printed, so an empty book prints a clean page.
+          <p className="recipe-card__toc-empty no-print">
+            Your recipes and chapters will be listed here as you add them.
+          </p>
         )}
         <ol className="recipe-card__toc-list">
           {entries.map((entry, index) =>

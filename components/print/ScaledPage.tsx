@@ -480,6 +480,12 @@ export const ScaledPage = memo(function ScaledPage({
   // has to render as a PAGE — an empty sheet that drew nothing would simply not
   // be in the file, which is the opposite of what it is for.
   if (anySlot.kind === "blank") {
+    // A page the cook added is one of the book's own themed pages, drawn by the
+    // same face as the dedication: the theme's paper, and whatever words or
+    // photo they put on it. Empty, it is a blank page that matches the book.
+    // It prints as cover art does, the whole sheet, bled. A blank closing a
+    // spread gap (no `pageId`) stays plain.
+    const ownPage = Boolean(anySlot.pageId);
     return (
       <div
         className="recipe-page-scaler"
@@ -487,7 +493,7 @@ export const ScaledPage = memo(function ScaledPage({
       >
         <div className="recipe-page-scaler__inner">
           <div
-            className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${presetSafeClass}`}
+            className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${ownPage ? presetArtClass : presetSafeClass}`}
             style={cardVars}
             data-double-sided="false"
           >
@@ -496,7 +502,15 @@ export const ScaledPage = memo(function ScaledPage({
                 className={`recipe-card-page recipe-card-page--front ${
                   isLastSheet ? "recipe-card-page--no-break" : ""
                 }`}
-              />
+              >
+                {ownPage && (
+                  <CoverFace
+                    cover={{ title: "", template, ...anySlot.pageContent }}
+                    side="dedication"
+                    template={template}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { isBookPage, newBlankPage } from "@/lib/bookPages";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ImportMethod, QueueItem, Recipe } from "@/types/recipe";
 import { track, truncateReason, type ImportContextProps } from "@/lib/analytics";
@@ -144,7 +145,8 @@ export function readCurrentPrintJobIds(): string[] | null {
 
 /**
  * The print job as live recipes: each job id projected onto the queue's
- * content, keeping only ready recipes. `null` while the job is still loading.
+ * content, keeping only ready recipes and the book's own pages. `null` while
+ * the job is still loading.
  *
  * Returns `previous` itself when it already holds exactly these recipes. The
  * deck's sections, sheets and displayed layout all hang off this array's
@@ -163,7 +165,8 @@ export function projectPrintJob(
   const byId = new Map(queueItems.map((it) => [it.id, it] as const));
   const next = jobIds
     .map((id) => byId.get(id))
-    .filter((it): it is QueueItem => Boolean(it && it.status === "ready" && it.recipe));
+    // A book's own pages (a blank page) have no recipe and are ready as made.
+    .filter((it): it is QueueItem => Boolean(it && it.status === "ready" && (it.recipe || isBookPage(it))));
   const unchanged =
     previous !== null &&
     previous.length === next.length &&
@@ -1333,6 +1336,27 @@ export function useQueue() {
     [commit],
   );
 
+  /**
+   * Adds a blank page to the queue. Not an import: nothing is parsed, metered
+   * or tracked, and it never counts toward a book's free recipes. The caller
+   * puts it in the print job and in a chapter.
+   */
+  const addBlankPage = useCallback(() => {
+    const page = newBlankPage();
+    commit([...itemsRef.current, page]);
+    return page.id;
+  }, [commit]);
+
+  /** Changes what is on one of the book's own pages. Only those pages: a
+      recipe is never touched here. */
+  const updateBookPage = useCallback(
+    (id: string, changes: Partial<Pick<QueueItem, "pageContent" | "title">>) => {
+      if (!isBookPage(itemsRef.current.find((it) => it.id === id))) return;
+      patch(id, changes);
+    },
+    [patch],
+  );
+
   const remove = useCallback(
     (id: string) => {
       const going = itemsRef.current.find((it) => it.id === id);
@@ -1374,6 +1398,8 @@ export function useQueue() {
     addImageFiles,
     addText,
     addReadyRecipes,
+    addBlankPage,
+    updateBookPage,
     addWithheldRecipes,
     adoptUploadedPhotos,
     remove,

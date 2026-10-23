@@ -2670,6 +2670,183 @@
 
    Nothing here touches the deck. The page being printed is the work, not the
    chrome around it, and it stays exactly the size it was. */
+/* A cookbook's Book / Page switch, above the scrolling settings so it stays
+   put while either tab scrolls. Inset like the scroll area's content. */
+.recipe-config-panel__tabs {
+  flex: 0 0 auto;
+  padding: 12px 8px 0;
+}
+/* Level with the collapse button pinned in the panel's top-right corner
+   (`.recipe-panel-toggle`, 32px tall), and kept clear of it. */
+.recipe-config-panel__title {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  margin: 8px 0 0;
+  padding: 0 44px 0 8px;
+  color: var(--cp-ink);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+/* A recessed track with the chosen tab raised out of it, so both halves read
+   as one control (the bare shared pill left "Page" as loose text). Flat: a
+   hairline, no shadow. */
+.recipe-config-panel__tabs .segmented-control {
+  width: 100%;
+  padding: 3px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--cp-ink) 5%, var(--cp-card));
+}
+.recipe-config-panel__tabs .segmented-control__thumb {
+  top: 3px;
+  bottom: 3px;
+  border: 1px solid var(--cp-line);
+  border-radius: 9px;
+  background: var(--cp-card);
+}
+.recipe-config-panel__tabs .segmented-control__option {
+  flex: 1 1 0;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 9px;
+}
+.recipe-config-panel__tabs .segmented-control__option:not(.is-active) {
+  color: var(--cp-ink-soft);
+}
+.recipe-config-panel__tabs .segmented-control__option:not(.is-active):hover {
+  color: var(--cp-ink);
+}
+/* Under the tabs, the settings start a step below them rather than the
+   panel's usual top padding, which was set for a panel with nothing above. */
+.recipe-config-panel__tabs + .recipe-config-panel__scroll {
+  padding-top: 16px;
+}
+
+/* The Page tab: which page, what kind of page, then that kind's settings,
+   each a section spaced as the Book tab spaces its own. */
+.recipe-page-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  /* Fills the panel's height, so the page's own Delete can sit at the foot. */
+  flex: 1 0 auto;
+}
+.recipe-page-settings__title {
+  margin: -4px 0 0;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body);
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.recipe-page-settings__note {
+  margin: 0;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  line-height: 1.45;
+}
+.recipe-page-settings .btn {
+  align-self: flex-start;
+}
+/* The page's own Delete, last and set apart by a hairline, as the toolbar
+   keeps its Delete in a group of its own. */
+/* Last, after everything else: at the foot of the panel when the settings are
+   short, and simply at their end, scrolled to, when they are long. */
+.recipe-page-settings__remove {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--cp-line);
+}
+.recipe-page-settings__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* How the page looks: tiles with a small picture of the finished page, the
+   same frame and selected state as the recipe Photos tiles. */
+.recipe-page-look {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.recipe-page-look__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 6px 8px;
+  border: 1px solid var(--cp-line);
+  border-radius: 10px;
+  background: var(--cp-card);
+  cursor: pointer;
+}
+.recipe-page-look__tile.is-active {
+  border-color: var(--cp-selected-border);
+  background: var(--cp-selected-fill);
+  box-shadow: var(--cp-selected-ring);
+}
+.recipe-page-look__label {
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+}
+/* Words over a picture: the lines sit low and light, as a title over a photo. */
+.recipe-look-preview--over {
+  position: relative;
+  justify-content: flex-end;
+}
+.recipe-look-preview--over .recipe-photo-preview__line {
+  position: relative;
+  height: 3px;
+  background: var(--cp-card);
+}
+/* Just a picture: a sun over the photo, so it reads as an image, not words. */
+.recipe-look-preview__sun {
+  width: 7px;
+  height: 7px;
+  margin: 2px 0 0 2px;
+  border-radius: 50%;
+  background: var(--cp-card);
+}
+/* The recipe's chapter: a full-width field that opens the Move menu. */
+.recipe-page-chapter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding-right: 10px;
+  color: var(--cp-ink);
+  text-align: left;
+  cursor: pointer;
+}
+.recipe-page-chapter > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The page's words, one labelled field each. */
+.recipe-page-fields {
+  gap: 10px;
+}
+.recipe-page-fields__row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.recipe-page-fields__input {
+  width: 100%;
+}
+textarea.recipe-page-fields__input {
+  resize: vertical;
+  min-height: 64px;
+  line-height: 1.4;
+}
 .recipe-config-section {
   display: flex;
   flex-direction: column;
@@ -2721,47 +2898,6 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-/* One-line "back up your cookbook" bar, sits directly under the sticky header
-   for a signed-out owner. Full-width, accent-soft, a single sentence + the
-   shared .btn call-to-action — an un-backed-up purchase lives only in this
-   browser, so it's a standing nudge, not a card in the settings panel. */
-.recipe-protect-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px clamp(16px, 4vw, 24px);
-  border-bottom: 1px solid color-mix(in srgb, var(--cp-accent-warm) 32%, transparent);
-  background: var(--cp-accent-warm-soft);
-  color: var(--cp-ink);
-}
-
-.recipe-protect-bar__text {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-size: var(--cp-fs-small);
-  font-weight: 650;
-}
-
-/* Drawn in the banner's own hue rather than in page-primary black. This bar is
-   a standing note about where the book lives, not the page's climax — and the
-   climax, Buy & Print, is a black button sitting directly above it. Two of
-   those stacked made the quieter message look like the louder one. Accent
-   outline on the accent tint keeps the whole bar one calm object while leaving
-   the action plainly clickable. */
-.recipe-protect-bar__action {
-  /* Cornflower on a clay banner, on purpose. The bar is the message; this is
-     the button that resolves it, and a button is something you act on. */
-  border-color: color-mix(in srgb, var(--cp-accent) 55%, transparent);
-  background: var(--cp-card);
-  color: var(--cp-accent);
-}
-
-.recipe-protect-bar__action:hover:not(:disabled) {
-  border-color: var(--cp-accent);
-  background: var(--cp-card);
-  color: var(--cp-accent);
 }
 
 /* Book-wide "Photos" style (cookbook Print setup) — three visual tiles, each a
@@ -3323,7 +3459,7 @@
     overscroll-behavior: contain;
   }
 
-  /* The desktop header (now wrapped with the back-up bar in .recipe-print-topbar)
+  /* The desktop header (wrapped in .recipe-print-topbar)
      is replaced by the mobile top bar below 821px. */
   .recipe-print-page > .recipe-print-topbar {
     display: none;
@@ -5562,6 +5698,41 @@
   background: none;
 }
 
+/* ── A page the cook made themselves ──────────────────────────────────────
+   Their own image edge to edge, or a blank: plain paper, none of the theme's
+   framing, padding or decoration, whatever the theme does to its covers. The
+   selector carries the theme scope's weight so it outranks theme cover rules. */
+.recipe-card-set .recipe-card.recipe-card--cover.recipe-card--own-page {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  box-shadow: none;
+  background: #fff;
+}
+.recipe-card-set .recipe-card.recipe-card--cover.recipe-card--own-page::before,
+.recipe-card-set .recipe-card.recipe-card--cover.recipe-card--own-page::after {
+  content: none;
+  display: none;
+}
+.recipe-card--own-page .recipe-card__cover-photo {
+  background: #fff;
+}
+.recipe-card--own-page .recipe-card__cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.recipe-card__own-page-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--cp-ink-soft);
+  font-size: 0.16in;
+}
+
 /* ── Table of contents ────────────────────────────────────────────────────
    Skinned by the same --recipe-* vars as every other page, so it matches the
    chosen template. Chapters as headings, recipes indented with dot leaders. */
@@ -5570,8 +5741,14 @@
      edges than any other page in the book (a full-page recipe sits at 0.6in /
      0.5in) and read as a short list stranded in the middle of the sheet.
      `PAGE_PADDING_Y_IN` in lib/tocPagination.ts is this number; keep the two
-     in step or the page budget stops matching the page. */
-  padding: 0.8in 0.85in;
+     in step or the page budget stops matching the page.
+
+     The heading starts where a recipe's title does: the theme's own top and
+     side padding, not a fixed 0.8in / 0.85in that set it lower and further in
+     than the page you turn to next. The bottom takes whatever the top doesn't,
+     so the two still add up to the 1.6in the page budget counts on. */
+  padding: var(--recipe-card-padding-top) var(--recipe-card-padding-x)
+    calc(1.6in - var(--recipe-card-padding-top));
   overflow: hidden;
 }
 .recipe-card__toc-content {
@@ -5652,6 +5829,14 @@
   margin: 0.075in 0;
   font-size: 0.155in;
   color: var(--recipe-ink);
+}
+/* An empty book's contents: one muted line where the list will be, set at
+   recipe-line size so the page reads as the same page it will become. */
+.recipe-card__toc-empty {
+  margin: 0.075in 0;
+  font-size: 0.155in;
+  font-style: italic;
+  color: var(--recipe-muted);
 }
 .recipe-card__toc-recipe-name {
   white-space: nowrap;
@@ -7332,12 +7517,14 @@ textarea.recipe-card__toc-title {
 /* An empty field, which only exists while the reveal is on. It used to be the
    card's own muted grey at 70%, and on a phone, at the card's print scale,
    that was a few pale pixels nobody could find after pressing "Add link, time,
-   servings". It reads as the app's, not the card's: accent words ("Add
-   servings") on the accent tint, a chip to tap. Never printed, since an empty
-   field is never drawn outside the reveal. */
+   servings". It reads as the app's, not the card's: a chip to tap, in the
+   app's soft grey on a grey tint (a tint of the ink, so it stays grey on any
+   theme's paper). It was the accent blue, the colour of a selection, which
+   made a prompt to fill in look like something already chosen. Never printed,
+   since an empty field is never drawn outside the reveal. */
 .recipe-card__inline-input::placeholder,
 .recipe-card__inline-textarea::placeholder {
-  color: var(--cp-accent);
+  color: var(--cp-ink-soft);
   opacity: 1;
 }
 .recipe-card__inline-input:placeholder-shown,
@@ -7346,8 +7533,8 @@ textarea.recipe-card__toc-title {
 .recipe-card__opener-field--empty,
 .recipe-card__headnote--empty {
   border-radius: 3px;
-  background: var(--cp-selected-fill);
-  box-shadow: 0 0 0 2px var(--cp-selected-fill);
+  background: color-mix(in srgb, var(--cp-ink) 8%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cp-ink) 8%, transparent);
 }
 /* The link field is the width of its line, and an empty one drew the chip
    across the whole card. Empty, it is as wide as "Add link". */
@@ -8023,14 +8210,14 @@ textarea.recipe-card__toc-title {
 
 .recipe-card__cover-field--empty,
 .recipe-card__opener-field--empty {
-  color: var(--cp-accent);
+  color: var(--cp-ink-soft);
   cursor: pointer;
 }
 
 /* The one placeholder that IS shown rather than typed into: the prompt for a
    note this recipe does not have. Only ever rendered while the reveal is on. */
 .recipe-card__headnote--empty {
-  color: var(--cp-accent);
+  color: var(--cp-ink-soft);
   cursor: pointer;
 }
 

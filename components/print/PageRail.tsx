@@ -26,6 +26,7 @@ import {
   PencilIcon,
   GripIcon,
   ICON_SIZE,
+  PagePlusIcon,
   PlusIcon,
   SearchIcon,
   TrashIcon,
@@ -228,6 +229,8 @@ interface PageRailProps {
   setShowAddRecipeDialog: Dispatch<SetStateAction<boolean>>;
   openAddRecipeBelow: (navItem?: NavItem | null) => void;
   addSectionDivider: () => void;
+  /** Adds a blank page after the page being looked at (cookbook only). */
+  addBlankPage?: () => void;
   /** Moves a whole chapter one place up (-1) or down (1) in the book. */
   moveSectionInBook: (sectionId: string, direction: -1 | 1) => void;
   makeSectionFromSelection: (selection?: ReadonlySet<string>) => void;
@@ -300,6 +303,7 @@ export function PageRail(props: PageRailProps) {
     setShowAddRecipeDialog,
     openAddRecipeBelow,
     addSectionDivider,
+    addBlankPage,
     moveSectionInBook,
     makeSectionFromSelection,
     moveRecipesToSection,
@@ -746,6 +750,20 @@ export function PageRail(props: PageRailProps) {
                           <PlusIcon size={ICON_SIZE.sm} />
                           Add chapter
                         </button>
+                        {addBlankPage && (
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className="cp-menu__item"
+                            onClick={() => {
+                              setAddMenuOpen(false);
+                              addBlankPage();
+                            }}
+                          >
+                            <PagePlusIcon size={ICON_SIZE.sm} />
+                            Add blank page
+                          </button>
+                        )}
                       </div>,
                       document.body,
                     )}
@@ -1363,9 +1381,11 @@ export function PageRail(props: PageRailProps) {
                           <span>{section.title}</span>
                         )}
                         <span className="recipe-page-rail__section-count">
-                          {itemIdsForSection(section.id).length === 1
-                            ? "1 recipe"
-                            : `${itemIdsForSection(section.id).length} recipes`}
+                          {(() => {
+                            // Recipes only: a blank page in the chapter is not one.
+                            const count = section.items.filter((item) => !item.pageKind).length;
+                            return count === 1 ? "1 recipe" : `${count} recipes`;
+                          })()}
                         </span>
                         {/* Add recipe, move, rename and delete wait in a menu so
                             the chapter name stays the main thing. A folded

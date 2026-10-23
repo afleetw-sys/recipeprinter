@@ -1,8 +1,10 @@
 "use client";
 
-import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
+import { useEffect, useState, type Dispatch, type ReactNode, type RefObject, type SetStateAction } from "react";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { ICON_SIZE, XIcon } from "@/components/icons";
+import { SegmentedControl } from "@/components/Controls";
+import { localStore } from "@/lib/storage";
 import { PrintSetupControls } from "@/components/print/PrintSetupControls";
 import type { PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
 import { ThemePicker } from "@/components/print/ThemePicker";
@@ -49,7 +51,13 @@ interface PrintConfigPanelProps {
   /** Cut lines / two-sided, pre-rendered by the page (`renderPrintSettingsFields`)
       so this panel doesn't need its own copy of which fields apply when. */
   cardSettingsFields: ReactNode;
+  /** A cookbook's Page tab: the selected page's own settings (PageSettings).
+      Present only in a cookbook, where the panel splits into Book and Page. */
+  pageSettings?: ReactNode;
 }
+
+type PanelTab = "book" | "page";
+const PANEL_TAB_STORAGE_KEY = "recipeprinter:config-panel-tab:v1";
 
 /**
  * The right-hand Print-setup / Book-settings panel (a mobile drawer under
@@ -81,7 +89,32 @@ export function PrintConfigPanel({
   setToastMessage,
   hasPrintSettingsFields,
   cardSettingsFields,
+  pageSettings,
 }: PrintConfigPanelProps) {
+  // Which tab a cookbook's panel shows. Kept as the cook left it, not moved by
+  // selecting pages, so browsing themes isn't interrupted by every click on
+  // the deck. Remembered on this device; a new book starts on Page, where the
+  // page in front of them is, rather than on settings for recipes that may
+  // not exist yet.
+  const [tab, setTab] = useState<PanelTab>("page");
+  useEffect(() => {
+    const stored = localStore.get(PANEL_TAB_STORAGE_KEY);
+    if (stored === "book" || stored === "page") setTab(stored);
+  }, []);
+  // The photo-style tip points at the Book tab's Photos tiles, so it brings
+  // that tab forward rather than pointing at something hidden.
+  useEffect(() => {
+    if (photoStyleTip) setTab("book");
+  }, [photoStyleTip]);
+  const chooseTab = (next: PanelTab) => {
+    setTab(next);
+    localStore.set(PANEL_TAB_STORAGE_KEY, next);
+  };
+  // The phone's Themes sheet is the book's theme grid alone; tabs are the
+  // desktop panel's.
+  const tabbed = cookbookMode && Boolean(pageSettings) && !mobileDrawer;
+  const showBook = !tabbed || tab === "book";
+
   return (
     <aside
       ref={configPanelRef}
@@ -99,6 +132,9 @@ export function PrintConfigPanel({
             the bar. Only the mobile Themes SHEET still needs one: it's a
             transient dialog with nothing else on screen to say what it's
             showing. */}
+        {/* A cookbook's desktop panel is titled, so its Book / Page tabs sit
+            on the row below, clear of the collapse button in this corner. */}
+        {tabbed && <h2 className="recipe-config-panel__title">Settings</h2>}
         {mobileDrawer === "template" && (
           <h2 className="text-cp-dialog-title font-extrabold tracking-[-0.02em] min-w-0 truncate">
             Themes
@@ -114,7 +150,24 @@ export function PrintConfigPanel({
         </button>
       </div>
 
+      {tabbed && (
+        <div className="recipe-config-panel__tabs">
+          <SegmentedControl<PanelTab>
+            label="Settings for"
+            value={tab}
+            onChange={chooseTab}
+            options={[
+              { id: "book", label: "Book" },
+              { id: "page", label: "Page" },
+            ]}
+          />
+        </div>
+      )}
+
       <div className="recipe-config-panel__scroll">
+        {tabbed && tab === "page" && pageSettings}
+        {showBook && (
+        <>
         <PrintSetupControls
           cookbookMode={cookbookMode}
           cardSize={cardSize}
@@ -142,6 +195,8 @@ export function PrintConfigPanel({
           setToastMessage={setToastMessage}
           setMobileDrawer={setMobileDrawer}
         />
+        </>
+        )}
       </div>
 
       <div className="recipe-config-panel__footer">

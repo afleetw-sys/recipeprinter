@@ -131,7 +131,6 @@ export function PrintSetupControls({
           arrive, since it is what every photo added afterwards inherits. */}
       {cookbookMode && (
         <div className="recipe-config-section recipe-config-section--photos">
-          <span className="recipe-config-label">Every recipe</span>
           {/* No book-wide Description switch. Imports no longer bring a
               website's description (see `withoutWebsiteDescription` in
               lib/cookpilot.ts), so every note is one the cook wrote, and
@@ -147,14 +146,14 @@ export function PrintSetupControls({
               checked={showSourceUrl}
               onChange={(event) => setShowSourceUrl(event.target.checked)}
           />
-          {/* Plain text, not a second uppercase heading: the tiles belong to
-              "Every recipe" like the checkboxes above them, and an eyebrow here
-              made them a section of their own. */}
+          {/* The same section label as Themes below it. It was plain text while
+              an "Every recipe" eyebrow headed this group; with the Book tab
+              saying what these apply to, Photos is a section like Themes. */}
           <div
             data-photo-style-section
             className={`recipe-photo-style-group ${photoStyleTip ? "is-highlighted" : ""}`}
           >
-            <span className="recipe-config-sublabel" id="recipe-photos-label">
+            <span className="recipe-config-label" id="recipe-photos-label">
               Photos
             </span>
             <div

@@ -1,5 +1,6 @@
 "use client";
 
+import { isBookPage } from "@/lib/bookPages";
 import type {
   PrintCardSize,
   PrintProject,
@@ -284,9 +285,16 @@ function filingProjectId(contentKey: string | null, ownId: string | undefined): 
   return indexed;
 }
 
+/** What a filed project holds: ready recipes, and the book's own pages
+    (a blank page) in among them. */
+function filedItems(items: QueueItem[]): QueueItem[] {
+  return items.filter((item) => item.status === "ready" && (item.recipe || isBookPage(item)));
+}
+
 export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): string | null {
-  const printable = items.filter((item) => item.status === "ready" && item.recipe);
-  if (printable.length === 0) return null;
+  const printable = filedItems(items);
+  // Something to file means a recipe: a book of blank pages alone is not one.
+  if (!printable.some((item) => item.recipe)) return null;
   const isBook = Boolean(meta.cookbookMode || meta.stashedCookbook);
   const contentKey = projectContentKey(printable, isBook);
   // The content's existing project if it has one, otherwise this working
@@ -310,8 +318,8 @@ export function fileProjectLocally(items: QueueItem[], meta: ProjectMeta): strin
  * whether the device holds edits the account never received.
  */
 export function workingCopyAsProject(items: QueueItem[], meta: ProjectMeta): PrintProject | null {
-  const printable = items.filter((item) => item.status === "ready" && item.recipe);
-  if (printable.length === 0 || !meta.projectId) return null;
+  const printable = filedItems(items);
+  if (!printable.some((item) => item.recipe) || !meta.projectId) return null;
   return assembleWorkingCopy(printable, meta, meta.projectId);
 }
 

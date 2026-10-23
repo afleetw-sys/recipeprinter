@@ -38,6 +38,13 @@ import { MobileStructureSheet, type MobileBookSheet } from "@/components/print/M
 import { EditTips } from "@/components/print/EditTips";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
+import { PageSettings, type LookOption, type PageField } from "@/components/print/PageSettings";
+import { photoDialogKey } from "@/lib/photoOpenGesture";
+import { isBookPage, isRecipeEntry } from "@/lib/bookPages";
+import { coverSideOf, pageDeletionFor } from "@/lib/pageDeletion";
+import type { RecipeCardEditTarget } from "@/lib/recipeCardLayout";
+import { formatRecipeTime } from "@/lib/time";
+import { composeNote } from "@/lib/recipeNote";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import { PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
@@ -54,6 +61,8 @@ import {
   useProjectMeta,
   type ProjectMeta,
   type PhotoStyle,
+  sectionHasArtPage,
+  resolveCardPhotoMode,
 } from "@/lib/project";
 import { type CookbookScaffoldPatch } from "@/lib/projectCopy";
 import { materializeProjectPhotos } from "@/lib/photoStorage";
@@ -97,7 +106,7 @@ import {
   verifyPrintPass,
   withPrintPass,
 } from "@/lib/printHandoff";
-import { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
+import { applyRecipeTargetEdit, useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
 import { useRailSelection } from "@/lib/useRailSelection";
 import { PAGE_DIMS } from "@/lib/printGeometry";
@@ -161,6 +170,7 @@ import { track } from "@/lib/analytics";
 import {
   BookIcon,
   PagesIcon,
+  SettingsIcon,
   PagePlusIcon,
   CheckIcon,
   CrownIcon,
@@ -206,6 +216,8 @@ import type {
   QueueItem,
   Recipe,
   Section,
+  SlotPhotoMode,
+  BookPageContent,
 } from "@/types/recipe";
 import { postPrintPrompt, purchaseGate, type PostPrintAction } from "@/lib/purchaseAccess";
 import { isCookbookProjectUnlocked } from "@/lib/cookbookUnlocks";
@@ -272,6 +284,52 @@ const FULL_CARD_DECK_MAX_PAGES = 80;
  * scope, so it runs once, ahead of the first render.
  */
 const ARRIVED_BY_HANDOFF = seedPrintHandoff();
+
+/** The Look tiles each kind of page offers (see `renderPageSettings`). */
+// One photo or several is a choice made in the photo picker, not a separate
+// look: a collage is a photo page with more photos in it.
+const COVER_LOOKS: LookOption[] = [
+  { id: "typographic", label: "Just text", preview: "text" },
+  { id: "photo", label: "Text on a photo", preview: "text-on-photo" },
+  { id: "own-image", label: "Your own image", preview: "own-image" },
+];
+const CHAPTER_LOOKS: LookOption[] = [
+  { id: "none", label: "Just text", preview: "text" },
+  { id: "photo", label: "With a photo", preview: "text-with-photo" },
+];
+const RECIPE_LOOKS: LookOption[] = [
+  { id: "none", label: "None", preview: "recipe-none" },
+  { id: "card", label: "In page", preview: "recipe-in-page" },
+  { id: "full", label: "Full page", preview: "recipe-full-page" },
+];
+
+/** A cover-like page's name, as the rail shows it. */
+function coverName(side: "front" | "back" | "dedication"): string {
+  return side === "front" ? "Front cover" : side === "back" ? "Back cover" : "Dedication";
+}
+
+/** The page's own Delete, named for what goes, as its toolbar button is. */
+function removeLabelFor(page: NavItem): string {
+  switch (page.kind) {
+    case "recipe":
+      return "Delete recipe";
+    case "divider":
+      return "Delete chapter";
+    case "image":
+    case "section-photo":
+      return "Remove photo page";
+    case "blank":
+      return "Delete page";
+    case "toc":
+      return "Remove contents";
+    case "cover":
+      return page.recipeId === "cover-back"
+        ? "Remove back cover"
+        : page.recipeId === "cover-dedication"
+          ? "Remove dedication"
+          : "Remove cover";
+  }
+}
 
 export default function PrintPage() {
   useEffect(() => {
@@ -1475,9 +1533,7 @@ export default function PrintPage() {
 
 
   function coverSideFromNavItem(navItem: NavItem): "front" | "back" | "dedication" {
-    if (navItem.recipeId === "cover-back") return "back";
-    if (navItem.recipeId === "cover-dedication") return "dedication";
-    return "front";
+    return coverSideOf(navItem);
   }
 
   function defaultCover(): CoverConfig {
@@ -1636,7 +1692,7 @@ export default function PrintPage() {
         setPendingFocusNavId("cover-front");
       }
       track("cookbook_workspace_entered", {
-        recipeCount: items?.length ?? 0,
+        recipeCount: items?.filter(isRecipeEntry).length ?? 0,
         template: bookTemplate ?? template,
       });
       if (!offerAfter) {
@@ -1650,7 +1706,7 @@ export default function PrintPage() {
       // hanging for a second and a half before anything happened.
       window.setTimeout(() => {
         void untilBookSettled().then(() => {
-          track("cookbook_welcome_shown", { price: cookbookPrice, recipeCount: items?.length ?? 0 });
+          track("cookbook_welcome_shown", { price: cookbookPrice, recipeCount: items?.filter(isRecipeEntry).length ?? 0 });
           setBookHiddenUntilBuilt(false);
           setShowCookbookOfferDialog(true);
         });
@@ -1842,6 +1898,8 @@ export default function PrintPage() {
           imageUrl: frontMatter.imageUrl,
           gridImages: frontMatter.gridImages,
           layout: frontMatter.layout,
+          pageType: frontMatter.pageType,
+          pageImageUrl: frontMatter.pageImageUrl,
           template,
         };
       }
@@ -1866,6 +1924,8 @@ export default function PrintPage() {
               imageUrl: cover.imageUrl,
               gridImages: cover.gridImages,
               layout: cover.layout,
+              pageType: cover.pageType,
+              pageImageUrl: cover.pageImageUrl,
             }
           : undefined,
       );
@@ -1987,53 +2047,61 @@ export default function PrintPage() {
   );
 
   const requestDeleteNavItem = useCallback((navItem: NavItem) => {
-    if (navItem.kind === "recipe") {
-      const item = items?.find((candidate) => candidate.id === navItem.recipeId && candidate.recipe);
-      setPendingDelete({
-        kind: "recipe",
-        id: navItem.recipeId,
-        title: item?.recipe?.title || item?.title || "this recipe",
-      });
-      return;
+    // Which page this is, decided in one tested place (lib/pageDeletion): a
+    // kind not listed there used to fall through to "the front cover".
+    const deletion = pageDeletionFor(navItem);
+    switch (deletion.kind) {
+      case "recipe": {
+        const item = items?.find((candidate) => candidate.id === deletion.recipeId && candidate.recipe);
+        setPendingDelete({
+          kind: "recipe",
+          id: deletion.recipeId,
+          title: item?.recipe?.title || item?.title || "this recipe",
+        });
+        return;
+      }
+      case "recipe-photo-page":
+        // The full-page photo goes; the photo itself stays, back in the recipe's
+        // own page. Nothing is lost, so no confirm, like a chapter's photo page.
+        setRecipePhotoMode(deletion.recipeId, "card");
+        return;
+      case "chapter":
+        setPendingDelete({
+          kind: "section",
+          id: deletion.sectionId,
+          title: sectionTitleForId(deletion.sectionId),
+          recipeIds: itemIdsForSection(deletion.sectionId),
+        });
+        return;
+      case "chapter-photo-page":
+        // The facing page's OWN delete, not the chapter's: clearing it drops
+        // the art (photo/collage/caption), which collapses the leaf away, like
+        // picking "None" in its photo dialog. No confirm: re-added in a click.
+        setArtPhoto(deletion.sectionId, "none");
+        setArtCaption(deletion.sectionId, undefined);
+        return;
+      case "book-page": {
+        // A blank or image page of the book's own: nothing to lose but the page.
+        const id = deletion.pageId;
+        setJobIds((current) => (current ?? []).filter((jid) => jid !== id));
+        queue.remove(id);
+        return;
+      }
+      case "contents":
+        // Generated from the book, so nothing of the cook's to lose: it goes
+        // without a confirm and comes back whole from the rail's "Add".
+        projectMeta.setTableOfContents(false);
+        return;
+      case "cover":
+        setPendingDelete({
+          kind: "cover",
+          side: deletion.side,
+          title: navItem.label || (deletion.side === "front" ? "cover" : "back cover"),
+        });
+        return;
     }
-    if (navItem.kind === "divider") {
-      setPendingDelete({
-        kind: "section",
-        id: navItem.recipeId,
-        title: sectionTitleForId(navItem.recipeId),
-        recipeIds: itemIdsForSection(navItem.recipeId),
-      });
-      return;
-    }
-    if (navItem.kind === "section-photo") {
-      // This is the facing page's OWN delete, not the chapter's — clearing it
-      // just drops the art (photo/collage/caption), which collapses the leaf
-      // away, exactly like picking "None" in its photo dialog. No confirm: a
-      // lost photo is a much smaller loss than a lost chapter, re-added in one
-      // click, and every other photo removal in this app already works this
-      // way. Falling through to the generic cover-delete branch below would be
-      // wrong here — `coverSideFromNavItem` defaults to "front" for anything
-      // it doesn't recognize, which would have deleted the book's FRONT COVER
-      // instead of this page's art.
-      setArtPhoto(navItem.recipeId, "none");
-      setArtCaption(navItem.recipeId, undefined);
-      return;
-    }
-    if (navItem.kind === "toc") {
-      // The contents is generated from the book, so there is nothing of the
-      // cook's to lose: it goes without a confirm and comes back whole from
-      // the rail's "Add table of contents". This used to fall through to the
-      // cover branch below, which read it as the FRONT cover and offered to
-      // delete that instead.
-      projectMeta.setTableOfContents(false);
-      return;
-    }
-    const side = coverSideFromNavItem(navItem);
-    setPendingDelete({
-      kind: "cover",
-      side,
-      title: navItem.label || (side === "front" ? "cover" : "back cover"),
-    });
+    // `queue.remove` and `setRecipePhotoMode` read current state when called.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, itemIdsForSection, sectionTitleForId, setArtPhoto, setArtCaption, projectMeta]);
 
   const requestDeleteSection = useCallback((sectionId: string) => {
@@ -3198,8 +3266,8 @@ export default function PrintPage() {
     showToast,
     showErrorToast,
     clearToast,
-    // Cookbook protection is handled by the persistent banner in cookbook
-    // mode. Do not interrupt a newly purchased book with a login modal.
+    // Buying needs an account, so a newly purchased book is already kept.
+    // Do not interrupt it with a login modal.
     onFreshPurchase: () => undefined,
     // Optimistic: the real, webhook-confirmed timestamp lands in Firestore
     // asynchronously regardless, but a second cookbook purchase attempted
@@ -3260,7 +3328,9 @@ export default function PrintPage() {
   const hasInFlightImport = queue.items.some(
     (item) => item.status === "parsing" && isOursToAwait(item.id),
   );
-  const recipeCount = (items?.length ?? 0) + (hasInFlightImport ? 1 : 0);
+  // Recipes only: the book's own pages (a blank page) never count toward a
+  // free preview or anything else measured in recipes.
+  const recipeCount = (items?.filter(isRecipeEntry).length ?? 0) + (hasInFlightImport ? 1 : 0);
   const { themeLocked, cardSizeLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked } =
     computeProLocks({
       customerInfo: effectiveCustomerInfo.customerInfo,
@@ -3688,7 +3758,7 @@ export default function PrintPage() {
       track("cookbook_export_ready", {
         preset: presetId,
         files: 1,
-        recipeCount: items?.length ?? 0,
+        recipeCount: items?.filter(isRecipeEntry).length ?? 0,
         ...(cookbookProjectId ? { cookbookId: cookbookProjectId } : {}),
       });
       track("cookbook_export_download_started", { preset: presetId, role: "pages" });
@@ -3806,6 +3876,10 @@ export default function PrintPage() {
   // that relationship ever changes).
   const nothingToPrint = navItems.length === 0 && spreads.length === 0;
   const printBlocked = proBusy || cookbookPurchaseBusy || nothingToPrint;
+  // A cookbook with no recipes yet has nothing worth buying, so Buy & Print
+  // steps back to a secondary button until the first one lands. A brand-new
+  // book should point at Add recipes, not at checkout.
+  const printEmphasis = cookbookMode && recipeCount === 0 ? "btn-secondary" : "btn-primary";
   // `printAwaitingBrowser` is the second or so between asking to print and
   // knowing whether the browser took it. Nothing is on screen during that gap
   // when the answer turns out to be no, and a button that looks untouched is
@@ -4185,10 +4259,11 @@ export default function PrintPage() {
       (idsFromUrl.length > 0 ? idsFromUrl : readCurrentPrintJobIds()) ??
       fullQueue.filter((it) => it.status === "ready").map((it) => it.id);
     // Preserve the order from the current print job, keeping only ids that
-    // resolve to a ready recipe — the same set `items` would project.
+    // resolve to a ready recipe or one of the book's own pages — the same set
+    // `items` would project (see `projectPrintJob`).
     const printIds = ids.filter((id) => {
       const it = byId.get(id);
-      return Boolean(it && it.status === "ready" && it.recipe);
+      return Boolean(it && it.status === "ready" && (it.recipe || isBookPage(it)));
     });
     setJobIds(printIds);
     // queue.items is read as an intentional snapshot (see above), not a trigger.
@@ -5314,6 +5389,19 @@ export default function PrintPage() {
     }
     openAddRecipeDialogAt(navItem);
   }
+  /**
+   * A blank page, straight after the page being looked at, where a recipe
+   * added from here would go (`addRecipeTarget`). Not an import and not a
+   * recipe, so no paywall or free-preview cap applies.
+   */
+  function addBlankPage(navItem: NavItem | null = activeNavItem) {
+    const target = addRecipeTarget(navItem, sections);
+    const id = queue.addBlankPage();
+    setJobIds((current) => [...(current ?? []), id]);
+    const sectionId = target?.sectionId ?? sections[0]?.id;
+    if (sectionId) moveProjectItem(id, sectionId, target?.index ?? itemIdsForSection(sectionId).length);
+    setPendingFocusRecipeId(id);
+  }
   function openAddRecipeDialogAt(navItem: NavItem | null) {
     const target = addRecipeTarget(navItem, sections);
     setPendingAddSectionId(target?.sectionId ?? sections[0]?.id ?? null);
@@ -5504,6 +5592,370 @@ export default function PrintPage() {
   function dismissPhotoStyleTip() {
     if (photoStyleTip) track("photo_style_tip_answered", { mode: photoStyleTip.mode, accepted: false });
     setPhotoStyleTip(null);
+  }
+
+  /**
+   * The panel's Page tab for the page the deck is on. Every kind of page is
+   * laid out the same way (see components/print/PageSettings): its name, how
+   * it looks as picture tiles, its words as fields, its switches, where it
+   * lives, and removing it. Anything the page's toolbar or inline editing can
+   * do is here too, through the same setters, so the two can't disagree.
+   */
+  function renderPageSettings() {
+    const page = activeNavItem;
+    if (!page) return <PageSettings page={null} name="" />;
+    const photoKey = photoDialogKey(page, () => coverSideFromNavItem(page));
+    const choosePhoto = photoKey ? () => openPhotoDialog(photoKey) : undefined;
+    const remove = { label: removeLabelFor(page), onRemove: () => requestDeleteNavItem(page) };
+    const photoButton = (label: string) =>
+      choosePhoto ? (
+        <button type="button" className="btn btn-secondary btn-compact" onClick={choosePhoto}>
+          {label}
+        </button>
+      ) : null;
+
+    // ── Covers and the dedication ──────────────────────────────────────────
+    if (page.kind === "cover") {
+      const side = coverSideFromNavItem(page);
+      const cover = coverForSide(side);
+      if (!cover) return <PageSettings page={page} name={coverName(side)} remove={remove} />;
+      const set = (patch: Partial<CoverConfig>) => setCoverForSide(side, { ...cover, ...patch });
+      const ownImage = cover.pageType === "image";
+      const layout =
+        cover.layout ?? (cover.gridImages?.length ? "collage" : cover.imageUrl ? "photo" : "typographic");
+      // A collage is "Text on a photo" with more photos in it.
+      const look = ownImage ? "own-image" : cover.pageType === "blank" ? null : layout === "typographic" ? "typographic" : "photo";
+      const hasPhotos = Boolean(cover.imageUrl || cover.gridImages?.length);
+      const imageKey = `page-image:${side}`;
+      const fields: PageField[] =
+        side === "front"
+          ? [
+              { id: "title", label: "Title", value: cover.title, onCommit: (v) => set({ title: v }) },
+              { id: "subtitle", label: "Subtitle", value: cover.subtitle ?? "", onCommit: (v) => set({ subtitle: v || undefined }) },
+              { id: "author", label: "Author", value: cover.author ?? "", onCommit: (v) => set({ author: v || undefined }) },
+              { id: "edition", label: "Edition", value: cover.edition ?? "", onCommit: (v) => set({ edition: v || undefined }) },
+            ]
+          : side === "dedication"
+            ? [
+                { id: "heading", label: "Heading", value: cover.title, onCommit: (v) => set({ title: v }) },
+                { id: "message", label: "Message", value: cover.blurb ?? "", multiline: true, onCommit: (v) => set({ blurb: v || undefined }) },
+                { id: "signature", label: "Signature", value: cover.author ?? "", onCommit: (v) => set({ author: v || undefined }) },
+              ]
+            : [
+                { id: "closing", label: "Closing line", value: cover.blurb ?? "", multiline: true, onCommit: (v) => set({ blurb: v || undefined }) },
+                { id: "credit", label: "Credit", value: cover.author ?? "", onCommit: (v) => set({ author: v || undefined }) },
+              ];
+      return (
+        <PageSettings
+          page={page}
+          name={coverName(side)}
+          look={{
+            label: "Look",
+            value: look,
+            options: COVER_LOOKS,
+            onChange: (id) => {
+              if (id === "own-image") {
+                set({ pageType: "image" });
+                if (!cover.pageImageUrl) openPhotoDialog(imageKey);
+                return;
+              }
+              // Back to a photo page keeps the collage it had, if it had one.
+              const nextLayout = id === "photo" ? (cover.gridImages?.length ? "collage" : "photo") : "typographic";
+              set({ pageType: undefined, layout: nextLayout });
+              // Nothing to show yet: go straight to choosing it.
+              if (id === "photo" && !hasPhotos) openPhotoDialog(`cover:${side}`);
+            },
+          }}
+          lookAction={
+            ownImage
+              ? renderPageImagePicker(imageKey, cover.pageImageUrl, (url) => set({ pageImageUrl: url }))
+              : look === "photo"
+                ? photoButton(hasPhotos ? "Change photos" : "Choose photos")
+                : null
+          }
+          // Your own image has no words on it; they are kept for going back.
+          fields={ownImage ? undefined : fields}
+          remove={remove}
+        />
+      );
+    }
+
+    // ── The book's own pages ───────────────────────────────────────────────
+    // A themed page like the dedication: blank until the cook puts words or a
+    // photo on it, or makes it their own image.
+    if (page.kind === "blank") {
+      const ownPage = items?.find((item) => item.id === page.recipeId);
+      if (!ownPage) return null;
+      const content: BookPageContent = ownPage.pageContent ?? {};
+      const set = (patch: BookPageContent) =>
+        queue.updateBookPage(ownPage.id, { pageContent: { ...content, ...patch } });
+      const ownImage = content.pageType === "image";
+      const hasPhotos = Boolean(content.imageUrl || content.gridImages?.length);
+      const layout =
+        content.layout ?? (content.gridImages?.length ? "collage" : content.imageUrl ? "photo" : "typographic");
+      const look = ownImage ? "own-image" : layout === "typographic" ? "typographic" : "photo";
+      const imageKey = `page-image:${ownPage.id}`;
+      const photosKey = `page-photos:${ownPage.id}`;
+      return (
+        <PageSettings
+          page={page}
+          name="Page"
+          title={content.title?.trim() || undefined}
+          look={{
+            label: "Look",
+            value: look,
+            options: COVER_LOOKS,
+            onChange: (id) => {
+              if (id === "own-image") {
+                set({ pageType: "image" });
+                if (!content.pageImageUrl) openPhotoDialog(imageKey);
+                return;
+              }
+              set({ pageType: undefined, layout: id === "photo" ? (content.gridImages?.length ? "collage" : "photo") : "typographic" });
+              if (id === "photo" && !hasPhotos) openPhotoDialog(photosKey);
+            },
+          }}
+          lookAction={
+            ownImage ? (
+              renderPageImagePicker(imageKey, content.pageImageUrl, (url) => set({ pageImageUrl: url }))
+            ) : look === "photo" ? (
+              <>
+              <button type="button" className="btn btn-secondary btn-compact" onClick={() => openPhotoDialog(photosKey)}>
+                {hasPhotos ? "Change photos" : "Choose photos"}
+              </button>
+              <ImagePicker
+                hideTrigger
+                current={content.imageUrl}
+                images={coverPhotoCandidates}
+                gridImages={(content.gridImages ?? []).filter(Boolean)}
+                // Reached only by the "None" tile: clears the photos outright.
+                onSelect={(url) => {
+                  if (url !== undefined) return;
+                  set({ imageUrl: undefined, gridImages: undefined, layout: "typographic" });
+                }}
+                onGridChange={(urls) =>
+                  set({
+                    gridImages: urls.length ? urls : undefined,
+                    imageUrl: undefined,
+                    layout: urls.length ? "collage" : "typographic",
+                  })
+                }
+                openSignal={photoDialogSignal(photosKey)}
+                onOpenSignalConsumed={() => clearPhotoDialogSignal(photosKey)}
+              />
+              </>
+            ) : null
+          }
+          fields={
+            ownImage
+              ? undefined
+              : [
+                  { id: "heading", label: "Heading", value: content.title ?? "", onCommit: (v) => set({ title: v || undefined }) },
+                  { id: "message", label: "Message", value: content.blurb ?? "", multiline: true, onCommit: (v) => set({ blurb: v || undefined }) },
+                  { id: "signature", label: "Signature", value: content.author ?? "", onCommit: (v) => set({ author: v || undefined }) },
+                ]
+          }
+          remove={remove}
+        />
+      );
+    }
+
+    // ── Chapter openers ────────────────────────────────────────────────────
+    if (page.kind === "divider") {
+      const section = sections.find((candidate) => candidate.id === page.recipeId);
+      if (!section) return null;
+      const mode = resolveCardPhotoMode(section, photoStyle);
+      return (
+        <PageSettings
+          page={page}
+          name="Chapter"
+          title={sectionDisplayTitle(section) || section.title}
+          look={{
+            label: "Look",
+            // One photo or a collage: both are "With a photo".
+            value: mode === "none" ? "none" : "photo",
+            options: CHAPTER_LOOKS,
+            onChange: (id) => {
+              const next: SlotPhotoMode = id === "none" ? "none" : section.cardGridImages?.length ? "grid" : "photo";
+              projectMeta.updateSection(section.id, { cardPhotoMode: next });
+              if (next !== "none" && !section.cardPhotoUrl && bookSectionImages(section).length === 0) {
+                openPhotoDialog(`card:${section.id}`);
+              }
+            },
+          }}
+          lookAction={mode === "none" ? null : photoButton("Change photos")}
+          fields={[
+            {
+              id: "title",
+              label: "Title",
+              value: section.title ?? "",
+              onCommit: (v) => projectMeta.updateSection(section.id, { title: v || undefined, titleOverride: undefined }),
+            },
+            {
+              id: "subtitle",
+              label: "Subtitle",
+              value: section.subtitle ?? "",
+              onCommit: (v) => projectMeta.updateSection(section.id, { subtitle: v || undefined }),
+            },
+            {
+              id: "intro",
+              label: "Description",
+              value: section.intro ?? "",
+              multiline: true,
+              onCommit: (v) => projectMeta.setSectionIntro(section.id, v),
+            },
+          ]}
+          toggles={[
+            {
+              id: "numbered",
+              label: "Number this chapter",
+              checked: Boolean(section.numberAsChapter),
+              onChange: (on) => projectMeta.updateSection(section.id, { numberAsChapter: on || undefined }),
+            },
+            {
+              id: "facing",
+              label: "Photo page beside it",
+              checked: sectionHasArtPage(section, bookSectionImages(section), photoStyle),
+              onChange: (on) => {
+                if (on) {
+                  projectMeta.setArtPhoto(section.id, "photo", {
+                    photoUrl: section.artPhotoUrl ?? bookSectionImages(section)[0],
+                  });
+                } else {
+                  setArtPhoto(section.id, "none");
+                  setArtCaption(section.id, undefined);
+                }
+              },
+            },
+          ]}
+          remove={remove}
+        />
+      );
+    }
+
+    // ── The contents ───────────────────────────────────────────────────────
+    if (page.kind === "toc") {
+      return (
+        <PageSettings
+          page={page}
+          name="Contents"
+          fields={
+            page.continued
+              ? undefined
+              : [
+                  { id: "kicker", label: "Label", value: projectMeta.meta.tocKicker ?? "", onCommit: (v) => projectMeta.setTocKicker(v) },
+                  { id: "heading", label: "Heading", value: projectMeta.meta.tocTitle ?? "", onCommit: (v) => projectMeta.setTocTitle(v) },
+                ]
+          }
+          note="The list is made from your chapters and recipes, so it updates as you change them."
+          remove={remove}
+        />
+      );
+    }
+
+    // ── A chapter's photo page, or a recipe's full-page photo ──────────────
+    if (page.kind === "section-photo" || page.kind === "image") {
+      const section = page.kind === "section-photo" ? sections.find((candidate) => candidate.id === page.recipeId) : undefined;
+      return (
+        <PageSettings
+          page={page}
+          name="Photo page"
+          title={page.label}
+          look={null}
+          fields={
+            section
+              ? [{ id: "caption", label: "Caption", value: section.artCaption ?? "", onCommit: (v) => setArtCaption(section.id, v || undefined) }]
+              : undefined
+          }
+          note={page.kind === "image" ? "This photo faces its recipe. Removing the page puts the photo back on the recipe." : undefined}
+          remove={remove}
+        />
+      );
+    }
+
+    // ── Recipes ────────────────────────────────────────────────────────────
+    const recipeItem = items?.find((item) => item.id === page.recipeId && item.recipe);
+    const recipe = recipeItem?.recipe;
+    if (!recipeItem || !recipe) return <PageSettings page={page} name="Recipe" remove={remove} />;
+    const placement = projectMeta.meta.itemPlacements?.[recipeItem.id];
+    // Written through the page's own inline edit, so a field typed here is
+    // stored exactly as the same field typed on the page would be.
+    const edit = (target: RecipeCardEditTarget) => (value: string) =>
+      queue.updateRecipe(recipeItem.id, applyRecipeTargetEdit(recipe, target, value, showDescription));
+    const photoMode = photoModeFor(recipeItem.id);
+    return (
+      <PageSettings
+        page={page}
+        name="Recipe"
+        title={recipe.title}
+        look={{
+          label: "Photo",
+          value: photoMode,
+          options: RECIPE_LOOKS,
+          onChange: (id) => setRecipePhotoMode(recipeItem.id, id as PhotoStyle),
+        }}
+        lookAction={photoMode === "none" ? null : photoButton(bookImageOf(recipeItem) ? "Change photo" : "Add photo")}
+        fields={[
+          { id: "title", label: "Title", value: recipe.title, onCommit: edit({ kind: "title" }) },
+          { id: "time", label: "Time", value: formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) ?? "", onCommit: edit({ kind: "cookTime" }) },
+          { id: "servings", label: "Servings", value: String(recipe.servings ?? recipe.yield ?? ""), onCommit: edit({ kind: "servings" }) },
+          { id: "note", label: "Note", value: composeNote(recipe.description, recipe.note, showDescription), multiline: true, onCommit: edit({ kind: "description" }) },
+          { id: "link", label: "Link", value: recipe.sourceUrl ?? "", onCommit: edit({ kind: "sourceUrl" }) },
+        ]}
+        toggles={[
+          {
+            id: "link-shown",
+            label: "Show the link on the page",
+            checked: Boolean(recipe.sourceUrl) && recipeLinkOn(showSourceUrl, true, placement),
+            disabled: !recipe.sourceUrl,
+            // Choosing what the book already does drops the override, so the
+            // recipe follows the book again (as the toolbar's toggle does).
+            onChange: (shown) =>
+              projectMeta.setItemPlacement(recipeItem.id, {
+                showSourceUrl: shown === showSourceUrl ? undefined : shown,
+              }),
+          },
+        ]}
+        chapter={(() => {
+          const options = projectMeta.meta.sections.map((section) => ({
+            id: section.id,
+            title: section.title?.trim() || "No chapter",
+          }));
+          const currentId =
+            projectMeta.meta.sections.find((section) => section.itemIds.includes(recipeItem.id))?.id ?? "";
+          return {
+            currentId,
+            currentTitle: options.find((option) => option.id === currentId)?.title ?? "No chapter",
+            options,
+            onMove: (sectionId: string) => moveRecipeToSection(recipeItem.id, sectionId),
+            onNewChapter: () => moveRecipeToNewSection(recipeItem.id),
+          };
+        })()}
+        remove={remove}
+      />
+    );
+  }
+
+  /** The picker for a page that is the cook's own image: which picture, and
+      nothing else, since the image is the whole page. */
+  function renderPageImagePicker(key: string, current: string | undefined, onPick: (url: string | undefined) => void) {
+    // The panel's own plain button, like every other button in it; the picker
+    // draws no trigger and opens on the signal.
+    return (
+      <>
+        <button type="button" className="btn btn-secondary btn-compact" onClick={() => openPhotoDialog(key)}>
+          {current ? "Change image" : "Choose image"}
+        </button>
+        <ImagePicker
+          hideTrigger
+          current={current}
+          images={Array.from(new Set([...(current ? [current] : []), ...coverPhotoCandidates]))}
+          onSelect={onPick}
+          openSignal={photoDialogSignal(key)}
+          onOpenSignalConsumed={() => clearPhotoDialogSignal(key)}
+        />
+      </>
+    );
   }
 
   // The per-recipe photo placement toggle (cookbook): an always-present
@@ -6356,10 +6808,10 @@ export default function PrintPage() {
       }`}
     >
       {measurers}
-      {/* Header + the back-up bar share one grid row so the bar pushes the
-          editor down instead of stealing the deck's `1fr` row (which left it
-          floating mid-page). `.recipe-print-page` is a two-row grid — keep it
-          to two children. */}
+      {/* The header sits in its own wrapper so `.recipe-print-page` stays a
+          two-row grid (topbar, then the deck's `1fr` row). Keep it to two
+          children. A signed-out cook is asked to make an account when they
+          press Save, not by a standing bar here. */}
       <div className="recipe-print-topbar">
         <SiteHeader
           sticky
@@ -6379,9 +6831,13 @@ export default function PrintPage() {
                     sentence as Print, and the avatar goes back to being only
                     the account. See `renderSaveControl`'s own doc comment
                     for why the control and the state are one thing. Shared
-                    with the mobile topbar (PrintDeck.tsx). Only once there is
-                    something to save. */}
-                {items?.length ? renderSaveControl("header") : null}
+                    with the mobile topbar (PrintDeck.tsx), and gated the same
+                    way: `renderSaveControl` already decides when there is
+                    something to save (a cookbook always, cards from two). An
+                    extra "has a recipe" check here hid Save on an empty book
+                    on desktop only, leaving a signed-out cook no way to keep
+                    it. */}
+                {renderSaveControl("header")}
 
                 {/* Print is always here, as it is on a phone's bottom bar:
                     the page is for printing, and a button that appears only
@@ -6402,7 +6858,7 @@ export default function PrintPage() {
                 ) : (
                 <button
                   type="button"
-                  className="btn btn-primary btn-header"
+                  className={`btn ${printEmphasis} btn-header`}
                   disabled={printBlocked}
                   onPointerDown={pressPrint}
                   onPointerEnter={warmPrint}
@@ -6457,49 +6913,6 @@ export default function PrintPage() {
           }
           onNavigateHome={() => handleNavigateHome()}
         />
-
-        {/* One-line "back up your cookbook" bar under the toolbar, shown to any
-            signed-out owner. Not dismissable on purpose: a book that lives only
-            in this browser stays worth saying so about until they make an
-            account.
-
-            This used to be gated on `!cookbookLocked`, so it only appeared once
-            a book had been PAID for — which is both the smallest audience and
-            the latest possible moment. Every unsaved book is worth keeping, and
-            asking here, while the cook is in the middle of building one, is a
-            far better moment than the one we were reaching for otherwise: a
-            modal at the door on the way out, making an account the price of
-            keeping their work. This says the same thing without holding
-            anything hostage — the book is on the device's shelf either way (see
-            lib/localProjects), and an account is how it stops being only there. */}
-        {projectMeta.meta.cookbookMode && !cookPilotUser && (
-          <div className="recipe-protect-bar no-print" role="status">
-            <span className="recipe-protect-bar__text">
-              {cookbookLocked
-                ? "Your cookbook is saved only on this device. Create a free account so you don’t lose it."
-                : "Your cookbook and your purchase are saved only on this device. Create a free account to keep them."}
-            </span>
-            <button
-              type="button"
-              className="btn btn-secondary btn-compact recipe-protect-bar__action"
-              onClick={() => {
-                track("protect_prompt_clicked", { source: "cookbook_banner" });
-                // This bar says "create an account to KEEP them", so making one
-                // has to be what keeps them. Arming the same intent a press on
-                // Save arms means signing in from here files the book, and —
-                // since this is a phone banner as much as a desktop one, and a
-                // phone signs in by redirect — that promise survives the page
-                // being destroyed on the way to Google. See `lib/saveIntent`.
-                saveAfterLoginRef.current = true;
-                rememberSaveIntent(cookbookProjectId);
-                setCookPilotLoginReason("purchase");
-                setShowCookPilotLogin(true);
-              }}
-            >
-              Create free account
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Print preview / printed content */}
@@ -6613,6 +7026,7 @@ export default function PrintPage() {
           setShowAddRecipeDialog={setShowAddRecipeDialog}
           openAddRecipeBelow={openAddRecipeBelow}
           addSectionDivider={addSectionDivider}
+          addBlankPage={() => addBlankPage()}
           makeSectionFromSelection={makeSectionFromSelection}
           moveRecipesToSection={moveRecipesToSection}
           railSortMode={railSortMode}
@@ -6739,6 +7153,7 @@ export default function PrintPage() {
           setToastMessage={setToastMessage}
           hasPrintSettingsFields={hasPrintSettingsFields}
           cardSettingsFields={renderPrintSettingsFields()}
+          pageSettings={cookbookMode ? renderPageSettings() : undefined}
         />
 
         <div ref={mobileBarRef} className="recipe-mobile-actions no-print">
@@ -6809,6 +7224,27 @@ export default function PrintPage() {
                   <PagesIcon size={ICON_SIZE.lg} />
                 </span>
                 Organize
+              </button>
+            )}
+            {/* The page in front of the cook, as the desktop panel's Page tab
+                has it: a phone has no panel, so without this a page's look
+                and words could only be reached from its toolbar. */}
+            {cookbookMode && activeNavItem && (
+              <button
+                type="button"
+                className={`recipe-mobile-toolbar__btn ${bookSheet === "page" ? "is-active" : ""}`}
+                aria-pressed={bookSheet === "page"}
+                aria-haspopup="dialog"
+                onClick={() => {
+                  setSizeMenuOpen(false);
+                  setStructureSheetOpen(false);
+                  setBookSheet((open) => (open === "page" ? null : "page"));
+                }}
+              >
+                <span className="recipe-mobile-toolbar__btn-icon">
+                  <SettingsIcon size={ICON_SIZE.lg} />
+                </span>
+                This page
               </button>
             )}
             {cookbookMode && (
@@ -6901,8 +7337,9 @@ export default function PrintPage() {
             /* The SAME button the desktop header uses, widened — not a
                hand-rolled one that happens to look similar. The custom class
                only carries the full-width shape now; every colour, radius and
-               weight comes from `.btn-primary`, so the two can never drift. */
-            className="btn btn-primary recipe-mobile-actions__print"
+               weight comes from the same `.btn` emphasis class
+               (`printEmphasis`), so the two can never drift. */
+            className={`btn ${printEmphasis} recipe-mobile-actions__print`}
             onPointerDown={pressPrint}
             onClick={handleMobilePrint}
             disabled={printBlocked}
@@ -6927,6 +7364,7 @@ export default function PrintPage() {
           sections={sections}
           toggleDedication={toggleDedication}
           toggleCover={toggleCover}
+          onAddBlankPage={() => addBlankPage()}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
           photoStyleTip={photoStyleTip?.surface === "sheet" ? photoStyleTip : null}
@@ -6944,6 +7382,17 @@ export default function PrintPage() {
           structureSheetOpen={structureSheetOpen}
           setStructureSheetOpen={setStructureSheetOpen}
         />
+
+        {cookbookMode && (
+          <MobileSheet
+            open={bookSheet === "page"}
+            onClose={() => setBookSheet(null)}
+            title="This page"
+            className="recipe-structure-sheet recipe-page-sheet"
+          >
+            {bookSheet === "page" && renderPageSettings()}
+          </MobileSheet>
+        )}
 
         {/* Cards' "Every recipe": the same two checkboxes the desktop panel's
             group holds (see PrintSetupControls). A cookbook's sheet lives in
@@ -7064,7 +7513,13 @@ export default function PrintPage() {
           // The X, Escape and the backdrop only dismiss the panel. The cook
           // just watched this book get built; closing the thing sitting on top
           // of it is not a decision to throw it away.
-          track("cookbook_onboarding_dismissed", { price: cookbookPrice });
+          track("cookbook_onboarding_dismissed", { price: cookbookPrice, via: "close" });
+          setShowCookbookOfferDialog(false);
+        }}
+        onLookAround={() => {
+          // Same as closing, but chosen: told apart so the funnel can show
+          // whether people who look first come back to add a recipe.
+          track("cookbook_onboarding_dismissed", { price: cookbookPrice, via: "look_around" });
           setShowCookbookOfferDialog(false);
         }}
         onStart={() => {
@@ -7128,7 +7583,7 @@ export default function PrintPage() {
           setCookbookCoverPending(null);
           setCookbookExportError(null);
         }}
-        recipeCount={items?.length ?? 0}
+        recipeCount={items?.filter(isRecipeEntry).length ?? 0}
         exportingPreset={exportingPreset}
         exportProgress={cookbookExportProgress}
         exportError={cookbookExportError}

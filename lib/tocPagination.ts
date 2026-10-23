@@ -15,8 +15,10 @@ import type { TocEntry } from "@/lib/usePrintSheets";
  * declaration over there; keep the two in step.
  */
 
-// The cookbook page and its contents padding: 10.75in tall, 0.8in top and
-// bottom (`.recipe-print-preview--letter`, `.recipe-card--toc`).
+// The cookbook page and its contents padding: 10.75in tall, 1.6in of top and
+// bottom padding together (`.recipe-print-preview--letter`, `.recipe-card--toc`).
+// The top follows the theme and the bottom takes the rest, so only the total is
+// fixed; budgeted here as 0.8in each side.
 /** Fallback page height, for a caller that does not name one — the old fixed
     Letter card. A cookbook always passes its preset's real page (see
     `presetCardHeightIn`): budgeting 10.75in for a book printed on a 10.25in

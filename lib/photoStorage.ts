@@ -1,6 +1,7 @@
 import { getFirebaseAuth, firebaseConfigured } from "./firebase/client";
 import { fileToCoverBlob, normalizePhotoBlob } from "./coverPhoto";
 import type {
+  CookbookFrontMatter,
   CoverConfig,
   QueueItem,
   RecipePagePlacement,
@@ -168,6 +169,10 @@ export interface ProjectPhotos {
   backCover?: CoverConfig;
   /** Legacy front matter, still a CoverConfig and so still able to carry art. */
   dedication?: CoverConfig;
+  /** The opening page as books store it now. Its photo or collage is as real
+      as a cover's: left out, the export sent it to the renderer as a dead
+      `blob:` URL and adoption left it in storage the account did not own. */
+  frontMatter?: CookbookFrontMatter;
   itemPlacements?: Record<string, RecipePagePlacement>;
   /** A book set aside by "print as recipe cards instead". Its art is as real as
       the live book's and comes from the same places, so it is walked too —
@@ -221,11 +226,25 @@ async function visitCover<T extends CoverConfig>(
   visit: VisitPhotoUrl,
 ): Promise<T | undefined> {
   if (!cover) return cover;
-  const [imageUrl, gridImages] = await Promise.all([
+  const [imageUrl, gridImages, pageImageUrl] = await Promise.all([
     visitOne(cover.imageUrl, ART, visit),
     visitList(cover.gridImages, visit),
+    visitOne(cover.pageImageUrl, ART, visit),
   ]);
-  return { ...cover, imageUrl, gridImages };
+  return { ...cover, imageUrl, gridImages, pageImageUrl };
+}
+
+async function visitFrontMatter(
+  frontMatter: CookbookFrontMatter | undefined,
+  visit: VisitPhotoUrl,
+): Promise<CookbookFrontMatter | undefined> {
+  if (!frontMatter) return frontMatter;
+  const [imageUrl, gridImages, pageImageUrl] = await Promise.all([
+    visitOne(frontMatter.imageUrl, ART, visit),
+    visitList(frontMatter.gridImages, visit),
+    visitOne(frontMatter.pageImageUrl, ART, visit),
+  ]);
+  return { ...frontMatter, imageUrl, gridImages, pageImageUrl };
 }
 
 /**
@@ -288,6 +307,19 @@ async function visitPlacements(
 /** The recipe's own photo. Left strictly alone — same object back — when the
     visit does not change it, so a walk that moved nothing allocates nothing. */
 async function visitItem(item: QueueItem, visit: VisitPhotoUrl): Promise<QueueItem> {
+  // A book's own page carries its pictures on the item itself.
+  if (item.pageContent) {
+    const content = item.pageContent;
+    const [imageUrl, gridImages, pageImageUrl] = await Promise.all([
+      visitOne(content.imageUrl, ART, visit),
+      visitList(content.gridImages, visit),
+      visitOne(content.pageImageUrl, ART, visit),
+    ]);
+    if (imageUrl === content.imageUrl && gridImages === content.gridImages && pageImageUrl === content.pageImageUrl) {
+      return item;
+    }
+    return { ...item, pageContent: { ...content, imageUrl, gridImages, pageImageUrl } };
+  }
   const image = item.recipe?.image;
   if (!image) return item;
   const next = await visit(image, { kind: "recipeImage", itemId: item.id });
@@ -310,14 +342,15 @@ async function visitStash(
   visit: VisitPhotoUrl,
 ): Promise<StashedCookbook | undefined> {
   if (!stash) return stash;
-  const [cover, backCover, dedication, sections, itemPlacements] = await Promise.all([
+  const [cover, backCover, dedication, frontMatter, sections, itemPlacements] = await Promise.all([
     visitCover(stash.cover, visit),
     visitCover(stash.backCover, visit),
     visitCover(stash.dedication, visit),
+    visitFrontMatter(stash.frontMatter, visit),
     Promise.all(stash.sections.map((section) => visitSectionArt(section, visit))),
     visitPlacements(stash.itemPlacements, visit),
   ]);
-  return { ...stash, cover, backCover, dedication, sections, itemPlacements };
+  return { ...stash, cover, backCover, dedication, frontMatter, sections, itemPlacements };
 }
 
 /**
@@ -343,16 +376,17 @@ export async function mapProjectPhotoUrls<T extends ProjectPhotos>(
   project: T,
   visit: VisitPhotoUrl,
 ): Promise<T> {
-  const [cover, backCover, dedication, stashedCookbook, itemPlacements, sections] =
+  const [cover, backCover, dedication, frontMatter, stashedCookbook, itemPlacements, sections] =
     await Promise.all([
       visitCover(project.cover, visit),
       visitCover(project.backCover, visit),
       visitCover(project.dedication, visit),
+      visitFrontMatter(project.frontMatter, visit),
       visitStash(project.stashedCookbook, visit),
       visitPlacements(project.itemPlacements, visit),
       Promise.all(project.sections.map((section) => visitSection(section, visit))),
     ]);
-  return { ...project, cover, backCover, dedication, stashedCookbook, itemPlacements, sections };
+  return { ...project, cover, backCover, dedication, frontMatter, stashedCookbook, itemPlacements, sections };
 }
 
 /** Every photo URL in a book, with nothing rewritten. Unordered — both callers

@@ -28,6 +28,7 @@ export function CookbookWelcomeDialog({
   fullPrice,
   hasRecipes,
   onStart,
+  onLookAround,
   onClose,
 }: {
   open: boolean;
@@ -42,6 +43,8 @@ export function CookbookWelcomeDialog({
       instead of asking for a first recipe, and the button says so. */
   hasRecipes: boolean;
   onStart: () => void;
+  /** Close onto the empty book without opening Add recipes. */
+  onLookAround: () => void;
   /** Dismiss and stay in the book: the X, Escape and the backdrop. */
   onClose: () => void;
 }) {
@@ -60,8 +63,8 @@ export function CookbookWelcomeDialog({
         <XIcon size={ICON_SIZE.md} />
       </button>
       <div className="cookbook-welcome__visual" aria-hidden>
-        {/* next/image, not a raw <img>: the source is a 2.4 MB PNG and this
-            dialog only mounts when it opens, so a raw tag started that download
+        {/* next/image, not a raw <img>: the source is a full-size photo and
+            this dialog only mounts when it opens, so a raw tag started that download
             at the exact moment the cook is being asked to pay — an empty panel
             on any connection that isn't fast. Served through the optimizer it
             arrives as WebP/AVIF at the ~460px the panel actually shows.
@@ -71,10 +74,10 @@ export function CookbookWelcomeDialog({
             add a beat. The existing `width/height/object-fit` CSS still drives
             the layout — the width/height props are only the intrinsic ratio. */}
         <Image
-          src="/images/cookbook-onboarding-hero.jpg"
+          src="/images/cookbook-welcome-souvlaki.jpg"
           alt=""
-          width={1536}
-          height={1024}
+          width={1333}
+          height={2000}
           sizes="(max-width: 720px) 100vw, 460px"
           priority
         />
@@ -116,6 +119,15 @@ export function CookbookWelcomeDialog({
           )}
         </div>
         <div className="cookbook-welcome__actions">
+          {/* An empty book can be looked over before anything goes in it: the
+              way out, left of the way forward. A book that already has a
+              recipe needs no second door, since its main button already just
+              shows the book ("Take a look"). */}
+          {!hasRecipes && (
+            <button type="button" className="btn btn-ghost" onClick={onLookAround}>
+              Look around first
+            </button>
+          )}
           <button type="button" className="btn btn-primary" onClick={onStart}>
             {hasRecipes ? "Take a look" : "Start adding recipes"}
           </button>

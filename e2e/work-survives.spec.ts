@@ -1,7 +1,7 @@
 import type { APIRequestContext, Browser, Page } from "@playwright/test";
 import { expect, test } from "./guarded";
 import { firestoreRunning, savedProjectIds, savedProjectText, signIn } from "./account";
-import { deckSettled, openRecipePage, selectedPage, startCookbook } from "./workspace";
+import { deckSettled, openRecipePage, selectedPage, showBookSettings, startCookbook } from "./workspace";
 
 /**
  * A cook's work is still there when they come back to it: after a reload,
@@ -49,6 +49,7 @@ async function editRecipe(page: Page, request: APIRequestContext, book: Book) {
   await page.waitForTimeout(150);
   await ingredient.fill("3 tablespoons olive oil");
   await ingredient.press("Tab");
+  await showBookSettings(page);
   await page.getByRole("button", { name: "Garden", exact: true }).click();
   await onServer(
     request,
@@ -69,6 +70,7 @@ async function expectEdits(page: Page) {
   await expect(selectedPage(page).getByText("10 min", { exact: true })).toHaveCount(0);
   await expect(selectedPage(page).getByText("3 tablespoons olive oil")).toBeVisible();
   await expect(selectedPage(page).getByText("2 tablespoons olive oil")).toHaveCount(0);
+  await showBookSettings(page);
   await expect(page.getByRole("button", { name: "Garden", exact: true })).toHaveAttribute("aria-pressed", "true");
 }
 

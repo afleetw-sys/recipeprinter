@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { collectProjectPhotoUrls, mapProjectPhotoUrls, type ProjectPhotos } from "@/lib/photoStorage";
-import type { CoverConfig, Section, StashedCookbook } from "@/types/recipe";
+import type { CookbookFrontMatter, CoverConfig, Section, StashedCookbook } from "@/types/recipe";
 
 /* WHERE a book keeps its photos, asserted once.
  *
@@ -21,6 +21,17 @@ const cover = (name: string): CoverConfig => ({
   template: "heirloom",
   imageUrl: `${name}-image`,
   gridImages: [`${name}-grid-1`, `${name}-grid-2`],
+  pageImageUrl: `${name}-own-page`,
+});
+
+/** The opening page as books store it now (`frontMatter`), not the legacy
+    `dedication` cover. */
+const openingPage = (name: string): CookbookFrontMatter => ({
+  kind: "dedication",
+  heading: name,
+  imageUrl: `${name}-image`,
+  gridImages: [`${name}-grid-1`],
+  pageImageUrl: `${name}-own-page`,
 });
 
 /** Every field that can hold a photo, each carrying a distinct, nameable URL. */
@@ -29,6 +40,7 @@ function bookWithPhotoEverywhere(): ProjectPhotos {
     cover: cover("stash-cover"),
     backCover: cover("stash-back"),
     dedication: cover("stash-dedication"),
+    frontMatter: openingPage("stash-opening"),
     sections: [
       {
         id: "ss1",
@@ -49,6 +61,7 @@ function bookWithPhotoEverywhere(): ProjectPhotos {
     cover: cover("cover"),
     backCover: cover("back"),
     dedication: cover("dedication"),
+    frontMatter: openingPage("opening"),
     sections: [
       {
         id: "s1",
@@ -61,6 +74,11 @@ function bookWithPhotoEverywhere(): ProjectPhotos {
           { id: "r1", recipe: { title: "Sourdough", image: "recipe-photo-1" } },
           { id: "r2", recipe: { title: "Rye", image: "recipe-photo-2" } },
           { id: "r3", recipe: { title: "No photo" } },
+          {
+            id: "p1",
+            pageKind: "blank",
+            pageContent: { imageUrl: "book-page-photo", gridImages: ["book-page-grid-1"], pageImageUrl: "image-page" },
+          },
         ] as Section["items"],
       } as Section,
     ],
@@ -87,6 +105,15 @@ const EVERY_PHOTO = [
   "stash-card-opener", "stash-card-collage-1",
   "stash-opener", "stash-collage-1",
   "stash-hero", "stash-history-1",
+  // The opening page as books store it now. Missed by the walk, so the PDF
+  // export sent its photo to the renderer as a dead `blob:` URL.
+  "opening-image", "opening-grid-1",
+  "stash-opening-image", "stash-opening-grid-1",
+  // A page that is just the cook's own image, on covers, the opening page and
+  // the book's own image pages.
+  "cover-own-page", "back-own-page", "dedication-own-page", "opening-own-page",
+  "stash-cover-own-page", "stash-back-own-page", "stash-dedication-own-page", "stash-opening-own-page",
+  "image-page", "book-page-photo", "book-page-grid-1",
 ];
 
 describe("every field of a book that can hold a photo", () => {

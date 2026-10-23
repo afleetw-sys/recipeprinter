@@ -1,5 +1,7 @@
 "use client";
 
+import { isBookPage } from "@/lib/bookPages";
+import type { BookPageContent } from "@/types/recipe";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   assembleSpreads,
@@ -363,6 +365,13 @@ export interface BlankSheetSlot {
       exclusivity — the default pairing rule takes any right-hand page — so
       this stays absent there. */
   pairsAs?: "toc";
+  /** A blank page the cook added (lib/bookPages), not one closing a gap: it
+      is theirs, so it is listed, can be deleted, carries a page number, and
+      reads as an ordinary page to the spread rules. */
+  pageId?: string;
+  /** What the cook has put on that page; empty, it prints as a blank page in
+      the book's theme. */
+  pageContent?: BookPageContent;
 }
 
 export type SheetSlot =
@@ -411,7 +420,7 @@ export interface PageSheet {
 // recipe's continuation pages — that's what lets a recipe's later faces still
 // browse and flip independently on screen.
 export interface NavItem {
-  kind: "recipe" | "divider" | "cover" | "toc" | "image" | "section-photo";
+  kind: "recipe" | "divider" | "cover" | "toc" | "image" | "section-photo" | "blank";
   /** The underlying recipe/divider/cover id — named `recipeId` for recipes so
       existing lookups by id keep working unchanged. */
   recipeId: string;
@@ -866,7 +875,39 @@ export function usePrintSheets({
     // `planCookbookSection`; this resolves each planned face index back to a
     // real `RecipeFace` and attaches recipe/label/queueIndex. Only used in
     // cookbook mode — the default one-card path is untouched.
+    /**
+     * A chapter's pages, with the cook's blank pages where they put them. The
+     * recipes between two blank pages are laid out as a run of their own, so
+     * a blank page sits exactly where it was placed instead of being packed
+     * around; closeSpreadGaps keeps the spreads right afterwards.
+     */
     function buildCookbookSectionSheets(sectionItems: QueueItem[], idPrefix: string, styleIndex?: number): PageSheet[] {
+      const out: PageSheet[] = [];
+      let run: QueueItem[] = [];
+      let runIndex = 0;
+      const flush = () => {
+        if (run.length === 0) return;
+        out.push(...buildCookbookRunSheets(run, runIndex === 0 ? idPrefix : `${idPrefix}-r${runIndex}`, styleIndex));
+        run = [];
+        runIndex += 1;
+      };
+      for (const item of sectionItems) {
+        if (!isBookPage(item)) {
+          run.push(item);
+          continue;
+        }
+        flush();
+        out.push({
+          id: `sheet-page-${item.id}`,
+          slots: [{ kind: "blank", id: item.id, pageId: item.id, pageContent: item.pageContent }],
+          backGroupNeeded: false,
+        });
+      }
+      flush();
+      return out;
+    }
+
+    function buildCookbookRunSheets(sectionItems: QueueItem[], idPrefix: string, styleIndex?: number): PageSheet[] {
       const { layoutOf } = cookbookResolution;
       const planItems: CookbookPlanItem[] = [];
       for (const item of sectionItems) {
@@ -1082,6 +1123,13 @@ export function usePrintSheets({
           sheet.pageNumber = pageNo;
           continue;
         }
+        // The cook's own blank page is a real page of the book: it takes the
+        // next number, though like a photo page it prints no folio.
+        if (sheet.slots.some((slot) => slot?.kind === "blank" && slot.pageId)) {
+          pageNo += 1;
+          sheet.pageNumber = pageNo;
+          continue;
+        }
         const dividerSlot = sheet.slots.find((slot) => slot?.kind === "divider") as
           | DividerSheetSlot
           | undefined;
@@ -1112,7 +1160,10 @@ export function usePrintSheets({
         }
       }
 
-      if (tableOfContents && tocEntries.length > 0) {
+      // Built even before there is anything to list. A new book shows where
+      // its contents will go (the face says so on screen) instead of a page
+      // appearing out of nowhere when the first recipe lands.
+      if (tableOfContents) {
         // A long book's contents runs onto as many pages as it needs. The page
         // is `overflow: hidden`, so anything past the first page's bottom edge
         // used to be silently clipped — recipes with no listing at all.
@@ -1196,6 +1247,18 @@ export function usePrintSheets({
           const group = groups.get(key);
           if (group) group.push(navItem);
           else groups.set(key, [navItem]);
+        } else if (slot.kind === "blank" && slot.pageId) {
+          groups.set(`page:${slot.pageId}`, [
+            {
+              kind: "blank",
+              recipeId: slot.pageId,
+              sheetIndex,
+              slotIndex,
+              label: slot.pageContent?.title?.trim() || "Blank page",
+              pageLabel: "Page",
+              flip: false,
+            },
+          ]);
         } else if (slot.kind === "divider") {
           groups.set(`divider:${slot.id}`, [
             {
