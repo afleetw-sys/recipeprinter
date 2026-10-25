@@ -48,7 +48,7 @@ export async function startCookbook(
 }
 
 /** The settings panel's Book tab, where the themes are. A cookbook's panel
-    opens on its Page tab, so a theme has to be reached through this first. */
+    opens on it, but a test that visited the Page tab has to come back. */
 export async function showBookSettings(page: Page) {
   const book = page.getByRole("button", { name: "Book", exact: true });
   if ((await book.getAttribute("aria-pressed")) !== "true") await book.click();

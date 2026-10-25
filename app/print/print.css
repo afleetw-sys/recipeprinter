@@ -1291,6 +1291,19 @@
   background: var(--cp-surface-strong-hover);
 }
 
+/* Beside the ink primary (a cookbook's Add recipes) the chevron is the other
+   half of the same filled button, with a hairline of the card colour between. */
+.recipe-page-rail__head .recipe-page-rail__add-main.btn-primary + .recipe-page-rail__add-menu-trigger {
+  border-left-color: color-mix(in srgb, var(--cp-card) 28%, var(--cp-ink));
+  background: var(--cp-ink);
+  color: var(--cp-card);
+}
+
+.recipe-page-rail__head .recipe-page-rail__add-main.btn-primary + .recipe-page-rail__add-menu-trigger:hover:not(:disabled) {
+  border-left-color: color-mix(in srgb, var(--cp-card) 28%, var(--cp-ink));
+  background: color-mix(in srgb, var(--cp-ink) 84%, var(--cp-card));
+}
+
 /* Fills the row on its own (no cookbook mode → no chevron trigger next to
    it); only squares off its right corners once the trigger is actually
    rendered alongside it, so it never looks clipped mid-button. */
