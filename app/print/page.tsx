@@ -251,6 +251,9 @@ import { organizeFlipProgress } from "@/lib/organizeFlip";
 import { RailResizer } from "@/components/print/RailResizer";
 import { bookRecipeImage } from "@/lib/bookPhotos";
 
+/** The cookbook settings panel's Page tab. Off for now; see the PrintConfigPanel call. */
+const PAGE_SETTINGS_TAB_ENABLED = false;
+
 /** This section's own recipe photos, in item order, capped for a collage. Scopes
     the opener picker to the chapter (unlike the whole-book `coverPhotoCandidates`).
     `imageOf` is the photo the BOOK shows for a recipe (see lib/bookPhotos.ts). */
@@ -7153,7 +7156,9 @@ export default function PrintPage() {
           setToastMessage={setToastMessage}
           hasPrintSettingsFields={hasPrintSettingsFields}
           cardSettingsFields={renderPrintSettingsFields()}
-          pageSettings={cookbookMode ? renderPageSettings() : undefined}
+          /* The Page tab is hidden for now: people found the Book/Page split
+             confusing. Restore by passing `renderPageSettings()` in a cookbook. */
+          pageSettings={PAGE_SETTINGS_TAB_ENABLED && cookbookMode ? renderPageSettings() : undefined}
         />
 
         <div ref={mobileBarRef} className="recipe-mobile-actions no-print">

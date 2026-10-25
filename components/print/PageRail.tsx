@@ -689,8 +689,11 @@ export function PageRail(props: PageRailProps) {
                 /* `btn-compact` like every other button in the chrome; it was
                    the only one without it and sat a size larger than Save and
                    Print for no visible reason. */
-                className={`btn btn-neutral btn-compact recipe-page-rail__add-main ${
-                  projectMeta.meta.cookbookMode ? "recipe-page-rail__add-main--paired" : ""
+                /* In a cookbook this is the page's first job (a book is built by
+                   filling it), so it wears the ink primary, top left where the
+                   eye starts. */
+                className={`btn btn-compact recipe-page-rail__add-main ${
+                  projectMeta.meta.cookbookMode ? "btn-primary recipe-page-rail__add-main--paired" : "btn-neutral"
                 }`}
                 onClick={() => {
                   setAddMenuOpen(false);

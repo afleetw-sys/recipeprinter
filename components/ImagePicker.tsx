@@ -301,19 +301,8 @@ export function ImagePicker({
   }, [open]);
 
   const headingTitle = gridMode ? "Choose photos" : recipeMode ? "Recipe photo" : "Choose an image";
-  // No subtitle in grid mode: the section heading below ("Tap to add or
-  // remove") already says how, and the max is only ever reached at the tile
-  // that greys out — nothing here needs to pre-explain the count.
-  const headingDescription = gridMode
-    ? undefined
-    : recipeMode
-      ? placementBelow
-        ? "Pick a photo or drag one in."
-        : "Set the placement, then pick a photo or drag one in."
-      : // Deliberately not "in this cookbook": this dialog is the
-        // photo control for plain recipe cards too now, where there
-        // is no cookbook to have a photo in.
-        "Use a photo you already have, or drag in a new one.";
+  // No subtitle on any picker: each section is headed, and the upload tile or
+  // drop box says how to add a photo.
 
   // On mobile, closing has to stay blocked during an upload the same way
   // the desktop Dialog's `closeDisabled` blocks it — MobileSheet (shared
@@ -322,6 +311,26 @@ export function ImagePicker({
   const closeSheet = () => {
     if (!uploading) setOpen(false);
   };
+
+  // The file input behind both the Upload/Change tile and the empty-state box.
+  const uploadInput = (
+    <input
+      type="file"
+      accept="image/*"
+      hidden
+      disabled={uploading}
+      multiple={gridMode}
+      onChange={(event) => {
+        // Read the selection before clearing: `value = ""` empties the
+        // live FileList too. `addFiles` copies it out synchronously,
+        // before its first await, so this order is safe.
+        void addFiles(event.target.files);
+        // Clear so picking the SAME file again still fires onChange,
+        // otherwise a retry after an error is a silent no-op.
+        event.target.value = "";
+      }}
+    />
+  );
 
   // Its own piece so it can sit above the photos or below them. A card's
   // None / In card (`placementBelow`) only shows or hides its photo, so with no
@@ -333,7 +342,7 @@ export function ImagePicker({
         className={`image-picker__placement ${placementBelow ? "image-picker__placement--below" : ""}`}
         aria-label="Where the photo goes"
       >
-        {placementBelow && <h3>On this card</h3>}
+        <h3>{placementBelow ? "On this card" : "Photo layout"}</h3>
         <div className="image-picker__placement-row" role="group">
           {placementOptions.map((option) => (
             <button
@@ -383,6 +392,16 @@ export function ImagePicker({
             <h3>{gridMode ? "Tap to add or remove" : recipeMode ? "This recipe's photo" : "Your photos"}</h3>
           </div>
 
+          {recipeMode && uniqueImages.length === 0 ? (
+            // Nothing to choose from yet, so the whole section is the way in:
+            // one big box to click or drop on, not a lone tile.
+            <label className={`dropzone image-picker__dropzone ${dragging ? "is-dragging" : ""} ${uploading ? "is-busy" : ""}`}>
+              <UploadIcon size={26} />
+              <span className="text-cp-body">{uploading ? "Adding…" : "Choose or drop a photo"}</span>
+              <span className="text-cp-caption font-medium text-ink-soft">JPG or PNG from your phone or computer</span>
+              {uploadInput}
+            </label>
+          ) : (
           <div className="image-picker__grid">
             {/* Upload leads, None follows: adding a photo is what someone opens
                 this for far more often than clearing one. The two still sit
@@ -394,23 +413,10 @@ export function ImagePicker({
               }`}
             >
               <UploadIcon size={20} />
-              <span className="image-picker__tile-label">{uploading ? "Adding…" : "Upload"}</span>
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                disabled={uploading}
-                multiple={gridMode}
-                onChange={(event) => {
-                  // Read the selection before clearing: `value = ""` empties the
-                  // live FileList too. `addFiles` copies it out synchronously,
-                  // before its first await, so this order is safe.
-                  void addFiles(event.target.files);
-                  // Clear so picking the SAME file again still fires onChange,
-                  // otherwise a retry after an error is a silent no-op.
-                  event.target.value = "";
-                }}
-              />
+              <span className="image-picker__tile-label">
+                {uploading ? "Adding…" : !gridMode && current ? "Change" : "Upload"}
+              </span>
+              {uploadInput}
             </label>
 
             {/* Cover/plain pickers keep a "None" tile to clear the photo. */}
@@ -491,6 +497,7 @@ export function ImagePicker({
               );
             })}
           </div>
+          )}
         </section>
         </>
         )}
@@ -539,7 +546,6 @@ export function ImagePicker({
           open={open}
           onClose={closeSheet}
           title={headingTitle}
-          subtitle={headingDescription}
           footer={gridFooter}
           className="image-picker-sheet"
           // Every call site (a recipe card, a cover, a chapter opener) sits
@@ -569,7 +575,6 @@ export function ImagePicker({
             <div className="image-picker__heading">
               <div>
                 <h2 id="image-picker-title">{headingTitle}</h2>
-                {headingDescription && <p>{headingDescription}</p>}
               </div>
               <IconButton className="image-picker__close" onClick={() => setOpen(false)} aria-label="Close">
                 <XIcon size={ICON_SIZE.md} />

@@ -4,7 +4,6 @@ import { useEffect, useState, type Dispatch, type ReactNode, type RefObject, typ
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { SegmentedControl } from "@/components/Controls";
-import { localStore } from "@/lib/storage";
 import { PrintSetupControls } from "@/components/print/PrintSetupControls";
 import type { PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
 import { ThemePicker } from "@/components/print/ThemePicker";
@@ -57,7 +56,6 @@ interface PrintConfigPanelProps {
 }
 
 type PanelTab = "book" | "page";
-const PANEL_TAB_STORAGE_KEY = "recipeprinter:config-panel-tab:v1";
 
 /**
  * The right-hand Print-setup / Book-settings panel (a mobile drawer under
@@ -91,25 +89,17 @@ export function PrintConfigPanel({
   cardSettingsFields,
   pageSettings,
 }: PrintConfigPanelProps) {
-  // Which tab a cookbook's panel shows. Kept as the cook left it, not moved by
-  // selecting pages, so browsing themes isn't interrupted by every click on
-  // the deck. Remembered on this device; a new book starts on Page, where the
-  // page in front of them is, rather than on settings for recipes that may
-  // not exist yet.
-  const [tab, setTab] = useState<PanelTab>("page");
-  useEffect(() => {
-    const stored = localStore.get(PANEL_TAB_STORAGE_KEY);
-    if (stored === "book" || stored === "page") setTab(stored);
-  }, []);
+  // Which tab a cookbook's panel shows. Kept as the cook left it while they
+  // work, not moved by selecting pages, so browsing themes isn't interrupted
+  // by every click on the deck. Opening a book always starts on Book: the
+  // first thing a new book asks for is how the whole thing should look.
+  const [tab, setTab] = useState<PanelTab>("book");
   // The photo-style tip points at the Book tab's Photos tiles, so it brings
   // that tab forward rather than pointing at something hidden.
   useEffect(() => {
     if (photoStyleTip) setTab("book");
   }, [photoStyleTip]);
-  const chooseTab = (next: PanelTab) => {
-    setTab(next);
-    localStore.set(PANEL_TAB_STORAGE_KEY, next);
-  };
+  const chooseTab = (next: PanelTab) => setTab(next);
   // The phone's Themes sheet is the book's theme grid alone; tabs are the
   // desktop panel's.
   const tabbed = cookbookMode && Boolean(pageSettings) && !mobileDrawer;
