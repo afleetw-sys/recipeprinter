@@ -189,3 +189,104 @@ test("the contents heading starts where a recipe title does, in every theme", as
   }
   expect(misplaced).toEqual([]);
 });
+
+/** The fixture book with a first recipe that runs over several pages, at a
+    text size. */
+function bookAt(fontScale: number) {
+  const book = structuredClone(fixture);
+  (book.project.settings as { fontScale?: number }).fontScale = fontScale;
+  const recipe = book.project.sections[0].items[0].recipe;
+  recipe.title = "A Very Long Stew";
+  recipe.ingredients = Array.from({ length: 30 }, (_, i) => ({ raw: `${i + 1} cups of ingredient number ${i + 1}, chopped` }));
+  recipe.instructions = Array.from({ length: 24 }, (_, i) => ({
+    step: i + 1,
+    text: `Step ${i + 1}: stir the pot slowly and keep going until everything is thoroughly combined and hot.`,
+  }));
+  return book;
+}
+
+const recipeFaceCount = (page: Page, within = "body") =>
+  page.$$eval(`${within} article.recipe-card[data-in-book]`, (faces) =>
+    faces.filter((face) => !face.closest(".recipe-face-measurer, .recipe-card__section-groups--probe")).length,
+  );
+
+const stepsOnFirstRecipePage = (page: Page) =>
+  page.$$eval("article.recipe-card[data-in-book]", (faces) => {
+    const first = faces.find((face) => !face.closest(".recipe-face-measurer"));
+    return first
+      ? Array.from(first.querySelectorAll(".recipe-card__method li")).filter(
+          (li) => !li.closest(".recipe-card__section-groups--probe"),
+        ).length
+      : 0;
+  });
+
+/** The same book in the print page's preview, opened from session storage. */
+async function openPreview(page: Page, book: Payload) {
+  const items = book.project.sections.flatMap((section) => section.items);
+  const settings = book.project.settings as Record<string, unknown>;
+  await page.addInitScript(
+    ({ items, meta, settings }) => {
+      if (sessionStorage.getItem("recipeprinter:queue:v1")) return;
+      sessionStorage.setItem("recipeprinter:queue:v1", JSON.stringify(items));
+      sessionStorage.setItem("recipeprinter:print-job:current:v1", JSON.stringify({ ids: items.map((i) => i.id) }));
+      sessionStorage.setItem("recipeprinter:project-meta:v1", JSON.stringify(meta));
+      localStorage.setItem("recipeprinter:print-settings:v1", JSON.stringify(settings));
+    },
+    {
+      items,
+      meta: {
+        cookbookIntent: true,
+        cookbookWelcomeCompleted: true,
+        cover: book.project.cover,
+        tableOfContents: settings.tableOfContents,
+        sections: book.project.sections.map((section) => ({
+          id: section.id,
+          title: section.title,
+          itemIds: section.items.map((item) => item.id),
+        })),
+      },
+      settings: {
+        cardSize: settings.cardSize,
+        template: settings.template,
+        doubleSided: settings.doubleSided,
+        showPhoto: settings.showPhoto,
+        showRecipeLink: settings.showSourceUrl,
+        fontScale: settings.fontScale,
+      },
+    },
+  );
+  await page.goto("/print");
+  await expect(page.locator("#recipe-page-deck article.recipe-card[data-in-book]").first()).toBeAttached();
+  await expect(page.locator(".recipe-print-shell--measuring")).toHaveCount(0);
+}
+
+// The renderer measures the book again in its own browser. Handed the text
+// size only for drawing, it would paginate at Normal and print bigger text
+// into those pages, off their bottoms. So: the book at Biggest stays inside
+// its pages, has the pages the preview gave it, and its first recipe page
+// holds fewer steps than at Normal (or the size never reached the measurement).
+test("a cookbook at the biggest text size exports the pages its preview shows, inside them", async ({ page, browser }) => {
+  await openExport(page, bookAt(1.2));
+  expect(await overflowingContent(page)).toEqual([]);
+  expect(
+    await page
+      .locator(".recipe-print-preview:not(.recipe-face-measurer):has(article.recipe-card[data-in-book])")
+      .first()
+      .evaluate((el) => getComputedStyle(el).getPropertyValue("--recipe-font-scale")),
+  ).toBe("1.2");
+  const exported = await recipeFaceCount(page);
+
+  const normal = await browser.newPage();
+  await openExport(normal, bookAt(1));
+  expect(await stepsOnFirstRecipePage(page), "steps on page one, Biggest against Normal").toBeLessThan(
+    await stepsOnFirstRecipePage(normal),
+  );
+  await normal.close();
+
+  const preview = await browser.newPage();
+  await openPreview(preview, bookAt(1.2));
+  // The deck draws only the pages near the reader; asked to print, all of them.
+  await preview.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
+  expect(await recipeFaceCount(preview, "#recipe-page-deck")).toBe(exported);
+  await preview.close();
+});

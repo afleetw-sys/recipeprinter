@@ -511,6 +511,10 @@ export interface PrintProjectSettings {
       already reads. */
   showDescription?: boolean;
   showCutLines: boolean;
+  /** The cook's text size on every recipe page, one of `FONT_SCALES`
+      (lib/fontScale.ts). Absent = Normal, which is how every book saved before
+      it existed reads. Read through `normalizeFontScale`, never directly. */
+  fontScale?: number;
   /** Book-only settings — stay undefined/off until "Make it a cookbook" has
       been used to opt into the cookbook experience. */
   cookbookMode?: boolean;

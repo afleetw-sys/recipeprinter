@@ -23,7 +23,10 @@ export async function openPrint(
   size: string,
   recipe: { title: string } = longRecipe,
   template = "classic",
+  /** A text size (lib/fontScale.ts), seeded as the device's saved setting. */
+  fontScale?: number,
 ) {
+  if (fontScale !== undefined) await seedFontScale(page, fontScale);
   const queue = [{ id: "r1", method: "text", source: "test", status: "ready", title: recipe.title, recipe }];
   // Only into a fresh tab, so a reload reads back what the page saved.
   await page.addInitScript((items) => {
@@ -34,6 +37,22 @@ export async function openPrint(
   await page.goto(`/print?ids=r1&size=${size}&template=${template}`);
   await expect(page.locator("#recipe-page-deck .recipe-card").first()).toBeVisible();
   await expect(page.locator(".recipe-print-shell--measuring")).toHaveCount(0);
+}
+
+/** Opens the next page at this text size: the device's saved print settings,
+    which is where the print page reads it from on arrival. */
+export async function seedFontScale(page: Page, fontScale: number) {
+  await page.addInitScript((value) => {
+    localStorage.setItem("recipeprinter:print-settings:v1", JSON.stringify({ fontScale: value }));
+  }, fontScale);
+}
+
+/** The text size the deck's recipe pages are drawn at. */
+export function deckFontScale(page: Page) {
+  return page
+    .locator("#recipe-page-deck .recipe-print-preview")
+    .first()
+    .evaluate((el) => Number(getComputedStyle(el).getPropertyValue("--recipe-font-scale") || 1));
 }
 
 /**

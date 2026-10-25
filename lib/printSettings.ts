@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { PRINT_CARD_SIZE_OPTIONS, RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
+import { normalizeFontScale, type FontScale } from "@/lib/fontScale";
 import type { PrintCardSize, RecipePrintTemplate } from "@/types/recipe";
 
 // SSR renders with the default (no localStorage), so the first client render
@@ -39,6 +40,7 @@ export interface StoredPrintSettings {
   showCutLines?: boolean;
   showPhoto?: boolean;
   showSourceUrl?: boolean;
+  fontScale?: number;
 }
 
 /**
@@ -100,6 +102,8 @@ interface PrintSettingsState {
   setShowPhoto: (value: boolean) => void;
   showSourceUrl: boolean;
   setShowSourceUrl: (value: boolean) => void;
+  fontScale: FontScale;
+  setFontScale: (value: FontScale) => void;
 }
 
 /**
@@ -125,6 +129,8 @@ export function usePrintSettingsPersistence(
     setShowPhoto,
     showSourceUrl,
     setShowSourceUrl,
+    fontScale,
+    setFontScale,
   } = state;
 
   // Hydrate stored layout preferences on mount (client only). Explicit URL
@@ -144,6 +150,7 @@ export function usePrintSettingsPersistence(
     if (typeof stored.showCutLines === "boolean") setShowCutLines(stored.showCutLines);
     if (typeof stored.showPhoto === "boolean") setShowPhoto(stored.showPhoto);
     if (typeof stored.showSourceUrl === "boolean") setShowSourceUrl(stored.showSourceUrl);
+    if (stored.fontScale !== undefined) setFontScale(normalizeFontScale(stored.fontScale));
     // Runs once on mount; the settings above are the ones being hydrated here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -163,6 +170,7 @@ export function usePrintSettingsPersistence(
       showCutLines,
       showPhoto,
       showSourceUrl,
+      fontScale,
     });
-  }, [cardSize, template, doubleSided, showCutLines, showPhoto, showSourceUrl]);
+  }, [cardSize, template, doubleSided, showCutLines, showPhoto, showSourceUrl, fontScale]);
 }

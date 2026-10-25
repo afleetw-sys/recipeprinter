@@ -34,6 +34,17 @@ preview's `.recipe-page-scaler` does. Without it the sweep only ever measured at
 1.0, where screen px and CSS px agree, and could not see a measurement that
 mixed them (0e97724 shipped past an 816/816 reading that way).
 
+`?font=<step>[,<step>]` (or `?font=all`) sweeps text sizes (`lib/fontScale.ts`)
+instead of Normal only, and `?book=1` measures cookbook pages (book chrome, the
+default preset's sheet) instead of cards. The spec runs every text size at 1×,
+Smallest and Biggest at 0.47× and 1.4×, and cookbook pages at every text size:
+sixteen runs, sharded across machines in CI.
+
+`?specimen=1&font=<step>[&book=1]` doesn't sweep: it lays out every kind of
+recipe-page text on every theme and size (`FontSpecimens.tsx`) for
+`e2e/font-scale-coverage.spec.ts`, which checks every text's computed size
+moves with the text size.
+
 ## The matrix
 
 `SIZES × TEMPLATES × photo × source-url` per recipe. `doubleSided` is
@@ -61,6 +72,9 @@ never how a recipe splits into faces, so it can't change any overflow verdict.
   first measured against (see the history below).
 - `lib/__fixtures__/layout-after-phase1.json` — the same sweep after the
   phase-1 engine work.
+- `lib/__fixtures__/layout-font-scale.json` — every run of the text-size
+  sweep (2026-10-25): each combo's settled shape at render scale 1, and the
+  summaries of the other render scales, which settle to the same shapes.
 - `lib/faceMeasure.ts` — the shared overflow/invariant primitives, used by both
   the live corrector and this harness so both measure identically. That sharing
   is the point: a corrector that measured a label differently from the harness
@@ -73,6 +87,17 @@ zero out-of-order, zero timed out.** 225 flash (INV-6), 2 underfill (INV-7).
 
 Run twice on the same commit — once with the shared-`labelHeightPx` change and
 once without — and every counter matched, including the two non-zero ones.
+
+## With text sizes (measured 2026-10-25)
+
+**Every run passes INV-1..4, none timed out:** 2176 card combos at each of the
+five text sizes (and at 0.47× and 1.4× for Smallest, Normal and Biggest), 1088
+cookbook-page combos at each size. Two engine changes were needed, both in
+`RecipeFaceMeasurer`: the content-shrink floor is on the printed size, so
+Biggest may come back down as far as Normal's floor (the giant single step on
+6x4 typewriter clipped at the old 0.75), and a front left holding only its
+header can shrink its title (`RecipeFace.titleFit`, a long Diner title beside
+its photo was taller than the whole 6x4 card at Biggest).
 
 ## History
 

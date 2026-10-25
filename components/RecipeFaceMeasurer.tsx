@@ -20,6 +20,7 @@ import {
   labelHeightPx,
   realItemHeights,
 } from "@/lib/faceMeasure";
+import { fontScaleVars, type FontScale } from "@/lib/fontScale";
 import type { Recipe } from "@/types/recipe";
 
 // getRecipeFaces' character-count budget is a guess, not a measurement, so it
@@ -72,7 +73,19 @@ const PULL_HYSTERESIS_PX = 12;
 // stops being readable at arm's length on a kitchen counter — better to clip a
 // truly absurd step than to print something nobody can read. 0.75 buys back a
 // third of the height, which covers the realistic "one very long step" case.
+//
+// The floor is on the type as printed, so it moves with the cook's text size:
+// Biggest starts 20% larger and may come back down to the same smallest type
+// Normal allows, never below it (see `minContentScale`).
 const MIN_CONTENT_SCALE = 0.75;
+
+function minContentScale(fontScale: FontScale | undefined): number {
+  return Math.min(MIN_CONTENT_SCALE, MIN_CONTENT_SCALE / (fontScale ?? 1));
+}
+
+// Floor on the title's own shrink-to-fit (`RecipeFace.titleFit`). A title is
+// the biggest type on the card, so even at this floor it is still a heading.
+const MIN_TITLE_FIT = 0.6;
 
 interface PopResult {
   shrunk: RecipeFace;
@@ -210,6 +223,7 @@ export function RecipeFaceMeasurer({
   showSourceUrl,
   cookbookMode = false,
   cardVars,
+  fontScale,
   onSettled,
 }: {
   recipe: Recipe;
@@ -228,11 +242,14 @@ export function RecipeFaceMeasurer({
       printing another is exactly the clipping this component exists to catch,
       so these have to be the same two values the preview root carries. */
   cardVars?: React.CSSProperties;
+  /** The cook's text size (lib/fontScale.ts), on the same root as `cardVars`
+      for the same reason: measured at one size, printed at another, clips. */
+  fontScale?: FontScale;
   onSettled: (pages: RecipeFace[]) => void;
 }) {
   const initialPages = useMemo(
-    () => getRecipeFaces(recipe, size, { hasPhoto, showSourceUrl, template }).pages,
-    [recipe, size, template, hasPhoto, showSourceUrl],
+    () => getRecipeFaces(recipe, size, { hasPhoto, showSourceUrl, template, fontScale }).pages,
+    [recipe, size, template, hasPhoto, showSourceUrl, fontScale],
   );
 
   const [pages, setPages] = useState<RecipeFace[]>(initialPages);
@@ -369,7 +386,7 @@ export function RecipeFaceMeasurer({
         const contentHeight = availableHeightPx + overflowPx;
         if (availableHeightPx <= 0 || contentHeight <= 0) return face;
         const needed = (availableHeightPx / contentHeight) * 0.98;
-        const scale = Math.max(MIN_CONTENT_SCALE, (face.contentScale ?? 1) * needed);
+        const scale = Math.max(minContentScale(fontScale), (face.contentScale ?? 1) * needed);
         return scale < (face.contentScale ?? 1) ? { ...face, contentScale: scale } : face;
       });
     }
@@ -413,6 +430,26 @@ export function RecipeFaceMeasurer({
         continue;
       }
 
+      // A front with nothing left on it but its header, and still too tall: the
+      // title alone is longer than the card has room for (a long title beside
+      // a photo, at a big text size). Every item has already moved on, so the
+      // one thing left that can give is the title's size. Its height falls
+      // faster than its size (fewer lines as well as shorter ones), so the
+      // square root of the shortfall is a first step that lands near, not far
+      // under; the next pass measures again and takes another if it must.
+      if (i === 0 && page.ingredients.length + page.instructions.length === 0) {
+        const titleHeight = cardEl.querySelector(".recipe-card__title")?.getBoundingClientRect().height ?? 0;
+        if (titleHeight > 0) {
+          const needed = Math.sqrt(Math.max(0, titleHeight - overflowPx) / titleHeight) * 0.98;
+          const nextFit = Math.max(MIN_TITLE_FIT, (page.titleFit ?? 1) * needed);
+          if (nextFit < (page.titleFit ?? 1)) {
+            next[i] = { ...page, titleFit: nextFit };
+            changed = true;
+          }
+        }
+        continue;
+      }
+
       // A face down to a single item that still overflows is the one case
       // pagination cannot win: popping it would empty this face and hand the
       // same item to the next one, where it overflows identically — the loop
@@ -422,8 +459,14 @@ export function RecipeFaceMeasurer({
         const contentHeight = availableHeightPx + overflowPx;
         if (availableHeightPx > 0 && contentHeight > 0) {
           // 0.98 so it lands just inside the edge rather than exactly on it.
-          const needed = (availableHeightPx / contentHeight) * 0.98;
-          const nextScale = Math.max(MIN_CONTENT_SCALE, (page.contentScale ?? 1) * needed);
+          // The square root because the shrunk block is also laid out wider
+          // (see `contentScale` in RecipeCardPrint), so it loses lines as well
+          // as height: the plain ratio overshot, and with the floor lowered
+          // for big text sizes it sent Bigger cards down to the floor when
+          // three-quarters size fitted. A step that falls short is taken
+          // again on the next pass, which measures it.
+          const needed = Math.sqrt(availableHeightPx / contentHeight) * 0.98;
+          const nextScale = Math.max(minContentScale(fontScale), (page.contentScale ?? 1) * needed);
           if (nextScale < (page.contentScale ?? 1)) {
             next[i] = { ...page, contentScale: nextScale };
             changed = true;
@@ -442,7 +485,7 @@ export function RecipeFaceMeasurer({
     }
 
     if (restartStacked) {
-      setPages(getRecipeFaces(recipe, size, { hasPhoto, showSourceUrl, template, forceStacked: true }).pages);
+      setPages(getRecipeFaces(recipe, size, { hasPhoto, showSourceUrl, template, fontScale, forceStacked: true }).pages);
       return;
     }
 
@@ -528,6 +571,7 @@ export function RecipeFaceMeasurer({
         pointerEvents: "none",
         zIndex: -1,
         ...cardVars,
+        ...fontScaleVars(fontScale),
       }}
       className={`recipe-print-preview ${previewSizeClass(size)} recipe-face-measurer`}
     >
@@ -552,6 +596,7 @@ export function RecipeFaceMeasurer({
               showSourceUrl={showSourceUrl}
               continued={i > 0}
               contentScale={page.contentScale}
+              titleFit={page.titleFit}
               template={template}
               cookbookMode={cookbookMode}
               // This whole subtree is `visibility: hidden` and only ever read

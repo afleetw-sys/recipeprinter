@@ -542,6 +542,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   showDescription = true,
   continued = false,
   contentScale,
+  titleFit,
   inlineEdit,
   template,
   showDecoration = true,
@@ -576,6 +577,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   continued?: boolean;
   /** Shrink-to-fit factor for this face's content — see `RecipeFace.contentScale`. */
   contentScale?: number;
+  /** The title's shrink-to-fit factor — see `RecipeFace.titleFit`. */
+  titleFit?: number;
   inlineEdit?: RecipeCardInlineEdit;
   template?: RecipePrintTemplate;
   /** See `TemplateDecoration` — false on surfaces that never show it. */
@@ -1296,6 +1299,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
          stays put (see "Right-to-left recipes" in app/print/print.css). */
       lang={recipe.language}
       dir={recipeTextDirection(recipe.language)}
+      style={titleFit && titleFit < 1 ? ({ "--recipe-title-fit": titleFit } as CSSProperties) : undefined}
     >
       <div className="recipe-card__accent" aria-hidden />
       <TemplateDecoration

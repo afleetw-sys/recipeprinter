@@ -66,6 +66,7 @@ describe("stored recipe link", () => {
       showCutLines: false,
       showPhoto: true,
       showSourceUrl: false,
+      fontScale: 1,
     });
     expect(readPrintSettings()?.showSourceUrl).toBe(false);
   });

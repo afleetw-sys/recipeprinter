@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { AnchoredMenu } from "@/components/AnchoredMenu";
 import { CheckIcon, ChevronDownIcon, ICON_SIZE } from "@/components/icons";
 
@@ -23,17 +23,23 @@ export function MenuSelect<T extends string>({
   onChange,
   clearLabel,
   disabled = false,
+  labelHidden = false,
 }: {
   /** Names the control for people and screen readers, e.g. "Fill in for". */
   label: string;
   /** Shown on the trigger while nothing is chosen. */
   placeholder: string;
   value: T | null;
-  options: Array<{ value: T; label: string }>;
+  /** `badge` sits after an option's label, in the list and on the trigger
+      while it is the choice (a Pro crown, say). */
+  options: Array<{ value: T; label: string; badge?: ReactNode }>;
   onChange: (value: T | null) => void;
   /** Adds a first row that clears the choice. Omit where there is always one. */
   clearLabel?: string;
   disabled?: boolean;
+  /** Where a heading above already names the control: the label is still
+      there for screen readers, just not drawn beside the trigger. */
+  labelHidden?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -48,7 +54,7 @@ export function MenuSelect<T extends string>({
 
   return (
     <div className="menu-select">
-      <span id={labelId} className="menu-select__label">
+      <span id={labelId} className={labelHidden ? "sr-only" : "menu-select__label"}>
         {label}
       </span>
       <button
@@ -63,6 +69,7 @@ export function MenuSelect<T extends string>({
         onClick={() => setOpen((isOpen) => !isOpen)}
       >
         <span>{current ? current.label : placeholder}</span>
+        {current?.badge}
         <ChevronDownIcon size={ICON_SIZE.sm} />
       </button>
       {open && (
@@ -83,6 +90,7 @@ export function MenuSelect<T extends string>({
               key={option.value}
               selected={option.value === value}
               onSelect={() => choose(option.value)}
+              badge={option.badge}
             >
               {option.label}
             </MenuRow>
@@ -97,10 +105,12 @@ function MenuRow({
   selected,
   onSelect,
   children,
+  badge,
 }: {
   selected: boolean;
   onSelect: () => void;
   children: string;
+  badge?: ReactNode;
 }) {
   return (
     <button
@@ -111,6 +121,7 @@ function MenuRow({
       onClick={onSelect}
     >
       {children}
+      {badge}
       {/* On the right, in a slot that is always there, so the labels line up
           whether or not a row is the chosen one. */}
       <span className="menu-select__check">{selected && <CheckIcon size={ICON_SIZE.sm} />}</span>

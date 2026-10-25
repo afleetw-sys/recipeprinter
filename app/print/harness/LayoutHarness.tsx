@@ -17,6 +17,9 @@ import {
   type FaceMeasureDetail,
 } from "@/lib/faceMeasure";
 import { HARNESS_RECIPES, type HarnessRecipe } from "@/lib/__fixtures__/harnessRecipes";
+import { DEFAULT_FONT_SCALE, FONT_SCALES, fontScaleVars, normalizeFontScale, type FontScale } from "@/lib/fontScale";
+import { FontSpecimens } from "./FontSpecimens";
+import { getCookbookPreset, presetCardVars } from "@/lib/cookbookPresets";
 import type { Recipe } from "@/types/recipe";
 
 // ── The config matrix ──────────────────────────────────────────────────────
@@ -30,6 +33,12 @@ const TEMPLATES: RecipePrintTemplate[] = RECIPE_PRINT_TEMPLATE_OPTIONS.map((t) =
 const PHOTO_OPTIONS = [false, true];
 const SOURCE_URL_OPTIONS = [false, true];
 
+// A cookbook page is its preset's sheet with the book's own card chrome
+// (`cookbookMode`: link in the header, no footer, `data-in-book`), measured
+// exactly as `usePrintSheets` measures it. Letter only: a book prints on
+// letter, whatever the preset trims it to.
+const BOOK_CARD_VARS = presetCardVars(getCookbookPreset(undefined)) as React.CSSProperties;
+
 interface Combo {
   id: string;
   recipeId: string;
@@ -37,27 +46,45 @@ interface Combo {
   template: RecipePrintTemplate;
   hasPhoto: boolean;
   showSourceUrl: boolean;
+  fontScale: FontScale;
+  book: boolean;
 }
 
-function combosFor(recipe: HarnessRecipe): Combo[] {
+function combosFor(recipe: HarnessRecipe, fontScales: readonly FontScale[], book: boolean): Combo[] {
   const combos: Combo[] = [];
-  for (const size of SIZES) {
+  for (const size of book ? (["letter"] as PrintCardSize[]) : SIZES) {
     for (const template of TEMPLATES) {
       for (const hasPhoto of PHOTO_OPTIONS) {
         for (const showSourceUrl of SOURCE_URL_OPTIONS) {
-          combos.push({
-            id: `${recipe.id}|${size}|${template}|p${hasPhoto ? 1 : 0}|s${showSourceUrl ? 1 : 0}`,
-            recipeId: recipe.id,
-            size,
-            template,
-            hasPhoto,
-            showSourceUrl,
-          });
+          for (const fontScale of fontScales) {
+            combos.push({
+              // Normal and cards keep the ids every saved baseline uses.
+              id:
+                `${recipe.id}|${size}|${template}|p${hasPhoto ? 1 : 0}|s${showSourceUrl ? 1 : 0}` +
+                (fontScale === DEFAULT_FONT_SCALE ? "" : `|f${fontScale}`) +
+                (book ? "|book" : ""),
+              recipeId: recipe.id,
+              size,
+              template,
+              hasPhoto,
+              showSourceUrl,
+              fontScale,
+              book,
+            });
+          }
         }
       }
     }
   }
   return combos;
+}
+
+/** `?font=1.2,0.85` sweeps those text sizes, `?font=all` every step; absent is Normal only. */
+function fontScalesFromUrl(value: string | null): FontScale[] {
+  if (!value) return [DEFAULT_FONT_SCALE];
+  if (value === "all") return [...FONT_SCALES];
+  const wanted = value.split(",").map((part) => Number(part.trim()));
+  return FONT_SCALES.filter((scale) => wanted.includes(scale));
 }
 
 type ClipKind = "none" | "repackable" | "oversized";
@@ -149,6 +176,8 @@ function FaceSetProbe({
   showSourceUrl,
   pages,
   scale,
+  fontScale,
+  book,
   onMeasured,
 }: {
   recipe: Recipe;
@@ -158,6 +187,8 @@ function FaceSetProbe({
   showSourceUrl: boolean;
   pages: RecipeFace[];
   scale: number;
+  fontScale: FontScale;
+  book: boolean;
   onMeasured: (details: FaceMeasureDetail[]) => void;
 }) {
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
@@ -217,6 +248,8 @@ function FaceSetProbe({
         pointerEvents: "none",
         zIndex: -1,
         ...(scale === 1 ? {} : { transform: `scale(${scale})`, transformOrigin: "top left" }),
+        ...(book ? BOOK_CARD_VARS : {}),
+        ...fontScaleVars(fontScale),
       }}
       className={`recipe-print-preview recipe-print-preview--${size} recipe-face-measurer`}
     >
@@ -237,10 +270,13 @@ function FaceSetProbe({
               layout={page.layout}
               hasBackFace={pages.length > 1}
               showImage={i === 0 && hasPhoto}
+              photoPlaceholder={book}
               showSourceUrl={showSourceUrl}
               continued={i > 0}
               contentScale={page.contentScale}
+              titleFit={page.titleFit}
               template={template}
+              cookbookMode={book}
             />
           </div>
         ))}
@@ -270,8 +306,9 @@ function ComboRunner({
         hasPhoto: combo.hasPhoto,
         showSourceUrl: combo.showSourceUrl,
         template: combo.template,
+        fontScale: combo.fontScale,
       }).pages,
-    [recipe, combo.size, combo.hasPhoto, combo.showSourceUrl, combo.template],
+    [recipe, combo.size, combo.hasPhoto, combo.showSourceUrl, combo.template, combo.fontScale],
   );
 
   const [settledPages, setSettledPages] = useState<RecipeFace[] | null>(null);
@@ -349,7 +386,8 @@ function ComboRunner({
         .map(
           (p, i) =>
             `${p.ingredients.length}i/${p.instructions.length}s(${p.layout})@${round(details[i]?.overflowPx ?? 0)}` +
-            (p.contentScale && p.contentScale < 1 ? `x${p.contentScale.toFixed(2)}` : ""),
+            (p.contentScale && p.contentScale < 1 ? `x${p.contentScale.toFixed(2)}` : "") +
+            (p.titleFit && p.titleFit < 1 ? `t${p.titleFit.toFixed(2)}` : ""),
         )
         .join(" · ");
 
@@ -383,7 +421,11 @@ function ComboRunner({
         size={combo.size}
         template={combo.template}
         hasPhoto={combo.hasPhoto}
+        photoPlaceholder={combo.book}
         showSourceUrl={combo.showSourceUrl}
+        cookbookMode={combo.book}
+        cardVars={combo.book ? BOOK_CARD_VARS : undefined}
+        fontScale={combo.fontScale}
         onSettled={(pages) => setSettledPages((prev) => prev ?? pages)}
       />
       {settledPages && (
@@ -395,6 +437,8 @@ function ComboRunner({
           showSourceUrl={combo.showSourceUrl}
           pages={settledPages}
           scale={scale}
+          fontScale={combo.fontScale}
+          book={combo.book}
           onMeasured={(o) => report(settledPages, o)}
         />
       )}
@@ -439,20 +483,46 @@ interface FlatCombo {
   label: string;
 }
 
+/** `?specimen=1` shows `FontSpecimens` instead of running the sweep. Decided
+    after mount, so the server's page and the first client render agree. */
 export function LayoutHarness() {
+  const [mode, setMode] = useState<
+    { kind: "sweep" } | { kind: "specimen"; fontScale: FontScale; book: boolean } | null
+  >(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setMode(
+      params.get("specimen") === "1"
+        ? { kind: "specimen", fontScale: normalizeFontScale(Number(params.get("font"))), book: params.get("book") === "1" }
+        : { kind: "sweep" },
+    );
+  }, []);
+  if (mode === null) return null;
+  if (mode.kind === "specimen") return <FontSpecimens fontScale={mode.fontScale} book={mode.book} />;
+  return <LayoutSweep />;
+}
+
+function LayoutSweep() {
   // `?only=<recipeId>[,<recipeId>]` narrows the sweep to specific fixtures —
   // re-validating one boundary case after a change is far quicker than
   // re-running all 1024 combos.
-  const flatCombos = useMemo<FlatCombo[]>(() => {
-    const only =
-      typeof window !== "undefined"
-        ? new URLSearchParams(window.location.search).get("only")
-        : null;
+  // `?font=` adds text sizes (see `fontScalesFromUrl`); `?book=1` measures
+  // cookbook pages instead of cards. Read once, like `only`: the combo list is
+  // what a run walks, and it must not change under it.
+  const [{ flatCombos, fontScales, book }] = useState(() => {
+    const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const only = params?.get("only") ?? null;
     const wanted = only ? new Set(only.split(",").map((s) => s.trim())) : null;
-    return HARNESS_RECIPES.filter((r) => !wanted || wanted.has(r.id)).flatMap((r) =>
-      combosFor(r).map((combo) => ({ combo, recipe: r.recipe, label: r.label })),
-    );
-  }, []);
+    const scales = fontScalesFromUrl(params?.get("font") ?? null);
+    const bookPages = params?.get("book") === "1";
+    return {
+      fontScales: scales,
+      book: bookPages,
+      flatCombos: HARNESS_RECIPES.filter((r) => !wanted || wanted.has(r.id)).flatMap((r) =>
+        combosFor(r, scales, bookPages).map((combo) => ({ combo, recipe: r.recipe, label: r.label })),
+      ) as FlatCombo[],
+    };
+  });
   const totalCombos = flatCombos.length;
 
   // `?scale=<n>` renders the settled faces under a transform, the way the live
@@ -630,7 +700,7 @@ export function LayoutHarness() {
   const downloadBaseline = () => {
     const baseline = {
       capturedAt: new Date().toISOString(),
-      matrix: { sizes: SIZES, templates: TEMPLATES, photo: PHOTO_OPTIONS, sourceUrl: SOURCE_URL_OPTIONS },
+      matrix: { sizes: book ? ["letter"] : SIZES, templates: TEMPLATES, photo: PHOTO_OPTIONS, sourceUrl: SOURCE_URL_OPTIONS, fontScales, book },
       renderScale,
       totalCombos,
       summary,
@@ -652,6 +722,8 @@ export function LayoutHarness() {
     (window as unknown as { __layoutHarness?: unknown }).__layoutHarness = {
       complete,
       renderScale,
+      fontScales,
+      book,
       envHealthy,
       summary,
       inv1Failures: inv1Failures.map((r) => ({
@@ -670,7 +742,7 @@ export function LayoutHarness() {
       timedOut: timedOut.map((r) => r.combo.id),
       dump: () => ({
         capturedAt: new Date().toISOString(),
-        matrix: { sizes: SIZES, templates: TEMPLATES, photo: PHOTO_OPTIONS, sourceUrl: SOURCE_URL_OPTIONS },
+        matrix: { sizes: book ? ["letter"] : SIZES, templates: TEMPLATES, photo: PHOTO_OPTIONS, sourceUrl: SOURCE_URL_OPTIONS, fontScales, book },
         renderScale,
         totalCombos,
         summary,
@@ -700,7 +772,8 @@ export function LayoutHarness() {
     <div style={{ padding: 24, fontFamily: "system-ui, sans-serif", overflowY: "auto", height: "100%" }}>
       <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Layout measurement harness</h1>
       <p style={{ color: "#555", marginBottom: 16, fontSize: 14 }}>
-        {HARNESS_RECIPES.length} recipes × {SIZES.length} sizes × {TEMPLATES.length} templates × photo × source-url ={" "}
+        {HARNESS_RECIPES.length} recipes × {book ? "cookbook pages" : `${SIZES.length} sizes`} × {TEMPLATES.length} templates × photo × source-url
+        {fontScales.length > 1 || fontScales[0] !== DEFAULT_FONT_SCALE ? ` × text size ${fontScales.join("/")}` : ""} ={" "}
         <strong>{totalCombos}</strong> combos{renderScale === 1 ? "" : `, rendered at ${renderScale}×`}. Each is settled with the current engine, then its real per-face
         overflow is measured (after fonts load) to check the invariants.
       </p>

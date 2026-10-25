@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import type { FontScale } from "@/lib/fontScale";
 import type {
   CSSProperties,
   Dispatch,
@@ -193,6 +194,8 @@ interface PrintDeckProps {
   spreadWidth: number;
   previewCardSize: PrintCardSize;
   previewTemplate: RecipePrintTemplate;
+  /** The text size the displayed sheets were measured at (`previewConfig`). */
+  previewFontScale: FontScale;
   continueOnBack: boolean;
   cardSize: PrintCardSize;
   showCutLines: boolean;
@@ -359,6 +362,7 @@ export function PrintDeck(props: PrintDeckProps) {
     spreadWidth,
     previewCardSize,
     previewTemplate,
+    previewFontScale,
     continueOnBack,
     cardSize,
     showCutLines,
@@ -1033,6 +1037,7 @@ export function PrintDeck(props: PrintDeckProps) {
       scale={deckScale}
       size={previewCardSize}
       template={previewTemplate}
+      fontScale={previewFontScale}
       doubleSided={continueOnBack}
       gutterSide={gutterSideForRole(role)}
       cookbookMode={Boolean(projectMeta.meta.cookbookMode)}
@@ -1923,6 +1928,7 @@ export function PrintDeck(props: PrintDeckProps) {
                     scale={deckScale}
                     size={previewCardSize}
                     template={previewTemplate}
+                    fontScale={previewFontScale}
                     doubleSided={continueOnBack}
                     cookbookMode={Boolean(projectMeta.meta.cookbookMode)}
                     showEmptyFields={showEmptyFields}

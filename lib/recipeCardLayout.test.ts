@@ -10,6 +10,7 @@ import {
   type CookbookPlanItem,
   type CookbookPlanRecipeSlot,
 } from "@/lib/recipeCardLayout";
+import { FONT_SCALES, type FontScale } from "@/lib/fontScale";
 import type { PrintCardSize, RecipePrintTemplate } from "@/types/recipe";
 
 /**
@@ -52,6 +53,7 @@ interface Combo {
   template: RecipePrintTemplate;
   hasPhoto: boolean;
   showSourceUrl: boolean;
+  fontScale: FontScale;
 }
 
 function everyCombo(): Combo[] {
@@ -60,7 +62,9 @@ function everyCombo(): Combo[] {
     for (const template of TEMPLATES) {
       for (const hasPhoto of PHOTO_OPTIONS) {
         for (const showSourceUrl of SOURCE_URL_OPTIONS) {
-          combos.push({ size, template, hasPhoto, showSourceUrl });
+          for (const fontScale of FONT_SCALES) {
+            combos.push({ size, template, hasPhoto, showSourceUrl, fontScale });
+          }
         }
       }
     }
@@ -81,11 +85,12 @@ describe("getRecipeFaces page invariants", () => {
           hasPhoto: combo.hasPhoto,
           showSourceUrl: combo.showSourceUrl,
           template: combo.template,
+          fontScale: combo.fontScale,
         });
 
         const where =
           `${fixture.id} | ${combo.size} | ${combo.template} | ` +
-          `photo=${combo.hasPhoto} | sourceUrl=${combo.showSourceUrl}`;
+          `photo=${combo.hasPhoto} | sourceUrl=${combo.showSourceUrl} | font=${combo.fontScale}`;
 
         const result = checkPageInvariants(
           pages,
@@ -124,8 +129,37 @@ describe("getRecipeFaces page invariants", () => {
     // while testing nothing.
     expect(HARNESS_RECIPES.length).toBeGreaterThan(0);
     expect(COMBOS.length).toBe(
-      SIZES.length * TEMPLATES.length * PHOTO_OPTIONS.length * SOURCE_URL_OPTIONS.length,
+      SIZES.length *
+        TEMPLATES.length *
+        PHOTO_OPTIONS.length *
+        SOURCE_URL_OPTIONS.length *
+        FONT_SCALES.length,
     );
+  });
+
+  it("never fits a recipe on fewer faces at a bigger text size", () => {
+    // Bigger type holds less, so a step up may add a face and may never take
+    // one away. A guess that gets this backwards starts the corrector from the
+    // wrong end at exactly the sizes most likely to overflow.
+    for (const fixture of HARNESS_RECIPES) {
+      for (const combo of COMBOS.filter((c) => c.fontScale === FONT_SCALES[0])) {
+        let previous = 0;
+        for (const fontScale of FONT_SCALES) {
+          const faces = getRecipeFaces(fixture.recipe, combo.size, {
+            hasPhoto: combo.hasPhoto,
+            showSourceUrl: combo.showSourceUrl,
+            template: combo.template,
+            fontScale,
+          }).pages.length;
+          expect(
+            faces,
+            `${fixture.id} | ${combo.size} | ${combo.template} | photo=${combo.hasPhoto} | ` +
+              `sourceUrl=${combo.showSourceUrl}: ${faces} faces at ${fontScale}, ${previous} one step smaller`,
+          ).toBeGreaterThanOrEqual(previous);
+          previous = faces;
+        }
+      }
+    }
   });
 });
 

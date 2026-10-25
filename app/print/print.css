@@ -52,13 +52,13 @@
   --recipe-card-padding-bottom: 0.22in;
   --recipe-card-columns: 1.7in 1fr;
   --recipe-card-gap: 0.19in;
-  --recipe-card-title-size: 16.5pt;
-  --recipe-card-meta-size: 7.2pt;
-  --recipe-card-label-size: 7pt;
-  --recipe-card-body-size: 7.8pt;
-  --recipe-card-step-size: 7.8pt;
-  --recipe-card-step-gap: 4.2pt;
-  --recipe-card-ingredient-gap: 1.8pt;
+  --recipe-card-title-size: calc(16.5pt * var(--recipe-font-scale, 1));
+  --recipe-card-meta-size: calc(7.2pt * var(--recipe-font-scale, 1));
+  --recipe-card-label-size: calc(7pt * var(--recipe-font-scale, 1));
+  --recipe-card-body-size: calc(7.8pt * var(--recipe-font-scale, 1));
+  --recipe-card-step-size: calc(7.8pt * var(--recipe-font-scale, 1));
+  --recipe-card-step-gap: calc(4.2pt * var(--recipe-font-scale, 1));
+  --recipe-card-ingredient-gap: calc(1.8pt * var(--recipe-font-scale, 1));
   --recipe-card-photo-size: 0.92in;
   --recipe-card-footer-reserve: 0.28in;
 }
@@ -4285,14 +4285,14 @@ textarea.recipe-page-fields__input {
   --recipe-card-padding-bottom: 0.5in;
   --recipe-card-columns: 2.65in 1fr;
   --recipe-card-gap: 0.46in;
-  --recipe-card-title-size: 25pt;
-  --recipe-card-meta-size: 8.6pt;
+  --recipe-card-title-size: calc(25pt * var(--recipe-font-scale, 1));
+  --recipe-card-meta-size: calc(8.6pt * var(--recipe-font-scale, 1));
   --recipe-card-meta-gap: 9px;
-  --recipe-card-label-size: 8pt;
-  --recipe-card-body-size: 9.6pt;
-  --recipe-card-step-size: 9.6pt;
-  --recipe-card-step-gap: 5.2pt;
-  --recipe-card-ingredient-gap: 3.2pt;
+  --recipe-card-label-size: calc(8pt * var(--recipe-font-scale, 1));
+  --recipe-card-body-size: calc(9.6pt * var(--recipe-font-scale, 1));
+  --recipe-card-step-size: calc(9.6pt * var(--recipe-font-scale, 1));
+  --recipe-card-step-gap: calc(5.2pt * var(--recipe-font-scale, 1));
+  --recipe-card-ingredient-gap: calc(3.2pt * var(--recipe-font-scale, 1));
   --recipe-card-photo-size: 1.7in;
 }
 
@@ -7473,7 +7473,7 @@ textarea.recipe-card__toc-title {
 
 .recipe-card__title {
   font-family: var(--recipe-title-font);
-  font-size: var(--recipe-card-title-size);
+  font-size: calc(var(--recipe-card-title-size) * var(--recipe-title-fit, 1));
   line-height: 1.08;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -7614,7 +7614,7 @@ textarea.recipe-card__toc-title {
 .recipe-card__headnote {
   margin: 0.05in 0 0.03in;
   max-width: 6.2in;
-  font-size: 10pt;
+  font-size: calc(10pt * var(--recipe-font-scale, 1));
   font-style: italic;
   line-height: 1.4;
   color: var(--recipe-muted);
@@ -7642,7 +7642,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-card__fact-label {
-  font-size: 7.5pt;
+  font-size: calc(7.5pt * var(--recipe-font-scale, 1));
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -7654,7 +7654,7 @@ textarea.recipe-card__toc-title {
   max-width: 1.15in;
   field-sizing: content;
   font-family: var(--recipe-title-font);
-  font-size: 10.5pt;
+  font-size: calc(10.5pt * var(--recipe-font-scale, 1));
   font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--recipe-ink);
@@ -8295,7 +8295,7 @@ textarea.recipe-card__toc-title {
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
   color: var(--recipe-accent);
-  font-size: 6.5pt;
+  font-size: calc(6.5pt * var(--recipe-font-scale, 1));
   font-weight: 800;
   text-shadow: none;
 }
@@ -8395,7 +8395,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-card__add-line-text {
-  font-size: 6.5pt;
+  font-size: calc(6.5pt * var(--recipe-font-scale, 1));
   font-weight: 800;
   color: var(--cp-ink-soft);
   white-space: nowrap;
@@ -8467,7 +8467,7 @@ textarea.recipe-card__toc-title {
   gap: 1px;
   padding-top: 3px;
   border-top: 1px solid var(--recipe-line);
-  font-size: 7pt;
+  font-size: calc(7pt * var(--recipe-font-scale, 1));
   color: var(--recipe-footer);
 }
 
@@ -8913,6 +8913,13 @@ textarea.recipe-card__toc-title {
    toolbar: white capsule, 14px corner, `--cp-shadow-md`, 28px buttons in 4px
    of padding. They sit over the same pages and are read together, so one is
    defined in the other's terms rather than beside it. */
+/* ── Text size (settings panel) ───────────────────────────────────────────
+   A section heading like Size and Themes, with the shared MenuSelect under
+   it. The Pro crowns are on the sizes themselves (every one but Normal). */
+.recipe-config-section--text-size {
+  align-items: flex-start;
+}
+
 /* ── Zoom control (deck, full-page photo) ─────────────────────────────────
    One control, positioned by whoever uses it. `.recipe-deck-zoom` and
    `.recipe-image-spread__zoom` are now nothing but that position. */
@@ -9954,7 +9961,7 @@ textarea.recipe-card__toc-title {
 /* Cormorant's lowercase is small for its point size, so at the shared title
    size it read a size smaller than every other theme's title. */
 .recipe-template--garden .recipe-card__title {
-  font-size: calc(var(--recipe-card-title-size) * 1.25);
+  font-size: calc(var(--recipe-card-title-size) * 1.25 * var(--recipe-title-fit, 1));
 }
 
 /* Softened corners, like everything else the art draws. */
@@ -10355,7 +10362,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--diner .recipe-card__title {
-  font-size: calc(96 * var(--diner-u));
+  font-size: calc(96 * var(--diner-u) * var(--recipe-font-scale, 1) * var(--recipe-title-fit, 1));
   font-weight: 400;
   line-height: 1.15;
   letter-spacing: 0;
@@ -10537,7 +10544,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--poster .recipe-card__title {
-  font-size: calc(72 * var(--poster-u));
+  font-size: calc(72 * var(--poster-u) * var(--recipe-font-scale, 1) * var(--recipe-title-fit, 1));
   font-weight: 400;
   line-height: 1.05;
   letter-spacing: 0;
@@ -10548,7 +10555,7 @@ textarea.recipe-card__toc-title {
    sheet, which is taller for its width than a 4x6. Letter's title gets 86,
    and the cook time and servings line under it grows a little with it. */
 .recipe-print-preview--letter .recipe-template--poster .recipe-card__title {
-  font-size: calc(86 * var(--poster-u));
+  font-size: calc(86 * var(--poster-u) * var(--recipe-font-scale, 1) * var(--recipe-title-fit, 1));
 }
 
 .recipe-print-preview--letter .recipe-template--poster .recipe-card__meta {
@@ -10662,7 +10669,7 @@ textarea.recipe-card__toc-title {
 
 .recipe-template--christmas .recipe-card__title {
   color: #c92e31;
-  font-size: calc(var(--recipe-card-title-size) * 1.45);
+  font-size: calc(var(--recipe-card-title-size) * 1.45 * var(--recipe-title-fit, 1));
   font-weight: 400;
   letter-spacing: 0;
   font-synthesis: none;
@@ -10762,7 +10769,7 @@ textarea.recipe-card__toc-title {
 
 .recipe-template--fall .recipe-card__title {
   color: #c4501c;
-  font-size: calc(var(--recipe-card-title-size) * 1.12);
+  font-size: calc(var(--recipe-card-title-size) * 1.12 * var(--recipe-title-fit, 1));
   font-weight: 700;
   font-variation-settings: "SOFT" 100;
   letter-spacing: -0.005em;
@@ -10880,7 +10887,7 @@ textarea.recipe-card__toc-title {
    title size so the drips read at card size. */
 .recipe-template--halloween .recipe-card__title {
   color: #1f1b16;
-  font-size: calc(var(--recipe-card-title-size) * 1.3);
+  font-size: calc(var(--recipe-card-title-size) * 1.3 * var(--recipe-title-fit, 1));
   font-weight: 400;
   font-synthesis: none;
   letter-spacing: 0.02em;

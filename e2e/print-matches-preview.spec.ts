@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./guarded";
+import { deckFontScale, seedFontScale } from "./printOverflow";
 
 /**
  * What prints is what the preview shows. Every card, front and back, in every
@@ -62,7 +63,8 @@ const recipes = [...Array.from({ length: 6 }, (_, i) => short(i + 1)), sectioned
   recipe,
 }));
 
-async function openPrint(page: Page, size: string) {
+async function openPrint(page: Page, size: string, fontScale?: number) {
+  if (fontScale !== undefined) await seedFontScale(page, fontScale);
   await page.addInitScript((items) => {
     sessionStorage.setItem("recipeprinter:queue:v1", JSON.stringify(items));
     sessionStorage.setItem("recipeprinter:print-job:current:v1", JSON.stringify({ ids: items.map((item) => item.id) }));
@@ -151,6 +153,29 @@ for (const size of ["card-6x4", "letter"]) {
     expect(differences(printed, preview), "in print media").toEqual([]);
   });
 }
+
+/** Sheets in the PDF Chromium prints from the page as it stands. */
+async function printedSheets(page: Page) {
+  await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
+  await page.emulateMedia({ media: "print" });
+  const pdf = await page.pdf({ width: "6in", height: "4in", printBackground: true });
+  return (pdf.toString("latin1").match(/\/Type\s*\/Page(?!s)/g) ?? []).length;
+}
+
+// Biggest text: more faces per recipe, each measured in the preview. The PDF
+// has to come out with the same count, or the print laid the text out at a
+// size the preview never measured.
+test("at the biggest text size, the PDF has as many sheets as the preview", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "only Chromium prints to PDF under Playwright");
+  await openPrint(page, "card-6x4", 1.2);
+  expect(await deckFontScale(page)).toBe(1.2);
+  // The deck draws only the pages near the reader; asked to print, it draws
+  // them all. Counted on screen, every front and back of every sheet.
+  await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
+  const previewPages = await page.locator("#recipe-page-deck .recipe-card-page").count();
+  expect(previewPages, "more pages than at Normal's 6x4 (the size took effect)").toBeGreaterThan(8);
+  expect(await printedSheets(page)).toBe(previewPages);
+});
 
 test("Chromium's PDF has exactly one sheet per printed page box", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium", "only Chromium prints to PDF under Playwright");

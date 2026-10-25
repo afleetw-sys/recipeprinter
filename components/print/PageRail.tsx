@@ -40,6 +40,7 @@ import { BACK_COVER_NAV_ID, pendingAnchorIndex, sectionDrawsNestingLine } from "
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
+import type { FontScale } from "@/lib/fontScale";
 import type { NavItem, usePrintSheets } from "@/lib/usePrintSheets";
 import type { useProjectMeta } from "@/lib/project";
 import type { useRailDrag } from "@/lib/useRailDrag";
@@ -188,6 +189,8 @@ interface PageRailProps {
   previewCardSize: PrintCardSize;
   cardSize: PrintCardSize;
   previewTemplate: RecipePrintTemplate;
+  /** The text size the displayed sheets were measured at (`previewConfig`). */
+  previewFontScale: FontScale;
   continueOnBack: boolean;
   previewDescriptionOn: boolean;
   organizeMode: boolean;
@@ -265,6 +268,7 @@ export function PageRail(props: PageRailProps) {
     previewCardSize,
     cardSize,
     previewTemplate,
+    previewFontScale,
     continueOnBack,
     previewDescriptionOn,
     organizeMode,
@@ -1586,6 +1590,7 @@ export function PageRail(props: PageRailProps) {
                                 scale={RAIL_SCALE[cardSize]}
                                 size={previewCardSize}
                                 template={previewTemplate}
+                                fontScale={previewFontScale}
                                 doubleSided={continueOnBack}
                                 showDescription={previewDescriptionOn}
                                 showCutLines={false}
@@ -1727,6 +1732,7 @@ export function PageRail(props: PageRailProps) {
                         scale={RAIL_SCALE[cardSize]}
                         size={previewCardSize}
                         template={previewTemplate}
+                        fontScale={previewFontScale}
                         doubleSided={continueOnBack}
                         showDescription={previewDescriptionOn}
                         showCutLines={false}

@@ -2,7 +2,8 @@ name: Layout
 
 # The full card-layout sweep (e2e/layout-harness.spec.ts): every fixture
 # recipe on every theme, at both sizes, with and without a photo and a source
-# link, at three render scales. It is the regression net for the bug that has
+# link, at three render scales, at every text size a cook can pick, and on
+# cookbook pages. It is the regression net for the bug that has
 # come back most often (text clipped off a card), and it used to run only when
 # somebody opened /print/harness by hand, so it caught nothing in between.
 #
@@ -29,6 +30,11 @@ on:
       - "lib/__fixtures__/harnessRecipes.ts"
       - "lib/seasonalThemes.ts"
       - "lib/premiumTemplates.ts"
+      - "lib/fontScale.ts"
+      - "lib/cookbookPresets.ts"
+      - "lib/usePrintSheets.tsx"
+      - "components/MenuSelect.tsx"
+      - "app/export/**"
       - "types/recipe.ts"
       - "app/fonts/**"
       - "package-lock.json"
@@ -47,6 +53,15 @@ jobs:
   sweep:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # Sixteen runs where there used to be three (every text size at 1x, the
+    # extremes at two more render scales, cookbook pages at every text size),
+    # too many to trust to one machine's 60-minute limit, so Playwright splits them
+    # across these. Each shard gets whole runs and builds the app itself; one
+    # failing shard doesn't stop the others, so a red run names every clip.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     # Playwright's own image: the browsers and every system library they need
     # are already in it, at the version package-lock.json pins (checked by
     # lib/playwrightImage.test.ts; bump both together). Installing them on
@@ -67,13 +82,13 @@ jobs:
       - run: npm ci
 
       - name: Layout sweep
-        run: npm run test:layout
+        run: npm run test:layout -- --shard=${{ matrix.shard }}/4
 
       # Each scale's full result (every clipped combo and by how much) is
       # attached to its test in the report, pass or fail.
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: layout-report
+          name: layout-report-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 14

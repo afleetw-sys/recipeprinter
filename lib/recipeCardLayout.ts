@@ -133,6 +133,36 @@ interface SplitOptions {
   // front" guess overflows, the recipe needs the same stacked front a normal
   // multi-face recipe gets, not a side-by-side layout with items missing.
   forceStacked?: boolean;
+  // The cook's text size (lib/fontScale.ts). Every budget above is calibrated
+  // at Normal; bigger type fits fewer characters per line AND fewer lines, so
+  // a budget shrinks by the square (see `budgetScale`).
+  fontScale?: number;
+}
+
+/** What a text-cost budget is worth at this text size: fewer characters per
+    line and fewer lines, so it shrinks by the square of the scale. */
+function budgetScale(fontScale: number | undefined): number {
+  const s = fontScale && fontScale > 0 ? fontScale : 1;
+  return 1 / (s * s);
+}
+
+function scaleBudget<T extends Record<string, number>>(budget: T, k: number): T {
+  if (k === 1) return budget;
+  const result = {} as T;
+  for (const key of Object.keys(budget) as Array<keyof T>) {
+    result[key] = (budget[key] * k) as T[keyof T];
+  }
+  return result;
+}
+
+/** Item caps count lines, so they shrink by the scale itself (√k), never below one. */
+function scaleLimits<T extends Record<string, number>>(limits: T, k: number): T {
+  if (k === 1) return limits;
+  const result = {} as T;
+  for (const key of Object.keys(limits) as Array<keyof T>) {
+    result[key] = Math.max(1, Math.floor(limits[key] * Math.sqrt(k))) as T[keyof T];
+  }
+  return result;
 }
 
 // The source link adds a second, wrapped line to the front face's footer.
@@ -532,14 +562,17 @@ function splitStandardFront(
   size: PrintCardSize,
   hasPhoto: boolean,
   hasSourceUrl: boolean,
+  k: number,
 ): SplitRecipeResult {
-  const baseBudget = hasPhoto
-    ? FRONT_SECTION_BUDGET[size].withPhoto
-    : FRONT_SECTION_BUDGET[size].withoutPhoto;
+  const baseBudget = scaleBudget(
+    hasPhoto ? FRONT_SECTION_BUDGET[size].withPhoto : FRONT_SECTION_BUDGET[size].withoutPhoto,
+    k,
+  );
   const frontBudget = applyReserve(baseBudget, hasSourceUrl ? SOURCE_URL_FOOTER_RESERVE[size] : 0);
-  const frontLimits = hasPhoto
+  const baseLimits = hasPhoto
     ? FRONT_SECTION_LIMITS[size]?.withPhoto
     : FRONT_SECTION_LIMITS[size]?.withoutPhoto;
+  const frontLimits = baseLimits ? scaleLimits(baseLimits, k) : undefined;
   const ingredients = splitByBudget(
     recipe.ingredients,
     frontBudget.ingredients,
@@ -570,17 +603,19 @@ function splitStackedFront(
   size: PrintCardSize,
   hasPhoto: boolean,
   hasSourceUrl: boolean,
-  template?: RecipePrintTemplate,
+  template: RecipePrintTemplate | undefined,
+  k: number,
 ): SplitRecipeResult {
-  const baseBudget = hasPhoto
-    ? STACKED_FRONT_BUDGET[size].withPhoto
-    : STACKED_FRONT_BUDGET[size].withoutPhoto;
+  const baseBudget = scaleBudget(
+    hasPhoto ? STACKED_FRONT_BUDGET[size].withPhoto : STACKED_FRONT_BUDGET[size].withoutPhoto,
+    k,
+  );
   const gutterReserve = TEMPLATE_STACKED_FRONT_GUTTER_RESERVE[template ?? "classic"]?.[size] ?? 0;
   const frontBudget = applyReserve(
     baseBudget,
     (hasSourceUrl ? SOURCE_URL_FOOTER_RESERVE[size] : 0) + gutterReserve,
   );
-  const frontLimits = stackedFrontLimitsFor(size, hasPhoto, template);
+  const frontLimits = scaleLimits(stackedFrontLimitsFor(size, hasPhoto, template), k);
 
   // Ingredients only reserve their smaller share when they finish on the front
   // and leave room for steps to begin. If they overflow that share they won't
@@ -644,11 +679,12 @@ function splitRecipe(
   size: PrintCardSize,
   options: SplitOptions = {},
 ): SplitRecipeResult {
-  const { hasPhoto = false, showSourceUrl = false, template, forceStacked = false } = options;
+  const { hasPhoto = false, showSourceUrl = false, template, forceStacked = false, fontScale } = options;
   const hasSourceUrl = showSourceUrl && Boolean(sourceLabel(recipe));
+  const k = budgetScale(fontScale);
 
   if (!forceStacked) {
-    const standardSplit = splitStandardFront(recipe, size, hasPhoto, hasSourceUrl);
+    const standardSplit = splitStandardFront(recipe, size, hasPhoto, hasSourceUrl, k);
 
     // Side-by-side is only used when the whole recipe fits on the front. The
     // moment anything spills onto another side, switch to the stacked layout
@@ -663,7 +699,7 @@ function splitRecipe(
     }
   }
 
-  return splitStackedFront(recipe, size, hasPhoto, hasSourceUrl, template);
+  return splitStackedFront(recipe, size, hasPhoto, hasSourceUrl, template, k);
 }
 
 export function recipeNeedsBackSide(
@@ -687,6 +723,14 @@ export interface RecipeFace {
    * — it overflows there too — so the sole remaining lever is smaller type.
    */
   contentScale?: number;
+  /**
+   * The same last resort for the header: a front face whose title alone is
+   * taller than the card (a long title beside a photo, at a big text size)
+   * has nothing left to move, so its title is set smaller. Multiplies the
+   * title's own size (`--recipe-title-fit` in print.css), never the photo or
+   * the lists. 1 = unscaled.
+   */
+  titleFit?: number;
 }
 
 export interface RecipeFaces {
@@ -768,8 +812,9 @@ function continuationFaces(
   instructions: Recipe["instructions"],
   size: PrintCardSize,
   layout: CardSectionLayout,
+  k = 1,
 ): RecipeFace[] {
-  const budget = CONTINUATION_FLOW_BUDGET[size][layout];
+  const budget = scaleBudget(CONTINUATION_FLOW_BUDGET[size][layout], k);
   const pages: RecipeFace[] = [];
   let remainingIngredients = ingredients;
   let remainingInstructions = instructions;
@@ -1088,6 +1133,7 @@ export function getRecipeFaces(
     split.backInstructions,
     size,
     split.backLayout,
+    budgetScale(options?.fontScale),
   );
   const pages = [front, ...continuations];
   const hasBack = continuations.length > 0;

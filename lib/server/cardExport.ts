@@ -6,6 +6,7 @@ import {
 } from "@/lib/printTemplates";
 import { RECIPEPRINTER_PRO_ENTITLEMENT_ID } from "@/lib/proProduct";
 import type { ProLockReason } from "@/lib/recipePrinterPurchases";
+import { DEFAULT_FONT_SCALE, normalizeFontScale } from "@/lib/fontScale";
 import type { ExportOutput, ExportPayload } from "@/types/export";
 import type { PrintCardSize, QueueItem, RecipePrintTemplate, Section } from "@/types/recipe";
 
@@ -81,11 +82,14 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
   const template: RecipePrintTemplate =
     RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === settings.template)?.id ?? "classic";
 
+  const fontScale = normalizeFontScale(settings.fontScale);
+
   const pro = entitlements.includes(RECIPEPRINTER_PRO_ENTITLEMENT_ID);
   const ownsTheme = isPremiumTemplate(template) && entitlements.includes(entitlementForTemplate(template) ?? "");
   const reasons: ProLockReason[] = [];
   if (isPremiumTemplate(template) && !pro && !ownsTheme) reasons.push("theme");
   if (isProOnlyCardSize(cardSize) && !pro) reasons.push("card_size");
+  if (fontScale !== DEFAULT_FONT_SCALE && !pro) reasons.push("font_size");
   if (recipeCount > 1 && !pro) reasons.push("multi_recipe");
   if (reasons.length > 0) return { ok: false, kind: "locked", reasons };
 
@@ -115,6 +119,7 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
           showSourceUrl: Boolean(settings.showSourceUrl),
           showDescription: settings.showDescription !== false,
           showCutLines: Boolean(settings.showCutLines),
+          fontScale,
           cookbookMode: false,
         },
       },

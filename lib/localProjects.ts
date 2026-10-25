@@ -8,6 +8,7 @@ import type {
   RecipePrintTemplate,
 } from "@/types/recipe";
 import { localStore } from "@/lib/storage";
+import { normalizeFontScale } from "@/lib/fontScale";
 import { buildSections, projectDisplayTitle, type ProjectMeta } from "@/lib/project";
 import { assemblePrintProject, projectContentFromMeta } from "@/lib/printProjects";
 import { readPrintSettings } from "@/lib/printSettings";
@@ -347,6 +348,7 @@ function assembleWorkingCopy(printable: QueueItem[], meta: ProjectMeta, id: stri
     showPhoto: stored.showPhoto ?? true,
     showSourceUrl: stored.showSourceUrl ?? true,
     showCutLines: stored.showCutLines ?? false,
+    fontScale: normalizeFontScale(stored.fontScale),
   });
 
   return assemblePrintProject({

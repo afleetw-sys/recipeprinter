@@ -14,6 +14,7 @@ import type {
   StashedCookbook,
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
+import type { FontScale } from "@/lib/fontScale";
 import { metaSectionsFromFull, type ProjectMeta } from "@/lib/project";
 import { stripUndefined } from "@/lib/firebase/stripUndefined";
 import { projectLibraryChanged } from "@/lib/projectCount";
@@ -181,6 +182,7 @@ export interface PrintLayoutSettings {
       outside the workspace — `writePrintSettings` has never stored it. */
   showDescription?: boolean;
   showCutLines: boolean;
+  fontScale?: FontScale;
 }
 
 /**
