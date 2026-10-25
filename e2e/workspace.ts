@@ -47,10 +47,13 @@ export async function startCookbook(
   return { uid, email, projectId };
 }
 
-/** The settings panel's Book tab, where the themes are. A cookbook's panel
-    opens on it, but a test that visited the Page tab has to come back. */
+/** The settings panel's Book settings, where the themes are. A cookbook's panel
+    opens on them; with the Page tab hidden (PAGE_SETTINGS_TAB_ENABLED) there
+    are no tabs at all, and a test that visited Page has to come back. */
 export async function showBookSettings(page: Page) {
+  await expect(page.getByRole("complementary", { name: "Recipe print settings" })).toBeVisible();
   const book = page.getByRole("button", { name: "Book", exact: true });
+  if ((await book.count()) === 0) return;
   if ((await book.getAttribute("aria-pressed")) !== "true") await book.click();
 }
 
