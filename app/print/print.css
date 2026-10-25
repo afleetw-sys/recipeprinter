@@ -6209,7 +6209,7 @@ textarea.recipe-page-fields__input {
 }
 .image-picker__heading h2,
 .image-picker__existing h3,
-.image-picker__placement--below h3 {
+.image-picker__placement h3 {
   margin: 0;
   font-family: inherit;
   color: var(--cp-ink);
@@ -6295,7 +6295,7 @@ textarea.recipe-page-fields__input {
   margin-top: 24px;
 }
 .image-picker__existing h3,
-.image-picker__placement--below h3 {
+.image-picker__placement h3 {
   margin-bottom: 10px;
   font-size: var(--cp-fs-caption);
   font-weight: 800;

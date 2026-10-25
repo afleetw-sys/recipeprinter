@@ -303,13 +303,12 @@ export function ImagePicker({
   const headingTitle = gridMode ? "Choose photos" : recipeMode ? "Recipe photo" : "Choose an image";
   // No subtitle in grid mode: the section heading below ("Tap to add or
   // remove") already says how, and the max is only ever reached at the tile
-  // that greys out — nothing here needs to pre-explain the count.
+  // that greys out — nothing here needs to pre-explain the count. None for a
+  // recipe either: its sections are headed, and the empty photo box says how.
   const headingDescription = gridMode
     ? undefined
     : recipeMode
-      ? placementBelow
-        ? "Pick a photo or drag one in."
-        : "Set the placement, then pick a photo or drag one in."
+      ? undefined
       : // Deliberately not "in this cookbook": this dialog is the
         // photo control for plain recipe cards too now, where there
         // is no cookbook to have a photo in.
@@ -323,6 +322,26 @@ export function ImagePicker({
     if (!uploading) setOpen(false);
   };
 
+  // The file input behind both the Upload/Change tile and the empty-state box.
+  const uploadInput = (
+    <input
+      type="file"
+      accept="image/*"
+      hidden
+      disabled={uploading}
+      multiple={gridMode}
+      onChange={(event) => {
+        // Read the selection before clearing: `value = ""` empties the
+        // live FileList too. `addFiles` copies it out synchronously,
+        // before its first await, so this order is safe.
+        void addFiles(event.target.files);
+        // Clear so picking the SAME file again still fires onChange,
+        // otherwise a retry after an error is a silent no-op.
+        event.target.value = "";
+      }}
+    />
+  );
+
   // Its own piece so it can sit above the photos or below them. A card's
   // None / In card (`placementBelow`) only shows or hides its photo, so with no
   // photo it isn't offered. A cookbook page keeps it: its placement sets the
@@ -333,7 +352,7 @@ export function ImagePicker({
         className={`image-picker__placement ${placementBelow ? "image-picker__placement--below" : ""}`}
         aria-label="Where the photo goes"
       >
-        {placementBelow && <h3>On this card</h3>}
+        <h3>{placementBelow ? "On this card" : "Photo layout"}</h3>
         <div className="image-picker__placement-row" role="group">
           {placementOptions.map((option) => (
             <button
@@ -383,6 +402,16 @@ export function ImagePicker({
             <h3>{gridMode ? "Tap to add or remove" : recipeMode ? "This recipe's photo" : "Your photos"}</h3>
           </div>
 
+          {recipeMode && uniqueImages.length === 0 ? (
+            // Nothing to choose from yet, so the whole section is the way in:
+            // one big box to click or drop on, not a lone tile.
+            <label className={`dropzone image-picker__dropzone ${dragging ? "is-dragging" : ""} ${uploading ? "is-busy" : ""}`}>
+              <UploadIcon size={26} />
+              <span className="text-cp-body">{uploading ? "Adding…" : "Choose or drop a photo"}</span>
+              <span className="text-cp-caption font-medium text-ink-soft">JPG or PNG from your phone or computer</span>
+              {uploadInput}
+            </label>
+          ) : (
           <div className="image-picker__grid">
             {/* Upload leads, None follows: adding a photo is what someone opens
                 this for far more often than clearing one. The two still sit
@@ -394,23 +423,10 @@ export function ImagePicker({
               }`}
             >
               <UploadIcon size={20} />
-              <span className="image-picker__tile-label">{uploading ? "Adding…" : "Upload"}</span>
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                disabled={uploading}
-                multiple={gridMode}
-                onChange={(event) => {
-                  // Read the selection before clearing: `value = ""` empties the
-                  // live FileList too. `addFiles` copies it out synchronously,
-                  // before its first await, so this order is safe.
-                  void addFiles(event.target.files);
-                  // Clear so picking the SAME file again still fires onChange,
-                  // otherwise a retry after an error is a silent no-op.
-                  event.target.value = "";
-                }}
-              />
+              <span className="image-picker__tile-label">
+                {uploading ? "Adding…" : !gridMode && current ? "Change" : "Upload"}
+              </span>
+              {uploadInput}
             </label>
 
             {/* Cover/plain pickers keep a "None" tile to clear the photo. */}
@@ -491,6 +507,7 @@ export function ImagePicker({
               );
             })}
           </div>
+          )}
         </section>
         </>
         )}
