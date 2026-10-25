@@ -301,18 +301,8 @@ export function ImagePicker({
   }, [open]);
 
   const headingTitle = gridMode ? "Choose photos" : recipeMode ? "Recipe photo" : "Choose an image";
-  // No subtitle in grid mode: the section heading below ("Tap to add or
-  // remove") already says how, and the max is only ever reached at the tile
-  // that greys out — nothing here needs to pre-explain the count. None for a
-  // recipe either: its sections are headed, and the empty photo box says how.
-  const headingDescription = gridMode
-    ? undefined
-    : recipeMode
-      ? undefined
-      : // Deliberately not "in this cookbook": this dialog is the
-        // photo control for plain recipe cards too now, where there
-        // is no cookbook to have a photo in.
-        "Use a photo you already have, or drag in a new one.";
+  // No subtitle on any picker: each section is headed, and the upload tile or
+  // drop box says how to add a photo.
 
   // On mobile, closing has to stay blocked during an upload the same way
   // the desktop Dialog's `closeDisabled` blocks it — MobileSheet (shared
@@ -556,7 +546,6 @@ export function ImagePicker({
           open={open}
           onClose={closeSheet}
           title={headingTitle}
-          subtitle={headingDescription}
           footer={gridFooter}
           className="image-picker-sheet"
           // Every call site (a recipe card, a cover, a chapter opener) sits
@@ -586,7 +575,6 @@ export function ImagePicker({
             <div className="image-picker__heading">
               <div>
                 <h2 id="image-picker-title">{headingTitle}</h2>
-                {headingDescription && <p>{headingDescription}</p>}
               </div>
               <IconButton className="image-picker__close" onClick={() => setOpen(false)} aria-label="Close">
                 <XIcon size={ICON_SIZE.md} />
