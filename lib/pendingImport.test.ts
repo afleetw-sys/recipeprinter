@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { clearPendingImport, stashPendingImport, takePendingImport } from "@/lib/pendingImport";
+import {
+  clearPendingImport,
+  hasPendingImport,
+  stashPendingImport,
+  takePendingImport,
+  type PendingImport,
+} from "@/lib/pendingImport";
 import type { QueueItem } from "@/types/recipe";
 
 /**
@@ -14,7 +20,7 @@ import type { QueueItem } from "@/types/recipe";
  * Same in-memory stand-in as the queue tests: lib/storage resolves its area per
  * call, so defining `window` is enough to make it usable. IndexedDB is left
  * undefined on purpose — see the last block, which is about what happens when
- * it cannot be reached.
+ * storage refuses the stash.
  */
 class MemoryStorage {
   values = new Map<string, string>();
@@ -44,6 +50,8 @@ function readyItem(id: string, title: string): QueueItem {
 beforeEach(() => {
   session.clear();
   vi.stubGlobal("window", { sessionStorage: session, localStorage: new MemoryStorage() });
+  // A payload held in memory outlives a test the way it outlives a navigation.
+  clearPendingImport();
 });
 
 afterEach(() => {
@@ -120,27 +128,37 @@ describe("descriptors written by an older deploy", () => {
   });
 });
 
-describe("photos handed over undecoded", () => {
-  it("still refuses a stash it cannot persist, files or data URLs", async () => {
-    // The `imageFiles` payload takes the same IndexedDB route as the data-URL
-    // form it replaced, so it inherits the same honest failure: no photo store,
-    // no promise of a handoff. The caller keeps the cook where they are.
-    const file = new File([new Uint8Array([1, 2, 3])], "card.jpg", { type: "image/jpeg" });
-    expect(
-      await stashPendingImport({ kind: "imageFiles", files: [file], label: "1 photo" }),
-    ).toBe(false);
-    expect(session.getItem(DESCRIPTOR_KEY)).toBeNull();
-  });
-});
+describe("when storage refuses the stash", () => {
+  it("still hands the payload to /print, once, whatever storage did", async () => {
+    // A recording (2026-10-24, iPhone, /print-recipe-from-photo): the cook
+    // picked a photo, tapped Read the photo, and /print opened on "No recipes
+    // yet". IndexedDB refused the File (WebKit private browsing will not store
+    // a Blob), so no descriptor was written and the photo was dropped between
+    // the two pages without a word. `router.push` is a client navigation in the
+    // same document, so the payload can always ride across in memory.
+    //
+    // This window has no `indexedDB`, so every photo put fails. The last case
+    // also makes sessionStorage throw, for the payloads that live there.
+    const file = new File([new Uint8Array([1, 2, 3])], "image.jpg", { type: "image/jpeg" });
+    const cases: { payload: PendingImport; breakSession?: boolean }[] = [
+      { payload: { kind: "imageFiles", files: [file], label: "1 photo" } },
+      { payload: { kind: "images", images: ["data:,x"], label: "1 photo" } },
+      { payload: { kind: "url", url: "https://example.com/soup" }, breakSession: true },
+    ];
+    for (const { payload, breakSession } of cases) {
+      const setItem = vi.spyOn(session, "setItem");
+      if (breakSession) setItem.mockImplementation(() => { throw new Error("QuotaExceededError"); });
+      expect(await stashPendingImport(payload)).toBe(true);
+      setItem.mockRestore();
 
-describe("when the photo store cannot be reached", () => {
-  it("refuses the stash rather than promising a handoff it cannot make", async () => {
-    // No `indexedDB` on this window (private mode, a locked-down browser). The
-    // caller checks this answer: the home page keeps the cook where they are
-    // and says so, rather than walking them to an empty print page.
-    expect(await stashPendingImport({ kind: "images", images: ["data:,x"], label: "1 photo" })).toBe(
-      false,
-    );
-    expect(session.getItem(DESCRIPTOR_KEY)).toBeNull();
+      // /print decides on its first render whether recipes are on the way.
+      expect(hasPendingImport()).toBe(true);
+      const pending = await takePendingImport();
+      expect(pending).toEqual(payload);
+      if (pending?.kind === "imageFiles") expect(pending.files[0]).toBe(file);
+      // Consume-once holds for the in-memory copy too.
+      expect(hasPendingImport()).toBe(false);
+      expect(await takePendingImport()).toBeNull();
+    }
   });
 });

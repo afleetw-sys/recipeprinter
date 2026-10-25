@@ -14,6 +14,13 @@
 //
 // Every read is consume-and-delete: `takePendingImport()` returns the payload once
 // and removes it, so a refresh can't re-import and nothing lingers.
+//
+// Storage is the carrier, not a condition of the handoff. When it refuses
+// (WebKit private browsing won't put a File in IndexedDB, a full quota, a
+// throwing sessionStorage), the payload is held in this module instead: every
+// caller reaches /print with `router.push`, a client navigation in the same
+// document, so module state is still there when /print mounts. Only a reload or
+// a new tab loses it.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { idbStore } from "@/lib/idb";
@@ -79,14 +86,28 @@ function isFileList(value: unknown): value is File[] {
 }
 
 /**
- * Store a pending import and return true if it was persisted. Callers should only
- * navigate to "/" once this resolves true, so the payload is guaranteed to be
- * waiting when the workspace mounts.
+ * The payload storage refused, waiting for /print in this document. Set only by
+ * `stashPendingImport`, and consumed by `takePendingImport` like a stored one.
+ */
+let heldInMemory: PendingImport | null = null;
+
+/**
+ * Store a pending import and return true once /print can collect it. Callers
+ * navigate with `router.push` only after this resolves true. When storage
+ * refuses, the payload is held in memory instead (see the note at the top), so
+ * a refusal no longer costs the cook their photo.
  */
 export async function stashPendingImport(payload: PendingImport): Promise<boolean> {
   // A fresh capture supersedes any earlier abandoned one.
   clearPendingImport();
+  if (await persist(payload)) return true;
+  // Whatever half-landed is useless without the other half.
+  clearPendingImport();
+  heldInMemory = payload;
+  return true;
+}
 
+async function persist(payload: PendingImport): Promise<boolean> {
   if (payload.kind === "imageFiles" || payload.kind === "images") {
     // Files and data URLs go to the same IndexedDB key, under the same
     // descriptor: both are "the photos", and which form they are in is
@@ -103,6 +124,11 @@ export async function stashPendingImport(payload: PendingImport): Promise<boolea
 
 /** Read the pending import exactly once, removing it (and any IndexedDB bytes). */
 export async function takePendingImport(): Promise<PendingImport | null> {
+  if (heldInMemory) {
+    const held = heldInMemory;
+    clearPendingImport();
+    return held;
+  }
   const descriptor = sessionStore.getJson<StoredDescriptor>(DESCRIPTOR_KEY);
   sessionStore.remove(DESCRIPTOR_KEY);
   if (!descriptor) return null;
@@ -132,11 +158,13 @@ export async function takePendingImport(): Promise<PendingImport | null> {
  * `takePendingImport` remains the only way to collect the payload.
  */
 export function hasPendingImport(): boolean {
+  if (heldInMemory) return true;
   return sessionStore.getJson<StoredDescriptor>(DESCRIPTOR_KEY) !== null;
 }
 
 /** Drop any waiting pending import without consuming it (best-effort). */
 export function clearPendingImport(): void {
+  heldInMemory = null;
   sessionStore.remove(DESCRIPTOR_KEY);
   void pendingImages.remove(IDB_IMAGES_KEY);
 }

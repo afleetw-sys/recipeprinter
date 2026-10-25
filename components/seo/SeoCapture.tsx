@@ -56,6 +56,7 @@ function resolveMode(tab?: ImportTab): CaptureMode {
 function useHandoff() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [handoffError, setHandoffError] = useState<string | null>(null);
 
   async function handoff(payload: Parameters<typeof stashPendingImport>[0]) {
     // Out of free imports: the upgrade dialog opens on this page instead of
@@ -75,14 +76,20 @@ function useHandoff() {
               ? (payload.recipes[0]?.method ?? "manual")
               : "url",
     });
-    const ok = await stashPendingImport(payload);
-    // Even if persistence failed (private mode, quota), send them to the working
-    // tool rather than stranding them on the landing page.
+    setHandoffError(null);
+    // Never navigate to an empty /print: it opens on "No recipes yet" and the
+    // cook's photo is gone without a word. A storage refusal no longer lands
+    // here (lib/pendingImport holds the payload in memory instead), so this is
+    // only for a stash that truly could not be made.
+    if (!(await stashPendingImport(payload))) {
+      setBusy(false);
+      setHandoffError("We couldn't open that recipe. Please try again.");
+      return;
+    }
     router.push("/print");
-    if (!ok) setBusy(false);
   }
 
-  return { router, busy, setBusy, handoff };
+  return { router, busy, setBusy, handoff, handoffError };
 }
 
 export function SeoCapture({
@@ -191,7 +198,7 @@ function FullCapture({
   submitLabel: string;
   modes: ImportTab[] | undefined;
 }) {
-  const { busy, handoff } = useHandoff();
+  const { busy, handoff, handoffError } = useHandoff();
 
   return (
     // No reserved min-height here on purpose. That was the original fix for
@@ -202,26 +209,29 @@ function FullCapture({
     // HeroSplitRow): the photo's position is measured once after mount and
     // frozen, so it doesn't depend on this column's height after that, and
     // there's nothing left to reserve against.
-    <ImportPanel
-      // Always empty, and that is the point: this page holds no print list,
-      // so nothing can be marked as already added and every enabled source
-      // stays on show — see PrinterWorkspace, which does the same.
-      items={[]}
-      workspace
-      modes={modes}
-      initialMode={initialMode}
-      submitLabel={submitLabel}
-      submitBusy={busy}
-      autoFocusUrl={false}
-      onAddUrl={(url) => void handoff({ kind: "url", url })}
-      onAddText={(text) => void handoff({ kind: "text", text })}
-      onAddImageFiles={(files, label) => void handoff({ kind: "imageFiles", files, label })}
-      onAddReadyRecipes={(recipes: QueueItem[]) => {
-        if (recipes.length === 0) return 0;
-        void handoff({ kind: "ready", recipes });
-        return recipes.length;
-      }}
-    />
+    <>
+      <ImportPanel
+        // Always empty, and that is the point: this page holds no print list,
+        // so nothing can be marked as already added and every enabled source
+        // stays on show — see PrinterWorkspace, which does the same.
+        items={[]}
+        workspace
+        modes={modes}
+        initialMode={initialMode}
+        submitLabel={submitLabel}
+        submitBusy={busy}
+        autoFocusUrl={false}
+        onAddUrl={(url) => void handoff({ kind: "url", url })}
+        onAddText={(text) => void handoff({ kind: "text", text })}
+        onAddImageFiles={(files, label) => void handoff({ kind: "imageFiles", files, label })}
+        onAddReadyRecipes={(recipes: QueueItem[]) => {
+          if (recipes.length === 0) return 0;
+          void handoff({ kind: "ready", recipes });
+          return recipes.length;
+        }}
+      />
+      {handoffError && <p className="field-error" role="alert">{handoffError}</p>}
+    </>
   );
 }
 
@@ -241,7 +251,7 @@ function SingleFieldCapture({
   placeholder?: string;
   uploadTitle?: string;
 }) {
-  const { router, busy, setBusy, handoff } = useHandoff();
+  const { router, busy, setBusy, handoff, handoffError } = useHandoff();
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -406,7 +416,7 @@ function SingleFieldCapture({
             />
             {submitButton}
           </div>
-          <FieldError error={error} />
+          <FieldError error={error ?? handoffError} />
         </div>
       )}
 
@@ -426,7 +436,7 @@ function SingleFieldCapture({
               if (error) setError(null);
             }}
           />
-          <FieldError error={error} />
+          <FieldError error={error ?? handoffError} />
           {submitButton}
         </>
       )}
@@ -475,7 +485,7 @@ function SingleFieldCapture({
             </span>
           </label>
           </div>
-          <FieldError error={error} reserveSpace={false} />
+          <FieldError error={error ?? handoffError} reserveSpace={false} />
           {submitButton}
         </>
       )}
