@@ -10653,9 +10653,12 @@ textarea.recipe-card__toc-title {
    the artwork's 452-unit tile size, so it covers a portrait Full Page sheet
    as well as a 4x6 without stretching. The tile is mirrored four ways
    (christmas-linen.svg) so every edge meets its own reflection: repeated
-   plain, the photo's edges showed as a faint grid of seams. The hats are one image, 156
+   plain, the photo's edges showed as a faint grid of seams. The hats are one image, 128
    units tall, on the card's bottom edge; the bottom padding clears them, and
-   it is what the face measurer treats as the end of the page. */
+   it is what the face measurer treats as the end of the page. Each hat is
+   drawn at 80% of the artist's size (2026-10-26), shrunk toward its own foot
+   where it stood, so the row still spans the card and the end hats still run
+   off it. */
 .recipe-template--christmas {
   --recipe-bg: #d7d5d1;
   --recipe-ink: #2c2624;
@@ -10676,7 +10679,7 @@ textarea.recipe-card__toc-title {
   background-image: url("/images/christmas-linen.svg");
   background-size: calc(904 * var(--christmas-u)) calc(904 * var(--christmas-u));
   background-repeat: repeat;
-  --recipe-card-padding-bottom: calc(170 * var(--christmas-u));
+  --recipe-card-padding-bottom: calc(142 * var(--christmas-u));
 }
 
 .recipe-template--christmas .recipe-card__title {
@@ -10892,6 +10895,23 @@ textarea.recipe-card__toc-title {
 .recipe-print-preview--letter .recipe-template--halloween .recipe-card {
   --recipe-card-keepout-w: 2.27in;
   --recipe-card-keepout-h: 1.53in;
+}
+
+/* The back of a card (every face after its first) has a smaller headstone,
+   80% of the front's, so the steps that run onto it get more of the page.
+   Its keep-out corner shrinks with it (plain lengths, for lib/faceMeasure). */
+.recipe-template--halloween .recipe-card--continued .recipe-card__halloween-grave {
+  width: calc(432 * var(--halloween-u));
+}
+
+.recipe-print-preview--card-6x4 .recipe-template--halloween .recipe-card--continued {
+  --recipe-card-keepout-w: 1.29in;
+  --recipe-card-keepout-h: 0.86in;
+}
+
+.recipe-print-preview--letter .recipe-template--halloween .recipe-card--continued {
+  --recipe-card-keepout-w: 1.82in;
+  --recipe-card-keepout-h: 1.22in;
 }
 
 /* Creepster has one weight; a synthesised bold smears its drips. Its
