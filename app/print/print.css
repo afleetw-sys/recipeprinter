@@ -52,14 +52,20 @@
   --recipe-card-padding-bottom: 0.22in;
   --recipe-card-columns: 1.7in 1fr;
   --recipe-card-gap: 0.19in;
-  --recipe-card-title-size: 16.5pt;
-  --recipe-card-meta-size: 7.2pt;
-  --recipe-card-label-size: 7pt;
-  --recipe-card-body-size: 7.8pt;
-  --recipe-card-step-size: 7.8pt;
-  --recipe-card-step-gap: 4.2pt;
-  --recipe-card-ingredient-gap: 1.8pt;
+  --recipe-card-title-size: calc(16.5pt * var(--recipe-font-scale, 1));
+  --recipe-card-meta-size: calc(7.2pt * var(--recipe-font-scale, 1));
+  --recipe-card-label-size: calc(7pt * var(--recipe-font-scale, 1));
+  --recipe-card-body-size: calc(7.8pt * var(--recipe-font-scale, 1));
+  --recipe-card-step-size: calc(7.8pt * var(--recipe-font-scale, 1));
+  --recipe-card-step-gap: calc(4.2pt * var(--recipe-font-scale, 1));
+  --recipe-card-ingredient-gap: calc(1.8pt * var(--recipe-font-scale, 1));
   --recipe-card-photo-size: 0.92in;
+  /* The recipe photo follows the text size at half its step (Biggest's 1.2
+     is 1.1 here): at the full step a photo crowded the card. Only the
+     picture: a mat or frame a theme draws round it (`--recipe-photo-mat`)
+     is the theme's art and keeps its size. Every photo width below is
+     (box - mat) * this + mat. */
+  --recipe-photo-scale: calc(1 + (var(--recipe-font-scale, 1) - 1) / 2);
   --recipe-card-footer-reserve: 0.28in;
 }
 
@@ -4285,15 +4291,15 @@ textarea.recipe-page-fields__input {
   --recipe-card-padding-bottom: 0.5in;
   --recipe-card-columns: 2.65in 1fr;
   --recipe-card-gap: 0.46in;
-  --recipe-card-title-size: 25pt;
-  --recipe-card-meta-size: 8.6pt;
+  --recipe-card-title-size: calc(25pt * var(--recipe-font-scale, 1));
+  --recipe-card-meta-size: calc(8.6pt * var(--recipe-font-scale, 1));
   --recipe-card-meta-gap: 9px;
-  --recipe-card-label-size: 8pt;
-  --recipe-card-body-size: 9.6pt;
-  --recipe-card-step-size: 9.6pt;
-  --recipe-card-step-gap: 5.2pt;
-  --recipe-card-ingredient-gap: 3.2pt;
-  --recipe-card-photo-size: 1.7in;
+  --recipe-card-label-size: calc(8pt * var(--recipe-font-scale, 1));
+  --recipe-card-body-size: calc(9.6pt * var(--recipe-font-scale, 1));
+  --recipe-card-step-size: calc(9.6pt * var(--recipe-font-scale, 1));
+  --recipe-card-step-gap: calc(5.2pt * var(--recipe-font-scale, 1));
+  --recipe-card-ingredient-gap: calc(3.2pt * var(--recipe-font-scale, 1));
+  --recipe-card-photo-size: 1.55in;
 }
 
 .recipe-card-set {
@@ -6020,15 +6026,15 @@ textarea.recipe-page-fields__input {
 }
 
 .recipe-template--halloween .recipe-book-runhead {
-  bottom: calc(352 * var(--halloween-u) + 0.08in);
+  bottom: calc(282 * var(--halloween-u) + 0.08in);
 }
 
 .recipe-print-preview--card-6x4 .recipe-card-set.recipe-template--halloween .recipe-card[data-in-book] {
-  --recipe-card-keepout-h: 1.44in;
+  --recipe-card-keepout-h: 1.22in;
 }
 
 .recipe-print-preview--letter .recipe-card-set.recipe-template--halloween .recipe-card[data-in-book] {
-  --recipe-card-keepout-h: 1.89in;
+  --recipe-card-keepout-h: 1.58in;
 }
 
 /* A page a recipe runs onto keeps only its theme's edge (see
@@ -7244,29 +7250,29 @@ textarea.recipe-card__toc-title {
    sides when the cook changed size. */
 .recipe-print-preview--card-6x4 .recipe-template--classic .recipe-card__header--with-photo .recipe-card__photo,
 .recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.82in;
-  height: 0.82in;
+  width: calc((0.82in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.82in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.68in;
-  height: 0.68in;
+  width: calc((0.74in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.74in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--pantry .recipe-card__header--with-photo .recipe-card__photo,
 .recipe-print-preview--card-6x4 .recipe-template--bistro .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.8in;
-  height: 0.8in;
+  width: calc((0.8in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.8in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--heirloom .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.78in;
-  height: 0.78in;
+  width: calc((0.78in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.78in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--keepsake .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.72in;
-  height: 0.72in;
+  width: calc((0.78in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.78in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 /* When a recipe photo is shown, the title/meta share the header row with a
@@ -7311,8 +7317,8 @@ textarea.recipe-card__toc-title {
   box-sizing: border-box;
   position: relative;
   flex: 0 0 auto;
-  width: var(--recipe-card-photo-size);
-  height: var(--recipe-card-photo-size);
+  width: calc((var(--recipe-card-photo-size) - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((var(--recipe-card-photo-size) - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
   /* No `margin-top: 1px`. That nudge existed to optically settle the photo
      against the title's cap-height while the header was top-aligned; against a
      centred headline it is just a 1px drop off the midline, which is the exact
@@ -7364,6 +7370,8 @@ textarea.recipe-card__toc-title {
 
 /* ── Classic: a crisp, modern cookbook print — white mat, teal hairline ───── */
 .recipe-template--classic .recipe-card__photo {
+  /* Padding and border, both sides: see `--recipe-photo-scale`. */
+  --recipe-photo-mat: 8px;
   padding: 3px;
   background: #fff;
   border: 1px solid color-mix(in srgb, var(--recipe-accent-2) 55%, var(--recipe-line));
@@ -7385,6 +7393,8 @@ textarea.recipe-card__toc-title {
 
 /* ── Keepsake: a small inset photo window built into the recipe card ─────── */
 .recipe-template--keepsake .recipe-card__photo {
+  /* Padding and border, both sides: see `--recipe-photo-scale`. */
+  --recipe-photo-mat: 6px;
   padding: 2px;
   overflow: hidden;
   background: rgba(255, 250, 236, 0.64);
@@ -7402,6 +7412,8 @@ textarea.recipe-card__toc-title {
 
 /* ── Bistro: a bold blue-framed menu snapshot with a playful offset & tilt ─── */
 .recipe-template--bistro .recipe-card__photo {
+  /* Padding and border, both sides: see `--recipe-photo-scale`. */
+  --recipe-photo-mat: 12px;
   padding: 4px;
   background: #fff;
   border: 2px solid var(--recipe-accent-2);
@@ -7441,6 +7453,8 @@ textarea.recipe-card__toc-title {
 
 /* ── Counter: a high-contrast black-and-white photocopy in a hard ink box ─── */
 .recipe-template--counter .recipe-card__photo {
+  /* The border, both sides: see `--recipe-photo-scale`. */
+  --recipe-photo-mat: 2px;
   border: 1px solid var(--recipe-ink);
   border-radius: 0;
 }
@@ -7473,7 +7487,7 @@ textarea.recipe-card__toc-title {
 
 .recipe-card__title {
   font-family: var(--recipe-title-font);
-  font-size: var(--recipe-card-title-size);
+  font-size: calc(var(--recipe-card-title-size) * var(--recipe-title-fit, 1));
   line-height: 1.08;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -7614,7 +7628,7 @@ textarea.recipe-card__toc-title {
 .recipe-card__headnote {
   margin: 0.05in 0 0.03in;
   max-width: 6.2in;
-  font-size: 10pt;
+  font-size: calc(10pt * var(--recipe-font-scale, 1));
   font-style: italic;
   line-height: 1.4;
   color: var(--recipe-muted);
@@ -7642,7 +7656,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-card__fact-label {
-  font-size: 7.5pt;
+  font-size: calc(7.5pt * var(--recipe-font-scale, 1));
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -7654,7 +7668,7 @@ textarea.recipe-card__toc-title {
   max-width: 1.15in;
   field-sizing: content;
   font-family: var(--recipe-title-font);
-  font-size: 10.5pt;
+  font-size: calc(10.5pt * var(--recipe-font-scale, 1));
   font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--recipe-ink);
@@ -8295,7 +8309,7 @@ textarea.recipe-card__toc-title {
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
   color: var(--recipe-accent);
-  font-size: 6.5pt;
+  font-size: calc(6.5pt * var(--recipe-font-scale, 1));
   font-weight: 800;
   text-shadow: none;
 }
@@ -8395,7 +8409,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-card__add-line-text {
-  font-size: 6.5pt;
+  font-size: calc(6.5pt * var(--recipe-font-scale, 1));
   font-weight: 800;
   color: var(--cp-ink-soft);
   white-space: nowrap;
@@ -8467,7 +8481,7 @@ textarea.recipe-card__toc-title {
   gap: 1px;
   padding-top: 3px;
   border-top: 1px solid var(--recipe-line);
-  font-size: 7pt;
+  font-size: calc(7pt * var(--recipe-font-scale, 1));
   color: var(--recipe-footer);
 }
 
@@ -8913,6 +8927,13 @@ textarea.recipe-card__toc-title {
    toolbar: white capsule, 14px corner, `--cp-shadow-md`, 28px buttons in 4px
    of padding. They sit over the same pages and are read together, so one is
    defined in the other's terms rather than beside it. */
+/* ── Text size (settings panel) ───────────────────────────────────────────
+   A section heading like Size and Themes, with the shared MenuSelect under
+   it. The Pro crowns are on the sizes themselves (every one but Normal). */
+.recipe-config-section--text-size {
+  align-items: flex-start;
+}
+
 /* ── Zoom control (deck, full-page photo) ─────────────────────────────────
    One control, positioned by whoever uses it. `.recipe-deck-zoom` and
    `.recipe-image-spread__zoom` are now nothing but that position. */
@@ -9896,13 +9917,13 @@ textarea.recipe-card__toc-title {
    gives the card its picture: 0.72in on a 6x4 (Keepsake's size) and 1.3in on
    Full Page, against the default 0.92in / 1.7in. */
 .recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster, .recipe-template--christmas, .recipe-template--fall, .recipe-template--halloween) .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.72in;
-  height: 0.72in;
+  width: calc((0.72in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.72in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 .recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster, .recipe-template--christmas, .recipe-template--fall, .recipe-template--halloween) .recipe-card__header--with-photo .recipe-card__photo {
-  width: 1.3in;
-  height: 1.3in;
+  width: calc((1.3in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((1.3in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 /* "1." typed in line with the step, not a badge. */
@@ -9954,7 +9975,7 @@ textarea.recipe-card__toc-title {
 /* Cormorant's lowercase is small for its point size, so at the shared title
    size it read a size smaller than every other theme's title. */
 .recipe-template--garden .recipe-card__title {
-  font-size: calc(var(--recipe-card-title-size) * 1.25);
+  font-size: calc(var(--recipe-card-title-size) * 1.12 * var(--recipe-title-fit, 1));
 }
 
 /* Softened corners, like everything else the art draws. */
@@ -10332,7 +10353,8 @@ textarea.recipe-card__toc-title {
    wide: `--diner-u` is one of those units at this card's width, so both sizes
    keep the design's proportions.
 
-   - Title: 96 units, #DB3937, a 2-unit black outline outside the letters
+   - Title: 1.2x the card's title size (96 units in the mockup, which put it
+     half again over every other theme's), #DB3937, a 2-unit black outline outside the letters
      (a 4-unit stroke painted under the fill), shadow -5, 4, no blur.
    - Photo frame: #A5DAEA, 30-unit corners, a 6-unit black stroke inside the
      edge dashed 24 on 18 off (shorter than the mockup's 45/48, which left
@@ -10355,7 +10377,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--diner .recipe-card__title {
-  font-size: calc(96 * var(--diner-u));
+  font-size: calc(var(--recipe-card-title-size) * 1.2 * var(--recipe-title-fit, 1));
   font-weight: 400;
   line-height: 1.15;
   letter-spacing: 0;
@@ -10367,6 +10389,8 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--diner .recipe-card__photo {
+  /* Padding and border, both sides: see `--recipe-photo-scale`. */
+  --recipe-photo-mat: calc(36 * var(--diner-u));
   padding: calc(18 * var(--diner-u));
   background: #a5daea;
   border-radius: calc(30 * var(--diner-u));
@@ -10377,13 +10401,13 @@ textarea.recipe-card__toc-title {
 /* Larger than the other new themes' photos: the frame is the theme's second
    feature, and its mat takes some of the space. */
 .recipe-print-preview--card-6x4 .recipe-template--diner .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.9in;
-  height: 0.9in;
+  width: calc((0.9in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.9in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 .recipe-print-preview--letter .recipe-template--diner .recipe-card__header--with-photo .recipe-card__photo {
-  width: 1.6in;
-  height: 1.6in;
+  width: calc((1.6in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((1.6in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 .recipe-template--diner .recipe-card__photo-img {
@@ -10537,20 +10561,15 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--poster .recipe-card__title {
-  font-size: calc(72 * var(--poster-u));
+  font-size: calc(var(--recipe-card-title-size) * 1.16 * var(--recipe-title-fit, 1));
   font-weight: 400;
   line-height: 1.05;
   letter-spacing: 0;
   text-transform: none;
 }
 
-/* Scaled with the card's width alone, 72 units read small on a Full Page
-   sheet, which is taller for its width than a 4x6. Letter's title gets 86,
-   and the cook time and servings line under it grows a little with it. */
-.recipe-print-preview--letter .recipe-template--poster .recipe-card__title {
-  font-size: calc(86 * var(--poster-u));
-}
-
+/* On a Full Page sheet, which is taller for its width than a 4x6, the cook
+   time and servings line grows a little. */
 .recipe-print-preview--letter .recipe-template--poster .recipe-card__meta {
   font-size: calc(var(--recipe-card-meta-size) * 1.15);
 }
@@ -10574,13 +10593,13 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--poster .recipe-card__header--with-photo .recipe-card__photo {
-  width: calc(0.72in + 32 * var(--poster-u));
-  height: calc(0.72in + 32 * var(--poster-u));
+  width: calc(0.72in * var(--recipe-photo-scale, 1) + 32 * var(--poster-u));
+  height: calc(0.72in * var(--recipe-photo-scale, 1) + 32 * var(--poster-u));
 }
 
 .recipe-print-preview--letter .recipe-template--poster .recipe-card__header--with-photo .recipe-card__photo {
-  width: calc(1.3in + 32 * var(--poster-u));
-  height: calc(1.3in + 32 * var(--poster-u));
+  width: calc(1.3in * var(--recipe-photo-scale, 1) + 32 * var(--poster-u));
+  height: calc(1.3in * var(--recipe-photo-scale, 1) + 32 * var(--poster-u));
 }
 
 /* Below the tab, before the recipe. */
@@ -10634,9 +10653,12 @@ textarea.recipe-card__toc-title {
    the artwork's 452-unit tile size, so it covers a portrait Full Page sheet
    as well as a 4x6 without stretching. The tile is mirrored four ways
    (christmas-linen.svg) so every edge meets its own reflection: repeated
-   plain, the photo's edges showed as a faint grid of seams. The hats are one image, 156
+   plain, the photo's edges showed as a faint grid of seams. The hats are one image, 128
    units tall, on the card's bottom edge; the bottom padding clears them, and
-   it is what the face measurer treats as the end of the page. */
+   it is what the face measurer treats as the end of the page. Each hat is
+   drawn at 80% of the artist's size (2026-10-26), shrunk toward its own foot
+   where it stood, so the row still spans the card and the end hats still run
+   off it. */
 .recipe-template--christmas {
   --recipe-bg: #d7d5d1;
   --recipe-ink: #2c2624;
@@ -10657,12 +10679,12 @@ textarea.recipe-card__toc-title {
   background-image: url("/images/christmas-linen.svg");
   background-size: calc(904 * var(--christmas-u)) calc(904 * var(--christmas-u));
   background-repeat: repeat;
-  --recipe-card-padding-bottom: calc(170 * var(--christmas-u));
+  --recipe-card-padding-bottom: calc(142 * var(--christmas-u));
 }
 
 .recipe-template--christmas .recipe-card__title {
   color: #c92e31;
-  font-size: calc(var(--recipe-card-title-size) * 1.45);
+  font-size: calc(var(--recipe-card-title-size) * 1.16 * var(--recipe-title-fit, 1));
   font-weight: 400;
   letter-spacing: 0;
   font-synthesis: none;
@@ -10762,7 +10784,7 @@ textarea.recipe-card__toc-title {
 
 .recipe-template--fall .recipe-card__title {
   color: #c4501c;
-  font-size: calc(var(--recipe-card-title-size) * 1.12);
+  font-size: calc(var(--recipe-card-title-size) * 1.08 * var(--recipe-title-fit, 1));
   font-weight: 700;
   font-variation-settings: "SOFT" 100;
   letter-spacing: -0.005em;
@@ -10829,7 +10851,8 @@ textarea.recipe-card__toc-title {
    raster, not an SVG wrapping one, which Firefox prints blank (see
    Christmas).
 
-   The headstone (540 units wide, art 532 x 352) is a keep-out corner on the
+   The headstone (432 units wide, art 426 x 282: 80% of the mockup's, since
+   2026-10-26) is a keep-out corner on the
    LEFT (`--recipe-card-keepout-side`), so only the lines over it stop short.
    The hand (376 x 205) stands where the steps run, so it is not laid over the
    card: it floats at the top-right of the steps and they wrap around it, one
@@ -10866,13 +10889,28 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--halloween .recipe-card {
-  --recipe-card-keepout-w: 1.6in;
-  --recipe-card-keepout-h: 1.08in;
+  --recipe-card-keepout-w: 1.29in;
+  --recipe-card-keepout-h: 0.86in;
 }
 
 .recipe-print-preview--letter .recipe-template--halloween .recipe-card {
-  --recipe-card-keepout-w: 2.27in;
-  --recipe-card-keepout-h: 1.53in;
+  --recipe-card-keepout-w: 1.82in;
+  --recipe-card-keepout-h: 1.22in;
+}
+
+/* The back of a card (every face after its first: its back, or the next card
+   when printing one-sided) is plain paper. The headstone and the hand are the
+   front's, so the steps that run on get the whole face. Cookbook pages a
+   recipe runs onto already drop them (see `data-edge-only`). */
+.recipe-template--halloween .recipe-card--continued .recipe-card__halloween-grave,
+.recipe-template--halloween .recipe-card--continued .recipe-card__method::before,
+.recipe-template--halloween .recipe-card--continued .recipe-card__ingredients::before {
+  display: none;
+}
+
+.recipe-print-preview .recipe-template--halloween .recipe-card.recipe-card--continued {
+  --recipe-card-keepout-w: 0in;
+  --recipe-card-keepout-h: 0in;
 }
 
 /* Creepster has one weight; a synthesised bold smears its drips. Its
@@ -10880,7 +10918,7 @@ textarea.recipe-card__toc-title {
    title size so the drips read at card size. */
 .recipe-template--halloween .recipe-card__title {
   color: #1f1b16;
-  font-size: calc(var(--recipe-card-title-size) * 1.3);
+  font-size: calc(var(--recipe-card-title-size) * 1.12 * var(--recipe-title-fit, 1));
   font-weight: 400;
   font-synthesis: none;
   letter-spacing: 0.02em;
@@ -10907,7 +10945,7 @@ textarea.recipe-card__toc-title {
   display: none;
   left: 0;
   bottom: 0;
-  width: calc(540 * var(--halloween-u));
+  width: calc(432 * var(--halloween-u));
   height: auto;
   pointer-events: none;
   user-select: none;
@@ -11048,7 +11086,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--halloween .recipe-card-page[data-dir="rtl"] .recipe-book-folio {
-  bottom: calc(352 * var(--halloween-u) + 0.08in);
+  bottom: calc(282 * var(--halloween-u) + 0.08in);
 }
 
 .recipe-template--fall .recipe-card-page[data-dir="rtl"] .recipe-book-folio,

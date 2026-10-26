@@ -30,7 +30,13 @@ describe("planCardExport", () => {
     expect(locks(request({ template: premium }), free)).toEqual(["theme"]);
     expect(locks(request({ cardSize: "card-6x4" }), free)).toEqual(["card_size"]);
     expect(locks(request({}, 2), free)).toEqual(["multi_recipe"]);
-    expect(locks(request({ template: premium, cardSize: "card-6x4" }, 3), pro)).toEqual([]);
+    expect(locks(request({ fontScale: 1.2 }), free)).toEqual(["font_size"]);
+    // Normal, or anything that isn't a step, is no lock: it prints at Normal.
+    expect(locks(request({ fontScale: 1 }), free)).toEqual([]);
+    expect(locks(request({ fontScale: 7 }), free)).toEqual([]);
+    expect(locks(request({ template: premium, cardSize: "card-6x4", fontScale: 0.85 }, 3), pro)).toEqual([]);
+    const sized = planCardExport(request({ fontScale: 1.1 }), pro);
+    expect(sized.ok && sized.payload.project.settings.fontScale).toBe(1.1);
 
     // A legacy theme purchase unlocks that theme and nothing else.
     const themeOwner = [premiumEntitlement];

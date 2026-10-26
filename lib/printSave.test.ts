@@ -33,6 +33,8 @@ describe("printProjectFingerprint", () => {
       { showSourceUrl: false },
       { showDescription: false },
       { showCutLines: true },
+      // A text size change alone has to reach the autosave.
+      { fontScale: 1.2 },
     ];
     for (const change of flips) {
       expect(printProjectFingerprint(null, meta, { ...layout, ...change })).not.toBe(base);

@@ -46,6 +46,7 @@ import type { RecipeCardEditTarget } from "@/lib/recipeCardLayout";
 import { formatRecipeTime } from "@/lib/time";
 import { composeNote } from "@/lib/recipeNote";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
+import { TextSizeControl } from "@/components/print/TextSizeControl";
 import { PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
 import { deckIndexForPendingSlot, landingForRecipe } from "@/lib/pendingDeckSlot";
@@ -207,6 +208,7 @@ import {
   isRecipePrintTemplate,
   usePrintSettingsPersistence,
 } from "@/lib/printSettings";
+import { DEFAULT_FONT_SCALE, normalizeFontScale, type FontScale } from "@/lib/fontScale";
 import { openingPageFor } from "@/lib/frontMatterPage";
 import type {
   CookbookFrontMatter,
@@ -369,6 +371,9 @@ export default function PrintPage() {
       own words are never affected — see lib/recipeNote.ts. Defaults on, which
       is how books saved before this already read. */
   const [showDescription, setShowDescription] = useState(true);
+  /** The cook's text size on every recipe page (lib/fontScale.ts). Pro on
+      recipe cards; included in a cookbook. */
+  const [fontScale, setFontScale] = useState<FontScale>(DEFAULT_FONT_SCALE);
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showReferralInvite, setShowReferralInvite] = useState(false);
   const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
@@ -930,6 +935,7 @@ export default function PrintPage() {
     descriptionOn: showDescription,
     brandHidden,
     template,
+    fontScale,
     // The preview page IS the book's real sheet, and so is the card every
     // recipe is measured against (see `presetCardDims`).
     preset: projectMeta.meta.cookbookPreset,
@@ -974,6 +980,7 @@ export default function PrintPage() {
   // values only before the first layout lands, when nothing is drawn anyway.
   const previewCardSize = previewConfig?.cardSize ?? cardSize;
   const previewTemplate = previewConfig?.template ?? template;
+  const previewFontScale = previewConfig?.fontScale ?? fontScale;
   // Per-recipe photo now travels baked into each slot's `showPhoto` (resolved
   // in usePrintSheets against the committed frame), so there's no global
   // preview-photo flag to thread to the faces anymore.
@@ -2708,6 +2715,7 @@ export default function PrintPage() {
       showSourceUrl,
       showDescription,
       showCutLines,
+      fontScale,
     };
   }
 
@@ -3334,7 +3342,7 @@ export default function PrintPage() {
   // Recipes only: the book's own pages (a blank page) never count toward a
   // free preview or anything else measured in recipes.
   const recipeCount = (items?.filter(isRecipeEntry).length ?? 0) + (hasInFlightImport ? 1 : 0);
-  const { themeLocked, cardSizeLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked } =
+  const { themeLocked, cardSizeLocked, fontScaleLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked } =
     computeProLocks({
       customerInfo: effectiveCustomerInfo.customerInfo,
       cookbookMode,
@@ -3342,6 +3350,7 @@ export default function PrintPage() {
       selectedPremiumTemplate,
       cardSize,
       recipeCount,
+      fontScale,
     });
   // A free, non-cookbook account can never hold more than one recipe — see
   // `hasMultiRecipeEntitlement`'s doc comment ("nothing to grandfather...
@@ -3434,17 +3443,22 @@ export default function PrintPage() {
       ? { context: "cookbook", ...(cookbookProjectId ? { cookbookId: cookbookProjectId } : {}) }
       : { context: "recipe_cards" },
   });
-  function proLockFeature(): "batch_print" | "card_size" | "theme" {
-    const reasons = activeProLockReasons({ themeLocked, cardSizeLocked, multiRecipeLocked }, "print_button");
+  function proLockFeature(): "batch_print" | "card_size" | "font_size" | "theme" {
+    const reasons = activeProLockReasons(
+      { themeLocked, cardSizeLocked, fontScaleLocked, multiRecipeLocked },
+      "print_button",
+    );
     if (reasons.includes("multi_recipe")) return "batch_print";
-    return reasons.includes("card_size") ? "card_size" : "theme";
+    if (reasons.includes("card_size")) return "card_size";
+    if (!reasons.includes("theme") && reasons.includes("font_size")) return "font_size";
+    return "theme";
   }
   // Names the actual reason(s) this dialog opened rather than a generic
   // pitch, and says so plainly when more than one applies at once (a locked
   // theme AND a locked card size, say) instead of silently picking whichever
   // happens to be checked first.
   const proUpgradeLockReasons = activeProLockReasons(
-    { themeLocked, cardSizeLocked, multiRecipeLocked },
+    { themeLocked, cardSizeLocked, fontScaleLocked, multiRecipeLocked },
     proUpgradeTrigger,
   );
   const proUpgradeDialogCopy = proUpgradeCopy(
@@ -3467,7 +3481,7 @@ export default function PrintPage() {
    */
   function printPaywallReason(trigger: string): { reason?: ProLockReason | "several" } {
     if (trigger !== "print_button") return {};
-    const reasons = activeProLockReasons({ themeLocked, cardSizeLocked, multiRecipeLocked }, trigger);
+    const reasons = activeProLockReasons({ themeLocked, cardSizeLocked, fontScaleLocked, multiRecipeLocked }, trigger);
     if (reasons.length === 0) return {};
     return { reason: reasons.length === 1 ? reasons[0] : "several" };
   }
@@ -4065,6 +4079,7 @@ export default function PrintPage() {
         setShowSourceUrl(project.settings.showSourceUrl);
         setShowDescription(project.settings.showDescription ?? true);
         setShowCutLines(project.settings.showCutLines);
+        setFontScale(normalizeFontScale(project.settings.fontScale));
         if (source === "recovered" && account) {
           // The device's copy is on screen; the account's document is still
           // where it belongs. Take that document's identity and revision, and
@@ -4594,6 +4609,7 @@ export default function PrintPage() {
     // the change, so that setting alone never triggered an autosave. It rode
     // along silently with the next unrelated edit, or was lost with the tab.
     showDescription,
+    fontScale,
     projectLoading,
     projectAttachChecked,
     autosaveEnabledForCurrentMode,
@@ -5098,6 +5114,8 @@ export default function PrintPage() {
     setShowPhoto,
     showSourceUrl,
     setShowSourceUrl,
+    fontScale,
+    setFontScale,
   });
 
   // Auto-open the print dialog when the user chose Print instead of Preview.
@@ -6990,6 +7008,7 @@ export default function PrintPage() {
           previewCardSize={previewCardSize}
           cardSize={cardSize}
           previewTemplate={previewTemplate}
+          previewFontScale={previewFontScale}
           continueOnBack={continueOnBack}
           previewDescriptionOn={showDescription}
           organizeMode={organizeMode}
@@ -7050,6 +7069,7 @@ export default function PrintPage() {
           spreadWidth={spreadWidth}
           previewCardSize={previewCardSize}
           previewTemplate={previewTemplate}
+          previewFontScale={previewFontScale}
           continueOnBack={continueOnBack}
           cardSize={cardSize}
           showCutLines={showCutLines}
@@ -7140,6 +7160,8 @@ export default function PrintPage() {
           cookbookMode={cookbookMode}
           cardSize={cardSize}
           setCardSize={setCardSize}
+          fontScale={fontScale}
+          setFontScale={setFontScale}
           anyRecipeHasImage={anyRecipeHasImage}
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
           bookPhotoStyle={bookPhotoStyle}
@@ -7376,6 +7398,8 @@ export default function PrintPage() {
           onDismissPhotoStyleTip={dismissPhotoStyleTip}
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setBookShowSourceUrl}
+          fontScale={fontScale}
+          setFontScale={setFontScale}
           renameSectionEverywhere={renameSectionEverywhere}
           moveSectionInBook={moveSectionInBook}
           requestDeleteSection={requestDeleteSection}
@@ -7462,6 +7486,11 @@ export default function PrintPage() {
               {renderPrintSettingsFields()}
             </div>
           )}
+          <TextSizeControl
+            fontScale={fontScale}
+            setFontScale={setFontScale}
+            proMarked={!hasProEntitlement(effectiveCustomerInfo.customerInfo)}
+          />
         </MobileSheet>
       </main>
     </>

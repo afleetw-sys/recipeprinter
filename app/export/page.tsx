@@ -10,6 +10,7 @@ import {
 } from "@/lib/cookbookPresets";
 import { openingPageFor } from "@/lib/frontMatterPage";
 import { isPrintCardSize, isRecipePrintTemplate } from "@/lib/printSettings";
+import { normalizeFontScale } from "@/lib/fontScale";
 import {
   coverWrapGeometry,
   coverWrapGeometryFromSheet,
@@ -364,6 +365,10 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
 
   const cardSize = isPrintCardSize(settings.cardSize) ? settings.cardSize : "letter";
   const template = isRecipePrintTemplate(settings.template) ? settings.template : "classic";
+  // Measured here again, in the renderer's own browser, so the book's text
+  // size has to reach this measurement as well as the pages: handed only to
+  // the pages, the book would be paginated at Normal and printed bigger.
+  const fontScale = normalizeFontScale(settings.fontScale);
   const cookbookMode = Boolean(settings.cookbookMode);
   // Mirrors the derivations the workspace makes (see `photosOn` / `sourceUrlOn`
   // in app/print/page.tsx): a toggle only takes effect if the content can honour
@@ -423,6 +428,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     sourceUrlOn: settings.showSourceUrl && anyRecipeHasSourceUrl,
     descriptionOn: settings.showDescription ?? true,
     template,
+    fontScale,
     // The book's real page — what every recipe is measured against, and what
     // the preview draws too, so the two cannot disagree.
     preset: payload.preset,
@@ -486,6 +492,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
             scale={1}
             size={cardSize}
             template={template}
+            fontScale={fontScale}
             doubleSided={settings.doubleSided}
             cookbookMode={cookbookMode}
             showDescription={settings.showDescription ?? true}

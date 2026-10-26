@@ -14,6 +14,7 @@ import {
 } from "./recipePrinterPurchases";
 import { synthesizeCustomerInfoFromMirror } from "./proAccessFallback";
 import { meterGateFor } from "./importMeter";
+import { FONT_SCALES } from "./fontScale";
 
 /**
  * A minimal `CustomerInfo` stand-in: every function under test only ever
@@ -351,6 +352,18 @@ describe("computeProLocks — the print page's Pro-gate matrix", () => {
     expect(computeProLocks({ ...baseArgs, customerInfo: owner }).proLocked).toBe(false);
   });
 
+  test("any text size but Normal locks Print on cards for a free account, never in a cookbook or for Pro", () => {
+    const free = { ...baseArgs, customerInfo: NO_ENTITLEMENTS, cardSize: "letter" as const };
+    const pro = { ...free, customerInfo: customerWith({ pro: { productIdentifier: "pro_monthly" } }) };
+    for (const fontScale of FONT_SCALES) {
+      const changed = fontScale !== 1;
+      expect(computeProLocks({ ...free, fontScale }).fontScaleLocked, `free at ${fontScale}`).toBe(changed);
+      expect(computeProLocks({ ...free, fontScale }).proLocked, `free at ${fontScale}`).toBe(changed);
+      expect(computeProLocks({ ...free, fontScale, cookbookMode: true }).proLocked, `cookbook at ${fontScale}`).toBe(false);
+      expect(computeProLocks({ ...pro, fontScale }).proLocked, `Pro at ${fontScale}`).toBe(false);
+    }
+  });
+
   test("cookbook mode exempts every lock regardless of entitlement", () => {
     const locks = computeProLocks({ ...baseArgs, customerInfo: NO_ENTITLEMENTS, cookbookMode: true, recipeCount: 5 });
     expect(locks.proLocked).toBe(false);
@@ -386,7 +399,7 @@ describe("activeProLockReasons", () => {
   test("clicking Add more recipes always names multi-recipe alone, even if a theme and a card size are also locked", () => {
     expect(
       activeProLockReasons(
-        { themeLocked: true, cardSizeLocked: true, multiRecipeLocked: false },
+        { themeLocked: true, cardSizeLocked: true, fontScaleLocked: false, multiRecipeLocked: false },
         "add_more_recipes",
       ),
     ).toEqual(["multi_recipe"]);
@@ -395,7 +408,7 @@ describe("activeProLockReasons", () => {
   test("the print button reports every lock currently in effect, combined", () => {
     expect(
       activeProLockReasons(
-        { themeLocked: true, cardSizeLocked: true, multiRecipeLocked: false },
+        { themeLocked: true, cardSizeLocked: true, fontScaleLocked: false, multiRecipeLocked: false },
         "print_button",
       ),
     ).toEqual(["theme", "card_size"]);
@@ -404,7 +417,7 @@ describe("activeProLockReasons", () => {
   test("the print button reports a single reason plainly when only one applies", () => {
     expect(
       activeProLockReasons(
-        { themeLocked: false, cardSizeLocked: true, multiRecipeLocked: false },
+        { themeLocked: false, cardSizeLocked: true, fontScaleLocked: false, multiRecipeLocked: false },
         "print_button",
       ),
     ).toEqual(["card_size"]);
@@ -413,10 +426,19 @@ describe("activeProLockReasons", () => {
   test("the print button includes multi-recipe when the job already holds more than one", () => {
     expect(
       activeProLockReasons(
-        { themeLocked: false, cardSizeLocked: false, multiRecipeLocked: true },
+        { themeLocked: false, cardSizeLocked: false, fontScaleLocked: false, multiRecipeLocked: true },
         "print_button",
       ),
     ).toEqual(["multi_recipe"]);
+  });
+
+  test("the print button names a locked text size", () => {
+    expect(
+      activeProLockReasons(
+        { themeLocked: false, cardSizeLocked: false, fontScaleLocked: true, multiRecipeLocked: false },
+        "print_button",
+      ),
+    ).toEqual(["font_size"]);
   });
 });
 

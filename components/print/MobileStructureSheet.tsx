@@ -7,6 +7,8 @@ import { MobileSheet } from "@/components/print/MobileSheet";
 import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
 import { PhotoStyleTip, type PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
 import { ChapterNameInput } from "@/components/print/ChapterNameInput";
+import { TextSizeControl } from "@/components/print/TextSizeControl";
+import type { FontScale } from "@/lib/fontScale";
 import { namedSectionCount, useProjectMeta, type PhotoStyle } from "@/lib/project";
 import type { Section } from "@/types/recipe";
 
@@ -25,6 +27,8 @@ interface MobileStructureSheetProps {
   onDismissPhotoStyleTip?: () => void;
   showSourceUrl: boolean;
   setShowSourceUrl: (next: boolean) => void;
+  fontScale: FontScale;
+  setFontScale: (value: FontScale) => void;
   renameSectionEverywhere: (sectionId: string, value: string) => void;
   moveSectionInBook: (sectionId: string, direction: -1 | 1) => void;
   requestDeleteSection: (sectionId: string) => void;
@@ -69,6 +73,8 @@ export function MobileStructureSheet({
   onDismissPhotoStyleTip,
   showSourceUrl,
   setShowSourceUrl,
+  fontScale,
+  setFontScale,
   renameSectionEverywhere,
   moveSectionInBook,
   requestDeleteSection,
@@ -187,6 +193,8 @@ export function MobileStructureSheet({
                   <PhotoStyleTip onDismiss={onDismissPhotoStyleTip} />
                 )}
               </div>
+              {/* Included in the book, so no crown here. */}
+              <TextSizeControl fontScale={fontScale} setFontScale={setFontScale} proMarked={false} />
             </div>
         </MobileSheet>
 

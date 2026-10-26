@@ -35,6 +35,7 @@ import {
   presetCardVars,
 } from "@/lib/cookbookPresets";
 import type { CookbookPresetId } from "@/types/recipe";
+import { fontScaleVars, type FontScale } from "@/lib/fontScale";
 
 /**
  * A physical sheet rendered at true page size, scaled down by `scale` on
@@ -76,6 +77,7 @@ export const ScaledPage = memo(function ScaledPage({
   tocEdit,
   gutterSide = "none",
   preset,
+  fontScale,
 }: {
   sheet: PageSheet;
   isLastSheet: boolean;
@@ -151,6 +153,9 @@ export const ScaledPage = memo(function ScaledPage({
       — see `presetCardDims`. Ignored outside cookbook mode, where a card is a
       card and the paper it prints on is the print dialog's business. */
   preset?: CookbookPresetId;
+  /** The cook's text size. Only recipe pages carry it: a cover, an opener or
+      the contents page keeps the theme's own type. */
+  fontScale?: FontScale;
 }) {
   // A cookbook page is the preset's real sheet, on screen exactly as in the
   // file — so the preview cannot show a page shape the book does not have (see
@@ -605,7 +610,7 @@ export const ScaledPage = memo(function ScaledPage({
           className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${presetSafeClass} ${
             showCutLines ? "recipe-print-preview--cut-lines" : ""
           }`}
-          style={cardVars}
+          style={{ ...cardVars, ...fontScaleVars(fontScale) }}
           data-double-sided={doubleSided ? "true" : "false"}
         >
           <div
@@ -681,6 +686,7 @@ export const ScaledPage = memo(function ScaledPage({
                     showHeader={!slot.isContinuation}
                     layout={slot.front.layout}
                     contentScale={slot.front.contentScale}
+                    titleFit={slot.front.titleFit}
                     hasBackFace={slot.hasBack}
                     showImage={slot.showPhoto}
                     photoPlaceholder
@@ -726,6 +732,7 @@ export const ScaledPage = memo(function ScaledPage({
                       showHeader={false}
                       layout={slot.back.layout}
                       contentScale={slot.back.contentScale}
+                      titleFit={slot.back.titleFit}
                       hasBackFace={slot.hasBack}
                       template={template}
                       showDecoration={showDecoration}

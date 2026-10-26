@@ -7,7 +7,9 @@ import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import type { PrintCardSize } from "@/components/RecipeCardPrint";
 import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
 import { PhotoStyleTip, type PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
-import { hasMultiRecipeEntitlement } from "@/lib/recipePrinterPurchases";
+import { TextSizeControl } from "@/components/print/TextSizeControl";
+import { hasMultiRecipeEntitlement, hasProEntitlement } from "@/lib/recipePrinterPurchases";
+import type { FontScale } from "@/lib/fontScale";
 import type { PhotoStyle } from "@/lib/project";
 
 interface PrintSetupControlsProps {
@@ -41,6 +43,8 @@ interface PrintSetupControlsProps {
   /** Cut lines / two-sided, pre-rendered by the page — see
       `renderPrintSettingsFields`. */
   cardSettingsFields: ReactNode;
+  fontScale: FontScale;
+  setFontScale: (value: FontScale) => void;
 }
 
 /**
@@ -66,6 +70,8 @@ export function PrintSetupControls({
   setShowSourceUrl,
   hasPrintSettingsFields,
   cardSettingsFields,
+  fontScale,
+  setFontScale,
 }: PrintSetupControlsProps) {
   /**
    * "Every recipe" is only an honest title where more than one recipe is
@@ -216,6 +222,14 @@ export function PrintSetupControls({
           )}
         </CheckboxGroup>
       )}
+
+      {/* Every recipe page, cards and books alike. A cookbook includes it, as
+          it includes every theme, so the crown only marks recipe cards. */}
+      <TextSizeControl
+        fontScale={fontScale}
+        setFontScale={setFontScale}
+        proMarked={!cookbookMode && !hasProEntitlement(customerInfo)}
+      />
     </>
   );
 }

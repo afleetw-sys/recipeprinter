@@ -9,6 +9,7 @@ import type { PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
 import { ThemePicker } from "@/components/print/ThemePicker";
 import type { PhotoStyle } from "@/lib/project";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
+import type { FontScale } from "@/lib/fontScale";
 
 interface PrintConfigPanelProps {
   configPanelRef: RefObject<HTMLElement>;
@@ -25,6 +26,8 @@ interface PrintConfigPanelProps {
   // Setup controls (Size / Photos / Include)
   cardSize: PrintCardSize;
   setCardSize: Dispatch<SetStateAction<PrintCardSize>>;
+  fontScale: FontScale;
+  setFontScale: (value: FontScale) => void;
   anyRecipeHasImage: boolean;
   anyRecipeHasSourceUrl: boolean;
   bookPhotoStyle: PhotoStyle | null;
@@ -71,6 +74,8 @@ export function PrintConfigPanel({
   cookbookMode,
   cardSize,
   setCardSize,
+  fontScale,
+  setFontScale,
   anyRecipeHasImage,
   anyRecipeHasSourceUrl,
   bookPhotoStyle,
@@ -175,6 +180,8 @@ export function PrintConfigPanel({
           setShowSourceUrl={setShowSourceUrl}
           hasPrintSettingsFields={hasPrintSettingsFields}
           cardSettingsFields={cardSettingsFields}
+          fontScale={fontScale}
+          setFontScale={setFontScale}
         />
 
         <ThemePicker

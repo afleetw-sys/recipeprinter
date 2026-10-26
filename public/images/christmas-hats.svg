@@ -1,16 +1,16 @@
-<svg width="1500" height="156" viewBox="0 0 1500 156" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<rect x="53.1094" width="121.693" height="127.434" transform="rotate(45 53.1094 0)" fill="url(#pattern0_237_1434)"/>
-<rect x="100.453" y="31.4961" width="121.693" height="127.434" transform="rotate(-15 100.453 31.4961)" fill="url(#pattern1_237_1434)"/>
-<rect width="121.693" height="127.434" transform="matrix(-0.15945 -0.987206 -0.987206 0.15945 357.482 120.136)" fill="url(#pattern2_237_1434)"/>
-<rect x="487.883" y="110.36" width="121.693" height="127.434" transform="rotate(150 487.883 110.36)" fill="url(#pattern3_237_1434)"/>
-<rect x="577.992" width="121.693" height="127.434" transform="rotate(45 577.992 0)" fill="url(#pattern4_237_1434)"/>
-<rect x="625.336" y="31.4961" width="121.693" height="127.434" transform="rotate(-15 625.336 31.4961)" fill="url(#pattern5_237_1434)"/>
-<rect width="121.693" height="127.434" transform="matrix(-0.15945 -0.987206 -0.987206 0.15945 882.365 120.136)" fill="url(#pattern6_237_1434)"/>
-<rect x="1012.77" y="110.36" width="121.693" height="127.434" transform="rotate(150 1012.77 110.36)" fill="url(#pattern7_237_1434)"/>
-<rect x="1102.88" width="121.693" height="127.434" transform="rotate(45 1102.88 0)" fill="url(#pattern8_237_1434)"/>
-<rect x="1150.22" y="31.4961" width="121.693" height="127.434" transform="rotate(-15 1150.22 31.4961)" fill="url(#pattern9_237_1434)"/>
-<rect width="121.693" height="127.434" transform="matrix(-0.15945 -0.987206 -0.987206 0.15945 1407.25 120.136)" fill="url(#pattern10_237_1434)"/>
-<rect x="1537.65" y="110.36" width="121.693" height="127.434" transform="rotate(150 1537.65 110.36)" fill="url(#pattern11_237_1434)"/>
+<svg width="1500" height="128" viewBox="0 28 1500 128" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g transform="translate(51.080 156.000) scale(0.8) translate(-51.080 -156.000)"><rect x="53.1094" width="121.693" height="127.434" transform="rotate(45 53.1094 0)" fill="url(#pattern0_237_1434)"/></g>
+<g transform="translate(175.717 154.588) scale(0.8) translate(-175.717 -154.588)"><rect x="100.453" y="31.4961" width="121.693" height="127.434" transform="rotate(-15 100.453 31.4961)" fill="url(#pattern1_237_1434)"/></g>
+<g transform="translate(284.878 140.455) scale(0.8) translate(-284.878 -140.455)"><rect width="121.693" height="127.434" transform="matrix(-0.15945 -0.987206 -0.987206 0.15945 357.482 120.136)" fill="url(#pattern2_237_1434)"/></g>
+<g transform="translate(403.330 156.000) scale(0.8) translate(-403.330 -156.000)"><rect x="487.883" y="110.36" width="121.693" height="127.434" transform="rotate(150 487.883 110.36)" fill="url(#pattern3_237_1434)"/></g>
+<g transform="translate(575.962 156.000) scale(0.8) translate(-575.962 -156.000)"><rect x="577.992" width="121.693" height="127.434" transform="rotate(45 577.992 0)" fill="url(#pattern4_237_1434)"/></g>
+<g transform="translate(700.600 154.588) scale(0.8) translate(-700.600 -154.588)"><rect x="625.336" y="31.4961" width="121.693" height="127.434" transform="rotate(-15 625.336 31.4961)" fill="url(#pattern5_237_1434)"/></g>
+<g transform="translate(809.761 140.455) scale(0.8) translate(-809.761 -140.455)"><rect width="121.693" height="127.434" transform="matrix(-0.15945 -0.987206 -0.987206 0.15945 882.365 120.136)" fill="url(#pattern6_237_1434)"/></g>
+<g transform="translate(928.217 156.000) scale(0.8) translate(-928.217 -156.000)"><rect x="1012.77" y="110.36" width="121.693" height="127.434" transform="rotate(150 1012.77 110.36)" fill="url(#pattern7_237_1434)"/></g>
+<g transform="translate(1100.850 156.000) scale(0.8) translate(-1100.850 -156.000)"><rect x="1102.88" width="121.693" height="127.434" transform="rotate(45 1102.88 0)" fill="url(#pattern8_237_1434)"/></g>
+<g transform="translate(1225.484 154.588) scale(0.8) translate(-1225.484 -154.588)"><rect x="1150.22" y="31.4961" width="121.693" height="127.434" transform="rotate(-15 1150.22 31.4961)" fill="url(#pattern9_237_1434)"/></g>
+<g transform="translate(1334.646 140.455) scale(0.8) translate(-1334.646 -140.455)"><rect width="121.693" height="127.434" transform="matrix(-0.15945 -0.987206 -0.987206 0.15945 1407.25 120.136)" fill="url(#pattern10_237_1434)"/></g>
+<g transform="translate(1453.097 156.000) scale(0.8) translate(-1453.097 -156.000)"><rect x="1537.65" y="110.36" width="121.693" height="127.434" transform="rotate(150 1537.65 110.36)" fill="url(#pattern11_237_1434)"/></g>
 <defs>
 <pattern id="pattern0_237_1434" patternContentUnits="objectBoundingBox" width="1" height="1">
 <use xlink:href="#image0_237_1434" transform="matrix(0.00795154 0 0 0.00759334 -0.34041 -0.211894)"/>
