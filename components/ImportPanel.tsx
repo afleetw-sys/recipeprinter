@@ -82,6 +82,7 @@ export function ImportPanel({
   hideSubmit = false,
   showAllModes = false,
   modes,
+  fieldCopy,
   onModeChange,
   autoFocusUrl = true,
   onAddUrl,
@@ -101,11 +102,16 @@ export function ImportPanel({
   submitLabel?: string;
   /** Restricts which sources the toggle offers — the workspace rail and the
       Add-recipe dialog both want every source, so they leave this unset and
-      get all four; an SEO page built around one search phrase (or a
-      deliberately narrow set) passes the subset that actually applies.
+      get all four, and so does every SEO page (someone who lands on the
+      link page holding a recipe to type out needs the Text tab too).
       `initialMode` must be one of these. A single entry drops the toggle
       row entirely: one source is a field, not a choice. */
   modes?: ImportTab[];
+  /** One source's field, named by the page it sits on. A page about one
+      source can say "Pinterest link" where the generic panel says "Recipe
+      link", which tells someone holding a Pinterest URL that this box is for
+      it. Applies only while that source is showing. */
+  fieldCopy?: { mode: ImportTab; label?: string; placeholder?: string; uploadTitle?: string };
   /** The submit is busy taking you somewhere, so say so on the button.
       Owned by the surface, not by this panel: the panel's own work ends the
       moment it validates (see `handleSubmit`), and what takes the time happens
@@ -171,6 +177,7 @@ export function ImportPanel({
   }, []);
 
   const [mode, setMode] = useState<ImportTab>(initialMode);
+  const copy = fieldCopy?.mode === mode ? fieldCopy : undefined;
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const textRef = useRef<HTMLTextAreaElement | null>(null);
@@ -560,7 +567,7 @@ export function ImportPanel({
         {mode === "url" && (
           <div className="flex flex-col">
             <label className="field-label" htmlFor="rp-url">
-              Recipe link
+              {copy?.label ?? "Recipe link"}
             </label>
             {/* The button is shorter than the field, so it centers against it
                 rather than sitting top-aligned.
@@ -587,7 +594,7 @@ export function ImportPanel({
                 autoCapitalize="none"
                 spellCheck={false}
                 className="field w-full lg:flex-1 lg:min-w-0"
-                placeholder="Paste a recipe link"
+                placeholder={copy?.placeholder ?? "Paste a recipe link"}
                 ref={urlRef}
                 value={url}
                 onChange={(e) => {
@@ -635,7 +642,7 @@ export function ImportPanel({
 
         {mode === "image" && (
           <div>
-            <label className="field-label">Recipe photos</label>
+            <label className="field-label">{copy?.label ?? "Recipe photos"}</label>
             {/* One box to start. Once a photo is attached the box shrinks into
                 a small tile beside it (an animated width, see `.dropzone`), so
                 another page can be added without the screen asking for one.
@@ -703,9 +710,9 @@ export function ImportPanel({
                   <UploadIcon size={26} />
                   {imageFiles.length === 0 && (
                     <>
-                      <span className="text-cp-body">{imageLabel(imageFiles)}</span>
+                      <span className="text-cp-body">{copy?.uploadTitle ?? imageLabel(imageFiles)}</span>
                       <span className="text-cp-caption font-medium text-ink-soft">
-                        Snap a cookbook page or screenshot, or drop multiple for one recipe
+                        {copy?.placeholder ?? "Snap a cookbook page or screenshot, or drop multiple for one recipe"}
                       </span>
                     </>
                   )}
@@ -719,13 +726,16 @@ export function ImportPanel({
         {mode === "text" && (
           <div>
             <label className="field-label" htmlFor="rp-text">
-              Recipe text
+              {copy?.label ?? "Recipe text"}
             </label>
             <textarea
               id="rp-text"
               className="field min-h-56"
               ref={textRef}
-              placeholder={"Paste a full recipe with the title, ingredients, and steps.\n\nGrandma's Banana Bread\n\n2 cups flour\n3 ripe bananas\n…\n\nwww.example.com/banana-bread"}
+              placeholder={
+                copy?.placeholder ??
+                "Paste a full recipe with the title, ingredients, and steps.\n\nGrandma's Banana Bread\n\n2 cups flour\n3 ripe bananas\n…\n\nwww.example.com/banana-bread"
+              }
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
