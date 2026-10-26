@@ -72,7 +72,7 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
   // A friend's link, left by app/invite/[code]/route.ts. The homepage's
   // InviteWelcome normally keeps it first; this covers any other landing.
   useEffect(() => {
-    if (!ready || !document.cookie.includes(`${INVITE_COOKIE}=`)) return;
+    if (!REFERRALS_LIVE || !ready || !document.cookie.includes(`${INVITE_COOKIE}=`)) return;
     const outcome = recordInviteFromCookie(document.cookie);
     if (outcome) track("referral_link_opened", { first_touch: outcome.recorded, signed_in: Boolean(uid) });
   }, [ready, uid]);
@@ -80,7 +80,7 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
   // Signed in from "Get my referral link": straight to /invites, where the
   // link is ready to copy (lib/referral, goToInvitesAfterSignIn).
   useEffect(() => {
-    if (!ready || !uid) return;
+    if (!REFERRALS_LIVE || !ready || !uid) return;
     if (takeGoToInvitesAfterSignIn() && window.location.pathname !== "/invites") router.push("/invites");
   }, [ready, uid, router]);
 
@@ -134,9 +134,10 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
   }, [uid, verifying]);
 
   // What happened while they were away: a friend joined, a welcome confirmed
-  // on another device, or referral Pro that has run out.
+  // on another device, or referral Pro that has run out. Read with the program
+  // hidden too, so days already earned still start.
   useEffect(() => {
-    if (!REFERRALS_LIVE || !ready || !uid) return;
+    if (!ready || !uid) return;
     // At most once a minute, so a reload (or coming back later in the same
     // tab) still finds a friend who joined meanwhile. It used to be once per
     // tab, which hid a friend's reward until a new tab.
@@ -174,7 +175,8 @@ export function ReferralHost({ initialWelcome = null }: { initialWelcome?: ProWe
           // Referral Pro has run out and nothing paid replaced it: this browser
           // stops treating them as Pro, so "Upgrade to Pro" and the count return.
           if (ended !== null && !loaded.proActive) clearImportsUnlimited();
-          if (ended !== null && referralSurface() !== "cookbook") {
+          // Its paywall offers inviting a friend, so it waits for the program.
+          if (ended !== null && REFERRALS_LIVE && referralSurface() !== "cookbook") {
             markExpirySeen(uid, ended);
             // The invite half needs a link; someone who joined through a
             // friend may never have made one.

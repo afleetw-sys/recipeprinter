@@ -25,15 +25,20 @@ export const REFERRAL_CALLABLE = "recipePrinterReferral";
 export const DEFAULT_REWARD_DAYS = 3;
 
 /**
- * The app's own switch for everything a person sees of the program before
- * they've been invited: the after-print invite, the session status read that
- * finds rewards and expiry. On since launch (Amelia, 2026-10-19), like `IMPORT_ALLOWANCE_LIVE`;
- * CookPilot's `recipePrinterConfig/referrals.enabled` is the server's switch,
- * and both must be on. A friend's link is recorded and claimed either way,
- * and the server says no while it is off.
+ * The app's own switch for everything a cook sees of the program: the
+ * after-print invite, the Invites page and its menu row, a friend's link and
+ * its "A friend gave you Pro" dialog, and the invite half of the paywall when
+ * referral Pro runs out. Live 2026-10-19 to 2026-10-26, then hidden but kept
+ * (Amelia): the feedback and Buy Me a Coffee dialog is back in the invite's
+ * place. CookPilot's `recipePrinterConfig/referrals.enabled` is the server's
+ * switch, and both must be on.
+ *
+ * Off, days already earned keep working: running referral Pro is a RevenueCat
+ * grant like any other, a link opened before the switch is still claimed at
+ * sign-in, and banked days still start on the next visit (ReferralHost).
  */
 export const REFERRALS_LIVE =
-  true ||
+  false ||
   // Local preview only: lets a dev server against the emulators show the
   // program before launch. A deployed build never sets it.
   process.env.NEXT_PUBLIC_REFERRALS_PREVIEW === "1";

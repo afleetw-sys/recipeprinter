@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { onCookPilotSignedInChange, readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
 import { subscribeProWelcome, type ProWelcome } from "@/lib/proWelcome";
-import { INVITE_COOKIE, REFERRALS_LIVE, readStoredOpen } from "@/lib/referral";
+import { INVITE_COOKIE, readStoredOpen } from "@/lib/referral";
 
 /**
  * Loads `ReferralHost` only when it has something to do, the same way
@@ -14,7 +14,8 @@ import { INVITE_COOKIE, REFERRALS_LIVE, readStoredOpen } from "@/lib/referral";
  *
  * It is needed when a friend's link has just been opened or is waiting to be
  * claimed, when this browser has been signed in (rewards and expiry to tell
- * them about), or when something announces "You're on Pro" before it loaded.
+ * them about, and banked days to start even while the program is hidden), or
+ * when something announces "You're on Pro" before it loaded.
  */
 const ReferralHost = dynamic(() => import("@/components/ReferralHost").then((m) => m.ReferralHost), {
   ssr: false,
@@ -25,8 +26,7 @@ function hasWork(): boolean {
   const path = window.location.pathname;
   // The PDF renderer's headless browser and our own print diagnostics.
   if (path.startsWith("/export") || path.startsWith("/print-check")) return false;
-  return document.cookie.includes(`${INVITE_COOKIE}=`) || readStoredOpen() !== null ||
-    (REFERRALS_LIVE && readCookPilotWasSignedIn());
+  return document.cookie.includes(`${INVITE_COOKIE}=`) || readStoredOpen() !== null || readCookPilotWasSignedIn();
 }
 
 export function ReferralHostLoader() {
