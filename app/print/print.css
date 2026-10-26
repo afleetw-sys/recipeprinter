@@ -4299,7 +4299,7 @@ textarea.recipe-page-fields__input {
   --recipe-card-step-size: calc(9.6pt * var(--recipe-font-scale, 1));
   --recipe-card-step-gap: calc(5.2pt * var(--recipe-font-scale, 1));
   --recipe-card-ingredient-gap: calc(3.2pt * var(--recipe-font-scale, 1));
-  --recipe-card-photo-size: 1.7in;
+  --recipe-card-photo-size: 1.55in;
 }
 
 .recipe-card-set {
@@ -7255,8 +7255,8 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card__header--with-photo .recipe-card__photo {
-  width: calc((0.68in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
-  height: calc((0.68in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  width: calc((0.74in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.74in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--pantry .recipe-card__header--with-photo .recipe-card__photo,
@@ -7271,8 +7271,8 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--keepsake .recipe-card__header--with-photo .recipe-card__photo {
-  width: calc((0.72in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
-  height: calc((0.72in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  width: calc((0.78in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.78in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 /* When a recipe photo is shown, the title/meta share the header row with a
@@ -9975,7 +9975,7 @@ textarea.recipe-card__toc-title {
 /* Cormorant's lowercase is small for its point size, so at the shared title
    size it read a size smaller than every other theme's title. */
 .recipe-template--garden .recipe-card__title {
-  font-size: calc(var(--recipe-card-title-size) * 1.25 * var(--recipe-title-fit, 1));
+  font-size: calc(var(--recipe-card-title-size) * 1.12 * var(--recipe-title-fit, 1));
 }
 
 /* Softened corners, like everything else the art draws. */
@@ -10353,7 +10353,8 @@ textarea.recipe-card__toc-title {
    wide: `--diner-u` is one of those units at this card's width, so both sizes
    keep the design's proportions.
 
-   - Title: 96 units, #DB3937, a 2-unit black outline outside the letters
+   - Title: 1.2x the card's title size (96 units in the mockup, which put it
+     half again over every other theme's), #DB3937, a 2-unit black outline outside the letters
      (a 4-unit stroke painted under the fill), shadow -5, 4, no blur.
    - Photo frame: #A5DAEA, 30-unit corners, a 6-unit black stroke inside the
      edge dashed 24 on 18 off (shorter than the mockup's 45/48, which left
@@ -10376,7 +10377,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--diner .recipe-card__title {
-  font-size: calc(96 * var(--diner-u) * var(--recipe-font-scale, 1) * var(--recipe-title-fit, 1));
+  font-size: calc(var(--recipe-card-title-size) * 1.2 * var(--recipe-title-fit, 1));
   font-weight: 400;
   line-height: 1.15;
   letter-spacing: 0;
@@ -10560,20 +10561,15 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--poster .recipe-card__title {
-  font-size: calc(72 * var(--poster-u) * var(--recipe-font-scale, 1) * var(--recipe-title-fit, 1));
+  font-size: calc(var(--recipe-card-title-size) * 1.16 * var(--recipe-title-fit, 1));
   font-weight: 400;
   line-height: 1.05;
   letter-spacing: 0;
   text-transform: none;
 }
 
-/* Scaled with the card's width alone, 72 units read small on a Full Page
-   sheet, which is taller for its width than a 4x6. Letter's title gets 86,
-   and the cook time and servings line under it grows a little with it. */
-.recipe-print-preview--letter .recipe-template--poster .recipe-card__title {
-  font-size: calc(86 * var(--poster-u) * var(--recipe-font-scale, 1) * var(--recipe-title-fit, 1));
-}
-
+/* On a Full Page sheet, which is taller for its width than a 4x6, the cook
+   time and servings line grows a little. */
 .recipe-print-preview--letter .recipe-template--poster .recipe-card__meta {
   font-size: calc(var(--recipe-card-meta-size) * 1.15);
 }
@@ -10685,7 +10681,7 @@ textarea.recipe-card__toc-title {
 
 .recipe-template--christmas .recipe-card__title {
   color: #c92e31;
-  font-size: calc(var(--recipe-card-title-size) * 1.45 * var(--recipe-title-fit, 1));
+  font-size: calc(var(--recipe-card-title-size) * 1.16 * var(--recipe-title-fit, 1));
   font-weight: 400;
   letter-spacing: 0;
   font-synthesis: none;
@@ -10785,7 +10781,7 @@ textarea.recipe-card__toc-title {
 
 .recipe-template--fall .recipe-card__title {
   color: #c4501c;
-  font-size: calc(var(--recipe-card-title-size) * 1.12 * var(--recipe-title-fit, 1));
+  font-size: calc(var(--recipe-card-title-size) * 1.08 * var(--recipe-title-fit, 1));
   font-weight: 700;
   font-variation-settings: "SOFT" 100;
   letter-spacing: -0.005em;
@@ -10903,7 +10899,7 @@ textarea.recipe-card__toc-title {
    title size so the drips read at card size. */
 .recipe-template--halloween .recipe-card__title {
   color: #1f1b16;
-  font-size: calc(var(--recipe-card-title-size) * 1.3 * var(--recipe-title-fit, 1));
+  font-size: calc(var(--recipe-card-title-size) * 1.12 * var(--recipe-title-fit, 1));
   font-weight: 400;
   font-synthesis: none;
   letter-spacing: 0.02em;
