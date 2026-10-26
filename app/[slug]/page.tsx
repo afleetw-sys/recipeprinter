@@ -29,6 +29,7 @@ import {
   SEO_LANDING_PAGE_MAP,
   SEO_LANDING_PAGES,
   layoutForPage,
+  seoCaptureProps,
   seoLandingPageMetadata,
   type SeoLandingPage,
 } from "@/lib/seoLandingPages";
@@ -93,14 +94,7 @@ function CaptureBlock({ page }: { page: SeoLandingPage }) {
       {page.startsCookbook ? (
         <CookbookStartButton label={page.importSubmitLabel} />
       ) : (
-      <SeoCapture
-        initialMode={page.initialImportMode ?? "url"}
-        submitLabel={page.importSubmitLabel ?? "Make it printable"}
-        fieldLabel={page.importFieldLabel}
-        placeholder={page.importPlaceholder}
-        uploadTitle={page.importUploadTitle}
-        modes={page.importModes}
-      />
+      <SeoCapture {...seoCaptureProps(page)} />
       )}
       {/* Off by default — see the field's own doc comment. Full-contrast,
           deliberately NOT the muted caption weight ImportPanel's own inline

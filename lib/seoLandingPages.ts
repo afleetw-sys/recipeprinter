@@ -95,7 +95,7 @@ export type SeoLandingPage = {
   importSubmitLabel?: string;
   /**
    * What the capture field is called on this page, overriding the generic name
-   * of whichever input it shows ("Recipe link", "Recipe text", "Recipe photos").
+   * of the input the page opens on ("Recipe link", "Recipe text", "Recipe photos").
    *
    * Worth setting wherever the page is about ONE source. A page that opens on
    * "Print TikTok recipes" and then labels its only box "Recipe link" makes the
@@ -109,13 +109,6 @@ export type SeoLandingPage = {
   importPlaceholder?: string;
   /** Resting title inside a single-image upload dropzone. */
   importUploadTitle?: string;
-  /** Which sources this page offers. Defaults to just `initialImportMode` —
-      the deliberately minimal single field every page keeps by design (see
-      the file-level comment on SeoCapture). Name two or more only where the
-      page's own subject IS the choice between sources, not one of them —
-      it swaps the field for the shared ImportPanel switch, restricted to
-      the sources listed. */
-  importModes?: ImportTab[];
   /** A FEATURE_IMAGES key for the hero photo, when the page's subject is not
       one of the printed cards. Without it every utility page opens on the same
       card. */
@@ -523,7 +516,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     pickerGroup: "output",
     intent: "Utility SEO",
     initialImportMode: "url",
-    importModes: ["url", "apps", "image", "text"],
     // Overrides the default printed-card hero photo — this page's subject is
     // the PDF itself, and showing one of the same recipe-card photos every
     // other utility page opens on would answer a different question than
@@ -628,7 +620,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImage: "caprese-card-board",
     initialImportMode: "url",
     importSubmitLabel: "Make recipe card",
-    importModes: ["url", "apps", "image", "text"],
     title: "Recipe Card Printer | Make & Print 4×6 Recipe Cards",
     description:
       "Turn recipes from websites, photos, screenshots, and text into printable 4×6 recipe cards. Preview your card online, choose a design, and print it at home.",
@@ -723,7 +714,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     pickerGroup: "output",
     intent: "Utility SEO",
     initialImportMode: "url",
-    importModes: ["url", "apps", "image", "text"],
     importSubmitLabel: "Add your first recipe",
     heroImage: "card",
     cookbookPitch: true,
@@ -1704,7 +1694,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     initialImportMode: "url",
     // The full import box, not a lone link field: a recipe on social media is
     // as often a screenshot or a copied caption as it is a link that imports.
-    importModes: ["url", "apps", "image", "text"],
     title: "Print Recipes from Social Media | Instagram, TikTok & More",
     description:
       "Print recipes from Instagram, TikTok, Pinterest, Facebook, and YouTube. Paste a social media link and turn it into a clean recipe you can print or save.",
@@ -1834,7 +1823,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     layout: "capture-first",
     heroImage: "counter-card",
     initialImportMode: "url",
-    importModes: ["url", "image", "text"],
     importSubmitLabel: "Put it on paper",
     // The Link field already lists the apps and recipe sites under itself
     // (ImportPanel), so this names only what that line leaves out.
@@ -1962,7 +1950,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     layout: "capture-first",
     heroImage: "counter-card",
     initialImportMode: "url",
-    importModes: ["url", "image", "text"],
     importSubmitLabel: "Add the first recipe",
     title: "Print Meal Plan Recipes for the Week | RecipePrinter",
     description:
@@ -2065,7 +2052,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     captureHeading: "Start with one recipe",
     importSubmitLabel: "Add your first recipe",
     initialImportMode: "url",
-    importModes: ["url", "apps", "image", "text"],
     layout: "capture-first",
     primaryKeyword: "organize recipes",
     secondaryKeywords: [
@@ -3578,7 +3564,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImageAlt:
       "A handwritten recipe card in cursive beside an open recipe box, the kind of card guests fill in at a bridal shower.",
     initialImportMode: "image",
-    importModes: ["image", "url", "text"],
     importSubmitLabel: "Start the recipe book",
     // Several photos in one upload are read as ONE recipe (ImportPanel's
     // "drop multiple for one recipe"), so a host with a stack of cards has to
@@ -3830,7 +3815,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // alternative page rather than waiting below an explanation.
     layout: "capture-first",
     initialImportMode: "image",
-    importModes: ["url", "image", "text"],
     title: "ReciScan Alternative for Printing Recipes | RecipePrinter",
     description:
       "Looking for a ReciScan alternative? Turn recipe photos and handwritten cards into editable recipes you can review and print right away.",
@@ -3945,7 +3929,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Utility SEO",
     heroImage: "multi-themes",
     initialImportMode: "url",
-    importModes: ["url", "image", "text"],
     title: "Canva Alternative for Recipe Cards | RecipePrinter",
     description:
       "Looking for a Canva alternative for recipe cards? Paste a recipe link, upload a photo, or add the text, and RecipePrinter turns it into a printable recipe card.",
@@ -4211,4 +4194,22 @@ export function seoLandingPageMetadata(page: SeoLandingPage): Metadata {
     metadata.twitter = { ...metadata.twitter, title: page.title };
   }
   return metadata;
+}
+
+/** What a page hands its capture block (SeoCapture). */
+export function seoCaptureProps(page: SeoLandingPage) {
+  const initialMode = page.initialImportMode ?? "url";
+  return {
+    initialMode,
+    // The capture shows every source, so its button label is on every tab.
+    // A photo or Paprika page's label ("Read the photo", "Open a Paprika file")
+    // names its own source and would be wrong under Link or Text; the Image
+    // tab says "Read my photo" whatever it is given.
+    submitLabel:
+      (initialMode === "url" || initialMode === "text" ? page.importSubmitLabel : undefined) ??
+      "Make it printable",
+    fieldLabel: page.importFieldLabel,
+    placeholder: page.importPlaceholder,
+    uploadTitle: page.importUploadTitle,
+  } as const;
 }
