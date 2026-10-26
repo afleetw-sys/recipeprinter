@@ -183,6 +183,7 @@ import {
   DownloadIcon,
   SidePanelsIcon,
   SizeIcon,
+  TextSizeIcon,
   SpinnerIcon,
   TemplateIcon,
   XIcon,
@@ -7350,6 +7351,27 @@ export default function PrintPage() {
                 Every recipe
               </button>
             )}
+            {/* Text size, last: its own sheet on recipe cards. A cookbook keeps
+                it in its Every recipe sheet, with the rest of what every page
+                carries. */}
+            {!cookbookMode && (
+              <button
+                type="button"
+                className={`recipe-mobile-toolbar__btn ${bookSheet === "text" ? "is-active" : ""}`}
+                aria-pressed={bookSheet === "text"}
+                aria-haspopup="dialog"
+                onClick={() => {
+                  setSizeMenuOpen(false);
+                  setStructureSheetOpen(false);
+                  setBookSheet((open) => (open === "text" ? null : "text"));
+                }}
+              >
+                <span className="recipe-mobile-toolbar__btn-icon">
+                  <TextSizeIcon size={ICON_SIZE.lg} />
+                </span>
+                Text size
+              </button>
+            )}
           </div>
           {/* Print sits DOWN here, under the tools, not up in the top bar.
               It is the thing this page is for and the last thing you do, and
@@ -7486,12 +7508,25 @@ export default function PrintPage() {
               {renderPrintSettingsFields()}
             </div>
           )}
-          <TextSizeControl
-            fontScale={fontScale}
-            setFontScale={setFontScale}
-            proMarked={!hasProEntitlement(effectiveCustomerInfo.customerInfo)}
-          />
         </MobileSheet>
+
+        {!cookbookMode && (
+          <MobileSheet
+            open={bookSheet === "text"}
+            onClose={() => setBookSheet(null)}
+            title="Text size"
+            className="recipe-structure-sheet"
+          >
+            <div className="recipe-structure-sheet__settings">
+              <TextSizeControl
+                fontScale={fontScale}
+                setFontScale={setFontScale}
+                proMarked={!hasProEntitlement(effectiveCustomerInfo.customerInfo)}
+                labelHidden
+              />
+            </div>
+          </MobileSheet>
+        )}
       </main>
     </>
 

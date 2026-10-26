@@ -22,11 +22,14 @@ export function TextSizeControl({
   fontScale,
   setFontScale,
   proMarked,
+  labelHidden = false,
 }: {
   fontScale: FontScale;
   setFontScale: (value: FontScale) => void;
   /** Crown every size but Normal: recipe cards on a free account. */
   proMarked: boolean;
+  /** No heading of its own: a sheet titled "Text size" already says it. */
+  labelHidden?: boolean;
 }) {
   const options = FONT_SCALES.map((scale) => ({
     value: String(scale),
@@ -38,7 +41,7 @@ export function TextSizeControl({
   }));
   return (
     <div className="recipe-config-section recipe-config-section--text-size">
-      <span className="recipe-config-label">Text size</span>
+      {!labelHidden && <span className="recipe-config-label">Text size</span>}
       <MenuSelect
         label="Text size"
         labelHidden

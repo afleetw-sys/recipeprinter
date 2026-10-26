@@ -435,6 +435,16 @@ export const AccountIcon = (p: IconProps) => (
   </Base>
 );
 
+/** A big A and a small one: the text size. */
+export const TextSizeIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M3 19L8.5 5L14 19" />
+    <path d="M5.2 14h6.6" />
+    <path d="M15 19l3.5-8l3.5 8" />
+    <path d="M16.3 16h4.4" />
+  </Base>
+);
+
 export const SizeIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M4 9V4h5" />
