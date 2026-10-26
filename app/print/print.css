@@ -60,6 +60,12 @@
   --recipe-card-step-gap: calc(4.2pt * var(--recipe-font-scale, 1));
   --recipe-card-ingredient-gap: calc(1.8pt * var(--recipe-font-scale, 1));
   --recipe-card-photo-size: 0.92in;
+  /* The recipe photo follows the text size at half its step (Biggest's 1.2
+     is 1.1 here): at the full step a photo crowded the card. Only the
+     picture: a mat or frame a theme draws round it (`--recipe-photo-mat`)
+     is the theme's art and keeps its size. Every photo width below is
+     (box - mat) * this + mat. */
+  --recipe-photo-scale: calc(1 + (var(--recipe-font-scale, 1) - 1) / 2);
   --recipe-card-footer-reserve: 0.28in;
 }
 
@@ -7244,29 +7250,29 @@ textarea.recipe-card__toc-title {
    sides when the cook changed size. */
 .recipe-print-preview--card-6x4 .recipe-template--classic .recipe-card__header--with-photo .recipe-card__photo,
 .recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.82in;
-  height: 0.82in;
+  width: calc((0.82in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.82in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--counter .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.68in;
-  height: 0.68in;
+  width: calc((0.68in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.68in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--pantry .recipe-card__header--with-photo .recipe-card__photo,
 .recipe-print-preview--card-6x4 .recipe-template--bistro .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.8in;
-  height: 0.8in;
+  width: calc((0.8in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.8in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--heirloom .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.78in;
-  height: 0.78in;
+  width: calc((0.78in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.78in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--keepsake .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.72in;
-  height: 0.72in;
+  width: calc((0.72in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.72in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 /* When a recipe photo is shown, the title/meta share the header row with a
@@ -7311,8 +7317,8 @@ textarea.recipe-card__toc-title {
   box-sizing: border-box;
   position: relative;
   flex: 0 0 auto;
-  width: var(--recipe-card-photo-size);
-  height: var(--recipe-card-photo-size);
+  width: calc((var(--recipe-card-photo-size) - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((var(--recipe-card-photo-size) - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
   /* No `margin-top: 1px`. That nudge existed to optically settle the photo
      against the title's cap-height while the header was top-aligned; against a
      centred headline it is just a 1px drop off the midline, which is the exact
@@ -7364,6 +7370,8 @@ textarea.recipe-card__toc-title {
 
 /* ── Classic: a crisp, modern cookbook print — white mat, teal hairline ───── */
 .recipe-template--classic .recipe-card__photo {
+  /* Padding and border, both sides: see `--recipe-photo-scale`. */
+  --recipe-photo-mat: 8px;
   padding: 3px;
   background: #fff;
   border: 1px solid color-mix(in srgb, var(--recipe-accent-2) 55%, var(--recipe-line));
@@ -7385,6 +7393,8 @@ textarea.recipe-card__toc-title {
 
 /* ── Keepsake: a small inset photo window built into the recipe card ─────── */
 .recipe-template--keepsake .recipe-card__photo {
+  /* Padding and border, both sides: see `--recipe-photo-scale`. */
+  --recipe-photo-mat: 6px;
   padding: 2px;
   overflow: hidden;
   background: rgba(255, 250, 236, 0.64);
@@ -7402,6 +7412,8 @@ textarea.recipe-card__toc-title {
 
 /* ── Bistro: a bold blue-framed menu snapshot with a playful offset & tilt ─── */
 .recipe-template--bistro .recipe-card__photo {
+  /* Padding and border, both sides: see `--recipe-photo-scale`. */
+  --recipe-photo-mat: 12px;
   padding: 4px;
   background: #fff;
   border: 2px solid var(--recipe-accent-2);
@@ -7441,6 +7453,8 @@ textarea.recipe-card__toc-title {
 
 /* ── Counter: a high-contrast black-and-white photocopy in a hard ink box ─── */
 .recipe-template--counter .recipe-card__photo {
+  /* The border, both sides: see `--recipe-photo-scale`. */
+  --recipe-photo-mat: 2px;
   border: 1px solid var(--recipe-ink);
   border-radius: 0;
 }
@@ -9903,13 +9917,13 @@ textarea.recipe-card__toc-title {
    gives the card its picture: 0.72in on a 6x4 (Keepsake's size) and 1.3in on
    Full Page, against the default 0.92in / 1.7in. */
 .recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster, .recipe-template--christmas, .recipe-template--fall, .recipe-template--halloween) .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.72in;
-  height: 0.72in;
+  width: calc((0.72in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.72in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 .recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster, .recipe-template--christmas, .recipe-template--fall, .recipe-template--halloween) .recipe-card__header--with-photo .recipe-card__photo {
-  width: 1.3in;
-  height: 1.3in;
+  width: calc((1.3in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((1.3in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 /* "1." typed in line with the step, not a badge. */
@@ -10374,6 +10388,8 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--diner .recipe-card__photo {
+  /* Padding and border, both sides: see `--recipe-photo-scale`. */
+  --recipe-photo-mat: calc(36 * var(--diner-u));
   padding: calc(18 * var(--diner-u));
   background: #a5daea;
   border-radius: calc(30 * var(--diner-u));
@@ -10384,13 +10400,13 @@ textarea.recipe-card__toc-title {
 /* Larger than the other new themes' photos: the frame is the theme's second
    feature, and its mat takes some of the space. */
 .recipe-print-preview--card-6x4 .recipe-template--diner .recipe-card__header--with-photo .recipe-card__photo {
-  width: 0.9in;
-  height: 0.9in;
+  width: calc((0.9in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((0.9in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 .recipe-print-preview--letter .recipe-template--diner .recipe-card__header--with-photo .recipe-card__photo {
-  width: 1.6in;
-  height: 1.6in;
+  width: calc((1.6in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
+  height: calc((1.6in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
 .recipe-template--diner .recipe-card__photo-img {
@@ -10581,13 +10597,13 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--poster .recipe-card__header--with-photo .recipe-card__photo {
-  width: calc(0.72in + 32 * var(--poster-u));
-  height: calc(0.72in + 32 * var(--poster-u));
+  width: calc(0.72in * var(--recipe-photo-scale, 1) + 32 * var(--poster-u));
+  height: calc(0.72in * var(--recipe-photo-scale, 1) + 32 * var(--poster-u));
 }
 
 .recipe-print-preview--letter .recipe-template--poster .recipe-card__header--with-photo .recipe-card__photo {
-  width: calc(1.3in + 32 * var(--poster-u));
-  height: calc(1.3in + 32 * var(--poster-u));
+  width: calc(1.3in * var(--recipe-photo-scale, 1) + 32 * var(--poster-u));
+  height: calc(1.3in * var(--recipe-photo-scale, 1) + 32 * var(--poster-u));
 }
 
 /* Below the tab, before the recipe. */
