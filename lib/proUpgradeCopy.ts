@@ -22,7 +22,7 @@ const BENEFIT_BY_REASON: Record<ProLockReason, string> = {
   multi_recipe: "Print multiple recipes at once",
   card_size: "4×6 recipe cards",
   theme: "All premium themes",
-  font_size: "Bigger or smaller text on your cards",
+  font_size: "Change the text size on your cards",
 };
 const COOKBOOK_BENEFIT = "20% off your first cookbook";
 // Not "no watermark": the free line is a quiet footer, not a watermark, and

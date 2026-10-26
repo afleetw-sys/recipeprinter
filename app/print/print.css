@@ -6026,15 +6026,15 @@ textarea.recipe-page-fields__input {
 }
 
 .recipe-template--halloween .recipe-book-runhead {
-  bottom: calc(352 * var(--halloween-u) + 0.08in);
+  bottom: calc(282 * var(--halloween-u) + 0.08in);
 }
 
 .recipe-print-preview--card-6x4 .recipe-card-set.recipe-template--halloween .recipe-card[data-in-book] {
-  --recipe-card-keepout-h: 1.44in;
+  --recipe-card-keepout-h: 1.22in;
 }
 
 .recipe-print-preview--letter .recipe-card-set.recipe-template--halloween .recipe-card[data-in-book] {
-  --recipe-card-keepout-h: 1.89in;
+  --recipe-card-keepout-h: 1.58in;
 }
 
 /* A page a recipe runs onto keeps only its theme's edge (see
@@ -10851,7 +10851,8 @@ textarea.recipe-card__toc-title {
    raster, not an SVG wrapping one, which Firefox prints blank (see
    Christmas).
 
-   The headstone (540 units wide, art 532 x 352) is a keep-out corner on the
+   The headstone (432 units wide, art 426 x 282: 80% of the mockup's, since
+   2026-10-26) is a keep-out corner on the
    LEFT (`--recipe-card-keepout-side`), so only the lines over it stop short.
    The hand (376 x 205) stands where the steps run, so it is not laid over the
    card: it floats at the top-right of the steps and they wrap around it, one
@@ -10888,30 +10889,28 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--halloween .recipe-card {
-  --recipe-card-keepout-w: 1.6in;
-  --recipe-card-keepout-h: 1.08in;
-}
-
-.recipe-print-preview--letter .recipe-template--halloween .recipe-card {
-  --recipe-card-keepout-w: 2.27in;
-  --recipe-card-keepout-h: 1.53in;
-}
-
-/* The back of a card (every face after its first) has a smaller headstone,
-   80% of the front's, so the steps that run onto it get more of the page.
-   Its keep-out corner shrinks with it (plain lengths, for lib/faceMeasure). */
-.recipe-template--halloween .recipe-card--continued .recipe-card__halloween-grave {
-  width: calc(432 * var(--halloween-u));
-}
-
-.recipe-print-preview--card-6x4 .recipe-template--halloween .recipe-card--continued {
   --recipe-card-keepout-w: 1.29in;
   --recipe-card-keepout-h: 0.86in;
 }
 
-.recipe-print-preview--letter .recipe-template--halloween .recipe-card--continued {
+.recipe-print-preview--letter .recipe-template--halloween .recipe-card {
   --recipe-card-keepout-w: 1.82in;
   --recipe-card-keepout-h: 1.22in;
+}
+
+/* The back of a card (every face after its first: its back, or the next card
+   when printing one-sided) is plain paper. The headstone and the hand are the
+   front's, so the steps that run on get the whole face. Cookbook pages a
+   recipe runs onto already drop them (see `data-edge-only`). */
+.recipe-template--halloween .recipe-card--continued .recipe-card__halloween-grave,
+.recipe-template--halloween .recipe-card--continued .recipe-card__method::before,
+.recipe-template--halloween .recipe-card--continued .recipe-card__ingredients::before {
+  display: none;
+}
+
+.recipe-print-preview .recipe-template--halloween .recipe-card.recipe-card--continued {
+  --recipe-card-keepout-w: 0in;
+  --recipe-card-keepout-h: 0in;
 }
 
 /* Creepster has one weight; a synthesised bold smears its drips. Its
@@ -10946,7 +10945,7 @@ textarea.recipe-card__toc-title {
   display: none;
   left: 0;
   bottom: 0;
-  width: calc(540 * var(--halloween-u));
+  width: calc(432 * var(--halloween-u));
   height: auto;
   pointer-events: none;
   user-select: none;
@@ -11087,7 +11086,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--halloween .recipe-card-page[data-dir="rtl"] .recipe-book-folio {
-  bottom: calc(352 * var(--halloween-u) + 0.08in);
+  bottom: calc(282 * var(--halloween-u) + 0.08in);
 }
 
 .recipe-template--fall .recipe-card-page[data-dir="rtl"] .recipe-book-folio,
