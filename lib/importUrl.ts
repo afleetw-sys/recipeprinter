@@ -210,6 +210,44 @@ export function isPastedRecipeText(raw: string): boolean {
   return !(words.length <= 3 && LINK_START.test(words.join("")));
 }
 
+/** Few enough words before a link that they're a caption, not a recipe. */
+const CAPTION_MAX_WORDS_BEFORE = 8;
+/** And after it: an emoji, "so good". A recipe runs on well past its link. */
+const CAPTION_MAX_WORDS_AFTER = 2;
+
+/**
+ * The link out of a short caption pasted round it, or null.
+ *
+ * Copied whole out of a post or a message, a link arrives with the words
+ * around it: "RECIPE HERE: https://bit.ly/…", "Check this out!" on the line
+ * above. Those words are the post's, not the recipe's, and `isPastedRecipeText`
+ * (which goes by how a paste starts) sent the whole thing to the text reader.
+ * A caption is one web address with a few words before it and next to nothing
+ * after. Lines don't count: the link field is a one-line input, and the
+ * browser drops a paste's line breaks on the way in, so "Check this out!" and
+ * the link on the next line arrive as "Check this out!https://…" (the link is
+ * found inside the word for that reason). A pasted recipe that names its
+ * source ("Recipe from https://…" and then its ingredients, glued together the
+ * same way) runs on past the link, and stays text.
+ */
+export function linkInCaption(raw: string): string | null {
+  const links = raw.match(/(?:https?:\/\/|www\.)\S+/gi) ?? [];
+  if (links.length !== 1) return null;
+  const [link] = links;
+  const at = raw.indexOf(link);
+  const wordsIn = (text: string) => text.split(/\s+/).filter(Boolean).length;
+  const before = wordsIn(raw.slice(0, at));
+  const after = wordsIn(raw.slice(at + link.length));
+  if (before === 0 || before > CAPTION_MAX_WORDS_BEFORE || after > CAPTION_MAX_WORDS_AFTER) return null;
+  // A sentence's punctuation, not the link's: "(https://bit.ly/x)." A closing
+  // bracket the link opened itself (Wikipedia's "…_(dish)") stays.
+  let url = link.replace(/[.,;:!?'"’”]+$/, "");
+  while (/[)\]]$/.test(url) && (url.match(/[(\[]/g) ?? []).length < (url.match(/[)\]]/g) ?? []).length) {
+    url = url.slice(0, -1).replace(/[.,;:!?'"’”]+$/, "");
+  }
+  return url;
+}
+
 export const JOINED_LINKS_MESSAGE =
   "This link looks like two web addresses run together. Copy the recipe's link again and paste it on its own.";
 

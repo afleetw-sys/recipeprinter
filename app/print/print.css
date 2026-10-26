@@ -7563,6 +7563,27 @@ textarea.recipe-card__toc-title {
   background: color-mix(in srgb, var(--cp-ink) 8%, transparent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--cp-ink) 8%, transparent);
 }
+/* Never printed, never exported. Everything "show what's missing" adds is a
+   prompt for the screen: an empty field's placeholder ("Add servings"), the
+   note and cover-line prompts, a heading the cook hasn't set, an empty fact,
+   and a STEPS or INGREDIENTS section that exists only to hold its first "+
+   Add" (`data-reveal-only` in RecipeCardPrint). Printed with the reveal on,
+   the card being edited came out saying "Add servings". By CSS rather than
+   by turning the reveal off before printing, so Ctrl+P, Safari's late print
+   and anything else that prints the page get it too.
+   e2e/reveal-never-prints.spec.ts. */
+@media print {
+  .recipe-card [data-reveal-only],
+  .recipe-card input:placeholder-shown,
+  .recipe-card textarea:placeholder-shown,
+  .recipe-card__headnote--empty,
+  .recipe-card__label--empty,
+  .recipe-card__cover-field--empty,
+  .recipe-card__opener-field--empty {
+    display: none !important;
+  }
+}
+
 /* The link field is the width of its line, and an empty one drew the chip
    across the whole card. Empty, it is as wide as "Add link". */
 .recipe-card__source-line:placeholder-shown,

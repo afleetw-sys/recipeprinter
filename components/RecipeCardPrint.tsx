@@ -840,7 +840,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     return (
       <div className="recipe-card__facts" aria-label="Recipe details">
         {(showEmpty || time) && (
-          <span className="recipe-card__fact">
+          <span className="recipe-card__fact" data-reveal-only={time ? undefined : "true"}>
             <span className="recipe-card__fact-label">Cook time</span>
             {canEdit && inlineEdit ? (
               <input
@@ -869,7 +869,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           </span>
         )}
         {(showEmpty || servings) && (
-          <span className="recipe-card__fact">
+          <span className="recipe-card__fact" data-reveal-only={servings ? undefined : "true"}>
             <span className="recipe-card__fact-label">Serves</span>
             {canEdit && inlineEdit ? (
               <input
@@ -1384,7 +1384,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                   />
                 )}
                 {(showEmpty || metaTime) && (showEmpty || metaServes) && (
-                  <span aria-hidden> · </span>
+                  <span aria-hidden data-reveal-only={metaTime && metaServes ? undefined : "true"}>
+                    {" · "}
+                  </span>
                 )}
                 {(showEmpty || metaServes) && (
                   <input
@@ -1500,6 +1502,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       >
         {hasIngredientsSection && (
           <section
+            data-reveal-only={ingredientGroups.length === 0 ? "true" : undefined}
             className={`recipe-card__ingredients ${ingredientsWide ? "recipe-card__ingredients--wide" : ""}`}
             ref={ingredientsWide ? ingredientColumns.sectionRef : undefined}
           >
@@ -1574,6 +1577,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
 
         {hasInstructionsSection && (
           <section
+            data-reveal-only={instructionGroups.length === 0 ? "true" : undefined}
             className={`recipe-card__method ${methodWide ? "recipe-card__method--wide" : ""}`}
             ref={methodWide ? methodColumns.sectionRef : undefined}
           >

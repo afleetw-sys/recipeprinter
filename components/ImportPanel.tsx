@@ -15,7 +15,7 @@ import type { ImportTab } from "@/types/recipe";
 import type { QueueItem } from "@/types/recipe";
 import { track, type ImportFailureCode } from "@/lib/analytics";
 import { normalizeImportURL } from "@/lib/cookpilot";
-import { isPastedRecipeText } from "@/lib/importUrl";
+import { isPastedRecipeText, linkInCaption } from "@/lib/importUrl";
 import { imageLabel, MAX_IMAGE_FILES, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
 
 /** The Image tab's submit, on every surface. Exported for the add dialog,
@@ -322,7 +322,9 @@ export function ImportPanel({
     setError(null);
 
     if (mode === "url") {
-      const trimmed = url.trim();
+      // A link pasted with the words round it ("RECIPE HERE: https://…") is
+      // that link. See `linkInCaption`.
+      const trimmed = linkInCaption(url) ?? url.trim();
       if (!trimmed) return onStartEmpty ? startEmpty(onStartEmpty) : fail("Paste a recipe link first.");
       // A whole recipe pasted into the link box. The normalizer below would
       // squeeze it into one "hostname" and send it to the URL parser; it is
