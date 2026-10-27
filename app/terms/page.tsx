@@ -217,7 +217,13 @@ export default function TermsPage() {
           </li>
           <li>
             circumvent usage limits, entitlement checks, or payment
-            requirements, or use automated means to import in bulk;
+            requirements, for example by creating additional accounts, using
+            private or incognito browsing, clearing site data, or switching
+            browsers or devices to obtain more free use (see{" "}
+            <a href="#limits" className={sectionLink}>
+              section 8
+            </a>
+            ), or use automated means to import in bulk;
           </li>
           <li>
             resell or commercially redistribute access to the Service, or use it
@@ -251,6 +257,33 @@ export default function TermsPage() {
           and access resumes after a waiting period. We may adjust these limits
           over time, and we may restrict use by an account or network that
           consumes shared resources in a way that affects other users.
+        </p>
+        <p>
+          Free use, including any free import allowance and the free cookbook
+          preview, is offered once per person, not once per account, browser,
+          or device. Creating or using more than one account, or using private
+          browsing, cleared site data, or other browsers or devices, to obtain
+          more free use than one person is offered is a violation of{" "}
+          <a href="#acceptable-use" className={sectionLink}>
+            section 7
+          </a>
+          .
+        </p>
+        <p>
+          To enforce these limits, we use signals such as account details,
+          browser and device characteristics, and IP address, as described in
+          our{" "}
+          <LegalInternalLink href="/privacy">Privacy Policy</LegalInternalLink>
+          . If we reasonably believe free use is being obtained this way, we
+          may end free access for the accounts, browsers, devices, or networks
+          involved and require a purchase or subscription to continue using
+          the affected features. Paid features you have already bought are not
+          affected unless{" "}
+          <a href="#termination" className={sectionLink}>
+            section 15
+          </a>{" "}
+          applies. If you believe we have made a mistake, contact{" "}
+          <LegalContactLink /> and we will review it.
         </p>
       </LegalSection>
 
@@ -452,7 +485,10 @@ export default function TermsPage() {
           <a href="#acceptable-use" className={sectionLink}>
             section 7
           </a>
-          , or where required by law. Unless the violation is serious or we are
+          , or where required by law. We may also block access to the Service
+          from browsers, devices, or networks associated with that violation,
+          and decline to open new accounts for someone whose access we have
+          restricted or closed. Unless the violation is serious or we are
           legally prevented from doing so, we will tell you the reason and give
           you an opportunity to resolve it and to export your projects.
           Provisions that by their nature should survive termination will
