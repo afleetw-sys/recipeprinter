@@ -332,8 +332,10 @@ export default function PrivacyPage() {
             .
           </li>
           <li>
-            <strong>To prevent abuse</strong> of shared resources.{" "}
-            <em>Legitimate interests</em>, in keeping the service available.
+            <strong>To prevent abuse</strong> of shared resources, and to
+            enforce the once-per-person free allowance and our Terms.{" "}
+            <em>Legitimate interests</em>, in keeping the service available
+            and fair.
           </li>
           <li>
             <strong>To meet legal obligations</strong>, such as keeping tax
