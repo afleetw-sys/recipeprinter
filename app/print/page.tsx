@@ -230,7 +230,12 @@ import {
 } from "@/lib/printErrorRecovery";
 import { hasPendingImport, takePendingImport } from "@/lib/pendingImport";
 import { isIOSPrinter, isWebKitPrinter, printNeedsLiveGesture } from "@/lib/printGesture";
-import { markPostPrintDialogShown, shouldShowPostPrintDialog } from "@/lib/postPrintDialog";
+import {
+  loadPostPrintDialogSeenOnAccount,
+  markPostPrintDialogShown,
+  markPostPrintDialogShownOnDevice,
+  shouldShowPostPrintDialog,
+} from "@/lib/postPrintDialog";
 import {
   REFERRALS_LIVE,
   cachedReferralSummary,
@@ -2320,12 +2325,53 @@ export default function PrintPage() {
     }, delayMs);
   }
 
-  // The second card import offers the invite too, after the card has had a
-  // moment on screen.
+  /**
+   * Whether this account has seen the feedback dialog, read once per sign-in
+   * so a person sees it once wherever they print (lib/postPrintDialog.ts). An
+   * unreadable account counts as seen.
+   */
+  const feedbackSeenOnAccountRef = useRef<{ uid: string; seen: Promise<boolean> } | null>(null);
+  useEffect(() => {
+    const uid = cookPilotUser?.uid;
+    if (!uid) {
+      feedbackSeenOnAccountRef.current = null;
+      return;
+    }
+    const seen = loadPostPrintDialogSeenOnAccount(uid).catch(() => true);
+    feedbackSeenOnAccountRef.current = { uid, seen };
+    void seen.then((onAccount) => {
+      if (onAccount) markPostPrintDialogShownOnDevice();
+      // Seen here while signed out, now signed in: carry it to the account
+      // so their other devices know.
+      else if (!shouldShowPostPrintDialog()) void markPostPrintDialogShown(uid);
+    });
+  }, [cookPilotUser?.uid]);
+
+  /**
+   * "Leave feedback / Support RecipePrinter", in the invite's place while the
+   * referral program is hidden: once per person, after the first card export
+   * or the second card import, whichever comes first (Amelia, 2026-10-26).
+   */
+  function offerFeedbackDialog(delayMs: number) {
+    window.setTimeout(async () => {
+      if (cookbookModeRef.current || !shouldShowPostPrintDialog()) return;
+      const account = feedbackSeenOnAccountRef.current;
+      if (account && (await account.seen)) return;
+      // Another offer may have shown it while the account was read.
+      if (cookbookModeRef.current || !shouldShowPostPrintDialog()) return;
+      void markPostPrintDialogShown(account?.uid ?? null);
+      setShowDonateDialog(true);
+    }, delayMs);
+  }
+
+  // The second card import offers the invite (or the feedback dialog) too,
+  // after the card has had a moment on screen.
   useEffect(() => {
     if (cookbookMode) return;
     const onImported = () => {
-      if (cardImportCount() >= INVITE_AFTER_IMPORTS && referralInviteAllowed()) offerReferralInvite(1200);
+      if (cardImportCount() < INVITE_AFTER_IMPORTS) return;
+      if (referralInviteAllowed()) offerReferralInvite(1200);
+      else offerFeedbackDialog(1200);
     };
     window.addEventListener(CARD_IMPORTED_EVENT, onImported);
     return () => window.removeEventListener(CARD_IMPORTED_EVENT, onImported);
@@ -3682,9 +3728,11 @@ export default function PrintPage() {
         revenueCatUserId,
       });
       track("card_download_started", { output, recipeCount });
-      // A download is an export like Print: the same one-time invite, whichever
-      // of print, download or a second import comes first.
+      // A download is an export like Print: the same one-time invite (or
+      // feedback dialog), whichever of print, download or a second import
+      // comes first.
       if (referralInviteAllowed()) offerReferralInvite(600);
+      else offerFeedbackDialog(600);
     } catch (error) {
       const failure = error instanceof CardExportError ? error : null;
       track("card_download_failed", {
@@ -5261,16 +5309,15 @@ export default function PrintPage() {
       // can't stand in for "you exported a cookbook"). Only plain-card prints
       // get that nudge.
       if (cookbookMode) return;
-      // Once the program is live, the dialog after a print is the invite
+      // While the program is live, the dialog after a print is the invite
       // ("Give 3 days. Get 3 days."), once per browser, in place of the
-      // feedback dialog. Until then, nothing here changes.
+      // feedback dialog.
       if (REFERRALS_LIVE && postPrintAction !== "none" && referralInviteAllowed()) {
         offerReferralInvite(150);
         return;
       }
       if (!prompt) return;
-      markPostPrintDialogShown();
-      window.setTimeout(() => setShowDonateDialog(true), 150);
+      offerFeedbackDialog(150);
     }
 
     window.addEventListener("afterprint", handleAfterPrint);

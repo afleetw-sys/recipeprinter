@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   markPostPrintDialogShown,
   POST_PRINT_DIALOG_STORAGE_KEY,
+  resetPostPrintDialogForTest,
   shouldShowPostPrintDialog,
 } from "@/lib/postPrintDialog";
 
@@ -15,6 +16,7 @@ class MemoryStorage {
 let memory: MemoryStorage;
 
 beforeEach(() => {
+  resetPostPrintDialogForTest();
   memory = new MemoryStorage();
   Object.defineProperty(globalThis, "window", {
     configurable: true,
@@ -32,15 +34,15 @@ describe("post-print dialog", () => {
   });
 
   it("stops showing once marked shown", () => {
-    markPostPrintDialogShown();
+    void markPostPrintDialogShown();
     expect(memory.getItem(POST_PRINT_DIALOG_STORAGE_KEY)).toBe("1");
     expect(shouldShowPostPrintDialog()).toBe(false);
   });
 
-  it("shows every time when storage is unreadable, rather than never", () => {
+  it("shows once per page when storage is unreadable, rather than never", () => {
     Reflect.deleteProperty(globalThis, "window");
     expect(shouldShowPostPrintDialog()).toBe(true);
-    markPostPrintDialogShown();
-    expect(shouldShowPostPrintDialog()).toBe(true);
+    void markPostPrintDialogShown();
+    expect(shouldShowPostPrintDialog()).toBe(false);
   });
 });

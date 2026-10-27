@@ -12,6 +12,7 @@ vi.mock("@/lib/parser", () => ({
 
 import { GET as inviteRoute } from "@/app/invite/[code]/route";
 import {
+  REFERRALS_LIVE,
   INVITE_COOKIE,
   claimStoredOpen,
   membershipStatus,
@@ -39,13 +40,14 @@ beforeEach(() => {
 });
 
 describe("the invite link", () => {
-  test("hands the code over in a cookie and sends the visitor home, with the code in no URL", async () => {
+  test("hands the code over in a cookie (while the program is live) and sends the visitor home, with the code in no URL", async () => {
     const response = inviteRoute(new NextRequest("https://www.recipeprinter.com/invite/ab3cd4ef"), {
       params: { code: "ab3cd4ef" },
     });
     expect(response.status).toBe(302);
     expect(response.headers.get("location")).toBe("https://www.recipeprinter.com/");
-    expect(response.cookies.get(INVITE_COOKIE)?.value).toBe("AB3CD4EF");
+    // Hidden, a link lands on the homepage with nothing to claim.
+    expect(response.cookies.get(INVITE_COOKIE)?.value).toBe(REFERRALS_LIVE ? "AB3CD4EF" : undefined);
     // A malformed code sets nothing, and still lands on the homepage.
     const junk = inviteRoute(new NextRequest("https://www.recipeprinter.com/invite/x"), { params: { code: "x" } });
     expect(junk.cookies.get(INVITE_COOKIE)).toBeUndefined();

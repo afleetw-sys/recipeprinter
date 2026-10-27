@@ -210,6 +210,13 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["proDeclineAskedAt"])
         && !("proDeclineAskedAt" in resource.data)
         && request.resource.data.proDeclineAskedAt == request.time;
+      // The "Leave feedback / Support RecipePrinter" dialog was shown to this
+      // account (lib/postPrintDialog.ts). Write-once, server clock, so it is
+      // shown once per person across devices.
+      allow update: if owns(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["feedbackPromptSeenAt"])
+        && !("feedbackPromptSeenAt" in resource.data)
+        && request.resource.data.feedbackPromptSeenAt == request.time;
       allow delete: if false;
 
       match /printProjects/{projectId} {
