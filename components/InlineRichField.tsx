@@ -90,7 +90,10 @@ export function InlineRichField({
     // a synthetic of `keypress` and not this event.
     const onBeforeInput = (event: InputEvent) => {
       const paragraph = event.inputType === "insertParagraph";
-      const lineBreak = event.inputType === "insertLineBreak" && !shiftDown.current;
+      // A row that splits can't show a break inside it (see handleKeyDown), so
+      // Shift only keeps a line break in the fields that print one.
+      const lineBreak =
+        event.inputType === "insertLineBreak" && (Boolean(onSplitRef.current) || !shiftDown.current);
       if (!paragraph && !lineBreak) return;
       event.preventDefault();
       const split = onSplitRef.current;
@@ -122,7 +125,10 @@ export function InlineRichField({
       ref.current?.blur();
       return;
     }
-    if (event.key === "Enter" && !event.shiftKey) {
+    // Shift+Return in an ingredient or step used to put a line break inside the
+    // row. The card prints a row on one line, so the break vanished on save and
+    // the halves ran together; there, any Return starts the next row.
+    if (event.key === "Enter" && (!event.shiftKey || onSplit)) {
       event.preventDefault();
       const el = ref.current;
       if (onSplit && el) {
