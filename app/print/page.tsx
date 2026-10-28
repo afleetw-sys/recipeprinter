@@ -259,7 +259,8 @@ import { organizeFlipProgress } from "@/lib/organizeFlip";
 import { RailResizer } from "@/components/print/RailResizer";
 import { bookRecipeImage } from "@/lib/bookPhotos";
 
-/** The cookbook settings panel's Page tab. Off for now; see the PrintConfigPanel call. */
+/** The cookbook settings panel's Page tab, and the phone's This page tile and
+    sheet that stand in for it. Off for now; see the PrintConfigPanel call. */
 const PAGE_SETTINGS_TAB_ENABLED = false;
 
 /** This section's own recipe photos, in item order, capped for a collage. Scopes
@@ -7303,8 +7304,9 @@ export default function PrintPage() {
             )}
             {/* The page in front of the cook, as the desktop panel's Page tab
                 has it: a phone has no panel, so without this a page's look
-                and words could only be reached from its toolbar. */}
-            {cookbookMode && activeNavItem && (
+                and words could only be reached from its toolbar. Hidden with
+                that tab, so a phone and a desktop offer the same settings. */}
+            {PAGE_SETTINGS_TAB_ENABLED && cookbookMode && activeNavItem && (
               <button
                 type="button"
                 className={`recipe-mobile-toolbar__btn ${bookSheet === "page" ? "is-active" : ""}`}
@@ -7481,7 +7483,7 @@ export default function PrintPage() {
           setStructureSheetOpen={setStructureSheetOpen}
         />
 
-        {cookbookMode && (
+        {PAGE_SETTINGS_TAB_ENABLED && cookbookMode && (
           <MobileSheet
             open={bookSheet === "page"}
             onClose={() => setBookSheet(null)}
