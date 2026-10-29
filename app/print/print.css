@@ -2007,8 +2007,15 @@
   cursor: pointer;
 }
 
-.image-picker__trigger.recipe-page-toolbar__photo span {
+.image-picker__trigger.recipe-page-toolbar__photo > span:not(.pro-badge) {
   display: none;
+}
+
+/* A free card's photo is Pro, so the glyph carries the crown beside it. */
+.image-picker__trigger.recipe-page-toolbar__photo:has(.pro-badge) {
+  width: auto;
+  gap: 3px;
+  padding: 0 6px;
 }
 
 .image-picker__trigger.recipe-page-toolbar__photo:hover:not(:disabled) {

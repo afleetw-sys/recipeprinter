@@ -5,6 +5,7 @@ import { Dialog } from "@/components/Dialog";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { IconButton } from "@/components/Controls";
 import { CheckIcon, ICON_SIZE, ImageIcon, UploadIcon, XIcon } from "@/components/icons";
+import { ProBadge } from "@/components/ProBadge";
 import { friendlyPhotoUploadError } from "@/lib/friendlyErrors";
 import { partitionImageFiles } from "@/lib/imageImport";
 import { storePickedPhotoFile } from "@/lib/photoStorage";
@@ -45,6 +46,7 @@ export function ImagePicker({
   label = "Choose photo",
   className = "",
   hideTrigger = false,
+  proMarked = false,
 }: {
   current?: string;
   images: string[];
@@ -95,6 +97,8 @@ export function ImagePicker({
   /** No button of its own: the caller draws one in its own style and opens
       the dialog with `openSignal` (the settings panel's plain buttons). */
   hideTrigger?: boolean;
+  /** Crowns the trigger: printing a photo on a recipe card is Pro. */
+  proMarked?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const onOpenChangeRef = useRef(onOpenChange);
@@ -538,6 +542,7 @@ export function ImagePicker({
       >
         <ImageIcon size={ICON_SIZE.md} />
         <span>{label}</span>
+        {proMarked && <ProBadge variant="inline" label={false} tooltip="Recipe photos are Pro" />}
       </button>
       )}
 

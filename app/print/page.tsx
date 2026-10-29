@@ -3390,7 +3390,17 @@ export default function PrintPage() {
   // Recipes only: the book's own pages (a blank page) never count toward a
   // free preview or anything else measured in recipes.
   const recipeCount = (items?.filter(isRecipeEntry).length ?? 0) + (hasInFlightImport ? 1 : 0);
-  const { themeLocked, cardSizeLocked, fontScaleLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked } =
+  // Some card prints its photo: the per-recipe choice over the setting, and
+  // only when there is one (`photoOnFor` in lib/usePrintSheets).
+  const photoShown = Boolean(
+    items?.some(
+      (item) =>
+        isRecipeEntry(item) &&
+        Boolean(item.recipe?.image) &&
+        (projectMeta.meta.itemPlacements?.[item.id]?.showPhoto ?? showPhoto),
+    ),
+  );
+  const { themeLocked, cardSizeLocked, fontScaleLocked, photoLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked } =
     computeProLocks({
       customerInfo: effectiveCustomerInfo.customerInfo,
       cookbookMode,
@@ -3399,6 +3409,7 @@ export default function PrintPage() {
       cardSize,
       recipeCount,
       fontScale,
+      photoShown,
     });
   // A free, non-cookbook account can never hold more than one recipe — see
   // `hasMultiRecipeEntitlement`'s doc comment ("nothing to grandfather...
@@ -3491,14 +3502,15 @@ export default function PrintPage() {
       ? { context: "cookbook", ...(cookbookProjectId ? { cookbookId: cookbookProjectId } : {}) }
       : { context: "recipe_cards" },
   });
-  function proLockFeature(): "batch_print" | "card_size" | "font_size" | "theme" {
+  function proLockFeature(): "batch_print" | "card_size" | "font_size" | "photo" | "theme" {
     const reasons = activeProLockReasons(
-      { themeLocked, cardSizeLocked, fontScaleLocked, multiRecipeLocked },
+      { themeLocked, cardSizeLocked, fontScaleLocked, photoLocked, multiRecipeLocked },
       "print_button",
     );
     if (reasons.includes("multi_recipe")) return "batch_print";
     if (reasons.includes("card_size")) return "card_size";
     if (!reasons.includes("theme") && reasons.includes("font_size")) return "font_size";
+    if (!reasons.includes("theme") && reasons.includes("photo")) return "photo";
     return "theme";
   }
   // Names the actual reason(s) this dialog opened rather than a generic
@@ -3506,7 +3518,7 @@ export default function PrintPage() {
   // theme AND a locked card size, say) instead of silently picking whichever
   // happens to be checked first.
   const proUpgradeLockReasons = activeProLockReasons(
-    { themeLocked, cardSizeLocked, fontScaleLocked, multiRecipeLocked },
+    { themeLocked, cardSizeLocked, fontScaleLocked, photoLocked, multiRecipeLocked },
     proUpgradeTrigger,
   );
   const proUpgradeDialogCopy = proUpgradeCopy(
@@ -3529,7 +3541,7 @@ export default function PrintPage() {
    */
   function printPaywallReason(trigger: string): { reason?: ProLockReason | "several" } {
     if (trigger !== "print_button") return {};
-    const reasons = activeProLockReasons({ themeLocked, cardSizeLocked, fontScaleLocked, multiRecipeLocked }, trigger);
+    const reasons = activeProLockReasons({ themeLocked, cardSizeLocked, fontScaleLocked, photoLocked, multiRecipeLocked }, trigger);
     if (reasons.length === 0) return {};
     return { reason: reasons.length === 1 ? reasons[0] : "several" };
   }
@@ -6092,6 +6104,7 @@ export default function PrintPage() {
         // Says which job it is doing: there is nothing to change yet when the
         // recipe came in without a photo.
         label={shown ? "Photo" : "Add photo"}
+        proMarked={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
         className="recipe-page-toolbar__photo"
         onOpenChange={notePhotoPickerOpen}
         openSignal={photoDialogSignal(recipeId)}

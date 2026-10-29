@@ -295,6 +295,7 @@ export interface ProLocks {
   themeLocked: boolean;
   cardSizeLocked: boolean;
   fontScaleLocked: boolean;
+  photoLocked: boolean;
   multiRecipeLocked: boolean;
   multiRecipeAddLocked: boolean;
   proLocked: boolean;
@@ -316,6 +317,7 @@ export function computeProLocks({
   cardSize,
   recipeCount,
   fontScale = 1,
+  photoShown = false,
 }: {
   customerInfo: CustomerInfo | null;
   cookbookMode: boolean;
@@ -326,6 +328,9 @@ export function computeProLocks({
   /** The cook's text size (lib/fontScale.ts); anything but Normal is Pro on
       recipe cards. Previewing it is free, like a locked theme. */
   fontScale?: number;
+  /** Some recipe in the job prints with its photo. Photos on recipe cards are
+      Pro, on every theme; previewing one is free, like a locked theme. */
+  photoShown?: boolean;
 }): ProLocks {
   // Every theme (and every Pro-only card size) is included with the cookbook
   // purchase, so neither paywall applies while in cookbook mode — the
@@ -338,6 +343,8 @@ export function computeProLocks({
   const cardSizeLocked = !cookbookMode && !canUseCardSize(customerInfo, cardSize);
   // A cookbook includes every theme, and the text size with them.
   const fontScaleLocked = !cookbookMode && fontScale !== 1 && !hasProEntitlement(customerInfo);
+  // A cookbook includes photos too.
+  const photoLocked = !cookbookMode && photoShown && !hasProEntitlement(customerInfo);
   // Printing more than one recipe in one job (outside a cookbook, which has
   // its own separate purchase model) is its own Pro-gated capability — see
   // `hasMultiRecipeEntitlement`. There's nothing to preview here the way a
@@ -352,11 +359,11 @@ export function computeProLocks({
     !cookbookMode && recipeCount >= 1 && !hasMultiRecipeEntitlement(customerInfo);
   // All three resolve to the same purchase now (RecipePrinter Pro) — see
   // lib/purchaseAccess.ts's purchaseGate.
-  const proLocked = themeLocked || cardSizeLocked || fontScaleLocked || multiRecipeLocked;
-  return { themeLocked, cardSizeLocked, fontScaleLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked };
+  const proLocked = themeLocked || cardSizeLocked || fontScaleLocked || photoLocked || multiRecipeLocked;
+  return { themeLocked, cardSizeLocked, fontScaleLocked, photoLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked };
 }
 
-export type ProLockReason = "theme" | "card_size" | "font_size" | "multi_recipe";
+export type ProLockReason = "theme" | "card_size" | "font_size" | "photo" | "multi_recipe";
 
 /**
  * Whether an import arriving from a landing page or the homepage replaces the
@@ -405,7 +412,8 @@ export function captureImportStartsFresh({
  * app/print/page.tsx).
  */
 export function activeProLockReasons(
-  locks: Pick<ProLocks, "themeLocked" | "cardSizeLocked" | "fontScaleLocked" | "multiRecipeLocked">,
+  locks: Pick<ProLocks, "themeLocked" | "cardSizeLocked" | "fontScaleLocked" | "multiRecipeLocked"> &
+    Partial<Pick<ProLocks, "photoLocked">>,
   trigger: string,
 ): ProLockReason[] {
   if (trigger === "add_more_recipes" || trigger === "multi_recipe_found") return ["multi_recipe"];
@@ -413,6 +421,7 @@ export function activeProLockReasons(
   if (locks.themeLocked) reasons.push("theme");
   if (locks.cardSizeLocked) reasons.push("card_size");
   if (locks.fontScaleLocked) reasons.push("font_size");
+  if (locks.photoLocked) reasons.push("photo");
   if (locks.multiRecipeLocked) reasons.push("multi_recipe");
   return reasons;
 }
