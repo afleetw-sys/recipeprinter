@@ -86,3 +86,51 @@ test("every phone tool's label fits inside its tile, whatever its length", async
     expect(await overflowing(), `${width}px`).toEqual([]);
   }
 });
+
+/**
+ * A phone's cookbook offers the settings a desktop's does. The desktop panel's
+ * Page tab was hidden (PAGE_SETTINGS_TAB_ENABLED) but the phone kept its "This
+ * page" tile, so the two showed different books' worth of settings. Whichever
+ * way the flag is set, the phone's tile follows the desktop's tab.
+ *
+ * A book opened from session storage: no import, nothing billed.
+ */
+test("a phone offers a page's own settings only when the desktop panel does", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem("recipeprinter:queue:v1")) return;
+    const item = {
+      id: "r1",
+      method: "manual",
+      source: "test",
+      status: "ready",
+      title: "Lemon Chicken",
+      addedAt: 0,
+      recipe: { title: "Lemon Chicken", ingredients: [{ raw: "1 cup flour" }], instructions: [{ step: 1, text: "Mix." }] },
+    };
+    sessionStorage.setItem("recipeprinter:queue:v1", JSON.stringify([item]));
+    sessionStorage.setItem("recipeprinter:print-job:current:v1", JSON.stringify({ ids: ["r1"] }));
+    sessionStorage.setItem(
+      "recipeprinter:project-meta:v1",
+      JSON.stringify({ cookbookIntent: true, sections: [{ id: "s1", title: "Dinners", itemIds: ["r1"] }] }),
+    );
+  });
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/print");
+  await expect(page.locator(".cookbook-welcome")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".recipe-config-panel").filter({ visible: true })).toBeVisible();
+  const desktopHasPageTab = (await page.locator(".recipe-config-panel__tabs").filter({ visible: true }).count()) > 0;
+
+  await page.setViewportSize({ width: 390, height: 800 });
+  const tiles = page.locator('.recipe-mobile-toolbar__btn[aria-haspopup="dialog"]').filter({ visible: true });
+  await expect(tiles.first()).toBeVisible();
+  // Tap every tile that opens a sheet and see whether one is the page's own.
+  let phoneHasPageSheet = false;
+  for (let i = 0; i < (await tiles.count()); i++) {
+    await tiles.nth(i).click();
+    if (await page.locator(".recipe-page-sheet").filter({ visible: true }).count()) phoneHasPageSheet = true;
+    await page.keyboard.press("Escape");
+  }
+  expect(phoneHasPageSheet).toBe(desktopHasPageTab);
+});
