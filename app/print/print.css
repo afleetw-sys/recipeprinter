@@ -6240,6 +6240,31 @@ textarea.recipe-page-fields__input {
 .image-picker__close {
   flex: 0 0 auto;
 }
+/* A free recipe card: photos are Pro. The line offering it sits on top, and
+   everything under it shows what Pro adds, greyed and not pressable. */
+.image-picker__upgrade {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 14px 0 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--cp-line);
+  border-radius: 12px;
+}
+.image-picker__upgrade p {
+  margin: 0;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body);
+  font-weight: 600;
+}
+.image-picker__locked {
+  opacity: 0.4;
+  filter: grayscale(1);
+  pointer-events: none;
+  user-select: none;
+}
 /* Per-recipe Photo dialog: placement (None/In-page/Full-page) sits above the
    source, so both live in one dialog. */
 .image-picker__placement {

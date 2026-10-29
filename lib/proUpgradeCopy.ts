@@ -81,7 +81,7 @@ const TITLE_BY_REASON: Record<ProLockReason, string> = {
   card_size: "Print 4×6 recipe cards",
   theme: "Print with this premium theme",
   font_size: "Print with this text size",
-  photo: "Print with the recipe photo",
+  photo: "Add photos to your recipe cards",
 };
 
 export interface ProUpgradeCopy {

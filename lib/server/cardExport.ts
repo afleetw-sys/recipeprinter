@@ -16,7 +16,8 @@ import type { PrintCardSize, QueueItem, RecipePrintTemplate, Section } from "@/t
  *
  * A download is the same thing as a print, so it sits behind the same Pro
  * locks (`computeProLocks` in lib/recipePrinterPurchases): a premium theme,
- * the 4×6 size, a text size, a recipe photo, and more than one recipe. The print page already
+ * the 4×6 size, a text size, and more than one recipe. Photos are Pro too,
+ * but a free card simply draws none, so they are dropped here, not refused. The print page already
  * refuses those in the browser; this is the same answer where the browser
  * cannot change it. Cookbooks have their own paid export and are refused here.
  */
@@ -49,19 +50,12 @@ function cardSections(value: unknown): Section[] | null {
   return sections;
 }
 
-/** Whether any card prints its photo: the same rule as `photoOnFor` in
-    lib/usePrintSheets, for recipe cards (a per-recipe choice over the setting,
-    and only when there is a photo). */
-function printsAPhoto(sections: Section[], itemPlacements: unknown, photosOn: boolean): boolean {
-  const placements = isRecord(itemPlacements) ? itemPlacements : {};
-  return sections.some((section) =>
-    section.items.some((item) => {
-      if (!item.recipe?.image) return false;
-      const placement = placements[item.id];
-      const own = isRecord(placement) && typeof placement.showPhoto === "boolean" ? placement.showPhoto : undefined;
-      return own ?? photosOn;
-    }),
-  );
+/** The same recipes with no photo to draw: a free card prints none. */
+function withoutPhotos(sections: Section[]): Section[] {
+  return sections.map((section) => ({
+    ...section,
+    items: section.items.map((item) => (item.recipe ? { ...item, recipe: { ...item.recipe, image: undefined } } : item)),
+  }));
 }
 
 function safeFileName(value: unknown, output: ExportOutput): string {
@@ -105,7 +99,6 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
   if (isPremiumTemplate(template) && !pro && !ownsTheme) reasons.push("theme");
   if (isProOnlyCardSize(cardSize) && !pro) reasons.push("card_size");
   if (fontScale !== DEFAULT_FONT_SCALE && !pro) reasons.push("font_size");
-  if (!pro && printsAPhoto(sections, project.itemPlacements, settings.showPhoto !== false)) reasons.push("photo");
   if (recipeCount > 1 && !pro) reasons.push("multi_recipe");
   if (reasons.length > 0) return { ok: false, kind: "locked", reasons };
 
@@ -123,7 +116,7 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
         kind: "printProject",
         createdAt: 0,
         updatedAt: 0,
-        sections,
+        sections: pro ? sections : withoutPhotos(sections),
         itemPlacements: isRecord(project.itemPlacements)
           ? (project.itemPlacements as ExportPayload["project"]["itemPlacements"])
           : undefined,
@@ -131,7 +124,10 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
           cardSize,
           template,
           doubleSided: settings.doubleSided !== false,
-          showPhoto: settings.showPhoto !== false,
+          // Photos on recipe cards are Pro; a recipe's own "In card" choice
+          // is in `itemPlacements`, so the free answer drops the photos
+          // themselves (`withoutPhotos`), not just this default.
+          showPhoto: pro && settings.showPhoto !== false,
           showSourceUrl: Boolean(settings.showSourceUrl),
           showDescription: settings.showDescription !== false,
           showCutLines: Boolean(settings.showCutLines),

@@ -5,7 +5,6 @@ import { Dialog } from "@/components/Dialog";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { IconButton } from "@/components/Controls";
 import { CheckIcon, ICON_SIZE, ImageIcon, UploadIcon, XIcon } from "@/components/icons";
-import { ProBadge } from "@/components/ProBadge";
 import { friendlyPhotoUploadError } from "@/lib/friendlyErrors";
 import { partitionImageFiles } from "@/lib/imageImport";
 import { storePickedPhotoFile } from "@/lib/photoStorage";
@@ -46,7 +45,7 @@ export function ImagePicker({
   label = "Choose photo",
   className = "",
   hideTrigger = false,
-  proMarked = false,
+  onUpgrade,
 }: {
   current?: string;
   images: string[];
@@ -97,8 +96,9 @@ export function ImagePicker({
   /** No button of its own: the caller draws one in its own style and opens
       the dialog with `openSignal` (the settings panel's plain buttons). */
   hideTrigger?: boolean;
-  /** Crowns the trigger: printing a photo on a recipe card is Pro. */
-  proMarked?: boolean;
+  /** Photos are Pro here and this account is not: the dialog still opens,
+      greyed out, under a line offering the upgrade this calls. */
+  onUpgrade?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const onOpenChangeRef = useRef(onOpenChange);
@@ -254,8 +254,10 @@ export function ImagePicker({
      anywhere is both the forgiving target and the guard against that, which is
      why they stay attached even when `addFiles` will refuse the file. */
   const addFilesRef = useRef(addFiles);
+  const lockedRef = useRef(Boolean(onUpgrade));
   useEffect(() => {
     addFilesRef.current = addFiles;
+    lockedRef.current = Boolean(onUpgrade);
   });
   useEffect(() => {
     if (!open) {
@@ -269,7 +271,7 @@ export function ImagePicker({
     const carriesFiles = (event: DragEvent) =>
       Array.from(event.dataTransfer?.types ?? []).includes("Files");
     const onEnter = (event: DragEvent) => {
-      if (!carriesFiles(event)) return;
+      if (!carriesFiles(event) || lockedRef.current) return;
       depth += 1;
       setDragging(true);
     };
@@ -288,7 +290,7 @@ export function ImagePicker({
       event.preventDefault();
       depth = 0;
       setDragging(false);
-      if (!carriesFiles(event)) return;
+      if (!carriesFiles(event) || lockedRef.current) return;
       void addFilesRef.current(event.dataTransfer?.files ?? null);
     };
     window.addEventListener("dragenter", onEnter);
@@ -370,7 +372,7 @@ export function ImagePicker({
   // flow; MobileSheet takes both as `title`/`subtitle` and `footer` props
   // instead, so it can render the same grabber-handle sheet chrome every
   // other mobile picker already uses (Size, Book, Themes).
-  const pickerBody = (
+  const pickerContent = (
     <>
       {/* Painted over the whole screen, matching the window-wide drop target
           below, so the dialog says plainly that letting go here works. */}
@@ -509,6 +511,30 @@ export function ImagePicker({
         {error && <p className="field-error" role="alert">{error}</p>}
     </>
   );
+  // Locked: the whole dialog shows, so the cook sees what Pro adds, but
+  // greyed and inert under the line that offers it.
+  const pickerBody = onUpgrade ? (
+    <>
+      <div className="image-picker__upgrade">
+        <p>Photos on recipe cards come with Pro.</p>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => {
+            setOpen(false);
+            onUpgrade();
+          }}
+        >
+          Upgrade to Pro
+        </button>
+      </div>
+      <div className="image-picker__locked" inert aria-hidden>
+        {pickerContent}
+      </div>
+    </>
+  ) : (
+    pickerContent
+  );
 
   const gridFooter = gridMode ? (
     <div className="image-picker__footer">
@@ -542,7 +568,6 @@ export function ImagePicker({
       >
         <ImageIcon size={ICON_SIZE.md} />
         <span>{label}</span>
-        {proMarked && <ProBadge variant="inline" label={false} tooltip="Recipe photos are Pro" />}
       </button>
       )}
 
