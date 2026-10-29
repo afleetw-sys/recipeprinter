@@ -6,13 +6,13 @@ import {
 } from "@/lib/premiumTemplates";
 
 describe("cookbookTemplateFor", () => {
-  it("opens a book on bistro when the cook is on the plain Classic default", () => {
+  it("opens a book on bistro when the cook is on the plain Document default", () => {
     expect(DEFAULT_COOKBOOK_TEMPLATE).toBe("bistro");
-    expect(cookbookTemplateFor("classic")).toBe("bistro");
+    expect(cookbookTemplateFor("document")).toBe("bistro");
   });
 
   it("is the same every time, whatever came before it", () => {
-    const seen = new Set(Array.from({ length: 10 }, () => cookbookTemplateFor("classic")));
+    const seen = new Set(Array.from({ length: 10 }, () => cookbookTemplateFor("document")));
     expect(seen.size).toBe(1);
   });
 
@@ -22,6 +22,6 @@ describe("cookbookTemplateFor", () => {
   });
 
   it("always hands back a premium theme, so the book never opens locked", () => {
-    expect(isPremiumTemplate(cookbookTemplateFor("classic"))).toBe(true);
+    expect(isPremiumTemplate(cookbookTemplateFor("document"))).toBe(true);
   });
 });

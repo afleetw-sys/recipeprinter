@@ -23,6 +23,7 @@ const BENEFIT_BY_REASON: Record<ProLockReason, string> = {
   card_size: "4×6 recipe cards",
   theme: "All premium themes",
   font_size: "Change the text size on your cards",
+  photo: "Recipe photos on your cards",
 };
 const COOKBOOK_BENEFIT = "20% off your first cookbook";
 // Not "no watermark": the free line is a quiet footer, not a watermark, and
@@ -80,6 +81,7 @@ const TITLE_BY_REASON: Record<ProLockReason, string> = {
   card_size: "Print 4×6 recipe cards",
   theme: "Print with this premium theme",
   font_size: "Print with this text size",
+  photo: "Add photos to your recipe cards",
 };
 
 export interface ProUpgradeCopy {

@@ -54,6 +54,7 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
       Outside the window it is in the collapsed "Seasonal themes" group. */
   featured?: ThemeSeason;
 }> = [
+  { id: "document", label: "Document", detail: "Plain black type, like a printed document" },
   { id: "classic", label: "Classic", detail: "Cornflower and slate, clean cookbook card" },
   { id: "pantry", label: "Pantry", detail: "Fine ruled lines with small ingredient sketches" },
   { id: "typewriter", label: "Typewriter", detail: "Black and white, typed on an index card" },

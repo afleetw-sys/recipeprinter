@@ -1,4 +1,5 @@
 import { expect, test } from "./guarded";
+import { firestoreRunning, grantPro, returningUser, signIn } from "./account";
 import { longRecipe, openPrint } from "./printOverflow";
 
 /**
@@ -44,7 +45,12 @@ const recipes = {
 
 for (const size of ["card-6x4", "letter"]) {
   for (const [name, recipe] of Object.entries(recipes)) {
-    test(`Halloween's hand sits under the photo: ${name}, ${size}`, async ({ page }) => {
+    test(`Halloween's hand sits under the photo: ${name}, ${size}`, async ({ page, request }) => {
+      // Photos on recipe cards are Pro, so the card is a Pro subscriber's.
+      test.skip(!(await firestoreRunning(request)), "needs the Firestore emulator, which needs Java");
+      const { email, uid } = await returningUser(request);
+      await grantPro(request, uid);
+      await signIn(page, email);
       await openPrint(page, size, recipe, "halloween");
       const card = page.locator("#recipe-page-deck .recipe-card").first();
       await expect(card.locator(".recipe-card__photo-img")).toBeVisible();

@@ -356,7 +356,10 @@ export function computeProLocks({
   return { themeLocked, cardSizeLocked, fontScaleLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked };
 }
 
-export type ProLockReason = "theme" | "card_size" | "font_size" | "multi_recipe";
+/** The photo dialog's upgrade button on a free recipe card. */
+export const PHOTO_UPGRADE_TRIGGER = "card_photo";
+
+export type ProLockReason = "theme" | "card_size" | "font_size" | "photo" | "multi_recipe";
 
 /**
  * Whether an import arriving from a landing page or the homepage replaces the
@@ -409,6 +412,9 @@ export function activeProLockReasons(
   trigger: string,
 ): ProLockReason[] {
   if (trigger === "add_more_recipes" || trigger === "multi_recipe_found") return ["multi_recipe"];
+  // A free card draws no photo, so nothing is locked at Print; the photo
+  // dialog's own upgrade button is the one way to ask.
+  if (trigger === PHOTO_UPGRADE_TRIGGER) return ["photo"];
   const reasons: ProLockReason[] = [];
   if (locks.themeLocked) reasons.push("theme");
   if (locks.cardSizeLocked) reasons.push("card_size");

@@ -101,7 +101,7 @@ export function MenuSelect<T extends string>({
   );
 }
 
-function MenuRow({
+export function MenuRow({
   selected,
   onSelect,
   children,

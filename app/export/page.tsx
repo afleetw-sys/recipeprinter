@@ -364,7 +364,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   );
 
   const cardSize = isPrintCardSize(settings.cardSize) ? settings.cardSize : "letter";
-  const template = isRecipePrintTemplate(settings.template) ? settings.template : "classic";
+  const template = isRecipePrintTemplate(settings.template) ? settings.template : "document";
   // Measured here again, in the renderer's own browser, so the book's text
   // size has to reach this measurement as well as the pages: handed only to
   // the pages, the book would be paginated at Normal and printed bigger.

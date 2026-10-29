@@ -14,9 +14,10 @@ import type { PrintCardSize, QueueItem, RecipePrintTemplate, Section } from "@/t
  * What `/api/card-export` will render, worked out from the request and from
  * what the caller owns.
  *
- * A download is the same thing as a print, so it sits behind the same three
- * Pro locks (`computeProLocks` in lib/recipePrinterPurchases): a premium
- * theme, the 4×6 size, and more than one recipe. The print page already
+ * A download is the same thing as a print, so it sits behind the same Pro
+ * locks (`computeProLocks` in lib/recipePrinterPurchases): a premium theme,
+ * the 4×6 size, a text size, and more than one recipe. Photos are Pro too,
+ * but a free card simply draws none, so they are dropped here, not refused. The print page already
  * refuses those in the browser; this is the same answer where the browser
  * cannot change it. Cookbooks have their own paid export and are refused here.
  */
@@ -47,6 +48,14 @@ function cardSections(value: unknown): Section[] | null {
     sections.push({ id: typeof section.id === "string" ? section.id : "cards", title: "", items });
   }
   return sections;
+}
+
+/** The same recipes with no photo to draw: a free card prints none. */
+function withoutPhotos(sections: Section[]): Section[] {
+  return sections.map((section) => ({
+    ...section,
+    items: section.items.map((item) => (item.recipe ? { ...item, recipe: { ...item.recipe, image: undefined } } : item)),
+  }));
 }
 
 function safeFileName(value: unknown, output: ExportOutput): string {
@@ -80,7 +89,7 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
   const cardSize: PrintCardSize =
     PRINT_CARD_SIZE_OPTIONS.find((option) => option.id === settings.cardSize)?.id ?? "letter";
   const template: RecipePrintTemplate =
-    RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === settings.template)?.id ?? "classic";
+    RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === settings.template)?.id ?? "document";
 
   const fontScale = normalizeFontScale(settings.fontScale);
 
@@ -107,7 +116,7 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
         kind: "printProject",
         createdAt: 0,
         updatedAt: 0,
-        sections,
+        sections: pro ? sections : withoutPhotos(sections),
         itemPlacements: isRecord(project.itemPlacements)
           ? (project.itemPlacements as ExportPayload["project"]["itemPlacements"])
           : undefined,
@@ -115,7 +124,10 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
           cardSize,
           template,
           doubleSided: settings.doubleSided !== false,
-          showPhoto: settings.showPhoto !== false,
+          // Photos on recipe cards are Pro; a recipe's own "In card" choice
+          // is in `itemPlacements`, so the free answer drops the photos
+          // themselves (`withoutPhotos`), not just this default.
+          showPhoto: pro && settings.showPhoto !== false,
           showSourceUrl: Boolean(settings.showSourceUrl),
           showDescription: settings.showDescription !== false,
           showCutLines: Boolean(settings.showCutLines),

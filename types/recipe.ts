@@ -20,6 +20,7 @@
 export type PrintCardSize = "letter" | "card-6x4";
 
 export type RecipePrintTemplate =
+  | "document"
   | "classic"
   | "heirloom"
   | "bistro"

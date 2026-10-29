@@ -47,7 +47,7 @@ async function openDeck(page: Page) {
     { item: { id: "button-1", method: "text", source: "test", status: "ready", title: recipe.title, recipe } },
   );
   // Letter, a free theme, one recipe: nothing between this click and printing.
-  await page.goto("/print?ids=button-1&size=letter&template=classic");
+  await page.goto("/print?ids=button-1&size=letter&template=document");
   await expect(page.locator("#recipe-page-deck .recipe-card").first()).toBeVisible();
   await expect(page.locator(".recipe-print-shell--measuring")).toHaveCount(0);
 
