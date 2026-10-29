@@ -46,7 +46,7 @@ import type { RecipeCardEditTarget } from "@/lib/recipeCardLayout";
 import { formatRecipeTime } from "@/lib/time";
 import { composeNote } from "@/lib/recipeNote";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
-import { TextSizeControl } from "@/components/print/TextSizeControl";
+import { TextSizeControl, TextSizeMenu } from "@/components/print/TextSizeControl";
 import { PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
 import { deckIndexForPendingSlot, landingForRecipe } from "@/lib/pendingDeckSlot";
@@ -6278,6 +6278,7 @@ export default function PrintPage() {
    */
   useBackDismiss(Boolean(mobileDrawer), () => setMobileDrawer(null));
   const [sizeMenuOpen, setSizeMenuOpen] = useState(false);
+  const textSizeTileRef = useRef<HTMLButtonElement | null>(null);
 
 
   /* `<= 1`, not `=== 1`: an empty deck behaves exactly like a one-page deck —
@@ -7413,15 +7414,16 @@ export default function PrintPage() {
                 Every recipe
               </button>
             )}
-            {/* Text size, last: its own sheet on recipe cards. A cookbook keeps
-                it in its Every recipe sheet, with the rest of what every page
-                carries. */}
+            {/* Text size, last: on recipe cards the sizes open right against
+                the tile. A cookbook keeps it in its Every recipe sheet, with
+                the rest of what every page carries. */}
             {!cookbookMode && (
               <button
+                ref={textSizeTileRef}
                 type="button"
                 className={`recipe-mobile-toolbar__btn ${bookSheet === "text" ? "is-active" : ""}`}
-                aria-pressed={bookSheet === "text"}
-                aria-haspopup="dialog"
+                aria-expanded={bookSheet === "text"}
+                aria-haspopup="menu"
                 onClick={() => {
                   setSizeMenuOpen(false);
                   setStructureSheetOpen(false);
@@ -7572,22 +7574,14 @@ export default function PrintPage() {
           )}
         </MobileSheet>
 
-        {!cookbookMode && (
-          <MobileSheet
-            open={bookSheet === "text"}
+        {!cookbookMode && bookSheet === "text" && (
+          <TextSizeMenu
+            anchorRef={textSizeTileRef}
             onClose={() => setBookSheet(null)}
-            title="Text size"
-            className="recipe-structure-sheet"
-          >
-            <div className="recipe-structure-sheet__settings">
-              <TextSizeControl
-                fontScale={fontScale}
-                setFontScale={setFontScale}
-                proMarked={!hasProEntitlement(effectiveCustomerInfo.customerInfo)}
-                labelHidden
-              />
-            </div>
-          </MobileSheet>
+            fontScale={fontScale}
+            setFontScale={setFontScale}
+            proMarked={!hasProEntitlement(effectiveCustomerInfo.customerInfo)}
+          />
         )}
       </main>
     </>
