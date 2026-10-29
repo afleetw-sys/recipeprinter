@@ -15,12 +15,13 @@ export const PREMIUM_TEMPLATE_ENTITLEMENTS = {
   keepsake: "template_keepsake",
 } as const satisfies Partial<Record<RecipePrintTemplate, string>>;
 
-// Premium themes added after single-theme sales were retired. They were never
-// sold on their own, so they have no entitlement of their own: RecipePrinter
+// Premium themes added after single-theme sales were retired, plus Classic,
+// which was the free default until 2026-10-29 (Document replaced it). They were
+// never sold on their own, so they have no entitlement of their own: RecipePrinter
 // Pro (or a cookbook's own unlock) is the only way in. Kept out of the map
 // above on purpose, because every id in it is mirrored from RevenueCat and
 // treated as a lifetime grant (lib/proAccessFallback.ts).
-const PRO_ONLY_TEMPLATES = ["typewriter", "garden", "quilt", "market", "supper", "diner", "poster", "christmas", "fall", "halloween"] as const satisfies readonly RecipePrintTemplate[];
+const PRO_ONLY_TEMPLATES = ["classic", "typewriter", "garden", "quilt", "market", "supper", "diner", "poster", "christmas", "fall", "halloween"] as const satisfies readonly RecipePrintTemplate[];
 
 export type PremiumRecipePrintTemplate =
   | keyof typeof PREMIUM_TEMPLATE_ENTITLEMENTS
@@ -36,13 +37,13 @@ export function isPremiumTemplate(
 }
 
 // A fresh cookbook opens on a premium theme (unlocked inside the book, so no
-// paywall) so the first view looks designed rather than the plain Classic
+// paywall) so the first view looks designed rather than the plain Document
 // default. Always the same one: it used to rotate through the four per device,
 // which made a cook's first book depend on what they had made before.
 export const DEFAULT_COOKBOOK_TEMPLATE: PremiumRecipePrintTemplate = "bistro";
 
 /** The theme a new cookbook opens on: a premium theme the cook already chose is
-    respected, anything else (the Classic default) becomes the default book theme. */
+    respected, anything else (the free Document default) becomes the default book theme. */
 export function cookbookTemplateFor(current: RecipePrintTemplate): PremiumRecipePrintTemplate {
   return isPremiumTemplate(current) ? current : DEFAULT_COOKBOOK_TEMPLATE;
 }

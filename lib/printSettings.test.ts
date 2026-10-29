@@ -28,9 +28,9 @@ describe("initialRecipePrintTemplate", () => {
     expect(initialRecipePrintTemplate("heirloom")).toBe("heirloom");
   });
 
-  it("falls back to classic for a missing or unknown value", () => {
-    expect(initialRecipePrintTemplate(null)).toBe("classic");
-    expect(initialRecipePrintTemplate("not-a-template")).toBe("classic");
+  it("falls back to document for a missing or unknown value", () => {
+    expect(initialRecipePrintTemplate(null)).toBe("document");
+    expect(initialRecipePrintTemplate("not-a-template")).toBe("document");
   });
 });
 

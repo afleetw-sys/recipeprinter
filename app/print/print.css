@@ -8513,11 +8513,11 @@ textarea.recipe-card__toc-title {
 /* The footer is pinned to the bottom of the fixed-size card (see
    `.recipe-card__footer`'s `position: absolute` above) so content must leave
    room for it instead of running underneath. Reserved only where the footer
-   actually renders: letter's classic/pantry always show the brand line, and
+   actually renders: letter's document/pantry always show the brand line, and
    any face with a source link re-shows the footer regardless of size or
    template — both mirror the display-toggling rules below. Back/continued
    faces never show a footer, so they get the full card to themselves. */
-.recipe-template--classic .recipe-card:not(.recipe-card--back):not(.recipe-card--continued) .recipe-card__cols,
+.recipe-template--document .recipe-card:not(.recipe-card--back):not(.recipe-card--continued) .recipe-card__cols,
 .recipe-template--pantry .recipe-card:not(.recipe-card--back):not(.recipe-card--continued) .recipe-card__cols,
 .recipe-card:has(.recipe-card__footer-source) .recipe-card__cols {
   padding-bottom: var(--recipe-card-footer-reserve);
@@ -8536,7 +8536,7 @@ textarea.recipe-card__toc-title {
 .recipe-print-page--pro .recipe-card__footer:not(:has(.recipe-card__footer-source)) {
   display: none;
 }
-.recipe-print-page--pro :is(.recipe-template--classic, .recipe-template--pantry) .recipe-card:not(:has(.recipe-card__footer-source)) .recipe-card__cols {
+.recipe-print-page--pro :is(.recipe-template--document, .recipe-template--pantry) .recipe-card:not(:has(.recipe-card__footer-source)) .recipe-card__cols {
   padding-bottom: 0;
 }
 
@@ -8548,6 +8548,7 @@ textarea.recipe-card__toc-title {
    showing on a premium card when the user turns it on, just on its own rather
    than alongside branding that was never designed in. */
 :is(
+  .recipe-template--classic,
   .recipe-template--heirloom,
   .recipe-template--bistro,
   .recipe-template--counter,
@@ -8567,6 +8568,7 @@ textarea.recipe-card__toc-title {
 }
 
 :is(
+  .recipe-template--classic,
   .recipe-template--heirloom,
   .recipe-template--bistro,
   .recipe-template--counter,
@@ -8586,6 +8588,7 @@ textarea.recipe-card__toc-title {
 }
 
 :is(
+  .recipe-template--classic,
   .recipe-template--heirloom,
   .recipe-template--bistro,
   .recipe-template--counter,
@@ -9961,6 +9964,62 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--typewriter .recipe-card__step-number::after {
+  content: ".";
+}
+
+/* ── Document ──────────────────────────────────────────────────────────────
+   The free theme: a recipe typed into a word processor. Black type on white,
+   one plain sans face, bold sentence-case headings, ordinary bullets and
+   "1." step numbers. No colour, no frame, no art: the designed looks are
+   Pro (Classic moved there on 2026-10-29). */
+.recipe-template--document {
+  --recipe-bg: #ffffff;
+  --recipe-ink: #111111;
+  --recipe-muted: #444444;
+  --recipe-accent: #111111;
+  --recipe-accent-2: #111111;
+  --recipe-line: rgba(0, 0, 0, 0.16);
+  --recipe-step-bg: #ffffff;
+  --recipe-footer: #6b6b6b;
+  --recipe-bullet: var(--recipe-ink);
+  --recipe-radius: 0;
+  --recipe-title-font: var(--font-dm-sans), Arial, sans-serif;
+  font-family: var(--font-dm-sans), Arial, sans-serif;
+}
+
+.recipe-template--document .recipe-card__header {
+  border-bottom: 0;
+}
+
+.recipe-template--document .recipe-card__title {
+  letter-spacing: 0;
+}
+
+.recipe-template--document .recipe-card__label,
+.recipe-template--document .recipe-card__section-title {
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.recipe-template--document .recipe-card__label {
+  font-size: calc(var(--recipe-card-label-size) * 1.25);
+}
+
+.recipe-template--document .recipe-card__step-number {
+  display: inline;
+  width: auto;
+  height: auto;
+  margin-top: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--recipe-ink);
+  font-size: inherit;
+  font-weight: 400;
+  line-height: inherit;
+}
+
+.recipe-template--document .recipe-card__step-number::after {
   content: ".";
 }
 

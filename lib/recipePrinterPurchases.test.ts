@@ -80,7 +80,7 @@ describe("hasTemplateEntitlement / hasProEntitlement", () => {
 
 describe("hasTemplateOrProEntitlement", () => {
   test("a free theme is never locked, with or without any entitlement", () => {
-    expect(hasTemplateOrProEntitlement(null, "classic")).toBe(true);
+    expect(hasTemplateOrProEntitlement(null, "document")).toBe(true);
     expect(hasTemplateOrProEntitlement(NO_ENTITLEMENTS, "pantry")).toBe(true);
   });
 

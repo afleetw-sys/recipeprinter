@@ -86,7 +86,7 @@ export function initialPrintCardSize(value: string | null): PrintCardSize {
 }
 
 export function initialRecipePrintTemplate(value: string | null): RecipePrintTemplate {
-  return isRecipePrintTemplate(value) ? value : "classic";
+  return isRecipePrintTemplate(value) ? value : "document";
 }
 
 interface PrintSettingsState {

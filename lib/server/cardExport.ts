@@ -80,7 +80,7 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
   const cardSize: PrintCardSize =
     PRINT_CARD_SIZE_OPTIONS.find((option) => option.id === settings.cardSize)?.id ?? "letter";
   const template: RecipePrintTemplate =
-    RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === settings.template)?.id ?? "classic";
+    RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === settings.template)?.id ?? "document";
 
   const fontScale = normalizeFontScale(settings.fontScale);
 
