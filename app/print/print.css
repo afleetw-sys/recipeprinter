@@ -10001,7 +10001,8 @@ textarea.recipe-card__toc-title {
 
 /* ── Document ──────────────────────────────────────────────────────────────
    The free theme: a recipe typed into a word processor. Black type on white,
-   one plain sans face, bold sentence-case headings, ordinary bullets and
+   Times New Roman (Tinos, its metric clone, where a device has no Times),
+   bold sentence-case headings, ordinary bullets and
    "1." step numbers. No colour, no frame, no art: the designed looks are
    Pro (Classic moved there on 2026-10-29). */
 .recipe-template--document {
@@ -10015,8 +10016,8 @@ textarea.recipe-card__toc-title {
   --recipe-footer: #6b6b6b;
   --recipe-bullet: var(--recipe-ink);
   --recipe-radius: 0;
-  --recipe-title-font: var(--font-dm-sans), Arial, sans-serif;
-  font-family: var(--font-dm-sans), Arial, sans-serif;
+  --recipe-title-font: "Times New Roman", Times, var(--font-tinos), serif;
+  font-family: "Times New Roman", Times, var(--font-tinos), serif;
 }
 
 .recipe-template--document .recipe-card__header {
