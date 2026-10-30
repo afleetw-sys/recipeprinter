@@ -110,14 +110,21 @@ test("the page toolbar stays on screen while a zoomed-in page is scrolled", asyn
     const box = await deck.boundingBox();
     if (!box) throw new Error("no deck");
 
-    // Pinch in (ctrl+wheel is the trackpad pinch) until the page is well past
-    // the deck in both directions.
+    // Pinch in (ctrl+wheel is the trackpad pinch) until the page is past the
+    // deck in both directions.
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.keyboard.down("Control");
     for (let i = 0; i < 12; i += 1) await page.mouse.wheel(0, -100);
     await page.keyboard.up("Control");
+    // The page itself, not the deck: how many pages the recipe fills depends
+    // on the theme's face, and a second page made the deck tall on its own.
     await expect
-      .poll(() => deck.evaluate((el) => el.scrollHeight > el.clientHeight * 2 && el.scrollWidth > el.clientWidth))
+      .poll(() =>
+        deck.evaluate((el) => {
+          const slide = el.querySelector<HTMLElement>(".recipe-page-slide.is-active");
+          return !!slide && slide.offsetHeight > el.clientHeight && el.scrollWidth > el.clientWidth;
+        }),
+      )
       .toBe(true);
 
     const where = [
