@@ -158,6 +158,7 @@ import {
   computeProLocks,
   hasMultiRecipeEntitlement,
   hasProEntitlement,
+  hasTemplateOrProEntitlement,
   type ProLockReason,
 } from "@/lib/recipePrinterPurchases";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
@@ -210,6 +211,7 @@ import {
   isRecipePrintTemplate,
   usePrintSettingsPersistence,
 } from "@/lib/printSettings";
+import { useFreeThemeOnOpen } from "@/lib/useFreeThemeOnOpen";
 import { DEFAULT_FONT_SCALE, normalizeFontScale, type FontScale } from "@/lib/fontScale";
 import { openingPageFor } from "@/lib/frontMatterPage";
 import type {
@@ -3284,6 +3286,13 @@ export default function PrintPage() {
   useEffect(() => {
     setCardPhotosAllowed(hasProBrandless || (customerInfoStatus !== "ok" && importsKnownUnlimited()));
   }, [hasProBrandless, customerInfoStatus]);
+  const pickTemplate = useFreeThemeOnOpen({
+    template,
+    setTemplate,
+    status: customerInfoStatus,
+    unlocked: hasTemplateOrProEntitlement(effectiveCustomerInfo.customerInfo, template),
+    cookbookMode,
+  });
 
   // Resumes a print that was waiting on Pro checkout when a reload tore the
   // page down mid-purchase — see `rememberPendingPrintAfterCheckout`'s doc
@@ -7237,7 +7246,7 @@ export default function PrintPage() {
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setBookShowSourceUrl}
           template={template}
-          setTemplate={setTemplate}
+          setTemplate={pickTemplate}
           customerInfo={effectiveCustomerInfo.customerInfo}
           setToastMessage={setToastMessage}
           hasPrintSettingsFields={hasPrintSettingsFields}
