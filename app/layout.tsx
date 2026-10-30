@@ -84,6 +84,19 @@ const courierPrime = localFont({
   preload: false,
 });
 
+// The Document theme's fallback: Times New Roman itself is Microsoft's and can't
+// be bundled, so a device without it (Android, the PDF renderer) gets this
+// metric clone, which breaks every line in the same place.
+const tinos = localFont({
+  src: [
+    { path: "./fonts/tinos/tinos-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/tinos/tinos-latin-700-normal.woff2", weight: "700", style: "normal" },
+  ],
+  variable: "--font-tinos",
+  display: "swap",
+  preload: false,
+});
+
 // Garden's faces: a Garamond title over a soft rounded sans.
 const cormorant = localFont({
   src: "./fonts/cormorant-garamond/cormorant-garamond-latin-700-normal.woff2",
@@ -295,7 +308,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${berkshireSwash.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${fraunces.variable} ${figtree.variable} ${creepster.variable} ${lora.variable} ${karla.variable}`}
+      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${tinos.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${berkshireSwash.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${fraunces.variable} ${figtree.variable} ${creepster.variable} ${lora.variable} ${karla.variable}`}
     >
       <body>
         <TranslatedPageGuard />
