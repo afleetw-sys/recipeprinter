@@ -173,7 +173,10 @@ export function useCookbookPurchase({
       onSignInRequired();
       return;
     }
-    if (!revenueCatUserId) {
+    // Signed in is not enough on its own: until `identifyRecipePrinterCustomer`
+    // lands (just after sign-in, or never if linking failed) the session is
+    // still the guest id, and a purchase there is the same orphaned one.
+    if (revenueCatUserId !== cookPilotUser.uid) {
       showToast("Purchases aren't ready yet. Wait a moment, then try again.");
       return;
     }
