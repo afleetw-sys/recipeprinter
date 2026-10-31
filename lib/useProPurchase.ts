@@ -5,16 +5,17 @@ import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { track, truncateReason } from "@/lib/analytics";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
-import { hasProEntitlement, purchaseRecipePrinterPro } from "@/lib/recipePrinterPurchases";
+import { currentAccountUser, hasProEntitlement, purchaseRecipePrinterPro } from "@/lib/recipePrinterPurchases";
 import { cachedReferralSummary, referralPurchaseProps } from "@/lib/referral";
 import { announceProWelcome } from "@/lib/proWelcome";
 import type { ProBillingCycle } from "@/lib/proProduct";
 
 interface UseProPurchaseOptions {
-  /** Shared with usePremiumTemplatePurchase — this hook reuses that hook's
-      already-established RevenueCat identity rather than configuring the SDK
-      a second time. */
-  revenueCatUserId: string | null;
+  /** Links the account to RevenueCat before checkout when the page's own link
+      hasn't landed (`usePremiumTemplatePurchase`'s `linkAccountCustomer`),
+      returning its fresh purchases, or null when nothing needed linking.
+      Omitted where the account's uid is already the only identity in play. */
+  linkCustomer?: (uid: string) => Promise<CustomerInfo | null>;
   customerInfo: CustomerInfo | null;
   /** Pushes the fresh `CustomerInfo` a purchase returns into the shared state
       `usePremiumTemplatePurchase` owns, so every other gate (theme lock, card
@@ -52,7 +53,7 @@ export type ProPurchaseOutcome = "purchased" | "already-active" | "cancelled" | 
  * assuming printing is now unconditionally safe.
  */
 export function useProPurchase({
-  revenueCatUserId,
+  linkCustomer,
   customerInfo,
   setCustomerInfo,
   markCustomerInfoVerified,
@@ -79,12 +80,6 @@ export function useProPurchase({
      *  the server has confirmed — there is nothing to double-charge against. */
     { allowWhileActive = false }: { allowWhileActive?: boolean } = {},
   ) {
-    if (!revenueCatUserId) {
-      showToast("Purchases aren't ready yet. Wait a moment, then try again.");
-      onSettled("failed");
-      return;
-    }
-
     if (!allowWhileActive && hasProEntitlement(customerInfo)) {
       onSettled("already-active");
       return;
@@ -92,18 +87,35 @@ export function useProPurchase({
 
     setProBusy(true);
     clearToast();
+    // Bought as the account's uid, linked first, never whatever id the page
+    // held: nothing while sign-in's link was still out (or for good once it
+    // failed), or the guest id when checkout fires straight after signing in
+    // from the plan dialog, whose render hasn't seen the account yet.
+    let customerId: string | undefined;
     try {
-      track("purchase_started", { product: "pro", cycle, customerId: revenueCatUserId });
+      const account = cookPilotUser ?? (await currentAccountUser());
+      // Every caller signs the cook in before offering checkout.
+      if (!account) {
+        onSettled("failed");
+        return;
+      }
+      customerId = account.uid;
+      const linkedInfo = linkCustomer ? await linkCustomer(customerId) : null;
+      if (!allowWhileActive && hasProEntitlement(linkedInfo)) {
+        onSettled("already-active");
+        return;
+      }
+      track("purchase_started", { product: "pro", cycle, customerId });
       const result = await purchaseRecipePrinterPro({
-        userId: revenueCatUserId,
-        email: cookPilotUser?.email,
+        userId: customerId,
+        email: account.email,
         cycle,
       });
       setCustomerInfo(result.customerInfo);
       markCustomerInfoVerified();
 
       if (result.cancelled) {
-        track("purchase_cancelled", { product: "pro", cycle, customerId: revenueCatUserId });
+        track("purchase_cancelled", { product: "pro", cycle, customerId });
         onSettled("cancelled");
         return;
       }
@@ -111,7 +123,7 @@ export function useProPurchase({
       track("purchase_completed", {
         product: "pro",
         cycle,
-        customerId: revenueCatUserId,
+        customerId,
         ...referralPurchaseProps(cachedReferralSummary()),
       });
 
@@ -132,7 +144,7 @@ export function useProPurchase({
         product: "pro",
         cycle,
         reason: truncateReason(error),
-        customerId: revenueCatUserId,
+        customerId,
       });
       showErrorToast(friendlyPurchaseSetupError(error));
       onSettled("failed");

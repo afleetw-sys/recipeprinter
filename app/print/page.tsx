@@ -3186,6 +3186,7 @@ export default function PrintPage() {
   }, [cookPilotUser?.uid]);
 
   const {
+    linkAccountCustomer,
     revenueCatUserId,
     customerInfo,
     customerInfoStatus,
@@ -3198,8 +3199,6 @@ export default function PrintPage() {
     cookPilotUser,
     cookPilotAuthReady,
     template,
-    showToast,
-    showErrorToast,
   });
 
   // The live RevenueCat read whenever it succeeded — even confirming
@@ -3335,7 +3334,7 @@ export default function PrintPage() {
     cookbookPurchaseBusy,
     purchaseCookbookAndContinue,
   } = useCookbookPurchase({
-    revenueCatUserId,
+    linkCustomer: linkAccountCustomer,
     cookPilotUser,
     cookbookMode: Boolean(projectMeta.meta.cookbookMode),
     projectId: cookbookProjectId,
@@ -3353,10 +3352,14 @@ export default function PrintPage() {
     onCookbookGranted: (usedDiscount) => {
       if (usedDiscount) setFirstCookbookGrantedAt(Date.now());
     },
+    onSignInRequired: () => {
+      setCookPilotLoginReason("purchase");
+      setShowCookPilotLogin(true);
+    },
   });
 
   const { proBusy, purchaseProAndContinue } = useProPurchase({
-    revenueCatUserId,
+    linkCustomer: linkAccountCustomer,
     customerInfo,
     setCustomerInfo,
     markCustomerInfoVerified,
@@ -3663,20 +3666,15 @@ export default function PrintPage() {
       // No interstitial paywall dialog — a click on Export goes straight to
       // checkout, which states the price and collects the email itself (same
       // shape as the Pro branch below). A completed purchase re-runs
-      // handlePrint, which now clears the gate and exports. Signed-out
-      // buying is intentionally allowed; the unlock is backed up to Firestore
-      // as soon as the buyer has an account (at purchase if signed in, else on
-      // the adopt-on-sign-in path).
+      // handlePrint, which now clears the gate and exports. Signed out, the
+      // hook asks for sign-in instead of opening checkout.
       void purchaseCookbookAndContinue((freshPurchase) => {
         if (freshPurchase) setCookbookJustPurchased(true);
         // Buying a book is asking us to keep it.
         //
         // Saving is otherwise something a cook asks for by pressing Save, and
         // that is right for a book they are still deciding about — but nobody
-        // pays $19.99 for a copy that lives in one browser. Signed out there is
-        // no account to put it in; the unlock is recorded locally and the book
-        // is filed to the device, and the adopt-on-sign-in path carries both
-        // across when an account turns up.
+        // pays $19.99 for a copy that lives in one browser.
         if (freshPurchase && cookPilotUser) void handleSaveProject();
         void handlePrint();
       });

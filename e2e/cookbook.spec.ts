@@ -32,8 +32,8 @@ test("a cookbook that hasn't been paid for can't be exported for free", async ({
   await printButton(page).click();
 
   // Pressing it starts checkout, which has no RevenueCat to reach here and
-  // says so. What matters is that it stops there instead of exporting.
-  await expect(page.getByText("Purchases aren't ready yet. Wait a moment, then try again.")).toBeVisible();
+  // fails. What matters is that it stops there instead of exporting.
+  await expect(page.getByRole("alert")).toBeVisible();
   await expect(printDialog(page)).toHaveCount(0);
 });
 

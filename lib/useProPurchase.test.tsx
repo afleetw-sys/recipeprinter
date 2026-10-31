@@ -32,11 +32,10 @@ function customer(proActive: boolean): CustomerInfo {
 function setup(proActive: boolean) {
   return renderHook(() =>
     useProPurchase({
-      revenueCatUserId: "user-1",
       customerInfo: customer(proActive),
       setCustomerInfo: vi.fn(),
       markCustomerInfoVerified: vi.fn(),
-      cookPilotUser: null,
+      cookPilotUser: { uid: "user-1", email: null } as never,
       showToast: vi.fn(),
       clearToast: vi.fn(),
       onFreshPurchase: vi.fn(),
@@ -73,5 +72,51 @@ describe("useProPurchase", () => {
     await act(() => result.current.purchaseProAndContinue("monthly", onSettled, { allowWhileActive: true }));
     expect(purchaseRecipePrinterPro).toHaveBeenCalledTimes(1);
     expect(onSettled).toHaveBeenCalledWith("purchased");
+  });
+});
+
+/**
+ * Signed in is enough to buy. RevenueCat used to be asked as whatever id the
+ * page held: nothing while the sign-in link was still out (or for good once it
+ * failed, a dead "Purchases aren't ready yet" button), or the guest id when a
+ * plan was chosen signed out and checkout fired straight after signing in.
+ * Now checkout links the account first and buys as its uid, and the account's
+ * own entitlement still stops a second subscription.
+ */
+describe("useProPurchase as a signed-in account", () => {
+  const account = { uid: "uid-1", email: "cook@example.com" } as never;
+
+  function setupLinking(linked: CustomerInfo) {
+    const linkCustomer = vi.fn().mockResolvedValue(linked);
+    const hook = renderHook(() =>
+      useProPurchase({
+        customerInfo: null,
+        setCustomerInfo: vi.fn(),
+        markCustomerInfoVerified: vi.fn(),
+        cookPilotUser: account,
+        linkCustomer,
+        showToast: vi.fn(),
+        clearToast: vi.fn(),
+        onFreshPurchase: vi.fn(),
+      }),
+    );
+    return { ...hook, linkCustomer };
+  }
+
+  test("links the account, then buys as it, unless linking shows Pro already", async () => {
+    purchaseRecipePrinterPro.mockResolvedValue({ customerInfo: customer(true), cancelled: false });
+    const unlinked = setupLinking(customer(false));
+    const onSettled = vi.fn();
+    await act(() => unlinked.result.current.purchaseProAndContinue("monthly", onSettled));
+    expect(unlinked.linkCustomer).toHaveBeenCalledWith("uid-1");
+    expect(purchaseRecipePrinterPro).toHaveBeenCalledWith(expect.objectContaining({ userId: "uid-1" }));
+    expect(onSettled).toHaveBeenCalledWith("purchased");
+
+    purchaseRecipePrinterPro.mockClear();
+    const alreadyPro = setupLinking(customer(true));
+    const onSettledAgain = vi.fn();
+    await act(() => alreadyPro.result.current.purchaseProAndContinue("monthly", onSettledAgain));
+    expect(purchaseRecipePrinterPro).not.toHaveBeenCalled();
+    expect(onSettledAgain).toHaveBeenCalledWith("already-active");
   });
 });

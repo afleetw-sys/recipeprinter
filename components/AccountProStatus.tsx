@@ -154,7 +154,6 @@ export function AccountProStatus({ user }: { user: User }) {
   }
 
   const { proBusy, purchaseProAndContinue } = useProPurchase({
-    revenueCatUserId: uid,
     customerInfo: effectiveProInfo.customerInfo,
     setCustomerInfo: setProCustomerInfo,
     markCustomerInfoVerified: () => {
