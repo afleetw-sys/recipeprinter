@@ -41,6 +41,9 @@ interface UseCookbookPurchaseOptions {
   /** Buy was pressed signed out. Checkout doesn't open; the caller asks the
       cook to sign in, and the next press buys. */
   onSignInRequired: () => void;
+  /** Links the account to RevenueCat before checkout when sign-in's own link
+      hasn't landed (`usePremiumTemplatePurchase`'s `linkAccountCustomer`). */
+  linkCustomer: (uid: string) => Promise<unknown>;
 }
 
 /**
@@ -71,6 +74,7 @@ export function useCookbookPurchase({
   onFreshPurchase,
   onCookbookGranted,
   onSignInRequired,
+  linkCustomer,
 }: UseCookbookPurchaseOptions) {
   const [cookbookPurchaseBusy, setCookbookPurchaseBusy] = useState(false);
   const [projectUnlocked, setProjectUnlocked] = useState(() =>
@@ -169,10 +173,9 @@ export function useCookbookPurchase({
       onSignInRequired();
       return;
     }
-    // Bought as the account's own id, never whatever the session holds: until
-    // `identifyRecipePrinterCustomer` lands (just after sign-in, or never if
-    // linking failed) that is still the guest id, and a purchase there is the
-    // same orphaned one. `getPurchases` switches to the account on the way in.
+    // Bought as the account's own id, linked first, never whatever the session
+    // holds: until sign-in's link lands (or for good if it failed) that is
+    // still the guest id, and a purchase there is the same orphaned one.
     const customerId = cookPilotUser.uid;
 
     setCookbookPurchaseBusy(true);
@@ -188,6 +191,7 @@ export function useCookbookPurchase({
         return;
       }
 
+      await linkCustomer(customerId);
       track("purchase_started", {
         product: "cookbook",
         customerId,

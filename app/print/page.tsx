@@ -3186,6 +3186,7 @@ export default function PrintPage() {
   }, [cookPilotUser?.uid]);
 
   const {
+    linkAccountCustomer,
     revenueCatUserId,
     customerInfo,
     customerInfoStatus,
@@ -3198,8 +3199,6 @@ export default function PrintPage() {
     cookPilotUser,
     cookPilotAuthReady,
     template,
-    showToast,
-    showErrorToast,
   });
 
   // The live RevenueCat read whenever it succeeded — even confirming
@@ -3335,6 +3334,7 @@ export default function PrintPage() {
     cookbookPurchaseBusy,
     purchaseCookbookAndContinue,
   } = useCookbookPurchase({
+    linkCustomer: linkAccountCustomer,
     cookPilotUser,
     cookbookMode: Boolean(projectMeta.meta.cookbookMode),
     projectId: cookbookProjectId,
@@ -3359,7 +3359,7 @@ export default function PrintPage() {
   });
 
   const { proBusy, purchaseProAndContinue } = useProPurchase({
-    revenueCatUserId,
+    linkCustomer: linkAccountCustomer,
     customerInfo,
     setCustomerInfo,
     markCustomerInfoVerified,

@@ -62,7 +62,6 @@ export function useStandaloneProUpgrade(
   const [proJustActivated, setProJustActivated] = useState(false);
 
   const { proBusy, purchaseProAndContinue } = useProPurchase({
-    revenueCatUserId: uid,
     customerInfo,
     setCustomerInfo,
     markCustomerInfoVerified: () => undefined,

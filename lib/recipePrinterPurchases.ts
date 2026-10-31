@@ -10,6 +10,7 @@ import {
   isPremiumTemplate,
   type PremiumRecipePrintTemplate,
 } from "@/lib/premiumTemplates";
+import type { User } from "firebase/auth";
 import { isProductionRuntime } from "@/lib/appEnvironment";
 import { localStore } from "@/lib/storage";
 import {
@@ -512,9 +513,34 @@ async function loadRecipePrinterPrices(purchases: Purchases): Promise<void> {
  * had a RevenueCat customer record (i.e. purchases made under this account
  * elsewhere) versus being brand new.
  */
-export async function identifyRecipePrinterCustomer(
-  uid: string,
-): Promise<{ customerInfo: CustomerInfo; wasCreated: boolean; alreadyLinked: boolean }> {
+/**
+ * The signed-in account at this moment, never the anonymous session. A
+ * checkout fired straight after signing in runs from a render that hasn't seen
+ * the new user yet; Firebase already has.
+ */
+export async function currentAccountUser(): Promise<User | null> {
+  const { getFirebaseAuth } = await import("@/lib/firebase/client");
+  const user = getFirebaseAuth().currentUser;
+  return user && !user.isAnonymous ? user : null;
+}
+
+type IdentifyResult = { customerInfo: CustomerInfo; wasCreated: boolean; alreadyLinked: boolean };
+
+// One link per account at a time. Sign-in starts one and a checkout pressed
+// straight after starts another; two `identifyUser` calls racing on the same
+// guest customer is not something to leave to chance.
+let identifying: { uid: string; promise: Promise<IdentifyResult> } | null = null;
+
+export function identifyRecipePrinterCustomer(uid: string): Promise<IdentifyResult> {
+  if (identifying?.uid === uid) return identifying.promise;
+  const promise = identifyOnce(uid).finally(() => {
+    if (identifying?.promise === promise) identifying = null;
+  });
+  identifying = { uid, promise };
+  return promise;
+}
+
+async function identifyOnce(uid: string): Promise<IdentifyResult> {
   const alreadyLinked = hasLinkedRecipePrinterCustomer(uid);
 
   // A reload clears the in-memory SDK instance but not the anonymous buyer ID.

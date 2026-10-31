@@ -43,6 +43,7 @@ function setup(cookPilotUser: User | null) {
       onFreshPurchase: vi.fn(),
       onCookbookGranted: vi.fn(),
       onSignInRequired,
+      linkCustomer: vi.fn().mockResolvedValue(null),
     }),
   );
   return { ...hook, onSignInRequired };

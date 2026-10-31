@@ -23,9 +23,6 @@ interface UsePremiumTemplatePurchaseOptions {
   cookPilotUser: User | null;
   cookPilotAuthReady: boolean;
   template: RecipePrintTemplate;
-  showToast: (message: string) => void;
-  /** For a failure the cook needs to notice; falls back to `showToast`. */
-  showErrorToast?: (message: string) => void;
 }
 
 /**
@@ -41,8 +38,6 @@ export function usePremiumTemplatePurchase({
   cookPilotUser,
   cookPilotAuthReady,
   template,
-  showToast,
-  showErrorToast = showToast,
 }: UsePremiumTemplatePurchaseOptions) {
   const [revenueCatUserId, setRevenueCatUserId] = useState<string | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
@@ -160,9 +155,11 @@ export function usePremiumTemplatePurchase({
       })
       .catch((error) => {
         if (cancelled || identityRequestRef.current !== requestId) return;
+        // Quietly: nothing here needs the cook. Access falls back to the
+        // Firestore mirror, and the next checkout links again before it buys
+        // (`linkAccountCustomer`).
         console.warn("RecipePrinter: could not link CookPilot account to purchases", error);
         setCustomerInfoStatus("error");
-        showErrorToast("You're signed in, but we couldn't restore your purchases. Check your connection and try again.");
       });
     return () => {
       cancelled = true;
@@ -234,7 +231,28 @@ export function usePremiumTemplatePurchase({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revenueCatUserId, proEndsAtMs]);
 
+  /**
+   * Links the signed-in account before a checkout when sign-in's own link never
+   * landed (still out, or failed), so nothing is ever bought as the guest id: a
+   * cookbook bought there was orphaned (2026-10-31), and Pro must not be sold
+   * before the account's own Pro is known. Returns the account's fresh
+   * purchases when it had to link, or null when this session already is the
+   * account and the caller's `customerInfo` is current.
+   */
+  async function linkAccountCustomer(uid: string): Promise<CustomerInfo | null> {
+    if (revenueCatUserIdRef.current === uid) return null;
+    const { customerInfo: linkedInfo } = await identifyRecipePrinterCustomer(uid);
+    // Supersedes the sign-in effect's request; it shares this same link.
+    identityRequestRef.current += 1;
+    setRevenueCatIdentity(uid);
+    setCustomerInfo(linkedInfo);
+    setCustomerInfoStatus("ok");
+    setCustomerInfoLastVerifiedAtMs(Date.now());
+    return linkedInfo;
+  }
+
   return {
+    linkAccountCustomer,
     revenueCatUserId,
     customerInfo,
     customerInfoStatus,
