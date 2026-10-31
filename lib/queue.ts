@@ -19,6 +19,7 @@ import { QUEUE_RECOVERY_OWNER_KEY, stampRecoveryOwner } from "@/lib/recoveryMirr
 import { localStore, sessionStore } from "@/lib/storage";
 import { releaseImportPreview, setImportPreview } from "@/lib/importPreviews";
 import { fitBookRoom } from "@/lib/cookbookFreeSize";
+import { historyIsRecording, noteHistoryCommit, resetHistory, withoutHistory } from "@/lib/editHistory";
 import { storeImportedPhoto, withImportedPhoto } from "@/lib/importedPhoto";
 import { noteCardImport } from "@/lib/referral";
 import {
@@ -659,6 +660,7 @@ export function useQueue() {
     // Costs one assignment and, at most, one timer. The serialize and the two
     // storage writes happen on the throttle — see QUEUE_PERSIST_THROTTLE_MS.
     scheduleQueueWrite(next);
+    noteHistoryCommit("queue", next);
   }, []);
 
   /**
@@ -689,11 +691,13 @@ export function useQueue() {
       if (picked.length > 0) {
         const revived = await reviveLocalPhotoUrls(picked);
         if (revived.size > 0) {
-          commit(
-            itemsRef.current.map((item) => {
-              const url = item.recipe?.image ? revived.get(item.recipe.image) : undefined;
-              return url && item.recipe ? { ...item, recipe: { ...item.recipe, image: url } } : item;
-            }),
+          withoutHistory(() =>
+            commit(
+              itemsRef.current.map((item) => {
+                const url = item.recipe?.image ? revived.get(item.recipe.image) : undefined;
+                return url && item.recipe ? { ...item, recipe: { ...item.recipe, image: url } } : item;
+              }),
+            ),
           );
         }
       }
@@ -715,11 +719,13 @@ export function useQueue() {
       if (resolved.size === 0) return;
       // Applied against the live list, not the one passed in — the cook may
       // well have added something while IndexedDB was being read.
-      commit(
-        itemsRef.current.map((item) => {
-          const url = resolved.get(item.id);
-          return url && item.recipe ? { ...item, recipe: { ...item.recipe, image: url } } : item;
-        }),
+      withoutHistory(() =>
+        commit(
+          itemsRef.current.map((item) => {
+            const url = resolved.get(item.id);
+            return url && item.recipe ? { ...item, recipe: { ...item.recipe, image: url } } : item;
+          }),
+        ),
       );
     },
     [commit],
@@ -761,6 +767,9 @@ export function useQueue() {
       flushQueueWrites();
     };
   }, []);
+
+  /** Undo and redo's way in (lib/editHistory), alongside `commit` itself. */
+  const getItems = useCallback(() => itemsRef.current, []);
 
   const focusItem = useCallback(
     (id: string) => {
@@ -813,7 +822,7 @@ export function useQueue() {
         changed = true;
         return { ...item, recipe: { ...item.recipe, image: url } };
       });
-      if (changed) commit(next);
+      if (changed) withoutHistory(() => commit(next));
     },
     [commit],
   );
@@ -1361,7 +1370,8 @@ export function useQueue() {
     (id: string) => {
       const going = itemsRef.current.find((it) => it.id === id);
       commit(itemsRef.current.filter((it) => it.id !== id));
-      if (going) releaseLocalPhotos([going], itemsRef.current);
+      // Undo can bring the recipe back, so its photo stays while it might.
+      if (going && !historyIsRecording()) releaseLocalPhotos([going], itemsRef.current);
     },
     [commit],
   );
@@ -1369,6 +1379,7 @@ export function useQueue() {
   const clear = useCallback(() => {
     const going = itemsRef.current;
     setFocusedItemId(null);
+    resetHistory();
     commit([]);
     releaseLocalPhotos(going, itemsRef.current);
   }, [commit]);
@@ -1379,6 +1390,7 @@ export function useQueue() {
       // A project saved mid-import carries `parsing` items no parse is behind.
       const next = settleInterruptedParses(incoming);
       setFocusedItemId(next[0]?.id ?? null);
+      resetHistory();
       commit(next);
       // The project may be older than this document — any photo it is still
       // holding locally needs a URL that works here.
@@ -1405,6 +1417,8 @@ export function useQueue() {
     remove,
     clear,
     replaceAll,
+    getItems,
+    restoreItems: commit,
     focusItem,
     updateRecipe,
     configureImportGates,

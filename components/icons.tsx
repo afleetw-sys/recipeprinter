@@ -153,6 +153,21 @@ export const ArrowRightIcon = (p: IconProps) => (
   </Base>
 );
 
+/* A hooked arrow turning back on itself: undo; mirrored, redo. */
+export const UndoIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M9 14L4 9l5-5" />
+    <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+  </Base>
+);
+
+export const RedoIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M15 14l5-5-5-5" />
+    <path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />
+  </Base>
+);
+
 /* Two arrows swapping places: "move this to the other chapter". A folder read
    as filing the whole project away and a single arrow as navigation; the pair
    says the thing changes which group it is in. */
