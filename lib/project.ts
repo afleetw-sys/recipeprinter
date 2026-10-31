@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { asDerived, noteHistoryCommit, resetHistory, withoutHistory } from "@/lib/editHistory";
 import type {
   CookbookFrontMatter,
   CookbookPresetId,
@@ -774,6 +775,7 @@ export function useProjectMeta() {
     metaRef.current = next;
     setMeta(next);
     writeMeta(next);
+    noteHistoryCommit("meta", next);
   }, []);
 
   const update = useCallback(
@@ -794,7 +796,7 @@ export function useProjectMeta() {
     let alive = true;
     void reviveLocalPhotoUrls(urls).then((revived) => {
       if (!alive || revived.size === 0) return;
-      update((current) => withRevivedUrls(current, revived));
+      withoutHistory(() => update((current) => withRevivedUrls(current, revived)));
     });
     return () => {
       alive = false;
@@ -808,7 +810,8 @@ export function useProjectMeta() {
       const nextSections = metaSectionsFromFull(sections);
       const current = metaRef.current;
       if (!sectionsMetaEqual(current.sections, nextSections)) {
-        commit({ ...current, sections: nextSections });
+        // Recomputed from the recipes, so it belongs to whatever edit moved them.
+        asDerived(() => commit({ ...current, sections: nextSections }));
       }
     },
     [commit],
@@ -1315,6 +1318,7 @@ export function useProjectMeta() {
    */
   const startNewProject = useCallback(
     (options: { cookbook?: boolean; introduced?: boolean } = {}) => {
+      resetHistory();
       commit({
         ...EMPTY_META,
         projectId: uid(),
@@ -1346,17 +1350,22 @@ export function useProjectMeta() {
   const adoptUploadedPhotoUrls = useCallback(
     (uploaded: ReadonlyMap<string, string>) => {
       if (uploaded.size === 0) return;
-      update((current) => withRevivedUrls(current, uploaded));
+      withoutHistory(() => update((current) => withRevivedUrls(current, uploaded)));
     },
     [update],
   );
 
   const replaceMeta = useCallback(
     (next: ProjectMeta) => {
+      resetHistory();
       commit(normalizeProjectMeta(next));
     },
     [commit],
   );
+
+  /** Undo and redo's way in (lib/editHistory): the plain commit, so a step
+      persists and autosaves like the edit it reverses. */
+  const getMeta = useCallback(() => metaRef.current, []);
 
   /** Updates save identity without replacing newer edits made while an async
       save was in flight. */
@@ -1437,6 +1446,8 @@ export function useProjectMeta() {
     startNewProject,
     clearCookbookIntent,
     replaceMeta,
+    getMeta,
+    restoreMeta: commit,
     adoptUploadedPhotoUrls,
     setProjectId,
   };

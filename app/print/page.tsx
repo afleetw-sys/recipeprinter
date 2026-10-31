@@ -214,6 +214,8 @@ import { useFreeThemeOnOpen } from "@/lib/useFreeThemeOnOpen";
 import type { FontScale } from "@/lib/fontScale";
 import type { PhotoScale } from "@/lib/photoScale";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
+import { asDerived, latestHistoryStep, undoEdit, useEditHistory } from "@/lib/editHistory";
+import { HistoryControls } from "@/components/print/HistoryControls";
 import { openingPageFor } from "@/lib/frontMatterPage";
 import type {
   CookbookFrontMatter,
@@ -455,7 +457,7 @@ export default function PrintPage() {
    * out at once, and it does not stop to ask — so the way back is on the toast
    * that reports it, held until that toast goes.
    */
-  const [lineDeleteUndo, setLineDeleteUndo] = useState<(() => void) | null>(null);
+  const [lineDeleteUndo, setLineDeleteUndo] = useState<{ step: number | null; undo: () => void } | null>(null);
   /** The toast reporting that a library commit held more than one recipe but
       this account can only add one (see `queue.configureImportGates`) carries
       an Upgrade action — held until that toast goes, same as `lineDeleteUndo`. */
@@ -2552,7 +2554,10 @@ export default function PrintPage() {
    */
   const reportLinesDeleted = useCallback(
     ({ count, undo }: { count: number; undo: () => void }) => {
-      setLineDeleteUndo(() => undo);
+      // The delete is an ordinary undo step. The toast's Undo takes that step
+      // while it is still the latest, so Redo can bring the lines back out;
+      // the editor's own restore covers the case where something came after.
+      setLineDeleteUndo({ step: latestHistoryStep(), undo });
       setToastTone("info");
       setToastMessage(`Deleted ${count} ${count === 1 ? "line" : "lines"}`);
     },
@@ -2777,7 +2782,8 @@ export default function PrintPage() {
     if (railSortMode !== "title") return;
     const sorted = sortSectionsByTitle(projectMeta.meta.sections, recipeTitleForId);
     if (!sectionOrderChanged(projectMeta.meta.sections, sorted)) return;
-    projectMeta.setSectionStructure(sorted);
+    // Follows from the edit that moved or renamed a recipe, and undoes with it.
+    asDerived(() => projectMeta.setSectionStructure(sorted));
     // `recipeTitleForId` reads `items`, so that is the dependency that carries
     // a rename; it is redeclared each render and cannot be one itself.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3344,6 +3350,66 @@ export default function PrintPage() {
     unlocked: hasTemplateOrProEntitlement(effectiveCustomerInfo.customerInfo, template),
     cookbookMode,
   });
+
+  /*
+   * Undo and redo (lib/editHistory). One history across the book's meta, the
+   * recipes, the print job and the print settings, because a single edit
+   * often touches several: undoing half of one would leave a book that never
+   * existed. Recording waits until the project has finished arriving (loaded,
+   * any cookbook build done), and starting again resets it. Reattaching to a
+   * saved document doesn't gate it: that changes the save identity, not the
+   * book, and signing in mid-edit shouldn't throw the history away.
+   */
+  const jobIdsRef = useRef(jobIds);
+  jobIdsRef.current = jobIds;
+  const historySettings = useMemo(
+    () => ({ cardSize, template, doubleSided, showCutLines, showPhoto, showSourceUrl, showDescription, fontScale }),
+    [cardSize, template, doubleSided, showCutLines, showPhoto, showSourceUrl, showDescription, fontScale],
+  );
+  const historySettingsRef = useRef(historySettings);
+  historySettingsRef.current = historySettings;
+  const editHistory = useEditHistory({
+    ready:
+      projectMeta.hydrated &&
+      queue.hydrated &&
+      jobIds !== null &&
+      !projectLoading &&
+      !bookHiddenUntilBuilt &&
+      !cookbookBuilding,
+    job: jobIds,
+    settings: historySettings,
+    adapters: {
+      meta: { read: projectMeta.getMeta, write: (next) => projectMeta.restoreMeta(next as ProjectMeta) },
+      queue: { read: queue.getItems, write: (next) => queue.restoreItems(next as QueueItem[]) },
+      job: { read: () => jobIdsRef.current ?? [], write: (next) => setJobIds(next as string[]) },
+      settings: {
+        read: () => historySettingsRef.current,
+        write: (value) => {
+          const next = value as typeof historySettings;
+          const current = historySettingsRef.current;
+          if (next.cardSize !== current.cardSize) setCardSize(next.cardSize);
+          // Through the picker's own setter, so a theme put back by undo
+          // counts as chosen (see useFreeThemeOnOpen).
+          if (next.template !== current.template) pickTemplate(next.template);
+          if (next.doubleSided !== current.doubleSided) setDoubleSided(next.doubleSided);
+          if (next.showCutLines !== current.showCutLines) setShowCutLines(next.showCutLines);
+          if (next.showPhoto !== current.showPhoto) setShowPhoto(next.showPhoto);
+          if (next.showSourceUrl !== current.showSourceUrl) setShowSourceUrl(next.showSourceUrl);
+          if (next.showDescription !== current.showDescription) setShowDescription(next.showDescription);
+          if (next.fontScale !== current.fontScale) setFontScale(next.fontScale);
+        },
+      },
+    },
+  });
+  const historyControls = (size: "header" | "compact") => (
+    <HistoryControls
+      canUndo={editHistory.canUndo}
+      canRedo={editHistory.canRedo}
+      onUndo={editHistory.undo}
+      onRedo={editHistory.redo}
+      size={size}
+    />
+  );
 
   // Resumes a print that was waiting on Pro checkout when a reload tore the
   // page down mid-purchase — see `rememberPendingPrintAfterCheckout`'s doc
@@ -6999,6 +7065,7 @@ export default function PrintPage() {
                     extra "has a recipe" check here hid Save on an empty book
                     on desktop only, leaving a signed-out cook no way to keep
                     it. */}
+                {historyControls("header")}
                 {renderSaveControl("header")}
 
                 {/* Print is always here, as it is on a phone's bottom bar:
@@ -7203,6 +7270,7 @@ export default function PrintPage() {
         {/* Center: large preview of the selected page */}
         <PrintDeck
           saveControl={renderSaveControl()}
+          historyControls={historyControls("compact")}
           proUpgradeButton={renderProUpgradeButton()}
           singleRecipePrintView={singleRecipePrintView}
           cookbookView={cookbookView}
@@ -7833,7 +7901,8 @@ export default function PrintPage() {
               type="button"
               className="recipe-toast__action"
               onClick={() => {
-                lineDeleteUndo();
+                if (lineDeleteUndo.step !== null && latestHistoryStep() === lineDeleteUndo.step) undoEdit();
+                else lineDeleteUndo.undo();
                 setLineDeleteUndo(null);
                 setToastMessage(null);
               }}
