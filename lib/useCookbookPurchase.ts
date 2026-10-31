@@ -17,9 +17,6 @@ import {
 } from "@/lib/cookbookUnlocks";
 
 interface UseCookbookPurchaseOptions {
-  /** Shared with usePremiumTemplatePurchase so this doesn't re-run RevenueCat
-      identify/link/configure a second time for the same browser session. */
-  revenueCatUserId: string | null;
   cookPilotUser: User | null;
   cookbookMode: boolean;
   projectId: string;
@@ -64,7 +61,6 @@ interface UseCookbookPurchaseOptions {
  * check out with.
  */
 export function useCookbookPurchase({
-  revenueCatUserId,
   cookPilotUser,
   cookbookMode,
   projectId,
@@ -173,13 +169,11 @@ export function useCookbookPurchase({
       onSignInRequired();
       return;
     }
-    // Signed in is not enough on its own: until `identifyRecipePrinterCustomer`
-    // lands (just after sign-in, or never if linking failed) the session is
-    // still the guest id, and a purchase there is the same orphaned one.
-    if (revenueCatUserId !== cookPilotUser.uid) {
-      showToast("Purchases aren't ready yet. Wait a moment, then try again.");
-      return;
-    }
+    // Bought as the account's own id, never whatever the session holds: until
+    // `identifyRecipePrinterCustomer` lands (just after sign-in, or never if
+    // linking failed) that is still the guest id, and a purchase there is the
+    // same orphaned one. `getPurchases` switches to the account on the way in.
+    const customerId = cookPilotUser.uid;
 
     setCookbookPurchaseBusy(true);
     clearToast();
@@ -196,12 +190,12 @@ export function useCookbookPurchase({
 
       track("purchase_started", {
         product: "cookbook",
-        customerId: revenueCatUserId,
+        customerId,
         ...(usingDiscount ? { discount: "pro_first" as const } : {}),
       });
       const result = await purchaseRecipePrinterCookbook({
-        userId: revenueCatUserId,
-        email: cookPilotUser?.email,
+        userId: customerId,
+        email: cookPilotUser.email,
         projectId,
         discountEligible: usingDiscount,
       });
@@ -209,7 +203,7 @@ export function useCookbookPurchase({
       if (result.cancelled) {
         track("purchase_cancelled", {
           product: "cookbook",
-          customerId: revenueCatUserId,
+          customerId,
           ...(usingDiscount ? { discount: "pro_first" as const } : {}),
         });
         return;
@@ -217,7 +211,7 @@ export function useCookbookPurchase({
 
       track("purchase_completed", {
         product: "cookbook",
-        customerId: revenueCatUserId,
+        customerId,
         ...(usingDiscount ? { discount: "pro_first" as const } : {}),
       });
 
@@ -243,7 +237,7 @@ export function useCookbookPurchase({
       track("purchase_failed", {
         product: "cookbook",
         reason: truncateReason(error),
-        customerId: revenueCatUserId,
+        customerId,
         ...(usingDiscount ? { discount: "pro_first" as const } : {}),
       });
       showErrorToast(friendlyPurchaseSetupError(error));

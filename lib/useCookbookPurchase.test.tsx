@@ -12,9 +12,9 @@ import { useCookbookPurchase } from "./useCookbookPurchase";
  * that id into an alias instead, which sends no TRANSFER, so the buyer signed
  * in to "We couldn't find this cookbook on your account" with no way to pay
  * again (a customer report, 2026-10-31). Signed out, Buy now asks for sign-in
- * and never opens checkout. Signed in, checkout waits until RevenueCat has
- * switched to the account: just after sign-in (or when linking failed) the
- * session is still the guest id, and buying there is the same lost purchase.
+ * and never opens checkout. Signed in, checkout is always the account's own
+ * id: just after sign-in (or when linking failed) the session is still the
+ * guest id, and buying there is the same lost purchase.
  */
 
 const { purchaseRecipePrinterCookbook } = vi.hoisted(() => ({
@@ -30,13 +30,10 @@ vi.mock("@/lib/cookbookUnlocks", async (importOriginal) => ({
 }));
 vi.mock("@/lib/analytics", () => ({ track: vi.fn(), truncateReason: (e: unknown) => String(e) }));
 
-const GUEST = "$RCAnonymousID:0123456789abcdef0123456789abcdef";
-
-function setup(cookPilotUser: User | null, revenueCatUserId = cookPilotUser ? cookPilotUser.uid : GUEST) {
+function setup(cookPilotUser: User | null) {
   const onSignInRequired = vi.fn();
   const hook = renderHook(() =>
     useCookbookPurchase({
-      revenueCatUserId,
       cookPilotUser,
       cookbookMode: true,
       projectId: "book-1",
@@ -57,17 +54,12 @@ afterEach(() => {
 });
 
 describe("useCookbookPurchase", () => {
-  test("checkout needs an account: signed out asks for sign-in, signed in buys only as the account", async () => {
+  test("checkout needs an account: signed out asks for sign-in, signed in buys as the account", async () => {
     const signedOut = setup(null);
     const onUnlocked = vi.fn();
     await act(() => signedOut.result.current.purchaseCookbookAndContinue(onUnlocked));
     expect(purchaseRecipePrinterCookbook).not.toHaveBeenCalled();
     expect(signedOut.onSignInRequired).toHaveBeenCalledTimes(1);
-    expect(onUnlocked).not.toHaveBeenCalled();
-
-    const notLinkedYet = setup({ uid: "uid-1", email: "cook@example.com" } as User, GUEST);
-    await act(() => notLinkedYet.result.current.purchaseCookbookAndContinue(onUnlocked));
-    expect(purchaseRecipePrinterCookbook).not.toHaveBeenCalled();
     expect(onUnlocked).not.toHaveBeenCalled();
 
     purchaseRecipePrinterCookbook.mockResolvedValue({ cancelled: false });

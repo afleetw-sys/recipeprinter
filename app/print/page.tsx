@@ -3335,7 +3335,6 @@ export default function PrintPage() {
     cookbookPurchaseBusy,
     purchaseCookbookAndContinue,
   } = useCookbookPurchase({
-    revenueCatUserId,
     cookPilotUser,
     cookbookMode: Boolean(projectMeta.meta.cookbookMode),
     projectId: cookbookProjectId,
