@@ -17,9 +17,6 @@ import {
 } from "@/lib/cookbookUnlocks";
 
 interface UseCookbookPurchaseOptions {
-  /** Shared with usePremiumTemplatePurchase so this doesn't re-run RevenueCat
-      identify/link/configure a second time for the same browser session. */
-  revenueCatUserId: string | null;
   cookPilotUser: User | null;
   cookbookMode: boolean;
   projectId: string;
@@ -41,6 +38,12 @@ interface UseCookbookPurchaseOptions {
       Firestore round trip, so a second cookbook purchase started later in
       the same session can't also resolve the discounted product. */
   onCookbookGranted: (usedDiscount: boolean) => void;
+  /** Buy was pressed signed out. Checkout doesn't open; the caller asks the
+      cook to sign in, and the next press buys. */
+  onSignInRequired: () => void;
+  /** Links the account to RevenueCat before checkout when sign-in's own link
+      hasn't landed (`usePremiumTemplatePurchase`'s `linkAccountCustomer`). */
+  linkCustomer: (uid: string) => Promise<unknown>;
 }
 
 /**
@@ -61,7 +64,6 @@ interface UseCookbookPurchaseOptions {
  * check out with.
  */
 export function useCookbookPurchase({
-  revenueCatUserId,
   cookPilotUser,
   cookbookMode,
   projectId,
@@ -71,6 +73,8 @@ export function useCookbookPurchase({
   clearToast,
   onFreshPurchase,
   onCookbookGranted,
+  onSignInRequired,
+  linkCustomer,
 }: UseCookbookPurchaseOptions) {
   const [cookbookPurchaseBusy, setCookbookPurchaseBusy] = useState(false);
   const [projectUnlocked, setProjectUnlocked] = useState(() =>
@@ -161,10 +165,18 @@ export function useCookbookPurchase({
       directly — the caller may still have a locked premium template to
       resolve after this purchase clears. */
   async function purchaseCookbookAndContinue(onUnlocked: (freshPurchase: boolean) => void) {
-    if (!revenueCatUserId) {
-      showToast("Purchases aren't ready yet. Wait a moment, then try again.");
+    // Sold to an account only. A signed-out purchase was meant to reach the
+    // account on RevenueCat's TRANSFER at sign-in, but signing up aliases the
+    // anonymous id instead and no TRANSFER fires, so the buyer signed in to a
+    // book that said it was never bought.
+    if (!cookPilotUser) {
+      onSignInRequired();
       return;
     }
+    // Bought as the account's own id, linked first, never whatever the session
+    // holds: until sign-in's link lands (or for good if it failed) that is
+    // still the guest id, and a purchase there is the same orphaned one.
+    const customerId = cookPilotUser.uid;
 
     setCookbookPurchaseBusy(true);
     clearToast();
@@ -179,14 +191,15 @@ export function useCookbookPurchase({
         return;
       }
 
+      await linkCustomer(customerId);
       track("purchase_started", {
         product: "cookbook",
-        customerId: revenueCatUserId,
+        customerId,
         ...(usingDiscount ? { discount: "pro_first" as const } : {}),
       });
       const result = await purchaseRecipePrinterCookbook({
-        userId: revenueCatUserId,
-        email: cookPilotUser?.email,
+        userId: customerId,
+        email: cookPilotUser.email,
         projectId,
         discountEligible: usingDiscount,
       });
@@ -194,7 +207,7 @@ export function useCookbookPurchase({
       if (result.cancelled) {
         track("purchase_cancelled", {
           product: "cookbook",
-          customerId: revenueCatUserId,
+          customerId,
           ...(usingDiscount ? { discount: "pro_first" as const } : {}),
         });
         return;
@@ -202,7 +215,7 @@ export function useCookbookPurchase({
 
       track("purchase_completed", {
         product: "cookbook",
-        customerId: revenueCatUserId,
+        customerId,
         ...(usingDiscount ? { discount: "pro_first" as const } : {}),
       });
 
@@ -215,11 +228,9 @@ export function useCookbookPurchase({
       // that is exactly the hole this closed, since a write the client is
       // allowed to make is a write any signed-in user can make for free.
       //
-      // Signed-out buying is still allowed: the purchase is recorded against the
-      // anonymous RevenueCat id now and granted on the TRANSFER event when the
-      // buyer signs in. Either way the local marker set above carries access on
-      // this device in the meantime, so the buyer never sees "not purchased"
-      // while the webhook lands.
+      // The local marker set above carries access on this device in the
+      // meantime, so the buyer never sees "not purchased" while the webhook
+      // lands.
 
       onFreshPurchase();
       onCookbookGranted(usingDiscount);
@@ -230,7 +241,7 @@ export function useCookbookPurchase({
       track("purchase_failed", {
         product: "cookbook",
         reason: truncateReason(error),
-        customerId: revenueCatUserId,
+        customerId,
         ...(usingDiscount ? { discount: "pro_first" as const } : {}),
       });
       showErrorToast(friendlyPurchaseSetupError(error));
