@@ -32,8 +32,10 @@ test("a cookbook that hasn't been paid for can't be exported for free", async ({
   await printButton(page).click();
 
   // Pressing it starts checkout, which has no RevenueCat to reach here and
-  // fails. What matters is that it stops there instead of exporting.
-  await expect(page.getByRole("alert")).toBeVisible();
+  // fails. What matters is that it stops there instead of exporting. The
+  // app's own toast, not any alert: after an in-app navigation Next's route
+  // announcer is an alert too, and the bare role matched both.
+  await expect(page.getByRole("alert").and(page.locator(".recipe-toast"))).toBeVisible();
   await expect(printDialog(page)).toHaveCount(0);
 });
 
