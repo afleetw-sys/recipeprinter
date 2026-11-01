@@ -7,6 +7,11 @@ export type RailDragKind = "recipe" | "section";
 /** Where a live drag would land: a viewport-space indicator line + the commit. */
 export interface RailDropResolved {
   indicator: { top: number; left: number; width: number; height?: number };
+  /** The organizer's grid opens an empty tile-sized slot where the card will
+      land instead of drawing a line, and the other cards move aside for it,
+      the way a phone's home screen does: placed before or after the element
+      `anchor` (a selector inside the rail) selects. */
+  slot?: { anchor: string; place: "before" | "after" };
   commit: () => void;
 }
 
@@ -63,6 +68,9 @@ export function useRailDrag(
       Anything above one gets a count badge on the preview, so the cook can see
       the drag is bigger than the single card under the pointer. */
   countFor?: (kind: RailDragKind, id: string) => number,
+  /** The rail's own layout moved (the drop slot opened somewhere new), so any
+      cached measurements of its rows are stale. */
+  onLayoutChange?: () => void,
 ): RailDragController {
   const [dragging, setDragging] = useState<{ id: string; kind: RailDragKind } | null>(null);
   const resolveRef = useRef(resolve);
@@ -71,10 +79,19 @@ export function useRailDrag(
   onBeginRef.current = onBegin;
   const countForRef = useRef(countFor);
   countForRef.current = countFor;
+  const onLayoutChangeRef = useRef(onLayoutChange);
+  onLayoutChangeRef.current = onLayoutChange;
 
   const gesture = useRef<Gesture | null>(null);
   const preview = useRef<HTMLElement | null>(null);
   const line = useRef<HTMLElement | null>(null);
+  // The organizer's drop slot, and the carried card it stands in for (hidden
+  // while the slot shows, so the grid closes up behind it).
+  const slot = useRef<HTMLElement | null>(null);
+  const hiddenSource = useRef<HTMLElement | null>(null);
+  const settleTimer = useRef<number | null>(null);
+  // What the slot was opened for, which a pointer resting on the slot keeps.
+  const lastResolved = useRef<RailDropResolved | null>(null);
   const rafId = useRef<number | null>(null);
   const didDragRef = useRef(false);
 
@@ -96,10 +113,105 @@ export function useRailDrag(
       }
     };
 
-    const refreshIndicator = (g: Gesture) => {
+    /**
+     * Open the drop slot where the card will land, and slide the cards it
+     * displaces to their new places rather than letting them jump (FLIP: note
+     * where every card is, move the slot, then play each card from its old
+     * place to its new one). The rail's measurements are only marked stale
+     * once the cards have settled, so the drop target is still worked out
+     * against the layout the pointer was aimed at while they move.
+     */
+    const placeSlot = (g: Gesture, target: NonNullable<RailDropResolved["slot"]>) => {
+      const scroller = scrollRef.current;
+      // A card sits in its rail row (`data-rail-kind`), and the row is what
+      // the grid lays out, so the slot goes beside rows and the carried card's
+      // row is what hides.
+      const found = scroller?.querySelector<HTMLElement>(target.anchor);
+      const anchor = found?.closest<HTMLElement>("[data-rail-kind]") ?? found;
+      const source = g.node.closest<HTMLElement>("[data-rail-kind]") ?? g.node;
+      if (!scroller || !anchor?.parentNode) return false;
+      let el = slot.current;
+      if (!el) {
+        el = document.createElement("div");
+        el.className = "rail-drop-slot";
+        el.setAttribute("aria-hidden", "true");
+        el.style.height = `${g.node.getBoundingClientRect().height}px`;
+        slot.current = el;
+      }
+      const already =
+        target.place === "before"
+          ? el.nextElementSibling === anchor && el.parentNode === anchor.parentNode
+          : el.previousElementSibling === anchor && el.parentNode === anchor.parentNode;
+      if (already) return true;
+
+      const animate = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      // The cards themselves, not their rows: a row is only a wrapper
+      // (`display: contents` in the organizer), with no box to slide.
+      const cards = animate
+        ? Array.from(
+            scroller.querySelectorAll<HTMLElement>(
+              "[data-rail-recipe], [data-rail-section-head], [data-rail-section-add]",
+            ),
+          ).filter((card) => !source.contains(card))
+        : [];
+      const before = new Map(cards.map((card) => [card, card.getBoundingClientRect()]));
+
+      if (!hiddenSource.current && source.isConnected) {
+        source.style.display = "none";
+        hiddenSource.current = source;
+      }
+      anchor.parentNode.insertBefore(el, target.place === "before" ? anchor : anchor.nextSibling);
+
+      for (const card of cards) {
+        const from = before.get(card);
+        if (!from) continue;
+        const to = card.getBoundingClientRect();
+        const dx = from.left - to.left;
+        const dy = from.top - to.top;
+        if (!dx && !dy) continue;
+        card.style.transition = "none";
+        card.style.transform = `translate(${dx}px, ${dy}px)`;
+        requestAnimationFrame(() => {
+          card.style.transition = "transform 70ms ease-out";
+          card.style.transform = "";
+        });
+      }
+      if (settleTimer.current != null) window.clearTimeout(settleTimer.current);
+      settleTimer.current = window.setTimeout(
+        () => {
+          settleTimer.current = null;
+          for (const card of cards) card.style.transition = "";
+          onLayoutChangeRef.current?.();
+        },
+        animate ? 75 : 0,
+      );
+      return true;
+    };
+
+    /** The pointer is on the open slot: that is where the card goes, and the
+        slot must not move out from under it. Opening the slot shifts the cards
+        around it, so asking afresh from there can name a neighbour instead,
+        and the slot then jumped back and forth between two places. */
+    const overSlot = (g: Gesture) => {
+      const rect = slot.current?.isConnected ? slot.current.getBoundingClientRect() : null;
+      return Boolean(rect && g.x >= rect.left && g.x <= rect.right && g.y >= rect.top && g.y <= rect.bottom);
+    };
+
+    const resolveAt = (g: Gesture) => {
+      if (lastResolved.current?.slot && overSlot(g)) return lastResolved.current;
       const resolved = resolveRef.current(g.kind, g.id, g.x, g.y);
+      lastResolved.current = resolved;
+      return resolved;
+    };
+
+    const refreshIndicator = (g: Gesture) => {
+      const resolved = resolveAt(g);
       const el = line.current;
       if (!el) return;
+      if (resolved?.slot && placeSlot(g, resolved.slot)) {
+        el.style.display = "none";
+        return;
+      }
       if (resolved) {
         el.style.display = "block";
         el.style.top = `${resolved.indicator.top}px`;
@@ -173,9 +285,30 @@ export function useRailDrag(
       preview.current = null;
       line.current?.remove();
       line.current = null;
+      // Out of the rail before anything re-renders it: the slot is not one of
+      // React's nodes, and the carried card goes back to being drawn.
+      if (slot.current) {
+        slot.current.remove();
+        slot.current = null;
+        onLayoutChangeRef.current?.();
+      }
+      if (hiddenSource.current) {
+        hiddenSource.current.style.display = "";
+        hiddenSource.current = null;
+      }
+      if (settleTimer.current != null) window.clearTimeout(settleTimer.current);
+      settleTimer.current = null;
+      // And no card left mid-slide.
+      scrollRef.current
+        ?.querySelectorAll<HTMLElement>("[data-rail-recipe], [data-rail-section-head], [data-rail-section-add]")
+        .forEach((card) => {
+          card.style.transform = "";
+          card.style.transition = "";
+        });
       document.body.style.userSelect = "";
       document.body.style.cursor = "";
       gesture.current = null;
+      lastResolved.current = null;
     };
 
     const onMove = (event: PointerEvent) => {
@@ -187,16 +320,24 @@ export function useRailDrag(
         if (Math.hypot(event.clientX - g.startX, event.clientY - g.startY) < DRAG_THRESHOLD) return;
         begin(g);
       }
+      // The carried card follows the pointer from the event itself, not the
+      // next animation frame, which left it trailing a frame behind the hand.
+      applyPreview(g);
       event.preventDefault();
     };
 
     const finish = (didCommit: boolean) => {
       const g = gesture.current;
       if (g?.active) {
-        // Resolve the drop fresh at the final pointer position rather than
-        // trusting the last animation frame — correct even if rAF was throttled
-        // (background tab) or the release beat the next frame.
-        if (didCommit) resolveRef.current(g.kind, g.id, g.x, g.y)?.commit();
+        // Resolve the drop at the final pointer position rather than trusting
+        // the last animation frame (correct even if rAF was throttled or the
+        // release beat the next frame), or the open slot if the pointer is on
+        // it, so the card lands where the slot showed. Resolved before
+        // the teardown, against the layout the cook let go over, and committed
+        // after it, so the move re-renders a rail with no slot left in it.
+        const resolved = didCommit ? resolveAt(g) : null;
+        teardown();
+        resolved?.commit();
         setDragging(null);
         // Keep didDrag true through the click that fires right after pointerup,
         // then clear it so a later real click isn't swallowed.

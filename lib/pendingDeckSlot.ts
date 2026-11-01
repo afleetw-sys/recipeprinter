@@ -69,3 +69,65 @@ export function landingForRecipe({
   // one facing its chapter opener, arrived unselected.
   return { slide, sheet: targetSheet };
 }
+
+/** The little of a page that `hostedPendingPage` reads. */
+interface HostSheet {
+  slots: readonly ({ kind: string; id?: string; recipeId?: string; pageId?: string } | null)[];
+}
+
+/**
+ * The empty page an arriving recipe will fill, when there is one, so its
+ * loading card stands on that page.
+ *
+ * A recipe goes straight after the page it is added after (the last page of a
+ * recipe that runs onto two), so the page next in line is where it lands: the
+ * facing page when that one is empty, or the first page of the next spread
+ * when that is. Empty means nothing at all (the end of the book) or a blank
+ * the book only prints to pair its pages up. The loading card used to be drawn
+ * as a new page below the spread in every case but one (the top of a chapter
+ * whose opener faces an empty page), and the recipe then landed back up on the
+ * empty page, out of view.
+ *
+ * Never beside the contents, which keeps its facing page empty, nor onto a
+ * blank page the cook added (theirs, not room), nor when every recipe opens on
+ * its own full-page photo spread.
+ */
+export function hostedPendingPage({
+  spreads,
+  sheets,
+  anchorSheet,
+  anchorId,
+  fullPagePhotos,
+}: {
+  spreads: readonly { left: number | null; right: number | null; single?: boolean }[];
+  sheets: readonly HostSheet[];
+  /** The sheet of the nav item the recipe is added after (`pendingAnchorIndexIn`). */
+  anchorSheet: number | null;
+  /** That nav item's id, or null when nothing is anchored. */
+  anchorId: string | null;
+  /** Every recipe opens on its own full-page photo spread. */
+  fullPagePhotos: boolean;
+}): { spread: number; side: "left" | "right" } | null {
+  if (fullPagePhotos || anchorSheet === null) return null;
+  const idOf = (slot: HostSheet["slots"][number]) => (slot?.kind === "recipe" ? slot.recipeId : slot?.id);
+  // The last page the anchor is on.
+  let last = anchorSheet;
+  if (anchorId) {
+    for (let i = anchorSheet + 1; i < sheets.length; i += 1) {
+      if (!sheets[i]?.slots.some((slot) => idOf(slot) === anchorId)) break;
+      last = i;
+    }
+  }
+  if (sheets[last]?.slots.some((slot) => slot?.kind === "toc" || slot?.kind === "cover")) return null;
+  const isRoom = (sheet: number | null) =>
+    sheet === null ||
+    Boolean(sheets[sheet]?.slots.some((slot) => slot?.kind === "blank" && !slot.pageId));
+
+  const index = spreads.findIndex((spread) => spread.left === last || spread.right === last);
+  const spread = spreads[index];
+  if (!spread || spread.single) return null;
+  if (spread.left === last) return isRoom(spread.right) ? { spread: index, side: "right" } : null;
+  const next = spreads[index + 1];
+  if (!next || next.single || next.left === null) return null;
+  return isRoom(next.left) ? { spread: index + 1, side: "left" } : null;
+}

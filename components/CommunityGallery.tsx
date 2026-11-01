@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { ChevronLeftIcon, ChevronRightIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
-import { AddYoursDialog } from "@/components/AddYoursDialog";
 import { COMMUNITY_PHOTOS, type CommunityPhoto } from "@/lib/communityGallery";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -59,12 +58,16 @@ const ITEM = [
 
 export function CommunityGallery({
   items = COMMUNITY_PHOTOS,
+  heading = "Fresh off the printer",
+  label = "Photos of printed recipe cards",
 }: {
   items?: CommunityPhoto[];
+  heading?: string;
+  /** The strip's accessible name. */
+  label?: string;
 }) {
-  // Nothing to show is a reason to show nothing. A live homepage carrying an
-  // empty gallery and an "add yours" button reads as a broken feature, and it
-  // asks a first-time visitor for something they have no way to give. In
+  // Nothing to show is a reason to show nothing: a live homepage carrying an
+  // empty gallery reads as a broken feature. In
   // development the placeholder keeps the layout visible while the first
   // photographs are still being shot.
   const showPlaceholder =
@@ -72,7 +75,6 @@ export function CommunityGallery({
   const cards: CommunityPhoto[] = showPlaceholder ? PLACEHOLDERS : items;
 
   const [spotlight, setSpotlight] = useState<number | null>(null);
-  const [addYoursOpen, setAddYoursOpen] = useState(false);
 
   if (cards.length === 0) return null;
 
@@ -87,19 +89,10 @@ export function CommunityGallery({
       className="pt-[4rem] sm:pt-[7rem] flex flex-col gap-cp-3"
       aria-labelledby="rp-gallery-heading"
     >
-      <div className="flex items-center justify-between gap-cp-3">
-        <Header />
-        <button
-          type="button"
-          onClick={() => setAddYoursOpen(true)}
-          className="btn btn-secondary btn-compact shrink-0"
-        >
-          Add yours
-        </button>
-      </div>
+      <Header>{heading}</Header>
       <Carousel
         count={cards.length}
-        label="Photos of printed recipe cards"
+        label={label}
       >
         {cards.map((photo, i) => (
           <li key={photo.src} className={ITEM}>
@@ -135,7 +128,6 @@ export function CommunityGallery({
         onClose={() => setSpotlight(null)}
       />
 
-      <AddYoursDialog open={addYoursOpen} onClose={() => setAddYoursOpen(false)} />
     </section>
   );
 }
@@ -271,13 +263,13 @@ function Spotlight({
  * having and worth having SECOND, so it takes the quiet label treatment the
  * rest of the product uses for supporting material.
  */
-function Header() {
+function Header({ children }: { children: ReactNode }) {
   return (
     <h2
       id="rp-gallery-heading"
       className="text-cp-label font-bold uppercase tracking-[0.08em] text-ink-soft"
     >
-      Fresh off the printer
+      {children}
     </h2>
   );
 }

@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImportPanel } from "@/components/ImportPanel";
 import { HolidayCookbookBanner } from "@/components/HolidayCookbookBanner";
+import { CookbookIntro } from "@/components/CookbookIntro";
+import { HomeKindTabs, useHomeKind, type ImportKind } from "@/components/HomeKind";
 import { useQueue } from "@/lib/queue";
 import { useProjectMeta } from "@/lib/project";
 import { fileProjectLocally } from "@/lib/localProjects";
@@ -14,10 +16,6 @@ import { nextPaint } from "@/lib/nextPaint";
 import type { ImportMethod, ImportTab, QueueItem } from "@/types/recipe";
 import { handoffDedupeInput, refuseImportIfSpent } from "@/lib/importMeter";
 
-/** Which kind of project the front door is about to start. Recipe cards is
-    the default and asks for nothing; Cookbook is the one-project, $19.99,
-    unlimited-recipe alternative — see the tab row and banner below. */
-type ImportKind = "cards" | "cookbook";
 
 /**
  * The front door: the box you put a recipe into, and nothing else.
@@ -80,52 +78,10 @@ export function PrinterWorkspace({
   /** A handoff is on its way to /print, so the submit wears a spinner instead
       of its arrow. Stays true for the rest of this page's life — see `handoff`. */
   const [opening, setOpening] = useState(false);
-  const [importKind, setImportKind] = useState<ImportKind>("cards");
+  // Shared with the page around it, which changes with the tab too.
+  const { kind: importKind } = useHomeKind();
   const leftCookbookRef = useRef(false);
   const warmedRef = useRef(false);
-  const tabListRef = useRef<HTMLDivElement | null>(null);
-  /** Where the selected underline sits, measured off the DOM rather than assumed
-      from `importKind` alone — the two labels aren't the same width, so the
-      underline has to know the active button's actual box to slide to it rather
-      than just toggle between two guessed positions. Same technique as
-      `SegmentedControl`'s thumb (components/Controls.tsx); not reused
-      directly because these tabs carry their own padding, dimming and
-      "New" badge that control doesn't know about. */
-  const [tabFill, setTabFill] = useState<{ left: number; width: number } | null>(null);
-
-  useLayoutEffect(() => {
-    const root = tabListRef.current;
-    if (!root) return;
-    function measure() {
-      const active = root!.querySelector<HTMLElement>('[aria-selected="true"]');
-      if (!active) return;
-      // Read from the rects rather than `offsetLeft`/`offsetWidth`, which round
-      // to whole pixels: at 125% or 150% display scaling (common on Windows)
-      // that rounding alone can leave the bar a pixel off either end.
-      const tab = active.getBoundingClientRect();
-      if (tab.width <= 0) return;
-      const row = root!.getBoundingClientRect();
-      setTabFill({ left: tab.left - row.left, width: tab.width });
-    }
-    measure();
-    // Every tab, not just the row. The labels are set in Karla, which swaps in
-    // (`display: swap`) after a first visit has already drawn them in the
-    // fallback face, and the fallback is wider on Windows. A bar measured
-    // before the swap overhung "Recipe cards" by most of a word on a Windows
-    // desktop in Chrome, so whatever resizes a tab now moves the bar with it.
-    const observer = new ResizeObserver(measure);
-    observer.observe(root);
-    root.querySelectorAll<HTMLElement>('[role="tab"]').forEach((tab) => observer.observe(tab));
-    // And once each font finishes, in case its swap reached the page without
-    // changing any size this observer reports.
-    const fonts = document.fonts;
-    fonts?.ready.then(measure).catch(() => undefined);
-    fonts?.addEventListener?.("loadingdone", measure);
-    return () => {
-      observer.disconnect();
-      fonts?.removeEventListener?.("loadingdone", measure);
-    };
-  }, [importKind]);
 
   /**
    * Coming home means you finished with what you were working on, so this page
@@ -221,7 +177,11 @@ export function PrinterWorkspace({
    * link they just pasted. Staying put, with a sentence saying so, is the
    * better failure.
    */
-  async function handoff(payload: PendingImport, kind: ImportKind = importKind) {
+  async function handoff(
+    payload: PendingImport,
+    kind: ImportKind = importKind,
+    { introduced = false }: { introduced?: boolean } = {},
+  ) {
     // Out of free imports: the upgrade dialog opens here, and nothing is
     // stashed or navigated to. Card imports that go to a parser only; a
     // cookbook and a recipe-app pick aren't counted against the allowance.
@@ -241,7 +201,7 @@ export function PrinterWorkspace({
     // nothing has been added to it yet, so replacing its id costs nothing.
     // Left alone for the Recipe cards tab — the id this page already minted
     // on mount is exactly what a recipe-cards import should land in.
-    if (kind === "cookbook") startNewProject({ cookbook: true });
+    if (kind === "cookbook") startNewProject({ cookbook: true, introduced });
     // Counted here rather than where the parse starts: by then every import in
     // the product looks like it happened on /print. See `recipe_import_submitted`.
     track("recipe_import_submitted", { surface: "home", source: sourceOf(payload) });
@@ -275,11 +235,6 @@ export function PrinterWorkspace({
     // A library pick is whatever library it came from, and a batch is never
     // mixed: the picker that produced it only reads one source.
     return payload.recipes[0]?.method ?? "manual";
-  }
-
-  /** A cookbook begun with nothing in it. */
-  function handleStartEmpty() {
-    void handoff({ kind: "empty" });
   }
 
   function handleAddUrl(url: string) {
@@ -338,59 +293,29 @@ export function PrinterWorkspace({
 
   return (
     <div className="rp-printer-workspace rp-printer-workspace--landing">
-      {/* What kind of project this import starts, centred under the subtitle
-          and outside the card: it chooses what the whole panel below makes,
-          so it reads as a header to the card rather than a row inside it.
-          The selected tab carries a thick accent underline that SLIDES to it
-          rather than each tab drawing its own — one bar, moved, reads as a
-          single control picking between two states. The bar is a single
-          absolutely-positioned element measured off the active button's own
-          box (see `tabFill` above) so it can slide by any distance between two
-          differently-sized labels. The unselected label stays dimmed rather
-          than plain. The row hugs its tabs (`w-fit`) so `offsetLeft` is
-          measured from the first tab. Spacing to the card is the workspace's
-          own `gap-cp-6`.
-          No pricing banner here — submitting on the Cookbook tab builds the
-          book and hands straight off to CookbookWelcomeDialog on /print,
-          which pitches the price over the finished article instead of a bare
-          choice of tabs (see the pending-import effect's `offerAfter: true`). */}
-      <div
-        ref={tabListRef}
-        className="relative isolate mx-auto flex w-fit gap-cp-4"
-        role="tablist"
-        aria-label="What you're printing"
-      >
-        {tabFill && (
-          <span
-            aria-hidden
-            className="absolute bottom-0 left-0 z-0 h-[3px] bg-[var(--cp-accent)] transition-[transform,width] duration-200 ease-out"
-            style={{ transform: `translateX(${tabFill.left}px)`, width: `${tabFill.width}px` }}
+      {/* What kind of project this starts, centred under the subtitle and
+          outside the card: it chooses what the whole panel below makes, so it
+          reads as a header to the card rather than a row inside it. */}
+      <HomeKindTabs />
+      {/* The Cookbook tab is not an import box: it says what a book is and
+          opens an empty one, and recipes go in from inside the book. */}
+      {importKind === "cookbook" ? (
+        <div onPointerDownCapture={warmWorkspace} onFocusCapture={warmWorkspace}>
+          <CookbookIntro
+            busy={opening}
+            onStart={() => {
+              if (opening) return;
+              void handoff({ kind: "empty" }, "cookbook", { introduced: true });
+            }}
           />
-        )}
-        <button
-          type="button"
-          role="tab"
-          aria-selected={importKind === "cards"}
-          onClick={() => setImportKind("cards")}
-          className={`relative z-10 px-cp-2 pb-cp-2 pt-cp-1 text-cp-body-lg font-bold text-ink transition-opacity duration-200 ease-out ${
-            importKind === "cards" ? "opacity-100" : "opacity-45 hover:opacity-70"
-          }`}
-        >
-          Recipe cards
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={importKind === "cookbook"}
-          onClick={() => setImportKind("cookbook")}
-          className={`relative z-10 flex items-center gap-1 px-cp-2 pb-cp-2 pt-cp-1 text-cp-body-lg font-bold text-ink transition-opacity duration-200 ease-out ${
-            importKind === "cookbook" ? "opacity-100" : "opacity-45 hover:opacity-70"
-          }`}
-        >
-          Cookbook
-          <span className="rp-new-badge">New</span>
-        </button>
-      </div>
+          {handoffError && (
+            <p className="field-error mt-cp-3" role="alert">
+              {handoffError}
+            </p>
+          )}
+        </div>
+      ) : (
+      <>
       {/* Warmed on the first touch anywhere in the panel, which covers typing,
           dropping a photo and opening a library alike — see `warmWorkspace`. */}
       <div
@@ -405,22 +330,12 @@ export function PrinterWorkspace({
           items={[]}
           workspace
           initialMode={initialImportMode}
-          submitLabel={importKind === "cookbook" ? "Start my cookbook" : importSubmitLabel}
+          submitLabel={importSubmitLabel}
           submitBusy={opening}
           onAddUrl={handleAddUrl}
           onAddImageFiles={(files, label) => void handleAddImageFiles(files, label)}
           onAddText={handleAddText}
           onAddReadyRecipes={handleAddReadyRecipes}
-          /* Recipe apps' library pickers cap selection to one recipe unless
-             told otherwise (see `librarySingleSelect`'s own doc comment) —
-             for the Cookbook tab there's no cap to enforce, so this forces
-             the picker open rather than leaving it to `useSingleRecipeOnly`'s
-             Pro-only check. Left unset for Recipe cards: that's exactly the
-             check that tab is supposed to go through. */
-          librarySingleSelect={importKind === "cookbook" ? false : undefined}
-          /* A book may start with no recipes in it, on any of the four tabs.
-             Recipe cards still ask for something to print. */
-          onStartEmpty={importKind === "cookbook" ? handleStartEmpty : undefined}
         />
         {handoffError && (
           <p className="field-error mt-cp-3" role="alert">
@@ -428,8 +343,9 @@ export function PrinterWorkspace({
           </p>
         )}
       </div>
-      {/* Starts an empty book the way the Cookbook tab's empty submit does,
-          whichever tab is showing, so it reaches `handoff` as a cookbook. */}
+      {/* Starts an empty book from the Recipe cards tab, so it reaches
+          `handoff` as a cookbook. Not under the Cookbook tab, which already is
+          this pitch. */}
       <HolidayCookbookBanner
         busy={opening}
         onWarm={warmWorkspace}
@@ -438,6 +354,8 @@ export function PrinterWorkspace({
           void handoff({ kind: "empty" }, "cookbook");
         }}
       />
+      </>
+      )}
     </div>
   );
 }

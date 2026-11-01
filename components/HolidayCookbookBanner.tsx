@@ -68,7 +68,7 @@ export function HolidayCookbookBanner({
           disabled={busy}
           aria-busy={busy || undefined}
         >
-          Start my cookbook
+          Start a cookbook
         </button>
       </div>
       {/* The book, beside the copy (above it on a phone). */}
@@ -93,7 +93,7 @@ export function HolidayCookbookBanner({
  * homepage does not load either for a visitor who has no account to check.
  * For everyone else it waits for idle, like the header's avatar does.
  */
-function useFirstCookbookDiscount(): boolean {
+export function useFirstCookbookDiscount(): boolean {
   const [eligible, setEligible] = useState(false);
   useEffect(() => {
     if (!readCookPilotWasSignedIn()) return;

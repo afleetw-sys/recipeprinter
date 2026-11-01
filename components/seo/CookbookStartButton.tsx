@@ -14,12 +14,12 @@ import { track } from "@/lib/analytics";
  *
  * It replaced the import box on these pages. Nobody arrives on "make your own
  * cookbook" holding the one link the box asked for first, and that box handed
- * off as a recipe-card import, so "Start my cookbook" never actually started a
+ * off as a recipe-card import, so "Start a cookbook" never actually started a
  * cookbook. The book opens with its own ways in: Add recipes, chapters, and
  * the empty pages that offer both.
  */
 export function CookbookStartButton({
-  label = "Start my cookbook",
+  label = "Start a cookbook",
   compact = false,
 }: {
   label?: string;
@@ -47,11 +47,22 @@ export function CookbookStartButton({
     <button
       type="button"
       className={`btn btn-primary${compact ? " btn-header" : ""}`}
+      aria-label={compact ? label : undefined}
       aria-busy={opening || undefined}
       onClick={() => void start()}
     >
-      {label}
-      {opening ? <SpinnerIcon size={ICON_SIZE.md} /> : <ArrowRightIcon size={ICON_SIZE.md} />}
+      {/* In the header on the narrowest phones (under 360px), just "Start":
+          the bar also holds the logo, Upgrade and the account. */}
+      {compact ? (
+        <>
+          <span className="max-[359px]:hidden">{label}</span>
+          <span className="hidden max-[359px]:inline" aria-hidden>Start</span>
+        </>
+      ) : (
+        label
+      )}
+      {/* No arrow in the header either: the label only fits on its own. */}
+      {opening ? <SpinnerIcon size={ICON_SIZE.md} /> : !compact && <ArrowRightIcon size={ICON_SIZE.md} />}
     </button>
   );
 }

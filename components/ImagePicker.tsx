@@ -8,7 +8,7 @@ import { CheckIcon, ICON_SIZE, ImageIcon, UploadIcon, XIcon } from "@/components
 import { friendlyPhotoUploadError } from "@/lib/friendlyErrors";
 import { partitionImageFiles } from "@/lib/imageImport";
 import { storePickedPhotoFile } from "@/lib/photoStorage";
-import { DECK_MOBILE_QUERY, isDeckMobile } from "@/lib/useDeckScroller";
+import { useDeckMobile } from "@/lib/useDeckScroller";
 
 /** Same breakpoint the print workspace already switches its own chrome on
     (the rail-vs-filmstrip deck, the config panel's drawer) — reused here
@@ -17,15 +17,7 @@ import { DECK_MOBILE_QUERY, isDeckMobile } from "@/lib/useDeckScroller";
     decides which of two different component trees to mount, not just a
     CSS class to toggle. */
 function useIsMobileSheet(): boolean {
-  const [mobile, setMobile] = useState(isDeckMobile);
-  useEffect(() => {
-    const mql = window.matchMedia(DECK_MOBILE_QUERY);
-    const update = () => setMobile(mql.matches);
-    update();
-    mql.addEventListener("change", update);
-    return () => mql.removeEventListener("change", update);
-  }, []);
-  return mobile;
+  return useDeckMobile();
 }
 
 export function ImagePicker({

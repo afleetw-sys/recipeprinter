@@ -164,6 +164,15 @@ export default function AccountAvatarButton({
   /** Pressing the avatar opens the dropdown, signed in or not. */
   const pressAvatar = useCallback(() => setOpen((value) => !value), []);
 
+  // The menu's two pages, loaded the moment it opens rather than when a row is
+  // pressed: both are client pages, and fetching one only on the press left
+  // the page you were on sitting there until it arrived.
+  useEffect(() => {
+    if (!open) return;
+    router.prefetch("/projects");
+    router.prefetch("/account");
+  }, [open, router]);
+
   // The provider buttons open a popup from the press itself, which a browser
   // only allows if nothing has to be fetched first.
   useEffect(() => {

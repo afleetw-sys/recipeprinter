@@ -56,6 +56,7 @@ import { FailedImportCard } from "@/components/print/FailedImportCard";
 import { importLoadingLabel } from "@/lib/importProgress";
 import { importPreview } from "@/lib/importPreviews";
 import { BACK_COVER_NAV_ID } from "@/lib/railPending";
+import { hostedPendingPage } from "@/lib/pendingDeckSlot";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
 
 type CoverSide = "front" | "back" | "dedication";
@@ -432,6 +433,7 @@ export function PrintDeck(props: PrintDeckProps) {
     renderAllPages,
   } = props;
 
+
   // The empty-state outline is the page at the deck's scale, unless that is
   // too small to hold its words (see `emptyOutlineIsCompact`).
   const emptySheetCompact = emptyOutlineIsCompact(
@@ -521,21 +523,24 @@ export function PrintDeck(props: PrintDeckProps) {
         const cover = coverForSide(side);
         // A photo behind the opening page's words (see CoverFace) doesn't
         // make them optional — it's a background choice, not a replacement.
+        // Only the lines taken OFF the page (`""`). A line nobody has written
+        // already shows its prompt on the page, with a × to remove it (see
+        // CoverFace), so "Add" is for bringing a removed one back.
         if (side === "dedication") {
-          return [!cover?.title && "heading", !cover?.blurb && "message", !cover?.author && "signature"].filter(
+          return [!cover?.title && "heading", cover?.blurb === "" && "message", cover?.author === "" && "signature"].filter(
             (name): name is string => Boolean(name),
           );
         }
         if (side === "back") {
-          return [!cover?.blurb && "closing line", !cover?.author && "credit"].filter(
+          return [cover?.blurb === "" && "closing line", cover?.author === "" && "credit"].filter(
             (name): name is string => Boolean(name),
           );
         }
         return [
           !cover?.title && "title",
-          !cover?.subtitle && "subtitle",
-          !cover?.author && "author",
-          !cover?.edition && "edition",
+          cover?.subtitle === "" && "subtitle",
+          cover?.author === "" && "author",
+          cover?.edition === "" && "edition",
         ].filter((name): name is string => Boolean(name));
       }
       if (navItem.kind === "divider") {
@@ -549,7 +554,7 @@ export function PrintDeck(props: PrintDeckProps) {
         // it is not missing, it is being drawn for them.
         return [
           section && !sectionDisplayTitle(section).trim() && "title",
-          !section?.subtitle?.trim() && "subtitle",
+          section?.subtitle === "" && "subtitle",
           section?.intro === "" && "description",
         ].filter((name): name is string => Boolean(name));
       }
@@ -557,6 +562,51 @@ export function PrintDeck(props: PrintDeckProps) {
       // default ("Contents", "What's inside") when nobody types one, and the
       // entries are generated.
       return [];
+    };
+    /**
+     * Put a book page's removed lines back, prompts and all, rather than
+     * opening the reveal. A line that is there until removed (see CoverFace)
+     * comes back the same way: as its prompt on the page, ready to type into
+     * or take off again. False when the page has none to put back (a recipe,
+     * or only a cleared title, which has no prompt of its own and still goes
+     * through the reveal).
+     */
+    const restoreRemovedLines = (): boolean => {
+      const back = (value: string | undefined) => (value === "" ? undefined : value);
+      if (navItem.kind === "cover") {
+        const side = coverSideFromNavItem(navItem);
+        const cover = coverForSide(side);
+        // An opening page's heading comes back as the word it started with.
+        const headingBack =
+          side === "dedication" && !cover?.title
+            ? projectMeta.meta.frontMatter?.kind === "introduction"
+              ? "Introduction"
+              : "Dedication"
+            : undefined;
+        if (
+          !cover ||
+          (!headingBack && ![cover.subtitle, cover.author, cover.edition, cover.blurb].includes(""))
+        ) {
+          return false;
+        }
+        setCoverForSide(side, {
+          ...cover,
+          title: headingBack ?? cover.title,
+          subtitle: back(cover.subtitle),
+          author: back(cover.author),
+          edition: back(cover.edition),
+          blurb: back(cover.blurb),
+        });
+        return true;
+      }
+      if (navItem.kind === "divider") {
+        const section = sections.find((candidate) => candidate.id === navItem.recipeId);
+        if (!section || (section.subtitle !== "" && section.intro !== "")) return false;
+        if (section.subtitle === "") projectMeta.updateSection(section.id, { subtitle: undefined });
+        if (section.intro === "") projectMeta.setSectionIntro(section.id, undefined);
+        return true;
+      }
+      return false;
     };
     const missingNames = missingFieldNames();
     const pageHasHiddenFields = (): boolean => missingNames.length > 0;
@@ -860,6 +910,7 @@ export function PrintDeck(props: PrintDeckProps) {
                 aria-pressed={editing}
                 onClick={(event) => {
                   event.stopPropagation();
+                  if (!editing && restoreRemovedLines()) return;
                   toggleShowEmptyFields();
                 }}
               >
@@ -1011,7 +1062,9 @@ export function PrintDeck(props: PrintDeckProps) {
       },
       subtitle: section?.subtitle,
       onSubtitleChange: (value: string) =>
-        projectMeta.updateSection(sectionId, { subtitle: value || undefined }),
+        // Kept as typed, `""` included: emptying the line removes it, like
+        // the intro below, rather than bringing its prompt back.
+        projectMeta.updateSection(sectionId, { subtitle: value }),
       intro: section?.intro,
       // Kept as typed, `""` included: emptying the field removes the line. It no
       // longer hands the page back to the recipes' names, which is what made the
@@ -1181,26 +1234,25 @@ export function PrintDeck(props: PrintDeckProps) {
     return index === -1 ? null : index;
   })();
   /**
-   * A recipe added to the top of a chapter whose opener faces an empty page
-   * lands ON that page, so it loads there too. Drawn below the spread
-   * instead, the placeholder sat under the empty page and the finished
-   * recipe then jumped up into it, and the cook lost track of it.
-   *
-   * Not when the book puts every recipe on a full-page photo spread: such a
-   * recipe starts on a left-hand page, so it cannot fill the page facing the
-   * opener and does land after it.
+   * The empty page an arriving recipe will fill, which is where it loads
+   * (`hostedPendingPage`): drawn as a new page below the spread instead, the
+   * recipe then landed back up on the empty page, out of view.
    */
-  const blankHostedImport = (() => {
-    if (pendingAnchorSpreadIndex === null || photoStyle === "full") return null;
-    const spread = spreads[pendingAnchorSpreadIndex];
-    if (!spread || spread.single || spread.left === null) return null;
-    const opener = sheets[spread.left]?.slots.find((slot) => slot?.kind === "divider");
-    if (!opener || opener.id !== pendingAddAfterRecipeId) return null;
-    const facesEmpty =
-      spread.right === null ||
-      Boolean(sheets[spread.right]?.slots.some((slot) => slot?.kind === "blank" && !slot.pageId));
-    return facesEmpty ? (parsingImports[0] ?? null) : null;
-  })();
+  // What the recipe follows. Unanchored with no back cover, "last" is the
+  // book's last page, which `pendingAnchorIndexIn` leaves as null.
+  const hostAnchorIndex =
+    pendingAnchorIndex ?? (!pendingAddAfterRecipeId && navItems.length > 0 ? navItems.length - 1 : null);
+  const hostTarget =
+    cookbookView && hostAnchorIndex !== null
+      ? hostedPendingPage({
+          spreads,
+          sheets,
+          anchorSheet: navItems[hostAnchorIndex]?.sheetIndex ?? null,
+          anchorId: navItems[hostAnchorIndex]?.recipeId ?? null,
+          fullPagePhotos: photoStyle === "full",
+        })
+      : null;
+  const blankHostedImport = hostTarget ? (parsingImports[0] ?? null) : null;
   /** The loading page itself: the photo being read, or what is being fetched. */
   const pendingSheet = (pendingItem: QueueItem) => (
     <div
@@ -1608,7 +1660,17 @@ export function PrintDeck(props: PrintDeckProps) {
                     </div>
                   ) : null;
                   // The import landing on the empty page beside a chapter
-                  // (`blankHostedImport`), loading in that page's place.
+                  // or any other it will fill (`blankHostedImport`), loading in
+                  // that page's place.
+                  // This side of this spread is the empty page the arriving
+                  // recipe will fill (`hostedPendingPage`).
+                  const hostsImport = (role: "left" | "right" | "single") =>
+                    Boolean(
+                      blankHostedImport &&
+                        hostTarget &&
+                        hostTarget.spread === index &&
+                        hostTarget.side === role,
+                    );
                   const renderHostedImport = (pendingItem: QueueItem) => (
                     <div
                       className="recipe-page-pending recipe-page-pending--in-spread"
@@ -1655,6 +1717,31 @@ export function PrintDeck(props: PrintDeckProps) {
                       ) : null}
                     </div>
                   );
+                  // One page of a spread. On a phone it is a screen of its own
+                  // that the deck snaps to (print.css), a stacked spread being
+                  // two of them; elsewhere it adds no box (`display: contents`).
+                  // `data-focus-sheet` is the page a tap on it would focus,
+                  // which is what the phone's toolbar follows as you scroll.
+                  // Also how a jump to a particular page finds its screen.
+                  const cell = (sheetIndex: number | null, page: ReactNode) =>
+                    page ? (
+                      <div
+                        className="recipe-spread__cell"
+                        data-focus-sheet={
+                          sheetIndex === null
+                            ? undefined
+                            : linkedSpread
+                              ? linkedFocusSheet ?? sheetIndex
+                              : // A blank page has nothing to edit: the
+                                // toolbar stays on the page facing it.
+                                navIndexForSheet.has(sheetIndex)
+                                ? sheetIndex
+                                : undefined
+                        }
+                      >
+                        {page}
+                      </div>
+                    ) : null;
                   // Far from the reader, and not printing: hold the page's box
                   // and draw nothing in it. See DECK_WINDOW.
                   const drawn = renderAllPages || Math.abs(index - activeNavIndex) <= DECK_WINDOW;
@@ -1662,10 +1749,15 @@ export function PrintDeck(props: PrintDeckProps) {
                     sheetIndex: number | null,
                     role: "left" | "right" | "single",
                   ) => {
-                    if (sheetIndex === null) return renderBlank();
+                    if (sheetIndex === null) {
+                      return hostsImport(role) ? renderHostedImport(blankHostedImport!) : renderBlank();
+                    }
                     const pageSheet = sheets[sheetIndex];
                     if (!pageSheet) return renderBlank();
-                    if (!drawn) {
+                    const ni = navIndexForSheet.get(sheetIndex);
+                    const pageNav = ni != null ? navItems[ni] : null;
+                    // A blank leaf is drawn even far away: it costs nothing.
+                    if (!drawn && pageNav) {
                       return (
                         <PagePlaceholder
                           width={previewDims.w}
@@ -1674,8 +1766,6 @@ export function PrintDeck(props: PrintDeckProps) {
                         />
                       );
                     }
-                    const ni = navIndexForSheet.get(sheetIndex);
-                    const pageNav = ni != null ? navItems[ni] : null;
                     if (!pageNav) {
                       // A blank leaf the book prints on purpose: say why, on
                       // screen only, so it isn't mistaken for a missing page.
@@ -1692,9 +1782,7 @@ export function PrintDeck(props: PrintDeckProps) {
                             earlier.slots.some((slot) => slot?.kind === "cover" && slot.side === "front"),
                           );
                       const besideChapter = role === "right" && chapterBlankActions !== null;
-                      if (besideChapter && blankHostedImport && index === pendingAnchorSpreadIndex) {
-                        return renderHostedImport(blankHostedImport);
-                      }
+                      if (hostsImport(role)) return renderHostedImport(blankHostedImport!);
                       return renderBlank(
                         false,
                         isBlankLeaf
@@ -1808,16 +1896,12 @@ export function PrintDeck(props: PrintDeckProps) {
                         }`}
                       >
                         {spread.single
-                          ? renderSide(spread.right ?? spread.left, "single")
+                          ? cell(spread.right ?? spread.left, renderSide(spread.right ?? spread.left, "single"))
                           : (
                             <>
-                              {renderSide(spread.left, "left")}
-                              {spread.right === null &&
-                              index === spreads.length - 1 &&
-                              chapterBlankActions &&
-                              blankHostedImport &&
-                              index === pendingAnchorSpreadIndex
-                                ? renderHostedImport(blankHostedImport)
+                              {cell(spread.left, renderSide(spread.left, "left"))}
+                              {cell(spread.right, spread.right === null && hostsImport("right")
+                                ? renderHostedImport(blankHostedImport!)
                                 : spread.right === null && index === spreads.length - 1
                                 ? renderBlank(
                                     !designedBlank,
@@ -1826,7 +1910,7 @@ export function PrintDeck(props: PrintDeckProps) {
                                       : undefined,
                                     chapterBlankActions,
                                   )
-                                : renderSide(spread.right, "right")}
+                                : renderSide(spread.right, "right"))}
                             </>
                           )}
                       </div>

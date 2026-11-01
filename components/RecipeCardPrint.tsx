@@ -21,6 +21,7 @@ import {
 import { formatRecipeTime } from "@/lib/time";
 import { RichText } from "@/components/RichText";
 import { PhotoPlaceholder } from "@/components/print/PhotoPlaceholder";
+import { ICON_SIZE, PlusIcon, XIcon } from "@/components/icons";
 import { composeNote } from "@/lib/recipeNote";
 import { InlineRichField, type CaretRange } from "@/components/InlineRichField";
 import { photoGridLayout } from "@/lib/photoGrid";
@@ -1763,6 +1764,49 @@ function chapterWord(n: number): string {
   return CHAPTER_WORDS[n - 1] ?? String(n);
 }
 
+/**
+ * What an empty book line shows: "+ Author", in the app's own type rather than
+ * the theme's (print.css), so every prompt on every theme is the same chip.
+ * The full "Add author" stays for screen readers.
+ */
+function FieldPromptLabel({ placeholder }: { placeholder: string }) {
+  const noun = placeholder.replace(/^Add /, "");
+  return (
+    <>
+      <PlusIcon size={ICON_SIZE.sm} aria-hidden />
+      <span aria-hidden>{noun.charAt(0).toUpperCase() + noun.slice(1)}</span>
+      <span className="sr-only">{placeholder}</span>
+    </>
+  );
+}
+
+/**
+ * The × on an optional line's prompt: takes the line off the page. On the
+ * mouse press, stopped there, because the prompt itself opens its field on a
+ * press (the chapter opener's) or a click (a cover's).
+ */
+function FieldRemoveButton({ noun, onRemove }: { noun: string; onRemove: () => void }) {
+  const label = `Remove ${noun.replace(/^Add /, "")}`;
+  return (
+    <button
+      type="button"
+      className="recipe-card__field-remove no-print"
+      aria-label={label}
+      title={label}
+      onMouseDown={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      }}
+      onClick={(event) => {
+        event.stopPropagation();
+        onRemove();
+      }}
+    >
+      <XIcon size={ICON_SIZE.sm} />
+    </button>
+  );
+}
+
 export const DividerFace = memo(function DividerFace({
   title,
   chapterNumber = 1,
@@ -1859,6 +1903,7 @@ export const DividerFace = memo(function DividerFace({
   function openerField({
     name,
     value,
+    removed = true,
     placeholder,
     ariaLabel,
     onChange,
@@ -1868,6 +1913,11 @@ export const DividerFace = memo(function DividerFace({
   }: {
     name: "subtitle" | "intro";
     value: string;
+    /** Taken off the page (`""`). A line that is not shows its prompt with a
+        × to remove it, the same as a cover's lines (see CoverFace's
+        `coverField`). The intro never prompts: left alone it prints the
+        chapter's recipes, so it is never empty unless removed. */
+    removed?: boolean;
     placeholder: string;
     ariaLabel: string;
     onChange: (value: string) => void;
@@ -1910,14 +1960,16 @@ export const DividerFace = memo(function DividerFace({
         </p>
       );
     }
-    return showEmpty ? (
+    if (!canEdit || (removed && !showEmpty)) return null;
+    return (
       <p
         className={`${className} recipe-card__opener-field--empty`}
         onMouseDown={fieldOpener(() => openField(name))}
       >
-        {placeholder}
+        <FieldPromptLabel placeholder={placeholder} />
+        {removed ? null : <FieldRemoveButton noun={placeholder} onRemove={() => onChange("")} />}
       </p>
-    ) : null;
+    );
   }
 
   const cardImages = (cardGridImages ?? []).filter(Boolean);
@@ -1947,7 +1999,9 @@ export const DividerFace = memo(function DividerFace({
     Boolean((inlineEdit?.subtitle ?? subtitle ?? "").trim()) ||
     !introRemoved ||
     showChapterNumber ||
-    showEmpty;
+    showEmpty ||
+    // An untouched subtitle's prompt is on the page being edited.
+    (canEdit && (inlineEdit?.subtitle ?? subtitle) === undefined);
 
   return (
     <article
@@ -2030,12 +2084,13 @@ export const DividerFace = memo(function DividerFace({
             className="recipe-card__divider-title recipe-card__opener-field--empty"
             onMouseDown={fieldOpener(openTitleField)}
           >
-            Add title
+            <FieldPromptLabel placeholder="Add title" />
           </h1>
         ) : null}
         {openerField({
           name: "subtitle",
           value: inlineEdit?.subtitle ?? subtitle ?? "",
+          removed: (inlineEdit?.subtitle ?? subtitle) === "",
           placeholder: "Add subtitle",
           ariaLabel: "Section subtitle",
           className: "recipe-card__chapter-subtitle",
@@ -2211,12 +2266,19 @@ export const CoverFace = memo(function CoverFace({
 
   /**
    * One cover line: text you can click into, a field while you are in it, and
-   * — when there is nothing written and nothing to click — a prompt that only
-   * appears under the reveal. The same three states a recipe's fields have.
+   * when nothing is written, its prompt.
+   *
+   * The prompt shows on the page being edited until the line is removed: a
+   * book's optional lines (a signature, an edition) are there to be filled in
+   * or taken off, not hidden behind an "Add" the cook has to think of. The
+   * prompt's × removes the line (`""`), which is also what emptying it does;
+   * a removed line comes back under the toolbar's "Add …" (the reveal). A
+   * prompt never prints (print.css).
    */
   function coverField({
     name,
     value,
+    removed,
     placeholder,
     ariaLabel,
     onChange,
@@ -2227,6 +2289,8 @@ export const CoverFace = memo(function CoverFace({
   }: {
     name: string;
     value: string;
+    /** Taken off the page (`""`), as opposed to never written. */
+    removed: boolean;
     placeholder: string;
     ariaLabel: string;
     onChange: (value: string) => void;
@@ -2270,15 +2334,22 @@ export const CoverFace = memo(function CoverFace({
         </Tag>
       );
     }
-    return showEmpty ? (
+    if (!canEdit || (removed && !showEmpty)) return null;
+    return (
       <Tag
         className={`${className} recipe-card__cover-field--empty`}
         onClick={() => setEditingField(name)}
       >
-        {placeholder}
+        <FieldPromptLabel placeholder={placeholder} />
+        {removed ? null : (
+          <FieldRemoveButton noun={placeholder} onRemove={() => onChange("")} />
+        )}
       </Tag>
-    ) : null;
+    );
   }
+  /** A line nobody has written or removed: its prompt is on the page. */
+  const prompts = (...lines: (string | undefined)[]) =>
+    canEdit && lines.some((line) => line === undefined);
 
   // Dedication: a quiet front-matter page — a short, centered dedication
   // line, on the template's own paper by default or over a chosen photo/
@@ -2308,6 +2379,7 @@ export const CoverFace = memo(function CoverFace({
     const dedicationTextEmpty =
       ![draft.title, draft.blurb, draft.author].some((line) => line?.trim()) &&
       !showEmpty &&
+      !prompts(draft.blurb, draft.author) &&
       editingField === null;
 
     return (
@@ -2358,6 +2430,7 @@ export const CoverFace = memo(function CoverFace({
           {coverField({
             name: "dedication-heading",
             value: draft.title,
+            removed: !draft.title,
             // No fallback: a heading cleared on purpose prints nothing, the
             // same as the body and signature below it. Only a page that has
             // never been touched carries real text here (toggleDedication
@@ -2370,19 +2443,21 @@ export const CoverFace = memo(function CoverFace({
           {coverField({
             name: "dedication-text",
             value: draft.blurb ?? "",
+            removed: draft.blurb === "",
             placeholder: "Add message",
             ariaLabel: "Dedication",
             className: "recipe-card__cover-blurb recipe-card__cover-dedication-text",
             rows: 3,
-            onChange: (value) => set({ blurb: value || undefined }),
+            onChange: (value) => set({ blurb: value }),
           })}
           {coverField({
             name: "dedication-signature",
             value: draft.author ?? "",
+            removed: draft.author === "",
             placeholder: "Add signature",
             ariaLabel: "Dedication signature",
             className: "recipe-card__cover-from recipe-card__cover-dedication-sign",
-            onChange: (value) => set({ author: value || undefined }),
+            onChange: (value) => set({ author: value }),
           })}
         </div>
       </article>
@@ -2410,7 +2485,10 @@ export const CoverFace = memo(function CoverFace({
     const { columns: backGridColumns, firstSpans: backGridFirstSpans } =
       photoGridLayout(backGridImages.length);
     const backTextEmpty =
-      ![draft.blurb, draft.author].some((line) => line?.trim()) && !showEmpty && editingField === null;
+      ![draft.blurb, draft.author].some((line) => line?.trim()) &&
+      !showEmpty &&
+      !prompts(draft.blurb, draft.author) &&
+      editingField === null;
 
     return (
       <article
@@ -2464,19 +2542,21 @@ export const CoverFace = memo(function CoverFace({
           {coverField({
             name: "back-blurb",
             value: draft.blurb ?? "",
+            removed: draft.blurb === "",
             placeholder: "Add closing line",
             ariaLabel: "Back cover blurb",
             className: "recipe-card__cover-blurb",
             rows: 3,
-            onChange: (value) => set({ blurb: value || undefined }),
+            onChange: (value) => set({ blurb: value }),
           })}
           {coverField({
             name: "back-credit",
             value: draft.author ?? "",
+            removed: draft.author === "",
             placeholder: "Add credit",
             ariaLabel: "Back cover credit",
             className: "recipe-card__cover-from",
-            onChange: (value) => set({ author: value || undefined }),
+            onChange: (value) => set({ author: value }),
           })}
         </div>
       </article>
@@ -2507,6 +2587,7 @@ export const CoverFace = memo(function CoverFace({
   const coverTextEmpty =
     ![draft.title, draft.subtitle, draft.author, draft.edition].some((line) => line?.trim()) &&
     !showEmpty &&
+    !prompts(draft.subtitle, draft.author, draft.edition) &&
     editingField === null;
 
   return (
@@ -2558,14 +2639,16 @@ export const CoverFace = memo(function CoverFace({
         {coverField({
           name: "cover-kicker",
           value: draft.subtitle ?? "",
+          removed: draft.subtitle === "",
           placeholder: "Add subtitle",
           ariaLabel: "Cover kicker",
           className: "recipe-card__cover-subtitle",
-          onChange: (value) => set({ subtitle: value || undefined }),
+          onChange: (value) => set({ subtitle: value }),
         })}
         {coverField({
           name: "cover-title",
           value: draft.title,
+          removed: !draft.title,
           placeholder: "Add title",
           ariaLabel: "Cover title",
           className: "recipe-card__cover-title",
@@ -2577,18 +2660,20 @@ export const CoverFace = memo(function CoverFace({
         {coverField({
           name: "cover-byline",
           value: draft.author ?? "",
+          removed: draft.author === "",
           placeholder: "Add author",
           ariaLabel: "Cover byline",
           className: "recipe-card__cover-author",
-          onChange: (value) => set({ author: value || undefined }),
+          onChange: (value) => set({ author: value }),
         })}
         {coverField({
           name: "cover-edition",
           value: draft.edition ?? "",
+          removed: draft.edition === "",
           placeholder: "Add edition",
           ariaLabel: "Cover edition or year",
           className: "recipe-card__cover-edition",
-          onChange: (value) => set({ edition: value || undefined }),
+          onChange: (value) => set({ edition: value }),
         })}
       </div>
     </article>

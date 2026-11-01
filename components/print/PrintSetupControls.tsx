@@ -229,6 +229,7 @@ export function PrintSetupControls({
         fontScale={fontScale}
         setFontScale={setFontScale}
         proMarked={!cookbookMode && !hasProEntitlement(customerInfo)}
+        cookbook={cookbookMode}
       />
     </>
   );

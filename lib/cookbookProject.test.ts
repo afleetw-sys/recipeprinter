@@ -44,6 +44,9 @@ describe("cookbook project normalization", () => {
       kind: "dedication",
       heading: "Dedication",
       body: "For Mom",
+      // Never written, in a book from before unwritten lines showed a prompt:
+      // counted as left off, so the old book shows no "+ Signature".
+      signature: "",
     });
   });
 

@@ -206,3 +206,44 @@ const PHOTOS: CommunityPhoto[] = [
 ];
 
 export const COMMUNITY_PHOTOS: CommunityPhoto[] = PHOTOS;
+
+/**
+ * The homepage strip under the Cookbook tab: what a book comes out as. Three
+ * are photographs of a printed book and two are product mockups of one, which
+ * is why the strip is headed "what it can look like" and not "fresh off the
+ * printer". Real photographs first.
+ */
+export const COOKBOOK_PHOTOS: CommunityPhoto[] = [
+  {
+    src: "/images/printed-cards/cookbook.jpeg",
+    width: 1333,
+    height: 2000,
+    objectPosition: "center 38%",
+    alt:
+      "A printed spiral-bound cookbook open on a dark table to a Greek Chicken Souvlaki page, with a full-page photo of the finished flatbreads beside the recipe.",
+  },
+  {
+    src: "/images/cookbook-printed-cover.jpg",
+    width: 900,
+    height: 1161,
+    alt: "A printed spiral-bound cookbook cover titled Our Family Cookbook, set over a grid of home-cooked dishes.",
+  },
+  {
+    src: "/images/cookbook-welcome-souvlaki.jpg",
+    width: 1333,
+    height: 2000,
+    alt: "A close view of a printed spiral-bound cookbook open to a Greek Chicken Souvlaki recipe.",
+  },
+  {
+    src: "/images/cookbook-onboarding-hero.jpg",
+    width: 1536,
+    height: 1024,
+    alt: "A hardcover cookbook open to a Bourbon Chicken recipe, with a full-page photo of the dish on the facing page.",
+  },
+  {
+    src: "/images/cookbook-hardcover.webp",
+    width: 800,
+    height: 1067,
+    alt: "A hardcover cookbook titled Our Family Cookbook, with a grid of home-cooked dishes on the cover.",
+  },
+];
