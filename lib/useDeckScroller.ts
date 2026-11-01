@@ -43,6 +43,12 @@ export function isDeckMobile(): boolean {
   return typeof window !== "undefined" && window.matchMedia(DECK_MOBILE_QUERY).matches;
 }
 
+/** The deck's side padding, both sides together (print.css): a phone's page
+    runs edge to edge, the way a PDF reader shows one. */
+function deckSideRoom(): number {
+  return isDeckMobile() ? 0 : 40;
+}
+
 /** `isDeckMobile`, kept current as the window crosses the breakpoint. For
     what decides layout in JS rather than a class CSS can switch. */
 export function useDeckMobile(): boolean {
@@ -349,7 +355,7 @@ export function useDeckScroller({
       // Phones scroll the same vertical stack as the desktop deck (they used
       // to be a sideways filmstrip with its own geometry), so one set of
       // centring rules serves both.
-      const availW = el.clientWidth - 40;
+      const availW = el.clientWidth - deckSideRoom();
       const availH = el.clientHeight;
       if (availW <= 0 || availH <= 0) return;
       // Centre the first card inside the SNAPPORT (the viewport inset by
@@ -360,8 +366,21 @@ export function useDeckScroller({
       // at both ends, so the snapport's centre is the deck's centre and the top
       // inset still guarantees the control clearance.
       const snapportHeight = availH - DECK_SCROLL_PADDING_TOP * 2;
-      const topPad =
-        DECK_SCROLL_PADDING_TOP + Math.max(0, (snapportHeight - pageHeight * scale) / 2);
+      const mobile = isDeckMobile();
+      if (mobile) {
+        // A phone pages: a cell the deck's height per page (print.css), set
+        // on the canvas so the page counter and swipe hint beside the deck
+        // can place themselves by it too, and the page counter sits 8px
+        // inside the page's top-left corner.
+        el.parentElement?.style.setProperty("--deck-h", `${availH}px`);
+        el.parentElement?.style.setProperty(
+          "--deck-page-left",
+          `${Math.max(0, (el.clientWidth - pageWidth * scale) / 2) + 8}px`,
+        );
+      }
+      const topPad = mobile
+        ? 0
+        : DECK_SCROLL_PADDING_TOP + Math.max(0, (snapportHeight - pageHeight * scale) / 2);
       // Computed analytically from the scale rather than measured post-render,
       // so it is never a frame behind. That makes scrollTop:0 the first slide's
       // own resting position, with no gap above it to overscroll into.
@@ -417,7 +436,8 @@ export function useDeckScroller({
       const free = el.dataset.freeScroll === "true";
       const margin = free ? FREE_SCROLL_EXIT_SLACK : 1;
       const overflows =
-        pageHeight * scale > snapportHeight + margin || pageWidth * scale > availW + margin;
+        pageHeight * scale > (mobile ? availH : snapportHeight) + margin ||
+        pageWidth * scale > availW + margin;
       if (overflows) {
         el.dataset.freeScroll = "true";
       } else if (!zoomGestureRef.current) {
@@ -436,16 +456,13 @@ export function useDeckScroller({
       // Any resize moves the slides, so the cached centers are stale.
       centersDirtyRef.current = true;
       const mobile = isDeckMobile();
-      // The deck's 20px side padding, both sides. A phone scrolls the same
-      // vertical stack as the desktop, so a page takes the full width and the
-      // next one peeks in underneath rather than beside it.
-      const availW = el.clientWidth - 40;
+      // Less the deck's side padding (`deckSideRoom`). A phone scrolls the
+      // same vertical stack as the desktop, so a page takes the full width and
+      // the next one follows underneath rather than beside it.
+      const availW = el.clientWidth - deckSideRoom();
       const availH = el.clientHeight;
       if (availW > 0 && availH > 0) {
         const widthScale = availW / pageWidth;
-        // A phone keeps its own height budget, which leaves the next page
-        // room to peek in.
-        const heightScale = (availH * 0.86) / pageHeight;
         // On a desktop a page fills the SNAPPORT: as tall as it can be while
         // the next page still shows a sliver below it (the inset less the
         // deck's gap, ~50px). That sliver is the only hint there is more to
@@ -465,10 +482,11 @@ export function useDeckScroller({
         // A recipe card at that size is blown up on a laptop: a 4x6 filling the
         // window reads as a poster. So a card's 100% is three quarters of it
         // (what 75% used to be, 2026-11-03); Full Page keeps the whole fit. A
-        // phone keeps its own fit, which is already width-bound.
+        // phone fills its screen: a page per cell, as large as fits in it
+        // (print.css).
         const cardShare = cardSize === "letter" ? 1 : CARD_FIT_SHARE;
         const fit = mobile
-          ? Math.max(0.12, Math.min(1.05, widthScale, heightScale, snapportScale))
+          ? Math.max(0.12, Math.min(1.05, widthScale, availH / pageHeight))
           : Math.max(0.12, Math.min(widthScale, snapportScale) * cardShare);
         setFitScale(fit);
         applyDeckGeometry(el, fit * zoom);
@@ -1109,6 +1127,9 @@ export function useDeckScroller({
       if (navIndex !== activeNavIndex) {
         const behavior = Math.abs(navIndex - activeNavIndex) <= 3 ? "smooth" : "auto";
         suppressAndCenter(navIndex, behavior, sheet);
+      } else if (sheet != null && isDeckMobile()) {
+        // Already on the spread, maybe on its other page.
+        suppressAndCenter(navIndex, "smooth", sheet);
       }
       setActiveNavIndex(navIndex);
     },

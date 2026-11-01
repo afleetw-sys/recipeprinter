@@ -170,6 +170,7 @@ vi.mock("@/lib/useDeckScroller", () => ({
     goToSlide: vi.fn(),
     goToDeckElement: vi.fn(),
   }),
+  useDeckMobile: () => false,
 }));
 vi.mock("@/lib/usePremiumTemplatePurchase", () => ({
   usePremiumTemplatePurchase: () => ({

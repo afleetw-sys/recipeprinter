@@ -114,7 +114,7 @@ import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/use
 import { useRailSelection } from "@/lib/useRailSelection";
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import { addRecipeTarget } from "@/lib/addRecipeTarget";
-import { useDeckScroller } from "@/lib/useDeckScroller";
+import { useDeckMobile, useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { useProPurchase } from "@/lib/useProPurchase";
@@ -6481,7 +6481,12 @@ export default function PrintPage() {
   const previewDims = cookbookMode
     ? presetCardDims(getCookbookPreset(projectMeta.meta.cookbookPreset))
     : PAGE_DIMS[previewCardSize];
-  const spreadWidth = previewDims.w * 2;
+  // A phone shows a book like a PDF: a spread's two pages one above the
+  // other, each the full width of the screen, rather than both shrunk to fit
+  // side by side. So a slide there is one page wide.
+  const deckMobile = useDeckMobile();
+  const stackSpreads = cookbookView && deckMobile;
+  const spreadWidth = stackSpreads ? previewDims.w : previewDims.w * 2;
   // Sheet index → its representative nav item index (the first nav item on it).
   const navIndexForSheet = useMemo(() => {
     const map = new Map<number, number>();
@@ -7314,6 +7319,7 @@ export default function PrintPage() {
           previewMeasuring={previewMeasuring}
           previewDims={previewDims}
           spreadWidth={spreadWidth}
+          stackSpreads={stackSpreads}
           previewCardSize={previewCardSize}
           previewTemplate={previewTemplate}
           previewFontScale={previewFontScale}

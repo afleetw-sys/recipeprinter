@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { FontScale } from "@/lib/fontScale";
 import type { PhotoScale } from "@/lib/photoScale";
 import type {
@@ -31,6 +31,7 @@ import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
 import { AddLineMenu } from "@/components/print/AddLineMenu";
 import { PhotoHoverHint } from "@/components/print/PhotoHoverHint";
 import { ZoomControl } from "@/components/print/ZoomControl";
+import { DeckPageCount } from "@/components/print/DeckPageCount";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { TwoUpPrintPages } from "@/components/print/TwoUpPrintPages";
 import { recipeLinkOn } from "@/lib/recipeLink";
@@ -207,7 +208,10 @@ interface PrintDeckProps {
   cookbookView: boolean;
   previewMeasuring: boolean;
   previewDims: { w: number; h: number };
+  /** On screen: one page wide when `stackSpreads`, otherwise two. */
   spreadWidth: number;
+  /** A phone's book: each spread's pages one above the other (print.css). */
+  stackSpreads: boolean;
   previewCardSize: PrintCardSize;
   previewTemplate: RecipePrintTemplate;
   /** The text size the displayed sheets were measured at (`previewConfig`). */
@@ -440,6 +444,7 @@ export function PrintDeck(props: PrintDeckProps) {
     previewMeasuring,
     previewDims,
     spreadWidth,
+    stackSpreads,
     previewCardSize,
     previewTemplate,
     previewFontScale,
@@ -525,6 +530,34 @@ export function PrintDeck(props: PrintDeckProps) {
   const overflowAddress = activeSlot && activeSlot.kind !== "recipe" ? pageAddressForSlot(activeSlot) : undefined;
   const overflowing = usePageOverflow(overflowAddress, ".recipe-page-canvas");
 
+
+  // The deck element itself, for the page counter: the deck can be replaced
+  // while the counter stays mounted, so it is handed the live one.
+  const [deckEl, setDeckEl] = useState<HTMLDivElement | null>(null);
+  const attachDeck = useCallback(
+    (node: HTMLDivElement | null) => {
+      deckRef(node);
+      setDeckEl(node);
+    },
+    [deckRef],
+  );
+
+  // A phone shows a spread's pages as separate screens with no ring to say
+  // which one the toolbar acts on, so it acts on the one you can see.
+  const [sheetInView, setSheetInView] = useState<number | null>(null);
+  const focusSheetInSpreadRef = useRef(focusSheetInSpread);
+  focusSheetInSpreadRef.current = focusSheetInSpread;
+  useEffect(() => {
+    if (!stackSpreads || sheetInView === null || sheetInView === focusedSheet) return;
+    const spread = spreads[activeNavIndex];
+    if (!spread || (spread.left !== sheetInView && spread.right !== sheetInView)) return;
+    // A frame later: moving onto a new spread resets its page focus in the
+    // same commit, after this runs, and would undo it.
+    const frame = requestAnimationFrame(() =>
+      focusSheetInSpreadRef.current(activeNavIndex, sheetInView),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [stackSpreads, sheetInView, focusedSheet, activeNavIndex, spreads]);
 
   // The empty-state outline is the page at the deck's scale, unless that is
   // too small to hold its words (see `emptyOutlineIsCompact`).
@@ -1563,10 +1596,11 @@ export function PrintDeck(props: PrintDeckProps) {
               photoScale={previewPhotoScale}
             />
           )}
+          <DeckPageCount deck={deckEl} onSheetInView={setSheetInView} />
           <div
             className={`recipe-page-deck ${cookbookView ? "recipe-page-deck--book" : ""}`}
             id="recipe-page-deck"
-            ref={deckRef}
+            ref={attachDeck}
           >
             {previewMeasuring ? (
               /* The import cards stay up through the measure.
@@ -1774,11 +1808,18 @@ export function PrintDeck(props: PrintDeckProps) {
                       {pendingSheet(pendingItem)}
                     </div>
                   );
+                  // Blank pages are there so the printed book pairs up: a
+                  // chapter starting on a right-hand page, a photo facing its
+                  // recipe, a theme's ornament facing the contents. Stacked on
+                  // a phone, nothing faces anything, so they were just empty
+                  // screens to scroll past. The book still prints them. One
+                  // that holds a button (Add dedication, a chapter's Add
+                  // recipe) is not filler and stays.
                   const renderBlank = (
                     trailing = false,
                     reason?: string,
                     actions?: ReactNode,
-                  ) => (
+                  ) => stackSpreads && !actions ? null : (
                     <div
                       className={`recipe-spread__blank recipe-template--${previewTemplate} ${
                         designedBlank ? "recipe-spread__blank--designed" : ""
@@ -1849,7 +1890,10 @@ export function PrintDeck(props: PrintDeckProps) {
                     if (!pageSheet) return renderBlank();
                     const ni = navIndexForSheet.get(sheetIndex);
                     const pageNav = ni != null ? navItems[ni] : null;
-                    // A blank leaf is drawn even far away: it costs nothing.
+                    // A blank leaf is drawn even far away: it costs nothing,
+                    // and a phone leaves it out (`renderBlank`), where a
+                    // full-size placeholder vanishing on arrival would jump
+                    // the scroll.
                     if (!drawn && pageNav) {
                       return (
                         <PagePlaceholder
@@ -1967,7 +2011,7 @@ export function PrintDeck(props: PrintDeckProps) {
                           linkedSpread
                             ? spreadWidth * deckScale
                             : previewDims.w * deckScale,
-                          linkedSpread || spread.single
+                          linkedSpread || spread.single || stackSpreads
                             ? 0
                             : focusedSheet === spread.left
                               ? -((previewDims.w * deckScale + 12) / 2)
