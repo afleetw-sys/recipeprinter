@@ -1,6 +1,6 @@
 "use client";
 
-import type { RefObject } from "react";
+import type { CSSProperties, RefObject } from "react";
 import { AnchoredMenu } from "@/components/AnchoredMenu";
 import { MenuRow } from "@/components/MenuSelect";
 import { ProBadge } from "@/components/ProBadge";
@@ -91,6 +91,7 @@ export function TextSizeControl({
 }) {
   const label = cookbook ? "Recipe text size" : "Text size";
   const index = FONT_SCALES.indexOf(fontScale);
+  const position = index < 0 ? FONT_SCALES.indexOf(DEFAULT_FONT_SCALE) : index;
   return (
     <div className="recipe-config-section recipe-config-section--text-size">
       <span className="recipe-config-label" id="recipe-text-size-label">
@@ -102,22 +103,24 @@ export function TextSizeControl({
           <ProBadge variant="inline" label={false} tooltip="This text size is Pro" />
         )}
       </span>
-      <div className="recipe-text-size__slider">
-        <span className="recipe-text-size__a recipe-text-size__a--small" aria-hidden>
-          A
-        </span>
+      <div
+        className="recipe-text-size__slider"
+        style={{ "--fill": `${(position / (FONT_SCALES.length - 1)) * 100}%` } as CSSProperties}
+      >
         <input
           type="range"
           min={0}
           max={FONT_SCALES.length - 1}
           step={1}
-          value={index < 0 ? FONT_SCALES.indexOf(DEFAULT_FONT_SCALE) : index}
+          value={position}
           aria-labelledby="recipe-text-size-label"
           aria-valuetext={FONT_SCALE_LABELS[fontScale]}
           onChange={(event) => setFontScale(FONT_SCALES[Number(event.target.value)] ?? DEFAULT_FONT_SCALE)}
         />
-        <span className="recipe-text-size__a recipe-text-size__a--big" aria-hidden>
-          A
+        <span className="recipe-text-size__ticks" aria-hidden>
+          {FONT_SCALES.map((scale, i) => (
+            <span key={scale} className={i <= position ? "is-reached" : undefined} />
+          ))}
         </span>
       </div>
     </div>

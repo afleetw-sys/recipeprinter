@@ -3431,7 +3431,8 @@ textarea.recipe-page-fields__input {
   background: var(--cp-card);
 }
 /* Text size (TextSizeControl): the step's name at that size, over a slider
-   between a small and a big A. */
+   the panel's full width. Drawn by hand rather than left to the browser: a
+   thin rounded track, blue up to a white handle, and a mark at each step. */
 .recipe-text-size__name {
   display: inline-flex;
   align-items: center;
@@ -3442,25 +3443,86 @@ textarea.recipe-page-fields__input {
   line-height: 1.2;
 }
 .recipe-text-size__slider {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  --thumb: 18px;
+  position: relative;
+  width: 100%;
+  padding: 4px 0 10px;
 }
 .recipe-text-size__slider input[type="range"] {
-  flex: 1 1 auto;
-  min-width: 0;
-  accent-color: var(--cp-accent);
+  display: block;
+  width: 100%;
+  height: var(--thumb);
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
 }
-.recipe-text-size__a {
-  color: var(--cp-ink-soft);
-  font-weight: 700;
-  line-height: 1;
+.recipe-text-size__slider input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--cp-accent) var(--fill),
+    var(--cp-line-strong) var(--fill)
+  );
 }
-.recipe-text-size__a--small {
-  font-size: 0.72rem;
+.recipe-text-size__slider input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--cp-line-strong);
 }
-.recipe-text-size__a--big {
-  font-size: 1.1rem;
+.recipe-text-size__slider input[type="range"]::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--cp-accent);
+}
+.recipe-text-size__slider input[type="range"]::-webkit-slider-thumb {
+  width: var(--thumb);
+  height: var(--thumb);
+  margin-top: calc((4px - var(--thumb)) / 2);
+  border: 2px solid var(--cp-accent);
+  border-radius: 50%;
+  background: var(--cp-card);
+  -webkit-appearance: none;
+  appearance: none;
+  transition: transform 120ms ease;
+}
+.recipe-text-size__slider input[type="range"]::-moz-range-thumb {
+  width: var(--thumb);
+  height: var(--thumb);
+  box-sizing: border-box;
+  border: 2px solid var(--cp-accent);
+  border-radius: 50%;
+  background: var(--cp-card);
+}
+.recipe-text-size__slider input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+.recipe-text-size__slider input[type="range"]:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: 4px;
+  border-radius: 999px;
+}
+/* A mark under each step, centred where the handle stops. */
+.recipe-text-size__ticks {
+  position: absolute;
+  right: calc(var(--thumb) / 2);
+  bottom: 0;
+  left: calc(var(--thumb) / 2);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.recipe-text-size__ticks span {
+  width: 4px;
+  height: 4px;
+  margin: 0 -2px;
+  border-radius: 50%;
+  background: var(--cp-line-strong);
+}
+.recipe-text-size__ticks span.is-reached {
+  background: var(--cp-accent);
 }
 .recipe-customize__reset {
   align-self: flex-start;
@@ -9324,10 +9386,10 @@ textarea.recipe-card__toc-title {
    of padding. They sit over the same pages and are read together, so one is
    defined in the other's terms rather than beside it. */
 /* ── Text size (settings panel) ───────────────────────────────────────────
-   A section heading like Size and Themes, with the shared MenuSelect under
-   it. The Pro crowns are on the sizes themselves (every one but Normal). */
+   A section heading like Size and Themes, with the slider under it at the
+   panel's full width (see `.recipe-text-size__slider`). */
 .recipe-config-section--text-size {
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 /* ── Zoom control (deck, full-page photo) ─────────────────────────────────
