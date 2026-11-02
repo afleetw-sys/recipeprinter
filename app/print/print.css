@@ -3320,12 +3320,12 @@ textarea.recipe-page-fields__input {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 3px 5px 3px 6px;
+  padding: 2px 4px 2px 8px;
   border: 1px solid var(--cp-selected-border);
   border-radius: 999px;
   background: var(--cp-card);
   color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
+  font-size: var(--cp-fs-label);
   font-weight: 700;
   cursor: pointer;
   transition: background-color 150ms ease;
@@ -3344,10 +3344,6 @@ textarea.recipe-page-fields__input {
 }
 .recipe-template-cell:hover .recipe-template-option.is-active {
   border-color: var(--cp-selected-border);
-}
-.recipe-template-customize__check {
-  margin-right: 2px;
-  color: var(--cp-selected-border);
 }
 .recipe-template-customize:focus-visible,
 .recipe-customize__back:focus-visible {

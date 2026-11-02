@@ -8,7 +8,7 @@ import {
 } from "@/components/RecipeCardPrint";
 import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
 import { ProBadge } from "@/components/ProBadge";
-import { CheckIcon, ChevronDownIcon, ChevronRightIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
+import { ChevronDownIcon, ChevronRightIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
 import { arrangeThemes, isFeatured } from "@/lib/seasonalThemes";
 import { isPremiumTemplate } from "@/lib/premiumTemplates";
 import { hasTemplateOrProEntitlement } from "@/lib/recipePrinterPurchases";
@@ -149,8 +149,6 @@ export function ThemePicker({
           your own. */}
       {active && (
         <button type="button" className="recipe-template-customize" onClick={onCustomize}>
-          {/* The check says this is the theme in use, as well as the border. */}
-          <CheckIcon size={ICON_SIZE.sm} className="recipe-template-customize__check" />
           Customize
           <ChevronRightIcon size={ICON_SIZE.sm} />
         </button>
