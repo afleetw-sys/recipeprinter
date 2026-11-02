@@ -3307,30 +3307,24 @@ textarea.recipe-page-fields__input {
   transition: transform 150ms ease;
 }
 
-/* The theme in use, above the grid (ThemePicker): its card beside its name,
-   and the way into its Customize view along the bottom. One button, framed
-   with a hairline like the tiles below it. */
+/* The theme in use, above the grid (ThemePicker): a small preview beside its
+   name and the way into Customize, in one row. It wears the selected-state
+   border and tint, the same as its tile in the grid, so it reads as "this is
+   the one you have" without being bigger than the tiles. One button. */
 .recipe-current-theme {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas:
-    "preview name"
-    "customize customize";
+  display: flex;
   align-items: center;
-  gap: 0 12px;
+  gap: 12px;
   width: 100%;
   margin: 2px 0 12px;
-  padding: 10px 10px 0;
-  border: 1px solid var(--cp-line);
+  padding: 8px;
+  border: 1px solid var(--cp-selected-border);
   border-radius: 12px;
-  background: var(--cp-card);
-  color: var(--cp-ink);
+  background: var(--cp-selected-fill);
+  box-shadow: var(--cp-selected-ring);
+  color: var(--cp-selected-text);
   text-align: left;
   cursor: pointer;
-  overflow: hidden;
-}
-.recipe-current-theme:hover {
-  border-color: var(--cp-line-strong);
 }
 .recipe-current-theme:focus-visible,
 .recipe-customize__back:focus-visible {
@@ -3338,38 +3332,57 @@ textarea.recipe-page-fields__input {
   outline-offset: var(--cp-focus-ring-offset);
 }
 .recipe-current-theme__preview {
-  grid-area: preview;
+  flex: 0 0 96px;
   display: block;
   overflow: hidden;
   border: 1px solid var(--cp-line);
   border-radius: 6px;
+  background: var(--cp-card);
 }
-.recipe-current-theme__name {
-  grid-area: name;
+.recipe-current-theme__text {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 2px;
+  min-width: 0;
+}
+.recipe-current-theme__eyebrow {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.recipe-current-theme__name {
+  max-width: 100%;
+  overflow: hidden;
   font-size: var(--cp-fs-body);
   font-weight: 800;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recipe-current-theme__customize {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 4px;
+  padding: 3px 6px 3px 10px;
+  border: 1px solid var(--cp-line);
+  border-radius: 999px;
+  background: var(--cp-card);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+  transition: border-color 150ms ease;
 }
 .recipe-current-theme__state {
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
   font-weight: 500;
 }
-.recipe-current-theme__customize {
-  grid-area: customize;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 10px -10px 0;
-  padding: 9px 10px;
-  border-top: 1px solid var(--cp-line);
-  font-size: var(--cp-fs-caption);
-  font-weight: 700;
-}
+/* Colour, not movement: the chip is the button's visible handle. */
 .recipe-current-theme:hover .recipe-current-theme__customize {
-  background: var(--cp-surface-soft);
+  border-color: var(--cp-selected-border);
 }
 
 .recipe-config-section--customize {
