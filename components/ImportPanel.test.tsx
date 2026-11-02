@@ -71,19 +71,27 @@ describe("the link field", () => {
   });
 });
 
-describe("waking the import meter", () => {
+describe("waking the import backend", () => {
   // A cook's first import of a visit waited a median 3.9s on the meter, and a
   // quarter hit its 5s limit, because nothing had called the function since it
-  // was shut down for being idle (PostHog, 2026-11-02). Showing an import box
-  // wakes it, and so does coming back to the box after it may have gone idle.
-  it("wakes the meter when an import box shows, and again on a later touch", () => {
+  // was shut down for being idle; the link and photo parsers start cold the
+  // same way, 2.7s and 4.3s (PostHog and timings, 2026-11-02). Showing an
+  // import box wakes them, and so does coming back to the box after they may
+  // have gone idle.
+  it("wakes the meter and parsers when an import box shows, and again on a later touch", () => {
     onProductionHost.value = true;
     vi.stubEnv("NEXT_PUBLIC_FIREBASE_PROJECT_ID", "cookpilot-bbecb");
     vi.useFakeTimers({ toFake: ["Date"] });
     const fetch = vi.fn((_url: string, _init?: RequestInit) => Promise.resolve(new Response()));
     vi.stubGlobal("fetch", fetch);
-    const meterCalls = () =>
-      fetch.mock.calls.filter(([url]) => String(url).includes("recipePrinterImportMeter")).length;
+    const woken = () => {
+      const count = (name: string) => fetch.mock.calls.filter(([url]) => String(url).endsWith(`/${name}`)).length;
+      return {
+        meter: count("recipePrinterImportMeter"),
+        link: count("recipePrinterParseRecipeFromURL"),
+        photo: count("parseRecipeFromImages"),
+      };
+    };
     const panel = () =>
       render(
         <ImportPanel
@@ -97,23 +105,24 @@ describe("waking the import meter", () => {
     try {
       resetImportUsageForTest();
       panel();
-      expect(meterCalls()).toBe(1);
+      expect(woken()).toEqual({ meter: 1, link: 1, photo: 1 });
 
-      // Typing straight away: it's awake, nothing more is sent.
+      // Typing straight away: they're awake, nothing more is sent.
       fireEvent.focus(screen.getByRole("textbox"));
-      expect(meterCalls()).toBe(1);
+      expect(woken()).toEqual({ meter: 1, link: 1, photo: 1 });
 
-      // Back to the box after long enough for it to have gone idle.
+      // Back to the box after long enough for them to have gone idle.
       vi.setSystemTime(Date.now() + 20 * 60 * 1000);
       fireEvent.pointerDown(screen.getByRole("textbox"));
-      expect(meterCalls()).toBe(2);
+      expect(woken()).toEqual({ meter: 2, link: 2, photo: 2 });
       cleanup();
 
-      // A cook this browser knows is Pro never waits on the meter.
+      // A cook this browser knows is Pro never waits on the meter, but their
+      // imports are parsed like anyone's.
       resetImportUsageForTest();
       markImportsUnlimited();
       panel();
-      expect(meterCalls()).toBe(2);
+      expect(woken()).toEqual({ meter: 2, link: 3, photo: 3 });
     } finally {
       cleanup();
       resetImportUsageForTest();
