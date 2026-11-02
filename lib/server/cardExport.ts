@@ -7,6 +7,7 @@ import {
 import { RECIPEPRINTER_PRO_ENTITLEMENT_ID } from "@/lib/proProduct";
 import type { ProLockReason } from "@/lib/recipePrinterPurchases";
 import { DEFAULT_FONT_SCALE, normalizeFontScale } from "@/lib/fontScale";
+import { normalizePhotoScale } from "@/lib/photoScale";
 import type { ExportOutput, ExportPayload } from "@/types/export";
 import type { PrintCardSize, QueueItem, RecipePrintTemplate, Section } from "@/types/recipe";
 
@@ -132,6 +133,9 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
           showDescription: settings.showDescription !== false,
           showCutLines: Boolean(settings.showCutLines),
           fontScale,
+          // Free cards print no photo (`withoutPhotos`), so their size needs
+          // no lock of its own.
+          photoScale: normalizePhotoScale(settings.photoScale),
           cookbookMode: false,
         },
       },

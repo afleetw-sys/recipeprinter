@@ -517,8 +517,17 @@ export interface PrintProjectSettings {
   showCutLines: boolean;
   /** The cook's text size on every recipe page, one of `FONT_SCALES`
       (lib/fontScale.ts). Absent = Normal, which is how every book saved before
-      it existed reads. Read through `normalizeFontScale`, never directly. */
+      it existed reads. Read through `normalizeFontScale`, never directly.
+      Since 2026-11 each theme keeps its own (`themeLooks`); this is the
+      current theme's, for the exports, which draw only that one. */
   fontScale?: number;
+  /** The current theme's photo size, one of `PHOTO_SCALES`
+      (lib/photoScale.ts). Absent = Normal. */
+  photoScale?: number;
+  /** Every theme's own text and photo size (lib/themeLooks.ts). Absent on a
+      book saved before, whose `fontScale` was every theme's. Read through
+      `normalizeThemeLooks`, never directly. */
+  themeLooks?: Partial<Record<RecipePrintTemplate, { fontScale?: number; photoScale?: number }>>;
   /** Book-only settings — stay undefined/off until "Make it a cookbook" has
       been used to opt into the cookbook experience. */
   cookbookMode?: boolean;

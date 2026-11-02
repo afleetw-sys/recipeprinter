@@ -8,7 +8,7 @@ import {
 } from "@/components/RecipeCardPrint";
 import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
 import { ProBadge } from "@/components/ProBadge";
-import { ChevronDownIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
+import { ChevronDownIcon, ChevronRightIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
 import { arrangeThemes, isFeatured } from "@/lib/seasonalThemes";
 import { isPremiumTemplate } from "@/lib/premiumTemplates";
 import { hasTemplateOrProEntitlement } from "@/lib/recipePrinterPurchases";
@@ -21,6 +21,7 @@ interface ThemePickerProps {
   customerInfo: CustomerInfo | null;
   setToastMessage: Dispatch<SetStateAction<string | null>>;
   setMobileDrawer: Dispatch<SetStateAction<"template" | null>>;
+  onCustomize: () => void;
 }
 
 /**
@@ -48,6 +49,7 @@ export function ThemePicker({
   customerInfo,
   setToastMessage,
   setMobileDrawer,
+  onCustomize,
 }: ThemePickerProps) {
   const today = new Date();
   const { main, seasonal } = arrangeThemes(
@@ -100,9 +102,13 @@ export function ThemePicker({
       setMobileDrawer(null);
     };
 
+    const active = template === option.id;
+    // The cell holds the tile and, on the chosen one, its Customize button:
+    // a sibling laid over the tile rather than inside it, since the tile is a
+    // button already and one can't hold another.
     return (
+      <div key={option.id} className="recipe-template-cell">
       <div
-        key={option.id}
         role="button"
         tabIndex={0}
         className={`recipe-template-option recipe-template-option--${option.id} ${
@@ -138,6 +144,15 @@ export function ThemePicker({
           locked && <ProBadge tooltip="This theme is Pro" />
         )}
         <TemplateThumbnail template={option.id} />
+      </div>
+      {/* On the theme it changes, so it can't read as making a theme of
+          your own. */}
+      {active && (
+        <button type="button" className="recipe-template-customize" onClick={onCustomize}>
+          Customize
+          <ChevronRightIcon size={ICON_SIZE.sm} />
+        </button>
+      )}
       </div>
     );
   }

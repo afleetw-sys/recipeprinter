@@ -60,12 +60,12 @@
   --recipe-card-step-gap: calc(4.2pt * var(--recipe-font-scale, 1));
   --recipe-card-ingredient-gap: calc(1.8pt * var(--recipe-font-scale, 1));
   --recipe-card-photo-size: 0.92in;
-  /* The recipe photo follows the text size at half its step (Biggest's 1.2
-     is 1.1 here): at the full step a photo crowded the card. Only the
-     picture: a mat or frame a theme draws round it (`--recipe-photo-mat`)
-     is the theme's art and keeps its size. Every photo width below is
-     (box - mat) * this + mat. */
-  --recipe-photo-scale: calc(1 + (var(--recipe-font-scale, 1) - 1) / 2);
+  /* The cook's photo size (lib/photoScale.ts), set inline beside
+     `--recipe-font-scale`. It followed the text size at half its step until
+     2026-11; now each has its own setting. Only the picture: a mat or frame
+     a theme draws round it (`--recipe-photo-mat`) is the theme's art and
+     keeps its size. Every photo width below is (box - mat) * this + mat. */
+  --recipe-photo-scale: 1;
   --recipe-card-footer-reserve: 0.28in;
 }
 
@@ -2638,6 +2638,14 @@
     padding-bottom: 26px;
   }
 
+  /* Customize's Reset bar sits on the panel's bottom edge, not 26px above. */
+  .recipe-config-panel__scroll .recipe-config-section--customize {
+    margin-bottom: -26px;
+  }
+  .recipe-config-panel__scroll .recipe-customize__foot {
+    bottom: -26px;
+  }
+
   .recipe-config-panel__footer {
     display: none;
   }
@@ -3307,6 +3315,242 @@ textarea.recipe-page-fields__input {
   transition: transform 150ms ease;
 }
 
+/* A theme tile's cell (ThemePicker): the tile, and on the chosen one its
+   Customize button laid over its foot, on the theme it changes. */
+.recipe-template-cell {
+  position: relative;
+  min-width: 0;
+}
+.recipe-template-customize {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px 2px 8px;
+  border: 1px solid var(--cp-selected-border);
+  border-radius: 999px;
+  background: var(--cp-card);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+/* The button changes colour; it only moves with its tile's 1px lift, so the
+   two never come apart. */
+.recipe-template-customize:hover {
+  background: var(--cp-selected-fill);
+}
+.recipe-template-cell:hover .recipe-template-customize {
+  transform: translateY(-1px);
+}
+.recipe-template-cell:hover .recipe-template-option {
+  border-color: var(--cp-line-strong);
+  transform: translateY(-1px);
+}
+.recipe-template-cell:hover .recipe-template-option.is-active {
+  border-color: var(--cp-selected-border);
+}
+.recipe-template-customize:focus-visible,
+.recipe-customize__back:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+
+.recipe-config-section--customize {
+  gap: 16px;
+}
+.recipe-customize__header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.recipe-customize__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: -4px;
+  padding: 4px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.recipe-customize__back:hover {
+  color: var(--cp-ink);
+}
+.recipe-customize__title {
+  margin: 0;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body);
+  font-weight: 800;
+}
+/* Says Customize is Pro before anything is changed, so Print is never the
+   first a free cook hears of it. In the app's Pro colours: the cream tint, a
+   gold crown, and the header's own Upgrade button. */
+.recipe-customize__pro {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px 10px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--cp-premium) 25%, transparent);
+  border-radius: 10px;
+  background: var(--cp-premium-soft);
+  color: var(--cp-ink);
+}
+.recipe-customize__pro-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--cp-card);
+  color: var(--cp-premium-bright);
+}
+.recipe-customize__pro-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--cp-fs-caption);
+  line-height: 1.4;
+}
+.recipe-customize__pro-text p {
+  margin: 0;
+  color: var(--cp-ink-soft);
+}
+.recipe-customize__pro-text .recipe-customize__pro-title {
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+  font-weight: 700;
+}
+.recipe-customize__pro-button {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  background: var(--cp-card);
+}
+/* Text size (TextSizeControl): the step's name at that size, over a slider
+   the panel's full width. Drawn by hand rather than left to the browser: a
+   thin rounded track, blue up to a white handle, and a mark at each step. */
+.recipe-text-size__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 1.6em;
+  color: var(--cp-ink);
+  font-weight: 700;
+  line-height: 1.2;
+}
+.recipe-text-size__slider {
+  --thumb: 18px;
+  position: relative;
+  width: 100%;
+  padding: 4px 0 10px;
+}
+.recipe-text-size__slider input[type="range"] {
+  display: block;
+  width: 100%;
+  height: var(--thumb);
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.recipe-text-size__slider input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--cp-accent) var(--fill),
+    var(--cp-line-strong) var(--fill)
+  );
+}
+.recipe-text-size__slider input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--cp-line-strong);
+}
+.recipe-text-size__slider input[type="range"]::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--cp-accent);
+}
+.recipe-text-size__slider input[type="range"]::-webkit-slider-thumb {
+  width: var(--thumb);
+  height: var(--thumb);
+  margin-top: calc((4px - var(--thumb)) / 2);
+  border: 2px solid var(--cp-accent);
+  border-radius: 50%;
+  background: var(--cp-card);
+  -webkit-appearance: none;
+  appearance: none;
+  transition: transform 120ms ease;
+}
+.recipe-text-size__slider input[type="range"]::-moz-range-thumb {
+  width: var(--thumb);
+  height: var(--thumb);
+  box-sizing: border-box;
+  border: 2px solid var(--cp-accent);
+  border-radius: 50%;
+  background: var(--cp-card);
+}
+.recipe-text-size__slider input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+.recipe-text-size__slider input[type="range"]:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: 4px;
+  border-radius: 999px;
+}
+/* A mark under each step, centred where the handle stops. */
+.recipe-text-size__ticks {
+  position: absolute;
+  right: calc(var(--thumb) / 2);
+  bottom: 0;
+  left: calc(var(--thumb) / 2);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.recipe-text-size__ticks span {
+  width: 4px;
+  height: 4px;
+  margin: 0 -2px;
+  border-radius: 50%;
+  background: var(--cp-line-strong);
+}
+.recipe-text-size__ticks span.is-reached {
+  background: var(--cp-accent);
+}
+/* The view fills the panel so its foot can sit at the bottom; the foot
+   sticks there while the settings above it scroll. */
+.recipe-config-section--customize {
+  flex: 1 0 auto;
+}
+.recipe-customize__foot {
+  position: sticky;
+  bottom: 0;
+  margin: auto -8px 0;
+  padding: 10px 8px;
+  border-top: 1px solid var(--cp-line);
+  /* The panel's own ground, so it reads as the panel's foot. */
+  background: var(--cp-chrome-ground);
+}
+.recipe-customize__reset {
+  display: inline-flex;
+  align-items: center;
+}
+
 .recipe-template-seasonal-toggle[aria-expanded="true"] svg {
   transform: rotate(180deg);
 }
@@ -3333,7 +3577,12 @@ textarea.recipe-page-fields__input {
   transform: translateY(-1px);
 }
 
+/* 2px of blue: the preview fills the tile to its edge, so none of the tint
+   shows and a 1px border alone read thinner than the size tiles'. The second
+   pixel is an inset outline, so the preview keeps its size. */
 .recipe-template-option.is-active {
+  outline: 1px solid var(--cp-selected-border);
+  outline-offset: -2px;
   border-color: var(--cp-selected-border);
   background: var(--cp-selected-fill);
   box-shadow: var(--cp-selected-ring);
@@ -4244,7 +4493,9 @@ textarea.recipe-page-fields__input {
     display: none;
   }
 
-  .recipe-config-panel[data-mobile-drawer="template"] .recipe-config-section--template {
+  .recipe-config-panel[data-mobile-drawer="template"] .recipe-config-section--template,
+  .recipe-config-panel[data-mobile-drawer="template"] .recipe-config-section--customize,
+  .recipe-config-panel[data-mobile-drawer="template"] .recipe-config-section--customize .recipe-config-section {
     display: flex;
   }
 
@@ -6289,31 +6540,6 @@ textarea.recipe-page-fields__input {
 }
 .image-picker__close {
   flex: 0 0 auto;
-}
-/* A free recipe card: photos are Pro. The line offering it sits on top, and
-   everything under it shows what Pro adds, greyed and not pressable. */
-.image-picker__upgrade {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px 16px;
-  margin: 14px 0 4px;
-  padding: 12px 14px;
-  border: 1px solid var(--cp-line);
-  border-radius: 12px;
-}
-.image-picker__upgrade p {
-  margin: 0;
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-body);
-  font-weight: 600;
-}
-.image-picker__locked {
-  opacity: 0.4;
-  filter: grayscale(1);
-  pointer-events: none;
-  user-select: none;
 }
 /* Per-recipe Photo dialog: placement (None/In-page/Full-page) sits above the
    source, so both live in one dialog. */
@@ -9183,10 +9409,10 @@ textarea.recipe-card__toc-title {
    of padding. They sit over the same pages and are read together, so one is
    defined in the other's terms rather than beside it. */
 /* ── Text size (settings panel) ───────────────────────────────────────────
-   A section heading like Size and Themes, with the shared MenuSelect under
-   it. The Pro crowns are on the sizes themselves (every one but Normal). */
+   A section heading like Size and Themes, with the slider under it at the
+   panel's full width (see `.recipe-text-size__slider`). */
 .recipe-config-section--text-size {
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 /* ── Zoom control (deck, full-page photo) ─────────────────────────────────

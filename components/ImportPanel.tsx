@@ -175,9 +175,13 @@ export function ImportPanel({
     // The recipe-app sources are a primary import option, but CookPilot's
     // Firebase/Auth code is large enough to keep out of the initial page
     // bundle. Fetch and initialize it once the browser is idle so choosing the
-    // tab feels immediate without delaying first paint.
+    // tab feels immediate without delaying first paint. Only a head start:
+    // leaving the page mid-download fails it, and opening the tab loads the
+    // code again, so a failure here is dropped rather than left uncaught.
     const prewarm = () => {
-      void loadRecipeApps().then((mod) => mod.prewarmCookPilotImport());
+      loadRecipeApps()
+        .then((mod) => mod.prewarmCookPilotImport())
+        .catch(() => {});
     };
     if ("requestIdleCallback" in window) {
       const idleId = window.requestIdleCallback(prewarm, { timeout: 1_500 });

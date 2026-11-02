@@ -88,8 +88,8 @@ export function ImagePicker({
   /** No button of its own: the caller draws one in its own style and opens
       the dialog with `openSignal` (the settings panel's plain buttons). */
   hideTrigger?: boolean;
-  /** Photos are Pro here and this account is not: the dialog still opens,
-      greyed out, under a line offering the upgrade this calls. */
+  /** Photos are Pro here and this account is not: the button, and an
+      `openSignal`, open the upgrade this calls instead of the dialog. */
   onUpgrade?: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -102,7 +102,8 @@ export function ImagePicker({
   }, [open]);
   useEffect(() => {
     if (openSignal) {
-      setOpen(true);
+      if (onUpgrade) onUpgrade();
+      else setOpen(true);
       onOpenSignalConsumed?.();
     }
     // Only `openSignal` should retrigger this — `onOpenSignalConsumed` is a
@@ -246,10 +247,8 @@ export function ImagePicker({
      anywhere is both the forgiving target and the guard against that, which is
      why they stay attached even when `addFiles` will refuse the file. */
   const addFilesRef = useRef(addFiles);
-  const lockedRef = useRef(Boolean(onUpgrade));
   useEffect(() => {
     addFilesRef.current = addFiles;
-    lockedRef.current = Boolean(onUpgrade);
   });
   useEffect(() => {
     if (!open) {
@@ -263,7 +262,7 @@ export function ImagePicker({
     const carriesFiles = (event: DragEvent) =>
       Array.from(event.dataTransfer?.types ?? []).includes("Files");
     const onEnter = (event: DragEvent) => {
-      if (!carriesFiles(event) || lockedRef.current) return;
+      if (!carriesFiles(event)) return;
       depth += 1;
       setDragging(true);
     };
@@ -282,7 +281,7 @@ export function ImagePicker({
       event.preventDefault();
       depth = 0;
       setDragging(false);
-      if (!carriesFiles(event) || lockedRef.current) return;
+      if (!carriesFiles(event)) return;
       void addFilesRef.current(event.dataTransfer?.files ?? null);
     };
     window.addEventListener("dragenter", onEnter);
@@ -503,30 +502,7 @@ export function ImagePicker({
         {error && <p className="field-error" role="alert">{error}</p>}
     </>
   );
-  // Locked: the whole dialog shows, so the cook sees what Pro adds, but
-  // greyed and inert under the line that offers it.
-  const pickerBody = onUpgrade ? (
-    <>
-      <div className="image-picker__upgrade">
-        <p>Photos on recipe cards come with Pro.</p>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => {
-            setOpen(false);
-            onUpgrade();
-          }}
-        >
-          Upgrade to Pro
-        </button>
-      </div>
-      <div className="image-picker__locked" inert aria-hidden>
-        {pickerContent}
-      </div>
-    </>
-  ) : (
-    pickerContent
-  );
+
 
   const gridFooter = gridMode ? (
     <div className="image-picker__footer">
@@ -554,7 +530,8 @@ export function ImagePicker({
         onMouseDown={(event) => event.preventDefault()}
         onClick={(event) => {
           event.stopPropagation();
-          setOpen(true);
+          if (onUpgrade) onUpgrade();
+          else setOpen(true);
         }}
         aria-haspopup="dialog"
       >
@@ -576,7 +553,7 @@ export function ImagePicker({
           // plain `position: fixed` sheet.
           portal
         >
-          {pickerBody}
+          {pickerContent}
         </MobileSheet>
       ) : (
         <Dialog
@@ -602,7 +579,7 @@ export function ImagePicker({
                 <XIcon size={ICON_SIZE.md} />
               </IconButton>
             </div>
-            {pickerBody}
+            {pickerContent}
           </div>
           {gridFooter}
         </Dialog>

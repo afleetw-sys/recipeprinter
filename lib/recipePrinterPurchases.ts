@@ -357,8 +357,11 @@ export function computeProLocks({
   return { themeLocked, cardSizeLocked, fontScaleLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked };
 }
 
-/** The photo dialog's upgrade button on a free recipe card. */
+/** A free recipe card's Photo button, which opens the upgrade, not the photo dialog. */
 export const PHOTO_UPGRADE_TRIGGER = "card_photo";
+
+/** The Customize view's Upgrade button on a free recipe card. */
+export const CUSTOMIZE_UPGRADE_TRIGGER = "customize_theme";
 
 export type ProLockReason = "theme" | "card_size" | "font_size" | "photo" | "multi_recipe";
 
@@ -413,9 +416,12 @@ export function activeProLockReasons(
   trigger: string,
 ): ProLockReason[] {
   if (trigger === "add_more_recipes" || trigger === "multi_recipe_found") return ["multi_recipe"];
-  // A free card draws no photo, so nothing is locked at Print; the photo
-  // dialog's own upgrade button is the one way to ask.
+  // A free card draws no photo, so nothing is locked at Print; the card's
+  // Photo button is the one way to ask.
   if (trigger === PHOTO_UPGRADE_TRIGGER) return ["photo"];
+  // The Customize view's Upgrade button leads with customizing, whether or
+  // not anything has been changed yet.
+  if (trigger === CUSTOMIZE_UPGRADE_TRIGGER) return ["font_size"];
   const reasons: ProLockReason[] = [];
   if (locks.themeLocked) reasons.push("theme");
   if (locks.cardSizeLocked) reasons.push("card_size");

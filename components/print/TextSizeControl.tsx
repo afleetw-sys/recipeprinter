@@ -1,8 +1,8 @@
 "use client";
 
-import type { RefObject } from "react";
+import type { CSSProperties, RefObject } from "react";
 import { AnchoredMenu } from "@/components/AnchoredMenu";
-import { MenuRow, MenuSelect } from "@/components/MenuSelect";
+import { MenuRow } from "@/components/MenuSelect";
 import { ProBadge } from "@/components/ProBadge";
 import {
   DEFAULT_FONT_SCALE,
@@ -68,6 +68,12 @@ export function TextSizeMenu({
   );
 }
 
+/**
+ * The settings panel's text size: a slider over the five steps, with the
+ * step's name above it drawn at that size, so the cook sees the change before
+ * they look at the page. Steps, never a free value: every one is measured by
+ * the layout harness.
+ */
 export function TextSizeControl({
   fontScale,
   setFontScale,
@@ -83,19 +89,40 @@ export function TextSizeControl({
       size" to mean the whole book. So there it says which pages it means. */
   cookbook?: boolean;
 }) {
-  const options = textSizeOptions(proMarked);
   const label = cookbook ? "Recipe text size" : "Text size";
+  const index = FONT_SCALES.indexOf(fontScale);
+  const position = index < 0 ? FONT_SCALES.indexOf(DEFAULT_FONT_SCALE) : index;
   return (
     <div className="recipe-config-section recipe-config-section--text-size">
-      <span className="recipe-config-label">{label}</span>
-      <MenuSelect
-        label={label}
-        labelHidden
-        placeholder={FONT_SCALE_LABELS[fontScale]}
-        value={String(fontScale)}
-        options={options}
-        onChange={(value) => setFontScale(normalizeFontScale(Number(value)))}
-      />
+      <span className="recipe-config-label" id="recipe-text-size-label">
+        {label}
+      </span>
+      <span className="recipe-text-size__name" style={{ fontSize: `calc(var(--cp-fs-body) * ${fontScale})` }}>
+        {FONT_SCALE_LABELS[fontScale]}
+        {proMarked && fontScale !== DEFAULT_FONT_SCALE && (
+          <ProBadge variant="inline" label={false} tooltip="This text size is Pro" />
+        )}
+      </span>
+      <div
+        className="recipe-text-size__slider"
+        style={{ "--fill": `${(position / (FONT_SCALES.length - 1)) * 100}%` } as CSSProperties}
+      >
+        <input
+          type="range"
+          min={0}
+          max={FONT_SCALES.length - 1}
+          step={1}
+          value={position}
+          aria-labelledby="recipe-text-size-label"
+          aria-valuetext={FONT_SCALE_LABELS[fontScale]}
+          onChange={(event) => setFontScale(FONT_SCALES[Number(event.target.value)] ?? DEFAULT_FONT_SCALE)}
+        />
+        <span className="recipe-text-size__ticks" aria-hidden>
+          {FONT_SCALES.map((scale, i) => (
+            <span key={scale} className={i <= position ? "is-reached" : undefined} />
+          ))}
+        </span>
+      </div>
     </div>
   );
 }

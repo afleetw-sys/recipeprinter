@@ -25,6 +25,7 @@ import { withLiveRecipes } from "@/lib/liveSheetContent";
 import { chapterRecipeTitles } from "@/lib/chapterIntro";
 import { recipeLinkOn } from "@/lib/recipeLink";
 import { DEFAULT_FONT_SCALE, type FontScale } from "@/lib/fontScale";
+import { DEFAULT_PHOTO_SCALE, type PhotoScale } from "@/lib/photoScale";
 import {
   getCookbookPreset,
   presetCardHeightIn,
@@ -103,8 +104,10 @@ function faceKey(
   brandHidden: boolean,
   // The cook's text size: bigger type is a taller recipe on the same card.
   fontScale: FontScale,
+  // The cook's photo size: a bigger header photo leaves the recipe less room.
+  photoScale: PhotoScale,
 ): string {
-  return `${id}::${size}::${template}::${hasPhoto ? 1 : 0}::${sourceUrlOn ? 1 : 0}::${cookbookMode ? 1 : 0}::${descriptionOn ? 1 : 0}::${brandHidden ? 1 : 0}::${fontScale}`;
+  return `${id}::${size}::${template}::${hasPhoto ? 1 : 0}::${sourceUrlOn ? 1 : 0}::${cookbookMode ? 1 : 0}::${descriptionOn ? 1 : 0}::${brandHidden ? 1 : 0}::${fontScale}::${photoScale}`;
 }
 
 // Ceiling on retained measurements, evicted oldest-first. Entries are cheap —
@@ -487,6 +490,8 @@ interface UsePrintSheetsOptions {
   template: RecipePrintTemplate;
   /** The cook's text size (lib/fontScale.ts), applied to every recipe page. */
   fontScale?: FontScale;
+  /** The cook's photo size (lib/photoScale.ts), on every recipe page's photo. */
+  photoScale?: PhotoScale;
   /** The book's print format. In cookbook mode the page — and so the card every
       recipe is measured against — IS this preset's sheet (see `presetCardDims`).
       Absent outside cookbook mode and on books saved before presets existed,
@@ -530,6 +535,7 @@ export function usePrintSheets({
   brandHidden = false,
   template,
   fontScale = DEFAULT_FONT_SCALE,
+  photoScale = DEFAULT_PHOTO_SCALE,
   preset,
 }: UsePrintSheetsOptions) {
   // Everything below reads `recipe.image` as "the photo this book shows", so
@@ -610,14 +616,14 @@ export function usePrintSheets({
     (id: string, recipe: Recipe, hasPhoto: boolean, size: PrintCardSize): RecipeFace[] | null => {
       const entry =
         measuredFaces[
-          faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn, brandHidden, fontScale)
+          faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn, brandHidden, fontScale, photoScale)
         ];
       // Recipe CONTENT is the one discriminator a string key can't carry: an
       // inline edit keeps the same id, so a measurement of the pre-edit recipe
       // has to be rejected on identity. Everything else is in the key.
       return entry && entry.recipe === recipe ? entry.pages : null;
     },
-    [measuredFaces, linkOnFor, template, cookbookLayouts, descriptionOn, brandHidden, fontScale],
+    [measuredFaces, linkOnFor, template, cookbookLayouts, descriptionOn, brandHidden, fontScale, photoScale],
   );
 
   // Resolves each recipe's per-page layout: an explicit placement, else the
@@ -1415,7 +1421,7 @@ export function usePrintSheets({
             // never filled, and a project opened from the account page sat
             // loading until a hard refresh. Using `faceKey` itself means the
             // two can no longer drift.
-            key={faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn, brandHidden, fontScale)}
+            key={faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn, brandHidden, fontScale, photoScale)}
             recipe={recipe}
             size={size}
             template={template}
@@ -1425,11 +1431,12 @@ export function usePrintSheets({
             cookbookMode={cookbookLayouts}
             cardVars={cardVars}
             fontScale={fontScale}
+            photoScale={photoScale}
             onSettled={(pages) =>
               setMeasuredFaces((current) =>
                 withMeasuredFace(
                   current,
-                  faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn, brandHidden, fontScale),
+                  faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn, brandHidden, fontScale, photoScale),
                   { recipe, pages },
                 ),
               )
@@ -1459,8 +1466,8 @@ export function usePrintSheets({
   // wear 6x4 chrome while still holding letter pagination — which is exactly
   // the clipping this all exists to prevent.
   const committedLayout = useMemo(
-    () => ({ sheets, navItems, spreads, cardSize, template, photosOn, doubleSided, fontScale }),
-    [sheets, navItems, spreads, cardSize, template, photosOn, doubleSided, fontScale],
+    () => ({ sheets, navItems, spreads, cardSize, template, photosOn, doubleSided, fontScale, photoScale }),
+    [sheets, navItems, spreads, cardSize, template, photosOn, doubleSided, fontScale, photoScale],
   );
   type CommittedLayout = typeof committedLayout;
   // `null` until the very first measurement lands. On a cold load there is no
