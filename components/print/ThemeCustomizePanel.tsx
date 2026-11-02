@@ -64,10 +64,15 @@ export function ThemeCustomizePanel({
 
       {proMarked && (
         <div className="recipe-customize__pro">
-          <CrownIcon size={ICON_SIZE.sm} />
-          <p>Customizing is part of Pro. Try anything here; you&apos;ll only need Pro to print it.</p>
-          <button type="button" className="btn-ghost btn-compact recipe-customize__pro-button" onClick={onUpgrade}>
-            See Pro
+          <span className="recipe-customize__pro-icon" aria-hidden>
+            <CrownIcon size={ICON_SIZE.md} />
+          </span>
+          <div className="recipe-customize__pro-text">
+            <p className="recipe-customize__pro-title">Customizing is part of Pro</p>
+            <p>Try anything here. You&apos;ll only need Pro to print it.</p>
+          </div>
+          <button type="button" className="btn btn-premium btn-compact recipe-customize__pro-button" onClick={onUpgrade}>
+            Upgrade to Pro
           </button>
         </div>
       )}
