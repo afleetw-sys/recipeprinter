@@ -69,7 +69,7 @@ export function ThemeCustomizePanel({
           </span>
           <div className="recipe-customize__pro-text">
             <p className="recipe-customize__pro-title">Customize your theme with Pro</p>
-            <p>Try them on your card then upgrade when you&apos;re ready to print.</p>
+            <p>Try these settings on your card, then upgrade when you&apos;re ready to print.</p>
           </div>
           <button type="button" className="btn btn-premium btn-compact recipe-customize__pro-button" onClick={onUpgrade}>
             Upgrade to Pro
