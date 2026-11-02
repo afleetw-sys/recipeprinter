@@ -2,6 +2,13 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ImportPanel } from "@/components/ImportPanel";
+import { markImportsUnlimited, resetImportUsageForTest } from "@/lib/importMeter";
+
+const onProductionHost = vi.hoisted(() => ({ value: false }));
+vi.mock("@/lib/appEnvironment", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/appEnvironment")>()),
+  isProductionRuntime: () => onProductionHost.value,
+}));
 
 afterEach(cleanup);
 
@@ -61,5 +68,59 @@ describe("the link field", () => {
   it("still takes a plain link, and one that wrapped across lines", () => {
     expect(submit("https://bit.ly/4idG4GX")).toEqual({ url: "https://bit.ly/4idG4GX" });
     expect(submit("https://www.plainchicken.com/million-\ndollar-chicken-casserole/").url).toBeTruthy();
+  });
+});
+
+describe("waking the import meter", () => {
+  // A cook's first import of a visit waited a median 3.9s on the meter, and a
+  // quarter hit its 5s limit, because nothing had called the function since it
+  // was shut down for being idle (PostHog, 2026-11-02). Showing an import box
+  // wakes it, and so does coming back to the box after it may have gone idle.
+  it("wakes the meter when an import box shows, and again on a later touch", () => {
+    onProductionHost.value = true;
+    vi.stubEnv("NEXT_PUBLIC_FIREBASE_PROJECT_ID", "cookpilot-bbecb");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const fetch = vi.fn((_url: string, _init?: RequestInit) => Promise.resolve(new Response()));
+    vi.stubGlobal("fetch", fetch);
+    const meterCalls = () =>
+      fetch.mock.calls.filter(([url]) => String(url).includes("recipePrinterImportMeter")).length;
+    const panel = () =>
+      render(
+        <ImportPanel
+          items={[]}
+          onAddUrl={vi.fn()}
+          onAddText={vi.fn()}
+          onAddImageFiles={vi.fn()}
+          onAddReadyRecipes={vi.fn(() => 0)}
+        />,
+      );
+    try {
+      resetImportUsageForTest();
+      panel();
+      expect(meterCalls()).toBe(1);
+
+      // Typing straight away: it's awake, nothing more is sent.
+      fireEvent.focus(screen.getByRole("textbox"));
+      expect(meterCalls()).toBe(1);
+
+      // Back to the box after long enough for it to have gone idle.
+      vi.setSystemTime(Date.now() + 20 * 60 * 1000);
+      fireEvent.pointerDown(screen.getByRole("textbox"));
+      expect(meterCalls()).toBe(2);
+      cleanup();
+
+      // A cook this browser knows is Pro never waits on the meter.
+      resetImportUsageForTest();
+      markImportsUnlimited();
+      panel();
+      expect(meterCalls()).toBe(2);
+    } finally {
+      cleanup();
+      resetImportUsageForTest();
+      onProductionHost.value = false;
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+      vi.unstubAllEnvs();
+    }
   });
 });

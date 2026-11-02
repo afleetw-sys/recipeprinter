@@ -206,6 +206,7 @@ export function clearImportsUnlimited(): void {
 export function resetImportUsageForTest(): void {
   remembered = undefined;
   unlimited = undefined;
+  warmedAt = null;
   pendingDedupeKeys.clear();
   listeners.clear();
 }
@@ -363,6 +364,43 @@ function reportUnavailable(
     );
   }
   return reason;
+}
+
+/**
+ * How long a wake-up counts for. Google shuts the function down after about 15
+ * idle minutes; waking it again sooner is a wasted request, later a cold start.
+ */
+const WARM_FOR_MS = 5 * 60 * 1000;
+let warmedAt: number | null = null;
+
+/**
+ * Wakes the meter before it's needed. At a few imports a day the function was
+ * nearly always shut down, so a cook's first import of a visit waited a median
+ * 3.9s for it to start, and a quarter hit the 5s limit (PostHog, 2026-11-02).
+ * An import box calls this when it shows and when it's touched.
+ *
+ * The request is a bare POST with no App Check token, so the function turns
+ * it away before any of its own code runs: nothing is read, written or counted,
+ * but the instance has started. Plain text, so the browser sends it without a
+ * CORS preflight, and `no-cors`, so the refusal is never read.
+ */
+export function warmImportMeter(nowMs: number = Date.now()): void {
+  if (!meterReachableHere() || useLocalFunctions || importsKnownUnlimited()) return;
+  if (warmedAt !== null && nowMs - warmedAt < WARM_FOR_MS) return;
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  if (!projectId) return;
+  warmedAt = nowMs;
+  const region = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_REGION || "us-central1";
+  try {
+    void fetch(`https://${region}-${projectId}.cloudfunctions.net/${IMPORT_METER_CALLABLE}`, {
+      method: "POST",
+      mode: "no-cors",
+      keepalive: true,
+      body: "{}",
+    }).catch(() => {});
+  } catch {
+    /* Nothing depends on it. */
+  }
 }
 
 /**
