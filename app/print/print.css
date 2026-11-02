@@ -3320,7 +3320,7 @@ textarea.recipe-page-fields__input {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 3px 5px 3px 9px;
+  padding: 3px 5px 3px 6px;
   border: 1px solid var(--cp-selected-border);
   border-radius: 999px;
   background: var(--cp-card);
@@ -3344,6 +3344,10 @@ textarea.recipe-page-fields__input {
 }
 .recipe-template-cell:hover .recipe-template-option.is-active {
   border-color: var(--cp-selected-border);
+}
+.recipe-template-customize__check {
+  margin-right: 2px;
+  color: var(--cp-selected-border);
 }
 .recipe-template-customize:focus-visible,
 .recipe-customize__back:focus-visible {
@@ -3441,7 +3445,12 @@ textarea.recipe-page-fields__input {
   transform: translateY(-1px);
 }
 
+/* 2px of blue: the preview fills the tile to its edge, so none of the tint
+   shows and a 1px border alone read thinner than the size tiles'. The second
+   pixel is an inset outline, so the preview keeps its size. */
 .recipe-template-option.is-active {
+  outline: 1px solid var(--cp-selected-border);
+  outline-offset: -2px;
   border-color: var(--cp-selected-border);
   background: var(--cp-selected-fill);
   box-shadow: var(--cp-selected-ring);
