@@ -27,12 +27,15 @@ import {
 } from "@/components/icons";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
+import { AddLineMenu } from "@/components/print/AddLineMenu";
 import { ZoomControl } from "@/components/print/ZoomControl";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { recipeLinkOn } from "@/lib/recipeLink";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { recipeNamesIntro } from "@/lib/chapterIntro";
-import { missingRecipeFields } from "@/lib/recipeMissingFields";
+import { emptyRecipeFields } from "@/lib/recipeMissingFields";
+import { removedHeadingsName } from "@/lib/recipeHeadings";
+import type { AddableRecipeLine } from "@/types/recipe";
 import {
   RECIPE_PRINT_TEMPLATE_OPTIONS,
   type PrintCardSize,
@@ -256,6 +259,8 @@ interface PrintDeckProps {
   projectMeta: ReturnType<typeof useProjectMeta>;
   showEmptyFields: ReturnType<typeof useRecipeInlineEditor>["showEmptyFields"];
   toggleShowEmptyFields: ReturnType<typeof useRecipeInlineEditor>["toggleShowEmptyFields"];
+  restoreHeadings: ReturnType<typeof useRecipeInlineEditor>["restoreHeadings"];
+  addField: ReturnType<typeof useRecipeInlineEditor>["addField"];
   activeInlineEdit: ReturnType<typeof useRecipeInlineEditor>["activeInlineEdit"];
   editingSectionId: string | null;
   setEditingSectionId: Dispatch<SetStateAction<string | null>>;
@@ -326,22 +331,65 @@ interface PrintDeckProps {
 // controls, and the front/back side switcher. Verbatim move out of the print
 // god-file; `renderActiveControls` and `renderDeckPage` moved in as internals.
 /**
- * Puts the cursor in the page's link field, once it exists.
- *
- * The field is only drawn while the page's reveal is on, and pressing the link
- * button is what turns that on, so it is not in the DOM yet when this is called.
- * It looks again for a few frames instead of holding a flag in state for a
- * focus that happens once. Only the focused page has real inputs (every other
- * page draws its link as text), so the first match is the right one.
+ * Opens a book-page line the "+" menu just put back: its prompt appears a
+ * render later, so this looks for a few frames, marks it as added (left
+ * empty, it goes back under the "+"; see `takeAdded` in RecipeCardPrint) and
+ * presses it. A chapter opener's lines open on the press, a cover's on the
+ * click, so it sends both.
  */
-function focusSourceLinkField() {
+function openAddedLine(name: string) {
   let tries = 0;
   const attempt = () => {
-    const field = document.querySelector<HTMLInputElement>(
-      '.recipe-page-canvas input[aria-label="Source link"]',
+    const prompt = document.querySelector<HTMLElement>(
+      `.recipe-page-slide.is-active .recipe-card [data-field-prompt="${name}"]`,
     );
-    if (field) {
-      field.focus();
+    if (prompt) {
+      prompt.dataset.added = "true";
+      prompt.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+      if (prompt.dataset.added) prompt.click();
+      return;
+    }
+    if (++tries < 12) window.requestAnimationFrame(attempt);
+  };
+  window.requestAnimationFrame(attempt);
+}
+
+/** What the "+" menu calls each line a recipe can take off. */
+const RECIPE_LINE_NAMES: Record<AddableRecipeLine, string> = {
+  link: "Link",
+  time: "Cook time",
+  servings: "Servings",
+  note: "Note",
+  ingredients: "Ingredients",
+  steps: "Steps",
+};
+
+/**
+ * Puts the cursor in the first empty field the page's reveal has just shown,
+ * in reading order. The fields only exist once
+ * the reveal is on, so it looks for a few frames. Text fields take the focus;
+ * a prompt that opens its field on a press (the note, a book page's line) is
+ * pressed.
+ */
+function focusFirstMissingField() {
+  let tries = 0;
+  const attempt = () => {
+    const first = document.querySelector<HTMLElement>(
+      [
+        ".recipe-page-slide.is-active .recipe-card input:placeholder-shown",
+        ".recipe-page-slide.is-active .recipe-card textarea:placeholder-shown",
+        ".recipe-page-slide.is-active .recipe-card .recipe-card__headnote--empty",
+        ".recipe-page-slide.is-active .recipe-card .recipe-card__cover-field--empty",
+        ".recipe-page-slide.is-active .recipe-card .recipe-card__opener-field--empty",
+      ].join(", "),
+    );
+    if (first) {
+      if (first instanceof HTMLInputElement || first instanceof HTMLTextAreaElement) {
+        first.focus();
+      } else {
+        first.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+        first.click();
+      }
       return;
     }
     if (++tries < 12) window.requestAnimationFrame(attempt);
@@ -353,6 +401,8 @@ export function PrintDeck(props: PrintDeckProps) {
   // Where the shared move menu should open, or null when it is closed. The
   // menu closes itself on an outside press, Escape, a scroll or a resize.
   const [moveMenuAt, setMoveMenuAt] = useState<{ x: number; y: number } | null>(null);
+  const [addMenuAt, setAddMenuAt] = useState<{ x: number; y: number } | null>(null);
+  const addMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
   const {
     saveControl,
     proUpgradeButton,
@@ -400,6 +450,8 @@ export function PrintDeck(props: PrintDeckProps) {
     projectMeta,
     showEmptyFields,
     toggleShowEmptyFields,
+    restoreHeadings,
+    addField,
     activeInlineEdit,
     editingSectionId,
     setEditingSectionId,
@@ -488,137 +540,126 @@ export function PrintDeck(props: PrintDeckProps) {
   ) => {
     // Art pages and continuation sheets have no edit surface of their own.
     /**
-     * Does this page have a field nobody can see yet?
+     * What the page toolbar's "+" menu offers, in the order it appears on the
+     * page, each with how to add it. On a recipe page, every line the recipe
+     * has nothing in: a recipe page draws no empty line, because it is laid
+     * out as it prints (see RecipeFace). On a book page (a cover, an opening
+     * page, a chapter opener), whose empty lines show as fields with a × on
+     * the page itself, only the lines taken off. No lines, no button.
      *
-     * The reveal button shows the slots a page has not filled in. On a page where
-     * everything IS filled in it reveals nothing, so offering it is offering a
-     * button that does nothing — and the reveal is the button's whole job now
-     * that the text is editable by clicking it.
-     *
-     * Asked of every page that has text. It used to skip chapter openers and
-     * the contents page because those had a real edit mode behind this button,
-     * which was a different question from whether anything was missing; now
-     * that they edit by being clicked, it is the same question.
+     * A cleared cover or chapter title has no prompt of its own, so it comes
+     * back through the reveal instead.
      */
-    /**
-     * The names of the fields this page has not filled in, in the order they
-     * appear on it. The button says them out loud ("Add link, time, servings"),
-     * because a generic "More fields" gave nobody a reason to press it, and it
-     * is also the answer to whether there is anything to offer: no names, no
-     * button. The same on every kind of page, so the toolbar never has to be
-     * learnt page by page.
-     */
-    const missingFieldNames = (): string[] => {
+    const viaReveal = () => {
+      if (!showEmptyFields) toggleShowEmptyFields();
+      focusFirstMissingField();
+    };
+    const addableLines = (): { name: string; restore: () => void }[] => {
       if (navItem.kind === "recipe") {
-        const recipe = items?.find((item) => item.id === navItem.recipeId)?.recipe;
+        const recipeId = navItem.recipeId;
+        const recipe = items?.find((item) => item.id === recipeId)?.recipe;
         if (!recipe) return [];
-        return missingRecipeFields(recipe, {
+        const lines = emptyRecipeFields(recipe, {
           cookbook: Boolean(projectMeta.meta.cookbookMode),
           showSourceUrl,
           showDescription,
-        });
+        }).map((field) => ({
+            name: RECIPE_LINE_NAMES[field],
+            restore: () => addField(recipeId, field),
+          }));
+        // A removed "Ingredients" / "Steps" heading comes back as the default.
+        const headings = removedHeadingsName(recipe);
+        if (headings) {
+          lines.push({
+            name: headings === "heading" ? "Heading" : "Headings",
+            restore: () => {
+              restoreHeadings(recipeId);
+            },
+          });
+        }
+        return lines;
       }
       if (navItem.kind === "cover") {
         const side = coverSideFromNavItem(navItem);
         const cover = coverForSide(side);
+        if (!cover) return [];
+        // The prompt's name on the page (CoverFace's `coverField`) for each
+        // stored line, so the "+" menu can open the one it puts back.
+        const prefix = side === "front" ? "cover" : side;
+        const lineNames: Record<"subtitle" | "author" | "edition" | "blurb", string> = {
+          subtitle: `${prefix}-kicker`,
+          author: side === "front" ? "cover-byline" : side === "back" ? "back-credit" : "dedication-signature",
+          edition: `${prefix}-edition`,
+          blurb: side === "back" ? "back-blurb" : "dedication-text",
+        };
+        const back = (key: "subtitle" | "author" | "edition" | "blurb", name: string) =>
+          cover[key] === ""
+            ? [
+                {
+                  name,
+                  restore: () => {
+                    setCoverForSide(side, { ...cover, [key]: undefined });
+                    openAddedLine(lineNames[key]);
+                  },
+                },
+              ]
+            : [];
         // A photo behind the opening page's words (see CoverFace) doesn't
         // make them optional — it's a background choice, not a replacement.
-        // Only the lines taken OFF the page (`""`). A line nobody has written
-        // already shows its prompt on the page, with a × to remove it (see
-        // CoverFace), so "Add" is for bringing a removed one back.
         if (side === "dedication") {
-          return [!cover?.title && "heading", cover?.blurb === "" && "message", cover?.author === "" && "signature"].filter(
-            (name): name is string => Boolean(name),
-          );
+          // An opening page's heading comes back as the word it started with.
+          const heading = projectMeta.meta.frontMatter?.kind === "introduction" ? "Introduction" : "Dedication";
+          return [
+            ...(!cover.title
+              ? [{ name: "Heading", restore: () => setCoverForSide(side, { ...cover, title: heading }) }]
+              : []),
+            ...back("blurb", "Message"),
+            ...back("author", "Signature"),
+          ];
         }
         if (side === "back") {
-          return [cover?.blurb === "" && "closing line", cover?.author === "" && "credit"].filter(
-            (name): name is string => Boolean(name),
-          );
+          return [...back("blurb", "Closing line"), ...back("author", "Credit")];
         }
         return [
-          !cover?.title && "title",
-          cover?.subtitle === "" && "subtitle",
-          cover?.author === "" && "author",
-          cover?.edition === "" && "edition",
-        ].filter((name): name is string => Boolean(name));
+          ...(!cover.title ? [{ name: "Title", restore: viaReveal }] : []),
+          ...back("subtitle", "Subtitle"),
+          ...back("author", "Author"),
+          ...back("edition", "Edition"),
+        ];
       }
       if (navItem.kind === "divider") {
         const section = sections.find((candidate) => candidate.id === navItem.recipeId);
+        if (!section) return [];
         // Title first, matching where it sits on the page. It's missing when
         // the cook has hidden it (`titleOverride`), not when it's merely
         // untouched — the section's real name is the default, always there
         // unless deliberately cleared. The description prints the chapter's
         // recipe names until the cook writes their own or removes it, so it
-        // is only a hidden field once it has been removed (`""`); left alone
-        // it is not missing, it is being drawn for them.
+        // is only missing once it has been removed (`""`).
         return [
-          section && !sectionDisplayTitle(section).trim() && "title",
-          section?.subtitle === "" && "subtitle",
-          section?.intro === "" && "description",
-        ].filter((name): name is string => Boolean(name));
+          ...(!sectionDisplayTitle(section).trim() ? [{ name: "Title", restore: viaReveal }] : []),
+          ...(section.subtitle === ""
+            ? [
+                {
+                  name: "Subtitle",
+                  restore: () => {
+                    projectMeta.updateSection(section.id, { subtitle: undefined });
+                    openAddedLine("subtitle");
+                  },
+                },
+              ]
+            : []),
+          ...(section.intro === ""
+            ? [{ name: "Description", restore: () => projectMeta.setSectionIntro(section.id, undefined) }]
+            : []),
+        ];
       }
       // Nothing on the contents page can be missing: both of its lines print a
       // default ("Contents", "What's inside") when nobody types one, and the
       // entries are generated.
       return [];
     };
-    /**
-     * Put a book page's removed lines back, prompts and all, rather than
-     * opening the reveal. A line that is there until removed (see CoverFace)
-     * comes back the same way: as its prompt on the page, ready to type into
-     * or take off again. False when the page has none to put back (a recipe,
-     * or only a cleared title, which has no prompt of its own and still goes
-     * through the reveal).
-     */
-    const restoreRemovedLines = (): boolean => {
-      const back = (value: string | undefined) => (value === "" ? undefined : value);
-      if (navItem.kind === "cover") {
-        const side = coverSideFromNavItem(navItem);
-        const cover = coverForSide(side);
-        // An opening page's heading comes back as the word it started with.
-        const headingBack =
-          side === "dedication" && !cover?.title
-            ? projectMeta.meta.frontMatter?.kind === "introduction"
-              ? "Introduction"
-              : "Dedication"
-            : undefined;
-        if (
-          !cover ||
-          (!headingBack && ![cover.subtitle, cover.author, cover.edition, cover.blurb].includes(""))
-        ) {
-          return false;
-        }
-        setCoverForSide(side, {
-          ...cover,
-          title: headingBack ?? cover.title,
-          subtitle: back(cover.subtitle),
-          author: back(cover.author),
-          edition: back(cover.edition),
-          blurb: back(cover.blurb),
-        });
-        return true;
-      }
-      if (navItem.kind === "divider") {
-        const section = sections.find((candidate) => candidate.id === navItem.recipeId);
-        if (!section || (section.subtitle !== "" && section.intro !== "")) return false;
-        if (section.subtitle === "") projectMeta.updateSection(section.id, { subtitle: undefined });
-        if (section.intro === "") projectMeta.setSectionIntro(section.id, undefined);
-        return true;
-      }
-      return false;
-    };
-    const missingNames = missingFieldNames();
-    const pageHasHiddenFields = (): boolean => missingNames.length > 0;
-    const pageNoun = projectMeta.meta.cookbookMode ? "page" : "card";
-    // Four names is what fits a phone's pill on two lines; any more collapse
-    // into a count. A blank recipe would otherwise list six.
-    const fieldsLabel =
-      missingNames.length === 0
-        ? "Add fields"
-        : `Add ${missingNames.slice(0, 4).join(", ")}${
-            missingNames.length > 4 ? ` +${missingNames.length - 4}` : ""
-          }`;
+    const missingLines = addableLines();
 
     // Whether this KIND of page has an edit/reveal button at all.
     // A cover made into the cook's own image or a blank has no words or theme
@@ -633,11 +674,8 @@ export function PrintDeck(props: PrintDeckProps) {
       !navItem.continued;
     // Whether to actually offer it. Separate from `editable` on purpose: the
     // first decides whether the page has text to work on, the second whether
-    // there is anything left for the button to reveal.
-    //
-    // Already-on stays on, so pressing it to reveal a field and then filling
-    // that field in doesn't pull "Done" out from under the cursor.
-    const showFieldsButton = editable && (showEmptyFields || pageHasHiddenFields());
+    // there is anything taken off to put back.
+    const showFieldsButton = editable && missingLines.length > 0;
     const editing = isEditingNavItem(navItem);
     // Always present on the pages that have a photo to place, not only while
     // you happen to be editing them. Hiding it behind Edit meant the toolbar
@@ -712,13 +750,13 @@ export function PrintDeck(props: PrintDeckProps) {
         onClick={(event) => {
           event.stopPropagation();
           if (!hasLink) {
-            // Nothing to show or hide yet, so this is the way to add one: reveal
-            // the empty link field and put the cursor in it. A recipe card has
-            // no per-recipe switch, so there the field only exists while the
-            // book's "Recipe link" setting is on, and adding one means wanting it.
+            // Nothing to show or hide yet, so this is the way to add one: open
+            // the link line, ready to type, putting it back first if it was
+            // taken off. A recipe card has no per-recipe switch, so there the line
+            // only exists while the book's "Recipe link" setting is on, and
+            // adding one means wanting it.
             if (!linkCookbook && !showSourceUrl) setShowSourceUrl(true);
-            if (!showEmptyFields) toggleShowEmptyFields();
-            focusSourceLinkField();
+            if (navItem.kind === "recipe") addField(navItem.recipeId, "link");
             return;
           }
           if (linkCookbook && navItem.kind === "recipe") {
@@ -882,46 +920,42 @@ export function PrintDeck(props: PrintDeckProps) {
               </button>
             </div>
           )}
-          {/* What to do once the empty fields are showing. The button used to
-              just turn into "Done", and people pressed it and then kept looking
-              for where the link or servings go: the new fields are on the page,
-              not anything in the toolbar. Each one reads "Add servings", "Add
-              link" and so on, so the tip only has to point at them. */}
-          {showFieldsButton && editing && (
-            <div
-              className="recipe-page-toolbar__group recipe-page-toolbar__hint recipe-page-toolbar__hint--reveal"
-              role="note"
-            >
-              <InfoIcon size={ICON_SIZE.sm} aria-hidden />
-              <span>
-                <span className="recipe-page-toolbar__hint-fine">Click</span>
-                <span className="recipe-page-toolbar__hint-touch">Tap</span>
-                {missingNames.length > 0
-                  ? ` any \u201cAdd\u201d on the ${pageNoun} to fill it in.`
-                  : ` any line on the ${pageNoun} to edit it.`}
-              </span>
-            </div>
-          )}
-          {showFieldsButton && (
+          {/* "+": the lines this page has taken off, in a menu, one row each.
+              It used to say them out loud ("Add servings"), which put a
+              removed line's name back in front of the cook every time they
+              looked at the page. Picking one puts just that line back, as its
+              prompt, opened ready to type into. */}
+          {showFieldsButton && !editing && (
             <div className="recipe-page-toolbar__group recipe-page-toolbar__group--fields">
               <button
+                ref={addMenuTriggerRef}
                 type="button"
-                className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--fields ${editing ? "is-active" : ""}`}
-                aria-pressed={editing}
+                className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon recipe-page-toolbar__btn--fields"
+                aria-label="Add a line"
+                title="Add a line"
+                aria-haspopup="menu"
+                aria-expanded={addMenuAt ? true : undefined}
                 onClick={(event) => {
                   event.stopPropagation();
-                  if (!editing && restoreRemovedLines()) return;
-                  toggleShowEmptyFields();
+                  if (addMenuAt) {
+                    setAddMenuAt(null);
+                    return;
+                  }
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  setAddMenuAt({ x: rect.left, y: rect.bottom + 6 });
                 }}
               >
-                {/* This no longer opens an editor on any page -- the text is
-                    editable by clicking it. What is left for it to do is show
-                    the fields the page does NOT have filled in, which cannot be
-                    clicked into existence because they take up no room. So it
-                    says what appears rather than "Edit", which would promise a
-                    mode that is not there any more. */}
-                {editing ? "Done" : fieldsLabel}
+                <PlusIcon size={ICON_SIZE.md} />
               </button>
+              {addMenuAt && (
+                <AddLineMenu
+                  anchor={addMenuAt}
+                  triggerRef={addMenuTriggerRef}
+                  heading={navItem.kind === "recipe" ? "Add to this recipe" : "Add to this page"}
+                  lines={missingLines}
+                  onClose={() => setAddMenuAt(null)}
+                />
+              )}
             </div>
           )}
           {/* After Edit, with Move and Delete: this is an icon among icons, and
@@ -1097,10 +1131,11 @@ export function PrintDeck(props: PrintDeckProps) {
       showEmptyFields={showEmptyFields}
       showDescription={showDescription}
       // The recipe's own link decision travels on its slot. What is left for
-      // the deck to say is the reveal: the button shows the empty slot a link
-      // would be typed into, which in a cookbook needs no setting on first.
+      // the deck to say is the prompt: a recipe with no link shows "+ Link"
+      // while it is the one being edited, which in a cookbook needs no
+      // setting on first.
       revealSourceUrl={
-        showEmptyFields &&
+        !activeRecipeItem?.recipe?.sourceUrl &&
         focused &&
         activeRecipeItem?.id === navItem.recipeId &&
         (Boolean(projectMeta.meta.cookbookMode) || showSourceUrl)
@@ -2016,15 +2051,13 @@ export function PrintDeck(props: PrintDeckProps) {
                     doubleSided={continueOnBack}
                     cookbookMode={Boolean(projectMeta.meta.cookbookMode)}
                     showEmptyFields={showEmptyFields}
-                    // While revealing empty fields, keep the link field visible
-                    // even if deleting the link just took away the last one in
-                    // the book — otherwise clearing it mid-edit hides the very
-                    // field that would let the user type it back in. Outside a
-                    // cookbook it is gated on the setting itself so the reveal
-                    // never shows a link field the user has turned off.
+                    // A recipe with no link shows its "+ Link" prompt while it
+                    // is the one being edited. Outside a cookbook it is gated on
+                    // the setting itself, so it never offers a link line the
+                    // cook has turned off.
                     showDescription={showDescription}
                     revealSourceUrl={
-                      showEmptyFields &&
+                      !activeRecipeItem?.recipe?.sourceUrl &&
                       isActive &&
                       activeRecipeItem?.id === navItem.recipeId &&
                       (Boolean(projectMeta.meta.cookbookMode) || showSourceUrl)

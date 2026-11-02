@@ -10,12 +10,20 @@ import type {
   RecipeCardInlineEdit,
   RecipeCardLineTarget,
 } from "@/lib/recipeCardLayout";
-import type { QueueItem, Recipe } from "@/types/recipe";
+import type { AddableRecipeLine, QueueItem, Recipe } from "@/types/recipe";
 
 interface RecipeEditSelection {
   recipeId: string;
   target: RecipeCardEditTarget;
 }
+
+/** The field each line the "+" menu can add is typed into. */
+const FIELD_TARGETS: Record<"link" | "time" | "servings" | "note", RecipeCardEditTarget> = {
+  link: { kind: "sourceUrl" },
+  time: { kind: "cookTime" },
+  servings: { kind: "servings" },
+  note: { kind: "description" },
+};
 
 function stripStepPrefix(value: string): string {
   return value
@@ -170,6 +178,19 @@ export function deleteRecipeLines(recipe: Recipe, targets: RecipeCardLineTarget[
   return printableRecipe({ ...recipe, ingredients, instructions });
 }
 
+/**
+ * Whether this row is all a named section has. A section is a `section` label
+ * on a run of rows (`sectionGroups`), so deleting its only row would delete
+ * the heading with it; instead it stays as a blank row, which the card draws
+ * as the section's "+ Add ingredient" / "+ Add step" (`renderEmptyRow`).
+ */
+function onlyRowOfSection(items: { section?: string }[], index: number): boolean {
+  const section = items[index]?.section?.trim();
+  if (!section) return false;
+  const same = (other: { section?: string } | undefined) => other?.section?.trim() === section;
+  return !same(items[index - 1]) && !same(items[index + 1]);
+}
+
 export function applyRecipeTargetEdit(
   recipe: Recipe,
   target: RecipeCardEditTarget,
@@ -225,6 +246,17 @@ export function applyRecipeTargetEdit(
   }
   if (target.kind === "ingredient") {
     if (!trimmed) {
+      // The last line of a named section: emptied, it stays as the section's
+      // blank row, so the heading is not lost with it (see `onlyRowOfSection`).
+      if (onlyRowOfSection(recipe.ingredients, target.index)) {
+        const section = recipe.ingredients[target.index].section;
+        return printableRecipe({
+          ...recipe,
+          ingredients: recipe.ingredients.map((ingredient, index) =>
+            index === target.index ? { raw: "", section } : ingredient,
+          ),
+        });
+      }
       return printableRecipe({
         ...recipe,
         ingredients: recipe.ingredients.filter((_, index) => index !== target.index),
@@ -267,6 +299,14 @@ export function applyRecipeTargetEdit(
   }
   const text = stripStepPrefix(trimmed);
   if (!text) {
+    if (onlyRowOfSection(recipe.instructions, target.index)) {
+      return printableRecipe({
+        ...recipe,
+        instructions: recipe.instructions.map((step, index) =>
+          index === target.index ? { ...step, text: "" } : step,
+        ),
+      });
+    }
     return printableRecipe({
       ...recipe,
       instructions: recipe.instructions
@@ -398,9 +438,21 @@ export function useRecipeInlineEditor({
   );
 
   const cancelEditTarget = useCallback(() => {
+    // A blank first ingredient or step the "+" menu opened, abandoned, goes
+    // rather than staying behind as an empty row.
+    const target = editingEdit?.target;
+    const recipe = editingRecipeItem?.recipe;
+    if (
+      recipe &&
+      editingRecipeItem &&
+      ((target?.kind === "ingredient" && !ingredientText(recipe.ingredients[target.index]).trim()) ||
+        (target?.kind === "step" && !recipe.instructions[target.index]?.text.trim()))
+    ) {
+      updateRecipe(editingRecipeItem.id, applyRecipeTargetEdit(recipe, target, "", includeDescription));
+    }
     setEditingEdit(null);
     setEditValue("");
-  }, []);
+  }, [editingEdit, editingRecipeItem, updateRecipe, includeDescription]);
 
   // Route every edit through the queue hook, the single content owner: it
   // updates its React `items` (which the deck derives from) and storage
@@ -422,6 +474,52 @@ export function useRecipeInlineEditor({
       setEditValue("");
     },
     [editValue, editingEdit, editingRecipeItem, applyRecipeUpdate, includeDescription],
+  );
+
+  /**
+   * The page toolbar's "+" menu picked a line this recipe has nothing in:
+   * open its field on the card, ready to type. Nothing else draws an empty
+   * line (see RecipeFace), so left empty it is simply not there again. An
+   * empty list ("Ingredients") opens a first blank row.
+   */
+  const addField = useCallback(
+    (recipeId: string, field: AddableRecipeLine) => {
+      if (!activeRecipeItem?.recipe || activeRecipeItem.id !== recipeId) return;
+      const recipe = activeRecipeItem.recipe;
+      if (field === "ingredients") {
+        applyRecipeUpdate(recipeId, printableRecipe({ ...recipe, ingredients: [{ raw: "" }, ...recipe.ingredients] }));
+        setEditingEdit({ recipeId, target: { kind: "ingredient", index: 0 } });
+      } else if (field === "steps") {
+        applyRecipeUpdate(
+          recipeId,
+          printableRecipe({ ...recipe, instructions: [{ step: 1, text: "" }, ...recipe.instructions] }),
+        );
+        setEditingEdit({ recipeId, target: { kind: "step", index: 0 } });
+      } else {
+        setEditingEdit({ recipeId, target: FIELD_TARGETS[field] });
+      }
+      setEditValue("");
+    },
+    [activeRecipeItem, applyRecipeUpdate],
+  );
+
+  /** The "+" menu's "Heading(s)": a removed "Ingredients" / "Steps" heading
+      comes back as the default. */
+  const restoreHeadings = useCallback(
+    (recipeId: string) => {
+      const recipe = items?.find((candidate) => candidate.id === recipeId)?.recipe;
+      if (!recipe) return;
+      const headingBack = (heading: string | undefined) => (heading === "" ? undefined : heading);
+      applyRecipeUpdate(
+        recipeId,
+        printableRecipe({
+          ...recipe,
+          ingredientsHeading: headingBack(recipe.ingredientsHeading),
+          stepsHeading: headingBack(recipe.stepsHeading),
+        }),
+      );
+    },
+    [items, applyRecipeUpdate],
   );
 
   /**
@@ -532,6 +630,15 @@ export function useRecipeInlineEditor({
           ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, editValue, includeDescription)
           : activeRecipeItem.recipe;
       const section = sectionForInsertion(recipe.ingredients, index, sectionOverride);
+      // An empty section's blank row (see `onlyRowOfSection`) is the slot to
+      // type its first line into, not a row to add another above.
+      const blank = recipe.ingredients[index];
+      if (blank && !ingredientText(blank).trim() && (blank.section?.trim() || undefined) === (section?.trim() || undefined)) {
+        if (recipe !== activeRecipeItem.recipe) applyRecipeUpdate(activeRecipeItem.id, recipe);
+        setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "ingredient", index } });
+        setEditValue("");
+        return;
+      }
       const ingredients = recipe.ingredients.slice();
       ingredients.splice(index, 0, { raw: "", section });
       const nextRecipe = printableRecipe({ ...recipe, ingredients });
@@ -550,6 +657,13 @@ export function useRecipeInlineEditor({
           ? applyRecipeTargetEdit(activeRecipeItem.recipe, editingEdit.target, editValue, includeDescription)
           : activeRecipeItem.recipe;
       const section = sectionForInsertion(recipe.instructions, index, sectionOverride);
+      const blank = recipe.instructions[index];
+      if (blank && !blank.text.trim() && (blank.section?.trim() || undefined) === (section?.trim() || undefined)) {
+        if (recipe !== activeRecipeItem.recipe) applyRecipeUpdate(activeRecipeItem.id, recipe);
+        setEditingEdit({ recipeId: activeRecipeItem.id, target: { kind: "step", index } });
+        setEditValue("");
+        return;
+      }
       const instructions = recipe.instructions.slice();
       instructions.splice(index, 0, { step: 0, text: "", section });
       const renumbered = instructions.map((step, i) => ({ ...step, step: i + 1 }));
@@ -708,6 +822,39 @@ export function useRecipeInlineEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetOn]);
 
+  /**
+   * The reveal ends when the cook is done with the card, not on a Done button
+   * (there is none: nobody pressed it). A press anywhere off the card being
+   * edited closes it, as does Escape outside a field; a field being typed in
+   * is committed first. Presses on the card itself, and on the floating text
+   * toolbars that act on its fields, keep it open.
+   */
+  const closeRevealRef = useRef<() => void>(() => undefined);
+  closeRevealRef.current = () => {
+    if (editingEdit) commitEditTarget(editValue);
+    setPageEditMode(false);
+  };
+  useEffect(() => {
+    if (!pageEditMode) return;
+    const onPress = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (target?.closest(".recipe-page-slide.is-active .recipe-card, .recipe-text-toolbar")) return;
+      closeRevealRef.current();
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      const target = event.target as Element | null;
+      if (target?.closest("input, textarea, [contenteditable='true']")) return;
+      closeRevealRef.current();
+    };
+    document.addEventListener("pointerdown", onPress, true);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPress, true);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [pageEditMode]);
+
   function toggleShowEmptyFields() {
     if (pageEditMode && editingEdit) {
       // A field being hidden by the toggle isn't guaranteed to fire a blur in
@@ -717,5 +864,5 @@ export function useRecipeInlineEditor({
     setPageEditMode((mode) => !mode);
   }
 
-  return { showEmptyFields: pageEditMode, toggleShowEmptyFields, activeInlineEdit };
+  return { showEmptyFields: pageEditMode, toggleShowEmptyFields, restoreHeadings, addField, activeInlineEdit };
 }

@@ -487,6 +487,21 @@
   overflow-y: auto;
 }
 
+/* The page toolbar's "+" menu (AddLineMenu): a few one-word rows, so it is
+   as narrow and tight as they allow rather than a chapter list's width. */
+.add-line-menu.add-line-menu {
+  min-width: 0;
+  padding: 4px;
+}
+.add-line-menu .cp-menu__heading {
+  padding: 3px 8px 2px;
+}
+.add-line-menu .cp-menu__item {
+  min-height: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
 .recipe-page-rail__section-title-input {
   min-width: 0;
   flex: 1;
@@ -1773,9 +1788,6 @@
 .recipe-page-toolbar[data-measuring] > .recipe-page-toolbar__more[hidden] {
   display: inline-flex;
 }
-.recipe-page-toolbar[data-measuring] .recipe-page-toolbar__btn--fields {
-  white-space: nowrap;
-}
 
 
 /* ── The text toolbar ────────────────────────────────────────────────────────
@@ -1844,6 +1856,37 @@
   width: 22px;
 }
 
+/* The line-type dropdown (LineKindSelect): what the line is now, in ink, and
+   a chevron, like a document editor's text-style menu. As wide as its word,
+   so "Body" has no gap after it. */
+.recipe-text-toolbar .recipe-text-toolbar__select.recipe-text-toolbar__select {
+  padding: 0 5px 0 7px;
+  color: var(--cp-ink);
+}
+.recipe-text-toolbar__select svg {
+  flex: none;
+  color: var(--cp-ink-soft);
+}
+/* Each row previews itself: Heading in a heading's weight. */
+.line-kind-menu .line-kind-menu__item--body {
+  font-weight: 500;
+}
+.line-kind-menu .line-kind-menu__item--heading {
+  font-weight: 800;
+}
+.line-kind-menu.line-kind-menu {
+  min-width: 7.5em;
+}
+
+/* A worded button in this bar ("Delete 3 lines"): the page toolbar's 10px
+   sides and caption type made it twice the size of the 22px glyphs it sits
+   with, so it takes the bar's own tighter padding and the label size. */
+.recipe-text-toolbar .recipe-page-toolbar__btn:not(.recipe-page-toolbar__btn--icon) {
+  gap: 4px;
+  padding: 0 6px;
+  font-size: var(--cp-fs-label);
+}
+
 .recipe-page-toolbar__group {
   /* Never squish: when the bar runs out of room it scrolls (see the phone
      block), rather than compressing Front/Back into two half-arrows. */
@@ -1861,7 +1904,7 @@
    treatment Aa/H already use, since they sit in the same bar doing the same
    kind of job. Only the two things that ARE the icon differ. */
 .recipe-card__line-kind-glyph--bold {
-  /* Size comes from the base glyph, like Aa. Only the weight is the icon. */
+  /* Only the weight is the icon. */
   font-weight: 800;
 }
 
@@ -1901,21 +1944,8 @@
 }
 /* "Click" with a mouse, "Tap" on a touch screen. */
 .recipe-page-toolbar__hint-touch { display: none; }
-/* On a phone the reveal's tip is the line above the bottom bar (EditTips), so
-   the toolbar stays one row. The contents page's note has no such line and
-   keeps its place in the bar. */
-/* Where the reveal's tip will not fit beside the buttons it takes a row of its
-   own above them, rather than wrapping wherever it runs out and leaving Delete
-   alone on a second line. */
 .recipe-page-canvas__controls {
   container-type: inline-size;
-}
-@container (max-width: 600px) {
-  .recipe-page-toolbar__hint--reveal { flex-basis: 100%; }
-}
-@media screen and (max-width: 820px) {
-  .recipe-page-toolbar__hint--reveal { display: none; }
-  .recipe-page-toolbar:has(> .recipe-page-toolbar__hint--reveal) { flex-wrap: nowrap; }
 }
 @media (pointer: coarse) {
   .recipe-page-toolbar__hint-fine { display: none; }
@@ -1987,23 +2017,6 @@
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
-}
-
-/* The reveal button names what it reveals ("Add link, time, servings, note"),
-   which is wider than a phone's page. It is the one label allowed to wrap, so
-   its group gives up the "never squish" rule and the words break onto a second
-   line inside the bar instead of running out of it. */
-.recipe-page-toolbar__group--fields {
-  flex: 0 1 auto;
-  min-width: 0;
-}
-
-.recipe-page-toolbar__btn--fields {
-  min-width: 0;
-  padding-block: 4px;
-  line-height: 1.25;
-  text-align: center;
-  white-space: normal;
 }
 
 /* Square, for the ones that are a glyph and nothing else. */
@@ -7610,68 +7623,18 @@ textarea.recipe-card__toc-title {
   border-radius: 3px;
 }
 
-/* An empty field, which only exists while the reveal is on. It used to be the
-   card's own muted grey at 70%, and on a phone, at the card's print scale,
-   that was a few pale pixels nobody could find after pressing "Add link, time,
-   servings". It reads as the app's, not the card's: a chip to tap, in the
-   app's soft grey on a grey tint (a tint of the ink, so it stays grey on any
-   theme's paper). It was the accent blue, the colour of a selection, which
-   made a prompt to fill in look like something already chosen. Never printed,
-   since an empty field is never drawn outside the reveal. */
+/* An empty field is one a "+" chip has just opened (or a cleared line still
+   being typed in). The chip already said what goes there, so open, it is
+   the line itself in its own type: no grey block, just the focus ring above
+   like any field being typed in, and its placeholder in the soft grey. The
+   placeholder is the app talking, not the card, so it is never in a theme's
+   spaced caps ("ADD SERVINGS"), only what is typed is. */
 .recipe-card__inline-input::placeholder,
 .recipe-card__inline-textarea::placeholder {
   color: var(--cp-ink-soft);
   opacity: 1;
-}
-.recipe-card__inline-input:placeholder-shown,
-.recipe-card__inline-textarea:placeholder-shown,
-.recipe-card__headnote--empty {
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--cp-ink) 8%, transparent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cp-ink) 8%, transparent);
-}
-/* ...but not once a book page's line is open. Its "+ Author" chip has
-   already said what goes there, and a grey block in the app's small type,
-   swapping to the page's type at the first letter, read as something other
-   than the line being written. Open, it is the page's own line in its own
-   type, ringed like any field being typed in (the focus outline above). */
-.recipe-card--cover .recipe-card__inline-textarea:placeholder-shown,
-.recipe-card--divider .recipe-card__inline-textarea:placeholder-shown {
-  background: transparent;
-  box-shadow: none;
-}
-/* An open book-page line (a cover's author or edition, a dedication's
-   message or signature, a back cover's lines, a chapter's subtitle and
-   description): one plain input on every page and theme. Opened in the line's
-   own theme type and sized to its text, each was a different field. Now each
-   is the line's place on the page, in the line's own type and size (what you
-   type is what prints), with the same underline under it, blue while typing,
-   and the same width. Inline, not boxed. The titles keep editing in place, in their own
-   type, because they are the page. Sized against the page scale, like the
-   "+" chip it opens from, so it reads the same however small the page is
-   drawn. */
-.recipe-card.recipe-card--cover .recipe-card__inline-textarea.recipe-card__inline-textarea:not(.recipe-card__cover-title),
-.recipe-card.recipe-card--divider .recipe-card__inline-textarea.recipe-card__inline-textarea:not(.recipe-card__divider-title) {
-  box-sizing: border-box;
-  width: min(100%, calc(280px / var(--page-scale, 1)));
-  max-width: 100%;
-  margin-inline: auto;
-  padding: 0 0 calc(3px / var(--page-scale, 1));
-  border: 0;
-  border-bottom: calc(1px / var(--page-scale, 1)) solid var(--cp-line-strong);
-  border-radius: 0;
-  background: transparent;
-  text-align: inherit;
-  outline: none;
-}
-.recipe-card.recipe-card--cover .recipe-card__inline-textarea.recipe-card__inline-textarea:not(.recipe-card__cover-title):focus,
-.recipe-card.recipe-card--divider .recipe-card__inline-textarea.recipe-card__inline-textarea:not(.recipe-card__divider-title):focus {
-  border-bottom-color: var(--cp-accent);
-  outline: none;
-}
-.recipe-card--cover .recipe-card__inline-textarea:not(.recipe-card__cover-title)::placeholder,
-.recipe-card--divider .recipe-card__inline-textarea:not(.recipe-card__divider-title)::placeholder {
-  color: var(--cp-ink-soft);
+  text-transform: none;
+  letter-spacing: normal;
 }
 /* The titles, edited in place in their own type, keep a ring sized against
    the page scale: the base 1px ring drew under half a pixel on a page scaled
@@ -7683,55 +7646,103 @@ textarea.recipe-card__toc-title {
   outline-offset: calc(4px / var(--page-scale, 1));
 }
 
-/* A book page's empty optional line ("+ Author", FieldPromptLabel): one chip
-   in the app's own type on every theme. In the theme's type each prompt came
-   out differently (a cover's spaced caps, a dedication's large italic) on a
-   grey block, so they read as broken text rather than something to press.
-   Dashed, because it is a space for something, not something there. The page
-   is drawn full size and scaled down to fit, so every size here is divided by
-   that scale (`--page-scale`, set on the scaler) to stay the same on screen,
-   a fingertip's target however small the page is drawn. Doubled classes so no
-   theme's rule for the line underneath outranks it. */
+/* An empty optional line, on a recipe card (`fieldPrompt` in RecipeCardPrint)
+   and on a book page (a cover's, an opening page's or a chapter opener's
+   lines) alike: the app's text field (`.field` in globals.css) drawn at the
+   size of the line it stands in for: a hairline border with no fill, "Add time" in the
+   soft grey placeholder, and a × inside at the end. Clicked, the field it
+   opens into keeps that box (`--new`, below) until there is something in
+   the line, so nothing jumps. Every size is in em of the line's own type.
+   They sit on the lines they stand in for: side by side on the meta line,
+   one under another elsewhere. */
+.recipe-card .recipe-card__field-prompt.recipe-card__field-prompt,
 .recipe-card .recipe-card__cover-field--empty.recipe-card__cover-field--empty,
-.recipe-card .recipe-card__opener-field--empty.recipe-card__opener-field--empty {
+.recipe-card .recipe-card__opener-field--empty.recipe-card__opener-field--empty,
+.recipe-card .recipe-card__inline-input--new.recipe-card__inline-input--new {
+  box-sizing: border-box;
   display: inline-flex;
+  flex: none;
+  /* The footer and the cookbook header are column flex boxes, which would
+     stretch it across the card. */
+  align-self: flex-start;
   align-items: center;
-  gap: calc(5px / var(--page-scale, 1));
+  gap: 0.3em;
   width: auto;
+  min-width: 8em;
   max-width: 100%;
-  padding: calc(4px / var(--page-scale, 1)) calc(12px / var(--page-scale, 1));
-  border: calc(1px / var(--page-scale, 1)) dashed color-mix(in srgb, var(--cp-ink) 32%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--cp-card) 70%, transparent);
+  margin: 0.1em 0;
+  padding: 0.2em 0.5em;
+  border: 1px solid var(--cp-line);
+  border-radius: 0.3em;
+  /* No fill: the card's own paper shows through, whatever the theme. */
+  background: transparent;
   box-shadow: none;
-  color: var(--cp-ink-soft);
-  font-family: var(--font-karla), system-ui, sans-serif;
-  font-size: calc(var(--cp-fs-caption) / var(--page-scale, 1));
+  color: var(--cp-ink);
   font-style: normal;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: normal;
-  text-transform: none;
-  text-shadow: none;
+  line-height: 1.3;
+  outline: none;
   white-space: nowrap;
 }
+.recipe-card .recipe-card__field-prompt.recipe-card__field-prompt,
+.recipe-card .recipe-card__cover-field--empty.recipe-card__cover-field--empty,
+.recipe-card .recipe-card__opener-field--empty.recipe-card__opener-field--empty {
+  justify-content: space-between;
+  color: var(--cp-ink-soft);
+  cursor: text;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.recipe-card .recipe-card__field-prompt.recipe-card__field-prompt::before,
+.recipe-card .recipe-card__field-prompt.recipe-card__field-prompt::after,
 .recipe-card .recipe-card__cover-field--empty.recipe-card__cover-field--empty::before,
 .recipe-card .recipe-card__cover-field--empty.recipe-card__cover-field--empty::after,
 .recipe-card .recipe-card__opener-field--empty.recipe-card__opener-field--empty::before,
 .recipe-card .recipe-card__opener-field--empty.recipe-card__opener-field--empty::after {
   content: none;
 }
+.recipe-card .recipe-card__field-prompt.recipe-card__field-prompt:hover,
 .recipe-card .recipe-card__cover-field--empty.recipe-card__cover-field--empty:hover,
 .recipe-card .recipe-card__opener-field--empty.recipe-card__opener-field--empty:hover {
-  border-color: color-mix(in srgb, var(--cp-ink) 55%, transparent);
-  border-style: solid;
+  border-color: var(--cp-line-strong);
+}
+/* The words in it are the placeholder, so they are the placeholder's soft
+   grey whatever ink the theme gives the line. */
+.recipe-card .recipe-card__field-prompt-text {
+  color: var(--cp-ink-soft);
+}
+.recipe-card :hover > .recipe-card__field-prompt-text {
   color: var(--cp-ink);
 }
-.recipe-card__cover-field--empty > svg,
-.recipe-card__opener-field--empty > svg {
-  flex: none;
-  width: calc(12px / var(--page-scale, 1));
-  height: calc(12px / var(--page-scale, 1));
+
+/* A book page's lines are set on their own, mostly centred, so the field
+   sits where the line's text would (the page's own alignment), and an open
+   one is a block as wide as a line of writing, not a row of a recipe. */
+.recipe-card:is(.recipe-card--cover, .recipe-card--divider) .recipe-card__cover-field--empty.recipe-card__cover-field--empty,
+.recipe-card:is(.recipe-card--cover, .recipe-card--divider) .recipe-card__opener-field--empty.recipe-card__opener-field--empty {
+  align-self: auto;
+}
+.recipe-card:is(.recipe-card--cover, .recipe-card--divider) textarea.recipe-card__inline-input--new.recipe-card__inline-input--new {
+  display: block;
+  width: min(100%, 18em);
+  margin-inline: auto;
+  white-space: pre-wrap;
+  resize: none;
+}
+.recipe-card .recipe-card__inline-input--new.recipe-card__inline-input--new:focus {
+  border-color: var(--cp-accent);
+  background: transparent;
+  outline: none;
+}
+/* The note opens into a block, not a single line. */
+.recipe-card .recipe-card__inline-rich.recipe-card__inline-input--new {
+  display: block;
+  width: 100%;
+  white-space: pre-wrap;
+}
+.recipe-card__field-prompt + .recipe-card__field-prompt,
+.recipe-card__field-prompt + .recipe-card__inline-input,
+.recipe-card__inline-input + .recipe-card__field-prompt {
+  margin-inline-start: 0.5em;
 }
 
 /* The × at the end of that chip (FieldRemoveButton): takes the line off. */
@@ -7758,23 +7769,20 @@ textarea.recipe-card__toc-title {
   height: calc(12px / var(--page-scale, 1));
 }
 
-/* And in the app's type, the same for every prompt. Each prompt is the empty
-   field itself, so it wore that field's theme type: the meta line's caps and
-   tracking beside the source line's small footer face beside the note's
-   italic, which made every prompt on a card look like a different button.
-   Only while empty: what is typed takes the field's own type back. Doubled
-   class so no theme's rule for the field outranks it. */
-.recipe-card .recipe-card__inline-input.recipe-card__inline-input:placeholder-shown,
-.recipe-card:not(.recipe-card--cover):not(.recipe-card--divider)
-  .recipe-card__inline-textarea.recipe-card__inline-textarea:placeholder-shown,
-.recipe-card .recipe-card__headnote.recipe-card__headnote--empty {
-  font-family: var(--font-karla), system-ui, sans-serif;
-  font-size: calc(8.5pt * var(--recipe-font-scale, 1));
-  font-weight: 700;
-  font-style: normal;
-  text-transform: none;
-  letter-spacing: normal;
+/* On a recipe card the × goes by the line's type too (above). */
+.recipe-card .recipe-card__field-prompt .recipe-card__field-remove svg,
+.recipe-card .recipe-card__editable-line > .recipe-card__field-remove svg {
+  flex: none;
+  width: 0.9em;
+  height: 0.9em;
 }
+.recipe-card .recipe-card__field-prompt .recipe-card__field-remove,
+.recipe-card .recipe-card__editable-line > .recipe-card__field-remove {
+  width: 1.4em;
+  height: 1.4em;
+  margin: -0.2em 0;
+}
+
 /* Never printed, never exported. Everything "show what's missing" adds is a
    prompt for the screen: an empty field's placeholder ("Add servings"), the
    note and cover-line prompts, a heading the cook hasn't set, an empty fact,
@@ -7791,7 +7799,8 @@ textarea.recipe-card__toc-title {
   .recipe-card__headnote--empty,
   .recipe-card__label--empty,
   .recipe-card__cover-field--empty,
-  .recipe-card__opener-field--empty {
+  .recipe-card__opener-field--empty,
+  .recipe-card__field-prompt {
     display: none !important;
   }
 }
@@ -8619,6 +8628,14 @@ textarea.recipe-card__toc-title {
   font-weight: 800;
 }
 
+/* B and I are one letter, like H, so they take H's size. At the base glyph's
+   size, which is set for two letters ("Aa"), they read smaller than H beside
+   them. */
+.recipe-card__line-kind-glyph--bold,
+.recipe-card__line-kind-glyph--italic {
+  font-size: 13px;
+}
+
 /* The letterforms ARE the icons, so in the text toolbar they come down with
    its 22px buttons — left at 11/13 they filled that box edge to edge. Here
    rather than with the rest of that bar so both sizes of a glyph are read
@@ -8627,7 +8644,9 @@ textarea.recipe-card__toc-title {
   font-size: 10px;
 }
 
-.recipe-text-toolbar .recipe-card__line-kind-glyph--heading {
+.recipe-text-toolbar .recipe-card__line-kind-glyph--heading,
+.recipe-text-toolbar .recipe-card__line-kind-glyph--bold,
+.recipe-text-toolbar .recipe-card__line-kind-glyph--italic {
   font-size: 12px;
 }
 

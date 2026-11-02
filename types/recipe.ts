@@ -77,6 +77,9 @@ export interface RecipeNutrition {
   [key: string]: string | undefined;
 }
 
+/** A recipe line the page toolbar's "+" menu adds when it is empty. */
+export type AddableRecipeLine = "link" | "time" | "servings" | "note" | "ingredients" | "steps";
+
 export interface Recipe {
   title: string;
   /** The note printed under the title in a cookbook ("Notes" in the UI).
