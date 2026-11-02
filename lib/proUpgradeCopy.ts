@@ -22,7 +22,9 @@ const BENEFIT_BY_REASON: Record<ProLockReason, string> = {
   multi_recipe: "Print multiple recipes at once",
   card_size: "4×6 recipe cards",
   theme: "All premium themes",
-  font_size: "Change the text size on your cards",
+  // Text size was this line until 2026-11; it's one of the Customize
+  // settings now, and they're all Pro on a card.
+  font_size: "Customize any theme",
   photo: "Recipe photos on your cards",
 };
 const COOKBOOK_BENEFIT = "20% off your first cookbook";
@@ -80,7 +82,7 @@ const TITLE_BY_REASON: Record<ProLockReason, string> = {
   multi_recipe: "Print multiple recipes at once",
   card_size: "Print 4×6 recipe cards",
   theme: "Print with this premium theme",
-  font_size: "Print with this text size",
+  font_size: "Customize any theme with Pro",
   photo: "Add photos to your recipe cards",
 };
 

@@ -3430,6 +3430,38 @@ textarea.recipe-page-fields__input {
   justify-self: stretch;
   background: var(--cp-card);
 }
+/* Text size (TextSizeControl): the step's name at that size, over a slider
+   between a small and a big A. */
+.recipe-text-size__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 1.6em;
+  color: var(--cp-ink);
+  font-weight: 700;
+  line-height: 1.2;
+}
+.recipe-text-size__slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.recipe-text-size__slider input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  accent-color: var(--cp-accent);
+}
+.recipe-text-size__a {
+  color: var(--cp-ink-soft);
+  font-weight: 700;
+  line-height: 1;
+}
+.recipe-text-size__a--small {
+  font-size: 0.72rem;
+}
+.recipe-text-size__a--big {
+  font-size: 1.1rem;
+}
 .recipe-customize__reset {
   align-self: flex-start;
 }

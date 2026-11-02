@@ -68,8 +68,8 @@ export function ThemeCustomizePanel({
             <CrownIcon size={ICON_SIZE.md} />
           </span>
           <div className="recipe-customize__pro-text">
-            <p className="recipe-customize__pro-title">Customizing is part of Pro</p>
-            <p>Try anything here. You&apos;ll only need Pro to print it.</p>
+            <p className="recipe-customize__pro-title">Make it yours with Pro</p>
+            <p>Play with every setting here and see it on your card. Upgrade when you&apos;re ready to print.</p>
           </div>
           <button type="button" className="btn btn-premium btn-compact recipe-customize__pro-button" onClick={onUpgrade}>
             Upgrade to Pro

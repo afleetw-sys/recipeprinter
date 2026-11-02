@@ -154,6 +154,7 @@ import type { PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
 import {
   activeProLockReasons,
   PHOTO_UPGRADE_TRIGGER,
+  CUSTOMIZE_UPGRADE_TRIGGER,
   captureImportStartsFresh,
   computeProLocks,
   hasMultiRecipeEntitlement,
@@ -7277,7 +7278,7 @@ export default function PrintPage() {
           resetThemeLook={resetThemeLook}
           customizeProMarked={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
           photosShown={photosOn && (cookbookMode || cardPhotosAllowed)}
-          onCustomizeUpgrade={() => openProUpgradeDialog("customize_theme")}
+          onCustomizeUpgrade={() => openProUpgradeDialog(CUSTOMIZE_UPGRADE_TRIGGER)}
           anyRecipeHasImage={anyRecipeHasImage}
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
           bookPhotoStyle={bookPhotoStyle}
