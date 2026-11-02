@@ -440,23 +440,27 @@ export function useDeckScroller({
       const availH = el.clientHeight;
       if (availW > 0 && availH > 0) {
         const widthScale = availW / pageWidth;
-        const heightScale = (availH * (mobile ? 0.86 : 0.74)) / pageHeight;
-        // A page can never be taller than the SNAPPORT. `scroll-snap-align:
-        // center` centres against the snapport, so a page taller than it
-        // cannot be centred without eating into the inset — and the top half
-        // of that inset is the room the floating Edit control sits in, which
-        // would then be clipped by the deck's own overflow. This does not bind
-        // at the budget above; it is the guard that keeps the two rules
-        // consistent if the deck is ever short enough that it would.
+        // A phone keeps its own height budget, which leaves the next page
+        // room to peek in.
+        const heightScale = (availH * 0.86) / pageHeight;
+        // On a desktop a page fills the SNAPPORT: as tall as it can be while
+        // the next page still shows a sliver below it (the inset less the
+        // deck's gap, ~50px). That sliver is the only hint there is more to
+        // scroll, so 100% is sized for it. It is also the ceiling:
+        // `scroll-snap-align: center` centres against the snapport, so a page
+        // taller than it cannot be centred without eating into the inset, and
+        // the top half of that inset is the room the floating Edit control sits
+        // in. No cap at the card's real size either. It held a 4x6 card at
+        // 105% on a laptop with a third of the window showing the next one.
+        // A spread is usually width-bound and stops short of this.
         const snapportScale = (availH - DECK_SCROLL_PADDING_TOP * 2) / pageHeight;
         // The fit, then the cook's zoom on top of it. Clamping BEFORE the
         // multiply is what makes 100% mean "as large as this window allows"
         // and 150% mean half again — rather than the ceiling swallowing the
         // zoom whole on a small card.
-        const fit = Math.max(
-          0.12,
-          Math.min(1.05, widthScale, heightScale, snapportScale),
-        );
+        const fit = mobile
+          ? Math.max(0.12, Math.min(1.05, widthScale, heightScale, snapportScale))
+          : Math.max(0.12, Math.min(widthScale, snapportScale));
         setFitScale(fit);
         applyDeckGeometry(el, fit * zoom);
       }
