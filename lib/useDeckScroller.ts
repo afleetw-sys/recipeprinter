@@ -40,6 +40,20 @@ export function isDeckMobile(): boolean {
   return typeof window !== "undefined" && window.matchMedia(DECK_MOBILE_QUERY).matches;
 }
 
+/** `isDeckMobile`, kept current as the window crosses the breakpoint. For
+    what decides layout in JS rather than a class CSS can switch. */
+export function useDeckMobile(): boolean {
+  const [mobile, setMobile] = useState(isDeckMobile);
+  useEffect(() => {
+    const mql = window.matchMedia(DECK_MOBILE_QUERY);
+    const update = () => setMobile(mql.matches);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, []);
+  return mobile;
+}
+
 /**
  * The element CSS actually snaps for this slide — which differs by mode.
  *
@@ -48,8 +62,15 @@ export function isDeckMobile(): boolean {
  * a programmatic scroll at the wrong one is aiming at a position the browser
  * does not consider a snap point, which it then corrects with a visible jump.
  */
-function snapTargetIn(slide: HTMLElement): HTMLElement {
+function snapTargetIn(slide: HTMLElement, sheet?: number | null): HTMLElement {
   if (getComputedStyle(slide).scrollSnapAlign !== "none") return slide;
+  // A phone's book spread snaps its pages' cells, a screen each (print.css):
+  // the one for `sheet` when the jump is to a particular page, else the first.
+  const cell =
+    (sheet != null
+      ? slide.querySelector<HTMLElement>(`.recipe-spread__cell[data-focus-sheet="${sheet}"]`)
+      : null) ?? slide.querySelector<HTMLElement>(".recipe-spread__cell");
+  if (cell && getComputedStyle(cell).scrollSnapAlign !== "none") return cell;
   return slide.querySelector<HTMLElement>(PREVIEW_SELECTOR) ?? slide;
 }
 
@@ -68,8 +89,8 @@ function snapTargetIn(slide: HTMLElement): HTMLElement {
  * catch glitch. Deriving the target from the same inputs CSS uses makes the
  * premise true instead of approximately true.
  */
-function snapScrollTopFor(deck: HTMLElement, slide: HTMLElement): number {
-  const target = snapTargetIn(slide);
+function snapScrollTopFor(deck: HTMLElement, slide: HTMLElement, sheet?: number | null): number {
+  const target = snapTargetIn(slide, sheet);
   const deckStyle = getComputedStyle(deck);
   const padTop = parseFloat(deckStyle.scrollPaddingTop) || 0;
   const padBottom = parseFloat(deckStyle.scrollPaddingBottom) || 0;
@@ -278,7 +299,11 @@ export function useDeckScroller({
        * slide-based branch below, which is the right answer for a cookbook by
        * accident.
        */
-      const target = snapTargetIn(slide);
+      // A phone's stacked spread is two screens, and either one is "on" the
+      // spread: its middle is the boundary between them, never further than
+      // half a screen from what you are looking at.
+      const snapTarget = snapTargetIn(slide);
+      const target = snapTarget.classList.contains("recipe-spread__cell") ? slide : snapTarget;
       const rect = target.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
         return {
@@ -848,11 +873,16 @@ export function useDeckScroller({
    * the element — so the split costs nothing.
    */
   const centerElement = useCallback(
-    (deck: HTMLDivElement, slide: HTMLElement, behavior: ScrollBehavior = "auto") => {
+    (
+      deck: HTMLDivElement,
+      slide: HTMLElement,
+      behavior: ScrollBehavior = "auto",
+      sheet?: number | null,
+    ) => {
       // Control clearance is no longer applied here: `scroll-padding-top` owns
       // it, and honouring that is exactly what keeps this in agreement with the
       // browser. Two implementations of one intent is what drifted.
-      const targetTop = snapScrollTopFor(deck, slide);
+      const targetTop = snapScrollTopFor(deck, slide, sheet);
       const maxTop = deck.scrollHeight - deck.clientHeight;
       scrollDeckTo(deck, {
         top: Math.round(Math.max(0, Math.min(targetTop, maxTop))),
@@ -863,11 +893,11 @@ export function useDeckScroller({
   );
 
   const centerSlide = useCallback(
-    (index: number, behavior: ScrollBehavior = "auto") => {
+    (index: number, behavior: ScrollBehavior = "auto", sheet?: number | null) => {
       const deck = deckRef.current;
       const slide = slideRefs.current[index];
       if (!deck || !slide) return;
-      centerElement(deck, slide, behavior);
+      centerElement(deck, slide, behavior, sheet);
     },
     [centerElement],
   );
@@ -887,9 +917,9 @@ export function useDeckScroller({
   }, []);
 
   const suppressAndCenter = useCallback(
-    (index: number, behavior: ScrollBehavior) => {
+    (index: number, behavior: ScrollBehavior, sheet?: number | null) => {
       suppressScrollSync(behavior);
-      centerSlide(index, behavior);
+      centerSlide(index, behavior, sheet);
     },
     [centerSlide, suppressScrollSync],
   );
@@ -1057,13 +1087,15 @@ export function useDeckScroller({
   }, [navItemsLength, fitScale, cardSize]);
 
   const goToSlide = useCallback(
-    (navIndex: number) => {
+    /** `sheet`: the page of a book spread to land on, where a phone shows a
+        spread's pages as separate screens. */
+    (navIndex: number, sheet?: number | null) => {
       // Every nav item has its own slide now (see the deck render below), even
       // when two recipes share a physical sheet, so this is always a real
       // scroll rather than just a same-sheet slot swap.
       if (navIndex !== activeNavIndex) {
         const behavior = Math.abs(navIndex - activeNavIndex) <= 3 ? "smooth" : "auto";
-        suppressAndCenter(navIndex, behavior);
+        suppressAndCenter(navIndex, behavior, sheet);
       }
       setActiveNavIndex(navIndex);
     },

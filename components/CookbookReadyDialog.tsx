@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { formatInches, parseCoverInches, parseCoverPaste, sanitizeDecimal } from "@/lib/coverSizeInput";
+import { useEffect, useState, type ClipboardEvent } from "react";
 
 import { Dialog } from "@/components/Dialog";
 import { MenuSelect } from "@/components/MenuSelect";
@@ -263,15 +264,6 @@ export function CookbookReadyDialog({
  */
 export function exportsAsOneFile(destination: PrintDestination | null): boolean {
   return !destination || destination.id === "home";
-}
-
-/** Keep one positive decimal-shaped value while someone types or pastes a
-    dimension. Units, multiplication signs and other copy from the printer's
-    requirements block never enter state. */
-export function sanitizeDecimal(value: string): string {
-  const numeric = value.replace(/[^\d.]/g, "");
-  const [whole = "", ...fraction] = numeric.split(".");
-  return fraction.length > 0 ? `${whole}.${fraction.join("")}` : whole;
 }
 
 function ExportProgress({
@@ -673,16 +665,66 @@ function AwaitingCover({
 }) {
   const preset = getCookbookPreset(pages.preset);
   const size = coverSizes[preset.id] ?? { w: "", h: "", spine: "" };
-  const positiveNumber = (raw: string) => {
-    const parsed = Number(raw);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-  };
-  const widthIn = positiveNumber(size.w);
-  const heightIn = positiveNumber(size.h);
-  const spineWidthIn = positiveNumber(size.spine);
+  const widthIn = parseCoverInches(size.w);
+  const heightIn = parseCoverInches(size.h);
+  const spineWidthIn = parseCoverInches(size.spine);
   const statedSheet = widthIn && heightIn && spineWidthIn
     ? { widthIn, heightIn, spineWidthIn }
     : null;
+  /**
+   * Paste the printer's whole requirements into any box and each number goes
+   * to its own (`parseCoverPaste`); paste one size in millimetres and it goes
+   * in as inches. Anything else pastes as usual, and the box keeps only the
+   * number (`sanitizeDecimal`).
+   */
+  const pasteInto = (field: "w" | "h" | "spine") => (event: ClipboardEvent<HTMLInputElement>) => {
+    const text = event.clipboardData.getData("text");
+    const fields = parseCoverPaste(text);
+    if (fields) {
+      event.preventDefault();
+      for (const key of ["w", "h", "spine"] as const) {
+        const value = fields[key];
+        if (value) setCoverField(preset.id, key, value);
+      }
+      return;
+    }
+    if (/\b(mm|cm)\b/i.test(text)) {
+      const inches = parseCoverInches(text);
+      if (inches) {
+        event.preventDefault();
+        setCoverField(preset.id, field, formatInches(inches));
+      }
+    }
+  };
+  /**
+   * What stops the cover, said when Download cover is pressed rather than by
+   * greying the button out. Disabled, it gave no reason: a spine box holding
+   * "0" or a lone "." looked filled in and the button just didn't work.
+   * Shown from the first press on, and it updates as the boxes are fixed.
+   */
+  const [triedCover, setTriedCover] = useState(false);
+  const boxes = [
+    { key: "w", name: "width", typed: size.w, read: widthIn },
+    { key: "h", name: "height", typed: size.h, read: heightIn },
+    { key: "spine", name: "spine width", typed: size.spine, read: spineWidthIn },
+  ] as const;
+  const missing = boxes.filter((box) => box.typed.trim() === "");
+  const unreadable = boxes.filter((box) => box.typed.trim() !== "" && box.read === null);
+  const listNames = (names: string[]) =>
+    names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  const coverProblem = !triedCover
+    ? null
+    : missing.length > 0
+      ? `Add the cover's ${listNames(missing.map((box) => box.name))} from ${
+          destination?.id === "lulu" ? "Lulu" : "your printer"
+        } first.`
+      : unreadable.length > 0
+        ? `The ${listNames(unreadable.map((box) => box.name))} ${
+            unreadable.length > 1 ? "need" : "needs"
+          } to be a number above 0, like 0.48.`
+        : null;
+  const flagged = (key: string) =>
+    Boolean(coverProblem) && [...missing, ...unreadable].some((box) => box.key === key);
   // Only claim the shop states its own numbers where it is set up for this
   // format. Anywhere else the numbers come off whatever upload page they use.
   const shopStatesNumbers = Boolean(
@@ -738,8 +780,8 @@ function AwaitingCover({
         <span className="cookbook-cover-size__label">Cover size</span>
         <span className="cookbook-cover-size__hint">
           {shopStatesNumbers && destination?.id === "lulu"
-            ? "Depends on your page count and paper. Enter the Dimensions and Spine Width from Lulu's REQUIREMENTS."
-            : "Depends on your page count and paper. Enter the exact numbers your printer gives you."}
+            ? "Depends on your page count and paper. Paste Lulu's REQUIREMENTS into any box, or enter the Dimensions and Spine Width."
+            : "Depends on your page count and paper. Paste your printer's cover requirements into any box, or enter the exact numbers."}
         </span>
         {/* Sheet first, spine last: that is the order a print service states
             them in, and reading them back off their page in a different
@@ -752,6 +794,9 @@ function AwaitingCover({
             value={size.w}
             disabled={busy}
             onChange={(event) => setCoverField(preset.id, "w", event.target.value)}
+            onPaste={pasteInto("w")}
+            aria-invalid={flagged("w") || undefined}
+            aria-describedby={flagged("w") ? "cookbook-cover-size-error" : undefined}
           />
           <span aria-hidden>×</span>
           <input
@@ -761,6 +806,9 @@ function AwaitingCover({
             value={size.h}
             disabled={busy}
             onChange={(event) => setCoverField(preset.id, "h", event.target.value)}
+            onPaste={pasteInto("h")}
+            aria-invalid={flagged("h") || undefined}
+            aria-describedby={flagged("h") ? "cookbook-cover-size-error" : undefined}
           />
           <span className="cookbook-cover-size__unit" aria-hidden>
             in, spine
@@ -772,17 +820,28 @@ function AwaitingCover({
             value={size.spine}
             disabled={busy}
             onChange={(event) => setCoverField(preset.id, "spine", event.target.value)}
+            onPaste={pasteInto("spine")}
+            aria-invalid={flagged("spine") || undefined}
+            aria-describedby={flagged("spine") ? "cookbook-cover-size-error" : undefined}
           />
           <span className="cookbook-cover-size__unit">in</span>
         </span>
+        {coverProblem && (
+          <span className="cookbook-cover-size__error" role="alert" id="cookbook-cover-size-error">
+            {coverProblem}
+          </span>
+        )}
       </div>
 
       <div className="cookbook-next__actions">
         <button
           type="button"
           className="btn btn-primary btn-compact"
-          disabled={busy || !statedSheet}
-          onClick={() => statedSheet && onDownloadCover?.(statedSheet)}
+          disabled={busy}
+          onClick={() => {
+            setTriedCover(true);
+            if (statedSheet) onDownloadCover?.(statedSheet);
+          }}
         >
           {busy ? (
             <>

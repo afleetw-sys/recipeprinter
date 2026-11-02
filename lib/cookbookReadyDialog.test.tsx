@@ -165,7 +165,10 @@ describe("the cookbook print dialog", () => {
     expect(screen.getByText(/copy its required cover dimensions and spine width/i)).toBeTruthy();
     expect(screen.getByText("Cover size")).toBeTruthy();
     const coverButton = screen.getByRole("button", { name: "Download cover" }) as HTMLButtonElement;
-    expect(coverButton.disabled).toBe(true);
+    // Pressed before the sizes are in, it says why instead of being disabled.
+    fireEvent.click(coverButton);
+    expect(download).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toBeTruthy();
     const width = screen.getByLabelText("Cover width in inches") as HTMLInputElement;
     const height = screen.getByLabelText("Cover height in inches") as HTMLInputElement;
     const spine = screen.getByLabelText("Spine width in inches") as HTMLInputElement;
@@ -178,7 +181,7 @@ describe("the cookbook print dialog", () => {
     expect(width.value).toBe("19.688");
     expect(height.value).toBe("12.75");
     expect(spine.value).toBe("0.938");
-    expect(coverButton.disabled).toBe(false);
+    expect(screen.queryByRole("alert")).toBeNull();
     fireEvent.click(coverButton);
     expect(download).toHaveBeenCalledWith({
       widthIn: 19.688,

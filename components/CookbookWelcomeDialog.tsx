@@ -7,7 +7,7 @@ import type { CoverConfig } from "@/types/recipe";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
 import { FREE_COOKBOOK_RECIPES, IMPORT_ALLOWANCE_LIVE } from "@/lib/freeImports";
 
-const COOKBOOK_STEPS = [
+export const COOKBOOK_STEPS = [
   "Add your recipes",
   "Sort them into chapters",
   "Edit pages and add your photos",
@@ -15,10 +15,10 @@ const COOKBOOK_STEPS = [
 ] as const;
 
 // The cookbook's own rule, stated before the first recipe so the cap is never
-// a surprise. "Preview" (free) is always paired with what the purchase adds:
-// a cookbook is never "free up to 10 recipes" on its own.
-const PREVIEW_RULE = IMPORT_ALLOWANCE_LIVE
-  ? `Free to preview with up to ${FREE_COOKBOOK_RECIPES} recipes. Buy to download or add more.`
+// a surprise. Always shown under the price, which is what says the preview is
+// not the whole book.
+export const PREVIEW_RULE = IMPORT_ALLOWANCE_LIVE
+  ? `Free to preview with up to ${FREE_COOKBOOK_RECIPES} recipes.`
   : "Pay when you download.";
 
 export function CookbookWelcomeDialog({

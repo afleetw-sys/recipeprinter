@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deckIndexForPendingSlot, landingForRecipe } from "@/lib/pendingDeckSlot";
+import { deckIndexForPendingSlot, hostedPendingPage, landingForRecipe } from "@/lib/pendingDeckSlot";
 
 // Cover alone, then (1,2), (3,4), (5,6) — sheet indexes, one nav item per sheet.
 const navItems = Array.from({ length: 7 }, (_, sheetIndex) => ({ sheetIndex }));
@@ -59,5 +59,102 @@ describe("landingForRecipe", () => {
     // recipe, on the right, was not.
     expect(land("beside-opener")).toEqual({ slide: 0, sheet: 1 });
     expect(land("on-left")).toEqual({ slide: 1, sheet: 2 });
+  });
+});
+
+describe("hostedPendingPage", () => {
+  // A book's pages, by what is on them.
+  const recipe = (id: string) => ({ slots: [{ kind: "recipe", recipeId: id }] });
+  const opener = (id: string) => ({ slots: [{ kind: "divider", id }] });
+  const filler = (id: string) => ({ slots: [{ kind: "blank", id }] });
+  const ownBlank = (id: string) => ({ slots: [{ kind: "blank", id, pageId: id }] });
+  const toc = { slots: [{ kind: "toc", id: "toc" }] };
+  const cover = { slots: [{ kind: "cover", id: "cover" }] };
+
+  it("loads a new recipe on the empty page it is about to fill, wherever that page is", () => {
+    // A recipe added while photos sit inside the page fills the next empty
+    // page. Its loading card was drawn as a NEW page below the spread instead,
+    // and the recipe then landed back up on the empty page, out of view.
+    const cases: {
+      name: string;
+      sheets: { slots: { kind: string; id?: string; recipeId?: string; pageId?: string }[] }[];
+      spreads: { left: number | null; right: number | null; single?: boolean }[];
+      anchorSheet: number;
+      anchorId: string | null;
+      expected: { spread: number; side: "left" | "right" };
+    }[] = [
+      {
+        name: "after a recipe on a left page, facing nothing at the end of the book",
+        sheets: [cover, opener("s1"), recipe("a")],
+        spreads: [{ left: null, right: 0, single: true }, { left: null, right: 1 }, { left: 2, right: null }],
+        anchorSheet: 2,
+        anchorId: "a",
+        expected: { spread: 2, side: "right" },
+      },
+      {
+        name: "after a recipe on a left page, facing a filler blank",
+        sheets: [cover, opener("s1"), recipe("a"), filler("gap"), opener("s2")],
+        spreads: [{ left: null, right: 0, single: true }, { left: null, right: 1 }, { left: 2, right: 3 }, { left: null, right: 4 }],
+        anchorSheet: 2,
+        anchorId: "a",
+        expected: { spread: 2, side: "right" },
+      },
+      {
+        name: "after a recipe on a right page, with the next spread opening on a filler blank",
+        sheets: [cover, opener("s1"), recipe("a"), recipe("b"), filler("gap"), opener("s2")],
+        spreads: [{ left: null, right: 0, single: true }, { left: null, right: 1 }, { left: 2, right: 3 }, { left: 4, right: 5 }],
+        anchorSheet: 3,
+        anchorId: "b",
+        expected: { spread: 3, side: "left" },
+      },
+      {
+        name: "after a recipe two pages long, from the page it ends on",
+        sheets: [cover, opener("s1"), recipe("a"), recipe("a"), filler("gap"), opener("s2")],
+        spreads: [{ left: null, right: 0, single: true }, { left: null, right: 1 }, { left: 2, right: 3 }, { left: 4, right: 5 }],
+        anchorSheet: 2,
+        anchorId: "a",
+        expected: { spread: 3, side: "left" },
+      },
+      {
+        name: "at the top of a chapter whose opener faces a filler blank",
+        sheets: [cover, opener("s1"), filler("gap")],
+        spreads: [{ left: null, right: 0, single: true }, { left: 1, right: 2 }],
+        anchorSheet: 1,
+        anchorId: "s1",
+        expected: { spread: 1, side: "right" },
+      },
+    ];
+    for (const { name, expected, ...input } of cases) {
+      expect(hostedPendingPage({ ...input, fullPagePhotos: false }), name).toEqual(expected);
+    }
+  });
+
+  it("adds a page instead when no empty page is next", () => {
+    const sheets = [cover, toc, recipe("a"), recipe("b"), ownBlank("mine")];
+    const spreads = [{ left: null, right: 0, single: true }, { left: null, right: 1 }, { left: 2, right: 3 }, { left: 4, right: null }];
+    // A real page follows.
+    expect(hostedPendingPage({ sheets, spreads, anchorSheet: 2, anchorId: "a", fullPagePhotos: false })).toBeNull();
+    // A blank page the cook added is theirs, not room.
+    expect(hostedPendingPage({ sheets, spreads, anchorSheet: 3, anchorId: "b", fullPagePhotos: false })).toBeNull();
+    // Nothing goes beside the contents.
+    expect(
+      hostedPendingPage({
+        sheets: [cover, toc],
+        spreads: [{ left: null, right: 0, single: true }, { left: 1, right: null }],
+        anchorSheet: 1,
+        anchorId: "toc",
+        fullPagePhotos: false,
+      }),
+    ).toBeNull();
+    // A recipe on its own full-page photo spread opens a new spread.
+    expect(
+      hostedPendingPage({
+        sheets: [cover, opener("s1"), recipe("a")],
+        spreads: [{ left: null, right: 0, single: true }, { left: null, right: 1 }, { left: 2, right: null }],
+        anchorSheet: 2,
+        anchorId: "a",
+        fullPagePhotos: true,
+      }),
+    ).toBeNull();
   });
 });

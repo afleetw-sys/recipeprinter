@@ -46,15 +46,28 @@ describe("the book's opening page", () => {
     ).toBe("");
   });
 
-  it("is absent when nothing has been written", () => {
+  it("is absent when the book has none", () => {
     expect(openingPageFor({ template })).toBeUndefined();
-    // Whitespace is not a page. An empty record left behind by opening the
-    // editor and typing nothing must not add a leaf to the book — and, because
-    // front-matter length decides the parity blank, must not shift every page
-    // after it either.
-    expect(
-      openingPageFor({ frontMatter: { kind: "dedication", heading: "  ", body: "  " }, template }),
-    ).toBeUndefined();
+  });
+
+  it("stays in the book when every line on it is cleared or removed", () => {
+    // Clearing the dedication's last line used to take the whole page with
+    // it, and the Pages list, which still counted the page as on, offered no
+    // way back. Taking a line off is not deleting the page: its trash button
+    // and the Pages list do that. Every combination of emptied lines, so a
+    // page with just one line left and one with none are both covered.
+    const empties = [undefined, "", "  "];
+    for (const heading of empties) {
+      for (const body of empties) {
+        for (const signature of empties) {
+          const page = openingPageFor({
+            frontMatter: { kind: "dedication", heading, body, signature },
+            template,
+          });
+          expect(page, JSON.stringify({ heading, body, signature })).toBeDefined();
+        }
+      }
+    }
   });
 
   it("carries the signature through, which the preview already showed", () => {

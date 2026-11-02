@@ -1,9 +1,9 @@
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { PrinterWorkspace } from "@/components/PrinterWorkspace";
-import { CommunityGallery } from "@/components/CommunityGallery";
 import { InviteWelcome } from "@/components/InviteWelcome";
 import { REFERRALS_LIVE } from "@/lib/referral";
+import { HomeGallery, HomeKindProvider, HomeSubhead } from "@/components/HomeKind";
 import { homeJsonLd } from "@/lib/seo";
 
 // The homepage is a focused utility: understand what RecipePrinter does and
@@ -32,6 +32,9 @@ export default function Home() {
       <SiteHeader sticky chrome="page" />
 
       <main id="rp-main" className="flex-1 px-cp-6">
+        {/* The tab under the hero changes the whole page, not just the box
+            under it: the subhead and the photo strip follow it too. */}
+        <HomeKindProvider>
         {/* Two measures, on purpose. The front door is a narrow centred column
             because it is one thing to read and one thing to do; the kitchen
             strip below runs to the full page width because it is a band of
@@ -76,7 +79,7 @@ export default function Home() {
                 line of its own. The cap is here to keep a LONGER subhead
                 readable, not to break this one. */}
             <p className="mt-cp-3 mx-auto max-w-[38rem] text-ink-soft text-cp-body-lg leading-relaxed">
-              Turn web and social recipe links into printable recipe cards for your kitchen.
+              <HomeSubhead />
             </p>
             {REFERRALS_LIVE && <InviteWelcome />}
           </div>
@@ -92,8 +95,9 @@ export default function Home() {
             argument for staying, not the reason a visitor came. Renders
             nothing at all until there are photographs to show. */}
         <div className="max-w-content mx-auto pb-cp-7">
-          <CommunityGallery />
+          <HomeGallery />
         </div>
+        </HomeKindProvider>
       </main>
 
       <SiteFooter isHome />

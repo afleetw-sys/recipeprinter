@@ -991,6 +991,13 @@
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
 }
+/* A filled cover box that isn't a size (CookbookReadyDialog). */
+.cookbook-cover-size__error {
+  display: block;
+  margin-top: .4rem;
+  color: var(--cp-error);
+  font-size: var(--cp-fs-caption);
+}
 .cookbook-cover-size__fields {
   display: flex;
   margin-top: .45rem;
@@ -1009,6 +1016,10 @@
   color: var(--cp-ink);
   font-size: var(--cp-fs-caption);
   font-variant-numeric: tabular-nums;
+}
+/* A box the press found missing or unreadable (CookbookReadyDialog). */
+.cookbook-cover-size__fields input[aria-invalid="true"] {
+  border-color: var(--cp-error);
 }
 .cookbook-cover-size__fields input:focus-visible {
   outline: var(--cp-focus-ring);
@@ -2589,6 +2600,73 @@
   }
   .rp-workspace-import {
     min-width: 0;
+  }
+
+  /* The Cookbook tab (CookbookIntro), straight on the page with no panel: a
+     centred start button under the tabs, then three steps on a hairline. */
+  .rp-cookbook-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+  .rp-cookbook-page__go {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .75rem;
+    text-align: center;
+  }
+  /* An ordinary primary button, a touch taller: it is the only action on the
+     page, and placement is what makes it obvious, not size. */
+  .rp-cookbook-page__start {
+    min-height: 44px;
+    padding: 0 22px;
+  }
+  /* The printed-book photo above the Start button (CookbookIntro): the
+     carousel's first, a tall shot, cropped to a 3:2 window on the open book
+     (its recipe title at the top edge). Never squashed. */
+  .rp-cookbook-hero {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+  .rp-cookbook-hero__photo {
+    display: block;
+    width: min(100%, 400px);
+    height: auto;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    object-position: center 42%;
+    border: 1px solid var(--cp-line);
+    border-radius: var(--cp-radius-xl);
+  }
+  @media (max-width: 639px) {
+    .rp-cookbook-page__price span {
+      display: block;
+    }
+  }
+  /* How a book gets made, in three short numbered lines. */
+  .rp-cookbook-page__steps {
+    display: grid;
+    gap: 1rem;
+    margin: 0;
+    padding: 1.75rem 0 0;
+    border-top: 1px solid var(--cp-line);
+    list-style: none;
+  }
+  .rp-cookbook-page__steps li {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+  }
+  .rp-cookbook-page__steps .cookbook-welcome__step-num {
+    flex-shrink: 0;
+  }
+  @media (min-width: 768px) {
+    .rp-cookbook-page__steps {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.5rem;
+    }
   }
 
   /* The homepage's cookbook panel (HolidayCookbookBanner): the import box's

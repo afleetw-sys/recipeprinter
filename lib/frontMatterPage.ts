@@ -30,14 +30,12 @@ export function openingPageFor({
   dedication?: CoverConfig;
   template: RecipePrintTemplate;
 }): CoverConfig | undefined {
-  const hasContent =
-    frontMatter &&
-    (frontMatter.heading?.trim() ||
-      frontMatter.body?.trim() ||
-      frontMatter.signature?.trim() ||
-      frontMatter.imageUrl ||
-      frontMatter.gridImages?.length);
-  if (frontMatter && hasContent) {
+  // The page is there for as long as the record is, whatever is written on
+  // it. It used to need a line or a photo, so clearing the last line deleted
+  // the page, and the Pages list, which still saw the record, had no way to
+  // bring it back. Taking lines off a page is not deleting it: its trash
+  // button and the Pages list do that, by removing the record.
+  if (frontMatter) {
     return {
       // No "Dedication"/"Introduction" fallback: toggleDedication() (the only
       // thing that creates this page) already seeds real heading text, so an

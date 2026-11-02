@@ -28,13 +28,14 @@ export async function startCookbook(
     await tab.click();
     await expect(tab).toHaveAttribute("aria-selected", "true", { timeout: 1_000 });
   }).toPass();
-  const field = page.getByPlaceholder("Paste a recipe link");
+  // The Cookbook tab opens an empty book (no link field, no welcome dialog);
+  // the recipe goes in from inside it, as a cook's first one does.
+  await page.getByRole("button", { name: /Start a cookbook/ }).first().click();
+  await expect(page).toHaveURL(/\/print$/);
+  await page.getByRole("button", { name: /^Add recipes?$/ }).filter({ visible: true }).first().click();
+  const field = page.getByPlaceholder("Paste a recipe link").filter({ visible: true }).first();
   await field.fill(LINK);
   await field.press("Enter");
-  await expect(page).toHaveURL(/\/print$/);
-  await page.getByRole("button", { name: "Take a look" }).click();
-  // This book already has its recipe, so Start lands on the book rather than
-  // asking for a first recipe.
   await expect(page.locator("#recipe-add-dialog-title")).toHaveCount(0);
   // The first match can be the page rail, which a phone keeps hidden.
   await expect(page.getByText(RECIPE_TITLE).filter({ visible: true }).first()).toBeVisible();

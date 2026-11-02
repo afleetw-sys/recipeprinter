@@ -2171,7 +2171,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     slug: "recipe-binder",
     contentUpdated: "2026-10-06",
     copyReviewed: "2026-10-02",
-    importSubmitLabel: "Start my cookbook",
+    importSubmitLabel: "Start a cookbook",
     startsCookbook: true,
     layout: "capture-first",
     primaryKeyword: "how to make a recipe binder",
@@ -2502,7 +2502,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     h1: "Family recipe book ideas",
     lede:
       "RecipePrinter turns online recipes, old cards, photos, and typed-in notes into clean, matching pages. Put them together in a cookbook with your own cover and chapters, and RecipePrinter builds the table of contents.",
-    importSubmitLabel: "Start my cookbook",
+    importSubmitLabel: "Start a cookbook",
     howTo: [
       {
         name: "Gather the recipes",
@@ -2603,7 +2603,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     layout: "guide-first",
     heroImage: "printed-cookbook",
     heroImageAlt: "A homemade cookbook open to a recipe page beside a full-page photo of the finished dish.",
-    importSubmitLabel: "Start my cookbook",
+    importSubmitLabel: "Start a cookbook",
     title: "How to Make Your Own Cookbook, Step by Step | RecipePrinter",
     description:
       "A step-by-step guide to making your own cookbook: choosing the recipes, organizing chapters, adding a dedication and family stories, and getting it printed.",
@@ -2721,7 +2721,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     startsCookbook: true,
     layout: "capture-first",
     heroImage: "bound-cookbook",
-    importSubmitLabel: "Start my cookbook",
+    importSubmitLabel: "Start a cookbook",
     title: "Online Cookbook Maker | Turn Any Recipes Into a Book | RecipePrinter",
     description:
       "Make a cookbook from recipes you find anywhere: links, screenshots, apps, or handwritten cards. Organize chapters, add a cover, and export a print-ready PDF.",
@@ -2879,7 +2879,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     startsCookbook: true,
     layout: "guide-first",
     heroImage: "bound-cookbook",
-    importSubmitLabel: "Start my cookbook",
+    importSubmitLabel: "Start a cookbook",
     captureHeading: "Start your cookbook",
     title: "How to Print a Cookbook | At Home, Copy Shop, Lulu or Blurb",
     description:
@@ -3013,7 +3013,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImageAlt: "A handwritten family recipe card ready to be digitized.",
     importPlaceholder:
       "Upload a photo or scan of a handwritten recipe card. Add the front and back together if the recipe continues onto both sides.",
-    importSubmitLabel: "Start my cookbook",
+    importSubmitLabel: "Start a cookbook",
     title: "Scan Handwritten Recipes Into a Cookbook | RecipePrinter",
     description:
       "Digitize handwritten recipe cards, clean up the recipe text, and turn family recipes into a cookbook you can edit, print, or export as a PDF.",
@@ -3151,7 +3151,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // one family, is the gift.
     heroImage: "cookbook-cover",
     heroImageAlt: "A printed homemade cookbook titled Our Family Cookbook, ready to give as a gift.",
-    importSubmitLabel: "Start my cookbook",
+    importSubmitLabel: "Start a cookbook",
     title: "Homemade Cookbook Gift | Make a Personalized Recipe Book",
     description:
       "Turn family recipes, handwritten cards, and favorite dishes into a personalized cookbook gift you can edit, print at home, or export as a PDF.",
@@ -3302,7 +3302,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // (/make-your-own-cookbook): the dedication is what makes it a gift.
     heroImage: "dedication-page",
     heroImageAlt: "A printed recipe book open to its dedication page, made as a gift.",
-    importSubmitLabel: "Start my cookbook",
+    importSubmitLabel: "Start a cookbook",
     title: "Recipe Book Gift Ideas: What to Include and How to Make One | RecipePrinter",
     description:
       "Ideas for a personalized recipe book gift: what to put in it, how to gather recipes from family, and how to print it or give it as a PDF.",
@@ -3424,7 +3424,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     startsCookbook: true,
     layout: "capture-first",
     heroImage: "bound-cookbook",
-    importSubmitLabel: "Start my cookbook",
+    importSubmitLabel: "Start a cookbook",
     title: "Make a Family Recipe Book for Christmas | RecipePrinter",
     description:
       "Turn family recipes and handwritten cards into a personalized Christmas recipe book you can edit, print at home, or export as a PDF.",
@@ -4055,7 +4055,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     startsCookbook: true,
     layout: "capture-first",
     heroImage: "printed-cookbook",
-    importSubmitLabel: "Start my cookbook",
+    importSubmitLabel: "Start a cookbook",
     title: "CreateMyCookbook Alternative for Family Cookbooks | RecipePrinter",
     description:
       "Compare RecipePrinter with CreateMyCookbook. Import recipes from links, photos, and handwritten cards, build your cookbook, and export a print-ready PDF.",

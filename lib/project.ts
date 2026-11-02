@@ -204,6 +204,17 @@ export interface ProjectMeta {
       book on arrival"; once `scaffoldCookbook` runs, this records that the
       project was born a cookbook, with no prior recipe-cards state. */
   cookbookBornFresh?: boolean;
+  /** Started from the homepage's Cookbook tab, which explains the book and
+      its price itself, so /print opens the new book without the welcome. */
+  cookbookIntroduced?: boolean;
+  /** This book's unwritten optional lines (a cover's author and edition, a
+      dedication's message and signature, a back cover's lines, a chapter's
+      subtitle) are told apart from removed ones: `undefined` shows its "+"
+      prompt on the page, `""` was taken off. Books from before that
+      distinction have every unwritten line migrated to removed once, on load
+      (`normalizeProjectMeta`), so prompts never appear on a book someone
+      already finished, and set this. */
+  optionalLinesExplicit?: boolean;
   /** The print-format preset this cookbook exports at (trim/bleed/margin/gutter
       — see lib/cookbookPresets.ts). Absent = the default preset. Cookbook-only;
       cleared when the project stops being a cookbook. */
@@ -246,7 +257,11 @@ interface LegacySectionPhotoFields {
 const LEGACY_SECTION_PHOTO_MODES = ["none", "band", "full", "grid"] as const;
 
 export function normalizeProjectMeta(value: unknown): ProjectMeta {
-  if (!value || typeof value !== "object") return { sections: [], projectId: uid() };
+  if (!value || typeof value !== "object") {
+    // Nothing written yet, so nothing to migrate: whatever is added from here
+    // on shows its prompts.
+    return { sections: [], projectId: uid(), optionalLinesExplicit: true };
+  }
   const raw = value as Partial<ProjectMeta>;
   const legacyOpeners = Boolean(raw.sectionDividers);
   const sections = Array.isArray(raw.sections)
@@ -305,7 +320,14 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
                   ? section.titleOverride
                   : ""
                 : undefined,
-            subtitle: cleanText(section.subtitle),
+            // `""` is a subtitle taken off the page and has to survive a
+            // reload; `undefined` is one nobody has written, whose prompt shows.
+            subtitle:
+              typeof section.subtitle === "string"
+                ? section.subtitle.trim()
+                  ? section.subtitle
+                  : ""
+                : undefined,
             cardPhotoMode:
               SLOT_PHOTO_MODES.includes(section.cardPhotoMode as SlotPhotoMode)
                 ? (section.cardPhotoMode as SlotPhotoMode)
@@ -347,6 +369,21 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
         })
     : [];
   const legacyDedication = raw.dedication?.blurb?.trim();
+  // A book from before optional lines showed their prompts by default: every
+  // line it never wrote counts as one the cook left off on purpose, so
+  // opening it doesn't scatter "+ Author" chips over pages already done. The
+  // toolbar's "Add" still brings any of them back. Once, then flagged.
+  const settled = raw.optionalLinesExplicit === true;
+  const removed = (value: string | undefined) => (settled || value !== undefined ? value : "");
+  const migrateCover = (cover: CoverConfig | undefined, lines: ("subtitle" | "author" | "edition" | "blurb")[]) =>
+    cover && !settled
+      ? lines.reduce<CoverConfig>((next, line) => ({ ...next, [line]: removed(next[line]) }), cover)
+      : cover;
+  const frontMatterRaw =
+    raw.frontMatter ??
+    (legacyDedication
+      ? { kind: "dedication" as const, heading: "Dedication", body: legacyDedication }
+      : undefined);
   return {
     ...raw,
     // Straight out of storage, and handed to the import panel as the tab to
@@ -357,24 +394,34 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
       : undefined,
     projectId: cleanText(raw.projectId) ?? uid(),
     projectTitle: cleanText(raw.projectTitle),
-    sections,
+    sections: settled
+      ? sections
+      : sections.map((section) => ({ ...section, subtitle: removed(section.subtitle) })),
     cover: raw.cover
-      ? {
-          ...raw.cover,
-          layout:
-            raw.cover.layout ??
-            (raw.cover.gridImages?.length
-              ? "collage"
-              : raw.cover.imageUrl
-                ? "photo"
-                : "typographic"),
-        }
+      ? migrateCover(
+          {
+            ...raw.cover,
+            layout:
+              raw.cover.layout ??
+              (raw.cover.gridImages?.length
+                ? "collage"
+                : raw.cover.imageUrl
+                  ? "photo"
+                  : "typographic"),
+          },
+          ["subtitle", "author", "edition"],
+        )
       : undefined,
+    backCover: migrateCover(raw.backCover, ["blurb", "author"]),
     frontMatter:
-      raw.frontMatter ??
-      (legacyDedication
-        ? { kind: "dedication", heading: "Dedication", body: legacyDedication }
-        : undefined),
+      frontMatterRaw && !settled
+        ? {
+            ...frontMatterRaw,
+            body: removed(frontMatterRaw.body),
+            signature: removed(frontMatterRaw.signature),
+          }
+        : frontMatterRaw,
+    optionalLinesExplicit: true,
   };
 }
 
@@ -1257,12 +1304,15 @@ export function useProjectMeta() {
    * (docs/import-meter-plan.md, section 1.3).
    */
   const startNewProject = useCallback(
-    (options: { cookbook?: boolean } = {}) => {
+    (options: { cookbook?: boolean; introduced?: boolean } = {}) => {
       commit({
         ...EMPTY_META,
         projectId: uid(),
         cookbookIntent: options.cookbook || undefined,
         cookbookBornFresh: options.cookbook || undefined,
+        cookbookIntroduced: (options.cookbook && options.introduced) || undefined,
+        // A new book shows its unwritten lines' prompts (see the field).
+        optionalLinesExplicit: true,
         // Whether the cookbook pitch has been seen is a fact about the PERSON,
         // not the project. Resetting it per project would re-pitch the product
         // to someone already on their second book.

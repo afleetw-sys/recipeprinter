@@ -265,7 +265,7 @@ export function ImportPanel({
    * the arrow's own slot, so nothing moves.
    */
   // The Image tab's button always says what it does, on every surface (a
-  // cookbook's "Start my cookbook" included), and does not change with the
+  // cookbook's "Start a cookbook" included), and does not change with the
   // number of photos.
   const faceLabel = mode === "image" ? IMAGE_SUBMIT_LABEL : submitLabel;
   const submitFace = workspace ? (

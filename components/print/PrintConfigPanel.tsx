@@ -129,7 +129,12 @@ export function PrintConfigPanel({
             showing. */}
         {/* A cookbook's desktop panel is titled, so its Book / Page tabs sit
             on the row below, clear of the collapse button in this corner. */}
-        {tabbed && <h2 className="recipe-config-panel__title">Settings</h2>}
+        {/* Named for what it changes. Someone sized the text here expecting
+            the dedication page to grow, so a book's panel says it is the
+            book's: the whole cookbook, or this page under the Page tab. */}
+        {cookbookMode && !mobileDrawer && (
+          <h2 className="recipe-config-panel__title">{tabbed ? "Settings" : "Cookbook settings"}</h2>
+        )}
         {mobileDrawer === "template" && (
           <h2 className="text-cp-dialog-title font-extrabold tracking-[-0.02em] min-w-0 truncate">
             Themes
@@ -157,6 +162,14 @@ export function PrintConfigPanel({
             ]}
           />
         </div>
+      )}
+
+      {cookbookMode && !mobileDrawer && (
+        <p className="recipe-config-panel__note">
+          {tabbed && tab === "page"
+            ? "Changes here apply to this page only."
+            : "Changes here apply to the whole cookbook."}
+        </p>
       )}
 
       <div className="recipe-config-panel__scroll">

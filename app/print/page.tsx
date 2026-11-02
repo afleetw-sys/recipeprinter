@@ -1209,6 +1209,7 @@ export default function PrintPage() {
           const rect = sectionHead.rect;
           return {
             indicator: { top: rect.bottom - 1, left: rect.left, width: rect.width, height: 3 },
+            slot: { anchor: `[data-rail-section-head="${sectionId}"]`, place: "after" },
             commit: () => projectMeta.moveItems(movingIds, sectionId, 0),
           };
         }
@@ -1219,6 +1220,7 @@ export default function PrintPage() {
           const rect = sectionAdd.rect;
           return {
             indicator: { top: rect.top, left: rect.left, width: rect.width },
+            slot: { anchor: `[data-rail-section-add="${sectionId}"]`, place: "before" },
             commit: () =>
               projectMeta.moveItems(
                 movingIds,
@@ -1261,6 +1263,8 @@ export default function PrintPage() {
             };
         return {
           indicator,
+          // The card makes room: an empty slot opens where it will land.
+          slot: { anchor: `[data-rail-recipe="${target.id}"]`, place: after ? "after" : "before" },
           commit: () => {
             const location = sectionAndIndexForItem(target.id);
             if (!location) return;
@@ -1332,6 +1336,9 @@ export default function PrintPage() {
     },
     (kind, id) =>
       kind === "recipe" && effectiveRailSelection.has(id) ? effectiveRailSelection.size : 1,
+    () => {
+      railGeometryDirtyRef.current = true;
+    },
   );
 
   // Everything that can move rail rows WITHOUT scrolling the rail — the drag
@@ -1621,7 +1628,9 @@ export default function PrintPage() {
       : { title: "", template: bookTemplate };
     const frontMatter: CookbookFrontMatter | undefined =
       namedSectionCount(joinedSections) === 0 && !meta.frontMatter && !meta.dedication
-        ? { kind: "dedication", heading: "Dedication", body: "" }
+        ? // No body: an unwritten message shows its prompt on the page,
+          // where `""` would be one the cook had removed.
+          { kind: "dedication", heading: "Dedication" }
         : undefined;
     return {
       template: bookTemplate,
@@ -1720,7 +1729,10 @@ export default function PrintPage() {
         recipeCount: items?.filter(isRecipeEntry).length ?? 0,
         template: bookTemplate ?? template,
       });
-      if (!offerAfter) {
+      // The homepage's Cookbook tab already was this welcome (see
+      // `cookbookIntroduced`); a second one would stand between the cook and
+      // the book they just asked to open.
+      if (!offerAfter || projectMeta.meta.cookbookIntroduced) {
         setBookHiddenUntilBuilt(false);
         return;
       }
@@ -1945,7 +1957,8 @@ export default function PrintPage() {
               kind: projectMeta.meta.frontMatter?.kind ?? "dedication",
               heading: cover.title || undefined,
               body: cover.blurb,
-              signature: cover.author || undefined,
+              // `""` kept: a signature taken off the page stays off.
+              signature: cover.author,
               imageUrl: cover.imageUrl,
               gridImages: cover.gridImages,
               layout: cover.layout,
@@ -5717,19 +5730,19 @@ export default function PrintPage() {
         side === "front"
           ? [
               { id: "title", label: "Title", value: cover.title, onCommit: (v) => set({ title: v }) },
-              { id: "subtitle", label: "Subtitle", value: cover.subtitle ?? "", onCommit: (v) => set({ subtitle: v || undefined }) },
-              { id: "author", label: "Author", value: cover.author ?? "", onCommit: (v) => set({ author: v || undefined }) },
-              { id: "edition", label: "Edition", value: cover.edition ?? "", onCommit: (v) => set({ edition: v || undefined }) },
+              { id: "subtitle", label: "Subtitle", value: cover.subtitle ?? "", onCommit: (v) => set({ subtitle: v }) },
+              { id: "author", label: "Author", value: cover.author ?? "", onCommit: (v) => set({ author: v }) },
+              { id: "edition", label: "Edition", value: cover.edition ?? "", onCommit: (v) => set({ edition: v }) },
             ]
           : side === "dedication"
             ? [
                 { id: "heading", label: "Heading", value: cover.title, onCommit: (v) => set({ title: v }) },
-                { id: "message", label: "Message", value: cover.blurb ?? "", multiline: true, onCommit: (v) => set({ blurb: v || undefined }) },
-                { id: "signature", label: "Signature", value: cover.author ?? "", onCommit: (v) => set({ author: v || undefined }) },
+                { id: "message", label: "Message", value: cover.blurb ?? "", multiline: true, onCommit: (v) => set({ blurb: v }) },
+                { id: "signature", label: "Signature", value: cover.author ?? "", onCommit: (v) => set({ author: v }) },
               ]
             : [
-                { id: "closing", label: "Closing line", value: cover.blurb ?? "", multiline: true, onCommit: (v) => set({ blurb: v || undefined }) },
-                { id: "credit", label: "Credit", value: cover.author ?? "", onCommit: (v) => set({ author: v || undefined }) },
+                { id: "closing", label: "Closing line", value: cover.blurb ?? "", multiline: true, onCommit: (v) => set({ blurb: v }) },
+                { id: "credit", label: "Credit", value: cover.author ?? "", onCommit: (v) => set({ author: v }) },
               ];
       return (
         <PageSettings
@@ -5837,8 +5850,8 @@ export default function PrintPage() {
               ? undefined
               : [
                   { id: "heading", label: "Heading", value: content.title ?? "", onCommit: (v) => set({ title: v || undefined }) },
-                  { id: "message", label: "Message", value: content.blurb ?? "", multiline: true, onCommit: (v) => set({ blurb: v || undefined }) },
-                  { id: "signature", label: "Signature", value: content.author ?? "", onCommit: (v) => set({ author: v || undefined }) },
+                  { id: "message", label: "Message", value: content.blurb ?? "", multiline: true, onCommit: (v) => set({ blurb: v }) },
+                  { id: "signature", label: "Signature", value: content.author ?? "", onCommit: (v) => set({ author: v }) },
                 ]
           }
           remove={remove}
@@ -6426,7 +6439,7 @@ export default function PrintPage() {
       return;
     }
     pendingFocusSheetRef.current = sheetIndex;
-    goToSlide(spreadIndex);
+    goToSlide(spreadIndex, sheetIndex);
   };
   const activeSpread = cookbookView ? spreads[activeNavIndex] ?? null : null;
   const focusedSheet = cookbookView
@@ -6732,7 +6745,7 @@ export default function PrintPage() {
       if (targetIndex === activeNavIndex) setFocusedSheetIndex(landing.sheet);
       else pendingFocusSheetRef.current = landing.sheet;
     }
-    goToSlide(targetIndex);
+    goToSlide(targetIndex, landing.sheet);
     if (pendingFocusNavId) setPendingFocusNavId(null);
     if (pendingFocusRecipeId === pendingId) setPendingFocusRecipeId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
