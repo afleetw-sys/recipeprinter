@@ -150,15 +150,23 @@ export function ThemePicker({
   return (
     <div className="recipe-config-section recipe-config-section--template">
       <h3 className="recipe-config-label">Themes</h3>
-      {/* Above the grid, so it is in view without scrolling and reads as
-          belonging to the theme picked below. Not in the label's row: the
-          phone's Themes sheet hides that label. */}
-      <button type="button" className="recipe-customize-entry" onClick={onCustomize}>
-        <span>
-          Customize {RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === template)?.label}
-          {themeCustomized && <span className="recipe-customize-entry__state"> · Customized</span>}
+      {/* The theme in use, pulled up above the grid with the way into its
+          Customize view, so both are in view without scrolling. The whole
+          card opens Customize. It stays selected in the grid below as well:
+          taking it out would move the tiles every time the theme changed, and
+          the grid is where themes are compared. */}
+      <button type="button" className="recipe-current-theme" onClick={onCustomize}>
+        <span className="recipe-current-theme__preview">
+          <TemplateThumbnail template={template} />
         </span>
-        <ChevronRightIcon size={ICON_SIZE.sm} />
+        <span className="recipe-current-theme__name">
+          {RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === template)?.label}
+          {themeCustomized && <span className="recipe-current-theme__state">Customized</span>}
+        </span>
+        <span className="recipe-current-theme__customize">
+          Customize
+          <ChevronRightIcon size={ICON_SIZE.sm} />
+        </span>
       </button>
       <div className="recipe-template-list">{main.map(renderOption)}</div>
       {seasonal.length > 0 && (

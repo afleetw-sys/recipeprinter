@@ -3307,37 +3307,69 @@ textarea.recipe-page-fields__input {
   transition: transform 150ms ease;
 }
 
-/* "Customize <theme>": opens the panel's Customize view (ThemeCustomizePanel)
-   for the theme picked below it. A full-width row, quieter than the theme
-   cards, with a hairline like the panel's other separations. */
-.recipe-customize-entry {
-  display: flex;
+/* The theme in use, above the grid (ThemePicker): its card beside its name,
+   and the way into its Customize view along the bottom. One button, framed
+   with a hairline like the tiles below it. */
+.recipe-current-theme {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "preview name"
+    "customize customize";
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 0 12px;
   width: 100%;
-  margin: 2px 0 6px;
-  padding: 9px 10px;
+  margin: 2px 0 12px;
+  padding: 10px 10px 0;
   border: 1px solid var(--cp-line);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--cp-card);
   color: var(--cp-ink);
-  font-size: var(--cp-fs-caption);
-  font-weight: 600;
   text-align: left;
   cursor: pointer;
+  overflow: hidden;
 }
-.recipe-customize-entry:hover {
+.recipe-current-theme:hover {
   border-color: var(--cp-line-strong);
 }
-.recipe-customize-entry:focus-visible,
+.recipe-current-theme:focus-visible,
 .recipe-customize__back:focus-visible {
   outline: var(--cp-focus-ring);
   outline-offset: var(--cp-focus-ring-offset);
 }
-.recipe-customize-entry__state {
+.recipe-current-theme__preview {
+  grid-area: preview;
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--cp-line);
+  border-radius: 6px;
+}
+.recipe-current-theme__name {
+  grid-area: name;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--cp-fs-body);
+  font-weight: 800;
+}
+.recipe-current-theme__state {
   color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
   font-weight: 500;
+}
+.recipe-current-theme__customize {
+  grid-area: customize;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px -10px 0;
+  padding: 9px 10px;
+  border-top: 1px solid var(--cp-line);
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+}
+.recipe-current-theme:hover .recipe-current-theme__customize {
+  background: var(--cp-surface-soft);
 }
 
 .recipe-config-section--customize {
