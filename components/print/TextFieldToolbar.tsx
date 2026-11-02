@@ -1,14 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { BodyTextGlyph, HeadingGlyph } from "@/components/RecipeCardPrint";
+import { ChevronDownIcon, ICON_SIZE } from "@/components/icons";
 import { TextStyleControl } from "@/components/print/TextStyleControl";
 import { textBarScale } from "@/lib/deckZoom";
 import { readLineSelection } from "@/lib/lineSelection";
 import { readFocusedRichField } from "@/lib/richTextField";
 import { isAllCaps, isTitleCase, toAllCaps, toTitleCase } from "@/lib/titleCase";
 import { useFloatingBarPlacement } from "@/lib/useFloatingBarPlacement";
+import { useMenuDismiss } from "@/lib/useMenuDismiss";
 import type { RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
 
 /**
@@ -213,42 +214,10 @@ export function TextFieldToolbar({
     >
       {lineKind && inlineEdit && (
         <div className="recipe-page-toolbar__group" role="group" aria-label="Line type">
-          {/* Heading first: it is the one being reached for. Body is where the
-              line already is. */}
-          <button
-            type="button"
-            className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
-              isHeading ? "is-active" : ""
-            }`}
-            aria-label="Heading"
-            aria-pressed={isHeading}
-            title="Heading"
-            onMouseDown={(event) => {
-              event.preventDefault();
-              if (!isHeading) {
-                inlineEdit.onSetLineKind(lineKind, "heading", readFocusedRichField() ?? undefined);
-              }
-            }}
-          >
-            <HeadingGlyph />
-          </button>
-          <button
-            type="button"
-            className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
-              isHeading ? "" : "is-active"
-            }`}
-            aria-label="Body text"
-            aria-pressed={!isHeading}
-            title="Body text"
-            onMouseDown={(event) => {
-              event.preventDefault();
-              if (isHeading) {
-                inlineEdit.onSetLineKind(lineKind, "body", readFocusedRichField() ?? undefined);
-              }
-            }}
-          >
-            <BodyTextGlyph />
-          </button>
+          <LineKindSelect
+            isHeading={isHeading}
+            onPick={(kind) => inlineEdit.onSetLineKind(lineKind, kind, readFocusedRichField() ?? undefined)}
+          />
         </div>
       )}
       {isTitle && inlineEdit && (
@@ -293,4 +262,148 @@ export function TextFieldToolbar({
     </div>,
     document.body,
   );
+}
+
+/**
+ * Body or heading, as a dropdown naming what the line is now ("Body ⌄"), the
+ * way a document editor's text-style menu does. It was a pair of glyph
+ * buttons, H and Aa, which said nothing until hovered.
+ *
+ * Everything here acts on `mousedown` with the default prevented, like the
+ * rest of the bar: a click would blur the field first and end the edit.
+ */
+function LineKindSelect({
+  isHeading,
+  onPick,
+}: {
+  isHeading: boolean;
+  onPick: (kind: "body" | "heading") => void;
+}) {
+  const [openAt, setOpenAt] = useState<{ x: number; y: number } | null>(null);
+  // Part of the menu as far as closing goes: a press on it is not "outside",
+  // or that press closed the menu and then, as the same press, opened it again.
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const label = isHeading ? "Heading" : "Body";
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="recipe-page-toolbar__btn recipe-text-toolbar__select"
+        aria-haspopup="menu"
+        aria-expanded={openAt ? true : undefined}
+        aria-label={`Line type: ${label}`}
+        onMouseDown={(event) => {
+          event.preventDefault();
+          if (openAt) {
+            setOpenAt(null);
+            return;
+          }
+          const rect = event.currentTarget.getBoundingClientRect();
+          setOpenAt({ x: rect.left, y: rect.bottom + 4 });
+        }}
+      >
+        <span>{label}</span>
+        <ChevronDownIcon size={ICON_SIZE.xs} aria-hidden />
+      </button>
+      {openAt && (
+        <LineKindMenu
+          anchor={openAt}
+          triggerRef={triggerRef}
+          isHeading={isHeading}
+          onPick={(kind) => {
+            setOpenAt(null);
+            if ((kind === "heading") !== isHeading) onPick(kind);
+          }}
+          onClose={() => setOpenAt(null)}
+        />
+      )}
+    </>
+  );
+}
+
+function LineKindMenu({
+  anchor,
+  triggerRef,
+  isHeading,
+  onPick,
+  onClose,
+}: {
+  anchor: { x: number; y: number };
+  triggerRef: RefObject<HTMLButtonElement | null>;
+  isHeading: boolean;
+  onPick: (kind: "body" | "heading") => void;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  // Each row is set in the card's own type for that kind of line, read off
+  // the card being edited, so "Heading" looks like this card's headings.
+  const [looks] = useState(() => cardLooks());
+  // Opens under its button, and comes back inside the window near an edge.
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
+    node.style.left = `${Math.max(8, Math.min(anchor.x, window.innerWidth - rect.width - 8))}px`;
+    node.style.top = `${Math.max(8, Math.min(anchor.y, window.innerHeight - rect.height - 8))}px`;
+  }, [anchor]);
+  useMenuDismiss([ref, triggerRef], onClose);
+  const item = (kind: "body" | "heading", text: string) => {
+    const active = (kind === "heading") === isHeading;
+    return (
+      <button
+        type="button"
+        role="menuitemradio"
+        aria-checked={active}
+        className={`cp-menu__item line-kind-menu__item line-kind-menu__item--${kind} ${active ? "is-active" : ""}`}
+        style={looks[kind]}
+        onMouseDown={(event) => {
+          event.preventDefault();
+          onPick(kind);
+        }}
+      >
+        {text}
+      </button>
+    );
+  };
+  return createPortal(
+    <div
+      ref={ref}
+      className="cp-menu rail-tile-menu add-line-menu line-kind-menu no-print"
+      role="menu"
+      aria-label="Line type"
+      style={{ top: anchor.y, left: anchor.x }}
+      onMouseDown={(event) => event.preventDefault()}
+    >
+      {item("body", "Body")}
+      {item("heading", "Heading")}
+    </div>,
+    document.body,
+  );
+}
+
+/**
+ * The card's own type for a body line and a section heading: family, weight,
+ * slant, case and spacing, read from the card that has the caret (its section
+ * heading, or failing that its "Ingredients" label, and its first line). Not
+ * the size: the card is drawn small to fit, and the menu is read at the app's
+ * size.
+ */
+function cardLooks(): Record<"body" | "heading", CSSProperties | undefined> {
+  const card = document.activeElement?.closest(".recipe-card") ?? null;
+  const look = (el: Element | null | undefined): CSSProperties | undefined => {
+    if (!el) return undefined;
+    const style = getComputedStyle(el);
+    return {
+      fontFamily: style.fontFamily,
+      fontWeight: style.fontWeight,
+      fontStyle: style.fontStyle,
+      textTransform: style.textTransform as CSSProperties["textTransform"],
+      letterSpacing: style.letterSpacing,
+    };
+  };
+  return {
+    body: look(card?.querySelector(".recipe-card__editable-line")),
+    heading: look(card?.querySelector(".recipe-card__section-title") ?? card?.querySelector(".recipe-card__label")),
+  };
 }

@@ -78,7 +78,7 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
     id: "halloween",
     label: "Halloween",
     detail: "Parchment stock, a reaching hand and a jack-o'-lantern by a headstone",
-    featured: { from: "09-15", to: "11-03" },
+    featured: { from: "09-15", to: "11-01" },
   },
   {
     id: "christmas",

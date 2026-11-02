@@ -6587,7 +6587,8 @@ export default function PrintPage() {
     mobileBarObserverRef.current = observer;
   }, []);
 
-  const { showEmptyFields, toggleShowEmptyFields, activeInlineEdit } = useRecipeInlineEditor({
+  const { showEmptyFields, toggleShowEmptyFields, restoreHeadings, addField, activeInlineEdit } =
+    useRecipeInlineEditor({
     items,
     updateRecipe: updateRecipeAndRevealPhoto,
     activeRecipeId,
@@ -7190,6 +7191,8 @@ export default function PrintPage() {
           projectMeta={projectMeta}
           showEmptyFields={showEmptyFields}
           toggleShowEmptyFields={toggleShowEmptyFields}
+          restoreHeadings={restoreHeadings}
+          addField={addField}
           activeInlineEdit={activeInlineEdit}
           editingSectionId={editingSectionId}
           setEditingSectionId={setEditingSectionId}

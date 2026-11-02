@@ -13,9 +13,9 @@ import { expect, test } from "./guarded";
 const LINK = "https://www.wikipedia.org/recipes/lemon-herb-chicken";
 
 /**
- * Imports a recipe with no time or servings, the state in the report: the
- * reveal button then names both ("Add time, servings"), and that label is what
- * pushed the icons beside it off a phone's row. Long enough to run onto the
+ * Imports a recipe with no time or servings, the state in the report. Missing
+ * both, the toolbar has its "+" for adding them as well as every other
+ * button, which is what pushed the icons off a phone's row. Long enough to run onto the
  * card's back, so Front/Back is in the bar too.
  */
 async function importLink(page: Page) {
@@ -39,6 +39,10 @@ async function importLink(page: Page) {
 
 const bar = (page: Page) => page.locator(".recipe-page-toolbar").filter({ visible: true }).first();
 
+/** The recipe has no time or servings, so the bar has its "+" too. */
+async function expectAddButton(page: Page) {
+  await expect(bar(page).locator(".recipe-page-toolbar__btn--fields")).toBeVisible();
+}
 /** Every shown group's box, relative to the bar. */
 async function groupBoxes(page: Page) {
   return bar(page).evaluate((node) => {
@@ -99,10 +103,8 @@ test("the page toolbar stays on screen while a zoomed-in page is scrolled", asyn
   test.skip(isMobile, "covered at phone width by the desktop projects");
   await page.setViewportSize({ width: 1280, height: 800 });
   await importLink(page);
-  // With the empty fields showing, so the bar carries its widest content (the
-  // hint naming them), which is what ran off the side of a narrow deck.
-  await bar(page).locator(".recipe-page-toolbar__btn--fields").click();
-  await expect(bar(page).locator(".recipe-page-toolbar__hint")).toBeVisible();
+  // With the bar at its widest, as when it ran off the side of a narrow deck.
+  await expectAddButton(page);
   for (const width of [1280, 900, 390]) {
     await page.setViewportSize({ width, height: 800 });
     await expect(bar(page)).toBeVisible();
@@ -165,8 +167,7 @@ test("the page toolbar can be wider than a small page", async ({ page, isMobile 
   test.skip(isMobile, "a phone's bar is already the screen's width");
   await page.setViewportSize({ width: 1440, height: 900 });
   await importLink(page);
-  await bar(page).locator(".recipe-page-toolbar__btn--fields").click();
-  await expect(bar(page).locator(".recipe-page-toolbar__hint")).toBeVisible();
+  await expectAddButton(page);
   const deck = page.locator("#recipe-page-deck");
   const box = await deck.boundingBox();
   if (!box) throw new Error("no deck");
