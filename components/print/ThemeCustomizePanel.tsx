@@ -2,7 +2,7 @@
 
 import { MenuSelect } from "@/components/MenuSelect";
 import { ProBadge } from "@/components/ProBadge";
-import { ChevronLeftIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
+import { ChevronLeftIcon, CrownIcon, ICON_SIZE, UndoIcon } from "@/components/icons";
 import { TextSizeControl } from "@/components/print/TextSizeControl";
 import type { FontScale } from "@/lib/fontScale";
 import {
@@ -69,7 +69,7 @@ export function ThemeCustomizePanel({
           </span>
           <div className="recipe-customize__pro-text">
             <p className="recipe-customize__pro-title">Make it yours with Pro</p>
-            <p>Play with every setting here and see it on your card. Upgrade when you&apos;re ready to print.</p>
+            <p>Every setting here is free to try on your card. Upgrade when you&apos;re ready to print.</p>
           </div>
           <button type="button" className="btn btn-premium btn-compact recipe-customize__pro-button" onClick={onUpgrade}>
             Upgrade to Pro
@@ -100,10 +100,14 @@ export function ThemeCustomizePanel({
         </div>
       )}
 
+      {/* Pinned to the panel's foot, under whatever scrolls above it. */}
       {customized && (
-        <button type="button" className="btn-ghost btn-compact recipe-customize__reset" onClick={onReset}>
-          Reset to theme defaults
-        </button>
+        <div className="recipe-customize__foot">
+          <button type="button" className="btn-ghost btn-compact recipe-customize__reset" onClick={onReset}>
+            <UndoIcon size={ICON_SIZE.sm} />
+            Reset to theme defaults
+          </button>
+        </div>
       )}
     </div>
   );

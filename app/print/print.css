@@ -2638,6 +2638,14 @@
     padding-bottom: 26px;
   }
 
+  /* Customize's Reset bar sits on the panel's bottom edge, not 26px above. */
+  .recipe-config-panel__scroll .recipe-config-section--customize {
+    margin-bottom: -26px;
+  }
+  .recipe-config-panel__scroll .recipe-customize__foot {
+    bottom: -26px;
+  }
+
   .recipe-config-panel__footer {
     display: none;
   }
@@ -3524,8 +3532,23 @@ textarea.recipe-page-fields__input {
 .recipe-text-size__ticks span.is-reached {
   background: var(--cp-accent);
 }
+/* The view fills the panel so its foot can sit at the bottom; the foot
+   sticks there while the settings above it scroll. */
+.recipe-config-section--customize {
+  flex: 1 0 auto;
+}
+.recipe-customize__foot {
+  position: sticky;
+  bottom: 0;
+  margin: auto -8px 0;
+  padding: 10px 8px;
+  border-top: 1px solid var(--cp-line);
+  /* The panel's own ground, so it reads as the panel's foot. */
+  background: var(--cp-chrome-ground);
+}
 .recipe-customize__reset {
-  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
 }
 
 .recipe-template-seasonal-toggle[aria-expanded="true"] svg {
