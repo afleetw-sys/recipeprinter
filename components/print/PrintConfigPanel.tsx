@@ -8,7 +8,6 @@ import { PrintSetupControls } from "@/components/print/PrintSetupControls";
 import type { PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
 import { ThemePicker } from "@/components/print/ThemePicker";
 import { ThemeCustomizePanel } from "@/components/print/ThemeCustomizePanel";
-import { RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
 import type { PhotoStyle } from "@/lib/project";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import type { FontScale } from "@/lib/fontScale";
@@ -134,7 +133,6 @@ export function PrintConfigPanel({
   useEffect(() => {
     setCustomizing(false);
   }, [mobileDrawer]);
-  const themeLabel = RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === template)?.label ?? "theme";
   // The phone's Themes sheet is the book's theme grid alone; tabs are the
   // desktop panel's.
   const tabbed = cookbookMode && Boolean(pageSettings) && !mobileDrawer;
@@ -206,7 +204,6 @@ export function PrintConfigPanel({
         {tabbed && tab === "page" && pageSettings}
         {showBook && customizing && (
           <ThemeCustomizePanel
-            themeLabel={themeLabel}
             cookbook={cookbookMode}
             proMarked={customizeProMarked}
             photosShown={photosShown}

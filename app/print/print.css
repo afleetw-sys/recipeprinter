@@ -3307,8 +3307,8 @@ textarea.recipe-page-fields__input {
   transition: transform 150ms ease;
 }
 
-/* The theme in use, above the grid (ThemePicker): a small preview beside its
-   name and the way into Customize, in one row. It wears the selected-state
+/* The theme in use, above the grid (ThemePicker): a small preview beside the
+   way into Customize, in one row. No name: the preview says which it is. It wears the selected-state
    border and tint, the same as its tile in the grid, so it reads as "this is
    the one you have" without being bigger than the tiles. One button. */
 .recipe-current-theme {
@@ -3352,15 +3352,6 @@ textarea.recipe-page-fields__input {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-.recipe-current-theme__name {
-  max-width: 100%;
-  overflow: hidden;
-  font-size: var(--cp-fs-body);
-  font-weight: 800;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .recipe-current-theme__customize {
   display: inline-flex;

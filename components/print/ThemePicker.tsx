@@ -161,10 +161,7 @@ export function ThemePicker({
         </span>
         <span className="recipe-current-theme__text">
           <span className="recipe-current-theme__eyebrow">Current theme</span>
-          <span className="recipe-current-theme__name">
-            {RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === template)?.label}
-            {themeCustomized && <span className="recipe-current-theme__state"> · Customized</span>}
-          </span>
+          {themeCustomized && <span className="recipe-current-theme__state">Customized</span>}
           <span className="recipe-current-theme__customize">
             Customize
             <ChevronRightIcon size={ICON_SIZE.sm} />

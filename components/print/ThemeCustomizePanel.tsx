@@ -24,7 +24,6 @@ import {
  * changed, so Print is never the first a cook hears of it.
  */
 export function ThemeCustomizePanel({
-  themeLabel,
   cookbook,
   proMarked,
   photosShown,
@@ -37,7 +36,6 @@ export function ThemeCustomizePanel({
   onBack,
   onUpgrade,
 }: {
-  themeLabel: string;
   cookbook: boolean;
   /** A free account on recipe cards: crown everything but each default. */
   proMarked: boolean;
@@ -61,7 +59,7 @@ export function ThemeCustomizePanel({
           <ChevronLeftIcon size={ICON_SIZE.sm} />
           Themes
         </button>
-        <h3 className="recipe-customize__title">Customize {themeLabel}</h3>
+        <h3 className="recipe-customize__title">Customize theme</h3>
       </div>
 
       {proMarked && (
