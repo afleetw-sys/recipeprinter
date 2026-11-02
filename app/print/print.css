@@ -3438,14 +3438,22 @@ textarea.recipe-page-fields__input {
   justify-self: stretch;
   background: var(--cp-card);
 }
-/* Text size (TextSizeControl): the step's name at that size, over a slider
-   the panel's full width. Drawn by hand rather than left to the browser: a
-   thin rounded track, blue up to a white handle, and a mark at each step. */
+/* Text size (TextSizeControl): the heading with the step's name across from
+   it at that size, over a slider the panel's full width. Drawn by hand rather
+   than left to the browser: a thin rounded track, blue up to a white handle,
+   and a grey mark at each step, blue under the one picked. */
+.recipe-text-size__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  /* Holds the biggest step's name, so the slider doesn't move as it grows. */
+  min-height: calc(var(--cp-fs-body) * 1.2 * 1.6);
+}
 .recipe-text-size__name {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 1.6em;
   color: var(--cp-ink);
   font-weight: 700;
   line-height: 1.2;
@@ -3529,7 +3537,7 @@ textarea.recipe-page-fields__input {
   border-radius: 50%;
   background: var(--cp-line-strong);
 }
-.recipe-text-size__ticks span.is-reached {
+.recipe-text-size__ticks span.is-selected {
   background: var(--cp-accent);
 }
 /* The view fills the panel so its foot can sit at the bottom; the foot

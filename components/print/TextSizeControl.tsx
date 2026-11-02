@@ -14,7 +14,7 @@ import {
 
 /**
  * The cook's text size for every recipe page, picked from a list of words
- * (Smallest … Biggest), never a percentage: nobody knows what 92% looks like.
+ * (Smaller … Larger), never a percentage: nobody knows what 92% looks like.
  *
  * Normal is free; every other size is Pro on recipe cards. Like a Pro theme or
  * the 4×6 size, a free account can still pick and preview one: the crown marks
@@ -70,7 +70,7 @@ export function TextSizeMenu({
 
 /**
  * The settings panel's text size: a slider over the five steps, with the
- * step's name above it drawn at that size, so the cook sees the change before
+ * step's name across from the heading, drawn at that size, so the cook sees the change before
  * they look at the page. Steps, never a free value: every one is measured by
  * the layout harness.
  */
@@ -94,15 +94,17 @@ export function TextSizeControl({
   const position = index < 0 ? FONT_SCALES.indexOf(DEFAULT_FONT_SCALE) : index;
   return (
     <div className="recipe-config-section recipe-config-section--text-size">
-      <span className="recipe-config-label" id="recipe-text-size-label">
-        {label}
-      </span>
-      <span className="recipe-text-size__name" style={{ fontSize: `calc(var(--cp-fs-body) * ${fontScale})` }}>
-        {FONT_SCALE_LABELS[fontScale]}
-        {proMarked && fontScale !== DEFAULT_FONT_SCALE && (
-          <ProBadge variant="inline" label={false} tooltip="This text size is Pro" />
-        )}
-      </span>
+      <div className="recipe-text-size__head">
+        <span className="recipe-config-label" id="recipe-text-size-label">
+          {label}
+        </span>
+        <span className="recipe-text-size__name" style={{ fontSize: `calc(var(--cp-fs-body) * ${fontScale})` }}>
+          {proMarked && fontScale !== DEFAULT_FONT_SCALE && (
+            <ProBadge variant="inline" label={false} tooltip="This text size is Pro" />
+          )}
+          {FONT_SCALE_LABELS[fontScale]}
+        </span>
+      </div>
       <div
         className="recipe-text-size__slider"
         style={{ "--fill": `${(position / (FONT_SCALES.length - 1)) * 100}%` } as CSSProperties}
@@ -119,7 +121,7 @@ export function TextSizeControl({
         />
         <span className="recipe-text-size__ticks" aria-hidden>
           {FONT_SCALES.map((scale, i) => (
-            <span key={scale} className={i <= position ? "is-reached" : undefined} />
+            <span key={scale} className={i === position ? "is-selected" : undefined} />
           ))}
         </span>
       </div>

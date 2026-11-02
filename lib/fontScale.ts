@@ -17,11 +17,11 @@ export const DEFAULT_FONT_SCALE: FontScale = 1;
 
 /** What the cook sees. Never a percentage: "92%" means nothing at a glance. */
 export const FONT_SCALE_LABELS: Record<FontScale, string> = {
-  0.85: "Smallest",
-  0.92: "Smaller",
+  0.85: "Smaller",
+  0.92: "Small",
   1: "Normal",
-  1.1: "Bigger",
-  1.2: "Biggest",
+  1.1: "Large",
+  1.2: "Larger",
 };
 
 /** Anything that isn't one of the steps (a missing field, an old save, a
