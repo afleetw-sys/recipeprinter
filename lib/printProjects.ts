@@ -15,6 +15,8 @@ import type {
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
 import type { FontScale } from "@/lib/fontScale";
+import type { PhotoScale } from "@/lib/photoScale";
+import type { ThemeLooks } from "@/lib/themeLooks";
 import { metaSectionsFromFull, type ProjectMeta } from "@/lib/project";
 import { stripUndefined } from "@/lib/firebase/stripUndefined";
 import { projectLibraryChanged } from "@/lib/projectCount";
@@ -182,7 +184,11 @@ export interface PrintLayoutSettings {
       outside the workspace — `writePrintSettings` has never stored it. */
   showDescription?: boolean;
   showCutLines: boolean;
+  /** The current theme's text and photo size, resolved, for the exports that
+      draw only that theme. `themeLooks` holds every theme's. */
   fontScale?: FontScale;
+  photoScale?: PhotoScale;
+  themeLooks?: ThemeLooks;
 }
 
 /**

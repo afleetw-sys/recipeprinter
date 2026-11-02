@@ -21,6 +21,7 @@ import {
   realItemHeights,
 } from "@/lib/faceMeasure";
 import { fontScaleVars, type FontScale } from "@/lib/fontScale";
+import { photoScaleVars, type PhotoScale } from "@/lib/photoScale";
 import type { Recipe } from "@/types/recipe";
 
 // getRecipeFaces' character-count budget is a guess, not a measurement, so it
@@ -224,6 +225,7 @@ export function RecipeFaceMeasurer({
   cookbookMode = false,
   cardVars,
   fontScale,
+  photoScale,
   onSettled,
 }: {
   recipe: Recipe;
@@ -245,6 +247,8 @@ export function RecipeFaceMeasurer({
   /** The cook's text size (lib/fontScale.ts), on the same root as `cardVars`
       for the same reason: measured at one size, printed at another, clips. */
   fontScale?: FontScale;
+  /** The cook's photo size (lib/photoScale.ts), on that root too. */
+  photoScale?: PhotoScale;
   onSettled: (pages: RecipeFace[]) => void;
 }) {
   const initialPages = useMemo(
@@ -572,6 +576,7 @@ export function RecipeFaceMeasurer({
         zIndex: -1,
         ...cardVars,
         ...fontScaleVars(fontScale),
+        ...photoScaleVars(photoScale),
       }}
       className={`recipe-print-preview ${previewSizeClass(size)} recipe-face-measurer`}
     >

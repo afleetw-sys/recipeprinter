@@ -36,6 +36,7 @@ import {
 } from "@/lib/cookbookPresets";
 import type { CookbookPresetId } from "@/types/recipe";
 import { fontScaleVars, type FontScale } from "@/lib/fontScale";
+import { photoScaleVars, type PhotoScale } from "@/lib/photoScale";
 
 /**
  * A physical sheet rendered at true page size, scaled down by `scale` on
@@ -78,6 +79,7 @@ export const ScaledPage = memo(function ScaledPage({
   gutterSide = "none",
   preset,
   fontScale,
+  photoScale,
 }: {
   sheet: PageSheet;
   isLastSheet: boolean;
@@ -156,6 +158,8 @@ export const ScaledPage = memo(function ScaledPage({
   /** The cook's text size. Only recipe pages carry it: a cover, an opener or
       the contents page keeps the theme's own type. */
   fontScale?: FontScale;
+  /** The cook's photo size, on recipe pages only, like `fontScale`. */
+  photoScale?: PhotoScale;
 }) {
   // A cookbook page is the preset's real sheet, on screen exactly as in the
   // file — so the preview cannot show a page shape the book does not have (see
@@ -610,7 +614,7 @@ export const ScaledPage = memo(function ScaledPage({
           className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${presetSafeClass} ${
             showCutLines ? "recipe-print-preview--cut-lines" : ""
           }`}
-          style={{ ...cardVars, ...fontScaleVars(fontScale) }}
+          style={{ ...cardVars, ...fontScaleVars(fontScale), ...photoScaleVars(photoScale) }}
           data-double-sided={doubleSided ? "true" : "false"}
         >
           <div

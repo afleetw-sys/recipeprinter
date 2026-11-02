@@ -60,12 +60,12 @@
   --recipe-card-step-gap: calc(4.2pt * var(--recipe-font-scale, 1));
   --recipe-card-ingredient-gap: calc(1.8pt * var(--recipe-font-scale, 1));
   --recipe-card-photo-size: 0.92in;
-  /* The recipe photo follows the text size at half its step (Biggest's 1.2
-     is 1.1 here): at the full step a photo crowded the card. Only the
-     picture: a mat or frame a theme draws round it (`--recipe-photo-mat`)
-     is the theme's art and keeps its size. Every photo width below is
-     (box - mat) * this + mat. */
-  --recipe-photo-scale: calc(1 + (var(--recipe-font-scale, 1) - 1) / 2);
+  /* The cook's photo size (lib/photoScale.ts), set inline beside
+     `--recipe-font-scale`. It followed the text size at half its step until
+     2026-11; now each has its own setting. Only the picture: a mat or frame
+     a theme draws round it (`--recipe-photo-mat`) is the theme's art and
+     keeps its size. Every photo width below is (box - mat) * this + mat. */
+  --recipe-photo-scale: 1;
   --recipe-card-footer-reserve: 0.28in;
 }
 
@@ -3307,6 +3307,103 @@ textarea.recipe-page-fields__input {
   transition: transform 150ms ease;
 }
 
+/* "Customize <theme>": opens the panel's Customize view (ThemeCustomizePanel)
+   for the theme picked below it. A full-width row, quieter than the theme
+   cards, with a hairline like the panel's other separations. */
+.recipe-customize-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin: 2px 0 6px;
+  padding: 9px 10px;
+  border: 1px solid var(--cp-line);
+  border-radius: 8px;
+  background: var(--cp-card);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.recipe-customize-entry:hover {
+  border-color: var(--cp-line-strong);
+}
+.recipe-customize-entry:focus-visible,
+.recipe-customize__back:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+.recipe-customize-entry__state {
+  color: var(--cp-ink-soft);
+  font-weight: 500;
+}
+
+.recipe-config-section--customize {
+  gap: 16px;
+}
+.recipe-customize__header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.recipe-customize__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: -4px;
+  padding: 4px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.recipe-customize__back:hover {
+  color: var(--cp-ink);
+}
+.recipe-customize__title {
+  margin: 0;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body);
+  font-weight: 800;
+}
+/* Says Customize is Pro before anything is changed, so Print is never the
+   first a free cook hears of it. */
+.recipe-customize__pro {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 6px 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--cp-line);
+  border-radius: 8px;
+  background: var(--cp-surface-soft);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  line-height: 1.4;
+}
+.recipe-customize__pro > svg {
+  margin-top: 2px;
+  color: var(--cp-accent);
+}
+.recipe-customize__pro p {
+  margin: 0;
+}
+.recipe-customize__pro-button {
+  grid-column: 2;
+  justify-self: start;
+}
+.recipe-customize__reset {
+  align-self: flex-start;
+}
+
 .recipe-template-seasonal-toggle[aria-expanded="true"] svg {
   transform: rotate(180deg);
 }
@@ -4244,7 +4341,9 @@ textarea.recipe-page-fields__input {
     display: none;
   }
 
-  .recipe-config-panel[data-mobile-drawer="template"] .recipe-config-section--template {
+  .recipe-config-panel[data-mobile-drawer="template"] .recipe-config-section--template,
+  .recipe-config-panel[data-mobile-drawer="template"] .recipe-config-section--customize,
+  .recipe-config-panel[data-mobile-drawer="template"] .recipe-config-section--customize .recipe-config-section {
     display: flex;
   }
 

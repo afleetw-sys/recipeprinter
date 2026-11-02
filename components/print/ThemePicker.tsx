@@ -8,7 +8,7 @@ import {
 } from "@/components/RecipeCardPrint";
 import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
 import { ProBadge } from "@/components/ProBadge";
-import { ChevronDownIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
+import { ChevronDownIcon, ChevronRightIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
 import { arrangeThemes, isFeatured } from "@/lib/seasonalThemes";
 import { isPremiumTemplate } from "@/lib/premiumTemplates";
 import { hasTemplateOrProEntitlement } from "@/lib/recipePrinterPurchases";
@@ -21,6 +21,9 @@ interface ThemePickerProps {
   customerInfo: CustomerInfo | null;
   setToastMessage: Dispatch<SetStateAction<string | null>>;
   setMobileDrawer: Dispatch<SetStateAction<"template" | null>>;
+  /** Whether the current theme has been customized (lib/themeLooks.ts). */
+  themeCustomized: boolean;
+  onCustomize: () => void;
 }
 
 /**
@@ -48,6 +51,8 @@ export function ThemePicker({
   customerInfo,
   setToastMessage,
   setMobileDrawer,
+  themeCustomized,
+  onCustomize,
 }: ThemePickerProps) {
   const today = new Date();
   const { main, seasonal } = arrangeThemes(
@@ -145,6 +150,16 @@ export function ThemePicker({
   return (
     <div className="recipe-config-section recipe-config-section--template">
       <h3 className="recipe-config-label">Themes</h3>
+      {/* Above the grid, so it is in view without scrolling and reads as
+          belonging to the theme picked below. Not in the label's row: the
+          phone's Themes sheet hides that label. */}
+      <button type="button" className="recipe-customize-entry" onClick={onCustomize}>
+        <span>
+          Customize {RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === template)?.label}
+          {themeCustomized && <span className="recipe-customize-entry__state"> · Customized</span>}
+        </span>
+        <ChevronRightIcon size={ICON_SIZE.sm} />
+      </button>
       <div className="recipe-template-list">{main.map(renderOption)}</div>
       {seasonal.length > 0 && (
         <>

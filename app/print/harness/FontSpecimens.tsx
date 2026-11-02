@@ -8,6 +8,7 @@ import {
   type PrintCardSize,
 } from "@/components/RecipeCardPrint";
 import { fontScaleVars, type FontScale } from "@/lib/fontScale";
+import { legacyPhotoScale, photoScaleVars } from "@/lib/photoScale";
 import { getCookbookPreset, presetCardVars } from "@/lib/cookbookPresets";
 import type { RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
 import type { Recipe } from "@/types/recipe";
@@ -79,7 +80,7 @@ export function FontSpecimens({ fontScale, book }: { fontScale: FontScale; book:
             key={`${template}|${size}`}
             data-specimen={`${template}|${size}`}
             className={`recipe-print-preview ${previewSizeClass(size)}`}
-            style={{ ...(book ? BOOK_CARD_VARS : {}), ...fontScaleVars(fontScale), marginBottom: 24 }}
+            style={{ ...(book ? BOOK_CARD_VARS : {}), ...fontScaleVars(fontScale), ...photoScaleVars(legacyPhotoScale(fontScale)), marginBottom: 24 }}
           >
             <div className={`recipe-card-set recipe-template--${template}`}>
               <RecipeCardFace

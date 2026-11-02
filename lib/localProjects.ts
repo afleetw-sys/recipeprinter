@@ -8,7 +8,7 @@ import type {
   RecipePrintTemplate,
 } from "@/types/recipe";
 import { localStore } from "@/lib/storage";
-import { normalizeFontScale } from "@/lib/fontScale";
+import { lookFor, normalizeThemeLooks } from "@/lib/themeLooks";
 import { buildSections, projectDisplayTitle, type ProjectMeta } from "@/lib/project";
 import { assemblePrintProject, projectContentFromMeta } from "@/lib/printProjects";
 import { readPrintSettings } from "@/lib/printSettings";
@@ -341,14 +341,17 @@ function assembleWorkingCopy(printable: QueueItem[], meta: ProjectMeta, id: stri
   // book. This used to be a second copy of that mapping, and it had quietly
   // stopped carrying `railSortMode`: a book filed on the way out and reopened
   // later came back having forgotten it was sorted A-Z.
+  const template = (stored.template as RecipePrintTemplate) ?? "classic";
+  const themeLooks = normalizeThemeLooks(stored.themeLooks, stored);
   const fromMeta = projectContentFromMeta(meta, {
     cardSize: (stored.cardSize as PrintCardSize) ?? "letter",
-    template: (stored.template as RecipePrintTemplate) ?? "classic",
+    template,
     doubleSided: stored.doubleSided ?? true,
     showPhoto: stored.showPhoto ?? true,
     showSourceUrl: stored.showSourceUrl ?? true,
     showCutLines: stored.showCutLines ?? false,
-    fontScale: normalizeFontScale(stored.fontScale),
+    ...lookFor(themeLooks, template),
+    themeLooks,
   });
 
   return assemblePrintProject({

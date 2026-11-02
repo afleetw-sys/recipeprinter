@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
 import { createCurrentPrintJob, seedSharedQueueItem } from "@/lib/queue";
 import { writePrintSettings } from "@/lib/printSettings";
-import { DEFAULT_FONT_SCALE } from "@/lib/fontScale";
 import type { SharedRecipeCard } from "@/types/sharedRecipeCard";
 
 /**
@@ -42,8 +41,8 @@ export function SharedRecipeCardRedirect({ card }: { card: SharedRecipeCard }) {
       showPhoto: card.showPhoto,
       showSourceUrl: card.showSourceUrl,
       showCutLines: card.showCutLines,
-      // A shared card carries no text size, so it opens at Normal.
-      fontScale: DEFAULT_FONT_SCALE,
+      // A shared card carries no text or photo size, so it opens at Normal.
+      themeLooks: {},
     });
     // `shared=1` is read by nothing in this app — deliberately. It rides along
     // as a dimension on the `$pageview` PostHog records for /print, which is

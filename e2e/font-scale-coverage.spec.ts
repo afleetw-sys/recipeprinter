@@ -1,23 +1,25 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./guarded";
 import { FONT_SCALES } from "../lib/fontScale";
+import { legacyPhotoScale } from "../lib/photoScale";
 
 /**
- * Text size moves every text on a recipe page, and its photo, on every theme
- * and size, cards and cookbook pages alike. print.css scales the shared type variables, so a
- * size written straight into a rule (the headnote's 10pt, a theme's title in
- * its own units) stays put while everything around it grows, and the card
- * reads as broken. The photo follows at half the step (`--recipe-photo-scale`
- * in print.css: at the full step it crowded the card), and only its picture
- * does: a mat or frame a theme draws round it is art and keeps its size.
+ * Text size moves every text on a recipe page, and photo size its photo, on
+ * every theme and size, cards and cookbook pages alike. print.css scales the
+ * shared type variables, so a size written straight into a rule (the
+ * headnote's 10pt, a theme's title in its own units) stays put while
+ * everything around it grows, and the card reads as broken. Photo size scales
+ * only the picture (`--recipe-photo-scale` in print.css): a mat or frame a
+ * theme draws round it is art and keeps its size. The specimens pair Biggest
+ * text with Bigger photos (`legacyPhotoScale`), so one page checks both.
  * This reads each visible text's computed size, and each photo's width, at
  * Normal and at Biggest (`/print/harness?specimen=1`,
  * app/print/harness/FontSpecimens.tsx) and holds every ratio to its step.
  */
 
 const BIGGEST = FONT_SCALES[FONT_SCALES.length - 1];
-/** What the photo grows by at Biggest: half the text's step. */
-const BIGGEST_PHOTO = 1 + (BIGGEST - 1) / 2;
+/** The photo size the specimens pair with Biggest text. */
+const BIGGEST_PHOTO = legacyPhotoScale(BIGGEST);
 
 /** Every element that draws text of its own, keyed by where it sits and what
     it says, with its computed font size in px; and every recipe photo's

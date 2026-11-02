@@ -5,11 +5,13 @@ import {
   FONT_SCALE_LABELS,
   fontScaleVars,
   normalizeFontScale,
+  type FontScale,
 } from "@/lib/fontScale";
 import { readPrintSettings, writePrintSettings } from "@/lib/printSettings";
 import { packPrintHandoff, printHandoffUrl, readPrintHandoff } from "@/lib/printHandoff";
 import { assemblePrintProject, projectContentFromMeta, type PrintLayoutSettings } from "@/lib/printProjects";
 import type { ProjectMeta } from "@/lib/project";
+import { lookFor, normalizeThemeLooks, withLook } from "@/lib/themeLooks";
 
 describe("text size steps", () => {
   it("reads anything that is not a step as Normal", () => {
@@ -44,26 +46,30 @@ describe("text size travels with the deck", () => {
     });
   });
 
-  const stored = (fontScale: number) => ({
+  const stored = (fontScale: FontScale) => ({
     cardSize: "letter",
     template: "classic",
     doubleSided: true,
     showCutLines: false,
     showPhoto: true,
     showSourceUrl: true,
-    fontScale,
+    themeLooks: withLook({}, "classic", { fontScale }),
   });
 
   it("is remembered on this device and carried in a hand-off link", () => {
     for (const scale of FONT_SCALES) {
       writePrintSettings(stored(scale));
-      expect(normalizeFontScale(readPrintSettings()?.fontScale)).toBe(scale);
+      const fontScaleRead = () => {
+        const settings = readPrintSettings();
+        return lookFor(normalizeThemeLooks(settings?.themeLooks, settings ?? {}), "classic").fontScale;
+      };
+      expect(fontScaleRead()).toBe(scale);
 
       const link = printHandoffUrl(packPrintHandoff([], {} as ProjectMeta, new Map()), "https://example.test");
       const arrived = readPrintHandoff(link.slice(link.indexOf("#")));
       memory.clear();
       if (arrived?.settings) window.localStorage.setItem("recipeprinter:print-settings:v1", arrived.settings);
-      expect(normalizeFontScale(readPrintSettings()?.fontScale), `hand-off at ${scale}`).toBe(scale);
+      expect(fontScaleRead(), `hand-off at ${scale}`).toBe(scale);
     }
   });
 

@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { PRINT_CARD_SIZE_OPTIONS, RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
-import { normalizeFontScale, type FontScale } from "@/lib/fontScale";
+import { normalizeThemeLooks, type ThemeLooks } from "@/lib/themeLooks";
 import type { PrintCardSize, RecipePrintTemplate } from "@/types/recipe";
 
 // SSR renders with the default (no localStorage), so the first client render
@@ -40,7 +40,10 @@ export interface StoredPrintSettings {
   showCutLines?: boolean;
   showPhoto?: boolean;
   showSourceUrl?: boolean;
+  /** One text size for every theme, from before each theme kept its own.
+      Read once, into `themeLooks`, and never written again. */
   fontScale?: number;
+  themeLooks?: ThemeLooks;
 }
 
 /**
@@ -65,7 +68,7 @@ export function readPrintSettings(): StoredPrintSettings | null {
   return typeof showRecipeLink === "boolean" ? { ...rest, showSourceUrl: showRecipeLink } : rest;
 }
 
-export function writePrintSettings(settings: Required<StoredPrintSettings>) {
+export function writePrintSettings(settings: Required<Omit<StoredPrintSettings, "fontScale">>) {
   const { showSourceUrl, ...rest } = settings;
   // Survivable if it fails: settings stay correct for this session, they just
   // won't carry over to the next visit.
@@ -102,8 +105,8 @@ interface PrintSettingsState {
   setShowPhoto: (value: boolean) => void;
   showSourceUrl: boolean;
   setShowSourceUrl: (value: boolean) => void;
-  fontScale: FontScale;
-  setFontScale: (value: FontScale) => void;
+  themeLooks: ThemeLooks;
+  setThemeLooks: (value: ThemeLooks) => void;
 }
 
 /**
@@ -129,8 +132,8 @@ export function usePrintSettingsPersistence(
     setShowPhoto,
     showSourceUrl,
     setShowSourceUrl,
-    fontScale,
-    setFontScale,
+    themeLooks,
+    setThemeLooks,
   } = state;
 
   // Hydrate stored layout preferences on mount (client only). Explicit URL
@@ -150,7 +153,9 @@ export function usePrintSettingsPersistence(
     if (typeof stored.showCutLines === "boolean") setShowCutLines(stored.showCutLines);
     if (typeof stored.showPhoto === "boolean") setShowPhoto(stored.showPhoto);
     if (typeof stored.showSourceUrl === "boolean") setShowSourceUrl(stored.showSourceUrl);
-    if (stored.fontScale !== undefined) setFontScale(normalizeFontScale(stored.fontScale));
+    if (stored.themeLooks !== undefined || stored.fontScale !== undefined) {
+      setThemeLooks(normalizeThemeLooks(stored.themeLooks, stored));
+    }
     // Runs once on mount; the settings above are the ones being hydrated here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -170,7 +175,7 @@ export function usePrintSettingsPersistence(
       showCutLines,
       showPhoto,
       showSourceUrl,
-      fontScale,
+      themeLooks,
     });
-  }, [cardSize, template, doubleSided, showCutLines, showPhoto, showSourceUrl, fontScale]);
+  }, [cardSize, template, doubleSided, showCutLines, showPhoto, showSourceUrl, themeLooks]);
 }

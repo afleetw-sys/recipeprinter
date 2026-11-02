@@ -212,7 +212,9 @@ import {
   usePrintSettingsPersistence,
 } from "@/lib/printSettings";
 import { useFreeThemeOnOpen } from "@/lib/useFreeThemeOnOpen";
-import { DEFAULT_FONT_SCALE, normalizeFontScale, type FontScale } from "@/lib/fontScale";
+import type { FontScale } from "@/lib/fontScale";
+import type { PhotoScale } from "@/lib/photoScale";
+import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { openingPageFor } from "@/lib/frontMatterPage";
 import type {
   CookbookFrontMatter,
@@ -381,9 +383,23 @@ export default function PrintPage() {
       own words are never affected — see lib/recipeNote.ts. Defaults on, which
       is how books saved before this already read. */
   const [showDescription, setShowDescription] = useState(true);
-  /** The cook's text size on every recipe page (lib/fontScale.ts). Pro on
-      recipe cards; included in a cookbook. */
-  const [fontScale, setFontScale] = useState<FontScale>(DEFAULT_FONT_SCALE);
+  /** What the cook has customized about each theme: its text size and photo
+      size (lib/themeLooks.ts). Each theme keeps its own, so the page shows
+      the current theme's. Pro on recipe cards; included in a cookbook. */
+  const [themeLooks, setThemeLooks] = useState<ThemeLooks>({});
+  const { fontScale, photoScale } = lookFor(themeLooks, template);
+  const setFontScale = useCallback(
+    (value: FontScale) => setThemeLooks((looks) => withLook(looks, template, { fontScale: value })),
+    [template],
+  );
+  const setPhotoScale = useCallback(
+    (value: PhotoScale) => setThemeLooks((looks) => withLook(looks, template, { photoScale: value })),
+    [template],
+  );
+  const resetThemeLook = useCallback(
+    () => setThemeLooks((looks) => withLook(looks, template, DEFAULT_THEME_LOOK)),
+    [template],
+  );
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showReferralInvite, setShowReferralInvite] = useState(false);
   const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
@@ -951,6 +967,7 @@ export default function PrintPage() {
     brandHidden,
     template,
     fontScale,
+    photoScale,
     // The preview page IS the book's real sheet, and so is the card every
     // recipe is measured against (see `presetCardDims`).
     preset: projectMeta.meta.cookbookPreset,
@@ -996,6 +1013,7 @@ export default function PrintPage() {
   const previewCardSize = previewConfig?.cardSize ?? cardSize;
   const previewTemplate = previewConfig?.template ?? template;
   const previewFontScale = previewConfig?.fontScale ?? fontScale;
+  const previewPhotoScale = previewConfig?.photoScale ?? photoScale;
   // Per-recipe photo now travels baked into each slot's `showPhoto` (resolved
   // in usePrintSheets against the committed frame), so there's no global
   // preview-photo flag to thread to the faces anymore.
@@ -2785,6 +2803,8 @@ export default function PrintPage() {
       showDescription,
       showCutLines,
       fontScale,
+      photoScale,
+      themeLooks,
     };
   }
 
@@ -4158,7 +4178,7 @@ export default function PrintPage() {
         setShowSourceUrl(project.settings.showSourceUrl);
         setShowDescription(project.settings.showDescription ?? true);
         setShowCutLines(project.settings.showCutLines);
-        setFontScale(normalizeFontScale(project.settings.fontScale));
+        setThemeLooks(normalizeThemeLooks(project.settings.themeLooks, project.settings));
         if (source === "recovered" && account) {
           // The device's copy is on screen; the account's document is still
           // where it belongs. Take that document's identity and revision, and
@@ -4688,7 +4708,7 @@ export default function PrintPage() {
     // the change, so that setting alone never triggered an autosave. It rode
     // along silently with the next unrelated edit, or was lost with the tab.
     showDescription,
-    fontScale,
+    themeLooks,
     projectLoading,
     projectAttachChecked,
     autosaveEnabledForCurrentMode,
@@ -5193,8 +5213,8 @@ export default function PrintPage() {
     setShowPhoto,
     showSourceUrl,
     setShowSourceUrl,
-    fontScale,
-    setFontScale,
+    themeLooks,
+    setThemeLooks,
   });
 
   // Auto-open the print dialog when the user chose Print instead of Preview.
@@ -7094,6 +7114,7 @@ export default function PrintPage() {
           cardSize={cardSize}
           previewTemplate={previewTemplate}
           previewFontScale={previewFontScale}
+          previewPhotoScale={previewPhotoScale}
           continueOnBack={continueOnBack}
           previewDescriptionOn={showDescription}
           organizeMode={organizeMode}
@@ -7155,6 +7176,7 @@ export default function PrintPage() {
           previewCardSize={previewCardSize}
           previewTemplate={previewTemplate}
           previewFontScale={previewFontScale}
+          previewPhotoScale={previewPhotoScale}
           continueOnBack={continueOnBack}
           cardSize={cardSize}
           showCutLines={showCutLines}
@@ -7249,6 +7271,13 @@ export default function PrintPage() {
           setCardSize={setCardSize}
           fontScale={fontScale}
           setFontScale={setFontScale}
+          photoScale={photoScale}
+          setPhotoScale={setPhotoScale}
+          themeCustomized={isCustomized({ fontScale, photoScale })}
+          resetThemeLook={resetThemeLook}
+          customizeProMarked={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
+          photosShown={photosOn && (cookbookMode || cardPhotosAllowed)}
+          onCustomizeUpgrade={() => openProUpgradeDialog("customize_theme")}
           anyRecipeHasImage={anyRecipeHasImage}
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
           bookPhotoStyle={bookPhotoStyle}

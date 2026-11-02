@@ -7,9 +7,12 @@ import { SegmentedControl } from "@/components/Controls";
 import { PrintSetupControls } from "@/components/print/PrintSetupControls";
 import type { PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
 import { ThemePicker } from "@/components/print/ThemePicker";
+import { ThemeCustomizePanel } from "@/components/print/ThemeCustomizePanel";
+import { RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
 import type { PhotoStyle } from "@/lib/project";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import type { FontScale } from "@/lib/fontScale";
+import type { PhotoScale } from "@/lib/photoScale";
 
 interface PrintConfigPanelProps {
   configPanelRef: RefObject<HTMLElement>;
@@ -26,8 +29,18 @@ interface PrintConfigPanelProps {
   // Setup controls (Size / Photos / Include)
   cardSize: PrintCardSize;
   setCardSize: Dispatch<SetStateAction<PrintCardSize>>;
+  // The current theme's own look (lib/themeLooks.ts), under Customize.
   fontScale: FontScale;
   setFontScale: (value: FontScale) => void;
+  photoScale: PhotoScale;
+  setPhotoScale: (value: PhotoScale) => void;
+  themeCustomized: boolean;
+  resetThemeLook: () => void;
+  /** A free account on recipe cards, where customizing is Pro. */
+  customizeProMarked: boolean;
+  /** Whether any recipe page draws a photo for a photo size to change. */
+  photosShown: boolean;
+  onCustomizeUpgrade: () => void;
   anyRecipeHasImage: boolean;
   anyRecipeHasSourceUrl: boolean;
   bookPhotoStyle: PhotoStyle | null;
@@ -76,6 +89,13 @@ export function PrintConfigPanel({
   setCardSize,
   fontScale,
   setFontScale,
+  photoScale,
+  setPhotoScale,
+  themeCustomized,
+  resetThemeLook,
+  customizeProMarked,
+  photosShown,
+  onCustomizeUpgrade,
   anyRecipeHasImage,
   anyRecipeHasSourceUrl,
   bookPhotoStyle,
@@ -105,6 +125,16 @@ export function PrintConfigPanel({
     if (photoStyleTip) setTab("book");
   }, [photoStyleTip]);
   const chooseTab = (next: PanelTab) => setTab(next);
+  // The Customize view stands in for the whole main view, with its own way
+  // back, rather than opening under the theme grid where it would be one
+  // more section to scroll past.
+  const [customizing, setCustomizing] = useState(false);
+  // The phone's Themes sheet opens on its themes each time, not wherever it
+  // was left.
+  useEffect(() => {
+    setCustomizing(false);
+  }, [mobileDrawer]);
+  const themeLabel = RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === template)?.label ?? "theme";
   // The phone's Themes sheet is the book's theme grid alone; tabs are the
   // desktop panel's.
   const tabbed = cookbookMode && Boolean(pageSettings) && !mobileDrawer;
@@ -164,7 +194,7 @@ export function PrintConfigPanel({
         </div>
       )}
 
-      {cookbookMode && !mobileDrawer && (
+      {cookbookMode && !mobileDrawer && !customizing && (
         <p className="recipe-config-panel__note">
           {tabbed && tab === "page"
             ? "Changes here apply to this page only."
@@ -174,7 +204,23 @@ export function PrintConfigPanel({
 
       <div className="recipe-config-panel__scroll">
         {tabbed && tab === "page" && pageSettings}
-        {showBook && (
+        {showBook && customizing && (
+          <ThemeCustomizePanel
+            themeLabel={themeLabel}
+            cookbook={cookbookMode}
+            proMarked={customizeProMarked}
+            photosShown={photosShown}
+            fontScale={fontScale}
+            setFontScale={setFontScale}
+            photoScale={photoScale}
+            setPhotoScale={setPhotoScale}
+            customized={themeCustomized}
+            onReset={resetThemeLook}
+            onBack={() => setCustomizing(false)}
+            onUpgrade={onCustomizeUpgrade}
+          />
+        )}
+        {showBook && !customizing && (
         <>
         <PrintSetupControls
           cookbookMode={cookbookMode}
@@ -193,8 +239,6 @@ export function PrintConfigPanel({
           setShowSourceUrl={setShowSourceUrl}
           hasPrintSettingsFields={hasPrintSettingsFields}
           cardSettingsFields={cardSettingsFields}
-          fontScale={fontScale}
-          setFontScale={setFontScale}
         />
 
         <ThemePicker
@@ -204,6 +248,8 @@ export function PrintConfigPanel({
           customerInfo={customerInfo}
           setToastMessage={setToastMessage}
           setMobileDrawer={setMobileDrawer}
+          themeCustomized={themeCustomized}
+          onCustomize={() => setCustomizing(true)}
         />
         </>
         )}

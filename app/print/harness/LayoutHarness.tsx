@@ -18,6 +18,10 @@ import {
 } from "@/lib/faceMeasure";
 import { HARNESS_RECIPES, type HarnessRecipe } from "@/lib/__fixtures__/harnessRecipes";
 import { DEFAULT_FONT_SCALE, FONT_SCALES, fontScaleVars, normalizeFontScale, type FontScale } from "@/lib/fontScale";
+// Each text size is measured with the photo size a page at that text size had
+// when the photo still followed it (Biggest text, Bigger photo), so every photo
+// step is swept and the baseline in lib/__fixtures__ still holds.
+import { legacyPhotoScale, photoScaleVars } from "@/lib/photoScale";
 import { FontSpecimens } from "./FontSpecimens";
 import { RevealSpecimens } from "./RevealSpecimens";
 import { getCookbookPreset, presetCardVars } from "@/lib/cookbookPresets";
@@ -251,6 +255,7 @@ function FaceSetProbe({
         ...(scale === 1 ? {} : { transform: `scale(${scale})`, transformOrigin: "top left" }),
         ...(book ? BOOK_CARD_VARS : {}),
         ...fontScaleVars(fontScale),
+        ...photoScaleVars(legacyPhotoScale(fontScale)),
       }}
       className={`recipe-print-preview recipe-print-preview--${size} recipe-face-measurer`}
     >
@@ -427,6 +432,7 @@ function ComboRunner({
         cookbookMode={combo.book}
         cardVars={combo.book ? BOOK_CARD_VARS : undefined}
         fontScale={combo.fontScale}
+        photoScale={legacyPhotoScale(combo.fontScale)}
         onSettled={(pages) => setSettledPages((prev) => prev ?? pages)}
       />
       {settledPages && (
