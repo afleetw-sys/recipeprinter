@@ -16,6 +16,7 @@ import type { QueueItem } from "@/types/recipe";
 import { track, type ImportFailureCode } from "@/lib/analytics";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { warmImportMeter } from "@/lib/importMeter";
+import { warmImportParsers } from "@/lib/wakeFunctions";
 import { isPastedRecipeText, linkInCaption } from "@/lib/importUrl";
 import { imageLabel, MAX_IMAGE_FILES, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
 
@@ -161,10 +162,14 @@ export function ImportPanel({
   /** Opens the Pro upgrade dialog — only ever called while `libraryLocked`. */
   onLibraryLockedTap?: () => void;
 }) {
-  // Wake the free-import meter now, so it has started by the time the cook
-  // presses Add (see `warmImportMeter`). Touching the panel wakes it again if
-  // it has been a while.
-  useEffect(() => warmImportMeter(), []);
+  // Wake the free-import meter and the parsers now, so they have started by
+  // the time the cook presses Add (see lib/wakeFunctions). Touching the panel
+  // wakes them again if it has been a while.
+  const warmImportBackend = useCallback(() => {
+    warmImportMeter();
+    warmImportParsers();
+  }, []);
+  useEffect(warmImportBackend, [warmImportBackend]);
 
   useEffect(() => {
     // The recipe-app sources are a primary import option, but CookPilot's
@@ -494,8 +499,8 @@ export function ImportPanel({
       // before anything could be done. It stays as the panel's accessible
       // name, which a heading was the only thing providing.
       aria-label={workspace ? "Add a recipe" : "Import recipes"}
-      onFocusCapture={() => warmImportMeter()}
-      onPointerDownCapture={() => warmImportMeter()}
+      onFocusCapture={warmImportBackend}
+      onPointerDownCapture={warmImportBackend}
     >
       {/* Mode toggle — one enabled source is a field, not a choice, so there
           is nothing to pick between and the row is skipped entirely. */}
