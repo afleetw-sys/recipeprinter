@@ -68,6 +68,27 @@ export const PRO_BENEFITS = [
   COOKBOOK_BENEFIT,
 ];
 
+// The upgrade dialog lists only a few of these up front, so the plans stay in
+// view, and keeps the rest behind "And more" (Amelia, 2026-11-02). These lead
+// whenever the trigger leaves room; /pricing and /account show every one.
+const HEADLINE_BENEFITS = [UNLIMITED_IMPORTS_BENEFIT, BENEFIT_BY_REASON.multi_recipe, BENEFIT_BY_REASON.theme];
+const SHORT_LIST_LENGTH = 3;
+
+/**
+ * Splits the dialog's list: what opened it first, topped up with the headline
+ * benefits, then the rest for "And more". A benefit the title or body already
+ * says is left out of both, rather than said twice.
+ */
+function splitBenefits(lead: string[], alreadySaid?: string): Pick<ProUpgradeCopy, "highlights" | "more"> {
+  const highlights = lead.filter((benefit) => benefit !== alreadySaid);
+  for (const benefit of [...HEADLINE_BENEFITS, ...PRO_BENEFITS]) {
+    if (highlights.length >= SHORT_LIST_LENGTH) break;
+    if (benefit !== alreadySaid && !highlights.includes(benefit)) highlights.push(benefit);
+  }
+  const more = PRO_BENEFITS.filter((benefit) => benefit !== alreadySaid && !highlights.includes(benefit));
+  return { highlights, more };
+}
+
 /** Opened from a photo import that hit the free hourly limit. */
 export const IMAGE_IMPORT_LIMIT_TRIGGER = "image_import_limit";
 /** Opened from an import that didn't start because the free allowance is used up. */
@@ -93,12 +114,17 @@ export interface ProUpgradeCopy {
   body?: string;
   /** Every benefit, with whichever triggered the dialog first. */
   benefits: string[];
+  /** The few the dialog lists up front. */
+  highlights: string[];
+  /** The rest, behind "And more". */
+  more: string[];
   ctaLabel: string;
 }
 
-const GENERIC_COPY: ProUpgradeCopy = {
+export const GENERIC_COPY: ProUpgradeCopy = {
   title: "Upgrade to RecipePrinter Pro",
   benefits: PRO_BENEFITS,
+  ...splitBenefits([]),
   ctaLabel: "Unlock Pro",
 };
 
@@ -132,6 +158,7 @@ export function proUpgradeCopy(
       benefits: [...PRO_BENEFITS].sort(
         (a, b) => Number(b === BENEFIT_BY_REASON.multi_recipe) - Number(a === BENEFIT_BY_REASON.multi_recipe),
       ),
+      ...splitBenefits([BENEFIT_BY_REASON.multi_recipe]),
       ctaLabel: "Unlock Pro and add the rest",
     };
   }
@@ -146,6 +173,7 @@ export function proUpgradeCopy(
       // import sent from the homepage arrives on a fresh, empty project.
       body: `${back}${hasRecipes ? "You can still edit and print the recipes you've imported. " : ""}Upgrade to Pro for unlimited recipe imports.`,
       benefits: PRO_BENEFITS,
+      ...splitBenefits([], UNLIMITED_IMPORTS_BENEFIT),
       ctaLabel: "Unlock Pro",
     };
   }
@@ -153,6 +181,7 @@ export function proUpgradeCopy(
     return {
       title: `Import up to ${IMAGE_IMPORTS_PER_HOUR_PRO} images an hour`,
       benefits: PRO_BENEFITS,
+      ...splitBenefits([]),
       ctaLabel: "Unlock Pro",
     };
   }
@@ -162,15 +191,22 @@ export function proUpgradeCopy(
     return {
       title: "Print without RecipePrinter branding",
       benefits: [NO_BRANDING_BENEFIT, ...PRO_BENEFITS.filter((b) => b !== NO_BRANDING_BENEFIT)],
+      ...splitBenefits([], NO_BRANDING_BENEFIT),
       ctaLabel: "Unlock Pro and continue",
     };
   }
   if (trigger === "topbar_button" || reasons.length === 0) return GENERIC_COPY;
   const triggered = new Set(reasons.map((reason) => BENEFIT_BY_REASON[reason]));
+  // Stable sort: triggered benefits first, everything else keeps its place.
+  const benefits = [...PRO_BENEFITS].sort((a, b) => Number(triggered.has(b)) - Number(triggered.has(a)));
+  // A single lock's title names its benefit. Not the theme's: "this premium
+  // theme" is one, and the line says all of them.
+  const single = reasons.length === 1 ? reasons[0] : null;
+  const alreadySaid = single && single !== "theme" ? BENEFIT_BY_REASON[single] : undefined;
   return {
-    title: reasons.length === 1 ? TITLE_BY_REASON[reasons[0]] : "Unlock your Pro print setup",
-    // Stable sort: triggered benefits first, everything else keeps its place.
-    benefits: [...PRO_BENEFITS].sort((a, b) => Number(triggered.has(b)) - Number(triggered.has(a))),
+    title: single ? TITLE_BY_REASON[single] : "Unlock your Pro print setup",
+    benefits,
+    ...splitBenefits(benefits.filter((benefit) => triggered.has(benefit)), alreadySaid),
     ctaLabel: trigger === "print_button" ? "Unlock Pro and print" : "Unlock Pro and continue",
   };
 }
