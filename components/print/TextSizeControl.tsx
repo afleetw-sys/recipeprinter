@@ -70,9 +70,8 @@ export function TextSizeMenu({
 
 /**
  * The settings panel's text size: a slider over the five steps, with the
- * step's name across from the heading, drawn at that size, so the cook sees the change before
- * they look at the page. Steps, never a free value: every one is measured by
- * the layout harness.
+ * step's name across from the heading. Steps, never a free value: every one
+ * is measured by the layout harness.
  */
 export function TextSizeControl({
   fontScale,
@@ -98,7 +97,7 @@ export function TextSizeControl({
         <span className="recipe-config-label" id="recipe-text-size-label">
           {label}
         </span>
-        <span className="recipe-text-size__name" style={{ fontSize: `calc(var(--cp-fs-body) * ${fontScale})` }}>
+        <span className="recipe-text-size__name">
           {proMarked && fontScale !== DEFAULT_FONT_SCALE && (
             <ProBadge variant="inline" label={false} tooltip="This text size is Pro" />
           )}
