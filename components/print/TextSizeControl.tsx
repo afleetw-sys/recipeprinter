@@ -14,7 +14,7 @@ import {
 
 /**
  * The cook's text size for every recipe page, picked from a list of words
- * (Smaller … Larger), never a percentage: nobody knows what 92% looks like.
+ * (Smallest … Largest), never a percentage: nobody knows what 92% looks like.
  *
  * Normal is free; every other size is Pro on recipe cards. Like a Pro theme or
  * the 4×6 size, a free account can still pick and preview one: the crown marks
