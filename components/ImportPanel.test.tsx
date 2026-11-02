@@ -133,3 +133,54 @@ describe("waking the import backend", () => {
     }
   });
 });
+
+describe("loading the recipe-apps code in the background", () => {
+  // Leaving the home page while this was still downloading failed the load,
+  // and nothing caught it: WebKit raised an uncaught ChunkLoadError on every
+  // such exit (e2e work-survives, PR #261 and an Oct 30 run). The tab loads
+  // its code again when it's opened, so a failed head start is nothing.
+  it("lets a failed head start go quietly, whichever step fails", async () => {
+    const uncaught: unknown[] = [];
+    const onUncaught = (reason: unknown) => uncaught.push(reason);
+    process.on("unhandledRejection", onUncaught);
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      // Each case gets its own copy of the panel, so neither sees the other's
+      // already-loaded code.
+      const failures = {
+        download: () => {
+          throw new Error("ChunkLoadError: Loading chunk 4488 failed.");
+        },
+        "warm-up": () => ({
+          RecipeAppsPanel: () => null,
+          prewarmCookPilotImport: () => Promise.reject(new Error("network error")),
+        }),
+      };
+      for (const [fail, recipeAppsModule] of Object.entries(failures)) {
+        vi.resetModules();
+        vi.doMock("@/components/import/RecipeAppsPanel", recipeAppsModule);
+        const { ImportPanel: FreshImportPanel } = await import("@/components/ImportPanel");
+        render(
+          <FreshImportPanel
+            items={[]}
+            onAddUrl={vi.fn()}
+            onAddText={vi.fn()}
+            onAddImageFiles={vi.fn()}
+            onAddReadyRecipes={vi.fn(() => 0)}
+          />,
+        );
+        await vi.advanceTimersByTimeAsync(1_000);
+        vi.useRealTimers();
+        // Unhandled rejections are reported a turn after the promise settles.
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+        cleanup();
+        expect(uncaught, fail).toEqual([]);
+      }
+    } finally {
+      vi.doUnmock("@/components/import/RecipeAppsPanel");
+      vi.useRealTimers();
+      process.off("unhandledRejection", onUncaught);
+    }
+  });
+});
