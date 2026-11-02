@@ -3307,73 +3307,48 @@ textarea.recipe-page-fields__input {
   transition: transform 150ms ease;
 }
 
-/* The theme in use, above the grid (ThemePicker): a small preview beside the
-   way into Customize, in one row. No name: the preview says which it is. It wears the selected-state
-   border and tint, the same as its tile in the grid, so it reads as "this is
-   the one you have" without being bigger than the tiles. One button. */
-.recipe-current-theme {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  margin: 2px 0 12px;
-  padding: 8px;
-  border: 1px solid var(--cp-selected-border);
-  border-radius: 12px;
-  background: var(--cp-selected-fill);
-  box-shadow: var(--cp-selected-ring);
-  color: var(--cp-selected-text);
-  text-align: left;
-  cursor: pointer;
-}
-.recipe-current-theme:focus-visible,
-.recipe-customize__back:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: var(--cp-focus-ring-offset);
-}
-.recipe-current-theme__preview {
-  flex: 0 0 96px;
-  display: block;
-  overflow: hidden;
-  border: 1px solid var(--cp-line);
-  border-radius: 6px;
-  background: var(--cp-card);
-}
-.recipe-current-theme__text {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+/* A theme tile's cell (ThemePicker): the tile, and on the chosen one its
+   Customize button laid over its foot, on the theme it changes. */
+.recipe-template-cell {
+  position: relative;
   min-width: 0;
 }
-.recipe-current-theme__eyebrow {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-label);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.recipe-current-theme__customize {
+.recipe-template-customize {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  margin-top: 4px;
-  padding: 3px 6px 3px 10px;
-  border: 1px solid var(--cp-line);
+  padding: 3px 5px 3px 9px;
+  border: 1px solid var(--cp-selected-border);
   border-radius: 999px;
   background: var(--cp-card);
+  color: var(--cp-ink);
   font-size: var(--cp-fs-caption);
   font-weight: 700;
-  transition: border-color 150ms ease;
+  cursor: pointer;
+  transition: background-color 150ms ease;
 }
-.recipe-current-theme__state {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 500;
+/* The button changes colour; it only moves with its tile's 1px lift, so the
+   two never come apart. */
+.recipe-template-customize:hover {
+  background: var(--cp-selected-fill);
 }
-/* Colour, not movement: the chip is the button's visible handle. */
-.recipe-current-theme:hover .recipe-current-theme__customize {
+.recipe-template-cell:hover .recipe-template-customize {
+  transform: translateY(-1px);
+}
+.recipe-template-cell:hover .recipe-template-option {
+  border-color: var(--cp-line-strong);
+  transform: translateY(-1px);
+}
+.recipe-template-cell:hover .recipe-template-option.is-active {
   border-color: var(--cp-selected-border);
+}
+.recipe-template-customize:focus-visible,
+.recipe-customize__back:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
 }
 
 .recipe-config-section--customize {

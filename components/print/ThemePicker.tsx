@@ -21,8 +21,6 @@ interface ThemePickerProps {
   customerInfo: CustomerInfo | null;
   setToastMessage: Dispatch<SetStateAction<string | null>>;
   setMobileDrawer: Dispatch<SetStateAction<"template" | null>>;
-  /** Whether the current theme has been customized (lib/themeLooks.ts). */
-  themeCustomized: boolean;
   onCustomize: () => void;
 }
 
@@ -51,7 +49,6 @@ export function ThemePicker({
   customerInfo,
   setToastMessage,
   setMobileDrawer,
-  themeCustomized,
   onCustomize,
 }: ThemePickerProps) {
   const today = new Date();
@@ -105,9 +102,13 @@ export function ThemePicker({
       setMobileDrawer(null);
     };
 
+    const active = template === option.id;
+    // The cell holds the tile and, on the chosen one, its Customize button:
+    // a sibling laid over the tile rather than inside it, since the tile is a
+    // button already and one can't hold another.
     return (
+      <div key={option.id} className="recipe-template-cell">
       <div
-        key={option.id}
         role="button"
         tabIndex={0}
         className={`recipe-template-option recipe-template-option--${option.id} ${
@@ -144,30 +145,21 @@ export function ThemePicker({
         )}
         <TemplateThumbnail template={option.id} />
       </div>
+      {/* On the theme it changes, so it can't read as making a theme of
+          your own. */}
+      {active && (
+        <button type="button" className="recipe-template-customize" onClick={onCustomize}>
+          Customize
+          <ChevronRightIcon size={ICON_SIZE.sm} />
+        </button>
+      )}
+      </div>
     );
   }
 
   return (
     <div className="recipe-config-section recipe-config-section--template">
       <h3 className="recipe-config-label">Themes</h3>
-      {/* The theme in use, pulled up above the grid with the way into its
-          Customize view, so both are in view without scrolling. The whole
-          card opens Customize. It stays selected in the grid below as well:
-          taking it out would move the tiles every time the theme changed, and
-          the grid is where themes are compared. */}
-      <button type="button" className="recipe-current-theme" onClick={onCustomize}>
-        <span className="recipe-current-theme__preview">
-          <TemplateThumbnail template={template} />
-        </span>
-        <span className="recipe-current-theme__text">
-          <span className="recipe-current-theme__eyebrow">Current theme</span>
-          {themeCustomized && <span className="recipe-current-theme__state">Customized</span>}
-          <span className="recipe-current-theme__customize">
-            Customize
-            <ChevronRightIcon size={ICON_SIZE.sm} />
-          </span>
-        </span>
-      </button>
       <div className="recipe-template-list">{main.map(renderOption)}</div>
       {seasonal.length > 0 && (
         <>

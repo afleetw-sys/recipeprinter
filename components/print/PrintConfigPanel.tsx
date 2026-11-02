@@ -245,7 +245,6 @@ export function PrintConfigPanel({
           customerInfo={customerInfo}
           setToastMessage={setToastMessage}
           setMobileDrawer={setMobileDrawer}
-          themeCustomized={themeCustomized}
           onCustomize={() => setCustomizing(true)}
         />
         </>
