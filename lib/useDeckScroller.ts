@@ -10,6 +10,9 @@ import {
   type SetStateAction,
 } from "react";
 import { TOUCH_ZOOM_RANGE, zoomFromPinch, zoomFromWheel } from "@/lib/deckZoom";
+
+/** A recipe card's 100% on a desktop, as a share of the window fit. */
+const CARD_FIT_SHARE = 0.75;
 import type { PrintCardSize } from "@/types/recipe";
 
 const PREVIEW_SELECTOR = ".recipe-page-scaler";
@@ -458,9 +461,15 @@ export function useDeckScroller({
         // multiply is what makes 100% mean "as large as this window allows"
         // and 150% mean half again — rather than the ceiling swallowing the
         // zoom whole on a small card.
+        //
+        // A recipe card at that size is blown up on a laptop: a 4x6 filling the
+        // window reads as a poster. So a card's 100% is three quarters of it
+        // (what 75% used to be, 2026-11-03); Full Page keeps the whole fit. A
+        // phone keeps its own fit, which is already width-bound.
+        const cardShare = cardSize === "letter" ? 1 : CARD_FIT_SHARE;
         const fit = mobile
           ? Math.max(0.12, Math.min(1.05, widthScale, heightScale, snapportScale))
-          : Math.max(0.12, Math.min(widthScale, snapportScale));
+          : Math.max(0.12, Math.min(widthScale, snapportScale) * cardShare);
         setFitScale(fit);
         applyDeckGeometry(el, fit * zoom);
       }
