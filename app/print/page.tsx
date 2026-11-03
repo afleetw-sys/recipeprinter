@@ -2467,7 +2467,7 @@ export default function PrintPage() {
       cardSize,
       showPhoto,
       doubleSided,
-      twoPerSheet: twoPerSheet && cardSize === "card-6x4" && !cookbookMode,
+      twoPerSheet: twoPerSheet && twoPerSheetOffered,
       recipeCount: items?.filter((item) => item.recipe).length ?? 0,
       browserApp: currentBrowserApp(),
       printIsNative: printIsNative(),
@@ -3464,6 +3464,9 @@ export default function PrintPage() {
   // above, this is NOT recipe-count-dependent: it's what lets an empty
   // project's library picker still offer exactly one pick rather than none.
   const singleRecipeOnly = !cookbookMode && !hasMultiRecipeEntitlement(effectiveCustomerInfo.customerInfo);
+  // Two 4x6 cards to a sheet needs two cards, and only Pro prints more than
+  // one recipe. A setting stored while Pro is ignored once it lapses.
+  const twoPerSheetOffered = cardSize === "card-6x4" && !cookbookMode && !singleRecipeOnly;
   /** Recipe cards' phone "Every recipe" sheet: offered once there can be more
       than one recipe and some recipe has a photo or a link to show or hide. */
   const cardEveryRecipe = !cookbookMode && !singleRecipeOnly && (anyRecipeHasImage || anyRecipeHasSourceUrl);
@@ -5108,7 +5111,7 @@ export default function PrintPage() {
   function renderPrintSettingsFields() {
     return (
       <>
-        {cardSize === "card-6x4" && (
+        {twoPerSheetOffered && (
           <Checkbox
               label="Print 2 cards on each sheet"
               hint="Leave off for 4x6 cardstock."
@@ -7194,7 +7197,7 @@ export default function PrintPage() {
           continueOnBack={continueOnBack}
           cardSize={cardSize}
           showCutLines={showCutLines}
-          twoUpPrint={twoPerSheet && cardSize === "card-6x4" && !cookbookMode}
+          twoUpPrint={twoPerSheet && twoPerSheetOffered}
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setBookShowSourceUrl}
           showDescription={showDescription}
