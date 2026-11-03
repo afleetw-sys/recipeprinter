@@ -31,6 +31,7 @@ import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
 import { AddLineMenu } from "@/components/print/AddLineMenu";
 import { ZoomControl } from "@/components/print/ZoomControl";
 import { ScaledPage } from "@/components/print/ScaledPage";
+import { TwoUpPrintPages } from "@/components/print/TwoUpPrintPages";
 import { recipeLinkOn } from "@/lib/recipeLink";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { recipeNamesIntro } from "@/lib/chapterIntro";
@@ -205,6 +206,9 @@ interface PrintDeckProps {
   continueOnBack: boolean;
   cardSize: PrintCardSize;
   showCutLines: boolean;
+  /** Print the 4x6 cards two to a Letter sheet (see TwoUpPrintPages). The
+      deck on screen is unchanged; only what prints is. */
+  twoUpPrint: boolean;
   showSourceUrl: boolean;
   setShowSourceUrl: Dispatch<SetStateAction<boolean>>;
   showDescription: boolean;
@@ -420,6 +424,7 @@ export function PrintDeck(props: PrintDeckProps) {
     continueOnBack,
     cardSize,
     showCutLines,
+    twoUpPrint,
     showSourceUrl,
     setShowSourceUrl,
     showDescription,
@@ -1509,6 +1514,21 @@ export function PrintDeck(props: PrintDeckProps) {
               <AccountControl compact />
             </div>
           </div>
+          {/* Drawn with the rest of the deck (`renderAllPages`), so it is
+              ready before a print and its photos load with the deck's. Before
+              the deck, so print.css can switch the deck off with a sibling
+              selector. */}
+          {twoUpPrint && previewCardSize === "card-6x4" && renderAllPages && !previewMeasuring && (
+            <TwoUpPrintPages
+              sheets={sheets}
+              template={previewTemplate}
+              showDescription={showDescription}
+              showCutLines={showCutLines}
+              doubleSided={continueOnBack}
+              fontScale={previewFontScale}
+              photoScale={previewPhotoScale}
+            />
+          )}
           <div
             className={`recipe-page-deck ${cookbookView ? "recipe-page-deck--book" : ""}`}
             id="recipe-page-deck"

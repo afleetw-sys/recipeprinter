@@ -38,6 +38,10 @@ export interface StoredPrintSettings {
   template?: string;
   doubleSided?: boolean;
   showCutLines?: boolean;
+  /** 4x6 cards print two to a Letter sheet. Kept on the device, not in a
+      saved project: it describes the paper in this person's printer, not
+      the recipes. */
+  twoPerSheet?: boolean;
   showPhoto?: boolean;
   showSourceUrl?: boolean;
   /** One text size for every theme, from before each theme kept its own.
@@ -68,11 +72,21 @@ export function readPrintSettings(): StoredPrintSettings | null {
   return typeof showRecipeLink === "boolean" ? { ...rest, showSourceUrl: showRecipeLink } : rest;
 }
 
-export function writePrintSettings(settings: Required<Omit<StoredPrintSettings, "fontScale">>) {
+export function writePrintSettings(
+  settings: Required<Omit<StoredPrintSettings, "fontScale" | "twoPerSheet">> &
+    Pick<StoredPrintSettings, "twoPerSheet">,
+) {
   const { showSourceUrl, ...rest } = settings;
+  // A writer that does not know about two-per-sheet (a shared card link
+  // seeding its own look) leaves this device's paper choice as it was.
+  const twoPerSheet = settings.twoPerSheet ?? readPrintSettings()?.twoPerSheet;
   // Survivable if it fails: settings stay correct for this session, they just
   // won't carry over to the next visit.
-  const onDisk: StoredOnDisk = { ...rest, showRecipeLink: showSourceUrl };
+  const onDisk: StoredOnDisk = {
+    ...rest,
+    ...(twoPerSheet === undefined ? {} : { twoPerSheet }),
+    showRecipeLink: showSourceUrl,
+  };
   localStore.setJson(PRINT_SETTINGS_STORAGE_KEY, onDisk);
 }
 
@@ -101,6 +115,8 @@ interface PrintSettingsState {
   setDoubleSided: (value: boolean) => void;
   showCutLines: boolean;
   setShowCutLines: (value: boolean) => void;
+  twoPerSheet: boolean;
+  setTwoPerSheet: (value: boolean) => void;
   showPhoto: boolean;
   setShowPhoto: (value: boolean) => void;
   showSourceUrl: boolean;
@@ -128,6 +144,8 @@ export function usePrintSettingsPersistence(
     setDoubleSided,
     showCutLines,
     setShowCutLines,
+    twoPerSheet,
+    setTwoPerSheet,
     showPhoto,
     setShowPhoto,
     showSourceUrl,
@@ -151,6 +169,7 @@ export function usePrintSettingsPersistence(
     }
     if (typeof stored.doubleSided === "boolean") setDoubleSided(stored.doubleSided);
     if (typeof stored.showCutLines === "boolean") setShowCutLines(stored.showCutLines);
+    if (typeof stored.twoPerSheet === "boolean") setTwoPerSheet(stored.twoPerSheet);
     if (typeof stored.showPhoto === "boolean") setShowPhoto(stored.showPhoto);
     if (typeof stored.showSourceUrl === "boolean") setShowSourceUrl(stored.showSourceUrl);
     if (stored.themeLooks !== undefined || stored.fontScale !== undefined) {
@@ -173,9 +192,10 @@ export function usePrintSettingsPersistence(
       template,
       doubleSided,
       showCutLines,
+      twoPerSheet,
       showPhoto,
       showSourceUrl,
       themeLooks,
     });
-  }, [cardSize, template, doubleSided, showCutLines, showPhoto, showSourceUrl, themeLooks]);
+  }, [cardSize, template, doubleSided, showCutLines, twoPerSheet, showPhoto, showSourceUrl, themeLooks]);
 }

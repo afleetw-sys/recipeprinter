@@ -373,6 +373,7 @@ export default function PrintPage() {
   );
   const [doubleSided, setDoubleSided] = useState(true);
   const [showCutLines, setShowCutLines] = useState(false);
+  const [twoPerSheet, setTwoPerSheet] = useState(false);
   /* On by default: a recipe that came in with a photo should print with it
      until someone says otherwise. Off meant the common case — import, print —
      dropped the picture silently, and the only clue was a checkbox two panels
@@ -2276,7 +2277,9 @@ export default function PrintPage() {
 
   function loadDeckPhotosNow() {
     document
-      .querySelectorAll<HTMLImageElement>('#recipe-page-deck img[loading="lazy"]')
+      // The two-to-a-sheet pages (TwoUpPrintPages) are a second drawing of
+      // the same cards, and they are what prints when they are on.
+      .querySelectorAll<HTMLImageElement>('#recipe-page-deck img[loading="lazy"], .rp-twoup img[loading="lazy"]')
       .forEach((img) => {
         img.loading = "eager";
       });
@@ -2464,6 +2467,7 @@ export default function PrintPage() {
       cardSize,
       showPhoto,
       doubleSided,
+      twoPerSheet: twoPerSheet && cardSize === "card-6x4" && !cookbookMode,
       recipeCount: items?.filter((item) => item.recipe).length ?? 0,
       browserApp: currentBrowserApp(),
       printIsNative: printIsNative(),
@@ -5106,6 +5110,14 @@ export default function PrintPage() {
       <>
         {cardSize === "card-6x4" && (
           <Checkbox
+              label="2 cards per Letter page"
+              hint="For plain paper. Leave off for 4x6 cardstock."
+              checked={twoPerSheet}
+              onChange={(event) => setTwoPerSheet(event.target.checked)}
+          />
+        )}
+        {cardSize === "card-6x4" && (
+          <Checkbox
               label="Cut lines"
               hint="Only shows when printed."
               checked={showCutLines}
@@ -5209,6 +5221,8 @@ export default function PrintPage() {
     setDoubleSided,
     showCutLines,
     setShowCutLines,
+    twoPerSheet,
+    setTwoPerSheet,
     showPhoto,
     setShowPhoto,
     showSourceUrl,
@@ -7180,6 +7194,7 @@ export default function PrintPage() {
           continueOnBack={continueOnBack}
           cardSize={cardSize}
           showCutLines={showCutLines}
+          twoUpPrint={twoPerSheet && cardSize === "card-6x4" && !cookbookMode}
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setBookShowSourceUrl}
           showDescription={showDescription}

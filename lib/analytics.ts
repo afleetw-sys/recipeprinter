@@ -379,6 +379,8 @@ type EventProps = {
     cardSize: PrintCardSize;
     showPhoto: boolean;
     doubleSided: boolean;
+    /** 4x6 cards printed two to a Letter sheet (TwoUpPrintPages). */
+    twoPerSheet: boolean;
     recipeCount: number;
     browserApp: BrowserApp;
     printIsNative: boolean;
