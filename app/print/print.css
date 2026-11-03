@@ -3587,21 +3587,6 @@ textarea.recipe-page-fields__input {
   zoom: 1.4;
 }
 
-/* An in-season theme's tag: "Featured" before the Pro crown, in the crown's
-   own overlay chip (`.pro-badge--overlay` below), in white so the word reads
-   as a label and the gold stays the crown's. */
-.recipe-template-option__featured {
-  gap: 4px;
-  padding: 4px 6px;
-  color: #ffffff;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.recipe-template-option__featured svg {
-  color: var(--cp-premium-bright);
-}
-
 /* The shared Pro indicator (components/ProBadge.tsx). The base
    `.pro-badge`/`.pro-badge__label` look now lives in globals.css — it isn't
    print-specific, and ProBadge itself renders outside /print too (e.g. the
