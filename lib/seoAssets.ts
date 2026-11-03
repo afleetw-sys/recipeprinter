@@ -66,8 +66,8 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
   },
   crunchwrap: {
     src: "/images/printed-cards/crunchwrap.jpeg",
-    width: 3024,
-    height: 4032,
+    width: 1800,
+    height: 2400,
     alt: "A printed Crunchwrap Supreme recipe card beside the finished crunchwrap.",
     objectPosition: "50% 100%",
   },
@@ -90,8 +90,8 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
   },
   "photo-recipe-card": {
     src: "/images/peanut-butter-blossoms-card.jpeg",
-    width: 2939,
-    height: 3919,
+    width: 1800,
+    height: 2400,
     alt:
       "A printed Peanut Butter Blossoms recipe card lying on a vintage yellow spice chart.",
     objectPosition: "50% 58%",
@@ -123,55 +123,55 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
   },
   "multi-recipes": {
     src: "/images/multi-recipes.png",
-    width: 5555,
-    height: 3800,
+    width: 2400,
+    height: 1641,
     alt:
       "One saved PDF holding several printed recipes, a page each, open in a document viewer with the page thumbnails down the side.",
   },
   "addrecipes-cookbook": {
     src: "/images/addrecipes-cookbook.png",
-    width: 6350,
-    height: 3800,
+    width: 2400,
+    height: 1436,
     alt:
       "The Add recipes dialog in a cookbook, with its four sources circled: a recipe link, a recipe app, an image, or pasted text.",
   },
   "print-cookbook": {
     src: "/images/print-cookbook.png",
-    width: 6350,
-    height: 3800,
+    width: 2400,
+    height: 1436,
     alt:
       "The Print your cookbook dialog set up for Lulu: two files, the pages and the cover, with a choice of hardcover or spiral binding and standard or edge-to-edge photos.",
   },
   "organize-cookbook": {
     src: "/images/organize-cookbook.png",
-    width: 6350,
-    height: 3800,
+    width: 2400,
+    height: 1436,
     alt:
       "Organizing a cookbook into chapters by person, such as Aunt Wendy's Recipes and Grandma's Recipes, with a chapter opener page beside the list.",
   },
   "dedication-page": {
     src: "/images/dedication.jpeg",
-    width: 5472,
-    height: 3648,
+    width: 2400,
+    height: 1600,
     alt: "A printed, spiral-bound cookbook open to its dedication page: \"For the ones who taught us to cook, and who made every table feel like home.\"",
   },
   sources: {
     src: "/images/sources.png",
-    width: 6350,
-    height: 3800,
+    width: 2400,
+    height: 1436,
     alt:
       "RecipePrinter's add-recipe panel with its four sources circled: a recipe link, a recipe app, an image, or pasted text.",
   },
   "tiktok-import": {
     src: "/images/tiktok.png",
-    width: 6350,
-    height: 3800,
+    width: 2400,
+    height: 1436,
     alt: "A TikTok recipe brought into RecipePrinter for editing and printing.",
   },
   "youtube-import": {
     src: "/images/youtube.png",
-    width: 6350,
-    height: 3800,
+    width: 2400,
+    height: 1436,
     alt: "A YouTube recipe brought into RecipePrinter for editing and printing.",
   },
   "handwritten-card": {
@@ -282,8 +282,8 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
   },
   "screenshot-to-card": {
     src: "/images/screenshot-to-card.png",
-    width: 6350,
-    height: 4305,
+    width: 2400,
+    height: 1627,
     alt:
       "A phone screenshot of a recipe posted in a caption, beside the printed recipe card it becomes.",
   },

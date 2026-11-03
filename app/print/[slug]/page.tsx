@@ -24,9 +24,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title,
     description,
     alternates: { canonical: path },
-    // Overrides app/print/layout.tsx's blanket noindex — that default is
-    // right for the session-based /print, wrong for a public share link.
-    robots: { index: true, follow: true },
+    // Not indexed: the page shows "Preparing…" and redirects to /print, so a
+    // search engine sees an empty page titled with another site's recipe.
+    // Followed, so links from it still count.
+    robots: { index: false, follow: true },
     openGraph: { title: ogTitle, description, url: path, images: [image] },
     twitter: { title: ogTitle, description, images: [image] },
   };

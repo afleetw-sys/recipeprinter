@@ -16,6 +16,7 @@ import type { QueueItem } from "@/types/recipe";
 import { track, type ImportFailureCode } from "@/lib/analytics";
 import { normalizeImportURL } from "@/lib/cookpilot";
 import { warmImportMeter } from "@/lib/importMeter";
+import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
 import { warmImportParsers } from "@/lib/wakeFunctions";
 import { isPastedRecipeText, linkInCaption } from "@/lib/importUrl";
 import { imageLabel, MAX_IMAGE_FILES, partitionImageFiles, validateImageFiles } from "@/lib/imageImport";
@@ -171,25 +172,38 @@ export function ImportPanel({
   }, []);
   useEffect(warmImportBackend, [warmImportBackend]);
 
+  // The recipe-app sources and the import itself need CookPilot's Firebase,
+  // Auth and App Check code, which is large and starts reCAPTCHA. It stays out
+  // of the page bundle and is fetched as a head start: on idle for a browser
+  // that has been signed in (it will want its account anyway), and otherwise on
+  // the first press, key, paste or drop in this panel. Most visitors to a
+  // landing page never touch the box, and loading it for them on idle was the
+  // heaviest script those pages ran. Not on focus: the link field focuses
+  // itself on load. Leaving the page mid-download fails the head start, and the
+  // tab or the import loads the code again, so a failure is dropped.
+  const recipeAppsWarm = useRef(false);
+  const prewarmRecipeApps = useCallback(() => {
+    if (recipeAppsWarm.current) return;
+    recipeAppsWarm.current = true;
+    loadRecipeApps()
+      .then((mod) => mod.prewarmCookPilotImport())
+      .catch(() => {
+        recipeAppsWarm.current = false;
+      });
+  }, []);
+  const onPanelIntent = useCallback(() => {
+    warmImportBackend();
+    prewarmRecipeApps();
+  }, [warmImportBackend, prewarmRecipeApps]);
   useEffect(() => {
-    // The recipe-app sources are a primary import option, but CookPilot's
-    // Firebase/Auth code is large enough to keep out of the initial page
-    // bundle. Fetch and initialize it once the browser is idle so choosing the
-    // tab feels immediate without delaying first paint. Only a head start:
-    // leaving the page mid-download fails it, and opening the tab loads the
-    // code again, so a failure here is dropped rather than left uncaught.
-    const prewarm = () => {
-      loadRecipeApps()
-        .then((mod) => mod.prewarmCookPilotImport())
-        .catch(() => {});
-    };
+    if (!readCookPilotWasSignedIn()) return;
     if ("requestIdleCallback" in window) {
-      const idleId = window.requestIdleCallback(prewarm, { timeout: 1_500 });
+      const idleId = window.requestIdleCallback(prewarmRecipeApps, { timeout: 1_500 });
       return () => window.cancelIdleCallback(idleId);
     }
-    const timer = globalThis.setTimeout(prewarm, 500);
+    const timer = globalThis.setTimeout(prewarmRecipeApps, 500);
     return () => globalThis.clearTimeout(timer);
-  }, []);
+  }, [prewarmRecipeApps]);
 
   const [mode, setMode] = useState<ImportTab>(initialMode);
   const copy = fieldCopy?.mode === mode ? fieldCopy : undefined;
@@ -504,7 +518,10 @@ export function ImportPanel({
       // name, which a heading was the only thing providing.
       aria-label={workspace ? "Add a recipe" : "Import recipes"}
       onFocusCapture={warmImportBackend}
-      onPointerDownCapture={warmImportBackend}
+      onPointerDownCapture={onPanelIntent}
+      onKeyDownCapture={onPanelIntent}
+      onPasteCapture={onPanelIntent}
+      onDropCapture={onPanelIntent}
     >
       {/* Mode toggle — one enabled source is a field, not a choice, so there
           is nothing to pick between and the row is skipped entirely. */}

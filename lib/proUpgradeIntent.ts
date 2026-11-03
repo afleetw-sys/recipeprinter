@@ -57,6 +57,13 @@ export function forgetProUpgradeIntent(): void {
   sessionStore.remove(PRO_UPGRADE_INTENT_KEY);
 }
 
+/** Whether a plan is waiting on a sign-in, without spending it: a page that
+ *  loads its checkout lazily asks this to know it must load it now. */
+export function hasProUpgradeIntent(now = Date.now()): boolean {
+  const intent = sessionStore.getJson<StoredProUpgradeIntent>(PRO_UPGRADE_INTENT_KEY);
+  return !!intent && Number.isFinite(intent.at) && now - intent.at <= PRO_UPGRADE_INTENT_TTL_MS;
+}
+
 /** The plan to resume checkout with, spending the intent if present.
  *  One-shot: signing in must not resume a checkout again on a later visit
  *  just because the flag was never explicitly cleared. */
