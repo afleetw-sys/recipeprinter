@@ -35,10 +35,10 @@ describe("arrangeThemes", () => {
   ];
   const isPremium = (theme: { pro?: boolean }) => Boolean(theme.pro);
 
-  it("features a theme at the top of the Pro themes during its dates", () => {
+  it("features a theme at the top of the Pro themes during its dates, and keeps it in the seasonal group", () => {
     const { main, seasonal } = arrangeThemes(themes, isPremium, day(12, 1));
     expect(main.map((t) => t.id)).toEqual(["classic", "pantry", "christmas", "typewriter", "bistro"]);
-    expect(seasonal).toEqual([]);
+    expect(seasonal.map((t) => t.id)).toEqual(["christmas"]);
   });
 
   it("moves a seasonal theme to the seasonal group outside its dates", () => {

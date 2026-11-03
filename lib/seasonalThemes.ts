@@ -48,7 +48,8 @@ export interface ArrangedThemes<T> {
   /** The main grid: free themes, then featured themes, then the rest of the
       Pro themes, each group in its listed order. */
   main: T[];
-  /** Seasonal themes outside their featured dates, for the collapsed group. */
+  /** Every seasonal theme, for the collapsed group, in season or not: one
+      pulled up into the main grid is still where the others are. */
   seasonal: T[];
 }
 
@@ -62,9 +63,9 @@ export function arrangeThemes<T extends ArrangeableTheme>(
   const pro: T[] = [];
   const seasonal: T[] = [];
   for (const theme of themes) {
+    if (isSeasonal(theme)) seasonal.push(theme);
     if (isFeatured(theme, date)) featured.push(theme);
-    else if (isSeasonal(theme)) seasonal.push(theme);
-    else (isPremium(theme) ? pro : free).push(theme);
+    else if (!isSeasonal(theme)) (isPremium(theme) ? pro : free).push(theme);
   }
   return { main: [...free, ...featured, ...pro], seasonal };
 }
