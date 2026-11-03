@@ -111,6 +111,13 @@ export function AccountProStatus({ user }: { user: User }) {
     [proCustomerInfo, proInfoStatus, proInfoLastVerifiedAtMs, proMirroredEntitlements, proMirrorSyncedAtMs],
   );
   const proDetails = proSubscriptionDetails(effectiveProInfo.customerInfo);
+  // Pro granted for good (or for years, like an early buyer's lifetime grant)
+  // has nothing to say about ending and nothing to resubscribe to. It shows as
+  // plain Pro: no end date, no Resubscribe. Within a year, a non-renewing Pro
+  // still says when it ends.
+  const proEndsFarOff =
+    !proDetails.willRenew &&
+    (proDetails.expiresAtMs === null || proDetails.expiresAtMs - Date.now() > 365 * 24 * 60 * 60 * 1000);
   const paidPrice = proPaidPrice(effectiveProInfo.customerInfo);
   const proManagementLink = proManagementUrl(effectiveProInfo.customerInfo);
   const [openingPortal, setOpeningPortal] = useState(false);
@@ -248,7 +255,7 @@ export function AccountProStatus({ user }: { user: User }) {
                       ? price(PRO_PRICE_FALLBACKS[proDetails.cycle])
                       : "Your plan"}
                 </p>
-                {proDetails.willRenew ? (
+                {proEndsFarOff ? null : proDetails.willRenew ? (
                   <p className="mt-1 text-cp-small font-bold text-ink">
                     Renews {formatDate(proDetails.expiresAtMs) ?? "soon"}
                   </p>
@@ -280,7 +287,7 @@ export function AccountProStatus({ user }: { user: User }) {
                   ))}
                 </ul>
 
-                {proDetails.willRenew ? (
+                {proEndsFarOff ? null : proDetails.willRenew ? (
                   // Opens RevenueCat's own hosted billing portal, where
                   // canceling actually happens — there's no separate
                   // "Downgrade" step of ours in front of it anymore.
