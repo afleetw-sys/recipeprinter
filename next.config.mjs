@@ -81,6 +81,14 @@ const nextConfig = {
     ];
   },
 
+  // Resized images are kept for 31 days rather than Next's 60 seconds. At 60s
+  // most landing-page visits and crawls missed the cache and paid for a fresh
+  // resize, which is slower to show and billed by Vercel. Files in public/ are
+  // replaced under a new name or not at all, so a long cache can't go stale.
+  images: {
+    minimumCacheTTL: 60 * 60 * 24 * 31,
+  },
+
   // PostHog's API is trailing-slash sensitive; Next's default redirect breaks it.
   skipTrailingSlashRedirect: true,
 };

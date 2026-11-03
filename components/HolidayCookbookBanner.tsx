@@ -21,8 +21,8 @@ import { useVisitorPrices } from "@/lib/visitorCurrency";
  */
 /** A photograph of a printed, spiral-bound book. */
 const COOKBOOK_PEEK_IMAGE = "/images/cookbook.jpeg";
-const COOKBOOK_PEEK_WIDTH = 3648;
-const COOKBOOK_PEEK_HEIGHT = 5472;
+const COOKBOOK_PEEK_WIDTH = 1600;
+const COOKBOOK_PEEK_HEIGHT = 2400;
 
 export function HolidayCookbookBanner({
   onStart,
