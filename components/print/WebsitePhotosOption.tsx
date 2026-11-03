@@ -24,8 +24,7 @@ export function WebsitePhotosOption({
       onChange={(event) => onChange(event.target.checked)}
       hint={
         <>
-          They belong to the sites they came from, so they&apos;re fine in a book you keep or give as a gift,
-          but not one you sell.{" "}
+          Fine for gifts, not for books you sell.{" "}
           <a href="/terms#copyright-in-recipes" target="_blank" rel="noopener noreferrer">
             About photos
           </a>
