@@ -20,6 +20,7 @@ import {
   ICON_SIZE,
   ImageIcon,
   InfoIcon,
+  AlertIcon,
   LinkIcon,
   MoveToSectionIcon,
   PagePlusIcon,
@@ -55,6 +56,8 @@ import type { useDeckScroller } from "@/lib/useDeckScroller";
 import { isPhotoOpenClick, photoDialogKey, type PhotoPress } from "@/lib/photoOpenGesture";
 import { LineSelectionToolbar } from "@/components/print/LineSelectionToolbar";
 import { TextFieldToolbar } from "@/components/print/TextFieldToolbar";
+import { usePageOverflow } from "@/lib/pageOverflow";
+import { pageAddressForSlot } from "@/lib/elementStyles";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { PageToolbar, PageToolbarItem } from "@/components/print/PageToolbar";
 import { FailedImportCard } from "@/components/print/FailedImportCard";
@@ -497,6 +500,14 @@ export function PrintDeck(props: PrintDeckProps) {
     renderAllPages,
   } = props;
 
+  // What doesn't fit on the page being looked at (lib/pageOverflow.ts). Only
+  // a book's own pages: a recipe page fits itself, moving and shrinking its
+  // lines, so its words never run off.
+  const activeSheet = activeNavItem ? sheets[activeNavItem.sheetIndex] : undefined;
+  const activeSlot = activeSheet && activeNavItem ? (activeSheet.slots[activeNavItem.slotIndex] ?? activeSheet.slots.find(Boolean)) : undefined;
+  const overflowAddress = activeSlot && activeSlot.kind !== "recipe" ? pageAddressForSlot(activeSlot) : undefined;
+  const overflowing = usePageOverflow(overflowAddress, ".recipe-page-canvas");
+
 
   // The empty-state outline is the page at the deck's scale, unless that is
   // too small to hold its words (see `emptyOutlineIsCompact`).
@@ -891,6 +902,15 @@ export function PrintDeck(props: PrintDeckProps) {
               bar is already the floating thing that acts on this page, it
               already separates its groups with a hairline, and one object
               reads as chrome where two read as an interruption. */}
+          {/* Words running past their box print cut off, and nothing else
+              would say so. Stays while it's true, like the contents hint,
+              and the words themselves are outlined on the page. */}
+          {overflowing.length > 0 && (
+            <div className="recipe-page-toolbar__group recipe-page-toolbar__hint recipe-page-toolbar__hint--warning" role="status">
+              <AlertIcon size={ICON_SIZE.sm} aria-hidden />
+              <span>Some text doesn&apos;t fit on this page. A smaller text size or fewer words will make it fit.</span>
+            </div>
+          )}
           {navItem.kind === "toc" && !navItem.continued && (
             <div className="recipe-page-toolbar__group recipe-page-toolbar__hint">
               <InfoIcon size={ICON_SIZE.sm} aria-hidden />
@@ -1470,6 +1490,18 @@ export function PrintDeck(props: PrintDeckProps) {
           {/* Body/heading and bold/italic, floating over the line being typed
               rather than joining the page's bar. It anchors itself to whatever
               field has focus, so it is mounted once for the whole deck. */}
+          {overflowAddress && overflowing.length > 0 && (
+            // Outlines the words that don't fit, wherever they are on the
+            // page, without the page's faces knowing anything about it.
+            <style>
+              {`@media screen { ${overflowing
+                .map(
+                  (name) =>
+                    `.recipe-page-canvas [data-element-page="${CSS.escape(overflowAddress)}"][data-element="${CSS.escape(name)}"]`,
+                )
+                .join(", ")} { outline: 1.5px dashed var(--cp-error); outline-offset: 2px; } }`}
+            </style>
+          )}
           <TextFieldToolbar
             inlineEdit={activeInlineEdit}
             zoom={deckZoom}

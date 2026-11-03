@@ -1964,6 +1964,14 @@
 .recipe-page-toolbar__hint svg {
   flex: none;
 }
+/* Text running off the page (lib/pageOverflow.ts): the sentence stays in the
+   bar's ink, the mark takes the error colour the outline on the page uses. */
+.recipe-page-toolbar__hint--warning {
+  color: var(--cp-ink);
+}
+.recipe-page-toolbar__hint--warning svg {
+  color: var(--cp-error);
+}
 /* "Click" with a mouse, "Tap" on a touch screen. */
 .recipe-page-toolbar__hint-touch { display: none; }
 .recipe-page-canvas__controls {
