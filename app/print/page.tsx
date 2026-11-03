@@ -5112,8 +5112,8 @@ export default function PrintPage() {
       <>
         {twoPerSheetOffered && (
           <Checkbox
-              label="Print 2 cards on each sheet"
-              hint="Leave off for 4x6 cardstock."
+              label="Print 2 cards per sheet"
+              hint="Uncheck for 4x6 cardstock."
               checked={twoPerSheet}
               onChange={(event) => setTwoPerSheet(event.target.checked)}
           />
