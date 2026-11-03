@@ -5387,11 +5387,15 @@ export default function PrintPage() {
               label="Print 2 cards per sheet"
               hint="Uncheck for 4×6 card stock."
               checked={twoPerSheet}
-              onChange={(event) => setTwoPerSheet(event.target.checked)}
+              onChange={(event) => {
+                setTwoPerSheet(event.target.checked);
+                // A sheet of two gets cut, so it starts with lines to cut
+                // along (and the bleed that comes with them, TwoUpPrintPages).
+                if (event.target.checked) setShowCutLines(true);
+              }}
           />
         )}
-        {/* Two to a sheet always prints its cut lines (TwoUpPrintPages). */}
-        {cardSize === "card-6x4" && !(twoPerSheet && twoPerSheetOffered) && (
+        {cardSize === "card-6x4" && (
           <Checkbox
               label="Cut lines"
               hint="Only shows when printed."

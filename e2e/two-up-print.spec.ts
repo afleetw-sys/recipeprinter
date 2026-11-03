@@ -10,8 +10,9 @@ import { firestoreRunning, grantPro, returningUser, signIn } from "./account";
  * and back, now carries its edge out past the cut line, so the cut lands in
  * colour on both sides.
  *
- * Checked on every theme: wherever a face is coloured just inside its edge,
- * it is coloured just outside it too. Real paint, so a real browser.
+ * Checked on every theme, with cut lines on (the bleed comes with them):
+ * wherever a face is coloured just inside its edge, it is coloured just
+ * outside it too. Real paint, so a real browser.
  *
  * Two-per-sheet is Pro with two recipes, so a Pro account (see e2e/account.ts)
  * with two recipes opened from session storage: no import, nothing billed.
@@ -114,7 +115,7 @@ test("two cards on a sheet carry every theme's edge past the cut line, front and
     sessionStorage.setItem("recipeprinter:print-job:current:v1", JSON.stringify({ ids: items.map((item) => item.id) }));
     localStorage.setItem(
       "recipeprinter:print-settings:v1",
-      JSON.stringify({ cardSize: "card-6x4", doubleSided: true, twoPerSheet: true, showPhoto: false, showRecipeLink: false }),
+      JSON.stringify({ cardSize: "card-6x4", doubleSided: true, twoPerSheet: true, showCutLines: true, showPhoto: false, showRecipeLink: false }),
     );
   }, [recipe("r1", "Lemon Chicken"), recipe("r2", "Pea Soup")]);
   await page.setViewportSize({ width: 1280, height: 900 });

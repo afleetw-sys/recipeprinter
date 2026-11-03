@@ -1613,6 +1613,7 @@ export function PrintDeck(props: PrintDeckProps) {
               sheets={sheets}
               template={previewTemplate}
               showDescription={showDescription}
+              showCutLines={showCutLines}
               doubleSided={continueOnBack}
               fontScale={previewFontScale}
               pageLooks={projectMeta.meta.pageLooks}

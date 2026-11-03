@@ -25,6 +25,7 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
   sheets,
   template,
   showDescription,
+  showCutLines,
   doubleSided,
   fontScale,
   photoScale,
@@ -33,6 +34,9 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
   sheets: PageSheet[];
   template: RecipePrintTemplate;
   showDescription: boolean;
+  /** Cut lines, and the bleed past them (see `Slot`): the two come together,
+      since with no line to cut along the colour's own edge is the guide. */
+  showCutLines: boolean;
   /** Same flag the deck carries: some themes draw a back's art the other
       way round when it prints behind its front. */
   doubleSided: boolean;
@@ -50,9 +54,9 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
 
   return (
     <div
-      // Always cut lines: this sheet is always cut, and the colour runs past
-      // the cut (see `Slot`), so the colour's edge is no guide to cut along.
-      className="rp-twoup recipe-print-preview recipe-print-preview--card-6x4 recipe-print-preview--cut-lines"
+      className={`rp-twoup recipe-print-preview recipe-print-preview--card-6x4 ${
+        showCutLines ? "recipe-print-preview--cut-lines" : ""
+      }`}
       style={{ ...fontScaleVars(fontScale), ...photoScaleVars(photoScale) }}
       data-double-sided={doubleSided ? "true" : "false"}
       aria-hidden
@@ -69,7 +73,7 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
               }`}
             >
               {page.cards.map((card, half) => (
-                <Slot key={half} filled={Boolean(card)}>
+                <Slot key={half} filled={Boolean(card)} bleed={showCutLines}>
                   {card && (
                     <ElementPageProvider page={pageAddressForSlot(card.slot)} looks={pageLooks}>
                     <RecipeCardFace
@@ -102,7 +106,7 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
                 className={`rp-twoup__page rp-twoup__page--back ${isLast ? "rp-twoup__page--last" : ""}`}
               >
                 {page.cards.map((card, half) => (
-                  <Slot key={half} filled={Boolean(card?.slot.back)}>
+                  <Slot key={half} filled={Boolean(card?.slot.back)} bleed={showCutLines}>
                     {card && (
                       <ElementPageProvider page={pageAddressForSlot(card.slot)} looks={pageLooks}>
                         <BackFace card={card} template={template} />
@@ -131,13 +135,16 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
  * the face's own edge. Text never reaches the strip: every theme pads its
  * card well over 1/8in. The corners, too small to matter, take a copy scaled
  * up behind the card.
+ *
+ * Only with cut lines on. Without them the colour's own edge is what gets cut
+ * along, so it has to stop at the card's edge as it always did.
  */
 const BLEED_SIDES = ["top", "right", "bottom", "left"] as const;
 
-function Slot({ filled, children }: { filled: boolean; children: ReactNode }) {
+function Slot({ filled, bleed, children }: { filled: boolean; bleed: boolean; children: ReactNode }) {
   return (
     <div className={`rp-twoup__slot ${filled ? "rp-twoup__slot--filled" : ""}`}>
-      {filled && (
+      {filled && bleed && (
         <>
           <div className="rp-twoup__bleed rp-twoup__bleed--corners">{children}</div>
           {BLEED_SIDES.map((side) => (
