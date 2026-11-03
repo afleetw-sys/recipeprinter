@@ -52,13 +52,13 @@
   --recipe-card-padding-bottom: 0.22in;
   --recipe-card-columns: 1.7in 1fr;
   --recipe-card-gap: 0.19in;
-  --recipe-card-title-size: calc(16.5pt * var(--recipe-font-scale, 1));
-  --recipe-card-meta-size: calc(7.2pt * var(--recipe-font-scale, 1));
-  --recipe-card-label-size: calc(7pt * var(--recipe-font-scale, 1));
-  --recipe-card-body-size: calc(7.8pt * var(--recipe-font-scale, 1));
-  --recipe-card-step-size: calc(7.8pt * var(--recipe-font-scale, 1));
-  --recipe-card-step-gap: calc(4.2pt * var(--recipe-font-scale, 1));
-  --recipe-card-ingredient-gap: calc(1.8pt * var(--recipe-font-scale, 1));
+  --recipe-card-title-size-base: 16.5pt;
+  --recipe-card-meta-size-base: 7.2pt;
+  --recipe-card-label-size-base: 7pt;
+  --recipe-card-body-size-base: 7.8pt;
+  --recipe-card-step-size-base: 7.8pt;
+  --recipe-card-step-gap-base: 4.2pt;
+  --recipe-card-ingredient-gap-base: 1.8pt;
   --recipe-card-photo-size: 0.92in;
   /* The cook's photo size (lib/photoScale.ts), set inline beside
      `--recipe-font-scale`. It followed the text size at half its step until
@@ -67,6 +67,28 @@
      keeps its size. Every photo width below is (box - mat) * this + mat. */
   --recipe-photo-scale: 1;
   --recipe-card-footer-reserve: 0.28in;
+  --recipe-card-title-size: calc(var(--recipe-card-title-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-meta-size: calc(var(--recipe-card-meta-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-label-size: calc(var(--recipe-card-label-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-body-size: calc(var(--recipe-card-body-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-step-size: calc(var(--recipe-card-step-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-step-gap: calc(var(--recipe-card-step-gap-base) * var(--recipe-font-scale, 1));
+  --recipe-card-ingredient-gap: calc(var(--recipe-card-ingredient-gap-base) * var(--recipe-font-scale, 1));
+}
+
+/* One part of a page at its own text size (lib/textSizes.tsx): the part's
+   element carries its own `--recipe-font-scale`. The role sizes above are
+   worked out where they are declared, so they are declared again here, where
+   that variable is the part's. Each base is inherited from the page, so 6x4,
+   Letter and every theme keep their own. */
+.recipe-print-preview [data-text-part] {
+  --recipe-card-title-size: calc(var(--recipe-card-title-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-meta-size: calc(var(--recipe-card-meta-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-label-size: calc(var(--recipe-card-label-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-body-size: calc(var(--recipe-card-body-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-step-size: calc(var(--recipe-card-step-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-step-gap: calc(var(--recipe-card-step-gap-base) * var(--recipe-font-scale, 1));
+  --recipe-card-ingredient-gap: calc(var(--recipe-card-ingredient-gap-base) * var(--recipe-font-scale, 1));
 }
 
 .recipe-print-shell {
@@ -4549,15 +4571,22 @@ textarea.recipe-page-fields__input {
   --recipe-card-padding-bottom: 0.5in;
   --recipe-card-columns: 2.65in 1fr;
   --recipe-card-gap: 0.46in;
-  --recipe-card-title-size: calc(25pt * var(--recipe-font-scale, 1));
-  --recipe-card-meta-size: calc(8.6pt * var(--recipe-font-scale, 1));
+  --recipe-card-title-size-base: 25pt;
+  --recipe-card-meta-size-base: 8.6pt;
   --recipe-card-meta-gap: 9px;
-  --recipe-card-label-size: calc(8pt * var(--recipe-font-scale, 1));
-  --recipe-card-body-size: calc(9.6pt * var(--recipe-font-scale, 1));
-  --recipe-card-step-size: calc(9.6pt * var(--recipe-font-scale, 1));
-  --recipe-card-step-gap: calc(5.2pt * var(--recipe-font-scale, 1));
-  --recipe-card-ingredient-gap: calc(3.2pt * var(--recipe-font-scale, 1));
+  --recipe-card-label-size-base: 8pt;
+  --recipe-card-body-size-base: 9.6pt;
+  --recipe-card-step-size-base: 9.6pt;
+  --recipe-card-step-gap-base: 5.2pt;
+  --recipe-card-ingredient-gap-base: 3.2pt;
   --recipe-card-photo-size: 1.55in;
+  --recipe-card-title-size: calc(var(--recipe-card-title-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-meta-size: calc(var(--recipe-card-meta-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-label-size: calc(var(--recipe-card-label-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-body-size: calc(var(--recipe-card-body-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-step-size: calc(var(--recipe-card-step-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-step-gap: calc(var(--recipe-card-step-gap-base) * var(--recipe-font-scale, 1));
+  --recipe-card-ingredient-gap: calc(var(--recipe-card-ingredient-gap-base) * var(--recipe-font-scale, 1));
 }
 
 .recipe-card-set {

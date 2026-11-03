@@ -1,5 +1,6 @@
 "use client";
 
+import type { TextPartProps } from "@/lib/textSizes";
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { nodesToRichText, richTextToHtml } from "@/lib/richText";
 
@@ -36,6 +37,7 @@ export function InlineRichField({
   onCommit,
   onCancel,
   onSplit,
+  partProps,
 }: {
   /** Marker text. Read ONCE — see the ref below. */
   value: string;
@@ -49,6 +51,9 @@ export function InlineRichField({
   /** Enter splits the line here, for ingredients and steps. Absent = Enter
       finishes the edit, which is what the single-value fields want. */
   onSplit?: (before: string, after: string) => void;
+  /** A page part's marker and size (lib/textSizes.tsx), when the field IS
+      the part rather than a line inside one. */
+  partProps?: TextPartProps;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const initialHtml = useRef(richTextToHtml(value));
@@ -130,6 +135,7 @@ export function InlineRichField({
 
   return (
     <div
+      {...partProps}
       ref={ref}
       role="textbox"
       aria-label={ariaLabel}

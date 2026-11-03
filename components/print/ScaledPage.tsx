@@ -14,7 +14,11 @@ import {
   type PrintCardSize,
   type RecipePrintTemplate,
 } from "@/components/RecipeCardPrint";
-import type { PageSheet, SheetSlot, ImageSheetSlot } from "@/lib/usePrintSheets";
+import type {
+  PageSheet,
+  SheetSlot,
+  ImageSheetSlot,
+} from "@/lib/usePrintSheets";
 import { photoGridLayout } from "@/lib/photoGrid";
 import { startFocalDrag } from "@/lib/focalDrag";
 import {
@@ -36,6 +40,12 @@ import {
 } from "@/lib/cookbookPresets";
 import type { CookbookPresetId } from "@/types/recipe";
 import { fontScaleVars, type FontScale } from "@/lib/fontScale";
+import {
+  TextPageProvider,
+  textPageForSlot,
+  textPartProps,
+  type TextSizes,
+} from "@/lib/textSizes";
 import { photoScaleVars, type PhotoScale } from "@/lib/photoScale";
 
 /**
@@ -54,7 +64,7 @@ import { photoScaleVars, type PhotoScale } from "@/lib/photoScale";
  * A NEGATIVE `activeSlotIndex` turns all of that off and shows every face at
  * once — see `showAllFaces` below, and the note on the prop.
  */
-export const ScaledPage = memo(function ScaledPage({
+function ScaledPageBody({
   sheet,
   isLastSheet,
   activeSlotIndex,
@@ -80,6 +90,8 @@ export const ScaledPage = memo(function ScaledPage({
   preset,
   fontScale,
   photoScale,
+  textSizes,
+  sizeTargets = false,
 }: {
   sheet: PageSheet;
   isLastSheet: boolean;
@@ -159,21 +171,33 @@ export const ScaledPage = memo(function ScaledPage({
   fontScale?: FontScale;
   /** The cook's photo size, on recipe pages only. */
   photoScale?: PhotoScale;
+  /** Sizes of single parts of pages (lib/textSizes.tsx). */
+  textSizes?: TextSizes;
+  /** This is the deck's page being edited: words with no field of their own
+      can be clicked for the text bar's Size. Never the export or the rail. */
+  sizeTargets?: boolean;
 }) {
   // A cookbook page is the preset's real sheet, on screen exactly as in the
   // file — so the preview cannot show a page shape the book does not have (see
   // `presetCardDims`). A plain card project keeps its own fixed page.
   const bookPreset = getCookbookPreset(preset);
   const dims = cookbookMode ? presetCardDims(bookPreset) : PAGE_DIMS[size];
-  const cardVars = cookbookMode ? (presetCardVars(bookPreset) as CSSProperties) : undefined;
+  const cardVars = cookbookMode
+    ? (presetCardVars(bookPreset) as CSSProperties)
+    : undefined;
   // The text size reaches every page of a book, not just its recipes: the
   // cover, contents, chapter openers and the pages a cook adds grow with it
   // too, each keeping its own size relative to the rest. Photo size stays a
   // recipe-page setting.
-  const bookPageVars = { ...cardVars, ...fontScaleVars(fontScale) } as CSSProperties;
+  const bookPageVars = {
+    ...cardVars,
+    ...fontScaleVars(fontScale),
+  } as CSSProperties;
   const imageSource =
     sheet.layoutKind === "image"
-      ? sheet.slots.find((slot): slot is ImageSheetSlot => slot?.kind === "image")?.imageUrl
+      ? sheet.slots.find(
+          (slot): slot is ImageSheetSlot => slot?.kind === "image",
+        )?.imageUrl
       : undefined;
   const [imageCanReposition, setImageCanReposition] = useState(false);
   useEffect(() => {
@@ -220,7 +244,8 @@ export const ScaledPage = memo(function ScaledPage({
   // bottom of a page that fit on screen.
   const showAllFaces = activeSlotIndex < 0;
 
-  const anySlot = sheet.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
+  const anySlot =
+    sheet.slots.find((slot): slot is SheetSlot => slot !== null) ?? null;
   if (!anySlot) return null;
 
   // Cookbook print-format geometry is applied only at EXPORT time, never on
@@ -238,7 +263,9 @@ export const ScaledPage = memo(function ScaledPage({
         : "";
   // Base class (paper bleed + binding side) plus the per-page bucket: `safe`
   // scales text into the margins; `art` fills the sheet so covers/photos bleed.
-  const presetBaseClass = cookbookMode ? `recipe-print-preview--book-preset ${gutterClass}` : "";
+  const presetBaseClass = cookbookMode
+    ? `recipe-print-preview--book-preset ${gutterClass}`
+    : "";
   const presetSafeClass = cookbookMode ? "recipe-print-preview--book-safe" : "";
   const presetArtClass = cookbookMode ? "recipe-print-preview--book-art" : "";
 
@@ -257,7 +284,13 @@ export const ScaledPage = memo(function ScaledPage({
       return (
         <div
           className="recipe-page-scaler"
-          style={{ "--page-scale": scale, "--page-w": `${dims.w}px`, "--page-h": `${dims.h}px` } as CSSProperties}
+          style={
+            {
+              "--page-scale": scale,
+              "--page-w": `${dims.w}px`,
+              "--page-h": `${dims.h}px`,
+            } as CSSProperties
+          }
         >
           <div className="recipe-page-scaler__inner">
             <div
@@ -265,7 +298,9 @@ export const ScaledPage = memo(function ScaledPage({
               style={bookPageVars}
               data-double-sided="false"
             >
-              <div className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}>
+              <div
+                className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}
+              >
                 <div
                   className={`recipe-card-page recipe-card-page--front recipe-card-page--image ${
                     isLastSheet ? "recipe-card-page--no-break" : ""
@@ -284,11 +319,19 @@ export const ScaledPage = memo(function ScaledPage({
     const zoom = clampImageZoom(imageEdit?.zoom ?? imageSlot.zoom ?? 1);
     // A photo that exactly fits its page has no crop to drag around — until it
     // is zoomed in, which creates that travel. So zoom decides this too.
-    const repositionable = Boolean(imageEdit && (imageCanReposition || zoom > IMAGE_ZOOM_MIN));
+    const repositionable = Boolean(
+      imageEdit && (imageCanReposition || zoom > IMAGE_ZOOM_MIN),
+    );
     return (
       <div
         className="recipe-page-scaler"
-        style={{ "--page-scale": scale, "--page-w": `${dims.w}px`, "--page-h": `${dims.h}px` } as CSSProperties}
+        style={
+          {
+            "--page-scale": scale,
+            "--page-w": `${dims.w}px`,
+            "--page-h": `${dims.h}px`,
+          } as CSSProperties
+        }
       >
         <div className="recipe-page-scaler__inner">
           <div
@@ -296,7 +339,9 @@ export const ScaledPage = memo(function ScaledPage({
             style={bookPageVars}
             data-double-sided="false"
           >
-            <div className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}>
+            <div
+              className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}
+            >
               <div
                 className={`recipe-card-page recipe-card-page--front recipe-card-page--image ${
                   isLastSheet ? "recipe-card-page--no-break" : ""
@@ -306,7 +351,9 @@ export const ScaledPage = memo(function ScaledPage({
                 <img
                   referrerPolicy="no-referrer"
                   className={`recipe-image-spread__photo ${
-                    repositionable ? "recipe-image-spread__photo--draggable" : ""
+                    repositionable
+                      ? "recipe-image-spread__photo--draggable"
+                      : ""
                   }`}
                   src={imageSlot.imageUrl}
                   alt=""
@@ -336,9 +383,13 @@ export const ScaledPage = memo(function ScaledPage({
                       setImageCanReposition(false);
                       return;
                     }
-                    const imageAspect = image.naturalWidth / image.naturalHeight;
+                    const imageAspect =
+                      image.naturalWidth / image.naturalHeight;
                     const frameAspect = dims.w / dims.h;
-                    const cropRatio = Math.max(imageAspect / frameAspect, frameAspect / imageAspect);
+                    const cropRatio = Math.max(
+                      imageAspect / frameAspect,
+                      frameAspect / imageAspect,
+                    );
                     // Ignore tiny rounding/aspect differences that technically
                     // crop a sliver but don't create useful drag travel.
                     setImageCanReposition(cropRatio > 1.015);
@@ -353,12 +404,18 @@ export const ScaledPage = memo(function ScaledPage({
                           startFocalDrag(
                             event,
                             { x: imageEdit.focusX, y: imageEdit.focusY },
-                            (point) => imageEdit.onChange(Math.round(point.x), Math.round(point.y)),
+                            (point) =>
+                              imageEdit.onChange(
+                                Math.round(point.x),
+                                Math.round(point.y),
+                              ),
                           )
                       : undefined
                   }
                 />
-                <span className="photo-unavailable-message">Photo unavailable</span>
+                <span className="photo-unavailable-message">
+                  Photo unavailable
+                </span>
                 {repositionable && (
                   <span className="recipe-image-spread__hint no-print">
                     {/* Just the drag. Pinching stopped zooming the photo when a
@@ -412,11 +469,19 @@ export const ScaledPage = memo(function ScaledPage({
   // section's edit controls on the facing divider page).
   if (anySlot.kind === "section-photo") {
     const gridLayout =
-      anySlot.mode === "grid" ? photoGridLayout(anySlot.gridImages?.length ?? 0) : null;
+      anySlot.mode === "grid"
+        ? photoGridLayout(anySlot.gridImages?.length ?? 0)
+        : null;
     return (
       <div
         className="recipe-page-scaler"
-        style={{ "--page-scale": scale, "--page-w": `${dims.w}px`, "--page-h": `${dims.h}px` } as CSSProperties}
+        style={
+          {
+            "--page-scale": scale,
+            "--page-w": `${dims.w}px`,
+            "--page-h": `${dims.h}px`,
+          } as CSSProperties
+        }
       >
         <div className="recipe-page-scaler__inner">
           <div
@@ -424,7 +489,9 @@ export const ScaledPage = memo(function ScaledPage({
             style={bookPageVars}
             data-double-sided="false"
           >
-            <div className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}>
+            <div
+              className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}
+            >
               <div
                 className={`recipe-card-page recipe-card-page--front recipe-card-page--image ${
                   isLastSheet ? "recipe-card-page--no-break" : ""
@@ -441,27 +508,53 @@ export const ScaledPage = memo(function ScaledPage({
                       draggable={false}
                       loading="lazy"
                       decoding="async"
-                      onLoad={(event) => markImageAvailable(event.currentTarget)}
-                      onError={(event) => markImageUnavailable(event.currentTarget)}
+                      onLoad={(event) =>
+                        markImageAvailable(event.currentTarget)
+                      }
+                      onError={(event) =>
+                        markImageUnavailable(event.currentTarget)
+                      }
                     />
-                    <span className="photo-unavailable-message">Photo unavailable</span>
+                    <span className="photo-unavailable-message">
+                      Photo unavailable
+                    </span>
                   </>
                 ) : anySlot.mode === "grid" && gridLayout ? (
                   <div
                     className="recipe-card__cover-photo recipe-card__cover-photo--grid"
-                    style={{ "--cover-grid-cols": gridLayout.columns } as CSSProperties}
+                    style={
+                      {
+                        "--cover-grid-cols": gridLayout.columns,
+                      } as CSSProperties
+                    }
                     aria-hidden
                   >
                     {(anySlot.gridImages ?? []).map((url, index) => (
                       <span
                         key={`${url}-${index}`}
                         className={`recipe-card__cover-grid-cell ${
-                          gridLayout.firstSpans && index === 0 ? "recipe-card__cover-grid-img--wide" : ""
+                          gridLayout.firstSpans && index === 0
+                            ? "recipe-card__cover-grid-img--wide"
+                            : ""
                         }`}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img referrerPolicy="no-referrer" src={url} alt="" draggable={false} className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
-                        <span className="photo-unavailable-message">Photo unavailable</span>
+                        <img
+                          referrerPolicy="no-referrer"
+                          src={url}
+                          alt=""
+                          draggable={false}
+                          className="recipe-card__cover-grid-img"
+                          onLoad={(event) =>
+                            markImageAvailable(event.currentTarget)
+                          }
+                          onError={(event) =>
+                            markImageUnavailable(event.currentTarget)
+                          }
+                        />
+                        <span className="photo-unavailable-message">
+                          Photo unavailable
+                        </span>
                       </span>
                     ))}
                   </div>
@@ -473,8 +566,17 @@ export const ScaledPage = memo(function ScaledPage({
                 ) : null}
                 {anySlot.caption?.trim() && (
                   <p
+                    {...textPartProps(
+                      textPageForSlot(anySlot),
+                      textSizes?.[textPageForSlot(anySlot) ?? ""],
+                      "caption",
+                      undefined,
+                      sizeTargets,
+                    )}
                     className={`recipe-card__chapter-photo-caption ${
-                      anySlot.mode === "none" ? "recipe-card__chapter-photo-caption--plain" : ""
+                      anySlot.mode === "none"
+                        ? "recipe-card__chapter-photo-caption--plain"
+                        : ""
                     }`}
                   >
                     {anySlot.caption}
@@ -502,7 +604,13 @@ export const ScaledPage = memo(function ScaledPage({
     return (
       <div
         className="recipe-page-scaler"
-        style={{ "--page-scale": scale, "--page-w": `${dims.w}px`, "--page-h": `${dims.h}px` } as CSSProperties}
+        style={
+          {
+            "--page-scale": scale,
+            "--page-w": `${dims.w}px`,
+            "--page-h": `${dims.h}px`,
+          } as CSSProperties
+        }
       >
         <div className="recipe-page-scaler__inner">
           <div
@@ -510,7 +618,9 @@ export const ScaledPage = memo(function ScaledPage({
             style={bookPageVars}
             data-double-sided="false"
           >
-            <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>
+            <div
+              className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}
+            >
               <div
                 className={`recipe-card-page recipe-card-page--front ${
                   isLastSheet ? "recipe-card-page--no-break" : ""
@@ -534,15 +644,26 @@ export const ScaledPage = memo(function ScaledPage({
   // Divider and cover sheets are always a single slot, single-sided, on their
   // own dedicated page — render the whole sheet as one face rather than the
   // front/back card-page structure below, which only recipes need.
-  if (anySlot.kind === "divider" || anySlot.kind === "cover" || anySlot.kind === "toc") {
+  if (
+    anySlot.kind === "divider" ||
+    anySlot.kind === "cover" ||
+    anySlot.kind === "toc"
+  ) {
     // A cover/back is art-dominant (fill the sheet, bleed the artwork); a TOC or
     // text divider is text-dominant (scale into the safe area over bleeding
     // paper).
-    const bucketClass = anySlot.kind === "cover" ? presetArtClass : presetSafeClass;
+    const bucketClass =
+      anySlot.kind === "cover" ? presetArtClass : presetSafeClass;
     return (
       <div
         className="recipe-page-scaler"
-        style={{ "--page-scale": scale, "--page-w": `${dims.w}px`, "--page-h": `${dims.h}px` } as CSSProperties}
+        style={
+          {
+            "--page-scale": scale,
+            "--page-w": `${dims.w}px`,
+            "--page-h": `${dims.h}px`,
+          } as CSSProperties
+        }
       >
         <div className="recipe-page-scaler__inner">
           <div
@@ -550,8 +671,12 @@ export const ScaledPage = memo(function ScaledPage({
             style={bookPageVars}
             data-double-sided="false"
           >
-            <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>
-              <div className={`recipe-card-page recipe-card-page--front ${isLastSheet ? "recipe-card-page--no-break" : ""}`}>
+            <div
+              className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}
+            >
+              <div
+                className={`recipe-card-page recipe-card-page--front ${isLastSheet ? "recipe-card-page--no-break" : ""}`}
+              >
                 {anySlot.kind === "divider" ? (
                   <DividerFace
                     title={anySlot.displayTitle}
@@ -564,7 +689,11 @@ export const ScaledPage = memo(function ScaledPage({
                     cardGridImages={anySlot.cardGridImages}
                     intro={anySlot.intro}
                     showEmptyFields={showEmptyFields}
-                    inlineEdit={dividerEdit?.sectionId === anySlot.id ? dividerEdit : undefined}
+                    inlineEdit={
+                      dividerEdit?.sectionId === anySlot.id
+                        ? dividerEdit
+                        : undefined
+                    }
                   />
                 ) : anySlot.kind === "toc" ? (
                   <TableOfContentsFace
@@ -581,7 +710,9 @@ export const ScaledPage = memo(function ScaledPage({
                     template={template}
                     showDecoration={showDecoration}
                     showEmptyFields={showEmptyFields}
-                    inlineEdit={coverEdit?.side === anySlot.side ? coverEdit : undefined}
+                    inlineEdit={
+                      coverEdit?.side === anySlot.side ? coverEdit : undefined
+                    }
                   />
                 )}
               </div>
@@ -618,7 +749,11 @@ export const ScaledPage = memo(function ScaledPage({
           className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${presetSafeClass} ${
             showCutLines ? "recipe-print-preview--cut-lines" : ""
           }`}
-          style={{ ...cardVars, ...fontScaleVars(fontScale), ...photoScaleVars(photoScale) }}
+          style={{
+            ...cardVars,
+            ...fontScaleVars(fontScale),
+            ...photoScaleVars(photoScale),
+          }}
           data-double-sided={doubleSided ? "true" : "false"}
         >
           <div
@@ -628,11 +763,16 @@ export const ScaledPage = memo(function ScaledPage({
               className={`recipe-card-page recipe-card-page--front ${
                 lastGroupIsFront ? "recipe-card-page--no-break" : ""
               }`}
-              data-preview-hidden={!showAllFaces && activeSide !== "front" ? "true" : undefined}
+              data-preview-hidden={
+                !showAllFaces && activeSide !== "front" ? "true" : undefined
+              }
               // A page a recipe runs onto: its card draws only the theme's
               // edge, so the page furniture drops to where the art was.
               data-edge-only={
-                cookbookMode && sheet.slots.some((slot) => slot?.kind === "recipe" && slot.isContinuation)
+                cookbookMode &&
+                sheet.slots.some(
+                  (slot) => slot?.kind === "recipe" && slot.isContinuation,
+                )
                   ? "true"
                   : undefined
               }
@@ -641,7 +781,10 @@ export const ScaledPage = memo(function ScaledPage({
               // corner art").
               data-dir={
                 cookbookMode
-                  ? recipeTextDirection(sheet.slots.find((slot) => slot?.kind === "recipe")?.recipe?.language)
+                  ? recipeTextDirection(
+                      sheet.slots.find((slot) => slot?.kind === "recipe")
+                        ?.recipe?.language,
+                    )
                   : undefined
               }
             >
@@ -658,18 +801,20 @@ export const ScaledPage = memo(function ScaledPage({
                   A photo page has a number and still shows nothing — a full-bleed
                   picture with a numeral over it is not a book, it's a mistake.
                   `layoutKind` is what makes it a photo page. */}
-              {cookbookMode && sheet.pageNumber !== undefined && !sheet.layoutKind && (
-                <>
-                  {sheet.runningHeader && (
-                    <div className="recipe-book-runhead" aria-hidden>
-                      {sheet.runningHeader}
+              {cookbookMode &&
+                sheet.pageNumber !== undefined &&
+                !sheet.layoutKind && (
+                  <>
+                    {sheet.runningHeader && (
+                      <div className="recipe-book-runhead" aria-hidden>
+                        {sheet.runningHeader}
+                      </div>
+                    )}
+                    <div className="recipe-book-folio" aria-hidden>
+                      {sheet.pageNumber}
                     </div>
-                  )}
-                  <div className="recipe-book-folio" aria-hidden>
-                    {sheet.pageNumber}
-                  </div>
-                </>
-              )}
+                  </>
+                )}
               {/* Page-level copy of bistro's checker spine, drawn OUTSIDE the
                   transform-scaled card so a spiral export doesn't rasterize the
                   vector (see print.css `.rp-coil …__spine`). Shown only at spiral
@@ -685,38 +830,45 @@ export const ScaledPage = memo(function ScaledPage({
                 // physical page count in sync (see `backGroupNeeded`), not
                 // for the front.
                 slot && slot.kind === "recipe" ? (
-                  <RecipeCardFace
+                  <TextPageProvider
                     key={`front-${slotIndex}`}
-                    recipe={slot.recipe}
-                    ingredients={slot.front.ingredients}
-                    instructions={slot.front.instructions}
-                    side="front"
-                    showHeader={!slot.isContinuation}
-                    layout={slot.front.layout}
-                    contentScale={slot.front.contentScale}
-                    titleFit={slot.front.titleFit}
-                    hasBackFace={slot.hasBack}
-                    showImage={slot.showPhoto}
-                    photoPlaceholder
-                    photoOnFacingPage={slot.hidePhoto}
-                    showSourceUrl={slot.showSourceUrl || revealSourceUrl}
-                    showDescription={showDescription}
-                    continued={slot.isContinuation}
-                    template={template}
-                    showDecoration={showDecoration}
-                    recipeIndex={slot.styleIndex ?? slot.queueIndex}
-                    cookbookMode={cookbookMode}
-                    showEmptyFields={showEmptyFields}
-                    previewHidden={
-                      !showAllFaces && (slotIndex !== activeSlotIndex || activeSide !== "front")
-                    }
-                    inlineEdit={
-                      activeSide === "front" &&
-                      slotIndex === activeSlotIndex
-                        ? inlineEdit
-                        : undefined
-                    }
-                  />
+                    page={textPageForSlot(slot)}
+                    sizes={textSizes}
+                    targets={sizeTargets}
+                  >
+                    <RecipeCardFace
+                      recipe={slot.recipe}
+                      ingredients={slot.front.ingredients}
+                      instructions={slot.front.instructions}
+                      side="front"
+                      showHeader={!slot.isContinuation}
+                      layout={slot.front.layout}
+                      contentScale={slot.front.contentScale}
+                      titleFit={slot.front.titleFit}
+                      hasBackFace={slot.hasBack}
+                      showImage={slot.showPhoto}
+                      photoPlaceholder
+                      photoOnFacingPage={slot.hidePhoto}
+                      showSourceUrl={slot.showSourceUrl || revealSourceUrl}
+                      showDescription={showDescription}
+                      continued={slot.isContinuation}
+                      template={template}
+                      showDecoration={showDecoration}
+                      recipeIndex={slot.styleIndex ?? slot.queueIndex}
+                      cookbookMode={cookbookMode}
+                      showEmptyFields={showEmptyFields}
+                      previewHidden={
+                        !showAllFaces &&
+                        (slotIndex !== activeSlotIndex ||
+                          activeSide !== "front")
+                      }
+                      inlineEdit={
+                        activeSide === "front" && slotIndex === activeSlotIndex
+                          ? inlineEdit
+                          : undefined
+                      }
+                    />
+                  </TextPageProvider>
                 ) : null,
               )}
             </div>
@@ -725,39 +877,48 @@ export const ScaledPage = memo(function ScaledPage({
                 className={`recipe-card-page recipe-card-page--back ${
                   lastGroupIsBack ? "recipe-card-page--no-break" : ""
                 }`}
-                data-preview-hidden={!showAllFaces && activeSide !== "back" ? "true" : undefined}
+                data-preview-hidden={
+                  !showAllFaces && activeSide !== "back" ? "true" : undefined
+                }
               >
                 {sheet.slots.map((slot, slotIndex) => {
                   if (!slot || slot.kind !== "recipe") return null;
 
                   return slot.back ? (
-                    <RecipeCardFace
+                    <TextPageProvider
                       key={`back-${slotIndex}`}
-                      recipe={slot.recipe}
-                      ingredients={slot.back.ingredients}
-                      instructions={slot.back.instructions}
-                      side="back"
-                      showHeader={false}
-                      layout={slot.back.layout}
-                      contentScale={slot.back.contentScale}
-                      titleFit={slot.back.titleFit}
-                      hasBackFace={slot.hasBack}
-                      template={template}
-                      showDecoration={showDecoration}
-                      recipeIndex={slot.styleIndex ?? slot.queueIndex}
-                      cookbookMode={cookbookMode}
-                      showEmptyFields={showEmptyFields}
-                      continued
-                      previewHidden={
-                        !showAllFaces && (slotIndex !== activeSlotIndex || activeSide !== "back")
-                      }
-                      inlineEdit={
-                        activeSide === "back" &&
-                        slotIndex === activeSlotIndex
-                          ? inlineEdit
-                          : undefined
-                      }
-                    />
+                      page={textPageForSlot(slot)}
+                      sizes={textSizes}
+                      targets={sizeTargets}
+                    >
+                      <RecipeCardFace
+                        recipe={slot.recipe}
+                        ingredients={slot.back.ingredients}
+                        instructions={slot.back.instructions}
+                        side="back"
+                        showHeader={false}
+                        layout={slot.back.layout}
+                        contentScale={slot.back.contentScale}
+                        titleFit={slot.back.titleFit}
+                        hasBackFace={slot.hasBack}
+                        template={template}
+                        showDecoration={showDecoration}
+                        recipeIndex={slot.styleIndex ?? slot.queueIndex}
+                        cookbookMode={cookbookMode}
+                        showEmptyFields={showEmptyFields}
+                        continued
+                        previewHidden={
+                          !showAllFaces &&
+                          (slotIndex !== activeSlotIndex ||
+                            activeSide !== "back")
+                        }
+                        inlineEdit={
+                          activeSide === "back" && slotIndex === activeSlotIndex
+                            ? inlineEdit
+                            : undefined
+                        }
+                      />
+                    </TextPageProvider>
                   ) : (
                     <RecipeCardFace
                       key={`back-blank-${slotIndex}`}
@@ -779,5 +940,22 @@ export const ScaledPage = memo(function ScaledPage({
         </div>
       </div>
     </div>
+  );
+}
+
+type ScaledPageProps = Parameters<typeof ScaledPageBody>[0];
+
+export const ScaledPage = memo(function ScaledPage(props: ScaledPageProps) {
+  // Every page reads its own parts' sizes; a sheet holding several recipe
+  // cards gives each card its own below.
+  const first = props.sheet.slots.find(Boolean) ?? null;
+  return (
+    <TextPageProvider
+      page={textPageForSlot(first)}
+      sizes={props.textSizes}
+      targets={props.sizeTargets}
+    >
+      <ScaledPageBody {...props} />
+    </TextPageProvider>
   );
 });

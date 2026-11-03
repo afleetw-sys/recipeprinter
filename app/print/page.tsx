@@ -212,6 +212,7 @@ import {
 } from "@/lib/printSettings";
 import { useFreeThemeOnOpen } from "@/lib/useFreeThemeOnOpen";
 import type { FontScale } from "@/lib/fontScale";
+import { normalizeTextSizes } from "@/lib/textSizes";
 import type { PhotoScale } from "@/lib/photoScale";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { openingPageFor } from "@/lib/frontMatterPage";
@@ -4166,6 +4167,7 @@ export default function PrintPage() {
           photoStyle: project.settings.photoStyle,
           ownPhotosOnly: project.settings.ownPhotosOnly,
           websitePhotos: project.settings.websitePhotos,
+          textSizes: normalizeTextSizes(project.settings.textSizes),
           railSortMode: project.settings.railSortMode,
           lastImportSource: project.settings.lastImportSource,
           cover: project.cover,

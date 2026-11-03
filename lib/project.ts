@@ -15,6 +15,8 @@ import type {
   StashedCookbook,
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
+import type { FontScale } from "@/lib/fontScale";
+import { normalizeTextSizes, withTextSize, type TextSizes } from "@/lib/textSizes";
 import {
   META_RECOVERY_OWNER_KEY,
   recoveryMirrorsAgree,
@@ -176,6 +178,8 @@ export interface ProjectMeta {
   ownPhotosOnly?: boolean;
   /** See `PrintProjectSettings.websitePhotos`. */
   websitePhotos?: boolean;
+  /** See `PrintProjectSettings.textSizes` and lib/textSizes.tsx. */
+  textSizes?: TextSizes;
   /** Whether the cookbook renders a table-of-contents page. */
   tableOfContents?: boolean;
   /** Editable TOC heading text (the entries themselves are derived from the
@@ -396,6 +400,7 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
       : undefined,
     projectId: cleanText(raw.projectId) ?? uid(),
     projectTitle: cleanText(raw.projectTitle),
+    textSizes: normalizeTextSizes(raw.textSizes),
     sections: settled
       ? sections
       : sections.map((section) => ({ ...section, subtitle: removed(section.subtitle) })),
@@ -1092,6 +1097,15 @@ export function useProjectMeta() {
     [update],
   );
 
+  /** One part of one page at its own size, or back to the book's with
+      `undefined`. */
+  const setTextSize = useCallback(
+    (page: string, part: string, size: FontScale | undefined) => {
+      update((current) => ({ ...current, textSizes: withTextSize(current.textSizes, page, part, size) }));
+    },
+    [update],
+  );
+
   const setTocKicker = useCallback(
     (value: string | undefined) => {
       update((current) => ({ ...current, tocKicker: value || undefined }));
@@ -1418,6 +1432,7 @@ export function useProjectMeta() {
     setCookbookWelcomeCompleted,
     setTableOfContents,
     setTocKicker,
+    setTextSize,
     setRailSortMode,
     setLastImportSource,
     setTocTitle,
