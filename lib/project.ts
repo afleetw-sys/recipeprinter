@@ -174,6 +174,8 @@ export interface ProjectMeta {
   /** See `PrintProjectSettings.ownPhotosOnly`. Set when a new book is
       scaffolded; absent on every book made before. */
   ownPhotosOnly?: boolean;
+  /** See `PrintProjectSettings.websitePhotos`. */
+  websitePhotos?: boolean;
   /** Whether the cookbook renders a table-of-contents page. */
   tableOfContents?: boolean;
   /** Editable TOC heading text (the entries themselves are derived from the
@@ -1199,6 +1201,14 @@ export function useProjectMeta() {
     update((current) => (current.ownPhotosOnly ? current : { ...current, ownPhotosOnly: true }));
   }, [update]);
 
+  /** See `PrintProjectSettings.websitePhotos`. */
+  const setWebsitePhotos = useCallback(
+    (value: boolean) => {
+      update((current) => ({ ...current, websitePhotos: value || undefined }));
+    },
+    [update],
+  );
+
   /** Book-wide recipe-photo default (cookbook). See PhotoStyle. */
   const setPhotoStyle = useCallback(
     (value: PhotoStyle) => {
@@ -1422,6 +1432,7 @@ export function useProjectMeta() {
     clearItemLinkOverrides,
     clearSectionPhotoModes,
     setPhotoStyle,
+    setWebsitePhotos,
     setOwnPhotosOnly,
     startNewProject,
     clearCookbookIntent,

@@ -547,6 +547,9 @@ export interface PrintProjectSettings {
       image a recipe imported with. Absent on every older book, which keep
       working exactly as they did. */
   ownPhotosOnly?: boolean;
+  /** In a book with `ownPhotosOnly`: the cook chose to use the photos recipes
+      imported with from websites too (see lib/bookPhotos.ts). Absent = off. */
+  websitePhotos?: boolean;
   /** How the cook chose to order recipes within each section. A property of the
       BOOK, not of the browser looking at it: "A-Z" is a standing instruction
       that keeps sorting as recipes are added and retitled, so it has to come

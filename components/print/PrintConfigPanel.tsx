@@ -64,6 +64,8 @@ interface PrintConfigPanelProps {
   /** Cut lines / two-sided, pre-rendered by the page (`renderPrintSettingsFields`)
       so this panel doesn't need its own copy of which fields apply when. */
   cardSettingsFields: ReactNode;
+  /** See `PrintSetupControls.websitePhotosField`. */
+  websitePhotosField?: ReactNode;
   /** A cookbook's Page tab: the selected page's own settings (PageSettings).
       Present only in a cookbook, where the panel splits into Book and Page. */
   pageSettings?: ReactNode;
@@ -109,6 +111,7 @@ export function PrintConfigPanel({
   setToastMessage,
   hasPrintSettingsFields,
   cardSettingsFields,
+  websitePhotosField,
   pageSettings,
 }: PrintConfigPanelProps) {
   // Which tab a cookbook's panel shows. Kept as the cook left it while they
@@ -233,6 +236,7 @@ export function PrintConfigPanel({
           setShowSourceUrl={setShowSourceUrl}
           hasPrintSettingsFields={hasPrintSettingsFields}
           cardSettingsFields={cardSettingsFields}
+          websitePhotosField={websitePhotosField}
         />
 
         <ThemePicker

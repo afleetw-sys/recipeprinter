@@ -66,8 +66,8 @@ export const PRIVACY_LAST_UPDATED = {
 } as const;
 
 export const TERMS_LAST_UPDATED = {
-  iso: "2026-10-26",
-  display: "October 26, 2026",
+  iso: "2026-11-03",
+  display: "November 3, 2026",
 } as const;
 
 /**
