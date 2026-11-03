@@ -5111,7 +5111,7 @@ export default function PrintPage() {
         {cardSize === "card-6x4" && (
           <Checkbox
               label="Print 2 cards on each sheet"
-              hint="For regular 8.5x11 paper. Leave it off if you're printing on 4x6 cards."
+              hint="Leave off for 4x6 cardstock."
               checked={twoPerSheet}
               onChange={(event) => setTwoPerSheet(event.target.checked)}
           />
