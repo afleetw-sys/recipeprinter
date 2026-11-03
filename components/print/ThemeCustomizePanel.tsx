@@ -2,7 +2,7 @@
 
 import { MenuSelect } from "@/components/MenuSelect";
 import { ProBadge } from "@/components/ProBadge";
-import { ChevronLeftIcon, CrownIcon, ICON_SIZE, UndoIcon } from "@/components/icons";
+import { ChevronLeftIcon, ICON_SIZE, UndoIcon } from "@/components/icons";
 import { TextSizeControl } from "@/components/print/TextSizeControl";
 import type { FontScale } from "@/lib/fontScale";
 import {
@@ -20,8 +20,8 @@ import {
  * switch and these don't.
  *
  * On a free recipe card all of it is Pro, but like a Pro theme it can be tried
- * here and only Print asks: the note up top says so before anything is
- * changed, so Print is never the first a cook hears of it.
+ * here and only Print asks. The crown on the heading says so, as it does on
+ * every other Pro choice.
  */
 export function ThemeCustomizePanel({
   cookbook,
@@ -34,7 +34,6 @@ export function ThemeCustomizePanel({
   customized,
   onReset,
   onBack,
-  onUpgrade,
 }: {
   cookbook: boolean;
   /** A free account on recipe cards: crown everything but each default. */
@@ -49,7 +48,6 @@ export function ThemeCustomizePanel({
   customized: boolean;
   onReset: () => void;
   onBack: () => void;
-  onUpgrade: () => void;
 }) {
   const photoLabel = cookbook ? "Recipe photo size" : "Photo size";
   return (
@@ -59,23 +57,11 @@ export function ThemeCustomizePanel({
           <ChevronLeftIcon size={ICON_SIZE.sm} />
           Themes
         </button>
-        <h3 className="recipe-customize__title">Customize theme</h3>
+        <h3 className="recipe-customize__title">
+          Customize theme
+          {proMarked && <ProBadge variant="inline" label={false} tooltip="Customizing a theme is Pro" />}
+        </h3>
       </div>
-
-      {proMarked && (
-        <div className="recipe-customize__pro">
-          <span className="recipe-customize__pro-icon" aria-hidden>
-            <CrownIcon size={ICON_SIZE.md} />
-          </span>
-          <div className="recipe-customize__pro-text">
-            <p className="recipe-customize__pro-title">Make it yours with Pro</p>
-            <p>Every setting here is free to try on your card. Upgrade when you&apos;re ready to print.</p>
-          </div>
-          <button type="button" className="btn btn-premium btn-compact recipe-customize__pro-button" onClick={onUpgrade}>
-            Upgrade to Pro
-          </button>
-        </div>
-      )}
 
       <TextSizeControl fontScale={fontScale} setFontScale={setFontScale} proMarked={proMarked} cookbook={cookbook} />
 

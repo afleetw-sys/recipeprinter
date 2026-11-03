@@ -3388,65 +3388,30 @@ textarea.recipe-page-fields__input {
   color: var(--cp-ink);
 }
 .recipe-customize__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin: 0;
   color: var(--cp-ink);
   font-size: var(--cp-fs-body);
   font-weight: 800;
 }
-/* Says Customize is Pro before anything is changed, so Print is never the
-   first a free cook hears of it. In the app's Pro colours: the cream tint, a
-   gold crown, and the header's own Upgrade button. */
-.recipe-customize__pro {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: 10px 10px;
-  padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--cp-premium) 25%, transparent);
-  border-radius: 10px;
-  background: var(--cp-premium-soft);
-  color: var(--cp-ink);
-}
-.recipe-customize__pro-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 999px;
-  background: var(--cp-card);
-  color: var(--cp-premium-bright);
-}
-.recipe-customize__pro-text {
+/* Text size (TextSizeControl): the heading with the step's name across from
+   it, over a slider the panel's full width. Drawn by hand rather
+   than left to the browser: a thin rounded track, blue up to a white handle,
+   and a grey mark at each step, blue under the one picked. */
+.recipe-text-size__head {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: var(--cp-fs-caption);
-  line-height: 1.4;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
-.recipe-customize__pro-text p {
-  margin: 0;
-  color: var(--cp-ink-soft);
-}
-.recipe-customize__pro-text .recipe-customize__pro-title {
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-small);
-  font-weight: 700;
-}
-.recipe-customize__pro-button {
-  grid-column: 1 / -1;
-  justify-self: stretch;
-  background: var(--cp-card);
-}
-/* Text size (TextSizeControl): the step's name at that size, over a slider
-   the panel's full width. Drawn by hand rather than left to the browser: a
-   thin rounded track, blue up to a white handle, and a mark at each step. */
 .recipe-text-size__name {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 1.6em;
   color: var(--cp-ink);
+  font-size: var(--cp-fs-body);
   font-weight: 700;
   line-height: 1.2;
 }
@@ -3529,7 +3494,7 @@ textarea.recipe-page-fields__input {
   border-radius: 50%;
   background: var(--cp-line-strong);
 }
-.recipe-text-size__ticks span.is-reached {
+.recipe-text-size__ticks span.is-selected {
   background: var(--cp-accent);
 }
 /* The view fills the panel so its foot can sit at the bottom; the foot
@@ -3620,21 +3585,6 @@ textarea.recipe-page-fields__input {
 .recipe-template-option__scaler .recipe-card__header,
 .recipe-template-option__scaler .recipe-card__cols {
   zoom: 1.4;
-}
-
-/* An in-season theme's tag: "Featured" before the Pro crown, in the crown's
-   own overlay chip (`.pro-badge--overlay` below), in white so the word reads
-   as a label and the gold stays the crown's. */
-.recipe-template-option__featured {
-  gap: 4px;
-  padding: 4px 6px;
-  color: #ffffff;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.recipe-template-option__featured svg {
-  color: var(--cp-premium-bright);
 }
 
 /* The shared Pro indicator (components/ProBadge.tsx). The base

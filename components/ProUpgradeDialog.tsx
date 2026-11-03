@@ -5,7 +5,7 @@ import type { User } from "firebase/auth";
 import { Dialog } from "@/components/Dialog";
 import { SelectTile } from "@/components/Controls";
 import { CookPilotLoginForm } from "@/components/CookPilotAuth";
-import { CheckIcon, CrownIcon, ICON_SIZE, XIcon } from "@/components/icons";
+import { CheckIcon, CrownIcon, ICON_SIZE, PlusIcon, XIcon } from "@/components/icons";
 import { track, type ProDeclineReason } from "@/lib/analytics";
 import {
   loadProDeclineAskedOnAccount,
@@ -14,7 +14,7 @@ import {
   proDeclineAskedOnDevice,
   proPaywallSeenBefore,
 } from "@/lib/proDeclineAsked";
-import { PRO_BENEFITS } from "@/lib/proUpgradeCopy";
+import { GENERIC_COPY } from "@/lib/proUpgradeCopy";
 import {
   PRO_PRICE_FALLBACKS,
   type ProBillingCycle,
@@ -71,7 +71,8 @@ export function ProUpgradeDialog({
   // alike whether or not the caller passes copy of its own.
   title = "Upgrade to RecipePrinter Pro",
   body,
-  benefits = PRO_BENEFITS,
+  highlights = GENERIC_COPY.highlights,
+  more = GENERIC_COPY.more,
   ctaLabel = "Unlock Pro and continue",
   referralChoice,
 }: {
@@ -90,8 +91,10 @@ export function ProUpgradeDialog({
   title?: string;
   /** Shown under the title when the trigger has something to explain. */
   body?: string;
-  /** Same benefits as `PRO_BENEFITS`, reordered to lead with what opened this. */
-  benefits?: string[];
+  /** The benefits listed up front, led by what opened this (`proUpgradeCopy`). */
+  highlights?: string[];
+  /** The rest of Pro, behind "And more". */
+  more?: string[];
   ctaLabel?: string;
   /** When referral Pro has just run out: open on a choice between subscribing
       and inviting a friend, side by side and equally weighted, before plans.
@@ -101,6 +104,7 @@ export function ProUpgradeDialog({
   const [step, setStep] = useState<"choice" | "plan" | "signin" | "decline">(referralChoice ? "choice" : "plan");
   const [invited, setInvited] = useState<"copy" | "native_share" | null>(null);
   const [showLink, setShowLink] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>("monthly");
   const [pendingCycle, setPendingCycle] = useState<ProBillingCycle | null>(null);
   const [formBusy, setFormBusy] = useState(false);
@@ -304,12 +308,26 @@ export function ProUpgradeDialog({
           {body && <p className="text-cp-body text-ink-soft">{body}</p>}
 
           <ul className="flex flex-col gap-cp-1">
-            {benefits.map((benefit) => (
+            {(showMore ? [...highlights, ...more] : highlights).map((benefit) => (
               <li key={benefit} className="flex items-start gap-cp-2 text-cp-body">
                 <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
                 {benefit}
               </li>
             ))}
+            {!showMore && more.length > 0 && (
+              <li>
+                {/* Opens the rest here: this is mid-checkout, and the
+                    pricing page would take the cook away from their work. */}
+                <button
+                  type="button"
+                  className="flex items-start gap-cp-2 text-cp-body text-ink-soft hover:text-ink"
+                  onClick={() => setShowMore(true)}
+                >
+                  <PlusIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
+                  And more
+                </button>
+              </li>
+            )}
           </ul>
 
           <div className="flex flex-col gap-cp-2" role="radiogroup" aria-label="Billing plan">

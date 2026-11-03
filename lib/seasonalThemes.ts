@@ -1,7 +1,7 @@
 /**
  * Seasonal themes: themes with a time of year (Fall, Halloween, Christmas).
  *
- * During its featured dates a seasonal theme is tagged and leads the Pro
+ * During its featured dates a seasonal theme leads the Pro
  * themes. The rest of the year it isn't hidden, only moved into a collapsed
  * "Seasonal themes" group under the main grid: nobody wants Christmas cards
  * offered in July, but a cook making a year-round cookbook still needs the
@@ -39,7 +39,7 @@ export function isSeasonal(theme: ArrangeableTheme): boolean {
   return theme.featured !== undefined;
 }
 
-/** In its featured window: tagged and led with in the picker. */
+/** In its featured window: led with in the picker. */
 export function isFeatured(theme: ArrangeableTheme, date: Date): boolean {
   return theme.featured !== undefined && isInSeason(theme.featured, date);
 }

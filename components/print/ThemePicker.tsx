@@ -8,8 +8,8 @@ import {
 } from "@/components/RecipeCardPrint";
 import { TemplateThumbnail } from "@/components/print/TemplateThumbnail";
 import { ProBadge } from "@/components/ProBadge";
-import { ChevronDownIcon, ChevronRightIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
-import { arrangeThemes, isFeatured } from "@/lib/seasonalThemes";
+import { ChevronDownIcon, ChevronRightIcon, ICON_SIZE } from "@/components/icons";
+import { arrangeThemes } from "@/lib/seasonalThemes";
 import { isPremiumTemplate } from "@/lib/premiumTemplates";
 import { hasTemplateOrProEntitlement } from "@/lib/recipePrinterPurchases";
 import { track } from "@/lib/analytics";
@@ -37,7 +37,7 @@ interface ThemePickerProps {
  * here.
  *
  * Seasonal themes (see lib/seasonalThemes) lead the Pro themes during their
- * featured dates, tagged "Featured" beside the crown. The rest of the year they
+ * featured dates, with no tag: being first is enough. The rest of the year they
  * sit in a collapsed "Seasonal themes" group at the end, still one tap away for
  * a year-round cookbook; it opens on its own when the chosen theme is one of
  * them, so the current theme never looks missing.
@@ -85,10 +85,6 @@ export function ThemePicker({
       premiumTemplate !== null &&
       !hasTemplateOrProEntitlement(customerInfo, option.id) &&
       !cookbookMode;
-    // During its featured dates, a seasonal theme leads the Pro themes; the
-    // tag says why it's up there.
-    const featured = isFeatured(option, today);
-
     // A real card renders <div>s, which aren't valid inside a
     // <button> (its content model is phrasing only) — so the option
     // is a role="button" div with matching keyboard behavior.
@@ -129,20 +125,7 @@ export function ThemePicker({
             printing this template is actually requested (see the Print
             button below) — locked themes stay fully selectable and
             previewable here. */}
-        {/* A featured theme's tag is the word before the crown, in the
-            crown's own chip; a Pro subscriber sees the word alone. */}
-        {featured ? (
-          <span
-            className="pro-badge pro-badge--overlay recipe-template-option__featured"
-            aria-label={locked ? "Featured, this theme is Pro" : "Featured"}
-            title={locked ? "This theme is Pro" : undefined}
-          >
-            Featured
-            {locked && <CrownIcon size={ICON_SIZE.sm} />}
-          </span>
-        ) : (
-          locked && <ProBadge tooltip="This theme is Pro" />
-        )}
+        {locked && <ProBadge tooltip="This theme is Pro" />}
         <TemplateThumbnail template={option.id} />
       </div>
       {/* On the theme it changes, so it can't read as making a theme of

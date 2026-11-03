@@ -18,9 +18,9 @@ export type PhotoScale = (typeof PHOTO_SCALES)[number];
 export const DEFAULT_PHOTO_SCALE: PhotoScale = 1;
 
 export const PHOTO_SCALE_LABELS: Record<PhotoScale, string> = {
-  0.9: "Smaller",
+  0.9: "Small",
   1: "Normal",
-  1.1: "Bigger",
+  1.1: "Large",
 };
 
 export function normalizePhotoScale(value: unknown): PhotoScale {
