@@ -11227,21 +11227,17 @@ textarea.recipe-card__toc-title {
 }
 
 /* Firefox prints a Christmas card BLANK with the SVG art: an SVG used as an
-   image that embeds a raster (the linen is one JPEG mirrored four ways, the
-   hats one PNG used as twelve pattern fills) makes Firefox's print stop
-   painting the page after the first few lines, so the title printed and
-   nothing else did, not even the hats (found 2026-10-01; screen is fine).
-   Firefox gets the same art pre-rendered as WebP at the embedded rasters'
-   own resolution, so nothing is lost. Chrome and Safari print the SVGs
-   correctly and keep them, unchanged. Applied on screen too, not just in
+   image that embeds a raster (the linen is one JPEG mirrored four ways)
+   makes Firefox's print stop painting the page after the first few lines,
+   so the title printed and nothing else did (found 2026-10-01; screen is
+   fine). Firefox gets the same linen pre-rendered as WebP at the embedded
+   raster's own resolution, so nothing is lost. The hats are a plain PNG now
+   (see `ChristmasHats`), so every browser shares them. Applied on screen too, not just in
    print, so the images are already loaded when Firefox takes its print
    snapshot. `-moz-appearance` is only recognised by Firefox. */
 @supports (-moz-appearance: none) {
   .recipe-template--christmas .recipe-card {
     background-image: url("/images/christmas-linen.webp");
-  }
-  .recipe-template--christmas .recipe-card__christmas-hats {
-    content: url("/images/christmas-hats.webp");
   }
 }
 

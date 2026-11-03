@@ -45,7 +45,6 @@ function firefoxBlocks(css: string): string {
 describe("print artwork in Firefox", () => {
   it("finds the print artwork it is meant to check", () => {
     expect(printArt).toContain("/images/christmas-linen.svg");
-    expect(printArt).toContain("/images/christmas-hats.svg");
   });
 
   it("gives Firefox a plain image for every SVG that embeds a raster", () => {
