@@ -377,8 +377,9 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   // it, and the layout engine must be handed the resolved answer, not the raw
   // preference, or it paginates for photos that aren't there.
   const ownPhotosOnly = cookbookMode && Boolean(settings.ownPhotosOnly);
+  const websitePhotos = Boolean(settings.websitePhotos);
   const anyRecipeHasImage = items.some((item) =>
-    Boolean(bookRecipeImage(item, project.itemPlacements?.[item.id], ownPhotosOnly)),
+    Boolean(bookRecipeImage(item, project.itemPlacements?.[item.id], ownPhotosOnly, websitePhotos)),
   );
   const anyRecipeHasSourceUrl = items.some((item) => Boolean(item.recipe?.sourceUrl));
   const photoStyle = settings.photoStyle ?? "card";
@@ -424,6 +425,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     // collage, an in-card band) would exist on screen and not on paper.
     photoStyle: cookbookMode ? photoStyle : undefined,
     ownPhotosOnly,
+    websitePhotos,
     cardSize,
     doubleSided: settings.doubleSided,
     photosOn: headerPhotosOn && (anyRecipeHasImage || ownPhotosOnly),

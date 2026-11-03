@@ -1558,6 +1558,12 @@
     font-size: var(--cp-fs-label);
     line-height: 1.3;
   }
+  .website-photos-option small a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .website-photos-option small a:hover { color: var(--cp-ink); }
   .control-checkbox-group {
     min-width: 0;
     margin: 0;

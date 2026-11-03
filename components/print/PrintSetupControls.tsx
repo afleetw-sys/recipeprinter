@@ -29,6 +29,9 @@ interface PrintSetupControlsProps {
       recipe; see components/print/PhotoStyleTip.tsx. */
   photoStyleTip?: PhotoStyleTipState | null;
   onDismissPhotoStyleTip?: () => void;
+  /** The cookbook's "Use website photos" switch, pre-rendered by the page
+      only when the book has website photos to use (WebsitePhotosOption). */
+  websitePhotosField?: ReactNode;
   showPhoto: boolean;
   setShowPhoto: Dispatch<SetStateAction<boolean>>;
   showSourceUrl: boolean;
@@ -60,6 +63,7 @@ export function PrintSetupControls({
   applyBookPhotoStyle,
   photoStyleTip,
   onDismissPhotoStyleTip,
+  websitePhotosField,
   showPhoto,
   setShowPhoto,
   showSourceUrl,
@@ -183,6 +187,7 @@ export function PrintSetupControls({
               <PhotoStyleTip onDismiss={onDismissPhotoStyleTip} />
             )}
           </div>
+          {websitePhotosField}
         </div>
       )}
 

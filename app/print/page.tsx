@@ -34,6 +34,7 @@ import { useModalFocus } from "@/lib/useModalFocus";
 import { navigateAfterOverlayHistory, useBackDismiss } from "@/lib/useBackDismiss";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
+import { WebsitePhotosOption } from "@/components/print/WebsitePhotosOption";
 import { MobileStructureSheet, type MobileBookSheet } from "@/components/print/MobileStructureSheet";
 import { EditTips } from "@/components/print/EditTips";
 import { MobileSheet } from "@/components/print/MobileSheet";
@@ -260,7 +261,7 @@ import { autosaveVerdict, LOADED_BASELINE, shouldFlushOnHide, shouldSaveOnLeave 
 import { readRailWidths, writeRailWidths, type RailWidthMode, type RailWidths } from "@/lib/railWidth";
 import { organizeFlipProgress } from "@/lib/organizeFlip";
 import { RailResizer } from "@/components/print/RailResizer";
-import { bookRecipeImage } from "@/lib/bookPhotos";
+import { bookRecipeImage, hasWebsitePhoto } from "@/lib/bookPhotos";
 
 /** The cookbook settings panel's Page tab, and the phone's This page tile and
     sheet that stand in for it. Off for now; see the PrintConfigPanel call. */
@@ -818,15 +819,29 @@ export default function PrintPage() {
   // Every "does this recipe have a photo" question the BOOK asks goes through
   // here. Editing and saving keep reading `recipe.image` itself.
   const ownPhotosOnly = Boolean(projectMeta.meta.cookbookMode && projectMeta.meta.ownPhotosOnly);
+  const websitePhotos = Boolean(projectMeta.meta.websitePhotos);
   const bookImageOf = useCallback(
-    (item: QueueItem) => bookRecipeImage(item, projectMeta.meta.itemPlacements?.[item.id], ownPhotosOnly),
-    [projectMeta.meta.itemPlacements, ownPhotosOnly],
+    (item: QueueItem) =>
+      bookRecipeImage(item, projectMeta.meta.itemPlacements?.[item.id], ownPhotosOnly, websitePhotos),
+    [projectMeta.meta.itemPlacements, ownPhotosOnly, websitePhotos],
+  );
+  // The photo a recipe brings to this book by itself, before the cook picks
+  // one: offered in its photo picker so a replaced one can be chosen again.
+  const importedBookPhotoOf = useCallback(
+    (item: QueueItem | undefined) =>
+      item ? (ownPhotosOnly ? bookRecipeImage(item, undefined, true, websitePhotos) : item.recipe?.image) : undefined,
+    [ownPhotosOnly, websitePhotos],
   );
   const bookSectionImages = useCallback(
     (section: Section) => sectionRecipeImages(section, bookImageOf),
     [bookImageOf],
   );
   const anyRecipeHasImage = items?.some((item) => Boolean(bookImageOf(item))) ?? false;
+  // Offered only in a book that holds website photos back and has some to use.
+  const websitePhotosField =
+    ownPhotosOnly && items?.some(hasWebsitePhoto) ? (
+      <WebsitePhotosOption checked={websitePhotos} onChange={projectMeta.setWebsitePhotos} />
+    ) : null;
   const anyRecipeHasSourceUrl =
     items?.some((item) => Boolean(item.recipe?.sourceUrl)) ?? false;
   const cookbookMode = Boolean(projectMeta.meta.cookbookMode);
@@ -957,6 +972,7 @@ export default function PrintPage() {
     // choice (see `resolveSectionPhotoMode`).
     photoStyle: cookbookMode ? photoStyle : undefined,
     ownPhotosOnly,
+    websitePhotos,
     cardSize,
     doubleSided,
     photosOn,
@@ -4149,6 +4165,7 @@ export default function PrintPage() {
           tocTitle: project.settings.tocTitle,
           photoStyle: project.settings.photoStyle,
           ownPhotosOnly: project.settings.ownPhotosOnly,
+          websitePhotos: project.settings.websitePhotos,
           railSortMode: project.settings.railSortMode,
           lastImportSource: project.settings.lastImportSource,
           cover: project.cover,
@@ -6108,12 +6125,12 @@ export default function PrintPage() {
     const own = recipe.image;
     const history = projectMeta.meta.itemPlacements?.[recipeId]?.photoHistory ?? [];
     // What the page shows: in a book of the cook's own photos, the one they
-    // added. The recipe's imported image is not offered there at all: it
-    // belongs to whoever published the recipe, so a printed book only ever
-    // holds photos the cook uploads.
+    // added, or the imported one the book allows (see lib/bookPhotos.ts). A
+    // website's photo belongs to whoever published the recipe, so it is only
+    // offered once the cook turns on website photos for the book.
     const recipeItem = items?.find((item) => item.id === recipeId);
     const shown = ownPhotosOnly ? (recipeItem ? bookImageOf(recipeItem) : undefined) : own;
-    const offered = ownPhotosOnly ? undefined : own;
+    const offered = ownPhotosOnly ? importedBookPhotoOf(recipeItem) : own;
     return (
       <ImagePicker
         current={shown}
@@ -6186,8 +6203,8 @@ export default function PrintPage() {
         ? bookImageOf(pageItem)
         : undefined
       : (placement?.heroImageUrl ?? own);
-    // Never the imported image in such a book (see `renderPagePhotoControl`).
-    const offered = ownPhotosOnly ? undefined : own;
+    // Only an imported image the book allows (see `renderPagePhotoControl`).
+    const offered = ownPhotosOnly ? importedBookPhotoOf(pageItem) : own;
     return (
       <ImagePicker
         current={shown}
@@ -7309,6 +7326,7 @@ export default function PrintPage() {
           setToastMessage={setToastMessage}
           hasPrintSettingsFields={hasPrintSettingsFields}
           cardSettingsFields={renderPrintSettingsFields()}
+          websitePhotosField={websitePhotosField}
           /* The Page tab is hidden for now: people found the Book/Page split
              confusing. Restore by passing `renderPageSettings()` in a cookbook. */
           pageSettings={PAGE_SETTINGS_TAB_ENABLED && cookbookMode ? renderPageSettings() : undefined}
@@ -7528,6 +7546,7 @@ export default function PrintPage() {
           applyBookPhotoStyle={applyBookPhotoStyle}
           photoStyleTip={photoStyleTip?.surface === "sheet" ? photoStyleTip : null}
           onDismissPhotoStyleTip={dismissPhotoStyleTip}
+          websitePhotosField={websitePhotosField}
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setBookShowSourceUrl}
           renameSectionEverywhere={renameSectionEverywhere}

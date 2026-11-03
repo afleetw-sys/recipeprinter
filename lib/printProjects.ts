@@ -257,6 +257,7 @@ export function projectContentFromMeta(
       tocTitle: meta.tocTitle,
       photoStyle: meta.photoStyle,
       ownPhotosOnly: meta.ownPhotosOnly,
+      websitePhotos: meta.websitePhotos,
       railSortMode: meta.railSortMode,
       lastImportSource: meta.lastImportSource,
     },

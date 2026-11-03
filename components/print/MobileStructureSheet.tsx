@@ -1,6 +1,6 @@
 "use client";
 
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { Checkbox, SelectTile } from "@/components/Controls";
 import { ChevronDownIcon, TrashIcon, PlusIcon, ICON_SIZE } from "@/components/icons";
 import { MobileSheet } from "@/components/print/MobileSheet";
@@ -23,6 +23,8 @@ interface MobileStructureSheetProps {
       recipe; see components/print/PhotoStyleTip.tsx. */
   photoStyleTip?: PhotoStyleTipState | null;
   onDismissPhotoStyleTip?: () => void;
+  /** See `PrintSetupControls.websitePhotosField`. */
+  websitePhotosField?: ReactNode;
   showSourceUrl: boolean;
   setShowSourceUrl: (next: boolean) => void;
   renameSectionEverywhere: (sectionId: string, value: string) => void;
@@ -67,6 +69,7 @@ export function MobileStructureSheet({
   applyBookPhotoStyle,
   photoStyleTip,
   onDismissPhotoStyleTip,
+  websitePhotosField,
   showSourceUrl,
   setShowSourceUrl,
   renameSectionEverywhere,
@@ -187,6 +190,7 @@ export function MobileStructureSheet({
                   <PhotoStyleTip onDismiss={onDismissPhotoStyleTip} />
                 )}
               </div>
+              {websitePhotosField}
             </div>
         </MobileSheet>
 

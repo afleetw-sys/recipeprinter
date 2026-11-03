@@ -471,6 +471,8 @@ interface UsePrintSheetsOptions {
       image (see lib/bookPhotos.ts), and a full-page photo not added yet holds
       its page as an empty placeholder rather than disappearing. */
   ownPhotosOnly?: boolean;
+  /** With `ownPhotosOnly`, also show photos recipes imported from websites. */
+  websitePhotos?: boolean;
   /** The book-wide Photos choice itself (cookbook). Chapter openers with no
       placement of their own follow it — see `resolveCardPhotoMode` /
       `resolveArtPhotoMode`. */
@@ -526,6 +528,7 @@ export function usePrintSheets({
   defaultFullPage,
   photoStyle,
   ownPhotosOnly = false,
+  websitePhotos = false,
   cardSize,
   doubleSided,
   photosOn,
@@ -543,8 +546,8 @@ export function usePrintSheets({
   // added (or none).
   const sections = useMemo<Section[]>(() => {
     const base = sectionsProp ?? [{ id: "__default", items: items ?? [] }];
-    return sectionsWithBookPhotos(base, itemPlacements, Boolean(cookbookMode) && ownPhotosOnly);
-  }, [sectionsProp, items, itemPlacements, cookbookMode, ownPhotosOnly]);
+    return sectionsWithBookPhotos(base, itemPlacements, Boolean(cookbookMode) && ownPhotosOnly, websitePhotos);
+  }, [sectionsProp, items, itemPlacements, cookbookMode, ownPhotosOnly, websitePhotos]);
 
   const allItems = useMemo(() => sections.flatMap((section) => section.items), [sections]);
 
