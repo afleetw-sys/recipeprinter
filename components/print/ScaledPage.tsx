@@ -41,11 +41,11 @@ import {
 import type { CookbookPresetId } from "@/types/recipe";
 import { fontScaleVars, type FontScale } from "@/lib/fontScale";
 import {
-  TextPageProvider,
-  textPageForSlot,
-  textPartProps,
-  type TextSizes,
-} from "@/lib/textSizes";
+  ElementPageProvider,
+  pageAddressForSlot,
+  elementProps,
+  type ElementStyles,
+} from "@/lib/elementStyles";
 import { photoScaleVars, type PhotoScale } from "@/lib/photoScale";
 
 /**
@@ -90,8 +90,8 @@ function ScaledPageBody({
   preset,
   fontScale,
   photoScale,
-  textSizes,
-  sizeTargets = false,
+  elementStyles,
+  elementTargets = false,
 }: {
   sheet: PageSheet;
   isLastSheet: boolean;
@@ -171,11 +171,11 @@ function ScaledPageBody({
   fontScale?: FontScale;
   /** The cook's photo size, on recipe pages only. */
   photoScale?: PhotoScale;
-  /** Sizes of single parts of pages (lib/textSizes.tsx). */
-  textSizes?: TextSizes;
+  /** Sizes of single parts of pages (lib/elementStyles.tsx). */
+  elementStyles?: ElementStyles;
   /** This is the deck's page being edited: words with no field of their own
       can be clicked for the text bar's Size. Never the export or the rail. */
-  sizeTargets?: boolean;
+  elementTargets?: boolean;
 }) {
   // A cookbook page is the preset's real sheet, on screen exactly as in the
   // file — so the preview cannot show a page shape the book does not have (see
@@ -566,12 +566,12 @@ function ScaledPageBody({
                 ) : null}
                 {anySlot.caption?.trim() && (
                   <p
-                    {...textPartProps(
-                      textPageForSlot(anySlot),
-                      textSizes?.[textPageForSlot(anySlot) ?? ""],
+                    {...elementProps(
+                      pageAddressForSlot(anySlot),
+                      elementStyles?.[pageAddressForSlot(anySlot) ?? ""],
                       "caption",
                       undefined,
-                      sizeTargets,
+                      elementTargets,
                     )}
                     className={`recipe-card__chapter-photo-caption ${
                       anySlot.mode === "none"
@@ -830,11 +830,11 @@ function ScaledPageBody({
                 // physical page count in sync (see `backGroupNeeded`), not
                 // for the front.
                 slot && slot.kind === "recipe" ? (
-                  <TextPageProvider
+                  <ElementPageProvider
                     key={`front-${slotIndex}`}
-                    page={textPageForSlot(slot)}
-                    sizes={textSizes}
-                    targets={sizeTargets}
+                    page={pageAddressForSlot(slot)}
+                    styles={elementStyles}
+                    targets={elementTargets}
                   >
                     <RecipeCardFace
                       recipe={slot.recipe}
@@ -868,7 +868,7 @@ function ScaledPageBody({
                           : undefined
                       }
                     />
-                  </TextPageProvider>
+                  </ElementPageProvider>
                 ) : null,
               )}
             </div>
@@ -885,11 +885,11 @@ function ScaledPageBody({
                   if (!slot || slot.kind !== "recipe") return null;
 
                   return slot.back ? (
-                    <TextPageProvider
+                    <ElementPageProvider
                       key={`back-${slotIndex}`}
-                      page={textPageForSlot(slot)}
-                      sizes={textSizes}
-                      targets={sizeTargets}
+                      page={pageAddressForSlot(slot)}
+                      styles={elementStyles}
+                      targets={elementTargets}
                     >
                       <RecipeCardFace
                         recipe={slot.recipe}
@@ -918,7 +918,7 @@ function ScaledPageBody({
                             : undefined
                         }
                       />
-                    </TextPageProvider>
+                    </ElementPageProvider>
                   ) : (
                     <RecipeCardFace
                       key={`back-blank-${slotIndex}`}
@@ -950,12 +950,12 @@ export const ScaledPage = memo(function ScaledPage(props: ScaledPageProps) {
   // cards gives each card its own below.
   const first = props.sheet.slots.find(Boolean) ?? null;
   return (
-    <TextPageProvider
-      page={textPageForSlot(first)}
-      sizes={props.textSizes}
-      targets={props.sizeTargets}
+    <ElementPageProvider
+      page={pageAddressForSlot(first)}
+      styles={props.elementStyles}
+      targets={props.elementTargets}
     >
       <ScaledPageBody {...props} />
-    </TextPageProvider>
+    </ElementPageProvider>
   );
 });

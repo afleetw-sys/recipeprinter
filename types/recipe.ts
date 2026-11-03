@@ -528,10 +528,12 @@ export interface PrintProjectSettings {
       book saved before, whose `fontScale` was every theme's. Read through
       `normalizeThemeLooks`, never directly. */
   themeLooks?: Partial<Record<RecipePrintTemplate, { fontScale?: number; photoScale?: number }>>;
-  /** Sizes the cook gave single parts of single pages (a recipe's title, a
-      cover's author line), keyed by page and then part. See lib/textSizes.tsx.
-      Absent = every part follows `fontScale`. */
-  textSizes?: Record<string, Partial<Record<string, number>>>;
+  /** The cook's own style for single elements on single pages (a recipe's
+      title, a cover's author line), keyed by page address and then element
+      name: today a text size, later a font, colour or position beside it. See
+      lib/elementStyles.tsx. Absent = every element follows the theme and the
+      book's settings. */
+  elementStyles?: Record<string, Record<string, { textSize?: number }>>;
   /** Book-only settings — stay undefined/off until "Make it a cookbook" has
       been used to opt into the cookbook experience. */
   cookbookMode?: boolean;

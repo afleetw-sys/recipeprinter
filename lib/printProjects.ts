@@ -258,7 +258,7 @@ export function projectContentFromMeta(
       photoStyle: meta.photoStyle,
       ownPhotosOnly: meta.ownPhotosOnly,
       websitePhotos: meta.websitePhotos,
-      textSizes: meta.textSizes,
+      elementStyles: meta.elementStyles,
       railSortMode: meta.railSortMode,
       lastImportSource: meta.lastImportSource,
     },

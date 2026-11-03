@@ -76,12 +76,12 @@
   --recipe-card-ingredient-gap: calc(var(--recipe-card-ingredient-gap-base) * var(--recipe-font-scale, 1));
 }
 
-/* One part of a page at its own text size (lib/textSizes.tsx): the part's
+/* One part of a page at its own text size (lib/elementStyles.tsx): the part's
    element carries its own `--recipe-font-scale`. The role sizes above are
    worked out where they are declared, so they are declared again here, where
    that variable is the part's. Each base is inherited from the page, so 6x4,
    Letter and every theme keep their own. */
-.recipe-print-preview [data-text-part] {
+.recipe-print-preview [data-element] {
   --recipe-card-title-size: calc(var(--recipe-card-title-size-base) * var(--recipe-font-scale, 1));
   --recipe-card-meta-size: calc(var(--recipe-card-meta-size-base) * var(--recipe-font-scale, 1));
   --recipe-card-label-size: calc(var(--recipe-card-label-size-base) * var(--recipe-font-scale, 1));
