@@ -6,6 +6,8 @@ import {
   hasMultiRecipeEntitlement,
   loadRecipePrinterCustomerInfo,
 } from "@/lib/recipePrinterPurchases";
+import { resolveEffectiveCustomerInfo } from "@/lib/proAccessFallback";
+import { loadRecipePrinterUserProfile } from "@/lib/recipePrinterUserProfile";
 
 /**
  * A library picker's own fallback answer for "can this account add more than
@@ -25,6 +27,12 @@ import {
  * the Paprika-only SEO capture) before this was pulled out, and the second
  * one silently missed the gate because the check lived only in the first.
  * Centralizing it here is what stops that from happening a third time.
+ *
+ * When RevenueCat can't be reached, the answer is the account's server-side
+ * mirror of its purchases, the same fallback /print uses
+ * (`resolveEffectiveCustomerInfo`). It used to stay single-recipe instead, so
+ * a Pro member's library had no Select all whenever RevenueCat was down, and
+ * the failed check surfaced as an uncaught error.
  */
 export function useSingleRecipeOnly(): boolean {
   const { user } = useCookPilotAuth();
@@ -36,9 +44,25 @@ export function useSingleRecipeOnly(): boolean {
       return;
     }
     let alive = true;
-    loadRecipePrinterCustomerInfo(user.uid).then((info) => {
-      if (alive) setHasMultiRecipe(hasMultiRecipeEntitlement(info));
-    });
+    void (async () => {
+      let live: Awaited<ReturnType<typeof loadRecipePrinterCustomerInfo>> = null;
+      let liveOk = true;
+      try {
+        live = await loadRecipePrinterCustomerInfo(user.uid);
+      } catch {
+        liveOk = false;
+      }
+      const profile = liveOk ? null : await loadRecipePrinterUserProfile(user.uid).catch(() => null);
+      const { customerInfo } = resolveEffectiveCustomerInfo({
+        liveCustomerInfo: live,
+        liveStatus: liveOk ? "ok" : "error",
+        liveLastVerifiedAtMs: null,
+        mirroredEntitlements: profile?.mirroredEntitlements ?? null,
+        mirrorSyncedAtMs: profile?.syncedAtMs ?? null,
+        nowMs: Date.now(),
+      });
+      if (alive) setHasMultiRecipe(hasMultiRecipeEntitlement(customerInfo));
+    })();
     return () => {
       alive = false;
     };
