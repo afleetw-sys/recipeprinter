@@ -11154,21 +11154,28 @@ textarea.recipe-card__toc-title {
    the artwork's 452-unit tile size, so it covers a portrait Full Page sheet
    as well as a 4x6 without stretching. The tile is mirrored four ways
    (christmas-linen.svg) so every edge meets its own reflection: repeated
-   plain, the photo's edges showed as a faint grid of seams. The hats are one image, 128
+   plain, the photo's edges showed as a faint grid of seams. Both linen files
+   are the artist's photo taken halfway to white (2026-11-03): at full
+   strength the grey read as heavy. Lightened in the files, not with a white
+   layer over the card, since a translucent layer flattens the page to a
+   bitmap in Chrome's PDF (see Heirloom). The hats are one image, 128
    units tall, on the card's bottom edge; the bottom padding clears them, and
    it is what the face measurer treats as the end of the page. Each hat is
    drawn at 80% of the artist's size (2026-10-26), shrunk toward its own foot
-   where it stood, so the row still spans the card and the end hats still run
-   off it. */
+   where it stood. Since 2026-11-03 only the artist's last four hats are
+   drawn, in the bottom-right corner where they always stood, the last one
+   still running off the card: twelve across the foot read as a lot. The
+   image keeps the row's full size, so nothing else moves, and the bottom
+   padding still clears the whole band. */
 .recipe-template--christmas {
-  --recipe-bg: #d7d5d1;
+  --recipe-bg: #ebeae8;
   --recipe-ink: #2c2624;
   --recipe-muted: #6b625d;
   --recipe-accent: #c92e31;
   --recipe-accent-2: #c92e31;
   --recipe-bullet: #c92e31;
   --recipe-line: rgba(201, 46, 49, 0.25);
-  --recipe-step-bg: #eceae6;
+  --recipe-step-bg: #f5f4f2;
   --recipe-footer: #6b625d;
   --recipe-radius: 0;
   --recipe-title-font: var(--font-berkshire-swash), Georgia, serif;
@@ -11176,7 +11183,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--christmas .recipe-card {
-  background-color: #d7d5d1;
+  background-color: #ebeae8;
   background-image: url("/images/christmas-linen.svg");
   background-size: calc(904 * var(--christmas-u)) calc(904 * var(--christmas-u));
   background-repeat: repeat;
@@ -11220,21 +11227,17 @@ textarea.recipe-card__toc-title {
 }
 
 /* Firefox prints a Christmas card BLANK with the SVG art: an SVG used as an
-   image that embeds a raster (the linen is one JPEG mirrored four ways, the
-   hats one PNG used as twelve pattern fills) makes Firefox's print stop
-   painting the page after the first few lines, so the title printed and
-   nothing else did, not even the hats (found 2026-10-01; screen is fine).
-   Firefox gets the same art pre-rendered as WebP at the embedded rasters'
-   own resolution, so nothing is lost. Chrome and Safari print the SVGs
-   correctly and keep them, unchanged. Applied on screen too, not just in
+   image that embeds a raster (the linen is one JPEG mirrored four ways)
+   makes Firefox's print stop painting the page after the first few lines,
+   so the title printed and nothing else did (found 2026-10-01; screen is
+   fine). Firefox gets the same linen pre-rendered as WebP at the embedded
+   raster's own resolution, so nothing is lost. The hats are a plain PNG now
+   (see `ChristmasHats`), so every browser shares them. Applied on screen too, not just in
    print, so the images are already loaded when Firefox takes its print
    snapshot. `-moz-appearance` is only recognised by Firefox. */
 @supports (-moz-appearance: none) {
   .recipe-template--christmas .recipe-card {
     background-image: url("/images/christmas-linen.webp");
-  }
-  .recipe-template--christmas .recipe-card__christmas-hats {
-    content: url("/images/christmas-hats.webp");
   }
 }
 

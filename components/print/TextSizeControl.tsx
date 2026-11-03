@@ -1,14 +1,11 @@
 "use client";
 
-import type { CSSProperties, RefObject } from "react";
-import { AnchoredMenu } from "@/components/AnchoredMenu";
-import { MenuRow } from "@/components/MenuSelect";
+import type { CSSProperties } from "react";
 import { ProBadge } from "@/components/ProBadge";
 import {
   DEFAULT_FONT_SCALE,
   FONT_SCALES,
   FONT_SCALE_LABELS,
-  normalizeFontScale,
   type FontScale,
 } from "@/lib/fontScale";
 
@@ -19,56 +16,7 @@ import {
  * Normal is free; every other size is Pro on recipe cards. Like a Pro theme or
  * the 4×6 size, a free account can still pick and preview one: the crown marks
  * it and only Print asks for Pro (`fontScaleLocked`).
- */
-function textSizeOptions(proMarked: boolean) {
-  return FONT_SCALES.map((scale) => ({
-    value: String(scale),
-    label: FONT_SCALE_LABELS[scale],
-    badge:
-      proMarked && scale !== DEFAULT_FONT_SCALE ? (
-        <ProBadge variant="inline" label={false} tooltip="This text size is Pro" />
-      ) : undefined,
-  }));
-}
-
-/**
- * The phone toolbar's Text size: the sizes open right against the tile, one
- * tap to pick, rather than a sheet holding a second dropdown. Mount it while
- * open.
- */
-export function TextSizeMenu({
-  anchorRef,
-  onClose,
-  fontScale,
-  setFontScale,
-  proMarked,
-}: {
-  anchorRef: RefObject<HTMLElement | null>;
-  onClose: () => void;
-  fontScale: FontScale;
-  setFontScale: (value: FontScale) => void;
-  proMarked: boolean;
-}) {
-  return (
-    <AnchoredMenu anchorRef={anchorRef} onClose={onClose} label="Text size" align="end" className="menu-select__menu">
-      {textSizeOptions(proMarked).map((option) => (
-        <MenuRow
-          key={option.value}
-          selected={option.value === String(fontScale)}
-          onSelect={() => {
-            setFontScale(normalizeFontScale(Number(option.value)));
-            onClose();
-          }}
-          badge={option.badge}
-        >
-          {option.label}
-        </MenuRow>
-      ))}
-    </AnchoredMenu>
-  );
-}
-
-/**
+ *
  * The settings panel's text size: a slider over the five steps, with the
  * step's name across from the heading. Steps, never a free value: every one
  * is measured by the layout harness.

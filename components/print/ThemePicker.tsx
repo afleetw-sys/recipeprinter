@@ -37,10 +37,10 @@ interface ThemePickerProps {
  * here.
  *
  * Seasonal themes (see lib/seasonalThemes) lead the Pro themes during their
- * featured dates, with no tag: being first is enough. The rest of the year they
- * sit in a collapsed "Seasonal themes" group at the end, still one tap away for
- * a year-round cookbook; it opens on its own when the chosen theme is one of
- * them, so the current theme never looks missing.
+ * featured dates, with no tag: being first is enough. All of them, in season
+ * or not, are also in a collapsed "Seasonal themes" group at the end, so that
+ * is always where to find them; it opens on its own when the chosen theme is
+ * one only the group shows, so the current theme never looks missing.
  */
 export function ThemePicker({
   cookbookMode,
@@ -57,7 +57,9 @@ export function ThemePicker({
     (option) => isPremiumTemplate(option.id),
     today,
   );
-  const currentIsSeasonal = seasonal.some((option) => option.id === template);
+  // Only a theme the main grid doesn't show: a featured one is already up top.
+  const currentIsSeasonal =
+    seasonal.some((option) => option.id === template) && !main.some((option) => option.id === template);
   const [seasonalOpen, setSeasonalOpen] = useState(currentIsSeasonal);
   const showSeasonal = seasonalOpen || currentIsSeasonal;
 

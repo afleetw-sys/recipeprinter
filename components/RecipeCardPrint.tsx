@@ -393,13 +393,16 @@ function PosterArt() {
   );
 }
 
-// Christmas: a row of the artist's Santa hats along the foot. One image
-// (public/images/christmas-hats.svg), each hat placed and turned as the artist
-// set it; the linen stock is the card's background in print.css.
+// Christmas: the artist's Santa hats in the foot's corner. One plain image
+// (public/images/christmas-hats.png, 3000px across the card), each hat placed
+// and turned as the artist set it; the linen stock is the card's background in
+// print.css. A PNG, not the SVG it was: that drew each hat as a pattern fill,
+// and Chrome's PDF turns a pattern into a coarse bitmap, so the hats printed
+// as blurred blocks. A plain image goes into the PDF at its own resolution.
 function ChristmasHats() {
   return (
     // eslint-disable-next-line @next/next/no-img-element -- fixed decorative art, not a photo to optimize
-    <img className="recipe-card__christmas-hats" src="/images/christmas-hats.svg" alt="" aria-hidden />
+    <img className="recipe-card__christmas-hats" src="/images/christmas-hats.png" alt="" aria-hidden />
   );
 }
 

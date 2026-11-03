@@ -7,8 +7,6 @@ import { MobileSheet } from "@/components/print/MobileSheet";
 import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
 import { PhotoStyleTip, type PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
 import { ChapterNameInput } from "@/components/print/ChapterNameInput";
-import { TextSizeControl } from "@/components/print/TextSizeControl";
-import type { FontScale } from "@/lib/fontScale";
 import { namedSectionCount, useProjectMeta, type PhotoStyle } from "@/lib/project";
 import type { Section } from "@/types/recipe";
 
@@ -27,8 +25,6 @@ interface MobileStructureSheetProps {
   onDismissPhotoStyleTip?: () => void;
   showSourceUrl: boolean;
   setShowSourceUrl: (next: boolean) => void;
-  fontScale: FontScale;
-  setFontScale: (value: FontScale) => void;
   renameSectionEverywhere: (sectionId: string, value: string) => void;
   moveSectionInBook: (sectionId: string, direction: -1 | 1) => void;
   requestDeleteSection: (sectionId: string) => void;
@@ -43,7 +39,7 @@ interface MobileStructureSheetProps {
 
 /** Which of the book-wide sheets is open, from the bottom bar's tiles. */
 /** "page": the selected page's settings, the desktop panel's Page tab. */
-export type MobileBookSheet = "extras" | "recipes" | "page" | "text" | null;
+export type MobileBookSheet = "extras" | "recipes" | "page" | null;
 
 /**
  * The mobile cookbook sheets. Desktop uses the page rail and the Book
@@ -73,8 +69,6 @@ export function MobileStructureSheet({
   onDismissPhotoStyleTip,
   showSourceUrl,
   setShowSourceUrl,
-  fontScale,
-  setFontScale,
   renameSectionEverywhere,
   moveSectionInBook,
   requestDeleteSection,
@@ -193,8 +187,6 @@ export function MobileStructureSheet({
                   <PhotoStyleTip onDismiss={onDismissPhotoStyleTip} />
                 )}
               </div>
-              {/* Included in the book, so no crown here. */}
-              <TextSizeControl fontScale={fontScale} setFontScale={setFontScale} proMarked={false} />
             </div>
         </MobileSheet>
 
