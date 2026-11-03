@@ -3464,9 +3464,10 @@ export default function PrintPage() {
   // above, this is NOT recipe-count-dependent: it's what lets an empty
   // project's library picker still offer exactly one pick rather than none.
   const singleRecipeOnly = !cookbookMode && !hasMultiRecipeEntitlement(effectiveCustomerInfo.customerInfo);
-  // Two 4x6 cards to a sheet needs two cards, and only Pro prints more than
-  // one recipe. A setting stored while Pro is ignored once it lapses.
-  const twoPerSheetOffered = cardSize === "card-6x4" && !cookbookMode && !singleRecipeOnly;
+  // Two 4x6 cards to a sheet: offered once there are two recipes to pair,
+  // which only Pro can add. A setting stored while Pro is ignored once it
+  // lapses, and while the job is down to one recipe.
+  const twoPerSheetOffered = cardSize === "card-6x4" && !cookbookMode && !singleRecipeOnly && recipeCount >= 2;
   /** Recipe cards' phone "Every recipe" sheet: offered once there can be more
       than one recipe and some recipe has a photo or a link to show or hide. */
   const cardEveryRecipe = !cookbookMode && !singleRecipeOnly && (anyRecipeHasImage || anyRecipeHasSourceUrl);
