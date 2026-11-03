@@ -1558,7 +1558,10 @@
     font-size: var(--cp-fs-label);
     line-height: 1.3;
   }
+  /* Its own step below the Photos tiles, not tucked under them. */
+  .website-photos-option { margin-top: 8px; }
   .website-photos-option small a {
+    white-space: nowrap;
     color: inherit;
     text-decoration: underline;
     text-underline-offset: 2px;
