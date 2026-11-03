@@ -10,8 +10,10 @@ import {
 import { fontScaleVars, type FontScale } from "@/lib/fontScale";
 import { legacyPhotoScale, photoScaleVars } from "@/lib/photoScale";
 import { getCookbookPreset, presetCardVars } from "@/lib/cookbookPresets";
-import type { RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
+import { getRecipeFaces, type RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
 import type { Recipe } from "@/types/recipe";
+import { ScaledPage } from "@/components/print/ScaledPage";
+import type { PageSheet, SheetSlot } from "@/lib/usePrintSheets";
 
 /**
  * `/print/harness?specimen=1&font=<step>[&book=1]`: one of every kind of text a
@@ -23,6 +25,12 @@ import type { Recipe } from "@/types/recipe";
  * Three faces per theme: a full front (photo, headnote, facts, sectioned lists,
  * footer and link), a stacked continuation back, and an empty card being
  * edited (the empty-field prompts and the add-line buttons).
+ *
+ * With `book=1`, every theme also gets each of a cookbook's own pages (cover,
+ * back cover, dedication, a page the cook added, contents, a chapter opener
+ * and its facing caption, and a recipe page with its folio), drawn through
+ * `ScaledPage` as the deck draws them, so a page kind the text size never
+ * reaches is caught as well as a hardcoded size.
  */
 
 const IMAGE =
@@ -69,6 +77,95 @@ const NOOP_EDIT: RecipeCardInlineEdit = {
 };
 
 const BOOK_CARD_VARS = presetCardVars(getCookbookPreset(undefined)) as CSSProperties;
+
+function bookSheets(template: (typeof RECIPE_PRINT_TEMPLATE_OPTIONS)[number]["id"]): PageSheet[] {
+  const cover = {
+    title: "Grandma's Kitchen",
+    subtitle: "Recipes we keep making",
+    author: "The Winger family",
+    edition: "2026 Family Edition",
+    blurb: "From the kitchen of the Wingers, with love.",
+    template,
+  };
+  const slots: SheetSlot[] = [
+    { kind: "cover", id: "front", cover, side: "front" },
+    { kind: "cover", id: "back", cover, side: "back" },
+    { kind: "cover", id: "dedication", cover: { ...cover, title: "For Mom" }, side: "dedication" },
+    { kind: "blank", id: "own", pageId: "own", pageContent: { title: "Our table", blurb: "Sunday dinners, every week.", author: "Amelia" } },
+    {
+      kind: "toc",
+      id: "toc",
+      entries: [
+        { kind: "chapter", title: "Dinners", pageNumber: 3, chapterNumber: 1 },
+        { kind: "recipe", title: "Honey Garlic Salmon", pageNumber: 4 },
+        { kind: "recipe", title: "Weeknight Chili", pageNumber: 6 },
+      ],
+    },
+    { kind: "toc", id: "toc-2", continued: true, entries: [{ kind: "chapter", title: "Dinners", pageNumber: 3, continued: true }] },
+    {
+      kind: "divider",
+      id: "dinners",
+      title: "Dinners",
+      displayTitle: "Dinners",
+      recipeTitles: ["Honey Garlic Salmon", "Weeknight Chili"],
+      chapterNumber: 1,
+      showChapterNumber: true,
+      subtitle: "Weeknights and Sundays",
+      cardPhotoMode: "none",
+      intro: "The ones we make most.",
+    },
+    { kind: "section-photo", sectionId: "dinners", title: "Dinners", mode: "none", caption: "Sunday at the lake." },
+  ];
+  const book = slots.map((slot, index) => ({ id: `book-${index}`, slots: [slot], backGroupNeeded: false }));
+  const recipe: PageSheet = {
+    id: "book-recipe",
+    slots: [
+      {
+        kind: "recipe",
+        recipeId: "salmon",
+        recipe: FULL,
+        label: FULL.title,
+        front: getRecipeFaces(FULL, "letter").front,
+        back: null,
+        hasBack: false,
+        isContinuation: false,
+        queueIndex: 0,
+        showPhoto: true,
+        showSourceUrl: true,
+      },
+    ],
+    backGroupNeeded: false,
+    pageNumber: 4,
+    runningHeader: "Dinners",
+  };
+  return [...book, recipe];
+}
+
+/** A cookbook's own pages for one theme, drawn as the deck draws them. */
+function BookPages({ template, fontScale }: { template: (typeof RECIPE_PRINT_TEMPLATE_OPTIONS)[number]["id"]; fontScale: FontScale }) {
+  return (
+    <div data-specimen={`${template}|book-pages`} style={{ marginBottom: 24 }}>
+      {bookSheets(template).map((sheet) => (
+        <ScaledPage
+          key={sheet.id}
+          sheet={sheet}
+          isLastSheet={false}
+          activeSlotIndex={-1}
+          activeSide="front"
+          scale={1}
+          size="letter"
+          template={template}
+          doubleSided={false}
+          showDescription
+          showCutLines={false}
+          cookbookMode
+          fontScale={fontScale}
+          photoScale={legacyPhotoScale(fontScale)}
+        />
+      ))}
+    </div>
+  );
+}
 
 export function FontSpecimens({ fontScale, book }: { fontScale: FontScale; book: boolean }) {
   const sizes: PrintCardSize[] = book ? ["letter"] : ["letter", "card-6x4"];
@@ -126,6 +223,10 @@ export function FontSpecimens({ fontScale, book }: { fontScale: FontScale; book:
           </div>
         )),
       )}
+      {book &&
+        RECIPE_PRINT_TEMPLATE_OPTIONS.map(({ id: template }) => (
+          <BookPages key={`${template}|book-pages`} template={template} fontScale={fontScale} />
+        ))}
     </div>
   );
 }

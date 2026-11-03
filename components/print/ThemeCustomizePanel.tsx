@@ -63,7 +63,7 @@ export function ThemeCustomizePanel({
         </h3>
       </div>
 
-      <TextSizeControl fontScale={fontScale} setFontScale={setFontScale} proMarked={proMarked} cookbook={cookbook} />
+      <TextSizeControl fontScale={fontScale} setFontScale={setFontScale} proMarked={proMarked} />
 
       {photosShown && (
         <div className="recipe-config-section">
