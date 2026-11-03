@@ -46,7 +46,6 @@ import type { RecipeCardEditTarget } from "@/lib/recipeCardLayout";
 import { formatRecipeTime } from "@/lib/time";
 import { composeNote } from "@/lib/recipeNote";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
-import { TextSizeControl, TextSizeMenu } from "@/components/print/TextSizeControl";
 import { PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
 import { deckIndexForPendingSlot, landingForRecipe } from "@/lib/pendingDeckSlot";
@@ -185,7 +184,6 @@ import {
   DownloadIcon,
   SidePanelsIcon,
   SizeIcon,
-  TextSizeIcon,
   SpinnerIcon,
   TemplateIcon,
   XIcon,
@@ -6337,7 +6335,6 @@ export default function PrintPage() {
    */
   useBackDismiss(Boolean(mobileDrawer), () => setMobileDrawer(null));
   const [sizeMenuOpen, setSizeMenuOpen] = useState(false);
-  const textSizeTileRef = useRef<HTMLButtonElement | null>(null);
 
 
   /* `<= 1`, not `=== 1`: an empty deck behaves exactly like a one-page deck —
@@ -7485,28 +7482,6 @@ export default function PrintPage() {
                 Every recipe
               </button>
             )}
-            {/* Text size, last: on recipe cards the sizes open right against
-                the tile. A cookbook keeps it in its Every recipe sheet, with
-                the rest of what every page carries. */}
-            {!cookbookMode && (
-              <button
-                ref={textSizeTileRef}
-                type="button"
-                className={`recipe-mobile-toolbar__btn ${bookSheet === "text" ? "is-active" : ""}`}
-                aria-expanded={bookSheet === "text"}
-                aria-haspopup="menu"
-                onClick={() => {
-                  setSizeMenuOpen(false);
-                  setStructureSheetOpen(false);
-                  setBookSheet((open) => (open === "text" ? null : "text"));
-                }}
-              >
-                <span className="recipe-mobile-toolbar__btn-icon">
-                  <TextSizeIcon size={ICON_SIZE.lg} />
-                </span>
-                Text size
-              </button>
-            )}
           </div>
           {/* Print sits DOWN here, under the tools, not up in the top bar.
               It is the thing this page is for and the last thing you do, and
@@ -7555,8 +7530,6 @@ export default function PrintPage() {
           onDismissPhotoStyleTip={dismissPhotoStyleTip}
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setBookShowSourceUrl}
-          fontScale={fontScale}
-          setFontScale={setFontScale}
           renameSectionEverywhere={renameSectionEverywhere}
           moveSectionInBook={moveSectionInBook}
           requestDeleteSection={requestDeleteSection}
@@ -7645,15 +7618,6 @@ export default function PrintPage() {
           )}
         </MobileSheet>
 
-        {!cookbookMode && bookSheet === "text" && (
-          <TextSizeMenu
-            anchorRef={textSizeTileRef}
-            onClose={() => setBookSheet(null)}
-            fontScale={fontScale}
-            setFontScale={setFontScale}
-            proMarked={!hasProEntitlement(effectiveCustomerInfo.customerInfo)}
-          />
-        )}
       </main>
     </>
 

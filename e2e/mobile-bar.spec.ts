@@ -134,3 +134,67 @@ test("a phone offers a page's own settings only when the desktop panel does", as
   }
   expect(phoneHasPageSheet).toBe(desktopHasPageTab);
 });
+
+/**
+ * A phone sets text size in one place, Customize theme, as a desktop does.
+ * When text size moved under Customize the phone kept its own Text size tile
+ * on recipe cards, and a cookbook's Every recipe sheet kept a slider too, so
+ * there were two. Every tile on the bar is tapped, for cards and for a book.
+ *
+ * Books opened from session storage: no import, nothing billed.
+ */
+test("a phone shows text size only under Customize theme, for cards and cookbooks", async ({ page }) => {
+  const textSize = page
+    .locator('.recipe-config-section--text-size, [role="menu"][aria-label="Text size"]')
+    .filter({ visible: true });
+
+  for (const cookbook of [false, true]) {
+    await page.addInitScript((cookbook) => {
+      const item = {
+        id: "r1",
+        method: "manual",
+        source: "test",
+        status: "ready",
+        title: "Lemon Chicken",
+        addedAt: 0,
+        recipe: { title: "Lemon Chicken", ingredients: [{ raw: "1 cup flour" }], instructions: [{ step: 1, text: "Mix." }] },
+      };
+      const other = { ...item, id: "r2", title: "Pea Soup", recipe: { ...item.recipe, title: "Pea Soup" } };
+      sessionStorage.setItem("recipeprinter:queue:v1", JSON.stringify([item, other]));
+      sessionStorage.setItem("recipeprinter:print-job:current:v1", JSON.stringify({ ids: ["r1", "r2"] }));
+      if (cookbook) {
+        sessionStorage.setItem(
+          "recipeprinter:project-meta:v1",
+          JSON.stringify({ cookbookIntent: true, sections: [{ id: "s1", title: "Dinners", itemIds: ["r1", "r2"] }] }),
+        );
+      } else {
+        sessionStorage.removeItem("recipeprinter:project-meta:v1");
+      }
+    }, cookbook);
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.goto("/print");
+    if (cookbook) {
+      await expect(page.locator(".cookbook-welcome")).toBeVisible();
+      await page.keyboard.press("Escape");
+    }
+    const tiles = page.locator(".recipe-mobile-toolbar__btn").filter({ visible: true });
+    await expect(tiles.first()).toBeVisible();
+
+    const showing: string[] = [];
+    for (let i = 0; i < (await tiles.count()); i++) {
+      const tile = tiles.nth(i);
+      const name = (await tile.innerText()).trim();
+      await tile.click();
+      await page.waitForTimeout(300);
+      if ((await textSize.count()) > 0) showing.push(name);
+      await page.keyboard.press("Escape");
+      await expect(textSize).toHaveCount(0);
+    }
+    expect(showing, cookbook ? "cookbook" : "cards").toEqual([]);
+
+    await page.locator(".recipe-mobile-toolbar__btn", { hasText: "Themes" }).click();
+    await page.locator(".recipe-template-customize").filter({ visible: true }).click();
+    await expect(textSize).toHaveCount(1);
+    await page.keyboard.press("Escape");
+  }
+});
