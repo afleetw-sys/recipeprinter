@@ -212,7 +212,12 @@ import {
 } from "@/lib/printSettings";
 import { useFreeThemeOnOpen } from "@/lib/useFreeThemeOnOpen";
 import type { FontScale } from "@/lib/fontScale";
-import { normalizeElementStyles } from "@/lib/elementStyles";
+import {
+  hasNonNormalTextSize,
+  normalizeElementStyles,
+  pruneElementStyles,
+  recipePageAddress,
+} from "@/lib/elementStyles";
 import type { PhotoScale } from "@/lib/photoScale";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { openingPageFor } from "@/lib/frontMatterPage";
@@ -984,6 +989,7 @@ export default function PrintPage() {
     template,
     fontScale,
     photoScale,
+    elementStyles: projectMeta.meta.elementStyles,
     // The preview page IS the book's real sheet, and so is the card every
     // recipe is measured against (see `presetCardDims`).
     preset: projectMeta.meta.cookbookPreset,
@@ -3472,6 +3478,14 @@ export default function PrintPage() {
       cardSize,
       recipeCount,
       fontScale,
+      // Only the recipes still here: a deleted recipe's sizes stay in the map
+      // and must not keep asking for Pro.
+      elementTextSized: hasNonNormalTextSize(
+        pruneElementStyles(
+          projectMeta.meta.elementStyles,
+          new Set((items ?? []).map((item) => recipePageAddress(item.id))),
+        ),
+      ),
     });
   // A free, non-cookbook account can never hold more than one recipe — see
   // `hasMultiRecipeEntitlement`'s doc comment ("nothing to grandfather...
@@ -7205,6 +7219,7 @@ export default function PrintPage() {
         <PrintDeck
           saveControl={renderSaveControl()}
           proUpgradeButton={renderProUpgradeButton()}
+          textSizeProMarked={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
           singleRecipePrintView={singleRecipePrintView}
           cookbookView={cookbookView}
           previewMeasuring={previewMeasuring}

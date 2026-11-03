@@ -80,7 +80,7 @@ const PULL_HYSTERESIS_PX = 12;
 // Normal allows, never below it (see `minContentScale`).
 const MIN_CONTENT_SCALE = 0.75;
 
-function minContentScale(fontScale: FontScale | undefined): number {
+function minContentScale(fontScale: number | undefined): number {
   return Math.min(MIN_CONTENT_SCALE, MIN_CONTENT_SCALE / (fontScale ?? 1));
 }
 
@@ -225,6 +225,8 @@ export function RecipeFaceMeasurer({
   cookbookMode = false,
   cardVars,
   fontScale,
+  budgetScale,
+  floorScale,
   photoScale,
   onSettled,
 }: {
@@ -244,6 +246,13 @@ export function RecipeFaceMeasurer({
       printing another is exactly the clipping this component exists to catch,
       so these have to be the same two values the preview root carries. */
   cardVars?: React.CSSProperties;
+  /** The size the first page-split guess is made at, when this recipe's own
+      elements differ from the book (lib/elementStyles.tsx). Defaults to
+      `fontScale`. */
+  budgetScale?: number;
+  /** The smallest body text size on this recipe, which the shrink floor
+      protects. Defaults to `fontScale`. */
+  floorScale?: number;
   /** The cook's text size (lib/fontScale.ts), on the same root as `cardVars`
       for the same reason: measured at one size, printed at another, clips. */
   fontScale?: FontScale;
@@ -252,8 +261,8 @@ export function RecipeFaceMeasurer({
   onSettled: (pages: RecipeFace[]) => void;
 }) {
   const initialPages = useMemo(
-    () => getRecipeFaces(recipe, size, { hasPhoto, showSourceUrl, template, fontScale }).pages,
-    [recipe, size, template, hasPhoto, showSourceUrl, fontScale],
+    () => getRecipeFaces(recipe, size, { hasPhoto, showSourceUrl, template, fontScale: budgetScale ?? fontScale }).pages,
+    [recipe, size, template, hasPhoto, showSourceUrl, fontScale, budgetScale],
   );
 
   const [pages, setPages] = useState<RecipeFace[]>(initialPages);
@@ -390,7 +399,7 @@ export function RecipeFaceMeasurer({
         const contentHeight = availableHeightPx + overflowPx;
         if (availableHeightPx <= 0 || contentHeight <= 0) return face;
         const needed = (availableHeightPx / contentHeight) * 0.98;
-        const scale = Math.max(minContentScale(fontScale), (face.contentScale ?? 1) * needed);
+        const scale = Math.max(minContentScale(floorScale ?? fontScale), (face.contentScale ?? 1) * needed);
         return scale < (face.contentScale ?? 1) ? { ...face, contentScale: scale } : face;
       });
     }
@@ -470,7 +479,7 @@ export function RecipeFaceMeasurer({
           // three-quarters size fitted. A step that falls short is taken
           // again on the next pass, which measures it.
           const needed = Math.sqrt(availableHeightPx / contentHeight) * 0.98;
-          const nextScale = Math.max(minContentScale(fontScale), (page.contentScale ?? 1) * needed);
+          const nextScale = Math.max(minContentScale(floorScale ?? fontScale), (page.contentScale ?? 1) * needed);
           if (nextScale < (page.contentScale ?? 1)) {
             next[i] = { ...page, contentScale: nextScale };
             changed = true;
@@ -489,7 +498,7 @@ export function RecipeFaceMeasurer({
     }
 
     if (restartStacked) {
-      setPages(getRecipeFaces(recipe, size, { hasPhoto, showSourceUrl, template, fontScale, forceStacked: true }).pages);
+      setPages(getRecipeFaces(recipe, size, { hasPhoto, showSourceUrl, template, fontScale: budgetScale ?? fontScale, forceStacked: true }).pages);
       return;
     }
 

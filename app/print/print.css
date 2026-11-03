@@ -8692,6 +8692,25 @@ textarea.recipe-card__toc-title {
   border-radius: 3px;
 }
 
+/* Words with no field of their own (an added page's lines, a chapter caption,
+   the contents entries) can still be clicked to size them from the text bar
+   (lib/elementStyles.tsx), so they read as clickable like the fields do. */
+[data-element][tabindex="-1"] {
+  cursor: pointer;
+}
+[data-element][tabindex="-1"]:hover,
+[data-element][tabindex="-1"]:focus {
+  outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+@media print {
+  [data-element][tabindex="-1"]:hover,
+  [data-element][tabindex="-1"]:focus {
+    outline: none;
+  }
+}
+
 .recipe-card__cover-field--empty,
 .recipe-card__opener-field--empty {
   color: var(--cp-ink-soft);

@@ -192,6 +192,9 @@ interface PrintDeckProps {
       (`renderProUpgradeButton`) — `null` once Pro is active, so this and
       the desktop header can never disagree about whether it's owed. */
   proUpgradeButton: ReactNode;
+  /** Crown every text size but Normal in the text bar's Size: recipe cards
+      on a free account, like the book-wide Text size. */
+  textSizeProMarked: boolean;
   // Layout / preview geometry
   singleRecipePrintView: boolean;
   cookbookView: boolean;
@@ -412,6 +415,7 @@ export function PrintDeck(props: PrintDeckProps) {
   const {
     saveControl,
     proUpgradeButton,
+    textSizeProMarked,
     singleRecipePrintView,
     cookbookView,
     previewMeasuring,
@@ -1133,6 +1137,8 @@ export function PrintDeck(props: PrintDeckProps) {
       size={previewCardSize}
       template={previewTemplate}
       fontScale={previewFontScale}
+      elementStyles={projectMeta.meta.elementStyles}
+      elementTargets={focused}
       photoScale={previewPhotoScale}
       doubleSided={continueOnBack}
       gutterSide={gutterSideForRole(role)}
@@ -1464,7 +1470,17 @@ export function PrintDeck(props: PrintDeckProps) {
           {/* Body/heading and bold/italic, floating over the line being typed
               rather than joining the page's bar. It anchors itself to whatever
               field has focus, so it is mounted once for the whole deck. */}
-          <TextFieldToolbar inlineEdit={activeInlineEdit} zoom={deckZoom} introReset={activeIntroReset} />
+          <TextFieldToolbar
+            inlineEdit={activeInlineEdit}
+            zoom={deckZoom}
+            introReset={activeIntroReset}
+            elementSize={{
+              styles: projectMeta.meta.elementStyles,
+              onChange: (page, element, size) => projectMeta.setElementStyle(page, element, { textSize: size }),
+              proMarked: textSizeProMarked,
+              followLabel: projectMeta.meta.cookbookMode ? "Same as book" : "Same as card",
+            }}
+          />
           {/* Its twin, for a drag that ran across several lines rather than a
               caret sitting in one. Mounted once for the whole deck, the same
               way and for the same reason. */}
@@ -1526,6 +1542,7 @@ export function PrintDeck(props: PrintDeckProps) {
               showCutLines={showCutLines}
               doubleSided={continueOnBack}
               fontScale={previewFontScale}
+              elementStyles={projectMeta.meta.elementStyles}
               photoScale={previewPhotoScale}
             />
           )}
@@ -2072,6 +2089,8 @@ export function PrintDeck(props: PrintDeckProps) {
                     size={previewCardSize}
                     template={previewTemplate}
                     fontScale={previewFontScale}
+                    elementStyles={projectMeta.meta.elementStyles}
+                    elementTargets={isActive}
                     photoScale={previewPhotoScale}
                     doubleSided={continueOnBack}
                     cookbookMode={Boolean(projectMeta.meta.cookbookMode)}

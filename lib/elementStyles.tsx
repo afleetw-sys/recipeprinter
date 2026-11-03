@@ -21,8 +21,9 @@ import type { SheetSlot } from "@/lib/usePrintSheets";
  *
  * Addresses, not positions in a list: a recipe's id and a part's name survive
  * reordering, editing and re-importing, which an index into the ingredients
- * would not. A page that is deleted leaves its entry behind, harmlessly, until
- * `pruneElementStyles` drops it on save.
+ * would not. A page that is deleted leaves its entry behind, which draws
+ * nothing; anything that counts styles (the Pro check) prunes first with
+ * `pruneElementStyles`.
  */
 export interface ElementStyle {
   /**
@@ -164,6 +165,29 @@ export function recipeTextSizes(
     if (style.textSize !== undefined) out[name as RecipeElement] = style.textSize;
   }
   return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/** The text size a recipe's first page-split guess is made at: the biggest of
+    its body elements, so a recipe with Biggest steps is guessed long. The
+    measurer corrects the guess either way; a long guess only pulls content
+    back, which is cheaper than pushing it out. */
+export function recipeBudgetScale(
+  bookScale: number,
+  sizes: Partial<Record<RecipeElement, FontScale>> | undefined,
+): number {
+  if (!sizes) return bookScale;
+  return Math.max(sizes.ingredients ?? bookScale, sizes.steps ?? bookScale, sizes.notes ?? bookScale);
+}
+
+/** The text size the shrink-to-fit floor protects: the smallest of a recipe's
+    body elements, so a face holding Smallest steps can never be shrunk below
+    the smallest type Normal allows. */
+export function recipeFloorScale(
+  bookScale: number,
+  sizes: Partial<Record<RecipeElement, FontScale>> | undefined,
+): number {
+  if (!sizes) return bookScale;
+  return Math.min(sizes.ingredients ?? bookScale, sizes.steps ?? bookScale, sizes.notes ?? bookScale);
 }
 
 /** A stable string for memo keys: the same styles always give the same key. */

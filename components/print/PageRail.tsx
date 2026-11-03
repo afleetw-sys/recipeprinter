@@ -1595,6 +1595,7 @@ export function PageRail(props: PageRailProps) {
                                 size={previewCardSize}
                                 template={previewTemplate}
                                 fontScale={previewFontScale}
+                                elementStyles={projectMeta.meta.elementStyles}
                                 photoScale={previewPhotoScale}
                                 doubleSided={continueOnBack}
                                 showDescription={previewDescriptionOn}
@@ -1738,6 +1739,7 @@ export function PageRail(props: PageRailProps) {
                         size={previewCardSize}
                         template={previewTemplate}
                         fontScale={previewFontScale}
+                        elementStyles={projectMeta.meta.elementStyles}
                         photoScale={previewPhotoScale}
                         doubleSided={continueOnBack}
                         showDescription={previewDescriptionOn}

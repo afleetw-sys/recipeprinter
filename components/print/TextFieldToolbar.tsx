@@ -11,6 +11,9 @@ import { isAllCaps, isTitleCase, toAllCaps, toTitleCase } from "@/lib/titleCase"
 import { useFloatingBarPlacement } from "@/lib/useFloatingBarPlacement";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 import type { RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
+import { ProBadge } from "@/components/ProBadge";
+import { DEFAULT_FONT_SCALE, FONT_SCALES, FONT_SCALE_LABELS, type FontScale } from "@/lib/fontScale";
+import type { ElementStyles } from "@/lib/elementStyles";
 
 /**
  * The card's inline fields, and nothing else on the page.
@@ -23,6 +26,9 @@ import type { RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
 function inlineFieldFrom(node: EventTarget | null): HTMLElement | null {
   if (!(node instanceof HTMLElement)) return null;
   if (node.isContentEditable) return node;
+  // Words with no field of their own (an added page's lines, a caption, the
+  // contents entries): focusable only so this bar can size them.
+  if (node.matches("[data-element][tabindex='-1']")) return node;
   if (node instanceof HTMLTextAreaElement || node instanceof HTMLInputElement) {
     return node.closest(".recipe-card") ? node : null;
   }
@@ -53,6 +59,7 @@ export function TextFieldToolbar({
   inlineEdit,
   zoom = 1,
   introReset,
+  elementSize,
 }: {
   inlineEdit?: RecipeCardInlineEdit;
   /** The deck's zoom. The bar grows with it — see `textBarScale`. */
@@ -61,6 +68,9 @@ export function TextFieldToolbar({
       recipes' names. Present only while there is something to go back from; it
       is offered on that one field and nowhere else. */
   introReset?: { derived: string; onReset: () => void };
+  /** The Size control: the element the field belongs to, at its own size or
+      the book's (lib/elementStyles.tsx). Absent = no Size on this bar. */
+  elementSize?: ElementSizeWiring;
 }) {
   const [field, setField] = useState<HTMLElement | null>(null);
   const barRef = useRef<HTMLDivElement | null>(null);
@@ -127,10 +137,27 @@ export function TextFieldToolbar({
 
   if (!field || spansLines) return null;
 
+  // The element this field is part of: a recipe's ingredients, a cover's
+  // title. Every element on every page carries its address.
+  const elementNode = field.closest<HTMLElement>("[data-element][data-element-page]");
+  const elementPage = elementNode?.dataset.elementPage;
+  const elementName = elementNode?.dataset.element;
+  const sizeGroup =
+    elementSize && elementPage && elementName ? (
+      <div className="recipe-page-toolbar__group" role="group" aria-label="Text size">
+        <SizeSelect
+          size={elementSize.styles?.[elementPage]?.[elementName]?.textSize}
+          followLabel={elementSize.followLabel}
+          proMarked={elementSize.proMarked}
+          onPick={(size) => elementSize.onChange(elementPage, elementName, size)}
+        />
+      </div>
+    ) : null;
+
   // A chapter's description is a plain textarea with no formatting to offer, so
   // the bar it gets holds the one thing that is specific to it.
   if (field.classList.contains("recipe-card__chapter-intro")) {
-    if (!introReset) return null;
+    if (!introReset && !sizeGroup) return null;
     return createPortal(
       <div
         ref={barRef}
@@ -140,6 +167,7 @@ export function TextFieldToolbar({
         aria-label="Chapter description"
         onMouseDown={(event) => event.preventDefault()}
       >
+        {introReset && (
         <div className="recipe-page-toolbar__group">
           <button
             type="button"
@@ -155,6 +183,8 @@ export function TextFieldToolbar({
             Use recipe names
           </button>
         </div>
+        )}
+        {sizeGroup}
       </div>,
       document.body,
     );
@@ -181,7 +211,7 @@ export function TextFieldToolbar({
   // body/heading pair: a lot of titles are imported in capitals.
   const isTitle = target?.kind === "title";
 
-  if (!lineKind && !richText && !isTitle) return null;
+  if (!lineKind && !richText && !isTitle && !sizeGroup) return null;
 
   /**
    * Only where there is something to style.
@@ -259,6 +289,142 @@ export function TextFieldToolbar({
         </div>
       )}
       {styleGroup}
+      {sizeGroup}
+    </div>,
+    document.body,
+  );
+}
+
+export interface ElementSizeWiring {
+  styles: ElementStyles | undefined;
+  /** `undefined` = back to the book's size. */
+  onChange: (page: string, element: string, size: FontScale | undefined) => void;
+  proMarked: boolean;
+  /** "Same as book" in a cookbook, "Same as card" on recipe cards. */
+  followLabel: string;
+}
+
+/**
+ * This element's own text size, as a dropdown naming it ("Large ⌄"), or
+ * "Size ⌄" while it follows the book. The same five sizes as the book-wide
+ * Text size, plus the way back to following it.
+ *
+ * Like the rest of the bar it acts on `mousedown` with the default prevented,
+ * so the field keeps focus and the edit isn't ended by choosing a size.
+ */
+function SizeSelect({
+  size,
+  followLabel,
+  proMarked,
+  onPick,
+}: {
+  size: FontScale | undefined;
+  followLabel: string;
+  proMarked: boolean;
+  onPick: (size: FontScale | undefined) => void;
+}) {
+  const [openAt, setOpenAt] = useState<{ x: number; y: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const label = size === undefined ? "Size" : FONT_SCALE_LABELS[size];
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="recipe-page-toolbar__btn recipe-text-toolbar__select"
+        aria-haspopup="menu"
+        aria-expanded={openAt ? true : undefined}
+        aria-label={size === undefined ? `Text size: ${followLabel}` : `Text size: ${label}`}
+        title="Text size"
+        onMouseDown={(event) => {
+          event.preventDefault();
+          if (openAt) {
+            setOpenAt(null);
+            return;
+          }
+          const rect = event.currentTarget.getBoundingClientRect();
+          setOpenAt({ x: rect.left, y: rect.bottom + 4 });
+        }}
+      >
+        <span>{label}</span>
+        <ChevronDownIcon size={ICON_SIZE.xs} aria-hidden />
+      </button>
+      {openAt && (
+        <SizeMenu
+          anchor={openAt}
+          triggerRef={triggerRef}
+          size={size}
+          followLabel={followLabel}
+          proMarked={proMarked}
+          onPick={(next) => {
+            setOpenAt(null);
+            if (next !== size) onPick(next);
+          }}
+          onClose={() => setOpenAt(null)}
+        />
+      )}
+    </>
+  );
+}
+
+function SizeMenu({
+  anchor,
+  triggerRef,
+  size,
+  followLabel,
+  proMarked,
+  onPick,
+  onClose,
+}: {
+  anchor: { x: number; y: number };
+  triggerRef: RefObject<HTMLButtonElement | null>;
+  size: FontScale | undefined;
+  followLabel: string;
+  proMarked: boolean;
+  onPick: (size: FontScale | undefined) => void;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
+    node.style.left = `${Math.max(8, Math.min(anchor.x, window.innerWidth - rect.width - 8))}px`;
+    node.style.top = `${Math.max(8, Math.min(anchor.y, window.innerHeight - rect.height - 8))}px`;
+  }, [anchor]);
+  useMenuDismiss([ref, triggerRef], onClose);
+  const item = (value: FontScale | undefined, text: string, key: string) => {
+    const active = value === size;
+    return (
+      <button
+        key={key}
+        type="button"
+        role="menuitemradio"
+        aria-checked={active}
+        className={`cp-menu__item ${active ? "is-active" : ""}`}
+        onMouseDown={(event) => {
+          event.preventDefault();
+          onPick(value);
+        }}
+      >
+        {text}
+        {proMarked && value !== undefined && value !== DEFAULT_FONT_SCALE && (
+          <ProBadge variant="inline" label={false} tooltip="This text size is Pro" />
+        )}
+      </button>
+    );
+  };
+  return createPortal(
+    <div
+      ref={ref}
+      className="cp-menu rail-tile-menu add-line-menu no-print"
+      role="menu"
+      aria-label="Text size"
+      style={{ top: anchor.y, left: anchor.x }}
+      onMouseDown={(event) => event.preventDefault()}
+    >
+      {item(undefined, followLabel, "follow")}
+      {FONT_SCALES.map((scale) => item(scale, FONT_SCALE_LABELS[scale], String(scale)))}
     </div>,
     document.body,
   );

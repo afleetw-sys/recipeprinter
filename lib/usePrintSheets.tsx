@@ -25,6 +25,15 @@ import { withLiveRecipes } from "@/lib/liveSheetContent";
 import { chapterRecipeTitles } from "@/lib/chapterIntro";
 import { recipeLinkOn } from "@/lib/recipeLink";
 import { DEFAULT_FONT_SCALE, type FontScale } from "@/lib/fontScale";
+import {
+  ElementPageProvider,
+  pageStylesKey,
+  recipeBudgetScale,
+  recipeFloorScale,
+  recipePageAddress,
+  recipeTextSizes,
+  type ElementStyles,
+} from "@/lib/elementStyles";
 import { DEFAULT_PHOTO_SCALE, type PhotoScale } from "@/lib/photoScale";
 import {
   getCookbookPreset,
@@ -106,8 +115,11 @@ function faceKey(
   fontScale: FontScale,
   // The cook's photo size: a bigger header photo leaves the recipe less room.
   photoScale: PhotoScale,
+  // This recipe's own element styles (lib/elementStyles.tsx): Biggest steps
+  // are a taller recipe too.
+  stylesKey: string,
 ): string {
-  return `${id}::${size}::${template}::${hasPhoto ? 1 : 0}::${sourceUrlOn ? 1 : 0}::${cookbookMode ? 1 : 0}::${descriptionOn ? 1 : 0}::${brandHidden ? 1 : 0}::${fontScale}::${photoScale}`;
+  return `${id}::${size}::${template}::${hasPhoto ? 1 : 0}::${sourceUrlOn ? 1 : 0}::${cookbookMode ? 1 : 0}::${descriptionOn ? 1 : 0}::${brandHidden ? 1 : 0}::${fontScale}::${photoScale}::${stylesKey}`;
 }
 
 // Ceiling on retained measurements, evicted oldest-first. Entries are cheap —
@@ -492,6 +504,8 @@ interface UsePrintSheetsOptions {
   template: RecipePrintTemplate;
   /** The cook's text size (lib/fontScale.ts), applied to every recipe page. */
   fontScale?: FontScale;
+  /** Single elements' own styles (lib/elementStyles.tsx). */
+  elementStyles?: ElementStyles;
   /** The cook's photo size (lib/photoScale.ts), on every recipe page's photo. */
   photoScale?: PhotoScale;
   /** The book's print format. In cookbook mode the page — and so the card every
@@ -538,6 +552,7 @@ export function usePrintSheets({
   brandHidden = false,
   template,
   fontScale = DEFAULT_FONT_SCALE,
+  elementStyles,
   photoScale = DEFAULT_PHOTO_SCALE,
   preset,
 }: UsePrintSheetsOptions) {
@@ -615,18 +630,29 @@ export function usePrintSheets({
     Record<string, { recipe: Recipe; pages: RecipeFace[] }>
   >({});
 
+  // A recipe's own element styles: part of its measurement key, and the size
+  // its first page-split guess is made at (see lib/elementStyles.tsx).
+  const stylesKeyFor = useCallback(
+    (id: string) => pageStylesKey(elementStyles?.[recipePageAddress(id)]),
+    [elementStyles],
+  );
+  const budgetScaleFor = useCallback(
+    (id: string) => recipeBudgetScale(fontScale, recipeTextSizes(elementStyles, id)),
+    [fontScale, elementStyles],
+  );
+
   const measuredFacesFor = useCallback(
     (id: string, recipe: Recipe, hasPhoto: boolean, size: PrintCardSize): RecipeFace[] | null => {
       const entry =
         measuredFaces[
-          faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn, brandHidden, fontScale, photoScale)
+          faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn, brandHidden, fontScale, photoScale, stylesKeyFor(id))
         ];
       // Recipe CONTENT is the one discriminator a string key can't carry: an
       // inline edit keeps the same id, so a measurement of the pre-edit recipe
       // has to be rejected on identity. Everything else is in the key.
       return entry && entry.recipe === recipe ? entry.pages : null;
     },
-    [measuredFaces, linkOnFor, template, cookbookLayouts, descriptionOn, brandHidden, fontScale, photoScale],
+    [measuredFaces, linkOnFor, template, cookbookLayouts, descriptionOn, brandHidden, fontScale, photoScale, stylesKeyFor],
   );
 
   // Resolves each recipe's per-page layout: an explicit placement, else the
@@ -693,10 +719,10 @@ export function usePrintSheets({
           hasPhoto,
           showSourceUrl: linkOnFor(id),
           template,
-          fontScale,
+          fontScale: budgetScaleFor(id),
         });
       }),
-    [measuredRecipeItems, measuredFacesFor, linkOnFor, template, fontScale],
+    [measuredRecipeItems, measuredFacesFor, linkOnFor, template, budgetScaleFor],
   );
   // A bound cookbook never uses the front/back "flip" model: a recipe's overflow
   // continues on the NEXT page (a new leaf), not the back of the same sheet.
@@ -782,7 +808,7 @@ export function usePrintSheets({
             hasPhoto,
             showSourceUrl: linkOnFor(item.id),
             template,
-            fontScale,
+            fontScale: budgetScaleFor(item.id),
           }).pages;
         queue.push({
           recipeId: item.id,
@@ -875,7 +901,7 @@ export function usePrintSheets({
           hasPhoto,
           showSourceUrl: linkOnFor(item.id),
           template,
-          fontScale,
+          fontScale: budgetScaleFor(item.id),
         }).pages
       );
     }
@@ -1190,7 +1216,11 @@ export function usePrintSheets({
         // A long book's contents runs onto as many pages as it needs. The page
         // is `overflow: hidden`, so anything past the first page's bottom edge
         // used to be silently clipped — recipes with no listing at all.
-        const tocSheets: PageSheet[] = paginateTocEntries(tocEntries, presetCardHeightIn(bookPreset), fontScale).map((pageEntries, index) => ({
+        const tocSheets: PageSheet[] = paginateTocEntries(
+          tocEntries,
+          presetCardHeightIn(bookPreset),
+          elementStyles?.toc?.entries?.textSize ?? fontScale,
+        ).map((pageEntries, index) => ({
           id: index === 0 ? "sheet-toc" : `sheet-toc-${index + 1}`,
           slots: [
             {
@@ -1233,7 +1263,7 @@ export function usePrintSheets({
     if (cookbookLayouts) closeSpreadGaps(out);
 
     return out;
-  }, [layoutSettled, sections, allItems, cover, backCover, dedication, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, linkOnFor, photoStyle, template, measuredFacesFor, cookbookMode, cookbookLayouts, cookbookResolution, itemPlacements, bookPreset, ownPhotosOnly, fontScale]);
+  }, [layoutSettled, sections, allItems, cover, backCover, dedication, tableOfContents, bookTitle, cardSize, continueOnBack, photoOnFor, linkOnFor, photoStyle, template, measuredFacesFor, cookbookMode, cookbookLayouts, cookbookResolution, itemPlacements, bookPreset, ownPhotosOnly, fontScale, elementStyles, budgetScaleFor]);
 
   // What the rail and deck actually browse: one face per item, in physical
   // sheet order, except that a recipe's own faces (front + any continuations)
@@ -1414,6 +1444,11 @@ export function usePrintSheets({
         // each settles out of the unsettled set above (see MEASURE_WINDOW_SIZE).
         .slice(0, MEASURE_WINDOW_SIZE)
         .map(({ id, recipe, hasPhoto, size }) => (
+          <ElementPageProvider
+            key={faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn, brandHidden, fontScale, photoScale, stylesKeyFor(id))}
+            page={recipePageAddress(id)}
+            styles={elementStyles}
+          >
           <RecipeFaceMeasurer
             // THE result key, not a lookalike. A measurer that has settled
             // never measures again for the same props, so its React key must
@@ -1424,7 +1459,7 @@ export function usePrintSheets({
             // never filled, and a project opened from the account page sat
             // loading until a hard refresh. Using `faceKey` itself means the
             // two can no longer drift.
-            key={faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn, brandHidden, fontScale, photoScale)}
+            key={faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn, brandHidden, fontScale, photoScale, stylesKeyFor(id))}
             recipe={recipe}
             size={size}
             template={template}
@@ -1434,17 +1469,20 @@ export function usePrintSheets({
             cookbookMode={cookbookLayouts}
             cardVars={cardVars}
             fontScale={fontScale}
+            budgetScale={budgetScaleFor(id)}
+            floorScale={recipeFloorScale(fontScale, recipeTextSizes(elementStyles, id))}
             photoScale={photoScale}
             onSettled={(pages) =>
               setMeasuredFaces((current) =>
                 withMeasuredFace(
                   current,
-                  faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn, brandHidden, fontScale, photoScale),
+                  faceKey(id, size, template, hasPhoto, linkOnFor(id), cookbookLayouts, descriptionOn, brandHidden, fontScale, photoScale, stylesKeyFor(id)),
                   { recipe, pages },
                 ),
               )
             }
           />
+          </ElementPageProvider>
         ))}
     </>
   );
