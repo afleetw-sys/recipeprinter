@@ -164,16 +164,22 @@ export default function TermsPage() {
         </p>
         <LegalSubheading>Photos from websites</LegalSubheading>
         <p>
-          Photos on other websites belong to whoever holds the rights to them.
-          Importing a recipe does not give you any right to use its photo. You
-          decide what goes into what you print, and we recommend using your own
-          photos, especially in a cookbook.
+          A photo on a recipe website belongs to the person who took it, or to
+          whoever they gave the rights to. Importing the recipe brings the photo
+          along, but it doesn&apos;t make it yours to reuse.
         </p>
         <p>
-          We do not review what you import, add, or print, and we cannot
-          determine whether you have the right to use it. Everything in a card,
-          PDF, or cookbook you make, including recipes, text, and photos, is
-          there because you added it or chose to keep it.
+          That&apos;s why a cookbook leaves website photos out until you turn on
+          &ldquo;Use website photos.&rdquo; They&apos;re meant for books you
+          keep or give as gifts. If you&apos;re making a book to sell, use your
+          own photos or ones you have permission to use (see &ldquo;Selling what
+          you make&rdquo; below).
+        </p>
+        <p>
+          We don&apos;t review what you import, add, or print, and we can&apos;t
+          tell whether you have the right to use it. Everything in a card, PDF,
+          or cookbook you make, including recipes, text, and photos, is there
+          because you added it or chose to keep it.
         </p>
         <LegalCallout title="Personal use, not republication.">
           <p>
