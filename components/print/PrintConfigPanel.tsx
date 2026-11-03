@@ -39,7 +39,6 @@ interface PrintConfigPanelProps {
   customizeProMarked: boolean;
   /** Whether any recipe page draws a photo for a photo size to change. */
   photosShown: boolean;
-  onCustomizeUpgrade: () => void;
   anyRecipeHasImage: boolean;
   anyRecipeHasSourceUrl: boolean;
   bookPhotoStyle: PhotoStyle | null;
@@ -94,7 +93,6 @@ export function PrintConfigPanel({
   resetThemeLook,
   customizeProMarked,
   photosShown,
-  onCustomizeUpgrade,
   anyRecipeHasImage,
   anyRecipeHasSourceUrl,
   bookPhotoStyle,
@@ -214,7 +212,6 @@ export function PrintConfigPanel({
             customized={themeCustomized}
             onReset={resetThemeLook}
             onBack={() => setCustomizing(false)}
-            onUpgrade={onCustomizeUpgrade}
           />
         )}
         {showBook && !customizing && (
