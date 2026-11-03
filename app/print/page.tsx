@@ -153,6 +153,7 @@ import {
 } from "@/lib/printPrimaryAction";
 import { bookRoomLeft } from "@/lib/cookbookFreeSize";
 import { FREE_COOKBOOK_RECIPES } from "@/lib/freeImports";
+import { BookCapDialog } from "@/components/print/BookCapDialog";
 import {
   markPhotoStyleTipSeen,
   photoStyleTipSeen,
@@ -3737,13 +3738,24 @@ export default function PrintPage() {
     recipeCount,
   });
   const bookCapReached = bookRoom === 0;
+  // More recipes arrived than the free preview holds: a dialog that stays
+  // until it's answered (components/print/BookCapDialog), not a toast gone in
+  // seconds. The ones that didn't fit wait in `bookCapWithheldRef` and are
+  // added once the book is bought.
+  const [bookCapDialog, setBookCapDialog] = useState<BookCapInfo | null>(null);
+  const [addAfterBookBought, setAddAfterBookBought] = useState<QueueItem[] | null>(null);
   function handleBookCapReached(info: BookCapInfo) {
-    showToast(
-      info.kept > 0
-        ? `We added ${info.kept} of ${info.found} recipes. A free preview holds up to ${FREE_COOKBOOK_RECIPES}; buy this cookbook to add the rest.`
-        : `A free preview holds up to ${FREE_COOKBOOK_RECIPES} recipes. Buy this cookbook to keep adding.`,
-    );
+    track("cookbook_preview_full", { recipeCount, price: cookbookPrice });
+    setBookCapDialog(info);
   }
+  useEffect(() => {
+    if (!addAfterBookBought || bookRoom !== null) return;
+    const added = queue.addReadyRecipes(addAfterBookBought);
+    setAddAfterBookBought(null);
+    if (added > 0) showToast(added === 1 ? "We added your other recipe." : `We added your other ${added} recipes.`);
+    // The queue's add methods are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addAfterBookBought, bookRoom]);
   function handleMultiRecipeBlocked(info: MultiRecipeBlockedInfo) {
     if (info.source === "library") {
       // The pickers already refuse to let a locked account select more than
@@ -8146,6 +8158,24 @@ export default function PrintPage() {
         })}
         onClose={() => setShowReferralInvite(false)}
       />
+      {bookCapDialog && (
+        <BookCapDialog
+          found={bookCapDialog.found}
+          kept={bookCapDialog.kept}
+          freeRecipes={FREE_COOKBOOK_RECIPES}
+          price={cookbookPrice}
+          willAddRest={Boolean(bookCapDialog.withheld?.length)}
+          busy={cookbookPurchaseBusy}
+          onClose={() => setBookCapDialog(null)}
+          onBuy={() => {
+            const withheld = bookCapDialog.withheld ?? null;
+            void purchaseCookbookAndContinue(() => {
+              setBookCapDialog(null);
+              if (withheld?.length) setAddAfterBookBought(withheld);
+            });
+          }}
+        />
+      )}
       <PrintDialogs
         showDonateDialog={showDonateDialog}
         onCloseDonateDialog={() => setShowDonateDialog(false)}
