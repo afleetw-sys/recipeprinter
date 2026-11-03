@@ -523,6 +523,16 @@ export interface AddImportOptions {
    * never hold it to the one-recipe card limit (see `addReadyRecipes`).
    */
   meterExempt?: boolean;
+  /**
+   * These ready recipes were picked in a library on a page that already let
+   * this account pick more than one (`singleSelect` was off there, so it read
+   * the account as Pro). Arriving on /print, they land before /print's own
+   * entitlement check has answered, when the one-recipe ceiling still reads
+   * every account as Free; holding them to it kept only the first of a Pro
+   * member's Select all. The picker's answer stands. Print still asks for Pro
+   * before printing more than one recipe.
+   */
+  pickedAsMulti?: boolean;
 }
 
 /** Recipes that didn't fit an unbought cookbook's free preview size. */
@@ -1265,7 +1275,7 @@ export function useQueue() {
       // A pick handed over from the homepage's Cookbook tab arrives before the
       // book is switched on, so the gate above still reads "cards". It is a
       // book, and a book holds every recipe it was given (see `meterExempt`).
-      if (singleRecipeOnlyRef.current && !opts?.meterExempt) {
+      if (singleRecipeOnlyRef.current && !opts?.meterExempt && !opts?.pickedAsMulti) {
         const allowed = Math.max(0, 1 - kept.length);
         if (nextRecipes.length > allowed) {
           onMultiRecipeBlockedRef.current?.({ source: "library", foundCount: nextRecipes.length });

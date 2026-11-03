@@ -4498,7 +4498,10 @@ export default function PrintPage() {
       if (startsFresh) queue.clear();
       if (pending.kind === "url") queue.addUrl(pending.url, importOptions);
       else if (pending.kind === "text") queue.addText(pending.text, importOptions);
-      else if (pending.kind === "ready") queue.addReadyRecipes(pending.recipes, importOptions);
+      // A library pick of several was allowed by the page it was made on,
+      // which had already read the account as Pro (see `pickedAsMulti`).
+      else if (pending.kind === "ready")
+        queue.addReadyRecipes(pending.recipes, { ...importOptions, pickedAsMulti: pending.recipes.length > 1 });
       // Files, not data URLs: the decode now happens HERE, inside `runParse`,
       // so the placeholder row goes up first and the photo is worked on in
       // front of the cook instead of behind a spinner on the page they left.
