@@ -194,7 +194,7 @@ export function MobileStructureSheet({
                 )}
               </div>
               {/* Included in the book, so no crown here. */}
-              <TextSizeControl fontScale={fontScale} setFontScale={setFontScale} proMarked={false} cookbook />
+              <TextSizeControl fontScale={fontScale} setFontScale={setFontScale} proMarked={false} />
             </div>
         </MobileSheet>
 

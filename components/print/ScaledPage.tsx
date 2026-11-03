@@ -155,10 +155,9 @@ export const ScaledPage = memo(function ScaledPage({
       — see `presetCardDims`. Ignored outside cookbook mode, where a card is a
       card and the paper it prints on is the print dialog's business. */
   preset?: CookbookPresetId;
-  /** The cook's text size. Only recipe pages carry it: a cover, an opener or
-      the contents page keeps the theme's own type. */
+  /** The cook's text size, on every page. */
   fontScale?: FontScale;
-  /** The cook's photo size, on recipe pages only, like `fontScale`. */
+  /** The cook's photo size, on recipe pages only. */
   photoScale?: PhotoScale;
 }) {
   // A cookbook page is the preset's real sheet, on screen exactly as in the
@@ -167,6 +166,11 @@ export const ScaledPage = memo(function ScaledPage({
   const bookPreset = getCookbookPreset(preset);
   const dims = cookbookMode ? presetCardDims(bookPreset) : PAGE_DIMS[size];
   const cardVars = cookbookMode ? (presetCardVars(bookPreset) as CSSProperties) : undefined;
+  // The text size reaches every page of a book, not just its recipes: the
+  // cover, contents, chapter openers and the pages a cook adds grow with it
+  // too, each keeping its own size relative to the rest. Photo size stays a
+  // recipe-page setting.
+  const bookPageVars = { ...cardVars, ...fontScaleVars(fontScale) } as CSSProperties;
   const imageSource =
     sheet.layoutKind === "image"
       ? sheet.slots.find((slot): slot is ImageSheetSlot => slot?.kind === "image")?.imageUrl
@@ -258,7 +262,7 @@ export const ScaledPage = memo(function ScaledPage({
           <div className="recipe-page-scaler__inner">
             <div
               className={`recipe-print-preview recipe-print-preview--letter ${presetBaseClass} ${presetArtClass}`}
-              style={cardVars}
+              style={bookPageVars}
               data-double-sided="false"
             >
               <div className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}>
@@ -289,7 +293,7 @@ export const ScaledPage = memo(function ScaledPage({
         <div className="recipe-page-scaler__inner">
           <div
             className={`recipe-print-preview recipe-print-preview--letter ${presetBaseClass} ${presetArtClass}`}
-            style={cardVars}
+            style={bookPageVars}
             data-double-sided="false"
           >
             <div className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}>
@@ -417,7 +421,7 @@ export const ScaledPage = memo(function ScaledPage({
         <div className="recipe-page-scaler__inner">
           <div
             className={`recipe-print-preview recipe-print-preview--letter ${presetBaseClass} ${presetArtClass}`}
-            style={cardVars}
+            style={bookPageVars}
             data-double-sided="false"
           >
             <div className={`recipe-card-set recipe-card-set--letter recipe-template--${template}`}>
@@ -503,7 +507,7 @@ export const ScaledPage = memo(function ScaledPage({
         <div className="recipe-page-scaler__inner">
           <div
             className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${ownPage ? presetArtClass : presetSafeClass}`}
-            style={cardVars}
+            style={bookPageVars}
             data-double-sided="false"
           >
             <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>
@@ -543,7 +547,7 @@ export const ScaledPage = memo(function ScaledPage({
         <div className="recipe-page-scaler__inner">
           <div
             className={`recipe-print-preview recipe-print-preview--${size} ${presetBaseClass} ${bucketClass}`}
-            style={cardVars}
+            style={bookPageVars}
             data-double-sided="false"
           >
             <div className={`recipe-card-set recipe-card-set--${size} recipe-template--${template}`}>

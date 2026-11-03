@@ -77,25 +77,19 @@ export function TextSizeControl({
   fontScale,
   setFontScale,
   proMarked,
-  cookbook = false,
 }: {
   fontScale: FontScale;
   setFontScale: (value: FontScale) => void;
   /** Crown every size but Normal: recipe cards on a free account. */
   proMarked: boolean;
-  /** In a book it sizes the recipe pages only, not the cover, dedication or
-      chapter openers, and a cook who wanted a bigger dedication took "Text
-      size" to mean the whole book. So there it says which pages it means. */
-  cookbook?: boolean;
 }) {
-  const label = cookbook ? "Recipe text size" : "Text size";
   const index = FONT_SCALES.indexOf(fontScale);
   const position = index < 0 ? FONT_SCALES.indexOf(DEFAULT_FONT_SCALE) : index;
   return (
     <div className="recipe-config-section recipe-config-section--text-size">
       <div className="recipe-text-size__head">
         <span className="recipe-config-label" id="recipe-text-size-label">
-          {label}
+          Text size
         </span>
         <span className="recipe-text-size__name">
           {proMarked && fontScale !== DEFAULT_FONT_SCALE && (

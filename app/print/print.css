@@ -5210,7 +5210,7 @@ textarea.recipe-page-fields__input {
 
 .recipe-card__chapter-eyebrow {
   margin: 0;
-  font-size: 0.14in;
+  font-size: calc(0.14in * var(--recipe-font-scale, 1));
   font-weight: 850;
   letter-spacing: 0.24em;
   text-transform: uppercase;
@@ -5569,6 +5569,16 @@ textarea.recipe-page-fields__input {
 }
 
 /* Title lockup, anchored bottom-left over the scrim. */
+/* A book's own pages had no type size of their own, so whatever they size in
+   em (the edition line, a chapter subtitle, a chapter's page number in the
+   contents) came from the browser's default 16px and never followed the text
+   size. This is that 16px, made theirs, at the cook's text size. */
+.recipe-card--cover,
+.recipe-card--divider,
+.recipe-card--toc {
+  font-size: calc(16px * var(--recipe-font-scale, 1));
+}
+
 .recipe-card__cover-content {
   position: absolute;
   z-index: 4;
@@ -5604,7 +5614,7 @@ textarea.recipe-page-fields__input {
   order: -1;
   max-width: 100%;
   margin: 0 0 0.04in;
-  font-size: 0.13in;
+  font-size: calc(0.13in * var(--recipe-font-scale, 1));
   font-weight: 800;
   letter-spacing: 0.26em;
   text-transform: uppercase;
@@ -5625,7 +5635,7 @@ textarea.recipe-page-fields__input {
 .recipe-card__cover-author {
   max-width: 100%;
   margin: 0;
-  font-size: 0.125in;
+  font-size: calc(0.125in * var(--recipe-font-scale, 1));
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -5664,7 +5674,7 @@ textarea.recipe-page-fields__input {
 
 .recipe-card__cover-from {
   margin: 0;
-  font-size: 0.125in;
+  font-size: calc(0.125in * var(--recipe-font-scale, 1));
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -5677,7 +5687,7 @@ textarea.recipe-page-fields__input {
    line (which reuses the back cover's italic `cover-blurb` treatment). */
 .recipe-card__cover-dedication-label {
   margin: 0;
-  font-size: 0.11in;
+  font-size: calc(0.11in * var(--recipe-font-scale, 1));
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -6037,7 +6047,7 @@ textarea.recipe-page-fields__input {
 }
 .recipe-card__toc-kicker {
   margin: 0 0 0.08in;
-  font-size: 0.13in;
+  font-size: calc(0.13in * var(--recipe-font-scale, 1));
   font-weight: 850;
   letter-spacing: 0.28em;
   text-transform: uppercase;
@@ -6074,7 +6084,7 @@ textarea.recipe-page-fields__input {
 }
 .recipe-card__toc-chapter-name {
   font-family: var(--recipe-title-font);
-  font-size: 0.2in;
+  font-size: calc(0.2in * var(--recipe-font-scale, 1));
   font-weight: 800;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -6104,14 +6114,14 @@ textarea.recipe-page-fields__input {
   gap: 0.1in;
   padding-left: 0.28in;
   margin: 0.075in 0;
-  font-size: 0.155in;
+  font-size: calc(0.155in * var(--recipe-font-scale, 1));
   color: var(--recipe-ink);
 }
 /* An empty book's contents: one muted line where the list will be, set at
    recipe-line size so the page reads as the same page it will become. */
 .recipe-card__toc-empty {
   margin: 0.075in 0;
-  font-size: 0.155in;
+  font-size: calc(0.155in * var(--recipe-font-scale, 1));
   font-style: italic;
   color: var(--recipe-muted);
 }
@@ -6989,11 +6999,11 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-print-preview--card-6x4 .recipe-card__cover-subtitle {
-  font-size: 0.135in;
+  font-size: calc(0.135in * var(--recipe-font-scale, 1));
 }
 
 .recipe-print-preview--card-6x4 .recipe-card__cover-author {
-  font-size: 0.095in;
+  font-size: calc(0.095in * var(--recipe-font-scale, 1));
 }
 
 .recipe-card__accent {

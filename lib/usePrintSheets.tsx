@@ -1187,7 +1187,7 @@ export function usePrintSheets({
         // A long book's contents runs onto as many pages as it needs. The page
         // is `overflow: hidden`, so anything past the first page's bottom edge
         // used to be silently clipped — recipes with no listing at all.
-        const tocSheets: PageSheet[] = paginateTocEntries(tocEntries, presetCardHeightIn(bookPreset)).map((pageEntries, index) => ({
+        const tocSheets: PageSheet[] = paginateTocEntries(tocEntries, presetCardHeightIn(bookPreset), fontScale).map((pageEntries, index) => ({
           id: index === 0 ? "sheet-toc" : `sheet-toc-${index + 1}`,
           slots: [
             {
