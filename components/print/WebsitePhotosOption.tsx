@@ -24,7 +24,7 @@ export function WebsitePhotosOption({
       onChange={(event) => onChange(event.target.checked)}
       hint={
         <>
-          Fine for gifts, not for books you sell.{" "}
+          Make sure you have the rights to use them.{" "}
           <a href="/terms#copyright-in-recipes" target="_blank" rel="noopener noreferrer">
             About photos
           </a>
