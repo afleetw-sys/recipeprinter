@@ -10230,13 +10230,15 @@ textarea.recipe-card__toc-title {
    flex column, and an in-flow pseudo-element would become a flex ITEM and shove
    the card's real content around. */
 @media print {
-  .rp-print-locked .recipe-card-page {
+  .rp-print-locked .recipe-card-page,
+  .rp-print-locked .rp-twoup__slot--filled {
     position: relative;
   }
 
   /* The diagonal. Short word on purpose — a long string would overrun the
      diagonal of a 6x4 card and spill onto the sheet. */
-  .rp-print-locked .recipe-card-page::after {
+  .rp-print-locked .recipe-card-page::after,
+  .rp-print-locked .rp-twoup__slot--filled::after {
     content: "PREVIEW";
     position: absolute;
     inset: 0;
@@ -10259,7 +10261,8 @@ textarea.recipe-card__toc-title {
   }
 
   /* Says what to do about it, rather than only that something is wrong. */
-  .rp-print-locked .recipe-card-page::before {
+  .rp-print-locked .recipe-card-page::before,
+  .rp-print-locked .rp-twoup__slot--filled::before {
     content: "Unlock at recipeprinter.com";
     position: absolute;
     left: 0;
@@ -11663,4 +11666,104 @@ textarea.recipe-card__toc-title {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   padding-inline: 7px;
+}
+
+/* ── Two 4x6 cards on a Letter sheet ───────────────────────────────────────
+   components/print/TwoUpPrintPages.tsx draws the cards a second time, two to
+   a page, and in print that drawing replaces the deck.
+
+   Geometry, on an 8.5x11 portrait sheet: two 5.75x3.75 cards, centred left to
+   right, 1.5in from the top and from the bottom, 0.5in apart. Every number
+   there is the same measured from either edge, which is the whole alignment
+   story: a long-edge duplex flip mirrors the sheet left to right, and a layout
+   that is symmetric left to right comes through the mirror unchanged, so each
+   back lands exactly behind its own front with nothing swapped. Front and back
+   pages are built from the same rules, so nothing can differ between them but
+   the content. The 0.5in gap means a printer that shifts the back a few
+   millimetres still keeps each card's back on its own card.
+
+   The page box is sheet-WIDE in inches (Safari prints inches at a scale set by
+   the document's width, see the recipe-card page box above) and 0.5in shorter
+   than the sheet, so a printer that loses some height to its margins never
+   pushes a page's bottom edge onto a sheet of its own. That slack is all below
+   the bottom card. */
+@page rp-twoup-letter {
+  size: 8.5in 11in;
+  margin: 0;
+}
+
+/* On screen it is laid out but never seen: a real box, so each card measures
+   its own columns (see TwoUpPrintPages), out of view and out of the way. */
+.rp-twoup {
+  position: fixed;
+  top: 0;
+  left: -100000px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media print {
+  .rp-twoup ~ .recipe-page-deck {
+    display: none !important;
+  }
+
+  .rp-twoup {
+    position: static !important;
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  .rp-twoup__page {
+    page: rp-twoup-letter;
+    box-sizing: border-box;
+    width: 8.5in;
+    height: 10.5in;
+    margin: 0;
+    padding-top: 1.5in;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5in;
+    overflow: hidden;
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .rp-twoup__page--last {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .rp-twoup__slot {
+    flex: none;
+    width: 5.75in;
+    height: 3.75in;
+  }
+
+  /* Cut lines on the front only. A back is cut along its front's line, and a
+     second dashed outline there would only show how far the printer shifted. */
+  .rp-twoup__page--back .recipe-card {
+    outline: none !important;
+  }
+
+  /* Safari: the same unsplittable cards and pages as the one-card print (see
+     "On Safari, a recipe card is never fragmented" above), for the same
+     reason: WebKit paginates against a page height of its own, and a card cut
+     by it pushes its lists to the bottom and off the card. */
+  .rp-webkit-print .rp-twoup .recipe-card:not(.recipe-card--chapter) {
+    overflow: auto !important;
+    scrollbar-width: none;
+  }
+  .rp-webkit-print .rp-twoup .recipe-card:not(.recipe-card--chapter)::-webkit-scrollbar {
+    display: none;
+  }
+  .rp-webkit-print .rp-twoup .recipe-card__section-group {
+    break-inside: auto !important;
+  }
+  .rp-webkit-print .rp-twoup .rp-twoup__page,
+  .rp-webkit-print .rp-twoup .recipe-card:not(.recipe-card--chapter) {
+    contain: size;
+  }
 }

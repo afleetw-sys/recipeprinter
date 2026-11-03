@@ -373,6 +373,7 @@ export default function PrintPage() {
   );
   const [doubleSided, setDoubleSided] = useState(true);
   const [showCutLines, setShowCutLines] = useState(false);
+  const [twoPerSheet, setTwoPerSheet] = useState(false);
   /* On by default: a recipe that came in with a photo should print with it
      until someone says otherwise. Off meant the common case — import, print —
      dropped the picture silently, and the only clue was a checkbox two panels
@@ -2276,7 +2277,9 @@ export default function PrintPage() {
 
   function loadDeckPhotosNow() {
     document
-      .querySelectorAll<HTMLImageElement>('#recipe-page-deck img[loading="lazy"]')
+      // The two-to-a-sheet pages (TwoUpPrintPages) are a second drawing of
+      // the same cards, and they are what prints when they are on.
+      .querySelectorAll<HTMLImageElement>('#recipe-page-deck img[loading="lazy"], .rp-twoup img[loading="lazy"]')
       .forEach((img) => {
         img.loading = "eager";
       });
@@ -2464,6 +2467,7 @@ export default function PrintPage() {
       cardSize,
       showPhoto,
       doubleSided,
+      twoPerSheet: twoPerSheet && twoPerSheetOffered,
       recipeCount: items?.filter((item) => item.recipe).length ?? 0,
       browserApp: currentBrowserApp(),
       printIsNative: printIsNative(),
@@ -3460,6 +3464,10 @@ export default function PrintPage() {
   // above, this is NOT recipe-count-dependent: it's what lets an empty
   // project's library picker still offer exactly one pick rather than none.
   const singleRecipeOnly = !cookbookMode && !hasMultiRecipeEntitlement(effectiveCustomerInfo.customerInfo);
+  // Two 4x6 cards to a sheet: offered once there are two recipes to pair,
+  // which only Pro can add. A setting stored while Pro is ignored once it
+  // lapses, and while the job is down to one recipe.
+  const twoPerSheetOffered = cardSize === "card-6x4" && !cookbookMode && !singleRecipeOnly && recipeCount >= 2;
   /** Recipe cards' phone "Every recipe" sheet: offered once there can be more
       than one recipe and some recipe has a photo or a link to show or hide. */
   const cardEveryRecipe = !cookbookMode && !singleRecipeOnly && (anyRecipeHasImage || anyRecipeHasSourceUrl);
@@ -5104,6 +5112,14 @@ export default function PrintPage() {
   function renderPrintSettingsFields() {
     return (
       <>
+        {twoPerSheetOffered && (
+          <Checkbox
+              label="Print 2 cards on each sheet"
+              hint="Leave off for 4x6 cardstock."
+              checked={twoPerSheet}
+              onChange={(event) => setTwoPerSheet(event.target.checked)}
+          />
+        )}
         {cardSize === "card-6x4" && (
           <Checkbox
               label="Cut lines"
@@ -5209,6 +5225,8 @@ export default function PrintPage() {
     setDoubleSided,
     showCutLines,
     setShowCutLines,
+    twoPerSheet,
+    setTwoPerSheet,
     showPhoto,
     setShowPhoto,
     showSourceUrl,
@@ -7180,6 +7198,7 @@ export default function PrintPage() {
           continueOnBack={continueOnBack}
           cardSize={cardSize}
           showCutLines={showCutLines}
+          twoUpPrint={twoPerSheet && twoPerSheetOffered}
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setBookShowSourceUrl}
           showDescription={showDescription}
