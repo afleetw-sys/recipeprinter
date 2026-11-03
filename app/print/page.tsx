@@ -5390,7 +5390,8 @@ export default function PrintPage() {
               onChange={(event) => setTwoPerSheet(event.target.checked)}
           />
         )}
-        {cardSize === "card-6x4" && (
+        {/* Two to a sheet always prints its cut lines (TwoUpPrintPages). */}
+        {cardSize === "card-6x4" && !(twoPerSheet && twoPerSheetOffered) && (
           <Checkbox
               label="Cut lines"
               hint="Only shows when printed."

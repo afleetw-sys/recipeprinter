@@ -13074,6 +13074,90 @@ textarea.recipe-card__toc-title {
     flex: none;
     width: 5.75in;
     height: 3.75in;
+    position: relative;
+    isolation: isolate;
+  }
+
+  /* Bleed, 1/8in past every edge of a filled half: see `Slot` in
+     components/print/TwoUpPrintPages.tsx. Each side is the face mirrored
+     about that edge and clipped to the strip; the corners take a copy scaled
+     up to 6x4 behind everything. A white mat the card's own size keeps every
+     copy out from under the card, whatever its theme leaves transparent. */
+  .rp-twoup {
+    --rp-bleed: 0.125in;
+  }
+  .rp-twoup__bleed {
+    position: absolute;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .rp-twoup__bleed .recipe-card {
+    outline: none !important;
+  }
+  .rp-twoup__bleed--corners {
+    inset: 0;
+    overflow: visible;
+    transform: scale(calc(6 / 5.75), calc(4 / 3.75));
+    transform-origin: center;
+  }
+  .rp-twoup__bleed--top,
+  .rp-twoup__bleed--bottom {
+    left: 0;
+    right: 0;
+    height: var(--rp-bleed);
+  }
+  .rp-twoup__bleed--left,
+  .rp-twoup__bleed--right {
+    top: 0;
+    bottom: 0;
+    width: var(--rp-bleed);
+  }
+  .rp-twoup__bleed--top { top: calc(-1 * var(--rp-bleed)); }
+  .rp-twoup__bleed--bottom { top: 100%; }
+  .rp-twoup__bleed--left { left: calc(-1 * var(--rp-bleed)); }
+  .rp-twoup__bleed--right { left: 100%; }
+  /* The copy sits where the card does and flips about the shared edge. */
+  .rp-twoup__mirror {
+    position: absolute;
+    width: 5.75in;
+    height: 3.75in;
+  }
+  .rp-twoup__bleed--top .rp-twoup__mirror {
+    left: 0;
+    top: var(--rp-bleed);
+    transform-origin: 50% 0;
+    transform: scaleY(-1);
+  }
+  .rp-twoup__bleed--bottom .rp-twoup__mirror {
+    left: 0;
+    top: -3.75in;
+    transform-origin: 50% 100%;
+    transform: scaleY(-1);
+  }
+  .rp-twoup__bleed--left .rp-twoup__mirror {
+    top: 0;
+    left: var(--rp-bleed);
+    transform-origin: 0 50%;
+    transform: scaleX(-1);
+  }
+  .rp-twoup__bleed--right .rp-twoup__mirror {
+    top: 0;
+    left: -5.75in;
+    transform-origin: 100% 50%;
+    transform: scaleX(-1);
+  }
+  .rp-twoup__mat {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .rp-twoup__slot > .recipe-card {
+    position: relative;
+    z-index: 2;
   }
 
   /* Cut lines on the front only. A back is cut along its front's line, and a
