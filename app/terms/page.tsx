@@ -170,9 +170,8 @@ export default function TermsPage() {
         </p>
         <p>
           That&apos;s why a cookbook leaves website photos out until you turn on
-          &ldquo;Use website photos.&rdquo; They&apos;re meant for books you
-          keep or give as gifts. If you&apos;re making a book to sell, use your
-          own photos or ones you have permission to use (see &ldquo;Selling what
+          &ldquo;Use website photos.&rdquo; If you&apos;re making a book to
+          sell, use your own photos or ones you have permission to use (see &ldquo;Selling what
           you make&rdquo; below).
         </p>
         <p>
