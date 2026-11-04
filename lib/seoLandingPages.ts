@@ -1470,7 +1470,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     h1: "Print recipes from Paprika",
     anchor: "Print Paprika recipes",
     lede:
-      "Export your Paprika recipe library, open it in RecipePrinter, and pick the recipes you want. Print them one at a time as full pages or PDFs for free, or use RecipePrinter Pro to print several together and make 4x6 recipe cards.",
+      "Open your Paprika export in RecipePrinter and print recipes one at a time for free, or several together with RecipePrinter Pro.",
     howToHeading: "How to print recipes from Paprika",
     howTo: [
       {
