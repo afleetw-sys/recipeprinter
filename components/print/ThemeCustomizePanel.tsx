@@ -105,7 +105,7 @@ export function ThemeCustomizePanel({
       {THEME_PALETTES[template] && (
         <SwatchControl
           label="Accent color"
-          first={{ label: "Theme's own", background: THEME_ACCENTS[template] }}
+          first={{ label: "Default", background: THEME_ACCENTS[template] }}
           options={THEME_PALETTES[template]!.map((option) => ({ value: option.id, label: option.label, background: option.hex }))}
           value={accent}
           onChange={setAccent}

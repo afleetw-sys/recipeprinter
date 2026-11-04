@@ -1252,13 +1252,6 @@
 .recipe-accent-custom .recipe-template--diner:not(.recipe-template-option__thumb *) {
   --recipe-step-bg: color-mix(in srgb, var(--rpa) 26%, var(--recipe-bg)) !important;
 }
-/* Themes whose title is set in the page's ink: a picked color is the title's
-   too, which is most of what a color choice is for. Themes that already
-   color their title get it through the accent above; Diner and Counter keep
-   their dark ink type. */
-.recipe-accent-custom :is(.recipe-template--document, .recipe-template--typewriter, .recipe-template--classic, .recipe-template--pantry, .recipe-template--market, .recipe-template--garden):not(.recipe-template-option__thumb *) .recipe-card__title {
-  color: var(--rpa) !important;
-}
 
 /* A whole target outlined, not a place between two: a folded chapter's bar. */
 .rail-drop-line.rail-drop-line--box {

@@ -10,9 +10,10 @@ import type { RecipePrintTemplate } from "@/types/recipe";
  * Each theme offers its own few colors, in its own style: vintage inks for
  * Heirloom and Typewriter, retro brights for Counter and Diner, produce
  * colors for Market. A short list, not a color picker, and every one checked
- * against its theme's paper: 4.5:1 or better where it sets small text, 3:1
- * where it only fills Counter's badges or Diner's big outlined title (their
- * own colors sit at 2.5:1 and 3.4:1).
+ * against its theme's paper: 4.5:1 or better where it sets small text, and
+ * for the bright themes about as much as their own color has (Bistro's coral
+ * is 3.8:1, Counter's badges 2.5:1, Diner's outlined title 3.4:1), so their
+ * choices are as bright as they are.
  *
  * Poster takes no accent: its color is its band, ten pop colors that take
  * turns by recipe, and the choice there is that band (`POSTER_COLORS`).
@@ -40,12 +41,13 @@ export const THEME_PALETTES: Partial<Record<RecipePrintTemplate, readonly Accent
     { id: "tobacco", label: "Tobacco", hex: "#7a4a22" },
     { id: "plum", label: "Plum", hex: "#5a2e4f" },
   ],
+  // Brights, as bright as Bistro's own coral against its blue checks.
   bistro: [
-    { id: "tomato", label: "Tomato", hex: "#b83f2a" },
-    { id: "bordeaux", label: "Bordeaux", hex: "#8c2333" },
-    { id: "rust", label: "Rust", hex: "#9a4a1c" },
-    { id: "olive", label: "Olive", hex: "#5f6b2a" },
-    { id: "ink", label: "Ink", hex: "#2a3550" },
+    { id: "raspberry", label: "Raspberry", hex: "#d6336c" },
+    { id: "orange", label: "Orange", hex: "#e2611a" },
+    { id: "kelly", label: "Kelly green", hex: "#2c9a55" },
+    { id: "teal", label: "Teal", hex: "#14958c" },
+    { id: "grape", label: "Grape", hex: "#8e44c9" },
   ],
   pantry: [
     { id: "slate", label: "Slate blue", hex: "#4b5d73" },
@@ -126,8 +128,8 @@ export function themeTakesAccent(template: RecipePrintTemplate): boolean {
   return Boolean(THEME_PALETTES[template]);
 }
 
-/** Each theme's own color, the one a pick replaces, for the swatch that puts
-    it back: its accent, or for Diner and Counter (dark labels, the color in
+/** Each theme's own color, the one a pick replaces, for the Default swatch
+    that puts it back: its accent, or for Diner and Counter (dark labels, the color in
     their second accent) that second one. Read from the theme blocks in
     print.css; a theme's color changing there should change here. */
 export const THEME_ACCENTS: Record<RecipePrintTemplate, string> = {
