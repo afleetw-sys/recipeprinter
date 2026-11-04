@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useId, useState, type CSSProperties } from "react";
 import { ProBadge } from "@/components/ProBadge";
 import { CheckIcon, ChevronDownIcon, ChevronLeftIcon, ICON_SIZE, UndoIcon } from "@/components/icons";
 import { StepSizeControl, TextSizeControl } from "@/components/print/TextSizeControl";
@@ -13,7 +13,15 @@ import {
   normalizePhotoScale,
   type PhotoScale,
 } from "@/lib/photoScale";
-import { ACCENT_COLORS, THEME_ACCENTS, themeTakesAccent, type AccentColor } from "@/lib/themeAccent";
+import {
+  POSTER_COLORS,
+  SUPPER_UTENSILS,
+  THEME_ACCENTS,
+  THEME_PALETTES,
+  type AccentColor,
+  type SupperUtensil,
+} from "@/lib/themeAccent";
+import { MenuSelect } from "@/components/MenuSelect";
 import type { RecipePrintTemplate } from "@/types/recipe";
 
 /**
@@ -36,6 +44,10 @@ export function ThemeCustomizePanel({
   setPhotoScale,
   accent,
   setAccent,
+  posterColor,
+  setPosterColor,
+  utensil,
+  setUtensil,
   template,
   customized,
   onReset,
@@ -55,7 +67,13 @@ export function ThemeCustomizePanel({
   /** The theme's accent color, null for its own (lib/themeAccent.ts). */
   accent: AccentColor | null;
   setAccent: (value: AccentColor | null) => void;
-  /** Which theme, for its own accent's swatch. */
+  /** Poster's band color for every recipe, null while they take turns. */
+  posterColor: number | null;
+  setPosterColor: (value: number | null) => void;
+  /** Supper's utensil for every recipe, null while they take turns. */
+  utensil: SupperUtensil | null;
+  setUtensil: (value: SupperUtensil | null) => void;
+  /** Which theme, for its own colors and art choices. */
   template: RecipePrintTemplate;
   /** Whether this theme differs from how it ships. */
   customized: boolean;
@@ -80,8 +98,49 @@ export function ThemeCustomizePanel({
         </h3>
       </div>
 
-      {themeTakesAccent(template) && (
-        <AccentColorControl accent={accent} setAccent={setAccent} template={template} proMarked={proMarked} />
+      {THEME_PALETTES[template] && (
+        <SwatchControl
+          label="Accent color"
+          first={{ label: "Theme's own", background: THEME_ACCENTS[template] }}
+          options={THEME_PALETTES[template]!.map((option) => ({ value: option.id, label: option.label, background: option.hex }))}
+          value={accent}
+          onChange={setAccent}
+          proMarked={proMarked}
+          proTooltip="This accent color is Pro"
+        />
+      )}
+      {template === "poster" && (
+        <SwatchControl
+          label="Band color"
+          first={{
+            label: "Alternating",
+            // Every band color around the swatch: they take turns.
+            background: `conic-gradient(${POSTER_COLORS.map((color) => color.hex).join(", ")})`,
+          }}
+          options={POSTER_COLORS.map((color, index) => ({ value: index, label: color.label, background: color.hex }))}
+          value={posterColor}
+          onChange={setPosterColor}
+          proMarked={proMarked}
+          proTooltip="One band color is Pro"
+        />
+      )}
+      {template === "supper" && (
+        <div className="recipe-config-section">
+          <span className="recipe-config-label">Utensil</span>
+          <MenuSelect
+            label="Utensil"
+            labelHidden
+            placeholder="Alternating"
+            clearLabel="Alternating"
+            value={utensil}
+            options={SUPPER_UTENSILS.map((piece) => ({
+              value: piece,
+              label: piece[0].toUpperCase() + piece.slice(1),
+              badge: proMarked ? <ProBadge variant="inline" label={false} tooltip="One utensil is Pro" /> : undefined,
+            }))}
+            onChange={setUtensil}
+          />
+        </div>
       )}
 
       <TextSizeControl fontScale={fontScale} setFontScale={setFontScale} proMarked={proMarked} />
@@ -128,52 +187,57 @@ export function ThemeCustomizePanel({
 }
 
 /**
- * The theme's accent: its own first, then a short list every theme can read
- * (lib/themeAccent.ts). One pick, so a radio group of round swatches, with the
- * name of the one chosen across from the heading the way Text size names its
- * step.
+ * One pick among round swatches: the theme as it ships first (its own accent,
+ * or Poster's bands taking turns), then the theme's own few choices
+ * (lib/themeAccent.ts). A radio group, with the name of the one chosen across
+ * from the heading the way Text size names its step.
  */
-function AccentColorControl({
-  accent,
-  setAccent,
-  template,
+function SwatchControl<T extends string | number>({
+  label,
+  first,
+  options,
+  value,
+  onChange,
   proMarked,
+  proTooltip,
 }: {
-  accent: AccentColor | null;
-  setAccent: (value: AccentColor | null) => void;
-  template: RecipePrintTemplate;
+  label: string;
+  first: { label: string; background: string };
+  options: Array<{ value: T; label: string; background: string }>;
+  value: T | null;
+  onChange: (value: T | null) => void;
   proMarked: boolean;
+  proTooltip: string;
 }) {
-  const options: Array<{ id: AccentColor | null; label: string; hex: string }> = [
-    { id: null, label: "Theme's own", hex: THEME_ACCENTS[template] },
-    ...ACCENT_COLORS.map((color) => ({ id: color.id, label: color.label, hex: color.hex })),
+  const labelId = useId();
+  const all: Array<{ value: T | null; label: string; background: string }> = [
+    { value: null, label: first.label, background: first.background },
+    ...options,
   ];
-  const current = options.find((option) => option.id === accent) ?? options[0];
+  const current = all.find((option) => option.value === value) ?? all[0];
   return (
     <div className="recipe-config-section">
       <div className="recipe-text-size__head">
-        <span className="recipe-config-label" id="recipe-accent-label">
-          Accent color
+        <span className="recipe-config-label" id={labelId}>
+          {label}
         </span>
         <span className="recipe-text-size__name">
-          {proMarked && accent !== null && (
-            <ProBadge variant="inline" label={false} tooltip="This accent color is Pro" />
-          )}
+          {proMarked && value !== null && <ProBadge variant="inline" label={false} tooltip={proTooltip} />}
           {current.label}
         </span>
       </div>
-      <div className="recipe-accent-swatches" role="radiogroup" aria-labelledby="recipe-accent-label">
-        {options.map((option) => (
+      <div className="recipe-accent-swatches" role="radiogroup" aria-labelledby={labelId}>
+        {all.map((option) => (
           <button
-            key={option.id ?? "theme"}
+            key={String(option.value)}
             type="button"
             role="radio"
-            aria-checked={option.id === accent}
+            aria-checked={option.value === value}
             aria-label={option.label}
             title={option.label}
-            className={`recipe-accent-swatch ${option.id === accent ? "is-selected" : ""}`}
-            style={{ "--swatch": option.hex } as CSSProperties}
-            onClick={() => setAccent(option.id)}
+            className={`recipe-accent-swatch ${option.value === value ? "is-selected" : ""}`}
+            style={{ "--swatch": option.background } as CSSProperties}
+            onClick={() => onChange(option.value)}
           />
         ))}
       </div>

@@ -319,6 +319,7 @@ export function computeProLocks({
   fontScale = 1,
   photoScale = 1,
   accent = null,
+  artChanged = false,
   elementTextSized = false,
 }: {
   customerInfo: CustomerInfo | null;
@@ -334,6 +335,9 @@ export function computeProLocks({
   photoScale?: number;
   /** The theme's accent changed (lib/themeAccent.ts): Pro the same way. */
   accent?: string | null;
+  /** One piece of art for every recipe where the theme takes turns (Poster's
+      band, Supper's utensil): Pro the same way. */
+  artChanged?: boolean;
   /** A single element on a recipe card has a text size other than Normal
       (lib/pageLooks.tsx): Pro the same way. */
   elementTextSized?: boolean;
@@ -352,7 +356,7 @@ export function computeProLocks({
   // size, accent, a part's own size) is this one lock.
   const fontScaleLocked =
     !cookbookMode &&
-    (fontScale !== 1 || photoScale !== 1 || accent !== null || elementTextSized) &&
+    (fontScale !== 1 || photoScale !== 1 || accent !== null || artChanged || elementTextSized) &&
     !hasProEntitlement(customerInfo);
   // Printing more than one recipe in one job (outside a cookbook, which has
   // its own separate purchase model) is its own Pro-gated capability — see

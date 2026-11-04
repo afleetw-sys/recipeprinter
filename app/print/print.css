@@ -1197,8 +1197,9 @@
    colors the pick replaces (Amelia, 2026-11-04: changing two labels did
    nothing you could see). A theme's deliberate second color (Bistro's blue,
    Pantry's gold, Garden's terracotta, Quilt's green) stays: it is the other
-   half of the pairing, not the color being chosen. Christmas, Fall and
-   Halloween take no accent at all; their art is in fixed colors.
+   half of the pairing, not the color being chosen. Poster's color is its
+   band (one for every recipe, or taking turns: lib/themeArt.tsx), and
+   Christmas, Fall and Halloween take no accent; their art is in fixed colors.
 
    Each block is on the theme's `.recipe-card-set` (where it declares its
    palette) or a blank page carrying the theme class, never the theme
@@ -1224,13 +1225,6 @@
   --recipe-accent: var(--rpa) !important;
   --recipe-accent-2: var(--rpa-dark) !important;
   --recipe-bullet: var(--rpa) !important;
-}
-/* Poster: its black badge under white numbers becomes the pick, solid. */
-.recipe-accent-custom .recipe-template--poster:not(.recipe-template-option__thumb *) {
-  --recipe-accent: var(--rpa) !important;
-  --recipe-accent-2: var(--rpa) !important;
-  --recipe-bullet: var(--rpa) !important;
-  --recipe-step-bg: var(--rpa) !important;
 }
 /* Two-color themes: the pick replaces the first, the second stays. */
 .recipe-accent-custom .recipe-template--bistro:not(.recipe-template-option__thumb *) {
@@ -1262,7 +1256,7 @@
    too, which is most of what a color choice is for. Themes that already
    color their title get it through the accent above; Diner and Counter keep
    their dark ink type. */
-.recipe-accent-custom :is(.recipe-template--document, .recipe-template--typewriter, .recipe-template--classic, .recipe-template--pantry, .recipe-template--market, .recipe-template--garden, .recipe-template--poster):not(.recipe-template-option__thumb *) .recipe-card__title {
+.recipe-accent-custom :is(.recipe-template--document, .recipe-template--typewriter, .recipe-template--classic, .recipe-template--pantry, .recipe-template--market, .recipe-template--garden):not(.recipe-template-option__thumb *) .recipe-card__title {
   color: var(--rpa) !important;
 }
 

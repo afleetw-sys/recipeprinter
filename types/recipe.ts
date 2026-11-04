@@ -553,7 +553,12 @@ export interface PrintProjectSettings {
   /** Every theme's own text size, photo size and accent (lib/themeLooks.ts). Absent on a
       book saved before, whose `fontScale` was every theme's. Read through
       `normalizeThemeLooks`, never directly. */
-  themeLooks?: Partial<Record<RecipePrintTemplate, { fontScale?: number; photoScale?: number; accent?: string }>>;
+  themeLooks?: Partial<
+    Record<
+      RecipePrintTemplate,
+      { fontScale?: number; photoScale?: number; accent?: string; posterColor?: number; utensil?: string }
+    >
+  >;
   /** How the cook has styled single pages and the elements on them, keyed by
       page address. See lib/pageLooks.tsx. Absent = every page follows its
       theme and the book's settings. */

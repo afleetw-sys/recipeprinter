@@ -15,6 +15,7 @@ import { normalizePageLooks } from "@/lib/pageLooks";
 import { normalizePhotoScale } from "@/lib/photoScale";
 import { accentRootProps } from "@/lib/themeAccent";
 import { lookFor, normalizeThemeLooks } from "@/lib/themeLooks";
+import { ThemeArtProvider } from "@/lib/themeArt";
 import {
   coverWrapGeometry,
   coverWrapGeometryFromSheet,
@@ -273,9 +274,8 @@ function CoverWrapDocument({ payload }: { payload: ExportPayload }) {
     ? project.settings.template
     : "classic";
   // The cook's accent for this theme, as the interior has it.
-  const accentRoot = accentRootProps(
-    lookFor(normalizeThemeLooks(project.settings.themeLooks, project.settings), template).accent,
-  );
+  const look = lookFor(normalizeThemeLooks(project.settings.themeLooks, project.settings), template);
+  const accentRoot = accentRootProps(look.accent, template);
   // The printer's own numbers when we have them, ours only as a fallback.
   const geometry = payload.coverSheet
     ? coverWrapGeometryFromSheet(preset, payload.coverSheet)
@@ -380,7 +380,10 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   const pageLooks = useMemo(() => normalizePageLooks(settings.pageLooks), [settings.pageLooks]);
   const photoScale = normalizePhotoScale(settings.photoScale);
   // The cook's accent for this theme (lib/themeAccent.ts), as on screen.
-  const accentRoot = accentRootProps(lookFor(normalizeThemeLooks(settings.themeLooks, settings), template).accent);
+  const look = lookFor(normalizeThemeLooks(settings.themeLooks, settings), template);
+  const accentRoot = accentRootProps(look.accent, template);
+  // One band color or utensil for every recipe, as on screen (lib/themeArt.tsx).
+  const themeArt = useMemo(() => ({ posterColor: look.posterColor, utensil: look.utensil }), [look.posterColor, look.utensil]);
   const cookbookMode = Boolean(settings.cookbookMode);
   // Mirrors the derivations the workspace makes (see `photosOn` / `sourceUrlOn`
   // in app/print/page.tsx): a toggle only takes effect if the content can honour
@@ -483,6 +486,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   } as CSSProperties;
 
   return (
+    <ThemeArtProvider value={themeArt}>
     <div
       className={`recipe-page-deck rp-exporting ${preset.pageClass}${preset.coilBound ? " rp-coil" : ""} ${
         cookbookMode ? "recipe-page-deck--book" : ""
@@ -522,5 +526,6 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
         </div>
       ))}
     </div>
+    </ThemeArtProvider>
   );
 }
