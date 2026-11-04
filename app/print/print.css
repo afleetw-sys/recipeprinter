@@ -1196,11 +1196,11 @@
    IS the theme's color differs by theme. So each theme says which of its
    colors the pick replaces (Amelia, 2026-11-04: changing two labels did
    nothing you could see). A theme's deliberate second color (Bistro's blue,
-   Pantry's gold, Quilt's green) stays: it is the other
+   Pantry's gold) stays: it is the other
    half of the pairing, not the color being chosen. Poster's color is its
    band (one for every recipe, or taking turns: lib/themeArt.tsx), and
-   Garden, Christmas, Fall and Halloween take no accent; their illustrations
-   are in fixed colors.
+   Garden, Quilt, Christmas, Fall and Halloween take no accent; their art is
+   in fixed colors.
 
    Each block is on the theme's `.recipe-card-set` (where it declares its
    palette) or a blank page carrying the theme class, never the theme
@@ -1233,9 +1233,6 @@
   --recipe-step-bg: color-mix(in srgb, var(--rpa) 14%, var(--recipe-bg)) !important;
 }
 .recipe-accent-custom .recipe-template--pantry:not(.recipe-template-option__thumb *) {
-  --recipe-accent: var(--rpa) !important;
-}
-.recipe-accent-custom .recipe-template--quilt:not(.recipe-template-option__thumb *) {
   --recipe-accent: var(--rpa) !important;
 }
 /* Diner and Counter set their labels in near-black and their color (Diner's

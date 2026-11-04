@@ -20,8 +20,8 @@ import type { RecipePrintTemplate } from "@/types/recipe";
  *
  * Poster takes no accent: its color is its band, ten pop colors that take
  * turns by recipe, and the choice there is that band (`POSTER_COLORS`).
- * Garden, Christmas, Fall and Halloween take nothing: their illustrations
- * (Garden's tomatoes and hills) are in fixed colors.
+ * Garden, Quilt, Christmas, Fall and Halloween take nothing: their art
+ * (Garden's tomatoes and hills, Quilt's two-color tiles) is in fixed colors.
  */
 export interface AccentOption {
   id: string;
@@ -89,13 +89,6 @@ export const THEME_PALETTES: Partial<Record<RecipePrintTemplate, readonly Accent
     { id: "berry", label: "Pink", hex: "#8e2a52" },
     { id: "plum", label: "Purple", hex: "#5e3a78" },
   ],
-  quilt: [
-    { id: "barn", label: "Red", hex: "#9a2e25" },
-    { id: "indigo", label: "Blue", hex: "#33457a" },
-    { id: "mustard", label: "Gold", hex: "#80600f" },
-    { id: "plum", label: "Purple", hex: "#6a3355" },
-    { id: "teal", label: "Teal", hex: "#2a6466" },
-  ],
   market: [
     { id: "tomato", label: "Red", hex: "#b5402c" },
     { id: "eggplant", label: "Purple", hex: "#5e3a6b" },
@@ -115,7 +108,10 @@ export const THEME_PALETTES: Partial<Record<RecipePrintTemplate, readonly Accent
     { id: "cobalt", label: "Blue", hex: "#2f6fd6" },
     { id: "teal", label: "Teal", hex: "#1a9a90" },
     { id: "orange", label: "Orange", hex: "#d85a12" },
-    { id: "grape", label: "Purple", hex: "#7a4cc2" },
+    // Lighter than the other themes' purples: Diner's title is outlined in
+    // black, so its fill has to stand off black as well as the paper (the
+    // dark one, 3.6:1 against the outline, ran into it).
+    { id: "grape", label: "Purple", hex: "#9b5de5" },
   ],
 };
 
