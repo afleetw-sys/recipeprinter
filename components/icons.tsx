@@ -160,6 +160,14 @@ export const ArrowRightIcon = (p: IconProps) => (
   </Base>
 );
 
+/* Undo (UndoIcon, above) mirrored: redo. */
+export const RedoIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M15 14l5-5-5-5" />
+    <path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />
+  </Base>
+);
+
 /* Two arrows swapping places: "move this to the other chapter". A folder read
    as filing the whole project away and a single arrow as navigation; the pair
    says the thing changes which group it is in. */
