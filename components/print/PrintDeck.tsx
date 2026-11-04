@@ -192,6 +192,9 @@ interface PrintDeckProps {
       the mobile topbar reports the exact same thing the desktop header does
       — see that function's doc comment in app/print/page.tsx. */
   saveControl: ReactNode;
+  /** Undo and redo, pre-rendered by the page (lib/editHistory). Up here
+      rather than in the bottom bar, which has no room to spare. */
+  historyControls: ReactNode;
   /** The Pro upsell button, pre-rendered by the page
       (`renderProUpgradeButton`) — `null` once Pro is active, so this and
       the desktop header can never disagree about whether it's owed. */
@@ -427,6 +430,7 @@ export function PrintDeck(props: PrintDeckProps) {
   const addMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
   const {
     saveControl,
+    historyControls,
     proUpgradeButton,
     textSizeProMarked,
     singleRecipePrintView,
@@ -1565,6 +1569,7 @@ export function PrintDeck(props: PrintDeckProps) {
               {/* Same save control the desktop header carries (see
                   `renderSaveControl` in app/print/page.tsx) — right next to
                   the account control, the same order the desktop bar keeps. */}
+              {historyControls}
               {saveControl}
               {/* Same order as the desktop header: Save, then the Pro
                   upsell — see `renderProUpgradeButton` in app/print/page.tsx

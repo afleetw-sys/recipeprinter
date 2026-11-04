@@ -11988,3 +11988,22 @@ textarea.recipe-card__toc-title {
     contain: size;
   }
 }
+
+/* Undo / redo (components/print/HistoryControls): two icon buttons sized to
+   the row they sit in, the header's 32px beside Save or the phone top bar's
+   30px. A hairline gap keeps them reading as one pair. */
+.rp-history-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.rp-history-button--header {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+}
+.rp-history-button--compact {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from "react";
+import { withoutHistory } from "@/lib/editHistory";
 import type { CustomerInfoLoadStatus } from "@/lib/proAccessFallback";
 import type { RecipePrintTemplate } from "@/types/recipe";
 
@@ -38,7 +39,8 @@ export function useFreeThemeOnOpen({
   useEffect(() => {
     if (unlocked || pickedRef.current === template) return;
     if (status !== "ok" || cookbookMode) return;
-    setTemplate("document");
+    // A correction, not the cook's choice: nothing for undo to put back.
+    withoutHistory(() => setTemplate("document"));
   }, [template, setTemplate, status, unlocked, cookbookMode]);
 
   return useCallback(

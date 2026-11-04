@@ -468,7 +468,16 @@ type EventProps = {
     recovered?: "already_signed_in" | "signed_in_existing";
     /** `email_code` only: the code made a new account. */
     created?: boolean;
+    /** `email_code` only: the server checking the code (and minting the
+     *  sign-in token), then Firebase signing in with that token. */
+    verifyMs?: number;
+    signInMs?: number;
   };
+  /** A signed-in session on this page ended. `sign_out` is a Sign out button
+   *  (in any tab); `firebase` is Firebase dropping the session by itself, which
+   *  it does when the server says it was revoked or the account disabled.
+   *  `minutesSignedIn` counts from when this page first saw them signed in. */
+  signed_out: { cause: "sign_out" | "firebase"; minutesSignedIn: number };
   /** It did not. Just the Firebase code (`auth/invalid-credential`), never a
    *  message, which can carry what was typed. */
   auth_failed: {

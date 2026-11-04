@@ -53,6 +53,24 @@ export function warmImportParsers(nowMs: number = Date.now()): void {
   wakeFunction("parseRecipeFromImages", nowMs);
 }
 
+/**
+ * The two functions behind signing in with an emailed code. Cold, the code
+ * check took 4.6s and the send 2.6s, against 0.15s running (2026-11-04), and
+ * the check is what someone waits on after typing the code: 4 to 13 seconds
+ * in PostHog. Woken as the sign-in form shows, and the check again when the
+ * code screen does, so both are up by the time anyone presses a button.
+ */
+export function warmEmailCodeSignIn(nowMs: number = Date.now()): void {
+  if (!isProductionRuntime()) return;
+  wakeFunction("recipePrinterEmailCodeSend", nowMs);
+  wakeFunction("recipePrinterEmailCodeVerify", nowMs);
+}
+
+export function warmEmailCodeCheck(nowMs: number = Date.now()): void {
+  if (!isProductionRuntime()) return;
+  wakeFunction("recipePrinterEmailCodeVerify", nowMs);
+}
+
 export function resetWokenFunctionsForTest(): void {
   wokenAt.clear();
 }
