@@ -93,6 +93,7 @@ function ScaledPageBody({
   photoScale,
   pageLooks,
   elementTargets = false,
+  sampleLines = false,
 }: {
   sheet: PageSheet;
   isLastSheet: boolean;
@@ -177,6 +178,8 @@ function ScaledPageBody({
   /** This is the deck's page being edited: words with no field of their own
       can be clicked for the text bar's Size. Never the export or the rail. */
   elementTargets?: boolean;
+  /** The book starts its optional lines with sample text (lib/bookPageSamples). */
+  sampleLines?: boolean;
 }) {
   // A cookbook page is the preset's real sheet, on screen exactly as in the
   // file — so the preview cannot show a page shape the book does not have (see
@@ -690,6 +693,7 @@ function ScaledPageBody({
                     cardGridImages={anySlot.cardGridImages}
                     intro={anySlot.intro}
                     showEmptyFields={showEmptyFields}
+                    sampleLines={sampleLines}
                     inlineEdit={
                       dividerEdit?.sectionId === anySlot.id
                         ? dividerEdit
@@ -711,6 +715,7 @@ function ScaledPageBody({
                     template={template}
                     showDecoration={showDecoration}
                     showEmptyFields={showEmptyFields}
+                    sampleLines={sampleLines}
                     inlineEdit={
                       coverEdit?.side === anySlot.side ? coverEdit : undefined
                     }

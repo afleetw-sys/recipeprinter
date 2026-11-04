@@ -216,6 +216,7 @@ export const BOOK_SETTING_KEYS = [
   "ownPhotosOnly",
   "websitePhotos",
   "pageLooks",
+  "sampleLines",
   "railSortMode",
   "lastImportSource",
 ] as const satisfies readonly (keyof ProjectMeta & keyof PrintProjectSettings)[];

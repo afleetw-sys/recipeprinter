@@ -502,6 +502,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
             template={template}
             fontScale={fontScale}
             pageLooks={pageLooks}
+            sampleLines={Boolean(settings.sampleLines)}
             photoScale={photoScale}
             doubleSided={settings.doubleSided}
             cookbookMode={cookbookMode}

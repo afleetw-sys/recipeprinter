@@ -558,6 +558,9 @@ export interface PrintProjectSettings {
       page address. See lib/pageLooks.tsx. Absent = every page follows its
       theme and the book's settings. */
   pageLooks?: PageLooks;
+  /** See `ProjectMeta.sampleLines`: optional lines never written show sample
+      text (lib/bookPageSamples.ts). Absent on books made before. */
+  sampleLines?: boolean;
   /** Book-only settings — stay undefined/off until "Make it a cookbook" has
       been used to opt into the cookbook experience. */
   cookbookMode?: boolean;

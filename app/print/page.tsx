@@ -219,7 +219,7 @@ import {
   recipePageAddress,
 } from "@/lib/pageLooks";
 import type { PhotoScale } from "@/lib/photoScale";
-import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
+import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, photoSizeOffered, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { openingPageFor } from "@/lib/frontMatterPage";
 import type {
   CookbookFrontMatter,
@@ -7307,7 +7307,13 @@ export default function PrintPage() {
           themeCustomized={isCustomized({ fontScale, photoScale })}
           resetThemeLook={resetThemeLook}
           customizeProMarked={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
-          photosShown={photosOn && (cookbookMode || cardPhotosAllowed)}
+          photosShown={photoSizeOffered({
+            cookbookMode,
+            cardPhotosAllowed,
+            // Photos the book actually shows (a book of the cook's own photos
+            // counts only those), not a place where one could go.
+            hasPhotos: coverPhotoCandidates.length > 0,
+          })}
           anyRecipeHasImage={anyRecipeHasImage}
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
           bookPhotoStyle={bookPhotoStyle}

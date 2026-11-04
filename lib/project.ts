@@ -220,6 +220,10 @@ export interface ProjectMeta {
       (`normalizeProjectMeta`), so prompts never appear on a book someone
       already finished, and set this. */
   optionalLinesExplicit?: boolean;
+  /** This book was started with sample lines (lib/bookPageSamples.ts): an
+      optional line it never wrote shows its sample text. Absent on every book
+      made before, where such a line counts as taken off. */
+  sampleLines?: boolean;
   /** The print-format preset this cookbook exports at (trim/bleed/margin/gutter
       — see lib/cookbookPresets.ts). Absent = the default preset. Cookbook-only;
       cleared when the project stops being a cookbook. */
@@ -265,7 +269,7 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
   if (!value || typeof value !== "object") {
     // Nothing written yet, so nothing to migrate: whatever is added from here
     // on shows its prompts.
-    return { sections: [], projectId: uid(), optionalLinesExplicit: true };
+    return { sections: [], projectId: uid(), optionalLinesExplicit: true, sampleLines: true };
   }
   const raw = value as Partial<ProjectMeta>;
   const legacyOpeners = Boolean(raw.sectionDividers);
@@ -1337,8 +1341,9 @@ export function useProjectMeta() {
         cookbookIntent: options.cookbook || undefined,
         cookbookBornFresh: options.cookbook || undefined,
         cookbookIntroduced: (options.cookbook && options.introduced) || undefined,
-        // A new book shows its unwritten lines' prompts (see the field).
+        // A new book starts its optional lines with sample text (see the field).
         optionalLinesExplicit: true,
+        sampleLines: true,
         // Whether the cookbook pitch has been seen is a fact about the PERSON,
         // not the project. Resetting it per project would re-pitch the product
         // to someone already on their second book.

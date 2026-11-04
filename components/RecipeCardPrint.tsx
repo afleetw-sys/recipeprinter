@@ -24,6 +24,7 @@ import { RichText } from "@/components/RichText";
 import { PhotoPlaceholder } from "@/components/print/PhotoPlaceholder";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { composeNote } from "@/lib/recipeNote";
+import { SAMPLE_LINES } from "@/lib/bookPageSamples";
 import { useElements } from "@/lib/pageLooks";
 import { InlineRichField, type CaretRange } from "@/components/InlineRichField";
 import { photoGridLayout } from "@/lib/photoGrid";
@@ -1871,6 +1872,7 @@ export const DividerFace = memo(function DividerFace({
   previewHidden = false,
   inlineEdit,
   showEmptyFields = false,
+  sampleLines = false,
 }: {
   title: string;
   chapterNumber?: number;
@@ -1889,6 +1891,8 @@ export const DividerFace = memo(function DividerFace({
   inlineEdit?: DividerCardInlineEdit;
   /** Reveal the opener lines nobody has written yet — see RecipeCardPrint. */
   showEmptyFields?: boolean;
+  /** The book starts its optional lines with sample text (see CoverFace). */
+  sampleLines?: boolean;
 }) {
   const el = useElements();
   // A chapter just made opens its title with "New chapter" selected, so the
@@ -2019,18 +2023,33 @@ export const DividerFace = memo(function DividerFace({
       setAddedField(null);
       setEditingField(null);
     }
-    const text = value || fallback || "";
+    // Never written, in a book that starts with sample lines: its sample
+    // (lib/bookPageSamples.ts). The description has none: left alone it
+    // already prints the chapter's recipes.
+    const sample = sampleLines && !removed && !value ? SAMPLE_LINES[name] : undefined;
+    const text = value || sample || fallback || "";
     if (text) {
       return (
         <p
           {...el(name)}
           className={`${className} ${canEdit ? "recipe-card__opener-field--editable" : ""}`}
-          onMouseDown={canEdit ? fieldOpener(() => openField(name)) : undefined}
+          data-field-line={name}
+          onMouseDown={
+            canEdit
+              ? fieldOpener(() => {
+                  // Editing the sample starts from its words (see CoverFace).
+                  if (sample) onChange(sample);
+                  openField(name);
+                })
+              : undefined
+          }
         >
           {text}
         </p>
       );
     }
+    // Off the page with nothing in it: no prompt; the "+" menu puts it back.
+    if (SAMPLE_LINES[name] !== undefined) return null;
     if (!canEdit || (removed && !showEmpty)) return null;
     return (
       <p
@@ -2073,6 +2092,8 @@ export const DividerFace = memo(function DividerFace({
   const cardBodyHasText =
     Boolean(effectiveTitle.trim()) ||
     Boolean((inlineEdit?.subtitle ?? subtitle ?? "").trim()) ||
+    // A subtitle never written shows its sample (see `openerField`).
+    (sampleLines && (inlineEdit?.subtitle ?? subtitle) === undefined) ||
     !introRemoved ||
     showChapterNumber ||
     showEmpty ||
@@ -2284,6 +2305,7 @@ export const CoverFace = memo(function CoverFace({
   inlineEdit,
   showDecoration = true,
   showEmptyFields = false,
+  sampleLines = false,
 }: {
   cover: CoverConfig;
   side: "front" | "back" | "dedication";
@@ -2296,6 +2318,10 @@ export const CoverFace = memo(function CoverFace({
   showDecoration?: boolean;
   /** Reveal the cover lines nobody has written yet — see RecipeCardPrint. */
   showEmptyFields?: boolean;
+  /** The book starts its optional lines with sample text (lib/bookPageSamples):
+      a line never written shows, and prints, its sample. Off for an older book,
+      where such a line is taken off, and for a page the cook added. */
+  sampleLines?: boolean;
   inlineEdit?: CoverCardInlineEdit;
 }) {
   const el = useElements();
@@ -2413,18 +2439,35 @@ export const CoverFace = memo(function CoverFace({
       setAddedField(null);
       setEditingField(null);
     }
-    const text = value || fallback || "";
+    // Never written, in a book that starts with sample lines: its sample, on
+    // the page and in print (lib/bookPageSamples.ts).
+    const sample = sampleLines && !removed && !value ? SAMPLE_LINES[name] : undefined;
+    const text = value || sample || fallback || "";
     if (text) {
       return (
         <Tag
           {...el(name, undefined, !canEdit)}
           className={`${className} ${canEdit ? "recipe-card__cover-field--editable" : ""}`}
-          onClick={canEdit ? () => setEditingField(name) : undefined}
+          data-field-line={name}
+          onClick={
+            canEdit
+              ? () => {
+                  // Editing sample words starts from them, as the cook's own:
+                  // deleting them all is what takes the line off.
+                  if (sample) onChange(sample);
+                  setEditingField(name);
+                }
+              : undefined
+          }
         >
           {text}
         </Tag>
       );
     }
+    // An optional line with nothing in it is off the page: no "Add …" prompt
+    // and no ×. The page toolbar's "+" menu puts it back. Only a title, which
+    // has no sample, still comes back through the reveal.
+    if (SAMPLE_LINES[name] !== undefined) return null;
     if (!canEdit || (removed && !showEmpty)) return null;
     return (
       <Tag
@@ -2443,9 +2486,9 @@ export const CoverFace = memo(function CoverFace({
       </Tag>
     );
   }
-  /** A line nobody has written or removed: its prompt is on the page. */
+  /** A line nobody has written or removed, showing its sample text. */
   const prompts = (...lines: (string | undefined)[]) =>
-    canEdit && lines.some((line) => line === undefined);
+    sampleLines && lines.some((line) => line === undefined);
 
   // Dedication: a quiet front-matter page — a short, centered dedication
   // line, on the template's own paper by default or over a chosen photo/

@@ -56,6 +56,7 @@ import type { useDeckScroller } from "@/lib/useDeckScroller";
 import { isPhotoOpenClick, photoDialogKey, type PhotoPress } from "@/lib/photoOpenGesture";
 import { LineSelectionToolbar } from "@/components/print/LineSelectionToolbar";
 import { TextFieldToolbar } from "@/components/print/TextFieldToolbar";
+import { SAMPLE_LINES, lineShown } from "@/lib/bookPageSamples";
 import { usePageOverflow } from "@/lib/pageOverflow";
 import { pageAddressForSlot } from "@/lib/pageLooks";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
@@ -354,13 +355,20 @@ interface PrintDeckProps {
 function openAddedLine(name: string) {
   let tries = 0;
   const attempt = () => {
+    // The line itself, back on the page with its sample words (a title's
+    // prompt, for the one kind of line that still has one).
     const prompt = document.querySelector<HTMLElement>(
-      `.recipe-page-slide.is-active .recipe-card [data-field-prompt="${name}"]`,
+      `.recipe-page-slide.is-active .recipe-card [data-field-line="${name}"], .recipe-page-slide.is-active .recipe-card [data-field-prompt="${name}"]`,
     );
     if (prompt) {
       prompt.dataset.added = "true";
       prompt.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
       if (prompt.dataset.added) prompt.click();
+      // Opened with its words selected, so typing replaces the sample.
+      window.requestAnimationFrame(() => {
+        const field = document.activeElement;
+        if (field instanceof HTMLTextAreaElement || field instanceof HTMLInputElement) field.select();
+      });
       return;
     }
     if (++tries < 12) window.requestAnimationFrame(attempt);
@@ -569,8 +577,9 @@ export function PrintDeck(props: PrintDeckProps) {
      * page, each with how to add it. On a recipe page, every line the recipe
      * has nothing in: a recipe page draws no empty line, because it is laid
      * out as it prints (see RecipeFace). On a book page (a cover, an opening
-     * page, a chapter opener), whose empty lines show as fields with a × on
-     * the page itself, only the lines taken off. No lines, no button.
+     * page, a chapter opener), every optional line that isn't on the page:
+     * there are no prompts on the page itself (lib/bookPageSamples.ts). No
+     * lines, no button.
      *
      * A cleared cover or chapter title has no prompt of its own, so it comes
      * back through the reveal instead.
@@ -617,13 +626,15 @@ export function PrintDeck(props: PrintDeckProps) {
           edition: `${prefix}-edition`,
           blurb: side === "back" ? "back-blurb" : "dedication-text",
         };
+        // Off the page: deleted, or (in a book from before sample lines)
+        // never written. Put back with its sample words, open and selected.
         const back = (key: "subtitle" | "author" | "edition" | "blurb", name: string) =>
-          cover[key] === ""
+          !lineShown(cover[key], projectMeta.meta.sampleLines)
             ? [
                 {
                   name,
                   restore: () => {
-                    setCoverForSide(side, { ...cover, [key]: undefined });
+                    setCoverForSide(side, { ...cover, [key]: SAMPLE_LINES[lineNames[key]] ?? "" });
                     openAddedLine(lineNames[key]);
                   },
                 },
@@ -663,12 +674,12 @@ export function PrintDeck(props: PrintDeckProps) {
         // is only missing once it has been removed (`""`).
         return [
           ...(!sectionDisplayTitle(section).trim() ? [{ name: "Title", restore: viaReveal }] : []),
-          ...(section.subtitle === ""
+          ...(!lineShown(section.subtitle, projectMeta.meta.sampleLines)
             ? [
                 {
                   name: "Subtitle",
                   restore: () => {
-                    projectMeta.updateSection(section.id, { subtitle: undefined });
+                    projectMeta.updateSection(section.id, { subtitle: SAMPLE_LINES.subtitle });
                     openAddedLine("subtitle");
                   },
                 },
@@ -1162,6 +1173,7 @@ export function PrintDeck(props: PrintDeckProps) {
       template={previewTemplate}
       fontScale={previewFontScale}
       pageLooks={projectMeta.meta.pageLooks}
+      sampleLines={projectMeta.meta.sampleLines}
       elementTargets={focused}
       photoScale={previewPhotoScale}
       doubleSided={continueOnBack}
@@ -2125,6 +2137,7 @@ export function PrintDeck(props: PrintDeckProps) {
                     template={previewTemplate}
                     fontScale={previewFontScale}
                     pageLooks={projectMeta.meta.pageLooks}
+                    sampleLines={projectMeta.meta.sampleLines}
                     elementTargets={isActive}
                     photoScale={previewPhotoScale}
                     doubleSided={continueOnBack}

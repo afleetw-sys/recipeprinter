@@ -1596,6 +1596,7 @@ export function PageRail(props: PageRailProps) {
                                 template={previewTemplate}
                                 fontScale={previewFontScale}
                                 pageLooks={projectMeta.meta.pageLooks}
+                                sampleLines={projectMeta.meta.sampleLines}
                                 photoScale={previewPhotoScale}
                                 doubleSided={continueOnBack}
                                 showDescription={previewDescriptionOn}
@@ -1745,6 +1746,7 @@ export function PageRail(props: PageRailProps) {
                         template={previewTemplate}
                         fontScale={previewFontScale}
                         pageLooks={projectMeta.meta.pageLooks}
+                        sampleLines={projectMeta.meta.sampleLines}
                         photoScale={previewPhotoScale}
                         doubleSided={continueOnBack}
                         showDescription={previewDescriptionOn}
