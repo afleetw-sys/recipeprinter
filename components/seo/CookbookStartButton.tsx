@@ -21,10 +21,13 @@ import { track } from "@/lib/analytics";
 export function CookbookStartButton({
   label = "Start a cookbook",
   compact = false,
+  variant = "button",
 }: {
   label?: string;
   /** The site header's control size (`.btn-header`), for the header slot. */
   compact?: boolean;
+  /** `link`: words inside a sentence (a page's subtitle), not a button. */
+  variant?: "button" | "link";
 }) {
   const router = useRouter();
   const { startNewProject } = useProjectMeta();
@@ -41,6 +44,19 @@ export function CookbookStartButton({
     // One frame so the spinner shows before the navigation takes the thread.
     await nextPaint();
     router.push("/print");
+  }
+
+  if (variant === "link") {
+    return (
+      <button
+        type="button"
+        className="inline cursor-pointer border-0 bg-transparent p-0 font-semibold text-ink underline underline-offset-[0.16em] hover:text-accent-ink"
+        aria-busy={opening || undefined}
+        onClick={() => void start()}
+      >
+        {label}
+      </button>
+    );
   }
 
   return (

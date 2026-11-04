@@ -179,6 +179,10 @@ export type SeoLandingPage = {
    */
   hub?: { label: string; slugs: string[] };
   lede: string;
+  /** Words of `lede`, exactly as written there, that start a new cookbook
+      when clicked (CookbookStartButton as a link): for a page whose recipes
+      could all go in one book. */
+  ledeCookbookLink?: string;
   /** One-sentence subtitle under the how-to section's heading. Renders only
       alongside `howTo` — nothing on its own if that's unset. */
   intro?: string;
@@ -1470,7 +1474,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     h1: "Print recipes from Paprika",
     anchor: "Print Paprika recipes",
     lede:
-      "Open your Paprika export in RecipePrinter and print recipes one at a time for free, or several together with RecipePrinter Pro.",
+      "Open your Paprika export and print any recipe free as a clean, ready-to-cook page. Printing several at once is part of Pro, or you can make a cookbook from all of them.",
+    ledeCookbookLink: "make a cookbook from all of them",
     howToHeading: "How to print recipes from Paprika",
     howTo: [
       {
