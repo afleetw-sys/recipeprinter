@@ -344,6 +344,22 @@
   backdrop-filter: var(--cp-scrim-blur);
 }
 
+/* A confirm's heading and message name things (a recipe, a project, a link a
+   failed import is titled with), and a name can be one unbroken string. Both
+   break anywhere rather than running out of the dialog, and the heading stops
+   at two lines with an ellipsis. */
+.confirm-dialog__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.confirm-dialog__message {
+  overflow-wrap: anywhere;
+}
+
 /* An extra choice inside a confirm dialog — today "also delete the recipes in
    this chapter". A slot in the shared ConfirmDialog rather than one dialog's
    private class, which is where it lived when that dialog was private too. */

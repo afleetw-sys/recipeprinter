@@ -74,10 +74,17 @@ export function ConfirmDialog({
       >
         <XIcon size={ICON_SIZE.md} />
       </IconButton>
-      <h2 id="confirm-dialog-title" className="pr-10 text-cp-dialog-title font-bold tracking-tight">
+      {/* The heading names what's being deleted, and a name can be a link with
+          no spaces to wrap at. It breaks anywhere and stops at two lines with
+          an ellipsis; the whole name is its tooltip. */}
+      <h2
+        id="confirm-dialog-title"
+        className="confirm-dialog__title pr-10 text-cp-dialog-title font-bold tracking-tight"
+        title={title}
+      >
         {title}
       </h2>
-      <div className="mt-cp-3 text-cp-body leading-relaxed text-ink-soft">{description}</div>
+      <div className="confirm-dialog__message mt-cp-3 text-cp-body leading-relaxed text-ink-soft">{description}</div>
       {children}
       <div className="mt-cp-6 flex flex-wrap justify-end gap-cp-3">
         <button type="button" className="btn btn-ghost" disabled={busy} onClick={onCancel}>
