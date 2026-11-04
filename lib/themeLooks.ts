@@ -86,3 +86,25 @@ export function normalizeThemeLooks(stored: unknown, legacy: { fontScale?: unkno
   const look = { fontScale, photoScale: legacyPhotoScale(fontScale) };
   return RECIPE_PRINT_TEMPLATE_OPTIONS.reduce<ThemeLooks>((looks, option) => withLook(looks, option.id, look), {});
 }
+
+/**
+ * Whether Customize theme offers the photo size. It sizes the photo in a
+ * recipe page, so it's offered whenever the book has photos, whatever the
+ * book-wide Photos choice is: a book on Full page, or on None with recipes
+ * set in page one by one, still has photos to size, and the setting
+ * shouldn't hide until the cook finds the one choice that shows it.
+ */
+export function photoSizeOffered({
+  cookbookMode,
+  cardPhotosAllowed,
+  hasPhotos,
+}: {
+  cookbookMode: boolean;
+  /** Recipe cards: photos are part of this account's cards at all. */
+  cardPhotosAllowed: boolean;
+  /** Any recipe in the project has a photo (or, in a book of the cook's own
+      photos, a place for one). */
+  hasPhotos: boolean;
+}): boolean {
+  return hasPhotos && (cookbookMode || cardPhotosAllowed);
+}
