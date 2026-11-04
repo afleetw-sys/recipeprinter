@@ -242,6 +242,8 @@ interface PageRailProps {
   makeSectionFromSelection: (selection?: ReadonlySet<string>) => void;
   /** Tile-menu move: drops `ids` at the end of `sectionId`, in book order. */
   moveRecipesToSection: (ids: string[], sectionId: string) => void;
+  /** Moves recipes into the group in no chapter. */
+  removeRecipesFromChapter: (ids: string[]) => void;
   railSortMode: RailSortMode;
   applyRailSort: (mode: RailSortMode) => void;
   addMenuOpen: boolean;
@@ -315,6 +317,7 @@ export function PageRail(props: PageRailProps) {
     moveSectionInBook,
     makeSectionFromSelection,
     moveRecipesToSection,
+    removeRecipesFromChapter,
     railSortMode,
     applyRailSort,
     addMenuOpen,
@@ -585,8 +588,16 @@ export function PageRail(props: PageRailProps) {
     };
   }, [addMenuOpen]);
 
+  /** The chapter name a recipe is under, or nothing when it is in none. */
+  const sectionTitleOfItem = (itemId: string) => {
+    const at = sectionAndIndexForItem(itemId);
+    return at ? sections.find((section) => section.id === at.sectionId)?.title?.trim() : undefined;
+  };
+  // The recipes in no chapter are a group with no name; moving there is
+  // "Remove from chapter", not a chapter called "Untitled".
   const tileMenuSections = tileMenu
     ? sections.filter((section) => {
+        if (!section.title?.trim()) return false;
         const ids = itemIdsForSection(section.id);
         // A section every moved recipe is already in has nowhere to move them.
         return !tileMenu.ids.every((id) => ids.includes(id));
@@ -1834,6 +1845,11 @@ export function PageRail(props: PageRailProps) {
               sections={tileMenuSections}
               onMove={(sectionId) => moveRecipesToSection(tileMenu.ids, sectionId)}
               onNewSection={() => makeSectionFromSelection(new Set(tileMenu.ids))}
+              onRemoveFromChapter={
+                tileMenu.ids.some((id) => sectionTitleOfItem(id))
+                  ? () => removeRecipesFromChapter(tileMenu.ids)
+                  : undefined
+              }
               onClose={() => setTileMenu(null)}
             />
           )}

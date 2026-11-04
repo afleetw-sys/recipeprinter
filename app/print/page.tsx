@@ -2834,6 +2834,14 @@ export default function PrintPage() {
     track("cookbook_recipes_moved_to_section", { count: ids.length, via: "tile_menu" });
   }
 
+  /** Out of their chapter, into the recipes in no chapter: the book's group
+      with no name, or a new one at the end when every recipe is in a
+      chapter. */
+  function removeRecipesFromChapter(ids: string[]) {
+    const target = sections.find((section) => !section.title?.trim())?.id ?? projectMeta.addSection();
+    moveRecipesToSection(ids, target);
+  }
+
   /** What this page has set up on screen, as the layout half of a project's
       settings. The device shelf reads its stored equivalent instead — see
       `PrintLayoutSettings`. */
@@ -7240,6 +7248,7 @@ export default function PrintPage() {
           addBlankPage={() => addBlankPage()}
           makeSectionFromSelection={makeSectionFromSelection}
           moveRecipesToSection={moveRecipesToSection}
+          removeRecipesFromChapter={removeRecipesFromChapter}
           railSortMode={railSortMode}
           applyRailSort={applyRailSort}
           addMenuOpen={addMenuOpen}

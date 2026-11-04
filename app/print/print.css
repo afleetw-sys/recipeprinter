@@ -324,8 +324,24 @@
   display: flex;
   flex: 1 0 100%;
   align-items: center;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 8px;
+  margin-top: 10px;
+}
+/* The toolbar is the whole page's now, so it is the workspace's 38px field
+   height (a print-panel dropdown's), not the 30px of a row in a side panel:
+   still compact, no longer tiny beside the page it runs. */
+.recipe-print-shell--organizing .recipe-organize-bar__find .icon-button {
+  width: 38px;
+  height: 38px;
+}
+.recipe-print-shell--organizing .recipe-organize-bar__find .recipe-organize-bar__search .icon-button {
+  width: 34px;
+  height: 34px;
+}
+.recipe-organize-bar__find .recipe-organize-bar__add-section {
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: var(--cp-fs-body);
 }
 
 /* Sort: an icon button at the head of the organizer's actions that opens its
@@ -358,8 +374,8 @@
      its end. */
   flex: 1 1 auto;
   min-width: 0;
-  height: 30px;
-  padding: 0 0 0 9px;
+  height: 38px;
+  padding: 0 2px 0 12px;
   border: 1px solid var(--cp-line-strong);
   border-radius: 8px;
   background: var(--cp-card);
@@ -372,20 +388,15 @@
 .recipe-organize-bar__search-input {
   flex: 1;
   min-width: 0;
-  height: 28px;
+  height: 36px;
   border: 0;
   background: transparent;
   color: var(--cp-ink);
   font: inherit;
-  font-size: var(--cp-fs-small);
+  font-size: var(--cp-fs-body);
 }
 .recipe-organize-bar__search-input:focus {
   outline: none;
-}
-/* The close button sits inside the field's own height. */
-.recipe-print-shell--organizing .recipe-organize-bar__search .icon-button {
-  width: 28px;
-  height: 28px;
 }
 /* The field shows its own close button; the browser's clear cross is a second. */
 .recipe-organize-bar__search-input::-webkit-search-cancel-button {
@@ -652,12 +663,13 @@
   }
 
   /* A cookbook organizer: each chapter is a lightly framed section, and its
-     recipes are cards inside it, three across now the organizer has the
-     whole page (Amelia, 2026-11-04). Each card is its own outlined thing to
-     pick up and drag, not a line in a list. */
+     recipes are cards inside it, as many across as fit at a readable width
+     (Amelia, 2026-11-04): four or more on a big screen, fewer as it narrows.
+     Each card is its own outlined thing to pick up and drag, not a line in a
+     list. */
   .recipe-print-shell--organizing .recipe-page-rail__section-group {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
     gap: 8px;
     margin-top: 8px;
     padding: 4px 12px 12px;
@@ -807,6 +819,7 @@
      no chapter, beside the count at the right. */
   .recipe-page-rail__section-add {
     flex: 0 0 auto;
+    margin-left: 6px;
     white-space: nowrap;
   }
   /* The recipes in no chapter: a heading like a chapter's, minus the frame,
