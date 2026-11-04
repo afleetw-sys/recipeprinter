@@ -661,10 +661,13 @@
     display: grid;
     /* At most five: a card is never narrower than 240px, nor than a fifth
        of the row (less the gaps), so a very wide screen stops at five. */
-    grid-template-columns: repeat(auto-fill, minmax(max(min(240px, 100%), calc((100% - 4 * 8px) / 5)), 1fr));
-    gap: 8px;
-    margin-top: 8px;
-    padding: 4px 12px 12px;
+    grid-template-columns: repeat(auto-fill, minmax(max(min(240px, 100%), calc((100% - 4 * 10px) / 5)), 1fr));
+    gap: 10px;
+    margin-top: 16px;
+    /* Room around the cards inside the frame, so a chapter reads as a box
+       holding recipes rather than recipes with a line drawn tight round them
+       (Amelia, 2026-11-04). */
+    padding: 16px 20px 20px;
     border: 1px solid color-mix(in srgb, var(--cp-line) 70%, transparent);
     border-radius: 12px;
     background: var(--cp-card);
@@ -677,7 +680,7 @@
   }
   /* Folded: the heading line alone. */
   .recipe-print-shell--organizing .recipe-page-rail__section-group--collapsed {
-    padding-bottom: 4px;
+    padding-block: 10px;
   }
 
   .recipe-print-shell--organizing .recipe-page-rail__section-group > .recipe-page-rail__row {
@@ -768,7 +771,7 @@
 
   .recipe-print-shell--organizing .recipe-page-rail__section-header {
     grid-column: 1 / -1;
-    padding: 0 0 2px;
+    padding: 0 0 6px;
     color: var(--cp-ink);
     font-size: var(--cp-fs-h2);
     text-transform: none;
