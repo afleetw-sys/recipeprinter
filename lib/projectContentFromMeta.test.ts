@@ -166,3 +166,90 @@ describe("what a project takes from its metadata", () => {
     expect(content.cover?.title).toBe("Nana's");
   });
 });
+
+/* A book comes back from the account as it went in. Every part of a cookbook
+   the workspace keeps is saved by `projectContentFromMeta` and read back by
+   `metaFromProject`, and anything one of them leaves out is lost the next time
+   the book is opened somewhere else, or reloaded. The fixture is typed to need
+   every field of `ProjectMeta` that a book keeps, so a new one can't be added
+   without this test holding it (Amelia, 2026-11-04: a dedication added back
+   came back missing after a reload). */
+describe("a saved book reopens with every part it was saved with", () => {
+  /** Only these are not the book: they steer the first arrival and are spent. */
+  type Transient = "cookbookIntent" | "cookbookBornFresh" | "cookbookIntroduced";
+  const book: Required<Omit<ProjectMeta, Transient>> = {
+    projectId: "proj-1",
+    sourceProjectId: "older-1",
+    projectTitle: "Ruth's book",
+    cover: { title: "Our Favorite Recipes", subtitle: "Again", author: "The Wingers", edition: "2026", template: "bistro" },
+    backCover: { title: "", blurb: "Thanks for cooking", author: "From us", template: "bistro" },
+    dedication: { title: "Old dedication", blurb: "Legacy", template: "bistro" },
+    frontMatter: { kind: "dedication", heading: "Dedication", body: "For Grandma Ruth", signature: "With love" },
+    cookbookWelcomeCompleted: true,
+    photoStyle: "full",
+    ownPhotosOnly: true,
+    websitePhotos: true,
+    pageLooks: { cover: { elements: { "cover-title": { textSize: 1.2 } } } },
+    tableOfContents: true,
+    tocKicker: "In this book",
+    tocTitle: "Inside",
+    railSortMode: "title",
+    lastImportSource: "text",
+    sectionDividers: true,
+    cookbookMode: true,
+    optionalLinesExplicit: true,
+    sampleLines: true,
+    cookbookPreset: "hardcover-8x10",
+    sections: [
+      {
+        id: "s1",
+        title: "Dinners",
+        titleOverride: "Weeknight dinners",
+        subtitle: "Fast",
+        cardPhotoMode: "photo",
+        cardPhotoUrl: "https://x/opener.jpg",
+        cardGridImages: ["https://x/a.jpg"],
+        artPhotoMode: "grid",
+        artPhotoUrl: "https://x/art.jpg",
+        artGridImages: ["https://x/b.jpg"],
+        artCaption: "Sunday",
+        intro: "What we make most",
+        showOpener: true,
+        numberAsChapter: true,
+        itemIds: ["r1"],
+      },
+    ],
+    itemPlacements: { r1: { pageLayout: "image-spread", heroImageUrl: "https://x/hero.jpg", heroZoom: 1.4, showPhoto: true, photoUrl: "https://x/p.jpg" } },
+    stashedCookbook: { sections: [], cover: { title: "Stashed", template: "classic" } },
+  };
+
+  it("keeps each of them through a save and a reopen", async () => {
+    const { assemblePrintProject, metaFromProject } = await import("@/lib/printProjects");
+    const { buildSections, normalizeProjectMeta } = await import("@/lib/project");
+    const { stripUndefined } = await import("@/lib/firebase/stripUndefined");
+    const items = [
+      {
+        id: "r1",
+        method: "manual" as const,
+        source: "test",
+        status: "ready" as const,
+        title: "Bread",
+        addedAt: 0,
+        recipe: { title: "Bread", ingredients: [{ raw: "flour" }], instructions: [{ step: 1, text: "Bake." }] },
+      },
+    ];
+    const saved = assemblePrintProject({
+      ...projectContentFromMeta(book, LAYOUT),
+      id: book.projectId,
+      ownerUid: "user-1",
+      sections: buildSections(items, book),
+    });
+    // Firestore keeps what JSON keeps and drops what is undefined.
+    const stored = JSON.parse(JSON.stringify(stripUndefined(saved)));
+    const reopened = normalizeProjectMeta(metaFromProject(stored));
+    const expected = normalizeProjectMeta(book);
+    for (const part of Object.keys(book) as (keyof typeof book)[]) {
+      expect(reopened[part], part).toEqual(expected[part]);
+    }
+  });
+});

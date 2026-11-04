@@ -382,7 +382,9 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
   // line it never wrote counts as one the cook left off on purpose, so
   // opening it doesn't scatter "+ Author" chips over pages already done. The
   // toolbar's "Add" still brings any of them back. Once, then flagged.
-  const settled = raw.optionalLinesExplicit === true;
+  // A book with sample lines was made after this distinction, whatever its
+  // flag says: migrating it would take every sample off its pages.
+  const settled = raw.optionalLinesExplicit === true || raw.sampleLines === true;
   const removed = (value: string | undefined) => (settled || value !== undefined ? value : "");
   const migrateCover = (cover: CoverConfig | undefined, lines: ("subtitle" | "author" | "edition" | "blurb")[]) =>
     cover && !settled

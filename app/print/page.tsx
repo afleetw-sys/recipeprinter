@@ -72,7 +72,7 @@ import {
   savePrintProject,
   savedProjectOpensAsCookbook,
   assemblePrintProject,
-  bookSettingsToMeta,
+  metaFromProject,
   projectContentFromMeta,
   type PrintLayoutSettings,
   loadPrintProject,
@@ -4177,40 +4177,9 @@ export default function PrintPage() {
         const loadedItems = project.sections.flatMap((section) => section.items);
         queue.replaceAll(loadedItems);
         setJobIds(loadedItems.map((item) => item.id));
-        projectMeta.replaceMeta({
-          projectId: project.id,
-          // Absent on documents saved before renames were persisted, which is
-          // exactly right: those never had one.
-          projectTitle: project.projectTitle,
-          cookbookMode: savedProjectOpensAsCookbook(project),
-          cookbookPreset: project.settings.bookPreset,
-          ...bookSettingsToMeta(project.settings),
-          cover: project.cover,
-          backCover: project.backCover,
-          dedication: project.dedication,
-          frontMatter: project.frontMatter,
-          itemPlacements: project.itemPlacements,
-          // Restores a book this project set aside, so the Cookbook toggle
-          // brings it back instead of scaffolding a fresh one over it.
-          stashedCookbook: project.stashedCookbook,
-          sections: project.sections.map((section) => ({
-            id: section.id,
-            title: section.title,
-            titleOverride: section.titleOverride,
-            subtitle: section.subtitle,
-            cardPhotoMode: section.cardPhotoMode,
-            cardPhotoUrl: section.cardPhotoUrl,
-            cardGridImages: section.cardGridImages,
-            artPhotoMode: section.artPhotoMode,
-            artPhotoUrl: section.artPhotoUrl,
-            artGridImages: section.artGridImages,
-            artCaption: section.artCaption,
-            intro: section.intro,
-            showOpener: section.showOpener,
-            numberAsChapter: section.numberAsChapter,
-            itemIds: section.items.map((item) => item.id),
-          })),
-        });
+        // Every part of the saved book, read the way the save wrote it (see
+        // `metaFromProject`, tested as a round trip with the save).
+        projectMeta.replaceMeta(metaFromProject(project));
         if (isPrintCardSize(project.settings.cardSize)) setCardSize(project.settings.cardSize);
         if (isRecipePrintTemplate(project.settings.template)) setTemplate(project.settings.template);
         setDoubleSided(project.settings.doubleSided);

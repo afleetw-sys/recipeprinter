@@ -217,6 +217,7 @@ export const BOOK_SETTING_KEYS = [
   "websitePhotos",
   "pageLooks",
   "sampleLines",
+  "optionalLinesExplicit",
   "railSortMode",
   "lastImportSource",
 ] as const satisfies readonly (keyof ProjectMeta & keyof PrintProjectSettings)[];
@@ -305,6 +306,38 @@ export function projectContentFromMeta(
     },
     itemPlacements: meta.itemPlacements,
     stashedCookbook: meta.stashedCookbook,
+  };
+}
+
+/**
+ * The workspace's book from a saved document: `projectContentFromMeta` read
+ * backwards. Every part a save writes comes back from here, so the two are
+ * kept side by side and tested as a round trip (lib/projectContentFromMeta
+ * .test.ts): the opening page's link to the book it was copied from used to
+ * be written and never read, so the next save erased it.
+ *
+ * Not normalized: the caller hands it to `replaceMeta`, which does that once
+ * for everything.
+ */
+export function metaFromProject(project: PrintProject): ProjectMeta {
+  return {
+    projectId: project.id,
+    // Absent on documents saved before renames were persisted, which is
+    // exactly right: those never had one.
+    projectTitle: project.projectTitle,
+    sourceProjectId: project.sourceProjectId,
+    cookbookMode: savedProjectOpensAsCookbook(project),
+    cookbookPreset: project.settings.bookPreset,
+    ...bookSettingsToMeta(project.settings),
+    cover: project.cover,
+    backCover: project.backCover,
+    dedication: project.dedication,
+    frontMatter: project.frontMatter,
+    itemPlacements: project.itemPlacements,
+    // Restores a book this project set aside, so the Cookbook toggle brings it
+    // back instead of scaffolding a fresh one over it.
+    stashedCookbook: project.stashedCookbook,
+    sections: metaSectionsFromFull(project.sections),
   };
 }
 

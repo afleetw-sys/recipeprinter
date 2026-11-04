@@ -561,6 +561,9 @@ export interface PrintProjectSettings {
   /** See `ProjectMeta.sampleLines`: optional lines never written show sample
       text (lib/bookPageSamples.ts). Absent on books made before. */
   sampleLines?: boolean;
+  /** See `ProjectMeta.optionalLinesExplicit`. Saved so a reloaded book isn't
+      taken for one from before optional lines and migrated again. */
+  optionalLinesExplicit?: boolean;
   /** Book-only settings — stay undefined/off until "Make it a cookbook" has
       been used to opt into the cookbook experience. */
   cookbookMode?: boolean;
