@@ -512,57 +512,95 @@ function SizeDropdown({
     new Set([...SIZE_PRESETS.filter((points) => points >= minPoints && points <= maxPoints), defaultPoints, shownPoints]),
   ).sort((a, b) => a - b);
 
+  // While the list is open, typing a size types it here, not into the line
+  // the cook is editing: the line keeps the focus (so the bar stays exactly
+  // as it was), and its keys are taken before they reach it. Enter applies a
+  // typed size, Escape closes the list without ending the edit.
+  const open = Boolean(openAt);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const applyDraftRef = useRef(commitDraft);
+  applyDraftRef.current = commitDraft;
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      const typed = draftRef.current;
+      if (/^[0-9.,]$/.test(event.key) && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        setDraft((typed ?? "") + event.key);
+      } else if (event.key === "Backspace" && typed !== null) {
+        setDraft(typed.slice(0, -1));
+      } else if (event.key === "Enter") {
+        if (typed) applyDraftRef.current();
+        setOpenAt(null);
+      } else if (event.key === "Escape") {
+        setDraft(null);
+        setOpenAt(null);
+      } else {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    // Text that arrives without a key press (a phone keyboard, dictation,
+    // autofill) is input, not keydown: taken the same way, so nothing typed
+    // while the list is open ever lands in the recipe.
+    const onInput = (event: InputEvent) => {
+      if (!event.inputType.startsWith("insert") && !event.inputType.startsWith("delete")) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const digits = (event.data ?? "").replace(/[^0-9.,]/g, "");
+      if (event.inputType.startsWith("delete")) setDraft((current) => (current === null ? null : current.slice(0, -1)));
+      else if (digits) setDraft((current) => (current ?? "") + digits);
+    };
+    document.addEventListener("keydown", onKey, true);
+    document.addEventListener("beforeinput", onInput, true);
+    return () => {
+      document.removeEventListener("keydown", onKey, true);
+      document.removeEventListener("beforeinput", onInput, true);
+    };
+  }, [open]);
+
+  const toggle = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    // Never takes the focus: the line being edited keeps it, so nothing
+    // else on the bar changes when the list opens.
+    event.preventDefault();
+    setDraft(null);
+    if (openAt) {
+      setOpenAt(null);
+      return;
+    }
+    const box = event.currentTarget.getBoundingClientRect();
+    setOpenAt({ x: box.left, y: box.bottom + 4 });
+  };
+
   return (
     <>
-      <div className="recipe-text-toolbar__size">
-        <input
-          className="recipe-text-toolbar__size-input"
-          inputMode="decimal"
-          aria-label={partLabel ? `${partLabel} text size in points` : "Text size in points"}
-          value={draft ?? String(shownPoints)}
-          onFocus={(event) => {
-            setDraft(String(shownPoints));
-            event.currentTarget.select();
-          }}
-          onChange={(event) => setDraft(event.target.value)}
-          onBlur={commitDraft}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              // Applied, and the box goes back to showing the size as drawn
-              // (a size past the range comes back as the nearest allowed).
-              commitDraft();
-            }
-            if (event.key === "Escape") {
-              event.preventDefault();
-              setDraft(null);
-              event.currentTarget.blur();
-            }
-          }}
-        />
-        <button
-          ref={triggerRef}
-          type="button"
-          className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon recipe-text-toolbar__size-open"
-          aria-haspopup="menu"
-          aria-expanded={openAt ? true : undefined}
-          aria-label="Text sizes"
-          title="Text size"
-          onMouseDown={(event) => {
+      {/* One control, opened by one press anywhere on it: the number and the
+          chevron are the same button. */}
+      <button
+        ref={triggerRef}
+        type="button"
+        className="recipe-text-toolbar__size"
+        aria-haspopup="menu"
+        aria-expanded={openAt ? true : undefined}
+        aria-label={`${partLabel ? `${partLabel} text size` : "Text size"}: ${shownPoints} points`}
+        title="Text size"
+        onMouseDown={toggle}
+        onKeyDown={(event) => {
+          // Reached by keyboard (the field closed on the way here), Enter or
+          // Space opens it too.
+          if ((event.key === "Enter" || event.key === " ") && !openAt) {
             event.preventDefault();
-            if (openAt) {
-              setOpenAt(null);
-              return;
-            }
-            // Under the whole box, not just the chevron, the way a size
-            // field's list opens.
-            const box = (event.currentTarget.parentElement ?? event.currentTarget).getBoundingClientRect();
+            const box = event.currentTarget.getBoundingClientRect();
             setOpenAt({ x: box.left, y: box.bottom + 4 });
-          }}
-        >
-          <ChevronDownIcon size={ICON_SIZE.xs} aria-hidden />
-        </button>
-      </div>
+          }
+        }}
+      >
+        <span className={`recipe-text-toolbar__size-value ${draft !== null ? "is-typing" : ""}`}>
+          {draft ?? String(shownPoints)}
+        </span>
+        <ChevronDownIcon size={ICON_SIZE.xs} aria-hidden />
+      </button>
       {proMarked && size !== undefined && size !== DEFAULT_FONT_SCALE && (
         <ProBadge variant="inline" label={false} tooltip="This text size is Pro" />
       )}

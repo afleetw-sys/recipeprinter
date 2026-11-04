@@ -1895,55 +1895,44 @@
 .recipe-text-toolbar__select svg {
   flex: none;
 }
-/* An element's own text size (SizeDropdown): the size in points, which takes
-   a typed size, and a chevron that opens the list. Drawn like the Body
-   dropdown beside it (no box of its own, the bar's grey, the bar's hover),
-   so the bar reads as one row of matching controls; a box shows only while
-   a size is being typed. */
+/* An element's own text size (SizeDropdown): one button, the size in points
+   and a chevron, drawn like the Body dropdown beside it. A press anywhere on
+   it opens the list, and it never takes the focus, so the bar around it
+   doesn't change. */
 .recipe-text-toolbar__size {
   display: inline-flex;
   align-items: center;
+  gap: 3px;
   height: 22px;
-  border-radius: 6px;
-  color: var(--cp-ink-soft);
-}
-.recipe-text-toolbar__size:hover {
-  background: var(--cp-overlay-hover);
-  color: var(--cp-ink);
-}
-.recipe-text-toolbar__size:focus-within {
-  background: var(--cp-card);
-  color: var(--cp-ink);
-  outline: var(--cp-focus-ring);
-  outline-offset: var(--cp-focus-ring-offset);
-}
-.recipe-text-toolbar__size-input {
-  width: 2.6em;
-  height: 100%;
-  padding: 0 0 0 7px;
+  padding: 0 4px 0 7px;
   border: 0;
+  border-radius: 6px;
   background: transparent;
-  color: inherit;
+  color: var(--cp-ink-soft);
   font: inherit;
   font-size: var(--cp-fs-label);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  cursor: pointer;
 }
-.recipe-text-toolbar__size-input:focus {
-  outline: none;
+.recipe-text-toolbar__size:hover,
+.recipe-text-toolbar__size[aria-expanded="true"] {
+  background: var(--cp-overlay-hover);
+  color: var(--cp-ink);
 }
-/* The chevron is part of the one control: no square of its own, no hover of
-   its own, the same 22px tall as the rest of the bar. */
-.recipe-text-toolbar .recipe-text-toolbar__size-open.recipe-text-toolbar__size-open {
-  width: 18px;
-  min-height: 0;
-  height: 100%;
-  padding: 0 4px 0 0;
-  border-radius: 0 6px 6px 0;
-  color: inherit;
+.recipe-text-toolbar__size:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
 }
-.recipe-text-toolbar .recipe-text-toolbar__size-open.recipe-text-toolbar__size-open:hover {
-  background: transparent;
+.recipe-text-toolbar__size svg {
+  flex: none;
+}
+/* A size being typed while the list is open: underlined like text being
+   entered, until Enter applies it. */
+.recipe-text-toolbar__size-value.is-typing {
+  color: var(--cp-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* The list of sizes: a check beside the one in use, "Default" beside the one
