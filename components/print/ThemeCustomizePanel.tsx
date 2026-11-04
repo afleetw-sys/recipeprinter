@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { MenuSelect } from "@/components/MenuSelect";
 import { ProBadge } from "@/components/ProBadge";
 import { ChevronDownIcon, ChevronLeftIcon, ICON_SIZE, UndoIcon } from "@/components/icons";
-import { TextSizeControl } from "@/components/print/TextSizeControl";
+import { StepSizeControl, TextSizeControl } from "@/components/print/TextSizeControl";
 import { SizeDropdown } from "@/components/print/TextFieldToolbar";
 import type { FontScale } from "@/lib/fontScale";
 import {
@@ -83,24 +82,16 @@ export function ThemeCustomizePanel({
       )}
 
       {photosShown && (
-        <div className="recipe-config-section">
-          <span className="recipe-config-label">{photoLabel}</span>
-          <MenuSelect
-            label={photoLabel}
-            labelHidden
-            placeholder={PHOTO_SCALE_LABELS[photoScale]}
-            value={String(photoScale)}
-            options={PHOTO_SCALES.map((scale) => ({
-              value: String(scale),
-              label: PHOTO_SCALE_LABELS[scale],
-              badge:
-                proMarked && scale !== DEFAULT_PHOTO_SCALE ? (
-                  <ProBadge variant="inline" label={false} tooltip="This photo size is Pro" />
-                ) : undefined,
-            }))}
-            onChange={(value) => setPhotoScale(normalizePhotoScale(Number(value)))}
-          />
-        </div>
+        <StepSizeControl
+          label={photoLabel}
+          steps={PHOTO_SCALES}
+          labels={PHOTO_SCALE_LABELS}
+          value={normalizePhotoScale(photoScale)}
+          defaultValue={DEFAULT_PHOTO_SCALE}
+          onChange={setPhotoScale}
+          proMarked={proMarked}
+          proTooltip="This photo size is Pro"
+        />
       )}
 
       {/* Pinned to the panel's foot, under whatever scrolls above it. A
