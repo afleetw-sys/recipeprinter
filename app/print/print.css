@@ -1883,52 +1883,67 @@
   width: 22px;
 }
 
-/* The line-type dropdown (LineKindSelect): what the line is now, in ink, and
-   a chevron, like a document editor's text-style menu. As wide as its word,
-   so "Body" has no gap after it. */
+/* The line-type dropdown (LineKindSelect): what the line is now and a
+   chevron, like a document editor's text-style menu. As wide as its word, so
+   "Body" has no gap after it. The same ink, weight and hover as every other
+   control on the bar: it was full ink beside grey glyphs, which made one
+   dropdown look like the bar's main action (Amelia, 2026-11-03). */
 .recipe-text-toolbar .recipe-text-toolbar__select.recipe-text-toolbar__select {
-  padding: 0 5px 0 7px;
-  color: var(--cp-ink);
+  gap: 3px;
+  padding: 0 4px 0 7px;
 }
 .recipe-text-toolbar__select svg {
   flex: none;
-  color: var(--cp-ink-soft);
 }
-/* An element's own text size (SizeDropdown): one box, the size in points on
-   the left (it takes a typed size) and a chevron on the right that opens the
-   list of sizes, split by a hairline, like a design app's size field. */
+/* An element's own text size (SizeDropdown): the size in points, which takes
+   a typed size, and a chevron that opens the list. Drawn like the Body
+   dropdown beside it (no box of its own, the bar's grey, the bar's hover),
+   so the bar reads as one row of matching controls; a box shows only while
+   a size is being typed. */
 .recipe-text-toolbar__size {
   display: inline-flex;
-  align-items: stretch;
+  align-items: center;
   height: 22px;
-  border: 1px solid var(--cp-line);
   border-radius: 6px;
-  background: var(--cp-card);
-  overflow: hidden;
+  color: var(--cp-ink-soft);
+}
+.recipe-text-toolbar__size:hover {
+  background: var(--cp-overlay-hover);
+  color: var(--cp-ink);
 }
 .recipe-text-toolbar__size:focus-within {
+  background: var(--cp-card);
+  color: var(--cp-ink);
   outline: var(--cp-focus-ring);
   outline-offset: var(--cp-focus-ring-offset);
 }
 .recipe-text-toolbar__size-input {
-  width: 3em;
-  padding: 0 4px 0 7px;
+  width: 2.6em;
+  height: 100%;
+  padding: 0 0 0 7px;
   border: 0;
   background: transparent;
-  color: var(--cp-ink);
+  color: inherit;
   font: inherit;
   font-size: var(--cp-fs-label);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .recipe-text-toolbar__size-input:focus {
   outline: none;
 }
+/* The chevron is part of the one control: no square of its own, no hover of
+   its own, the same 22px tall as the rest of the bar. */
 .recipe-text-toolbar .recipe-text-toolbar__size-open.recipe-text-toolbar__size-open {
+  width: 18px;
   min-height: 0;
   height: 100%;
-  border-left: 1px solid var(--cp-line);
-  border-radius: 0;
-  color: var(--cp-ink-soft);
+  padding: 0 4px 0 0;
+  border-radius: 0 6px 6px 0;
+  color: inherit;
+}
+.recipe-text-toolbar .recipe-text-toolbar__size-open.recipe-text-toolbar__size-open:hover {
+  background: transparent;
 }
 
 /* The list of sizes: a check beside the one in use, "Default" beside the one
