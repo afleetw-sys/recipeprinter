@@ -65,6 +65,40 @@ describe("useProPurchase", () => {
     expect(onSettled).toHaveBeenCalledWith("purchased");
   });
 
+  // 2026-11-03: a cook who signed in inside the upgrade dialog on /print got
+  // two checkouts 2ms apart (the dialog's onChoose and the page's
+  // resume-after-sign-in effect). RevenueCat refused the second with backend
+  // error 7638, "another request in flight", and Stripe showed "Something went
+  // wrong" over the real one.
+  test("a second request while checkout is open starts nothing, and settles nothing", async () => {
+    let finish!: (value: { customerInfo: CustomerInfo; cancelled: boolean }) => void;
+    purchaseRecipePrinterPro.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    const { result } = setup(false);
+    const first = vi.fn();
+    const second = vi.fn();
+
+    let pending!: Promise<void>;
+    act(() => {
+      // Same tick, same render: neither caller can see the other's busy state.
+      pending = result.current.purchaseProAndContinue("monthly", first);
+      void result.current.purchaseProAndContinue("monthly", second);
+    });
+    await act(async () => {
+      finish({ customerInfo: customer(true), cancelled: false });
+      await pending;
+    });
+
+    expect(purchaseRecipePrinterPro).toHaveBeenCalledTimes(1);
+    expect(first).toHaveBeenCalledWith("purchased");
+    // The dropped request must not settle too, or a print waiting on it runs twice.
+    expect(second).not.toHaveBeenCalled();
+
+    // Once the first checkout settles, a new one can start.
+    purchaseRecipePrinterPro.mockResolvedValue({ customerInfo: customer(true), cancelled: false });
+    await act(() => result.current.purchaseProAndContinue("annual", vi.fn(), { allowWhileActive: true }));
+    expect(purchaseRecipePrinterPro).toHaveBeenCalledTimes(2);
+  });
+
   test("allowWhileActive lets Pro with no subscription behind it buy one", async () => {
     purchaseRecipePrinterPro.mockResolvedValue({ customerInfo: customer(true), cancelled: false });
     const { result } = setup(true);
