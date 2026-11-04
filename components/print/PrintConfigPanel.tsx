@@ -199,12 +199,10 @@ export function PrintConfigPanel({
         </div>
       )}
 
-      {cookbookMode && !mobileDrawer && !customizing && (
-        <p className="recipe-config-panel__note">
-          {tabbed && tab === "page"
-            ? "Changes here apply to this page only."
-            : "Changes here apply to the whole cookbook."}
-        </p>
+      {/* Only the Page tab says where its changes go: the panel is the
+          book's unless it says otherwise. */}
+      {cookbookMode && !mobileDrawer && !customizing && tabbed && tab === "page" && (
+        <p className="recipe-config-panel__note">Changes here apply to this page only.</p>
       )}
 
       <div className="recipe-config-panel__scroll">

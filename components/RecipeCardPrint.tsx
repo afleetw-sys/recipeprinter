@@ -1446,30 +1446,37 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                     {" · "}
                   </span>
                 )}
+                {/* "Serves" is the field's label, not part of its value, so
+                    it stays put while the count is typed, as it does in a
+                    cookbook's facts. It used to be "Serves 4" in the field,
+                    which became the bare "4" on the first click. */}
                 {metaServesShown && (
-                  <input
-                    ref={focusIfEditing({ kind: "servings" })}
-                    className={`recipe-card__inline-input recipe-card__inline-input--meta${metaServes ? "" : " recipe-card__inline-input--new"}`}
-                    dir="auto"
-                    value={
-                      sameTarget(inlineEdit.editingTarget, { kind: "servings" })
-                        ? inlineEdit.value
-                        : metaServes
-                          ? `Serves ${metaServes}`
-                          : ""
-                    }
-                    placeholder="Add servings"
-                    aria-label="Servings"
-                    onFocus={() =>
-                      startEdit(
-                        { kind: "servings" },
-                        recipe.servings === undefined ? "" : String(recipe.servings),
-                      )
-                    }
-                    onChange={(event) => inlineEdit.onValueChange(event.target.value)}
-                    onBlur={commitEdit}
-                    onKeyDown={handleEditKeyDown}
-                  />
+                  <label className="recipe-card__meta-serves recipe-card__fact--editable">
+                    Serves{" "}
+                    <input
+                      ref={focusIfEditing({ kind: "servings" })}
+                      className={`recipe-card__inline-input recipe-card__inline-input--meta${metaServes ? "" : " recipe-card__inline-input--new"}`}
+                      dir="auto"
+                      value={
+                        sameTarget(inlineEdit.editingTarget, { kind: "servings" })
+                          ? inlineEdit.value
+                          : metaServes
+                            ? String(metaServes)
+                            : ""
+                      }
+                      placeholder="Add count"
+                      aria-label="Servings"
+                      onFocus={() =>
+                        startEdit(
+                          { kind: "servings" },
+                          recipe.servings === undefined ? "" : String(recipe.servings),
+                        )
+                      }
+                      onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                      onBlur={commitEdit}
+                      onKeyDown={handleEditKeyDown}
+                    />
+                  </label>
                 )}
               </p>
             ) : (

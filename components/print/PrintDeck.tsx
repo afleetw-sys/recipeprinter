@@ -21,7 +21,6 @@ import {
   ImageIcon,
   InfoIcon,
   AlertIcon,
-  LinkIcon,
   MoveToSectionIcon,
   PagePlusIcon,
   PlusIcon,
@@ -30,6 +29,7 @@ import {
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
 import { AddLineMenu } from "@/components/print/AddLineMenu";
+import { PhotoHoverHint } from "@/components/print/PhotoHoverHint";
 import { ZoomControl } from "@/components/print/ZoomControl";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { TwoUpPrintPages } from "@/components/print/TwoUpPrintPages";
@@ -296,6 +296,8 @@ interface PrintDeckProps {
   coverPhotoCandidates: string[];
   // Photo controls / helpers (defined in the page)
   renderPagePhotoControl: (recipeId: string) => ReactNode;
+  /** Whether a recipe's photo is drawn, so the "+" menu offers one if not. */
+  recipeHasPhoto: (recipeId: string) => boolean;
   /** The opener/title page's OWN photo slot — independent of the facing art
       page's, see `renderArtPhotoControl`. */
   renderCardPhotoControl: (sectionId: string) => ReactNode;
@@ -495,6 +497,7 @@ export function PrintDeck(props: PrintDeckProps) {
     setCoverForSide,
     coverPhotoCandidates,
     renderPagePhotoControl,
+    recipeHasPhoto,
     renderCardPhotoControl,
     renderArtPhotoControl,
     sectionRecipeImages,
@@ -597,14 +600,44 @@ export function PrintDeck(props: PrintDeckProps) {
         const recipeId = navItem.recipeId;
         const recipe = items?.find((item) => item.id === recipeId)?.recipe;
         if (!recipe) return [];
+        const cookbook = Boolean(projectMeta.meta.cookbookMode);
+        // The link is this menu's too, now the toolbar has no link button
+        // (Amelia, 2026-11-04): a link that isn't wanted is deleted on the
+        // page, and one that is missing is added here. A missing link is
+        // always offered, and adding it on recipe cards turns the cards'
+        // links on, as the button did.
         const lines = emptyRecipeFields(recipe, {
-          cookbook: Boolean(projectMeta.meta.cookbookMode),
-          showSourceUrl,
+          cookbook,
+          showSourceUrl: true,
           showDescription,
         }).map((field) => ({
             name: RECIPE_LINE_NAMES[field],
-            restore: () => addField(recipeId, field),
+            restore: () => {
+              if (field === "link" && !cookbook && !showSourceUrl) setShowSourceUrl(true);
+              addField(recipeId, field);
+            },
           }));
+        // A link that is there but hidden (a book saved with the old "Recipe
+        // link" switch off, or a recipe whose link was hidden by the toolbar
+        // button that used to be here) comes back the same way. In a cookbook
+        // only this recipe's: an override when the book's are off.
+        if (
+          recipe.sourceUrl &&
+          !recipeLinkOn(showSourceUrl, cookbook, projectMeta.meta.itemPlacements?.[recipeId])
+        ) {
+          lines.unshift({
+            name: RECIPE_LINE_NAMES.link,
+            restore: () =>
+              cookbook
+                ? projectMeta.setItemPlacement(recipeId, { showSourceUrl: showSourceUrl ? undefined : true })
+                : setShowSourceUrl(true),
+          });
+        }
+        // A recipe drawn without a photo: opens its photo picker, the toolbar
+        // Photo button's own dialog.
+        if (!recipeHasPhoto(recipeId)) {
+          lines.unshift({ name: "Photo", restore: () => openPhotoDialog(recipeId) });
+        }
         // A removed "Ingredients" / "Steps" heading comes back as the default.
         const headings = removedHeadingsName(recipe);
         if (headings) {
@@ -749,69 +782,6 @@ export function PrintDeck(props: PrintDeckProps) {
               : navItem.kind === "section-photo"
                 ? renderArtPhotoControl(navItem.recipeId)
                 : null;
-    // The recipe-link toggle, next to the photo control.
-    //
-    // Where the book can't hold more than this one recipe (`singleRecipeOnly`)
-    // it flips the setting, which IS that recipe's link. In a cookbook the
-    // setting is book-wide, so the button writes THIS recipe's own override
-    // instead (the link's counterpart to the photo picker's per-recipe "None"),
-    // and choosing what the book already does drops the override so the recipe
-    // follows the book again. Multi-recipe recipe cards have no per-recipe
-    // placement, so there it flips the cards' setting, as on a single card.
-    const linkCookbook = Boolean(projectMeta.meta.cookbookMode);
-    // On every recipe page, recipe cards too: with the panel's "Recipe link"
-    // switch gone (Amelia, 2026-11-03), this is how a link that was turned
-    // off comes back. On recipe cards there's no per-recipe choice, so it
-    // shows or hides the cards' links together, as that switch did.
-    const recipeForLink =
-      navItem.kind === "recipe" ? items?.find((item) => item.id === navItem.recipeId)?.recipe : null;
-    const linkShown =
-      navItem.kind === "recipe"
-        ? recipeLinkOn(showSourceUrl, linkCookbook, projectMeta.meta.itemPlacements?.[navItem.recipeId])
-        : showSourceUrl;
-    // Always on a recipe page, like the photo control beside it. It used to
-    // appear only once a recipe had a link, so on the very recipe that lacked
-    // one there was no sign that a link icon existed: a control that comes and
-    // goes with the data teaches nobody what it is for.
-    const hasLink = Boolean(recipeForLink?.sourceUrl);
-    const linkLabel = !hasLink
-      ? "Add recipe link"
-      : linkShown
-        ? "Hide recipe link"
-        : "Show recipe link";
-    const linkControl = recipeForLink ? (
-      <button
-        type="button"
-        className={`recipe-page-toolbar__btn recipe-page-toolbar__btn--icon ${
-          hasLink && linkShown ? "is-active" : ""
-        }`}
-        aria-pressed={hasLink ? linkShown : undefined}
-        aria-label={linkLabel}
-        title={linkLabel}
-        onClick={(event) => {
-          event.stopPropagation();
-          if (!hasLink) {
-            // Nothing to show or hide yet, so this is the way to add one: open
-            // the link line, ready to type, putting it back first if it was
-            // taken off. A recipe card has no per-recipe switch, so there the line
-            // only exists while the book's "Recipe link" setting is on, and
-            // adding one means wanting it.
-            if (!linkCookbook && !showSourceUrl) setShowSourceUrl(true);
-            if (navItem.kind === "recipe") addField(navItem.recipeId, "link");
-            return;
-          }
-          if (linkCookbook && navItem.kind === "recipe") {
-            projectMeta.setItemPlacement(navItem.recipeId, {
-              showSourceUrl: !linkShown === showSourceUrl ? undefined : !linkShown,
-            });
-            return;
-          }
-          setShowSourceUrl((value) => !value);
-        }}
-      >
-        <LinkIcon size={ICON_SIZE.md} />
-      </button>
-    ) : null;
     /**
      * The chapters this recipe could move to, or null outside a cookbook and
      * on anything that isn't a recipe. An untitled section is the implicit
@@ -894,7 +864,6 @@ export function PrintDeck(props: PrintDeckProps) {
       !navItem.flip &&
       !editable &&
       !photoControl &&
-      !linkControl &&
       !addImagePageButton
     ) {
       return null;
@@ -1011,17 +980,12 @@ export function PrintDeck(props: PrintDeckProps) {
           {/* After Edit, with Move and Delete: this is an icon among icons, and
               it led the bar only because that is where the placement toggle it
               replaced used to sit. */}
-          {/* Photo, link, Move and Delete can go into the bar's More menu
+          {/* Photo, Move and Delete can go into the bar's More menu
               when the screen is too narrow for them (Delete first, the photo
               last). The reveal button and Front/Back always stay. */}
           {photoControl && (
             <PageToolbarItem menuLabel="Photo" menuIcon={<ImageIcon size={ICON_SIZE.sm} />} priority={3}>
               {photoControl}
-            </PageToolbarItem>
-          )}
-          {linkControl && (
-            <PageToolbarItem menuLabel={linkLabel} menuIcon={<LinkIcon size={ICON_SIZE.sm} />} priority={2}>
-              {linkControl}
             </PageToolbarItem>
           )}
           {/* Move this recipe into another chapter.
@@ -1507,6 +1471,7 @@ export function PrintDeck(props: PrintDeckProps) {
           // parked the cover off-centre and hid the fact there was more.
           data-single-recipe={singleRecipePrintView && !cookbookView ? "true" : "false"}
         >
+          <PhotoHoverHint surfaces={PHOTO_SURFACES} />
           {/* Body/heading and bold/italic, floating over the line being typed
               rather than joining the page's bar. It anchors itself to whatever
               field has focus, so it is mounted once for the whole deck. */}

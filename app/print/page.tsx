@@ -6151,6 +6151,22 @@ export default function PrintPage() {
   // placement is one click away in every mode (not only when the photo is off).
   // The floating "Photo" button on the page still opens the fuller dialog
   // (placement + which photo). Shared desktop + mobile.
+  // What a recipe's page shows as its photo: in a book of the cook's own
+  // photos, the one they added, or the imported one the book allows (see
+  // lib/bookPhotos.ts). A website's photo belongs to whoever published the
+  // recipe, so it is only offered once the cook turns on website photos for
+  // the book.
+  const recipePhotoShown = (recipeId: string) => {
+    const recipeItem = items?.find((item) => item.id === recipeId);
+    return ownPhotosOnly ? (recipeItem ? bookImageOf(recipeItem) : undefined) : recipeItem?.recipe?.image;
+  };
+  // Whether a recipe has a photo the book draws, in its page or on the full
+  // page facing it. The page toolbar's "+" menu offers a photo when not.
+  const recipeHasPhoto = (recipeId: string) =>
+    Boolean(recipePhotoShown(recipeId)) &&
+    (cookbookMode
+      ? photoModeFor(recipeId) !== "none"
+      : (projectMeta.meta.itemPlacements?.[recipeId]?.showPhoto ?? showPhoto));
   const renderPagePhotoControl = (recipeId: string) => {
     const recipe = items?.find((item) => item.id === recipeId && item.recipe)?.recipe;
     // Every recipe page, photo or not. This used to bail on `!recipe.image`,
@@ -6160,12 +6176,8 @@ export default function PrintPage() {
     if (!recipe) return null;
     const own = recipe.image;
     const history = projectMeta.meta.itemPlacements?.[recipeId]?.photoHistory ?? [];
-    // What the page shows: in a book of the cook's own photos, the one they
-    // added, or the imported one the book allows (see lib/bookPhotos.ts). A
-    // website's photo belongs to whoever published the recipe, so it is only
-    // offered once the cook turns on website photos for the book.
     const recipeItem = items?.find((item) => item.id === recipeId);
-    const shown = ownPhotosOnly ? (recipeItem ? bookImageOf(recipeItem) : undefined) : own;
+    const shown = recipePhotoShown(recipeId);
     const offered = ownPhotosOnly ? importedBookPhotoOf(recipeItem) : own;
     return (
       <ImagePicker
@@ -7302,6 +7314,7 @@ export default function PrintPage() {
           setCoverForSide={setCoverForSide}
           coverPhotoCandidates={coverPhotoCandidates}
           renderPagePhotoControl={renderPagePhotoControl}
+          recipeHasPhoto={recipeHasPhoto}
           renderCardPhotoControl={renderCardPhotoControl}
           renderArtPhotoControl={renderArtPhotoControl}
           sectionRecipeImages={bookSectionImages}
