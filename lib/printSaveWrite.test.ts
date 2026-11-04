@@ -405,3 +405,71 @@ describe("a write that fails", () => {
     expect(first.statuses).toEqual(["saving"]);
   });
 });
+
+/* Every part of a book reaches the account. The save runs the book through the
+   photo sweep first, and the sweep hands back each photo-holding part; a part
+   the save didn't give it came back blank and was written over the book's own.
+   The opening page (`frontMatter`) was the one left out, so every account save
+   dropped the dedication and a reload lost it (Amelia, 2026-11-04). Run with
+   the real sweep (uploading nothing) over a book with every part filled in. */
+describe("a save keeps every part of the book", () => {
+  it("writes each part it was given, unchanged, through the real photo sweep", async () => {
+    const { materializeProjectPhotos } = await import("@/lib/photoStorage");
+    const book = {
+      id: "proj-1",
+      ownerUid: "user-1",
+      kind: "cookbook",
+      title: "Our Favorite Recipes",
+      projectTitle: "Ruth's book",
+      sourceProjectId: "older-1",
+      sections: [
+        {
+          id: "s1",
+          title: "Dinners",
+          subtitle: "Weeknights",
+          intro: "What we make most",
+          cardPhotoMode: "photo",
+          cardPhotoUrl: "https://x/opener.jpg",
+          artCaption: "Sunday",
+          items: [
+            {
+              id: "r1",
+              method: "manual",
+              source: "test",
+              status: "ready",
+              title: "Bread",
+              addedAt: 0,
+              recipe: { title: "Bread", ingredients: [{ raw: "flour" }], instructions: [{ step: 1, text: "Bake." }] },
+            },
+            { id: "page-1", method: "manual", source: "", status: "ready", title: "Notes", addedAt: 0, pageKind: "blank", pageContent: { title: "Notes", blurb: "Ours" } },
+          ],
+        },
+      ],
+      cover: { title: "Our Favorite Recipes", subtitle: "Again", author: "The Wingers", edition: "2026", template: "bistro", imageUrl: "https://x/cover.jpg" },
+      backCover: { title: "", blurb: "Thanks for cooking", author: "From us", template: "bistro" },
+      dedication: { title: "Old dedication", blurb: "Legacy", template: "bistro" },
+      frontMatter: { kind: "dedication", heading: "Dedication", body: "For Grandma Ruth", signature: "With love", imageUrl: "https://x/ded.jpg" },
+      settings: {
+        cookbookMode: true,
+        tableOfContents: true,
+        tocTitle: "Inside",
+        pageLooks: { cover: { elements: { "cover-title": { textSize: 1.2 } } } },
+        sampleLines: true,
+      },
+      itemPlacements: { r1: { pageLayout: "image-spread", heroImageUrl: "https://x/hero.jpg", photoUrl: "https://x/p.jpg" } },
+      stashedCookbook: { sections: [], cover: { title: "Stashed", template: "classic" } },
+      createdAt: 1,
+    } as unknown as PendingSave["project"];
+
+    const h = makeHarness(makeRefs({ savedProjectId: "proj-1" }), {
+      materializePhotos: (photos) => materializeProjectPhotos(photos, async (url) => url),
+    } as Partial<SaveWriteContext>);
+    await writeProject(makePending({ project: book }), h.ctx);
+
+    expect(h.saveProject).toHaveBeenCalledTimes(1);
+    const written = h.saveProject.mock.calls[0][0] as Record<string, unknown>;
+    for (const [part, value] of Object.entries(book as unknown as Record<string, unknown>)) {
+      expect(written[part], part).toEqual(value);
+    }
+  });
+});

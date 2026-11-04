@@ -52,13 +52,13 @@
   --recipe-card-padding-bottom: 0.22in;
   --recipe-card-columns: 1.7in 1fr;
   --recipe-card-gap: 0.19in;
-  --recipe-card-title-size: calc(16.5pt * var(--recipe-font-scale, 1));
-  --recipe-card-meta-size: calc(7.2pt * var(--recipe-font-scale, 1));
-  --recipe-card-label-size: calc(7pt * var(--recipe-font-scale, 1));
-  --recipe-card-body-size: calc(7.8pt * var(--recipe-font-scale, 1));
-  --recipe-card-step-size: calc(7.8pt * var(--recipe-font-scale, 1));
-  --recipe-card-step-gap: calc(4.2pt * var(--recipe-font-scale, 1));
-  --recipe-card-ingredient-gap: calc(1.8pt * var(--recipe-font-scale, 1));
+  --recipe-card-title-size-base: 16.5pt;
+  --recipe-card-meta-size-base: 7.2pt;
+  --recipe-card-label-size-base: 7pt;
+  --recipe-card-body-size-base: 7.8pt;
+  --recipe-card-step-size-base: 7.8pt;
+  --recipe-card-step-gap-base: 4.2pt;
+  --recipe-card-ingredient-gap-base: 1.8pt;
   --recipe-card-photo-size: 0.92in;
   /* The cook's photo size (lib/photoScale.ts), set inline beside
      `--recipe-font-scale`. It followed the text size at half its step until
@@ -67,6 +67,28 @@
      keeps its size. Every photo width below is (box - mat) * this + mat. */
   --recipe-photo-scale: 1;
   --recipe-card-footer-reserve: 0.28in;
+  --recipe-card-title-size: calc(var(--recipe-card-title-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-meta-size: calc(var(--recipe-card-meta-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-label-size: calc(var(--recipe-card-label-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-body-size: calc(var(--recipe-card-body-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-step-size: calc(var(--recipe-card-step-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-step-gap: calc(var(--recipe-card-step-gap-base) * var(--recipe-font-scale, 1));
+  --recipe-card-ingredient-gap: calc(var(--recipe-card-ingredient-gap-base) * var(--recipe-font-scale, 1));
+}
+
+/* One part of a page at its own text size (lib/pageLooks.tsx): the part's
+   element carries its own `--recipe-font-scale`. The role sizes above are
+   worked out where they are declared, so they are declared again here, where
+   that variable is the part's. Each base is inherited from the page, so 6x4,
+   Letter and every theme keep their own. */
+.recipe-print-preview [data-element] {
+  --recipe-card-title-size: calc(var(--recipe-card-title-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-meta-size: calc(var(--recipe-card-meta-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-label-size: calc(var(--recipe-card-label-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-body-size: calc(var(--recipe-card-body-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-step-size: calc(var(--recipe-card-step-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-step-gap: calc(var(--recipe-card-step-gap-base) * var(--recipe-font-scale, 1));
+  --recipe-card-ingredient-gap: calc(var(--recipe-card-ingredient-gap-base) * var(--recipe-font-scale, 1));
 }
 
 .recipe-print-shell {
@@ -1273,7 +1295,8 @@
   gap: 8px;
 }
 
-/* A cookbook's recipe count and whether it is kept, above Add recipes. */
+/* A cookbook's recipe count, above Add recipes. Whether it's saved is in the
+   header, beside Buy & Print. */
 .recipe-page-rail__book {
   display: flex;
   flex-direction: column;
@@ -1283,8 +1306,6 @@
 .recipe-page-rail__book-meta {
   display: flex;
   align-items: center;
-  /* The count sits left and the save state right, whether or not there is a
-     save state to show. */
   justify-content: space-between;
   gap: 4px 8px;
   margin: 0;
@@ -1862,17 +1883,139 @@
   width: 22px;
 }
 
-/* The line-type dropdown (LineKindSelect): what the line is now, in ink, and
-   a chevron, like a document editor's text-style menu. As wide as its word,
-   so "Body" has no gap after it. */
+/* The line-type dropdown (LineKindSelect): what the line is now and a
+   chevron, like a document editor's text-style menu. As wide as its word, so
+   "Body" has no gap after it. The same ink, weight and hover as every other
+   control on the bar: it was full ink beside grey glyphs, which made one
+   dropdown look like the bar's main action (Amelia, 2026-11-03). */
 .recipe-text-toolbar .recipe-text-toolbar__select.recipe-text-toolbar__select {
-  padding: 0 5px 0 7px;
-  color: var(--cp-ink);
+  gap: 3px;
+  padding: 0 4px 0 7px;
 }
 .recipe-text-toolbar__select svg {
   flex: none;
-  color: var(--cp-ink-soft);
 }
+/* An element's own text size (SizeDropdown): one button, the size in points
+   and a chevron, drawn like the Body dropdown beside it. A press anywhere on
+   it opens the list, and it never takes the focus, so the bar around it
+   doesn't change. */
+.recipe-text-toolbar__size {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+  padding: 0 4px 0 7px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--cp-ink-soft);
+  font: inherit;
+  font-size: var(--cp-fs-label);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.recipe-text-toolbar__size:hover,
+.recipe-text-toolbar__size[aria-expanded="true"] {
+  background: var(--cp-overlay-hover);
+  color: var(--cp-ink);
+}
+.recipe-text-toolbar__size:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+.recipe-text-toolbar__size svg {
+  flex: none;
+}
+/* A size being typed while the list is open: underlined like text being
+   entered, until Enter applies it. */
+.recipe-text-toolbar__size-value.is-typing {
+  color: var(--cp-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Customize theme's Each part: one row per part of a recipe, its name and
+   the text bar's own size dropdown, boxed here like the panel's other
+   dropdowns since it isn't sitting in a toolbar. */
+.recipe-customize__parts-hint {
+  margin: 2px 0 8px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+}
+.recipe-customize__part-rows {
+  display: grid;
+  gap: 6px;
+}
+.recipe-customize__part-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.recipe-customize__part-label {
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+}
+.recipe-customize__part-row .recipe-text-toolbar__size {
+  height: 28px;
+  min-width: 4.5em;
+  justify-content: space-between;
+  border: 1px solid var(--cp-line);
+  border-radius: 8px;
+  background: var(--cp-card);
+}
+
+/* The list of sizes: a check beside the one in use, "Default" beside the one
+   the element has with no size of its own. Scrolls, opened on the current
+   size. */
+.text-size-menu.text-size-menu {
+  min-width: 8.5em;
+  /* The list's top padding is its heading's instead (below): a sticky
+     heading sticks under the padding, and the sizes scrolled up through
+     that gap above it. */
+  padding-top: 0;
+  max-height: min(22rem, calc(100vh - 32px));
+  overflow-y: auto;
+  /* It still scrolls (wheel, trackpad, touch); it just draws no bar, which
+     in a list this narrow took a third of its width. */
+  scrollbar-width: none;
+}
+.text-size-menu.text-size-menu::-webkit-scrollbar {
+  display: none;
+}
+/* Which part the sizes are for ("Steps"): small, at the top, and held there
+   while the list scrolls under it. The menu's own background behind it, so
+   rows scrolling up pass under it rather than through it. */
+.text-size-menu__part {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 8px 10px 4px;
+  background: var(--cp-card);
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-micro, 10px);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.text-size-menu__item.text-size-menu__item {
+  display: grid;
+  grid-template-columns: 1.25em auto 1fr;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.text-size-menu__check {
+  display: inline-flex;
+}
+.text-size-menu__default {
+  justify-self: end;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+}
+
 /* Each row previews itself: Heading in a heading's weight. */
 .line-kind-menu .line-kind-menu__item--body {
   font-weight: 500;
@@ -1947,6 +2090,14 @@
 }
 .recipe-page-toolbar__hint svg {
   flex: none;
+}
+/* Text running off the page (lib/pageOverflow.ts): the sentence stays in the
+   bar's ink, the mark takes the error colour the outline on the page uses. */
+.recipe-page-toolbar__hint--warning {
+  color: var(--cp-ink);
+}
+.recipe-page-toolbar__hint--warning svg {
+  color: var(--cp-error);
 }
 /* "Click" with a mouse, "Tap" on a touch screen. */
 .recipe-page-toolbar__hint-touch { display: none; }
@@ -2595,8 +2746,9 @@
   /* One source of separation between sections. This gap and a 14px margin-top
      on adjacent sections were both in force, so settings sat 34px apart in a
      330px panel — the single biggest reason it still read loose after the
-     density pass. */
-  gap: 18px;
+     density pass. 18px then read cramped between groups (Amelia,
+     2026-11-04), so a touch more, still the one source. */
+  gap: 24px;
   min-height: 0;
   padding-top: 10px;
   /* Horizontal breathing room so keyboard :focus-visible outlines on full-width
@@ -2773,10 +2925,19 @@
   /* Up under the title: the title's row is as tall as the collapse button
      beside it, which left a gap that split the heading from what it says. */
   margin: -6px 0 0;
-  padding: 0 8px;
+  /* Part of the gap under it lives here, outside the scrolling list, so
+     settings scrolled up stop short of the note instead of running into it
+     (Amelia, 2026-11-03). The list's own top padding scrolls away with it. */
+  padding: 0 8px 12px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-small);
   line-height: 1.4;
+}
+/* Under the note, the list starts 10px further down, so the first setting
+   sits the same 22px below it as it always has; only the 12px above stays
+   when the list scrolls. Beats the desktop rule below on specificity. */
+.recipe-config-panel__note + .recipe-config-panel__scroll {
+  padding-top: 10px;
 }
 /* A recessed track with the chosen tab raised out of it, so both halves read
    as one control (the bare shared pill left "Page" as loose text). Flat: a
@@ -4555,15 +4716,22 @@ textarea.recipe-page-fields__input {
   --recipe-card-padding-bottom: 0.5in;
   --recipe-card-columns: 2.65in 1fr;
   --recipe-card-gap: 0.46in;
-  --recipe-card-title-size: calc(25pt * var(--recipe-font-scale, 1));
-  --recipe-card-meta-size: calc(8.6pt * var(--recipe-font-scale, 1));
+  --recipe-card-title-size-base: 25pt;
+  --recipe-card-meta-size-base: 8.6pt;
   --recipe-card-meta-gap: 9px;
-  --recipe-card-label-size: calc(8pt * var(--recipe-font-scale, 1));
-  --recipe-card-body-size: calc(9.6pt * var(--recipe-font-scale, 1));
-  --recipe-card-step-size: calc(9.6pt * var(--recipe-font-scale, 1));
-  --recipe-card-step-gap: calc(5.2pt * var(--recipe-font-scale, 1));
-  --recipe-card-ingredient-gap: calc(3.2pt * var(--recipe-font-scale, 1));
+  --recipe-card-label-size-base: 8pt;
+  --recipe-card-body-size-base: 9.6pt;
+  --recipe-card-step-size-base: 9.6pt;
+  --recipe-card-step-gap-base: 5.2pt;
+  --recipe-card-ingredient-gap-base: 3.2pt;
   --recipe-card-photo-size: 1.55in;
+  --recipe-card-title-size: calc(var(--recipe-card-title-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-meta-size: calc(var(--recipe-card-meta-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-label-size: calc(var(--recipe-card-label-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-body-size: calc(var(--recipe-card-body-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-step-size: calc(var(--recipe-card-step-size-base) * var(--recipe-font-scale, 1));
+  --recipe-card-step-gap: calc(var(--recipe-card-step-gap-base) * var(--recipe-font-scale, 1));
+  --recipe-card-ingredient-gap: calc(var(--recipe-card-ingredient-gap-base) * var(--recipe-font-scale, 1));
 }
 
 .recipe-card-set {
@@ -8303,9 +8471,12 @@ textarea.recipe-card__toc-title {
   align-self: flex-start;
 }
 
+/* A line's ring goes round its words, not its bullet or step number: only
+   the words change when it's clicked, and the field that opens is the size
+   of the words (Amelia, 2026-11-04). */
 .recipe-card__title--editable:hover,
 .recipe-card__headnote--editable:hover,
-.recipe-card__editable-line--editable:hover,
+.recipe-card__editable-line--editable:hover > [data-edit-text],
 .recipe-card__footer-brand--editable:hover,
 .recipe-card__footer-brand--editable:focus-visible {
   outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
@@ -8322,8 +8493,30 @@ textarea.recipe-card__toc-title {
    accepted — so it stands down and the focus ring is the only box. */
 .recipe-card__title--editable:hover:focus-within,
 .recipe-card__headnote--editable:hover:focus-within,
-.recipe-card__editable-line--editable:hover:focus-within {
+.recipe-card__editable-line--editable:hover:focus-within > [data-edit-text] {
   outline: none;
+}
+
+/* Time and servings are the exception: hovering outlines the whole fact,
+   its label with its value ("Serves 4"), because a click anywhere on it
+   opens the value, the one part that changes (Amelia, 2026-11-04). On a
+   recipe card each is a single field that shows only its value while typed
+   in. Not while it's open: its field's focus ring is the only box. */
+.recipe-card__fact--editable {
+  cursor: pointer;
+}
+.recipe-card__fact--editable:hover:not(:focus-within),
+.recipe-card__inline-input--meta:hover:not(:focus) {
+  outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* An ingredient's words as one block beside its bullet, so a ring round them
+   is one box even when the line wraps. Lays out as the bare text did: the
+   bullet sits in the line's own start padding. */
+.recipe-card__line-text {
+  display: block;
 }
 
 /* The emptied workspace. A page-shaped outline where the pages were, so the
@@ -8667,6 +8860,25 @@ textarea.recipe-card__toc-title {
   outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
   outline-offset: 2px;
   border-radius: 3px;
+}
+
+/* Words with no field of their own (an added page's lines, a chapter caption,
+   the contents entries) can still be clicked to size them from the text bar
+   (lib/pageLooks.tsx), so they read as clickable like the fields do. */
+[data-element][tabindex="-1"] {
+  cursor: pointer;
+}
+[data-element][tabindex="-1"]:hover,
+[data-element][tabindex="-1"]:focus {
+  outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+@media print {
+  [data-element][tabindex="-1"]:hover,
+  [data-element][tabindex="-1"]:focus {
+    outline: none;
+  }
 }
 
 .recipe-card__cover-field--empty,

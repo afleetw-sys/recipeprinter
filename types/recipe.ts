@@ -19,6 +19,32 @@
  */
 export type PrintCardSize = "letter" | "card-6x4";
 
+/**
+ * One element's own style on a page (a recipe's steps, a cover's title),
+ * overriding what its theme and the book's settings give it. Today only its
+ * text size: a multiple of the theme's Normal size for this element, between
+ * `MIN_TEXT_SIZE` and `MAX_TEXT_SIZE`, which REPLACES the book's size for it. Read through lib/pageLooks.tsx, which drops anything
+ * the app can't draw.
+ */
+export interface ElementStyle {
+  textSize?: number;
+}
+
+/**
+ * How one page looks beyond what its content and theme decide, kept in one
+ * record per page whatever kind of page it is. A new page-level property
+ * (a background, a photo's crop) belongs here, beside `elements`, rather than
+ * in another field on CoverConfig, Section or RecipePagePlacement. See
+ * lib/pageLooks.tsx for the addresses and for how an existing field moves in.
+ */
+export interface PageLook {
+  /** Element name -> its own style. */
+  elements?: Record<string, ElementStyle>;
+}
+
+/** Page address ("cover", "recipe:<id>", "section:<id>") -> its look. */
+export type PageLooks = Record<string, PageLook>;
+
 export type RecipePrintTemplate =
   | "document"
   | "classic"
@@ -528,6 +554,16 @@ export interface PrintProjectSettings {
       book saved before, whose `fontScale` was every theme's. Read through
       `normalizeThemeLooks`, never directly. */
   themeLooks?: Partial<Record<RecipePrintTemplate, { fontScale?: number; photoScale?: number }>>;
+  /** How the cook has styled single pages and the elements on them, keyed by
+      page address. See lib/pageLooks.tsx. Absent = every page follows its
+      theme and the book's settings. */
+  pageLooks?: PageLooks;
+  /** See `ProjectMeta.sampleLines`: optional lines never written show sample
+      text (lib/bookPageSamples.ts). Absent on books made before. */
+  sampleLines?: boolean;
+  /** See `ProjectMeta.optionalLinesExplicit`. Saved so a reloaded book isn't
+      taken for one from before optional lines and migrated again. */
+  optionalLinesExplicit?: boolean;
   /** Book-only settings — stay undefined/off until "Make it a cookbook" has
       been used to opt into the cookbook experience. */
   cookbookMode?: boolean;

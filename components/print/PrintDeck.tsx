@@ -20,6 +20,7 @@ import {
   ICON_SIZE,
   ImageIcon,
   InfoIcon,
+  AlertIcon,
   LinkIcon,
   MoveToSectionIcon,
   PagePlusIcon,
@@ -55,6 +56,9 @@ import type { useDeckScroller } from "@/lib/useDeckScroller";
 import { isPhotoOpenClick, photoDialogKey, type PhotoPress } from "@/lib/photoOpenGesture";
 import { LineSelectionToolbar } from "@/components/print/LineSelectionToolbar";
 import { TextFieldToolbar } from "@/components/print/TextFieldToolbar";
+import { SAMPLE_LINES, lineShown } from "@/lib/bookPageSamples";
+import { usePageOverflow } from "@/lib/pageOverflow";
+import { pageAddressForSlot } from "@/lib/pageLooks";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { PageToolbar, PageToolbarItem } from "@/components/print/PageToolbar";
 import { FailedImportCard } from "@/components/print/FailedImportCard";
@@ -195,6 +199,9 @@ interface PrintDeckProps {
       (`renderProUpgradeButton`) — `null` once Pro is active, so this and
       the desktop header can never disagree about whether it's owed. */
   proUpgradeButton: ReactNode;
+  /** Crown every text size but Normal in the text bar's Size: recipe cards
+      on a free account, like the book-wide Text size. */
+  textSizeProMarked: boolean;
   // Layout / preview geometry
   singleRecipePrintView: boolean;
   cookbookView: boolean;
@@ -272,6 +279,8 @@ interface PrintDeckProps {
   addField: ReturnType<typeof useRecipeInlineEditor>["addField"];
   activeInlineEdit: ReturnType<typeof useRecipeInlineEditor>["activeInlineEdit"];
   editingSectionId: string | null;
+  /** A chapter just made, whose name opens selected (see the page). */
+  newSectionTitleId: string | null;
   setEditingSectionId: Dispatch<SetStateAction<string | null>>;
   editingSectionTitle: string;
   setEditingSectionTitle: Dispatch<SetStateAction<string>>;
@@ -349,13 +358,20 @@ interface PrintDeckProps {
 function openAddedLine(name: string) {
   let tries = 0;
   const attempt = () => {
+    // The line itself, back on the page with its sample words (a title's
+    // prompt, for the one kind of line that still has one).
     const prompt = document.querySelector<HTMLElement>(
-      `.recipe-page-slide.is-active .recipe-card [data-field-prompt="${name}"]`,
+      `.recipe-page-slide.is-active .recipe-card [data-field-line="${name}"], .recipe-page-slide.is-active .recipe-card [data-field-prompt="${name}"]`,
     );
     if (prompt) {
       prompt.dataset.added = "true";
       prompt.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
       if (prompt.dataset.added) prompt.click();
+      // Opened with its words selected, so typing replaces the sample.
+      window.requestAnimationFrame(() => {
+        const field = document.activeElement;
+        if (field instanceof HTMLTextAreaElement || field instanceof HTMLInputElement) field.select();
+      });
       return;
     }
     if (++tries < 12) window.requestAnimationFrame(attempt);
@@ -416,6 +432,7 @@ export function PrintDeck(props: PrintDeckProps) {
     saveControl,
     historyControls,
     proUpgradeButton,
+    textSizeProMarked,
     singleRecipePrintView,
     cookbookView,
     previewMeasuring,
@@ -432,7 +449,6 @@ export function PrintDeck(props: PrintDeckProps) {
     showSourceUrl,
     setShowSourceUrl,
     showDescription,
-    singleRecipeOnly,
     sheets,
     navItems,
     spreads,
@@ -466,6 +482,7 @@ export function PrintDeck(props: PrintDeckProps) {
     addField,
     activeInlineEdit,
     editingSectionId,
+    newSectionTitleId,
     setEditingSectionId,
     editingSectionTitle,
     setEditingSectionTitle,
@@ -496,6 +513,14 @@ export function PrintDeck(props: PrintDeckProps) {
     pendingAddAfterRecipeId,
     renderAllPages,
   } = props;
+
+  // What doesn't fit on the page being looked at (lib/pageOverflow.ts). Only
+  // a book's own pages: a recipe page fits itself, moving and shrinking its
+  // lines, so its words never run off.
+  const activeSheet = activeNavItem ? sheets[activeNavItem.sheetIndex] : undefined;
+  const activeSlot = activeSheet && activeNavItem ? (activeSheet.slots[activeNavItem.slotIndex] ?? activeSheet.slots.find(Boolean)) : undefined;
+  const overflowAddress = activeSlot && activeSlot.kind !== "recipe" ? pageAddressForSlot(activeSlot) : undefined;
+  const overflowing = usePageOverflow(overflowAddress, ".recipe-page-canvas");
 
 
   // The empty-state outline is the page at the deck's scale, unless that is
@@ -556,8 +581,9 @@ export function PrintDeck(props: PrintDeckProps) {
      * page, each with how to add it. On a recipe page, every line the recipe
      * has nothing in: a recipe page draws no empty line, because it is laid
      * out as it prints (see RecipeFace). On a book page (a cover, an opening
-     * page, a chapter opener), whose empty lines show as fields with a × on
-     * the page itself, only the lines taken off. No lines, no button.
+     * page, a chapter opener), every optional line that isn't on the page:
+     * there are no prompts on the page itself (lib/bookPageSamples.ts). No
+     * lines, no button.
      *
      * A cleared cover or chapter title has no prompt of its own, so it comes
      * back through the reveal instead.
@@ -604,13 +630,15 @@ export function PrintDeck(props: PrintDeckProps) {
           edition: `${prefix}-edition`,
           blurb: side === "back" ? "back-blurb" : "dedication-text",
         };
+        // Off the page: deleted, or (in a book from before sample lines)
+        // never written. Put back with its sample words, open and selected.
         const back = (key: "subtitle" | "author" | "edition" | "blurb", name: string) =>
-          cover[key] === ""
+          !lineShown(cover[key], projectMeta.meta.sampleLines)
             ? [
                 {
                   name,
                   restore: () => {
-                    setCoverForSide(side, { ...cover, [key]: undefined });
+                    setCoverForSide(side, { ...cover, [key]: SAMPLE_LINES[lineNames[key]] ?? "" });
                     openAddedLine(lineNames[key]);
                   },
                 },
@@ -650,12 +678,12 @@ export function PrintDeck(props: PrintDeckProps) {
         // is only missing once it has been removed (`""`).
         return [
           ...(!sectionDisplayTitle(section).trim() ? [{ name: "Title", restore: viaReveal }] : []),
-          ...(section.subtitle === ""
+          ...(!lineShown(section.subtitle, projectMeta.meta.sampleLines)
             ? [
                 {
                   name: "Subtitle",
                   restore: () => {
-                    projectMeta.updateSection(section.id, { subtitle: undefined });
+                    projectMeta.updateSection(section.id, { subtitle: SAMPLE_LINES.subtitle });
                     openAddedLine("subtitle");
                   },
                 },
@@ -729,13 +757,14 @@ export function PrintDeck(props: PrintDeckProps) {
     // instead (the link's counterpart to the photo picker's per-recipe "None"),
     // and choosing what the book already does drops the override so the recipe
     // follows the book again. Multi-recipe recipe cards have no per-recipe
-    // placement, so there the panel's "Every recipe" section stays the one place
-    // to reach it.
+    // placement, so there it flips the cards' setting, as on a single card.
     const linkCookbook = Boolean(projectMeta.meta.cookbookMode);
+    // On every recipe page, recipe cards too: with the panel's "Recipe link"
+    // switch gone (Amelia, 2026-11-03), this is how a link that was turned
+    // off comes back. On recipe cards there's no per-recipe choice, so it
+    // shows or hides the cards' links together, as that switch did.
     const recipeForLink =
-      (singleRecipeOnly || linkCookbook) && navItem.kind === "recipe"
-        ? items?.find((item) => item.id === navItem.recipeId)?.recipe
-        : null;
+      navItem.kind === "recipe" ? items?.find((item) => item.id === navItem.recipeId)?.recipe : null;
     const linkShown =
       navItem.kind === "recipe"
         ? recipeLinkOn(showSourceUrl, linkCookbook, projectMeta.meta.itemPlacements?.[navItem.recipeId])
@@ -891,6 +920,15 @@ export function PrintDeck(props: PrintDeckProps) {
               bar is already the floating thing that acts on this page, it
               already separates its groups with a hairline, and one object
               reads as chrome where two read as an interruption. */}
+          {/* Words running past their box print cut off, and nothing else
+              would say so. Stays while it's true, like the contents hint,
+              and the words themselves are outlined on the page. */}
+          {overflowing.length > 0 && (
+            <div className="recipe-page-toolbar__group recipe-page-toolbar__hint recipe-page-toolbar__hint--warning" role="status">
+              <AlertIcon size={ICON_SIZE.sm} aria-hidden />
+              <span>Some text doesn&apos;t fit on this page. A smaller text size or fewer words will make it fit.</span>
+            </div>
+          )}
           {navItem.kind === "toc" && !navItem.continued && (
             <div className="recipe-page-toolbar__group recipe-page-toolbar__hint">
               <InfoIcon size={ICON_SIZE.sm} aria-hidden />
@@ -1098,6 +1136,7 @@ export function PrintDeck(props: PrintDeckProps) {
     return {
       sectionId,
       titleEditing: editingSectionId === sectionId,
+      titleSelected: newSectionTitleId === sectionId,
       titleValue: editingSectionTitle,
       onTitleOpen: () => startSectionEdit(sectionId),
       onTitleChange: (value: string) => editSectionTitle(sectionId, value),
@@ -1137,6 +1176,9 @@ export function PrintDeck(props: PrintDeckProps) {
       size={previewCardSize}
       template={previewTemplate}
       fontScale={previewFontScale}
+      pageLooks={projectMeta.meta.pageLooks}
+      sampleLines={projectMeta.meta.sampleLines}
+      elementTargets={focused}
       photoScale={previewPhotoScale}
       doubleSided={continueOnBack}
       gutterSide={gutterSideForRole(role)}
@@ -1468,7 +1510,28 @@ export function PrintDeck(props: PrintDeckProps) {
           {/* Body/heading and bold/italic, floating over the line being typed
               rather than joining the page's bar. It anchors itself to whatever
               field has focus, so it is mounted once for the whole deck. */}
-          <TextFieldToolbar inlineEdit={activeInlineEdit} zoom={deckZoom} introReset={activeIntroReset} />
+          {overflowAddress && overflowing.length > 0 && (
+            // Outlines the words that don't fit, wherever they are on the
+            // page, without the page's faces knowing anything about it.
+            <style>
+              {`@media screen { ${overflowing
+                .map(
+                  (name) =>
+                    `.recipe-page-canvas [data-element-page="${CSS.escape(overflowAddress)}"][data-element="${CSS.escape(name)}"]`,
+                )
+                .join(", ")} { outline: 1.5px dashed var(--cp-error); outline-offset: 2px; } }`}
+            </style>
+          )}
+          <TextFieldToolbar
+            inlineEdit={activeInlineEdit}
+            zoom={deckZoom}
+            introReset={activeIntroReset}
+            elementSize={{
+              styles: projectMeta.meta.pageLooks,
+              onChange: (page, element, size) => projectMeta.setElementStyle(page, element, { textSize: size }),
+              proMarked: textSizeProMarked,
+            }}
+          />
           {/* Its twin, for a drag that ran across several lines rather than a
               caret sitting in one. Mounted once for the whole deck, the same
               way and for the same reason. */}
@@ -1531,6 +1594,7 @@ export function PrintDeck(props: PrintDeckProps) {
               showCutLines={showCutLines}
               doubleSided={continueOnBack}
               fontScale={previewFontScale}
+              pageLooks={projectMeta.meta.pageLooks}
               photoScale={previewPhotoScale}
             />
           )}
@@ -2077,6 +2141,9 @@ export function PrintDeck(props: PrintDeckProps) {
                     size={previewCardSize}
                     template={previewTemplate}
                     fontScale={previewFontScale}
+                    pageLooks={projectMeta.meta.pageLooks}
+                    sampleLines={projectMeta.meta.sampleLines}
+                    elementTargets={isActive}
                     photoScale={previewPhotoScale}
                     doubleSided={continueOnBack}
                     cookbookMode={Boolean(projectMeta.meta.cookbookMode)}

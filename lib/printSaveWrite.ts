@@ -137,14 +137,11 @@ export async function writeProject(pending: PendingSave, ctx: SaveWriteContext):
     // recipe's photo history holds the ones it has worn before, so on a
     // Paprika book both were full of `blob:` URLs going straight into the
     // document. See `materializeProjectPhotos`.
-    const { photos, uploadedRecipeImages, uploadedUrls } = await ctx.materializePhotos({
-      sections: pending.project.sections,
-      cover: pending.project.cover,
-      backCover: pending.project.backCover,
-      dedication: pending.project.dedication,
-      itemPlacements: pending.project.itemPlacements,
-      stashedCookbook: pending.project.stashedCookbook,
-    });
+    //
+    // The whole book, not a list of its parts: the list left out the opening
+    // page (`frontMatter`), and the sweep handed it back blank over the
+    // book's own, so every account save dropped the dedication.
+    const { photos, uploadedRecipeImages, uploadedUrls } = await ctx.materializePhotos(pending.project);
     const project: PrintProject = { ...pending.project, ...photos };
     // Read before this write can set it — this is the one signal for
     // "is this THE first save" (see the toast below), and by the next

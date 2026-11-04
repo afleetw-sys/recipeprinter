@@ -192,6 +192,58 @@ export interface PrintLayoutSettings {
 }
 
 /**
+ * The book's settings that keep one name and one value in the workspace
+ * (`ProjectMeta`) and in the saved document (`PrintProjectSettings`).
+ *
+ * Saving copies each of them out and opening a book copies each of them back,
+ * both from this list. They used to be two hand-written lists, one per
+ * direction, and a setting added to one and not the other saved without ever
+ * coming back (or came back without ever being saved). A new book setting is
+ * now its field on both types and its name here.
+ *
+ * The two that differ between the sides stay mapped by hand where they're
+ * used: `cookbookMode`, which opening a book works out from more than the
+ * stored flag (`savedProjectOpensAsCookbook`), and `cookbookPreset`, saved as
+ * `bookPreset`.
+ */
+export const BOOK_SETTING_KEYS = [
+  "cookbookWelcomeCompleted",
+  "tableOfContents",
+  "sectionDividers",
+  "tocKicker",
+  "tocTitle",
+  "photoStyle",
+  "ownPhotosOnly",
+  "websitePhotos",
+  "pageLooks",
+  "sampleLines",
+  "optionalLinesExplicit",
+  "railSortMode",
+  "lastImportSource",
+] as const satisfies readonly (keyof ProjectMeta & keyof PrintProjectSettings)[];
+
+type BookSettingKey = (typeof BOOK_SETTING_KEYS)[number];
+type BookSettings = { [K in BookSettingKey]?: ProjectMeta[K] & PrintProjectSettings[K] };
+
+function pickBookSettings(source: Partial<Record<BookSettingKey, unknown>>): BookSettings {
+  const out: Record<string, unknown> = {};
+  for (const key of BOOK_SETTING_KEYS) out[key] = source[key];
+  return out as BookSettings;
+}
+
+/** The book's settings, as a saved document keeps them. */
+export function bookSettingsFromMeta(meta: ProjectMeta): BookSettings {
+  return pickBookSettings(meta);
+}
+
+/** The book's settings, as the workspace keeps them. `replaceMeta` normalizes
+    what comes back, so anything a stored document holds wrongly is dropped
+    there, once, for every setting. */
+export function bookSettingsToMeta(settings: PrintProjectSettings): BookSettings {
+  return pickBookSettings(settings);
+}
+
+/**
  * Everything a saved project takes from the working copy's metadata.
  *
  * Three places built this by hand: the account save and the PDF export on the
@@ -248,21 +300,44 @@ export function projectContentFromMeta(
     kind: meta.cookbookMode || meta.stashedCookbook ? "cookbook" : "printProject",
     settings: {
       ...layout,
+      ...bookSettingsFromMeta(meta),
       cookbookMode: meta.cookbookMode,
-      tableOfContents: meta.tableOfContents,
-      sectionDividers: meta.sectionDividers,
       bookPreset: meta.cookbookPreset,
-      cookbookWelcomeCompleted: meta.cookbookWelcomeCompleted,
-      tocKicker: meta.tocKicker,
-      tocTitle: meta.tocTitle,
-      photoStyle: meta.photoStyle,
-      ownPhotosOnly: meta.ownPhotosOnly,
-      websitePhotos: meta.websitePhotos,
-      railSortMode: meta.railSortMode,
-      lastImportSource: meta.lastImportSource,
     },
     itemPlacements: meta.itemPlacements,
     stashedCookbook: meta.stashedCookbook,
+  };
+}
+
+/**
+ * The workspace's book from a saved document: `projectContentFromMeta` read
+ * backwards. Every part a save writes comes back from here, so the two are
+ * kept side by side and tested as a round trip (lib/projectContentFromMeta
+ * .test.ts): the opening page's link to the book it was copied from used to
+ * be written and never read, so the next save erased it.
+ *
+ * Not normalized: the caller hands it to `replaceMeta`, which does that once
+ * for everything.
+ */
+export function metaFromProject(project: PrintProject): ProjectMeta {
+  return {
+    projectId: project.id,
+    // Absent on documents saved before renames were persisted, which is
+    // exactly right: those never had one.
+    projectTitle: project.projectTitle,
+    sourceProjectId: project.sourceProjectId,
+    cookbookMode: savedProjectOpensAsCookbook(project),
+    cookbookPreset: project.settings.bookPreset,
+    ...bookSettingsToMeta(project.settings),
+    cover: project.cover,
+    backCover: project.backCover,
+    dedication: project.dedication,
+    frontMatter: project.frontMatter,
+    itemPlacements: project.itemPlacements,
+    // Restores a book this project set aside, so the Cookbook toggle brings it
+    // back instead of scaffolding a fresh one over it.
+    stashedCookbook: project.stashedCookbook,
+    sections: metaSectionsFromFull(project.sections),
   };
 }
 

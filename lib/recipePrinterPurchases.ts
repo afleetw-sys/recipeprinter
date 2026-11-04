@@ -317,6 +317,7 @@ export function computeProLocks({
   cardSize,
   recipeCount,
   fontScale = 1,
+  elementTextSized = false,
 }: {
   customerInfo: CustomerInfo | null;
   cookbookMode: boolean;
@@ -327,6 +328,9 @@ export function computeProLocks({
   /** The cook's text size (lib/fontScale.ts); anything but Normal is Pro on
       recipe cards. Previewing it is free, like a locked theme. */
   fontScale?: number;
+  /** A single element on a recipe card has a text size other than Normal
+      (lib/pageLooks.tsx): Pro the same way. */
+  elementTextSized?: boolean;
 }): ProLocks {
   // Every theme (and every Pro-only card size) is included with the cookbook
   // purchase, so neither paywall applies while in cookbook mode — the
@@ -338,7 +342,8 @@ export function computeProLocks({
     !cookbookMode;
   const cardSizeLocked = !cookbookMode && !canUseCardSize(customerInfo, cardSize);
   // A cookbook includes every theme, and the text size with them.
-  const fontScaleLocked = !cookbookMode && fontScale !== 1 && !hasProEntitlement(customerInfo);
+  const fontScaleLocked =
+    !cookbookMode && (fontScale !== 1 || elementTextSized) && !hasProEntitlement(customerInfo);
   // Printing more than one recipe in one job (outside a cookbook, which has
   // its own separate purchase model) is its own Pro-gated capability — see
   // `hasMultiRecipeEntitlement`. There's nothing to preview here the way a

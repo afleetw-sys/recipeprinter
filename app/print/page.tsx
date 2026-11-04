@@ -37,6 +37,7 @@ import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { WebsitePhotosOption } from "@/components/print/WebsitePhotosOption";
 import { MobileStructureSheet, type MobileBookSheet } from "@/components/print/MobileStructureSheet";
 import { EditTips } from "@/components/print/EditTips";
+import { CardPhotosTiles } from "@/components/print/PrintSetupControls";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PageSettings, type LookOption, type PageField } from "@/components/print/PageSettings";
@@ -72,6 +73,7 @@ import {
   savePrintProject,
   savedProjectOpensAsCookbook,
   assemblePrintProject,
+  metaFromProject,
   projectContentFromMeta,
   type PrintLayoutSettings,
   loadPrintProject,
@@ -212,8 +214,14 @@ import {
 } from "@/lib/printSettings";
 import { useFreeThemeOnOpen } from "@/lib/useFreeThemeOnOpen";
 import type { FontScale } from "@/lib/fontScale";
+import {
+  hasNonNormalTextSize,
+  prunePageLooks,
+  RECIPES_ADDRESS,
+  recipePageAddress,
+} from "@/lib/pageLooks";
 import type { PhotoScale } from "@/lib/photoScale";
-import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
+import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, photoSizeOffered, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { asDerived, latestHistoryStep, undoEdit, useEditHistory } from "@/lib/editHistory";
 import { HistoryControls } from "@/components/print/HistoryControls";
 import { openingPageFor } from "@/lib/frontMatterPage";
@@ -554,6 +562,10 @@ export default function PrintPage() {
   }, [jobIds]);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionTitle, setEditingSectionTitle] = useState("");
+  /** A chapter just made: its page opens with "New chapter" selected, so the
+      first key typed replaces it. Cleared by the first edit, so a redraw
+      while typing never selects the name again. */
+  const [newSectionTitleId, setNewSectionTitleId] = useState<string | null>(null);
   // Both side panels fold away together to give the page more room. Session
   // state on purpose, not a stored preference: hiding them is something you do
   // to look at a page, not how you want the workspace set up from now on.
@@ -985,6 +997,7 @@ export default function PrintPage() {
     template,
     fontScale,
     photoScale,
+    pageLooks: projectMeta.meta.pageLooks,
     // The preview page IS the book's real sheet, and so is the card every
     // recipe is measured against (see `presetCardDims`).
     preset: projectMeta.meta.cookbookPreset,
@@ -1228,6 +1241,7 @@ export default function PrintPage() {
                 clearRailSelection();
                 setEditingSectionId(sectionId);
                 setEditingSectionTitle("New chapter");
+                setNewSectionTitleId(sectionId);
                 setPendingFocusNavId(sectionId);
               },
             };
@@ -1550,6 +1564,7 @@ export default function PrintPage() {
   const editSectionTitle = useCallback(
     (sectionId: string, value: string) => {
       setEditingSectionTitle(value);
+      setNewSectionTitleId(null);
       // Moving to a different section's title must not discard the one still
       // pending — land it before this one takes over the slot.
       const pending = pendingSectionRenameRef.current;
@@ -1579,6 +1594,7 @@ export default function PrintPage() {
     }
     setEditingSectionId(null);
     setEditingSectionTitle("");
+    setNewSectionTitleId(null);
   }
 
   function renameSectionEverywhere(sectionId: string, value: string) {
@@ -1594,6 +1610,7 @@ export default function PrintPage() {
     const sectionId = projectMeta.addSection(title);
     setEditingSectionId(sectionId);
     setEditingSectionTitle(title);
+    setNewSectionTitleId(sectionId);
     setPendingFocusNavId(sectionId);
     setPendingRailChapterFocusId(sectionId);
   }
@@ -2113,7 +2130,10 @@ export default function PrintPage() {
       projectMeta.moveItems([recipeId], sectionId, 0);
       setEditingSectionId(sectionId);
       setEditingSectionTitle("New chapter");
-      showToast("Chapter added. Give it a name.");
+      // To its page, name selected, like every other way of making one. The
+      // toast that asked for a name is gone: the name is in front of them.
+      setNewSectionTitleId(sectionId);
+      setPendingFocusNavId(sectionId);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [projectMeta],
@@ -3538,6 +3558,15 @@ export default function PrintPage() {
       cardSize,
       recipeCount,
       fontScale,
+      // Only the recipes still here: a deleted recipe's sizes stay in the map
+      // and must not keep asking for Pro.
+      elementTextSized: hasNonNormalTextSize(
+        prunePageLooks(
+          projectMeta.meta.pageLooks,
+          // The recipes still here, and the sizes set for every recipe's parts.
+          new Set([RECIPES_ADDRESS, ...(items ?? []).map((item) => recipePageAddress(item.id))]),
+        ),
+      ),
     });
   // A free, non-cookbook account can never hold more than one recipe — see
   // `hasMultiRecipeEntitlement`'s doc comment ("nothing to grandfather...
@@ -3549,9 +3578,10 @@ export default function PrintPage() {
   // which only Pro can add. A setting stored while Pro is ignored once it
   // lapses, and while the job is down to one recipe.
   const twoPerSheetOffered = cardSize === "card-6x4" && !cookbookMode && !singleRecipeOnly && recipeCount >= 2;
-  /** Recipe cards' phone "Every recipe" sheet: offered once there can be more
-      than one recipe and some recipe has a photo or a link to show or hide. */
-  const cardEveryRecipe = !cookbookMode && !singleRecipeOnly && (anyRecipeHasImage || anyRecipeHasSourceUrl);
+  /** Recipe cards' phone Photos sheet (None / In card): offered once there can
+      be more than one card and some card has a photo. One card's own photo
+      picker is that card's setting. */
+  const cardPhotosSheet = !cookbookMode && !singleRecipeOnly && anyRecipeHasImage;
   // An unbought cookbook's free preview size (lib/cookbookFreeSize): how many
   // more recipes this book can take, or null when nothing caps it (a bought
   // book, a card project, or the allowance not live yet).
@@ -4218,49 +4248,9 @@ export default function PrintPage() {
         const loadedItems = project.sections.flatMap((section) => section.items);
         queue.replaceAll(loadedItems);
         setJobIds(loadedItems.map((item) => item.id));
-        projectMeta.replaceMeta({
-          projectId: project.id,
-          // Absent on documents saved before renames were persisted, which is
-          // exactly right: those never had one.
-          projectTitle: project.projectTitle,
-          cookbookMode: savedProjectOpensAsCookbook(project),
-          cookbookWelcomeCompleted: project.settings.cookbookWelcomeCompleted,
-          cookbookPreset: project.settings.bookPreset,
-          tableOfContents: project.settings.tableOfContents,
-          sectionDividers: project.settings.sectionDividers,
-          tocKicker: project.settings.tocKicker,
-          tocTitle: project.settings.tocTitle,
-          photoStyle: project.settings.photoStyle,
-          ownPhotosOnly: project.settings.ownPhotosOnly,
-          websitePhotos: project.settings.websitePhotos,
-          railSortMode: project.settings.railSortMode,
-          lastImportSource: project.settings.lastImportSource,
-          cover: project.cover,
-          backCover: project.backCover,
-          dedication: project.dedication,
-          frontMatter: project.frontMatter,
-          itemPlacements: project.itemPlacements,
-          // Restores a book this project set aside, so the Cookbook toggle
-          // brings it back instead of scaffolding a fresh one over it.
-          stashedCookbook: project.stashedCookbook,
-          sections: project.sections.map((section) => ({
-            id: section.id,
-            title: section.title,
-            titleOverride: section.titleOverride,
-            subtitle: section.subtitle,
-            cardPhotoMode: section.cardPhotoMode,
-            cardPhotoUrl: section.cardPhotoUrl,
-            cardGridImages: section.cardGridImages,
-            artPhotoMode: section.artPhotoMode,
-            artPhotoUrl: section.artPhotoUrl,
-            artGridImages: section.artGridImages,
-            artCaption: section.artCaption,
-            intro: section.intro,
-            showOpener: section.showOpener,
-            numberAsChapter: section.numberAsChapter,
-            itemIds: section.items.map((item) => item.id),
-          })),
-        });
+        // Every part of the saved book, read the way the save wrote it (see
+        // `metaFromProject`, tested as a round trip with the save).
+        projectMeta.replaceMeta(metaFromProject(project));
         if (isPrintCardSize(project.settings.cardSize)) setCardSize(project.settings.cardSize);
         if (isRecipePrintTemplate(project.settings.template)) setTemplate(project.settings.template);
         setDoubleSided(project.settings.doubleSided);
@@ -4674,8 +4664,7 @@ export default function PrintPage() {
    * The reasons cookbooks lost this before are answered differently. A card
    * job that was once a cookbook no longer counts as one — the switch back to
    * recipe cards is gone, and this reads `cookbookMode`, never the stash. And
-   * the save is not silent: the header (cards) or the rail (cookbooks) says
-   * "Saving…" then "Saved", the first save of a card job says so in a toast,
+   * the save is not silent: the header says "Saving…" then "Saved", the first save of a card job says so in a toast,
    * and a failure surfaces in the header with a retry.
    */
   const keptOnItsOwnRef = useRef<string | null>(null);
@@ -4705,27 +4694,12 @@ export default function PrintPage() {
 
 
   /**
-   * How many recipes a cookbook holds, and whether it is kept — at the top of
-   * the page rail, above Add recipes. There is no separate name for the book
-   * here: its title is the one on its cover, edited on the page itself, and the
-   * header keeps the product's name the way every other page does.
-   *
-   * Saved is only ever said for a signed-in cook whose book is in the account
-   * (`savedToProfile`) or is on its way there. A failure is not repeated here:
-   * the header's save control already carries it, with the retry.
+   * How many recipes a cookbook holds, at the top of the page rail, above Add
+   * recipes. There is no separate name for the book here: its title is the one
+   * on its cover, edited on the page itself. Whether it's saved is said in the
+   * header, beside Buy & Print, the same as for recipe cards
+   * (`renderSaveControl`).
    */
-  const bookSaveNote =
-    cookPilotUser && saveStatus === "saving" ? (
-      <span className="rp-save-status" role="status" aria-live="polite">
-        <SpinnerIcon size={ICON_SIZE.sm} />
-        {SAVE_STATUS_LABEL.saving}
-      </span>
-    ) : cookPilotUser && savedToProfile && !(saveStatus && SAVE_FAILURES.has(saveStatus)) ? (
-      <span className="rp-save-status" role="status" aria-live="polite">
-        <CheckIcon size={ICON_SIZE.sm} />
-        {SAVE_STATUS_LABEL.saved}
-      </span>
-    ) : null;
   const railBookHeader = cookbookMode ? (
     <div className="recipe-page-rail__book">
       <p className="recipe-page-rail__book-meta">
@@ -4734,7 +4708,6 @@ export default function PrintPage() {
             ? `${recipeCount} ${recipeCount === 1 ? "recipe" : "recipes"}`
             : `Free preview: ${recipeCount} of ${FREE_COOKBOOK_RECIPES} recipes`}
         </span>
-        {bookSaveNote}
       </p>
     </div>
   ) : null;
@@ -5084,9 +5057,10 @@ export default function PrintPage() {
    *
    * - a failure: the word as a button that retries, in the error colour;
    * - saving: a quiet spinner and "Saving…";
-   * - kept: a quiet, persistent check and "Saved". A cookbook says this in
-   *   the page rail beside its recipe count (`bookSaveNote`), so its header
-   *   keeps it screen-reader-only instead of saying it twice;
+   * - kept: a quiet, persistent check and "Saved", for a cookbook too, free
+   *   or bought. It used to sit in a cookbook's page rail beside the recipe
+   *   count; it's here, beside Buy & Print, on every project (Amelia,
+   *   2026-11-03), and the rail keeps only the count;
    * - not kept and nothing to report: nothing.
    *
    * The one place a button survives is a SIGNED-OUT cook with a project worth
@@ -5113,15 +5087,6 @@ export default function PrintPage() {
           </button>
         );
       }
-      // A cookbook's rail already says Saving/Saved; still announced here
-      // for anyone on a screen reader, just not painted twice.
-      if (cookbookMode) {
-        return (
-          <span className="sr-only" role="status" aria-live="polite">
-            {SAVE_STATUS_LABEL[saveStatus]}
-          </span>
-        );
-      }
       if (saveStatus === "saving") {
         return (
           <span className="rp-save-status" role="status" aria-live="polite">
@@ -5132,7 +5097,7 @@ export default function PrintPage() {
       }
     }
     if (savedToProfile) {
-      return cookbookMode ? null : (
+      return (
         <span className="rp-save-status" role="status" aria-live="polite">
           <CheckIcon size={ICON_SIZE.sm} />
           {SAVE_STATUS_LABEL.saved}
@@ -5670,6 +5635,7 @@ export default function PrintPage() {
     clearRailSelection();
     setEditingSectionId(sectionId);
     setEditingSectionTitle("New chapter");
+    setNewSectionTitleId(sectionId);
     setPendingFocusNavId(sectionId);
     track("cookbook_section_created_from_selection", { count: ids.length });
   }
@@ -7047,7 +7013,7 @@ export default function PrintPage() {
           /*
             The wordmark stays, for cookbooks too. A cookbook's own name lives
             at the top of the page rail, above Add recipes (see `railBookHeader`),
-            where it sits with the count and the save state it belongs with. The right says what you can DO to it, in
+            where it sits with the count. The right says how it stands and what you can DO to it, in
             the order you'd reach for them: how it stands, then the action that
             finishes it.
           */
@@ -7272,6 +7238,7 @@ export default function PrintPage() {
           saveControl={renderSaveControl()}
           historyControls={historyControls("compact")}
           proUpgradeButton={renderProUpgradeButton()}
+          textSizeProMarked={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
           singleRecipePrintView={singleRecipePrintView}
           cookbookView={cookbookView}
           previewMeasuring={previewMeasuring}
@@ -7324,6 +7291,7 @@ export default function PrintPage() {
           editingSectionId={editingSectionId}
           setEditingSectionId={setEditingSectionId}
           editingSectionTitle={editingSectionTitle}
+          newSectionTitleId={newSectionTitleId}
           setEditingSectionTitle={setEditingSectionTitle}
           editSectionTitle={editSectionTitle}
           commitSectionEdit={commitSectionEdit}
@@ -7378,10 +7346,23 @@ export default function PrintPage() {
           setFontScale={setFontScale}
           photoScale={photoScale}
           setPhotoScale={setPhotoScale}
-          themeCustomized={isCustomized({ fontScale, photoScale })}
-          resetThemeLook={resetThemeLook}
+          themeCustomized={
+            isCustomized({ fontScale, photoScale }) || Boolean(projectMeta.meta.pageLooks?.[RECIPES_ADDRESS])
+          }
+          resetThemeLook={() => {
+            resetThemeLook();
+            projectMeta.clearPageLook(RECIPES_ADDRESS);
+          }}
+          recipePartSizes={projectMeta.meta.pageLooks?.[RECIPES_ADDRESS]?.elements}
+          setRecipePartSize={(part, size) => projectMeta.setElementStyle(RECIPES_ADDRESS, part, { textSize: size })}
           customizeProMarked={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
-          photosShown={photosOn && (cookbookMode || cardPhotosAllowed)}
+          photosShown={photoSizeOffered({
+            cookbookMode,
+            cardPhotosAllowed,
+            // Photos the book actually shows (a book of the cook's own photos
+            // counts only those), not a place where one could go.
+            hasPhotos: coverPhotoCandidates.length > 0,
+          })}
           anyRecipeHasImage={anyRecipeHasImage}
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
           bookPhotoStyle={bookPhotoStyle}
@@ -7554,7 +7535,10 @@ export default function PrintPage() {
                 they now sit in this sheet, as they sit under "Every recipe" in
                 the desktop panel. With exactly one recipe possible there is no
                 "every" (`singleRecipeOnly`): that page's own toolbar covers it. */}
-            {(cookbookMode || cardEveryRecipe) && (
+            {/* Recipe cards have no "Every recipe" (Amelia, 2026-11-04): a link
+                a card doesn't want is deleted on the page, and the one choice
+                left for every card is its Photos, so the button says that. */}
+            {(cookbookMode || cardPhotosSheet) && (
               <button
                 type="button"
                 className={`recipe-mobile-toolbar__btn ${bookSheet === "recipes" ? "is-active" : ""}`}
@@ -7569,7 +7553,7 @@ export default function PrintPage() {
                 <span className="recipe-mobile-toolbar__btn-icon">
                   <ImageIcon size={ICON_SIZE.lg} />
                 </span>
-                Every recipe
+                {cookbookMode ? "Every recipe" : "Photos"}
               </button>
             )}
           </div>
@@ -7644,31 +7628,16 @@ export default function PrintPage() {
           </MobileSheet>
         )}
 
-        {/* Cards' "Every recipe": the same two checkboxes the desktop panel's
-            group holds (see PrintSetupControls). A cookbook's sheet lives in
-            MobileStructureSheet, with its photo layouts. */}
-        {cardEveryRecipe && (
+        {/* Recipe cards' Photos, the same tiles the desktop panel has. */}
+        {cardPhotosSheet && (
           <MobileSheet
             open={bookSheet === "recipes"}
             onClose={() => setBookSheet(null)}
-            title="Every recipe"
+            title="Photos"
             className="recipe-structure-sheet"
           >
             <div className="recipe-structure-sheet__settings">
-              {anyRecipeHasImage && (
-                <Checkbox
-                    label="Recipe photo"
-                    checked={showPhoto}
-                    onChange={(event) => setAllShowPhoto(event.target.checked)}
-                />
-              )}
-              {anyRecipeHasSourceUrl && (
-                <Checkbox
-                    label="Recipe link"
-                    checked={showSourceUrl}
-                    onChange={(event) => setBookShowSourceUrl(event.target.checked)}
-                />
-              )}
+              <CardPhotosTiles showPhoto={showPhoto} setShowPhoto={setAllShowPhoto} idPrefix="sheet-card-photos" />
             </div>
           </MobileSheet>
         )}

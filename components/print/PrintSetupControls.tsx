@@ -2,7 +2,7 @@
 
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
-import { Checkbox, CheckboxGroup, SelectTile } from "@/components/Controls";
+import { CheckboxGroup, SelectTile } from "@/components/Controls";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import type { PrintCardSize } from "@/components/RecipeCardPrint";
 import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
@@ -71,17 +71,6 @@ export function PrintSetupControls({
   hasPrintSettingsFields,
   cardSettingsFields,
 }: PrintSetupControlsProps) {
-  /**
-   * "Every recipe" is only an honest title where more than one recipe is
-   * actually possible. Outside cookbook mode, a Free account can never hold
-   * more than one at a time (`multiRecipeAddLocked` in
-   * lib/recipePrinterPurchases.ts blocks adding a second) — so the section
-   * below is skipped entirely for them; the page's own toolbar governs their
-   * one recipe's photo and link instead. A cookbook is exempt: it is a bound
-   * book of recipes independent of Pro, so it can hold many regardless of
-   * this entitlement, and keeps the section unconditionally.
-   */
-  const multiRecipeCapable = cookbookMode || hasMultiRecipeEntitlement(customerInfo);
   return (
     <>
       {/* Print format is a recipe-card concept only. A cookbook is always
@@ -141,15 +130,11 @@ export function PrintSetupControls({
               there is no reason to hide them all at once. A book saved with
               the old switch off keeps that setting (`showDescription`), so
               no blurb it hid comes back. */}
-          {/* Always offered in a cookbook, not only once a recipe has a link:
-              a recipe can be given one by hand from its own toolbar, and this is
-              the book-wide default that link is measured against. Toggling it
-              resets every recipe's own choice, as the Photos tiles below do. */}
-          <Checkbox
-              label="Recipe link"
-              checked={showSourceUrl}
-              onChange={(event) => setShowSourceUrl(event.target.checked)}
-          />
+          {/* No "Recipe link" switch (Amelia, 2026-11-03). A recipe that has a
+              link shows it, and a cook who doesn't want it deletes it from the
+              page. A book saved with the old switch off keeps its links off
+              (`showSourceUrl`), and the page toolbar's link button still shows
+              or hides one recipe's link. */}
           {/* The same section label as Themes below it. It was plain text while
               an "Every recipe" eyebrow headed this group; with the Book tab
               saying what these apply to, Photos is a section like Themes. */}
@@ -191,36 +176,61 @@ export function PrintSetupControls({
         </div>
       )}
 
-      {/* Recipe cards have no pages to add, so they get only the second group —
-          and it is the same group, holding the same "Recipe link" checkbox a
-          cookbook has. It said "Include" until the cookbook's copy stopped;
-          now it says "Every recipe" only when there could BE more than one —
-          see `multiRecipeCapable` above.
-
-          With exactly one recipe possible, this section governed exactly one
-          recipe's photo and link — the same thing the page's own toolbar now
-          does directly (the photo picker's "None" tile, and the toolbar's
-          link toggle). A second control for the same one recipe, sitting in a
-          different panel, was redundant at best and disagreed with itself at
-          worst; it's only offered once there's a real "every" for it to mean. */}
-      {!cookbookMode && multiRecipeCapable && (anyRecipeHasImage || anyRecipeHasSourceUrl) && (
-        <CheckboxGroup label="Every recipe" className="recipe-config-section recipe-config-section--settings">
-          {anyRecipeHasImage && (
-            <Checkbox
-                label="Recipe photo"
-                checked={showPhoto}
-                onChange={(event) => setShowPhoto(event.target.checked)}
-            />
-          )}
-          {anyRecipeHasSourceUrl && (
-            <Checkbox
-                label="Recipe link"
-                checked={showSourceUrl}
-                onChange={(event) => setShowSourceUrl(event.target.checked)}
-            />
-          )}
-        </CheckboxGroup>
+      {/* Recipe cards: no "Every recipe" group (Amelia, 2026-11-04). A link a
+          card doesn't want is deleted on the page; whether the cards show
+          their photos is the same Photos choice a cookbook has, None or In
+          card. With one card possible, that card's own photo picker is the
+          setting, so this waits until there can be more. */}
+      {!cookbookMode && hasMultiRecipeEntitlement(customerInfo) && anyRecipeHasImage && (
+        <CardPhotosTiles showPhoto={showPhoto} setShowPhoto={(value) => setShowPhoto(value)} />
       )}
     </>
+  );
+}
+
+/**
+ * Recipe cards' Photos: None or In card, as tiles like a cookbook's Photos, so
+ * the two read as the same choice. Shared by the desktop panel and the phone's
+ * Photos sheet. A card can still be set apart from the rest from its own photo
+ * picker.
+ */
+export function CardPhotosTiles({
+  showPhoto,
+  setShowPhoto,
+  idPrefix = "recipe-card-photos",
+}: {
+  showPhoto: boolean;
+  setShowPhoto: (value: boolean) => void;
+  idPrefix?: string;
+}) {
+  const options = PHOTO_STYLE_OPTIONS.filter((option) => option.id !== "full");
+  return (
+    <div className="recipe-config-section recipe-config-section--photos">
+      <div className="recipe-photo-style-group">
+        <span className="recipe-config-label" id={`${idPrefix}-label`}>
+          Photos
+        </span>
+        <div className="recipe-photo-style" role="radiogroup" aria-labelledby={`${idPrefix}-label`}>
+          {options.map((option) => {
+            const selected = (option.id === "card") === showPhoto;
+            return (
+              <SelectTile key={option.id} selected={selected} className="recipe-photo-style__tile">
+                <input
+                  type="radio"
+                  name={idPrefix}
+                  className="sr-only"
+                  checked={selected}
+                  onChange={() => setShowPhoto(option.id === "card")}
+                />
+                <PhotoStylePreview id={option.id} />
+                <span className="recipe-photo-style__tile-label">
+                  {option.id === "card" ? "In card" : option.short}
+                </span>
+              </SelectTile>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }

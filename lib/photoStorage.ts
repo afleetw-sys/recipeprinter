@@ -386,7 +386,21 @@ export async function mapProjectPhotoUrls<T extends ProjectPhotos>(
       visitPlacements(project.itemPlacements, visit),
       Promise.all(project.sections.map((section) => visitSection(section, visit))),
     ]);
-  return { ...project, cover, backCover, dedication, frontMatter, stashedCookbook, itemPlacements, sections };
+  // Only the parts it was given. A caller that passes a few parts merges the
+  // result back over its whole book, and a part it left out used to come back
+  // here as `undefined` and blank the book's own: the save never passed the
+  // opening page, so every account save dropped the dedication.
+  const out: T = { ...project, sections };
+  const set = <K extends keyof ProjectPhotos>(key: K, value: ProjectPhotos[K]) => {
+    if (key in project) (out as ProjectPhotos)[key] = value;
+  };
+  set("cover", cover);
+  set("backCover", backCover);
+  set("dedication", dedication);
+  set("frontMatter", frontMatter);
+  set("stashedCookbook", stashedCookbook);
+  set("itemPlacements", itemPlacements);
+  return out;
 }
 
 /** Every photo URL in a book, with nothing rewritten. Unordered — both callers

@@ -11,6 +11,7 @@ import {
 import {
   Fragment,
   memo,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -23,6 +24,8 @@ import { RichText } from "@/components/RichText";
 import { PhotoPlaceholder } from "@/components/print/PhotoPlaceholder";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { composeNote } from "@/lib/recipeNote";
+import { SAMPLE_LINES } from "@/lib/bookPageSamples";
+import { useElements } from "@/lib/pageLooks";
 import { InlineRichField, type CaretRange } from "@/components/InlineRichField";
 import { photoGridLayout } from "@/lib/photoGrid";
 import { useWideColumns } from "@/lib/measureHeights";
@@ -581,6 +584,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       existence; this is the one job that still needs a mode behind it. */
   showEmptyFields?: boolean;
 }) {
+  const el = useElements();
   const source = sourceLabel(recipe);
   const meta = metaBits(recipe);
   // "This text can be clicked and typed into." True for the active card at all
@@ -796,6 +800,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     if (canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, target)) {
       return (
         <InlineRichField
+          elementProps={el("notes")}
           className={`recipe-card__inline-textarea recipe-card__headnote recipe-card__inline-rich${composeNote(recipe.description, recipe.note, showDescription) ? "" : " recipe-card__inline-input--new"}`}
           ariaLabel="Recipe notes"
           value={inlineEdit.value}
@@ -813,6 +818,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     if (noteText) {
       return (
         <p
+          {...el("notes")}
           className={`recipe-card__headnote ${canEdit ? "recipe-card__headnote--editable" : ""}`}
           onClick={canEdit ? (event) => startEdit(target, noteText, event) : undefined}
         >
@@ -826,6 +832,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
 
   function renderCookbookFacts() {
     if (!cookbookMode) return null;
+    // A label while the card is being edited, so its label text hands the
+    // click to the value field inside it.
+    const FactTag = canEdit && inlineEdit ? "label" : "span";
     const time = formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) || "";
     const servings = recipe.servings ?? recipe.yield;
     // A fact with nothing in it is not drawn (see the meta line), except as
@@ -835,9 +844,16 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     if (!time && !timeOpen && !servings && !servingsOpen) return null;
 
     return (
-      <div className="recipe-card__facts" aria-label="Recipe details">
+      <div {...el("details")} className="recipe-card__facts" aria-label="Recipe details">
         {(time || timeOpen) && (
-          <span className="recipe-card__fact" data-reveal-only={time ? undefined : "true"}>
+          // On the card being edited the whole fact is one target, label and
+          // all, so hovering it outlines "Cook time 20 min" and a click
+          // anywhere on it opens the value (a <label> hands it the focus);
+          // only the value changes.
+          <FactTag
+            className={`recipe-card__fact ${canEdit && inlineEdit ? "recipe-card__fact--editable" : ""}`}
+            data-reveal-only={time ? undefined : "true"}
+          >
             <span className="recipe-card__fact-label">Cook time</span>
             {canEdit && inlineEdit ? (
               <input
@@ -864,10 +880,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             ) : (
               <strong className="recipe-card__fact-value">{time}</strong>
             )}
-          </span>
+          </FactTag>
         )}
         {(servings || servingsOpen) && (
-          <span className="recipe-card__fact" data-reveal-only={servings ? undefined : "true"}>
+          <FactTag
+            className={`recipe-card__fact ${canEdit && inlineEdit ? "recipe-card__fact--editable" : ""}`}
+            data-reveal-only={servings ? undefined : "true"}
+          >
             <span className="recipe-card__fact-label">Serves</span>
             {canEdit && inlineEdit ? (
               <input
@@ -896,7 +915,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             ) : (
               <strong className="recipe-card__fact-value">{String(servings)}</strong>
             )}
-          </span>
+          </FactTag>
         )}
       </div>
     );
@@ -1016,8 +1035,16 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   // it.
   const cardWords = recipeCardWords(recipe.language);
 
+  /** A list's headings, its own "Ingredients" and the section headings in
+      it, are an element of their own: sized apart from the lines, following
+      them until the cook gives the headings a size (lib/pageLooks.tsx). */
+  function headingsElement(kind: RecipeHeadingKind | "ingredientSection" | "instructionSection") {
+    return kind === "ingredientsHeading" || kind === "ingredientSection" ? "ingredients-headings" : "steps-headings";
+  }
+
   function sectionLabel(kind: RecipeHeadingKind, suffix: ReactNode, addButton: ReactNode) {
     const target: RecipeCardEditTarget = { kind };
+    const headings = el(headingsElement(kind));
     const heading = recipeHeading(recipe, kind);
     const defaultHeading = cardWords[kind];
     const defaultLang = cardWords.lang;
@@ -1026,7 +1053,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     const headingLang = recipe[kind] === undefined ? defaultLang : undefined;
     if (canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, target)) {
       return (
-        <h2 className="recipe-card__label">
+        <h2 {...headings} className="recipe-card__label">
           <textarea
             ref={focusIfEditing(target)}
             className="recipe-card__inline-textarea recipe-card__label-input"
@@ -1044,6 +1071,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       if (showEmpty && canEdit) {
         return (
           <h2
+            {...headings}
             className="recipe-card__label recipe-card__label--empty"
             lang={defaultLang}
             onClick={() => startEdit(target, defaultHeading)}
@@ -1057,7 +1085,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         );
       }
       return suffix ? (
-        <h2 className="recipe-card__label">
+        <h2 {...headings} className="recipe-card__label">
           <span className="recipe-card__label-inline">
             {suffix}
             {addButton}
@@ -1067,6 +1095,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     }
     return (
       <h2
+        {...headings}
         className={`recipe-card__label ${canEdit ? "recipe-card__label--editable" : ""}`}
         lang={headingLang}
         onClick={canEdit ? () => startEdit(target, heading) : undefined}
@@ -1085,8 +1114,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     index: number,
     title: string,
   ) {
+    const headings = el(headingsElement(kind));
     if (!canEdit || !inlineEdit) {
-      return <h3 className="recipe-card__section-title">{title}</h3>;
+      return <h3 {...headings} className="recipe-card__section-title">{title}</h3>;
     }
     const target: RecipeCardEditTarget = { kind, index };
     const isEditingThis = sameTarget(inlineEdit.editingTarget, target);
@@ -1100,6 +1130,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     if (!isEditingThis) {
       return (
         <h3
+          {...headings}
           className="recipe-card__section-title recipe-card__section-title--editable"
           data-line-kind={kind}
           data-line-index={index}
@@ -1114,7 +1145,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       /* Still a heading being edited, and the toolbar's line-kind switch is
          what turns it back into a line — the conversion stays two-way, it just
          happens in the bar rather than in a control pinned over the card. */
-      <span className="recipe-card__section-title-edit">
+      <span {...headings} className="recipe-card__section-title-edit">
         <textarea
           ref={focusIfEditing(target)}
           className="recipe-card__inline-textarea recipe-card__section-title"
@@ -1146,10 +1177,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     const isEditingThis = inlineEdit && sameTarget(inlineEdit.editingTarget, target);
     if (isEmptyRow(text) && !isEditingThis) return null;
     const displayValue = isEditingThis ? inlineEdit!.value : text;
-    // The click target is the <li>, not a wrapper around the text: the hidden
-    // measurement probe renders this line as bare text in an <li> (see
-    // `renderIngredientProbeItem`), so adding an element here would measure one
-    // thing and print another.
+    // The click target is the <li>; the words are wrapped (`data-edit-text`,
+    // a block, so it lays out exactly as the bare text did) so the hover ring
+    // is drawn round what can be changed, not the bullet beside it. The
+    // measurement probe wraps them the same way (`renderIngredientProbeItem`),
+    // so it measures what prints.
     return (
       <li
         key={index}
@@ -1172,7 +1204,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             onSplit={(before, after) => inlineEdit.onSplitLine(target, before, after)}
           />
         ) : (
-          <RichText text={text} />
+          <span className="recipe-card__line-text" data-edit-text>
+            <RichText text={text} />
+          </span>
         )}
         {!isEditingThis && addLine("ingredient", index + 1)}
       </li>
@@ -1189,7 +1223,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     // than body, and that width is exactly what this is measuring.
     return (
       <li className="recipe-card__editable-line">
-        <RichText text={ingredientText(ing)} />
+        <span className="recipe-card__line-text">
+          <RichText text={ingredientText(ing)} />
+        </span>
       </li>
     );
   }
@@ -1341,6 +1377,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 every time. */}
             {canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, { kind: "title" }) ? (
               <textarea
+                {...el("title")}
                 ref={focusIfEditing({ kind: "title" })}
                 className="recipe-card__inline-textarea recipe-card__title"
                 rows={1}
@@ -1352,6 +1389,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
               />
             ) : (
               <h1
+                {...el("title")}
                 className={`recipe-card__title ${canEdit ? "recipe-card__title--editable" : ""}`}
                 onClick={canEdit ? (event) => startEdit({ kind: "title" }, recipe.title, event) : undefined}
               >
@@ -1379,7 +1417,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             ) : canEdit &&
               inlineEdit &&
               (metaTimeShown || metaServesShown) ? (
-              <p className="recipe-card__meta recipe-card__meta--editable-targets">
+              <p {...el("details")} className="recipe-card__meta recipe-card__meta--editable-targets">
                 {metaTimeShown && (
                   <input
                     ref={focusIfEditing({ kind: "cookTime" })}
@@ -1438,7 +1476,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
               // Each bit isolated, so "35 min" stays "35 min" on a right-to-left
               // card and only the order of the bits mirrors.
               meta.length > 0 && (
-                <p className="recipe-card__meta">
+                <p {...el("details")} className="recipe-card__meta">
                   {meta.map((bit, index) => (
                     <Fragment key={bit}>
                       {index > 0 && "  ·  "}
@@ -1459,6 +1497,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
               // the footer past the space pagination left for it.
               canEdit && inlineEdit && (source || editingNow({ kind: "sourceUrl" })) ? (
                 <input
+                  {...el("details")}
                   ref={focusIfEditing({ kind: "sourceUrl" })}
                   className={`recipe-card__inline-input recipe-card__source-line${source ? "" : " recipe-card__inline-input--new"}`}
                   dir="auto"
@@ -1475,7 +1514,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                   onKeyDown={handleEditKeyDown}
                 />
               ) : (
-                source && <p className="recipe-card__source-line">{source}</p>
+                source && <p {...el("details")} className="recipe-card__source-line">{source}</p>
               )
             )}
           </div>
@@ -1523,6 +1562,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       >
         {hasIngredientsSection && (
           <section
+            {...el("ingredients")}
             data-reveal-only={ingredientGroups.length === 0 ? "true" : undefined}
             className={`recipe-card__ingredients ${ingredientsWide ? "recipe-card__ingredients--wide" : ""}`}
             ref={ingredientsWide ? ingredientColumns.sectionRef : undefined}
@@ -1548,7 +1588,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                   {ingredientChunks.map((chunk, i) => (
                     <div key={i} ref={ingredientColumns.itemRef(i)}>
                       {chunk.groupTitle !== undefined && (
-                        <h3 className="recipe-card__section-title">{chunk.groupTitle}</h3>
+                        <h3 {...el("ingredients-headings")} className="recipe-card__section-title">{chunk.groupTitle}</h3>
                       )}
                       <ul>{renderIngredientProbeItem(chunk.item)}</ul>
                     </div>
@@ -1598,6 +1638,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
 
         {hasInstructionsSection && (
           <section
+            {...el("steps")}
             data-reveal-only={instructionGroups.length === 0 ? "true" : undefined}
             className={`recipe-card__method ${methodWide ? "recipe-card__method--wide" : ""}`}
             ref={methodWide ? methodColumns.sectionRef : undefined}
@@ -1641,7 +1682,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                   {instructionChunks.map((chunk, i) => (
                     <div key={i} ref={methodColumns.itemRef(i)}>
                       {chunk.groupTitle !== undefined && (
-                        <h3 className="recipe-card__section-title">{chunk.groupTitle}</h3>
+                        <h3 {...el("steps-headings")} className="recipe-card__section-title">{chunk.groupTitle}</h3>
                       )}
                       <ol>{renderInstructionProbeItem(chunk.item)}</ol>
                     </div>
@@ -1756,6 +1797,9 @@ export interface DividerCardInlineEdit {
    * it.
    */
   titleEditing: boolean;
+  /** The chapter was just made: its title opens with the whole name selected,
+      so typing replaces "New chapter" instead of adding to it. */
+  titleSelected?: boolean;
   titleValue: string;
   onTitleOpen: () => void;
   onTitleChange: (value: string) => void;
@@ -1846,6 +1890,7 @@ export const DividerFace = memo(function DividerFace({
   previewHidden = false,
   inlineEdit,
   showEmptyFields = false,
+  sampleLines = false,
 }: {
   title: string;
   chapterNumber?: number;
@@ -1864,7 +1909,19 @@ export const DividerFace = memo(function DividerFace({
   inlineEdit?: DividerCardInlineEdit;
   /** Reveal the opener lines nobody has written yet — see RecipeCardPrint. */
   showEmptyFields?: boolean;
+  /** The book starts its optional lines with sample text (see CoverFace). */
+  sampleLines?: boolean;
 }) {
+  const el = useElements();
+  // A chapter just made opens its title with "New chapter" selected, so the
+  // first key replaces it. Once, when the field opens: the page clears
+  // `titleSelected` on the first edit, so a redraw while typing doesn't take
+  // the selection back.
+  const titleFieldRef = useRef<HTMLTextAreaElement | null>(null);
+  const titleSelected = Boolean(inlineEdit?.titleEditing && inlineEdit.titleSelected);
+  useEffect(() => {
+    if (titleSelected) titleFieldRef.current?.select();
+  }, [titleSelected]);
   const canEdit = Boolean(inlineEdit);
   const showEmpty = canEdit && showEmptyFields;
   // Which of the two straight-through lines is open, if any. Local for the same
@@ -1960,6 +2017,7 @@ export const DividerFace = memo(function DividerFace({
         // autoFocus is safe here precisely because this mounts on the click
         // that asks for it, rather than sitting there for every idle opener.
         <textarea
+          {...el(name)}
           autoFocus
           rows={rows}
           className={`recipe-card__inline-textarea ${className}${value ? "" : " recipe-card__inline-input--new"}`}
@@ -1983,20 +2041,37 @@ export const DividerFace = memo(function DividerFace({
       setAddedField(null);
       setEditingField(null);
     }
-    const text = value || fallback || "";
+    // Never written, in a book that starts with sample lines: its sample
+    // (lib/bookPageSamples.ts). The description has none: left alone it
+    // already prints the chapter's recipes.
+    const sample = sampleLines && !removed && !value ? SAMPLE_LINES[name] : undefined;
+    const text = value || sample || fallback || "";
     if (text) {
       return (
         <p
+          {...el(name)}
           className={`${className} ${canEdit ? "recipe-card__opener-field--editable" : ""}`}
-          onMouseDown={canEdit ? fieldOpener(() => openField(name)) : undefined}
+          data-field-line={name}
+          onMouseDown={
+            canEdit
+              ? fieldOpener(() => {
+                  // Editing the sample starts from its words (see CoverFace).
+                  if (sample) onChange(sample);
+                  openField(name);
+                })
+              : undefined
+          }
         >
           {text}
         </p>
       );
     }
+    // Off the page with nothing in it: no prompt; the "+" menu puts it back.
+    if (SAMPLE_LINES[name] !== undefined) return null;
     if (!canEdit || (removed && !showEmpty)) return null;
     return (
       <p
+        {...el(name)}
         className={`${className} recipe-card__opener-field--empty`}
         data-field-prompt={name}
         onMouseDown={(event) => {
@@ -2035,6 +2110,8 @@ export const DividerFace = memo(function DividerFace({
   const cardBodyHasText =
     Boolean(effectiveTitle.trim()) ||
     Boolean((inlineEdit?.subtitle ?? subtitle ?? "").trim()) ||
+    // A subtitle never written shows its sample (see `openerField`).
+    (sampleLines && (inlineEdit?.subtitle ?? subtitle) === undefined) ||
     !introRemoved ||
     showChapterNumber ||
     showEmpty ||
@@ -2083,6 +2160,8 @@ export const DividerFace = memo(function DividerFace({
         )}
         {inlineEdit?.titleEditing ? (
           <textarea
+            {...el("title")}
+            ref={titleFieldRef}
             autoFocus
             rows={1}
             className="recipe-card__inline-textarea recipe-card__divider-title"
@@ -2105,6 +2184,7 @@ export const DividerFace = memo(function DividerFace({
           />
         ) : title.trim() ? (
           <h1
+            {...el("title")}
             className={`recipe-card__divider-title ${canEdit ? "recipe-card__opener-field--editable" : ""}`}
             onMouseDown={canEdit ? fieldOpener(openTitleField) : undefined}
           >
@@ -2119,6 +2199,7 @@ export const DividerFace = memo(function DividerFace({
           // context (export, print, rail thumbnails) — an actual printed
           // page prints nothing here.
           <h1
+            {...el("title")}
             className="recipe-card__divider-title recipe-card__opener-field--empty"
             onMouseDown={fieldOpener(openTitleField)}
           >
@@ -2242,6 +2323,7 @@ export const CoverFace = memo(function CoverFace({
   inlineEdit,
   showDecoration = true,
   showEmptyFields = false,
+  sampleLines = false,
 }: {
   cover: CoverConfig;
   side: "front" | "back" | "dedication";
@@ -2254,8 +2336,13 @@ export const CoverFace = memo(function CoverFace({
   showDecoration?: boolean;
   /** Reveal the cover lines nobody has written yet — see RecipeCardPrint. */
   showEmptyFields?: boolean;
+  /** The book starts its optional lines with sample text (lib/bookPageSamples):
+      a line never written shows, and prints, its sample. Off for an older book,
+      where such a line is taken off, and for a page the cook added. */
+  sampleLines?: boolean;
   inlineEdit?: CoverCardInlineEdit;
 }) {
+  const el = useElements();
   const canEdit = Boolean(inlineEdit);
   const showEmpty = canEdit && showEmptyFields;
   const draft = inlineEdit?.cover ?? cover;
@@ -2346,6 +2433,7 @@ export const CoverFace = memo(function CoverFace({
         // autoFocus is safe here precisely because this mounts on the click
         // that asks for it, rather than sitting there for every idle cover.
         <textarea
+          {...el(name)}
           autoFocus
           rows={rows}
           className={`recipe-card__inline-textarea ${className}${value ? "" : " recipe-card__inline-input--new"}`}
@@ -2369,20 +2457,39 @@ export const CoverFace = memo(function CoverFace({
       setAddedField(null);
       setEditingField(null);
     }
-    const text = value || fallback || "";
+    // Never written, in a book that starts with sample lines: its sample, on
+    // the page and in print (lib/bookPageSamples.ts).
+    const sample = sampleLines && !removed && !value ? SAMPLE_LINES[name] : undefined;
+    const text = value || sample || fallback || "";
     if (text) {
       return (
         <Tag
+          {...el(name, undefined, !canEdit)}
           className={`${className} ${canEdit ? "recipe-card__cover-field--editable" : ""}`}
-          onClick={canEdit ? () => setEditingField(name) : undefined}
+          data-field-line={name}
+          onClick={
+            canEdit
+              ? () => {
+                  // Editing sample words starts from them, as the cook's own:
+                  // deleting them all is what takes the line off.
+                  if (sample) onChange(sample);
+                  setEditingField(name);
+                }
+              : undefined
+          }
         >
           {text}
         </Tag>
       );
     }
+    // An optional line with nothing in it is off the page: no "Add …" prompt
+    // and no ×. The page toolbar's "+" menu puts it back. Only a title, which
+    // has no sample, still comes back through the reveal.
+    if (SAMPLE_LINES[name] !== undefined) return null;
     if (!canEdit || (removed && !showEmpty)) return null;
     return (
       <Tag
+        {...el(name)}
         className={`${className} recipe-card__cover-field--empty`}
         data-field-prompt={name}
         onClick={(event) => {
@@ -2397,9 +2504,9 @@ export const CoverFace = memo(function CoverFace({
       </Tag>
     );
   }
-  /** A line nobody has written or removed: its prompt is on the page. */
+  /** A line nobody has written or removed, showing its sample text. */
   const prompts = (...lines: (string | undefined)[]) =>
-    canEdit && lines.some((line) => line === undefined);
+    sampleLines && lines.some((line) => line === undefined);
 
   // Dedication: a quiet front-matter page — a short, centered dedication
   // line, on the template's own paper by default or over a chosen photo/
@@ -2768,6 +2875,7 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
   previewHidden?: boolean;
   inlineEdit?: TableOfContentsInlineEdit;
 }) {
+  const el = useElements();
   const canEdit = Boolean(inlineEdit);
   // Which of the two headings is open, if any — local for the same reason a
   // cover's is: they write straight through `onKickerChange`/`onTitleChange`,
@@ -2785,7 +2893,7 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
   // The heading is set once, on the first page; a continuation just says so
   // quietly and gives the rest of the page to the list.
   const heading = continued ? (
-    <p className="recipe-card__toc-kicker recipe-card__toc-kicker--continued">
+    <p {...el("kicker")} className="recipe-card__toc-kicker recipe-card__toc-kicker--continued">
       {kickerText} continued
     </p>
   ) : null;
@@ -2803,6 +2911,7 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
             be clicked. The entries below them are generated and are not. */}
         {continued ? null : canEdit && editingField === "kicker" ? (
           <textarea
+            {...el("kicker")}
             autoFocus
             rows={1}
             className="recipe-card__inline-textarea recipe-card__toc-kicker"
@@ -2820,6 +2929,7 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
           />
         ) : (
           <p
+            {...el("kicker")}
             className={`recipe-card__toc-kicker ${canEdit ? "recipe-card__opener-field--editable" : ""}`}
             onMouseDown={canEdit ? openHeading("kicker") : undefined}
           >
@@ -2828,6 +2938,7 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
         )}
         {continued ? null : canEdit && editingField === "title" ? (
           <textarea
+            {...el("title")}
             autoFocus
             rows={1}
             className="recipe-card__inline-textarea recipe-card__toc-title"
@@ -2845,6 +2956,7 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
           />
         ) : (
           <h1
+            {...el("title")}
             className={`recipe-card__toc-title ${canEdit ? "recipe-card__opener-field--editable" : ""}`}
             onMouseDown={canEdit ? openHeading("title") : undefined}
           >
@@ -2858,7 +2970,14 @@ export const TableOfContentsFace = memo(function TableOfContentsFace({
             Your recipes and chapters will be listed here as you add them.
           </p>
         )}
-        <ol className="recipe-card__toc-list">
+        {/* The entries are generated, so there is nothing to type here, but
+            they are a part with a size of their own like any other: clicking
+            them focuses the list, which brings up the text bar's Size. */}
+        <ol
+          {...el("entries", undefined, true)}
+          className="recipe-card__toc-list"
+          aria-label="Contents entries"
+        >
           {entries.map((entry, index) =>
             entry.kind === "chapter" ? (
               <li

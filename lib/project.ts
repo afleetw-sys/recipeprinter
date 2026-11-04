@@ -16,6 +16,7 @@ import type {
   StashedCookbook,
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
+import { normalizePageLooks, withElementStyle, type ElementStyle, type PageLooks } from "@/lib/pageLooks";
 import {
   META_RECOVERY_OWNER_KEY,
   recoveryMirrorsAgree,
@@ -177,6 +178,8 @@ export interface ProjectMeta {
   ownPhotosOnly?: boolean;
   /** See `PrintProjectSettings.websitePhotos`. */
   websitePhotos?: boolean;
+  /** See `PrintProjectSettings.pageLooks` and lib/pageLooks.tsx. */
+  pageLooks?: PageLooks;
   /** Whether the cookbook renders a table-of-contents page. */
   tableOfContents?: boolean;
   /** Editable TOC heading text (the entries themselves are derived from the
@@ -218,6 +221,10 @@ export interface ProjectMeta {
       (`normalizeProjectMeta`), so prompts never appear on a book someone
       already finished, and set this. */
   optionalLinesExplicit?: boolean;
+  /** This book was started with sample lines (lib/bookPageSamples.ts): an
+      optional line it never wrote shows its sample text. Absent on every book
+      made before, where such a line counts as taken off. */
+  sampleLines?: boolean;
   /** The print-format preset this cookbook exports at (trim/bleed/margin/gutter
       — see lib/cookbookPresets.ts). Absent = the default preset. Cookbook-only;
       cleared when the project stops being a cookbook. */
@@ -263,7 +270,7 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
   if (!value || typeof value !== "object") {
     // Nothing written yet, so nothing to migrate: whatever is added from here
     // on shows its prompts.
-    return { sections: [], projectId: uid(), optionalLinesExplicit: true };
+    return { sections: [], projectId: uid(), optionalLinesExplicit: true, sampleLines: true };
   }
   const raw = value as Partial<ProjectMeta>;
   const legacyOpeners = Boolean(raw.sectionDividers);
@@ -376,7 +383,9 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
   // line it never wrote counts as one the cook left off on purpose, so
   // opening it doesn't scatter "+ Author" chips over pages already done. The
   // toolbar's "Add" still brings any of them back. Once, then flagged.
-  const settled = raw.optionalLinesExplicit === true;
+  // A book with sample lines was made after this distinction, whatever its
+  // flag says: migrating it would take every sample off its pages.
+  const settled = raw.optionalLinesExplicit === true || raw.sampleLines === true;
   const removed = (value: string | undefined) => (settled || value !== undefined ? value : "");
   const migrateCover = (cover: CoverConfig | undefined, lines: ("subtitle" | "author" | "edition" | "blurb")[]) =>
     cover && !settled
@@ -397,6 +406,7 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
       : undefined,
     projectId: cleanText(raw.projectId) ?? uid(),
     projectTitle: cleanText(raw.projectTitle),
+    pageLooks: normalizePageLooks(raw.pageLooks),
     sections: settled
       ? sections
       : sections.map((section) => ({ ...section, subtitle: removed(section.subtitle) })),
@@ -1095,6 +1105,32 @@ export function useProjectMeta() {
     [update],
   );
 
+  /** Changes one element's own style; a property set to `undefined` goes
+      back to following the book (see lib/pageLooks.tsx). */
+  const setElementStyle = useCallback(
+    (page: string, element: string, patch: { [K in keyof ElementStyle]?: ElementStyle[K] | undefined }) => {
+      update((current) => ({
+        ...current,
+        pageLooks: withElementStyle(current.pageLooks, page, element, patch),
+      }));
+    },
+    [update],
+  );
+
+  /** Takes every style off one page at once (Customize theme's Reset clears
+      the sizes set for every recipe's parts this way, as one step). */
+  const clearPageLook = useCallback(
+    (page: string) => {
+      update((current) => {
+        if (!current.pageLooks?.[page]) return current;
+        const next = { ...current.pageLooks };
+        delete next[page];
+        return { ...current, pageLooks: Object.keys(next).length > 0 ? next : undefined };
+      });
+    },
+    [update],
+  );
+
   const setTocKicker = useCallback(
     (value: string | undefined) => {
       update((current) => ({ ...current, tocKicker: value || undefined }));
@@ -1325,8 +1361,9 @@ export function useProjectMeta() {
         cookbookIntent: options.cookbook || undefined,
         cookbookBornFresh: options.cookbook || undefined,
         cookbookIntroduced: (options.cookbook && options.introduced) || undefined,
-        // A new book shows its unwritten lines' prompts (see the field).
+        // A new book starts its optional lines with sample text (see the field).
         optionalLinesExplicit: true,
+        sampleLines: true,
         // Whether the cookbook pitch has been seen is a fact about the PERSON,
         // not the project. Resetting it per project would re-pitch the product
         // to someone already on their second book.
@@ -1427,6 +1464,8 @@ export function useProjectMeta() {
     setCookbookWelcomeCompleted,
     setTableOfContents,
     setTocKicker,
+    setElementStyle,
+    clearPageLook,
     setRailSortMode,
     setLastImportSource,
     setTocTitle,
