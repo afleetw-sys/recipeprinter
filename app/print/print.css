@@ -1927,6 +1927,17 @@
 .recipe-text-toolbar__size svg {
   flex: none;
 }
+.recipe-text-toolbar__size-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+/* In Customize theme's rows the crown goes before the dropdown, so the
+   dropdowns stay lined up at the panel's edge and a crowned row says which
+   size to put back to Default. */
+.recipe-customize__part-row .pro-badge {
+  order: -1;
+}
 /* A size being typed while the list is open: underlined like text being
    entered, until Enter applies it. */
 .recipe-text-toolbar__size-value.is-typing {
