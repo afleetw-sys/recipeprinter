@@ -207,16 +207,16 @@
   gap: 4px;
 }
 
-/* Sort, Collapse and each section's Delete sit in rows with 30px buttons, so
-   in here the icon button takes that box — and with it the 8px corner the
-   radius scale gives a 30px control, rather than the 12px a 40px one gets.
-   Scoped to the organizer on purpose: elsewhere .icon-button is a 40px touch
-   target rather than a member of a button row. */
+/* The organizer is a whole page, so its controls are the page header's size:
+   Buy & Print's 32px with its 9px corner (`.btn-header`), the icon buttons
+   included (Amelia, 2026-11-04: everything one size, and that one). Scoped to
+   the organizer on purpose: elsewhere .icon-button is a 40px touch target
+   rather than a member of a button row. */
 .recipe-print-shell--organizing .icon-button {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-color: var(--cp-line-strong);
-  border-radius: 8px;
+  border-radius: 9px;
   background: transparent;
 }
 
@@ -327,21 +327,11 @@
   gap: 8px;
   margin-top: 10px;
 }
-/* The toolbar is the whole page's now, so it is the workspace's 38px field
-   height (a print-panel dropdown's), not the 30px of a row in a side panel:
-   still compact, no longer tiny beside the page it runs. */
-.recipe-print-shell--organizing .recipe-organize-bar__find .icon-button {
-  width: 38px;
-  height: 38px;
-}
-.recipe-print-shell--organizing .recipe-organize-bar__find .recipe-organize-bar__search .icon-button {
-  width: 34px;
-  height: 34px;
-}
-.recipe-organize-bar__find .recipe-organize-bar__add-section {
-  min-height: 38px;
-  padding: 0 14px;
-  font-size: var(--cp-fs-body);
+/* The close button sits inside the search field's own height. */
+.recipe-print-shell--organizing .recipe-organize-bar__search .icon-button {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
 }
 
 /* Sort: an icon button at the head of the organizer's actions that opens its
@@ -374,10 +364,10 @@
      its end. */
   flex: 1 1 auto;
   min-width: 0;
-  height: 38px;
+  height: 32px;
   padding: 0 2px 0 12px;
   border: 1px solid var(--cp-line-strong);
-  border-radius: 8px;
+  border-radius: 9px;
   background: var(--cp-card);
   color: var(--cp-ink-soft);
 }
@@ -388,12 +378,12 @@
 .recipe-organize-bar__search-input {
   flex: 1;
   min-width: 0;
-  height: 36px;
+  height: 30px;
   border: 0;
   background: transparent;
   color: var(--cp-ink);
   font: inherit;
-  font-size: var(--cp-fs-body);
+  font-size: var(--cp-fs-small);
 }
 .recipe-organize-bar__search-input:focus {
   outline: none;
@@ -669,7 +659,9 @@
      list. */
   .recipe-print-shell--organizing .recipe-page-rail__section-group {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+    /* At most five: a card is never narrower than 240px, nor than a fifth
+       of the row (less the gaps), so a very wide screen stops at five. */
+    grid-template-columns: repeat(auto-fill, minmax(max(min(240px, 100%), calc((100% - 4 * 8px) / 5)), 1fr));
     gap: 8px;
     margin-top: 8px;
     padding: 4px 12px 12px;

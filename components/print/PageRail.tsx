@@ -1004,7 +1004,7 @@ export function PageRail(props: PageRailProps) {
                     whole-book actions rather than on any single section. */}
                 <button
                   type="button"
-                  className="btn btn-primary btn-compact recipe-organize-bar__add-section"
+                  className="btn btn-primary btn-header recipe-organize-bar__add-section"
                   data-rail-new-section
                   onClick={() => {
                     if (effectiveRailSelection.size > 0) makeSectionFromSelection();
@@ -1265,7 +1265,7 @@ export function PageRail(props: PageRailProps) {
                       <div className="recipe-organize-start__actions">
                         <button
                           type="button"
-                          className="btn btn-primary btn-compact"
+                          className="btn btn-primary btn-header"
                           onClick={() => openAddRecipeBelow()}
                         >
                           <PlusIcon size={ICON_SIZE.md} />
@@ -1273,7 +1273,7 @@ export function PageRail(props: PageRailProps) {
                         </button>
                         <button
                           type="button"
-                          className="btn btn-secondary btn-compact"
+                          className="btn btn-secondary btn-header"
                           onClick={() => addSectionDivider()}
                         >
                           <PlusIcon size={ICON_SIZE.md} />
@@ -1319,7 +1319,7 @@ export function PageRail(props: PageRailProps) {
                       {!organizeFiltering && (
                         <button
                           type="button"
-                          className="btn btn-secondary btn-compact recipe-page-rail__section-add"
+                          className="btn btn-secondary btn-header recipe-page-rail__section-add"
                           onClick={() => openAddToSection(group.sectionId!)}
                           onPointerDown={(event) => event.stopPropagation()}
                         >
@@ -1448,7 +1448,7 @@ export function PageRail(props: PageRailProps) {
                         {!organizeFiltering && !sectionFolded(section.id) && (
                           <button
                             type="button"
-                            className="btn btn-secondary btn-compact recipe-page-rail__section-add"
+                            className="btn btn-secondary btn-header recipe-page-rail__section-add"
                             onClick={(event) => {
                               event.stopPropagation();
                               openAddToSection(section.id);
@@ -1704,7 +1704,7 @@ export function PageRail(props: PageRailProps) {
                       <span>Drag a recipe here, or add a new one.</span>
                       <button
                         type="button"
-                        className="btn btn-secondary btn-compact"
+                        className="btn btn-secondary btn-header"
                         onClick={() => openAddToSection(group.sectionId!)}
                       >
                         <PlusIcon size={ICON_SIZE.sm} />
