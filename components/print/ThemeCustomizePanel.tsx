@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ProBadge } from "@/components/ProBadge";
-import { ChevronDownIcon, ChevronLeftIcon, ICON_SIZE, UndoIcon } from "@/components/icons";
+import { CheckIcon, ChevronDownIcon, ChevronLeftIcon, ICON_SIZE, UndoIcon } from "@/components/icons";
 import { StepSizeControl, TextSizeControl } from "@/components/print/TextSizeControl";
 import { SizeDropdown } from "@/components/print/TextFieldToolbar";
 import type { FontScale } from "@/lib/fontScale";
@@ -103,7 +103,10 @@ export function ThemeCustomizePanel({
             Reset to theme defaults
           </button>
         ) : (
-          <p className="recipe-customize__defaults">Using theme defaults</p>
+          <p className="recipe-customize__defaults">
+            <CheckIcon size={ICON_SIZE.sm} />
+            Using theme defaults
+          </p>
         )}
       </div>
     </div>

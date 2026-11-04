@@ -3716,6 +3716,9 @@ textarea.recipe-page-fields__input {
 .recipe-customize__defaults {
   display: flex;
   align-items: center;
+  /* The check sits where Reset's undo arrow does, the same gap from the
+     words, so swapping one for the other moves nothing. */
+  gap: 8px;
   min-height: 30px;
   margin: 0;
   padding: 0 11px;
