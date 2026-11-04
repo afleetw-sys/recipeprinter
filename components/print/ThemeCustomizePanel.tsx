@@ -85,6 +85,10 @@ export function ThemeCustomizePanel({
   setRecipePartSize?: (part: string, size: number | undefined) => void;
 }) {
   const photoLabel = cookbook ? "Recipe photo size" : "Photo size";
+  // Art that takes turns does so by chapter in a book (every recipe in a
+  // chapter shares one) and by recipe on cards (`styleIndex` in
+  // lib/usePrintSheets.tsx), so the choice says which.
+  const alternating = cookbook ? "Alternating by chapter" : "Alternating by recipe";
   return (
     <div className="recipe-config-section recipe-config-section--customize">
       <div className="recipe-customize__header">
@@ -113,7 +117,7 @@ export function ThemeCustomizePanel({
         <SwatchControl
           label="Band color"
           first={{
-            label: "Alternating",
+            label: alternating,
             // Every band color around the swatch: they take turns.
             background: `conic-gradient(${POSTER_COLORS.map((color) => color.hex).join(", ")})`,
           }}
@@ -130,8 +134,8 @@ export function ThemeCustomizePanel({
           <MenuSelect
             label="Utensil"
             labelHidden
-            placeholder="Alternating"
-            clearLabel="Alternating"
+            placeholder={alternating}
+            clearLabel={alternating}
             value={utensil}
             options={SUPPER_UTENSILS.map((piece) => ({
               value: piece,
