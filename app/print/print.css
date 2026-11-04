@@ -712,31 +712,6 @@
     font-weight: 600;
   }
 
-  /* The ungrouped recipes' "Add recipe": the empty slot at the end of the
-     list. It spans every column and keeps a recipe card's geometry (56px tall,
-     the + where the page number sits, the words where titles start), with a
-     dashed hairline so it reads as a place for one more recipe. As a small
-     pill in one column it floated under the first recipe like a stray button. */
-  .recipe-print-shell--organizing .recipe-page-rail__section-add-card {
-    grid-column: 1 / -1;
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: 16px; /* 16px icon + 16px = a card's 26px number + 6px gap */
-    min-height: 56px;
-    padding: 0 12px; /* the same border and padding as a card */
-    border: 1px dashed var(--cp-line-strong);
-    border-radius: 10px;
-    background: transparent;
-    color: var(--cp-ink-soft);
-    font-size: var(--cp-fs-small);
-    font-weight: 600;
-  }
-  .recipe-print-shell--organizing .recipe-page-rail__section-add-card:hover {
-    border-color: var(--cp-accent);
-    background: var(--cp-accent-soft);
-    color: var(--cp-ink);
-  }
-
   /* A chapter mid-fold keeps its recipes shown, so the closing frame clips
      them away (see `changeCollapsed` in PageRail). */
   .recipe-print-shell--organizing
@@ -806,31 +781,23 @@
     white-space: nowrap;
   }
 
-  .recipe-page-rail__section-add-card {
-    display: flex;
-    /* A FLOOR, not a height. As a grid item this stretches to its row, so the
-       number only has to be smaller than a recipe tile -- at 132px it was
-       taller than the 115px tiles and dragged its whole row up with it, so the
-       one tile sharing that row came out a different size from every other. */
-    min-height: 88px;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px;
-    border: 1px dashed var(--cp-line-strong);
-    border-radius: 12px;
-    background: transparent;
-    color: var(--cp-ink-soft);
-    font-size: var(--cp-fs-small);
-    font-weight: 700;
-    transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+  /* Add recipe in a chapter's heading, and in the heading of the recipes in
+     no chapter, beside the count at the right. */
+  .recipe-page-rail__section-add {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
-
-  .recipe-page-rail__section-add-card:hover {
-    border-color: var(--cp-accent);
-    background: var(--cp-accent-soft);
-    color: var(--cp-ink);
+  /* The recipes in no chapter: a heading like a chapter's, minus the frame,
+     the fold and the grip. Its name takes the room the chapter's name field
+     does, so the count and Add recipe sit at the right as they do there. */
+  .recipe-page-rail__section-name {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 6px;
+    font-weight: 800;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail__section-header--ungrouped {
+    padding: 8px 0 4px;
   }
 
   .recipe-print-shell--organizing .recipe-page-rail__section-title-input {
@@ -869,11 +836,10 @@
    same `.recipe-page-rail__item` elements slide (via a Web Animations FLIP in
    runOrganizeFlip) from their page-list positions into the organizer-grid
    positions and back. The mode chrome that only exists while organizing —
-   section headers, the "Add recipe" cards, the organizer bar — fades in behind
+   section headers, the organizer bar — fades in behind
    the moving tiles instead of popping. */
 .recipe-print-shell--organize-animating .recipe-organize-bar,
-.recipe-print-shell--organize-animating .recipe-page-rail__section-header,
-.recipe-print-shell--organize-animating .recipe-page-rail__section-add-card {
+.recipe-print-shell--organize-animating .recipe-page-rail__section-header {
   animation: cb-organize-chrome-in 320ms ease both;
 }
 
@@ -889,8 +855,7 @@
     transition: none;
   }
   .recipe-print-shell--organize-animating .recipe-organize-bar,
-  .recipe-print-shell--organize-animating .recipe-page-rail__section-header,
-  .recipe-print-shell--organize-animating .recipe-page-rail__section-add-card {
+  .recipe-print-shell--organize-animating .recipe-page-rail__section-header {
     animation: none;
   }
 }

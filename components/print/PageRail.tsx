@@ -1282,6 +1282,41 @@ export function PageRail(props: PageRailProps) {
                       sectionFolded(group.sectionId) ? "recipe-page-rail__section-group--collapsed" : ""
                     }`}
                   >
+                  {/* The recipes in no chapter get a heading like a chapter's:
+                      what they are, how many, and Add recipe at the right.
+                      The heading is also where a recipe dragged here lands
+                      when there are none left to drop beside. */}
+                  {organizeMode &&
+                    group.sectionId &&
+                    !sections.find((entry) => entry.id === group.sectionId)?.title?.trim() && (
+                    <div
+                      className="recipe-page-rail__section-header recipe-page-rail__section-header--ungrouped"
+                      data-rail-section-head={group.sectionId}
+                    >
+                      <span className="recipe-page-rail__section-name">
+                        {namedSectionIds.length > 0 ? "Not in a chapter" : "Recipes"}
+                      </span>
+                      <span className="recipe-page-rail__section-count">
+                        {(() => {
+                          const count =
+                            sections.find((entry) => entry.id === group.sectionId)?.items.filter((item) => !item.pageKind)
+                              .length ?? 0;
+                          return count === 1 ? "1 recipe" : `${count} recipes`;
+                        })()}
+                      </span>
+                      {!organizeFiltering && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-compact recipe-page-rail__section-add"
+                          onClick={() => openAddToSection(group.sectionId!)}
+                          onPointerDown={(event) => event.stopPropagation()}
+                        >
+                          <PlusIcon size={ICON_SIZE.sm} />
+                          Add recipe
+                        </button>
+                      )}
+                    </div>
+                  )}
                   {(() => {
                   // Same rule as the flat rail below: anchor to the LAST unit
                   // for that recipe so a two-page recipe draws one spinner.
@@ -1398,11 +1433,25 @@ export function PageRail(props: PageRailProps) {
                             return count === 1 ? "1 recipe" : `${count} recipes`;
                           })()}
                         </span>
-                        {/* Add recipe, move, rename and delete wait in a menu so
-                            the chapter name stays the main thing. A folded
-                            chapter shows its name and count only, but still
-                            answers a right-click, so the menu is mounted for
-                            it with no button showing. */}
+                        {!organizeFiltering && !sectionFolded(section.id) && (
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-compact recipe-page-rail__section-add"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openAddToSection(section.id);
+                            }}
+                            onPointerDown={(event) => event.stopPropagation()}
+                          >
+                            <PlusIcon size={ICON_SIZE.sm} />
+                            Add recipe
+                          </button>
+                        )}
+                        {/* Move, rename and delete wait in a menu so the
+                            chapter name stays the main thing. A folded chapter
+                            shows its name and count only, but still answers a
+                            right-click, so the menu is mounted for it with no
+                            button showing. */}
                           <div
                             className="recipe-page-rail__section-menu"
                             ref={chapterMenuId === section.id ? chapterMenuRef : undefined}
@@ -1430,20 +1479,6 @@ export function PageRail(props: PageRailProps) {
                                 label={`Actions for ${section.title}`}
                                 align="end"
                               >
-                                {!organizeFiltering && (
-                                  <button
-                                    type="button"
-                                    role="menuitem"
-                                    className="cp-menu__item"
-                                    onClick={() => {
-                                      setChapterMenuId(null);
-                                      openAddToSection(section.id);
-                                    }}
-                                  >
-                                    <PlusIcon size={ICON_SIZE.sm} />
-                                    Add recipe
-                                  </button>
-                                )}
                                 {!organizeFiltering && (
                                   <>
                                     <button
@@ -1651,24 +1686,6 @@ export function PageRail(props: PageRailProps) {
                         Add recipe
                       </button>
                     </div>
-                  )}
-                  {/* A named chapter's Add recipe is also in its heading's
-                      menu. The ungrouped recipes have no heading, so they keep
-                      the card. */}
-                  {organizeMode &&
-                    group.sectionId &&
-                    !organizeFiltering &&
-                    !sections.find((entry) => entry.id === group.sectionId)?.title?.trim() && (
-                    <button
-                      type="button"
-                      className="recipe-page-rail__section-add-card"
-                      data-rail-section-add={group.sectionId}
-                      onClick={() => openAddToSection(group.sectionId!)}
-                      aria-label={`Add a recipe to ${sectionTitleForId(group.sectionId)}`}
-                    >
-                      <PlusIcon size={ICON_SIZE.md} />
-                      <span>Add recipe</span>
-                    </button>
                   )}
                   </div>
                   {renderAddPages(addsAfterGroup.get(groupIdx) ?? [])}
