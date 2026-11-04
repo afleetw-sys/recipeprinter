@@ -832,6 +832,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
 
   function renderCookbookFacts() {
     if (!cookbookMode) return null;
+    // A label while the card is being edited, so its label text hands the
+    // click to the value field inside it.
+    const FactTag = canEdit && inlineEdit ? "label" : "span";
     const time = formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) || "";
     const servings = recipe.servings ?? recipe.yield;
     // A fact with nothing in it is not drawn (see the meta line), except as
@@ -843,7 +846,14 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     return (
       <div {...el("details")} className="recipe-card__facts" aria-label="Recipe details">
         {(time || timeOpen) && (
-          <span className="recipe-card__fact" data-reveal-only={time ? undefined : "true"}>
+          // On the card being edited the whole fact is one target, label and
+          // all, so hovering it outlines "Cook time 20 min" and a click
+          // anywhere on it opens the value (a <label> hands it the focus);
+          // only the value changes.
+          <FactTag
+            className={`recipe-card__fact ${canEdit && inlineEdit ? "recipe-card__fact--editable" : ""}`}
+            data-reveal-only={time ? undefined : "true"}
+          >
             <span className="recipe-card__fact-label">Cook time</span>
             {canEdit && inlineEdit ? (
               <input
@@ -870,10 +880,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             ) : (
               <strong className="recipe-card__fact-value">{time}</strong>
             )}
-          </span>
+          </FactTag>
         )}
         {(servings || servingsOpen) && (
-          <span className="recipe-card__fact" data-reveal-only={servings ? undefined : "true"}>
+          <FactTag
+            className={`recipe-card__fact ${canEdit && inlineEdit ? "recipe-card__fact--editable" : ""}`}
+            data-reveal-only={servings ? undefined : "true"}
+          >
             <span className="recipe-card__fact-label">Serves</span>
             {canEdit && inlineEdit ? (
               <input
@@ -902,7 +915,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             ) : (
               <strong className="recipe-card__fact-value">{String(servings)}</strong>
             )}
-          </span>
+          </FactTag>
         )}
       </div>
     );

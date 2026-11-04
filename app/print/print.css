@@ -2746,8 +2746,9 @@
   /* One source of separation between sections. This gap and a 14px margin-top
      on adjacent sections were both in force, so settings sat 34px apart in a
      330px panel — the single biggest reason it still read loose after the
-     density pass. */
-  gap: 18px;
+     density pass. 18px then read cramped between groups (Amelia,
+     2026-11-04), so a touch more, still the one source. */
+  gap: 24px;
   min-height: 0;
   padding-top: 10px;
   /* Horizontal breathing room so keyboard :focus-visible outlines on full-width
@@ -8494,6 +8495,21 @@ textarea.recipe-card__toc-title {
 .recipe-card__headnote--editable:hover:focus-within,
 .recipe-card__editable-line--editable:hover:focus-within > [data-edit-text] {
   outline: none;
+}
+
+/* Time and servings are the exception: hovering outlines the whole fact,
+   its label with its value ("Serves 4"), because a click anywhere on it
+   opens the value, the one part that changes (Amelia, 2026-11-04). On a
+   recipe card each is a single field that shows only its value while typed
+   in. Not while it's open: its field's focus ring is the only box. */
+.recipe-card__fact--editable {
+  cursor: pointer;
+}
+.recipe-card__fact--editable:hover:not(:focus-within),
+.recipe-card__inline-input--meta:hover:not(:focus) {
+  outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 
 /* An ingredient's words as one block beside its bullet, so a ring round them
