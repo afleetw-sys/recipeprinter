@@ -1114,6 +1114,20 @@ export function useProjectMeta() {
     [update],
   );
 
+  /** Takes every style off one page at once (Customize theme's Reset clears
+      the sizes set for every recipe's parts this way, as one step). */
+  const clearPageLook = useCallback(
+    (page: string) => {
+      update((current) => {
+        if (!current.pageLooks?.[page]) return current;
+        const next = { ...current.pageLooks };
+        delete next[page];
+        return { ...current, pageLooks: Object.keys(next).length > 0 ? next : undefined };
+      });
+    },
+    [update],
+  );
+
   const setTocKicker = useCallback(
     (value: string | undefined) => {
       update((current) => ({ ...current, tocKicker: value || undefined }));
@@ -1442,6 +1456,7 @@ export function useProjectMeta() {
     setTableOfContents,
     setTocKicker,
     setElementStyle,
+    clearPageLook,
     setRailSortMode,
     setLastImportSource,
     setTocTitle,

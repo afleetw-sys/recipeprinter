@@ -4,6 +4,7 @@ import { MenuSelect } from "@/components/MenuSelect";
 import { ProBadge } from "@/components/ProBadge";
 import { ChevronLeftIcon, ICON_SIZE, UndoIcon } from "@/components/icons";
 import { TextSizeControl } from "@/components/print/TextSizeControl";
+import { SizeDropdown } from "@/components/print/TextFieldToolbar";
 import type { FontScale } from "@/lib/fontScale";
 import {
   DEFAULT_PHOTO_SCALE,
@@ -34,6 +35,8 @@ export function ThemeCustomizePanel({
   customized,
   onReset,
   onBack,
+  recipePartSizes,
+  setRecipePartSize,
 }: {
   cookbook: boolean;
   /** A free account on recipe cards: crown everything but each default. */
@@ -48,6 +51,10 @@ export function ThemeCustomizePanel({
   customized: boolean;
   onReset: () => void;
   onBack: () => void;
+  /** Each part: the size every recipe's part has (lib/pageLooks.tsx,
+      `RECIPES_ADDRESS`), and its setter. Absent = no Each part section. */
+  recipePartSizes?: Record<string, { textSize?: number }>;
+  setRecipePartSize?: (part: string, size: number | undefined) => void;
 }) {
   const photoLabel = cookbook ? "Recipe photo size" : "Photo size";
   return (
@@ -64,6 +71,15 @@ export function ThemeCustomizePanel({
       </div>
 
       <TextSizeControl fontScale={fontScale} setFontScale={setFontScale} proMarked={proMarked} />
+
+      {setRecipePartSize && (
+        <EachPartSizes
+          fontScale={fontScale}
+          sizes={recipePartSizes}
+          setSize={setRecipePartSize}
+          proMarked={proMarked}
+        />
+      )}
 
       {photosShown && (
         <div className="recipe-config-section">
@@ -95,6 +111,68 @@ export function ThemeCustomizePanel({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/** The parts of a recipe page, in the order they sit on it, and what each is
+    called here. */
+const RECIPE_PARTS: Array<{ element: string; label: string }> = [
+  { element: "title", label: "Titles" },
+  { element: "notes", label: "Notes" },
+  { element: "details", label: "Time and servings" },
+  { element: "ingredients-headings", label: "Ingredient headings" },
+  { element: "ingredients", label: "Ingredients" },
+  { element: "steps-headings", label: "Step headings" },
+  { element: "steps", label: "Steps" },
+];
+
+/**
+ * Each part: a size for one part of every recipe at once (all the steps, all
+ * the titles), on top of Text size. Text size still moves everything; a part
+ * set here keeps its size relative to it, and a size picked in the text bar
+ * on one recipe still wins on that recipe. Each row is the text bar's own size
+ * dropdown, with Text size's size marked Default.
+ *
+ * A part shows here once some recipe page draws it, since its size in points
+ * is read off the page (each theme sets its own).
+ */
+function EachPartSizes({
+  fontScale,
+  sizes,
+  setSize,
+  proMarked,
+}: {
+  fontScale: number;
+  sizes: Record<string, { textSize?: number }> | undefined;
+  setSize: (part: string, size: number | undefined) => void;
+  proMarked: boolean;
+}) {
+  const drawn = (element: string) =>
+    document.querySelector<HTMLElement>(
+      `.recipe-page-canvas [data-element-page^="recipe:"][data-element="${element}"]`,
+    );
+  const parts = typeof document === "undefined" ? [] : RECIPE_PARTS.filter((part) => drawn(part.element));
+  if (parts.length === 0) return null;
+  return (
+    <div className="recipe-config-section recipe-customize__parts">
+      <span className="recipe-config-label">Each part</span>
+      <p className="recipe-customize__parts-hint">For every recipe. Text size still moves them all.</p>
+      <div className="recipe-customize__part-rows">
+        {parts.map((part) => (
+          <div key={part.element} className="recipe-customize__part-row">
+            <span className="recipe-customize__part-label">{part.label}</span>
+            <SizeDropdown
+              partLabel={part.label}
+              getNode={() => drawn(part.element)}
+              defaultScale={fontScale}
+              size={sizes?.[part.element]?.textSize}
+              proMarked={proMarked}
+              onChange={(size) => setSize(part.element, size)}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -13,7 +13,7 @@ import { useMenuDismiss } from "@/lib/useMenuDismiss";
 import type { RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
 import { ProBadge } from "@/components/ProBadge";
 import { DEFAULT_FONT_SCALE } from "@/lib/fontScale";
-import { MAX_TEXT_SIZE, MIN_TEXT_SIZE, pageElements, type PageLooks } from "@/lib/pageLooks";
+import { MAX_TEXT_SIZE, MIN_TEXT_SIZE, RECIPES_ADDRESS, ownPageElements, type PageLooks } from "@/lib/pageLooks";
 
 /**
  * The card's inline fields, and nothing else on the page.
@@ -203,7 +203,14 @@ export function TextFieldToolbar({
           getNode={() =>
             field.isConnected ? field.closest<HTMLElement>("[data-element][data-element-page]") : elementByAddress()
           }
-          size={pageElements(elementSize.styles, elementPage)?.[elementName]?.textSize}
+          size={ownPageElements(elementSize.styles, elementPage)?.[elementName]?.textSize}
+          // A recipe page's Default is the size every recipe's part has
+          // (Customize theme's Each part), when one is set.
+          defaultScale={
+            elementPage.startsWith("recipe:")
+              ? elementSize.styles?.[RECIPES_ADDRESS]?.elements?.[elementName]?.textSize
+              : undefined
+          }
           proMarked={elementSize.proMarked}
           onChange={(size) => elementSize.onChange(elementPage, elementName, size)}
         />
@@ -459,9 +466,10 @@ const SIZE_PRESETS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28
  * (lib/pageLooks.tsx), so everything inside the element (an ingredients list's
  * headings, a step's number) grows with its main text.
  */
-function SizeDropdown({
+export function SizeDropdown({
   partLabel,
   getNode,
+  defaultScale,
   size,
   proMarked,
   onChange,
@@ -470,6 +478,10 @@ function SizeDropdown({
       the size is the whole part's, not just the line being typed in. */
   partLabel?: string;
   getNode: () => HTMLElement | null;
+  /** The size this element has with no size of its own, when it isn't simply
+      what it inherits from around it (a recipe part set for every recipe;
+      the book's Text size, for Customize theme's own rows). */
+  defaultScale?: number;
   size: number | undefined;
   proMarked: boolean;
   onChange: (size: number | undefined) => void;
@@ -482,9 +494,11 @@ function SizeDropdown({
   const scaleOf = (el: Element | null | undefined) =>
     el ? parseFloat(getComputedStyle(el).getPropertyValue("--recipe-font-scale")) || 1 : 1;
   const drawnScale = scaleOf(node);
-  const bookScale = scaleOf(node?.parentElement);
+  const bookScale = defaultScale ?? scaleOf(node?.parentElement);
   const normalPoints = node ? printedPoints(node) / drawnScale : 0;
-  const shownPoints = roundHalf(normalPoints * (size ?? drawnScale));
+  // With no size of its own it's at its Default: the one given, or else the
+  // size it's drawn at (which is then the one it inherits).
+  const shownPoints = roundHalf(normalPoints * (size ?? defaultScale ?? drawnScale));
   const defaultPoints = roundHalf(normalPoints * bookScale);
   const minPoints = roundHalf(normalPoints * MIN_TEXT_SIZE);
   const maxPoints = roundHalf(normalPoints * MAX_TEXT_SIZE);

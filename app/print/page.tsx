@@ -217,6 +217,7 @@ import type { FontScale } from "@/lib/fontScale";
 import {
   hasNonNormalTextSize,
   prunePageLooks,
+  RECIPES_ADDRESS,
   recipePageAddress,
 } from "@/lib/pageLooks";
 import type { PhotoScale } from "@/lib/photoScale";
@@ -3495,7 +3496,8 @@ export default function PrintPage() {
       elementTextSized: hasNonNormalTextSize(
         prunePageLooks(
           projectMeta.meta.pageLooks,
-          new Set((items ?? []).map((item) => recipePageAddress(item.id))),
+          // The recipes still here, and the sizes set for every recipe's parts.
+          new Set([RECIPES_ADDRESS, ...(items ?? []).map((item) => recipePageAddress(item.id))]),
         ),
       ),
     });
@@ -7275,8 +7277,15 @@ export default function PrintPage() {
           setFontScale={setFontScale}
           photoScale={photoScale}
           setPhotoScale={setPhotoScale}
-          themeCustomized={isCustomized({ fontScale, photoScale })}
-          resetThemeLook={resetThemeLook}
+          themeCustomized={
+            isCustomized({ fontScale, photoScale }) || Boolean(projectMeta.meta.pageLooks?.[RECIPES_ADDRESS])
+          }
+          resetThemeLook={() => {
+            resetThemeLook();
+            projectMeta.clearPageLook(RECIPES_ADDRESS);
+          }}
+          recipePartSizes={projectMeta.meta.pageLooks?.[RECIPES_ADDRESS]?.elements}
+          setRecipePartSize={(part, size) => projectMeta.setElementStyle(RECIPES_ADDRESS, part, { textSize: size })}
           customizeProMarked={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
           photosShown={photoSizeOffered({
             cookbookMode,

@@ -35,6 +35,10 @@ interface PrintConfigPanelProps {
   setPhotoScale: (value: PhotoScale) => void;
   themeCustomized: boolean;
   resetThemeLook: () => void;
+  /** Customize theme's Each part: the size every recipe's part has, and its
+      setter (`undefined` = follow Text size). See lib/pageLooks.tsx. */
+  recipePartSizes?: Record<string, { textSize?: number }>;
+  setRecipePartSize?: (part: string, size: number | undefined) => void;
   /** A free account on recipe cards, where customizing is Pro. */
   customizeProMarked: boolean;
   /** Whether any recipe page draws a photo for a photo size to change. */
@@ -93,6 +97,8 @@ export function PrintConfigPanel({
   setPhotoScale,
   themeCustomized,
   resetThemeLook,
+  recipePartSizes,
+  setRecipePartSize,
   customizeProMarked,
   photosShown,
   anyRecipeHasImage,
@@ -214,6 +220,8 @@ export function PrintConfigPanel({
             setPhotoScale={setPhotoScale}
             customized={themeCustomized}
             onReset={resetThemeLook}
+            recipePartSizes={recipePartSizes}
+            setRecipePartSize={setRecipePartSize}
             onBack={() => setCustomizing(false)}
           />
         )}

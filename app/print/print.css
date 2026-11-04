@@ -1935,6 +1935,37 @@
   text-underline-offset: 2px;
 }
 
+/* Customize theme's Each part: one row per part of a recipe, its name and
+   the text bar's own size dropdown, boxed here like the panel's other
+   dropdowns since it isn't sitting in a toolbar. */
+.recipe-customize__parts-hint {
+  margin: 2px 0 8px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+}
+.recipe-customize__part-rows {
+  display: grid;
+  gap: 6px;
+}
+.recipe-customize__part-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.recipe-customize__part-label {
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+}
+.recipe-customize__part-row .recipe-text-toolbar__size {
+  height: 28px;
+  min-width: 4.5em;
+  justify-content: space-between;
+  border: 1px solid var(--cp-line);
+  border-radius: 8px;
+  background: var(--cp-card);
+}
+
 /* The list of sizes: a check beside the one in use, "Default" beside the one
    the element has with no size of its own. Scrolls, opened on the current
    size. */

@@ -79,7 +79,30 @@ function cleanStyle(value: unknown): ElementStyle | undefined {
 }
 
 /** One page's elements as the app draws them. */
+/**
+ * Every recipe page's parts at once: the sizes set in Customize theme ("Each
+ * part"), which apply to that part in every recipe. Not a page of its own; a
+ * recipe page reads it under its own sizes (`pageElements`), so the order is
+ * the book's Text size, then these, then the page's own size for that page.
+ */
+export const RECIPES_ADDRESS = "recipes";
+
+/** One page's elements as the app draws them: a recipe page's own sizes over
+    the book-wide ones for every recipe (`RECIPES_ADDRESS`). */
 export function pageElements(looks: PageLooks | undefined, page: string | undefined): PageElementStyles | undefined {
+  if (!page) return undefined;
+  const own = looks?.[page]?.elements as PageElementStyles | undefined;
+  if (!page.startsWith("recipe:")) return own;
+  const everyRecipe = looks?.[RECIPES_ADDRESS]?.elements as PageElementStyles | undefined;
+  if (!everyRecipe) return own;
+  const merged: PageElementStyles = { ...everyRecipe };
+  for (const [name, style] of Object.entries(own ?? {})) merged[name] = { ...merged[name], ...style };
+  return merged;
+}
+
+/** Only the page's own sizes, without the book-wide ones under them: what
+    the text bar shows as the page's choice. */
+export function ownPageElements(looks: PageLooks | undefined, page: string | undefined): PageElementStyles | undefined {
   return page ? (looks?.[page]?.elements as PageElementStyles | undefined) : undefined;
 }
 
