@@ -1164,10 +1164,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     const isEditingThis = inlineEdit && sameTarget(inlineEdit.editingTarget, target);
     if (isEmptyRow(text) && !isEditingThis) return null;
     const displayValue = isEditingThis ? inlineEdit!.value : text;
-    // The click target is the <li>, not a wrapper around the text: the hidden
-    // measurement probe renders this line as bare text in an <li> (see
-    // `renderIngredientProbeItem`), so adding an element here would measure one
-    // thing and print another.
+    // The click target is the <li>; the words are wrapped (`data-edit-text`,
+    // a block, so it lays out exactly as the bare text did) so the hover ring
+    // is drawn round what can be changed, not the bullet beside it. The
+    // measurement probe wraps them the same way (`renderIngredientProbeItem`),
+    // so it measures what prints.
     return (
       <li
         key={index}
@@ -1190,7 +1191,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             onSplit={(before, after) => inlineEdit.onSplitLine(target, before, after)}
           />
         ) : (
-          <RichText text={text} />
+          <span className="recipe-card__line-text" data-edit-text>
+            <RichText text={text} />
+          </span>
         )}
         {!isEditingThis && addLine("ingredient", index + 1)}
       </li>
@@ -1207,7 +1210,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     // than body, and that width is exactly what this is measuring.
     return (
       <li className="recipe-card__editable-line">
-        <RichText text={ingredientText(ing)} />
+        <span className="recipe-card__line-text">
+          <RichText text={ingredientText(ing)} />
+        </span>
       </li>
     );
   }

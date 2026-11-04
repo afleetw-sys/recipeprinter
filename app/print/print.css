@@ -8439,9 +8439,12 @@ textarea.recipe-card__toc-title {
   align-self: flex-start;
 }
 
+/* A line's ring goes round its words, not its bullet or step number: only
+   the words change when it's clicked, and the field that opens is the size
+   of the words (Amelia, 2026-11-04). */
 .recipe-card__title--editable:hover,
 .recipe-card__headnote--editable:hover,
-.recipe-card__editable-line--editable:hover,
+.recipe-card__editable-line--editable:hover > [data-edit-text],
 .recipe-card__footer-brand--editable:hover,
 .recipe-card__footer-brand--editable:focus-visible {
   outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
@@ -8458,8 +8461,15 @@ textarea.recipe-card__toc-title {
    accepted — so it stands down and the focus ring is the only box. */
 .recipe-card__title--editable:hover:focus-within,
 .recipe-card__headnote--editable:hover:focus-within,
-.recipe-card__editable-line--editable:hover:focus-within {
+.recipe-card__editable-line--editable:hover:focus-within > [data-edit-text] {
   outline: none;
+}
+
+/* An ingredient's words as one block beside its bullet, so a ring round them
+   is one box even when the line wraps. Lays out as the bare text did: the
+   bullet sits in the line's own start padding. */
+.recipe-card__line-text {
+  display: block;
 }
 
 /* The emptied workspace. A page-shaped outline where the pages were, so the
