@@ -9848,17 +9848,6 @@ textarea.recipe-card__toc-title {
   margin-bottom: 16px;
 }
 
-.recipe-add-dialog__target-label {
-  flex: 0 0 auto;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-small);
-  font-weight: var(--cp-fw-medium);
-}
-
-.recipe-add-dialog__target .select-shell {
-  flex: 1 1 auto;
-  min-width: 0;
-}
 
 /* Outside `__body` so it stays put while the added list scrolls. */
 .recipe-add-dialog__footer {
