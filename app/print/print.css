@@ -7483,6 +7483,39 @@ textarea.recipe-card__toc-title {
   background-size: var(--heirloom-band-art);
 }
 
+/* A picked accent (lib/themeAccent.ts): the same utensils as shapes filled
+   with it. A background SVG keeps the artist's red, so the files become the
+   mask over a fill of the accent, at the same places and sizes. Untouched,
+   the rule above is what draws. */
+.recipe-accent-custom .recipe-template--heirloom:not(.recipe-template-option__thumb *) .recipe-card::before {
+  background-image: none;
+  background-color: var(--recipe-accent);
+  -webkit-mask-image:
+    url("/images/heirloom-whisk.svg"),
+    url("/images/heirloom-spatula.svg"),
+    url("/images/heirloom-turner.svg"),
+    url("/images/heirloom-tongs.svg"),
+    url("/images/heirloom-whisk.svg"),
+    url("/images/heirloom-spatula.svg"),
+    url("/images/heirloom-turner.svg"),
+    url("/images/heirloom-tongs.svg");
+  mask-image:
+    url("/images/heirloom-whisk.svg"),
+    url("/images/heirloom-spatula.svg"),
+    url("/images/heirloom-turner.svg"),
+    url("/images/heirloom-tongs.svg"),
+    url("/images/heirloom-whisk.svg"),
+    url("/images/heirloom-spatula.svg"),
+    url("/images/heirloom-turner.svg"),
+    url("/images/heirloom-tongs.svg");
+  -webkit-mask-position: 8% center, 20% center, 32% center, 44% center, 56% center, 68% center, 80% center, 92% center;
+  mask-position: 8% center, 20% center, 32% center, 44% center, 56% center, 68% center, 80% center, 92% center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: var(--heirloom-band-art);
+  mask-size: var(--heirloom-band-art);
+}
+
 /* …and on a 6x4 the band gives way to the source link rather than the other
    way round, because the lift below is priced in content. The band runs from
    `--heirloom-band-bottom` to that plus `--heirloom-band-height` above the
@@ -11166,7 +11199,7 @@ textarea.recipe-card__toc-title {
   left: 0;
   right: 0;
   height: var(--market-bar);
-  background: #498988;
+  background: var(--recipe-accent); /* Market's teal: a picked accent recolors the bar. */
 }
 
 .recipe-card__market-band {
@@ -11264,15 +11297,67 @@ textarea.recipe-card__toc-title {
 .recipe-card__supper-frame {
   inset: var(--supper-inset);
   box-sizing: border-box;
-  border: calc(16 * var(--supper-u)) solid #7a151b;
+  /* Supper's red, its accent, so a picked accent recolors the frame. */
+  border: calc(16 * var(--supper-u)) solid var(--recipe-accent);
   border-radius: calc(48 * var(--supper-u));
 }
 
-.recipe-card__supper-utensil {
+.recipe-card__supper-utensil,
+.recipe-card__supper-utensil-tint {
   left: var(--supper-inset);
   width: calc(100% - 2 * var(--supper-inset));
   height: auto;
   bottom: calc(var(--supper-inset) - 28 * var(--supper-u));
+}
+
+/* The accent version of the utensil (see `SupperFrame`): the strip at the
+   art's 1452 x 110 proportions, its card-colored patch where the artist's
+   rect is, and the utensil as a mask filled with the accent. Shown, in place
+   of the image, only with a picked accent. */
+.recipe-card__supper-utensil-tint {
+  position: absolute;
+  display: none;
+  aspect-ratio: 1452 / 110;
+  pointer-events: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.recipe-accent-custom .recipe-template--supper:not(.recipe-template-option__thumb *) .recipe-card__supper-utensil {
+  display: none;
+}
+.recipe-accent-custom .recipe-template--supper:not(.recipe-template-option__thumb *) .recipe-card:not(.recipe-card--cover):not(.recipe-card--chapter-with-photo) .recipe-card__supper-utensil-tint {
+  display: block;
+}
+.recipe-card__supper-utensil-patch,
+.recipe-card__supper-utensil-mark {
+  position: absolute;
+}
+.recipe-card__supper-utensil-patch {
+  background: var(--recipe-bg);
+}
+.recipe-card__supper-utensil-tint[data-utensil="fork"] .recipe-card__supper-utensil-patch {
+  left: 37.38%;
+  top: 25.719%;
+  width: 25.24%;
+  height: 70.645%;
+}
+.recipe-card__supper-utensil-tint[data-utensil="spoon"] .recipe-card__supper-utensil-patch {
+  left: 37.401%;
+  top: 7.878%;
+  width: 25.198%;
+  height: 88.485%;
+}
+.recipe-card__supper-utensil-tint[data-utensil="knife"] .recipe-card__supper-utensil-patch {
+  left: 37.632%;
+  top: 36.625%;
+  width: 24.735%;
+  height: 59.739%;
+}
+.recipe-card__supper-utensil-mark {
+  inset: 0;
+  background: var(--recipe-accent);
+  -webkit-mask: var(--utensil-mark) center / 100% 100% no-repeat;
+  mask: var(--utensil-mark) center / 100% 100% no-repeat;
 }
 
 /* ── Diner ─────────────────────────────────────────────────────────────────
@@ -11570,7 +11655,7 @@ textarea.recipe-card__toc-title {
   right: var(--poster-inset);
   bottom: calc(24 * var(--poster-u));
   box-sizing: border-box;
-  border: calc(16 * var(--poster-u)) solid #1f1f1f;
+  border: calc(16 * var(--poster-u)) solid var(--recipe-accent); /* Poster's black: a picked accent recolors the frame. */
   background: #ffffff;
 }
 

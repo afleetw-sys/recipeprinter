@@ -449,6 +449,18 @@ function SupperFrame({ index = 0 }: { index?: number }) {
       <div className="recipe-card__supper-frame" aria-hidden />
       {/* eslint-disable-next-line @next/next/no-img-element -- fixed decorative vector art, not a photo to optimize */}
       <img className="recipe-card__supper-utensil" src={`/images/utensil-${utensil}.svg`} alt="" aria-hidden />
+      {/* The same utensil in the theme's accent, for a cook who picked one
+          (lib/themeAccent.ts): the card-colored patch that opens the line,
+          and the utensil as a shape (utensil-*-mark.svg) filled with the
+          accent. An <img> can't be recolored, so print.css swaps this in for
+          it only then; untouched, the artist's file is what prints. */}
+      <span className="recipe-card__supper-utensil-tint" data-utensil={utensil} aria-hidden>
+        <span className="recipe-card__supper-utensil-patch" />
+        <span
+          className="recipe-card__supper-utensil-mark"
+          style={{ "--utensil-mark": `url("/images/utensil-${utensil}-mark.svg")` } as CSSProperties}
+        />
+      </span>
     </>
   );
 }
