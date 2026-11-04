@@ -591,35 +591,40 @@ export function SizeDropdown({
 
   return (
     <>
-      {/* One control, opened by one press anywhere on it: the number and the
-          chevron are the same button. */}
-      <button
-        ref={triggerRef}
-        type="button"
-        className="recipe-text-toolbar__size"
-        aria-haspopup="menu"
-        aria-expanded={openAt ? true : undefined}
-        aria-label={`${partLabel ? `${partLabel} text size` : "Text size"}: ${shownPoints} points`}
-        title="Text size"
-        onMouseDown={toggle}
-        onKeyDown={(event) => {
-          // Reached by keyboard (the field closed on the way here), Enter or
-          // Space opens it too.
-          if ((event.key === "Enter" || event.key === " ") && !openAt) {
-            event.preventDefault();
-            const box = event.currentTarget.getBoundingClientRect();
-            setOpenAt({ x: box.left, y: box.bottom + 4 });
-          }
-        }}
-      >
-        <span className={`recipe-text-toolbar__size-value ${draft !== null ? "is-typing" : ""}`}>
-          {draft ?? String(shownPoints)}
-        </span>
-        <ChevronDownIcon size={ICON_SIZE.xs} aria-hidden />
-      </button>
-      {proMarked && size !== undefined && size !== DEFAULT_FONT_SCALE && (
-        <ProBadge variant="inline" label={false} tooltip="This text size is Pro" />
-      )}
+      {/* The dropdown and its crown are one control, so wherever it is laid
+          out (a row spreading its children apart, in Customize theme) the
+          crown stays beside the size it marks. */}
+      <span className="recipe-text-toolbar__size-control">
+        {/* One control, opened by one press anywhere on it: the number and the
+            chevron are the same button. */}
+        <button
+          ref={triggerRef}
+          type="button"
+          className="recipe-text-toolbar__size"
+          aria-haspopup="menu"
+          aria-expanded={openAt ? true : undefined}
+          aria-label={`${partLabel ? `${partLabel} text size` : "Text size"}: ${shownPoints} points`}
+          title="Text size"
+          onMouseDown={toggle}
+          onKeyDown={(event) => {
+            // Reached by keyboard (the field closed on the way here), Enter or
+            // Space opens it too.
+            if ((event.key === "Enter" || event.key === " ") && !openAt) {
+              event.preventDefault();
+              const box = event.currentTarget.getBoundingClientRect();
+              setOpenAt({ x: box.left, y: box.bottom + 4 });
+            }
+          }}
+        >
+          <span className={`recipe-text-toolbar__size-value ${draft !== null ? "is-typing" : ""}`}>
+            {draft ?? String(shownPoints)}
+          </span>
+          <ChevronDownIcon size={ICON_SIZE.xs} aria-hidden />
+        </button>
+        {proMarked && size !== undefined && size !== DEFAULT_FONT_SCALE && (
+          <ProBadge variant="inline" label={false} tooltip="This text size is Pro" />
+        )}
+      </span>
       {openAt && (
         <SizeMenu
           anchor={openAt}

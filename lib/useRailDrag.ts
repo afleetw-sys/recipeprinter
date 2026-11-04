@@ -6,7 +6,9 @@ export type RailDragKind = "recipe" | "section";
 
 /** Where a live drag would land: a viewport-space indicator line + the commit. */
 export interface RailDropResolved {
-  indicator: { top: number; left: number; width: number; height?: number };
+  /** `box` outlines the area instead of drawing a line: a whole target, like
+      a folded chapter's bar. */
+  indicator: { top: number; left: number; width: number; height?: number; box?: boolean };
   /** The organizer's grid opens an empty tile-sized slot where the card will
       land instead of drawing a line, and the other cards move aside for it,
       the way a phone's home screen does: placed before or after the element
@@ -212,12 +214,24 @@ export function useRailDrag(
         el.style.display = "none";
         return;
       }
+      // A whole target (a folded chapter) is outlined, not opened, so a gap
+      // left open elsewhere closes and the carried card shows in its place.
+      if (resolved?.indicator.box && slot.current) {
+        slot.current.remove();
+        slot.current = null;
+        if (hiddenSource.current) {
+          hiddenSource.current.style.display = "";
+          hiddenSource.current = null;
+        }
+        onLayoutChangeRef.current?.();
+      }
       if (resolved) {
         el.style.display = "block";
         el.style.top = `${resolved.indicator.top}px`;
         el.style.left = `${resolved.indicator.left}px`;
         el.style.width = `${resolved.indicator.width}px`;
         el.style.height = `${resolved.indicator.height ?? 3}px`;
+        el.classList.toggle("rail-drop-line--box", Boolean(resolved.indicator.box));
       } else {
         el.style.display = "none";
       }
@@ -258,7 +272,18 @@ export function useRailDrag(
         badge.textContent = String(count);
         clone.appendChild(badge);
       }
-      document.body.appendChild(clone);
+      // The copy goes on <body>, outside the organizer whose rules lay a card
+      // out (number, photo, title in a row). Inside a frame carrying the
+      // organizer's class it keeps that layout instead of falling back to the
+      // page rail's, which stacked the photo above the title.
+      if (g.node.closest(".recipe-print-shell--organizing")) {
+        const frame = document.createElement("div");
+        frame.className = "recipe-print-shell--organizing rail-drag-preview-frame";
+        frame.appendChild(clone);
+        document.body.appendChild(frame);
+      } else {
+        document.body.appendChild(clone);
+      }
       preview.current = clone;
 
       const indicator = document.createElement("div");
@@ -281,7 +306,8 @@ export function useRailDrag(
     const teardown = () => {
       if (rafId.current != null) cancelAnimationFrame(rafId.current);
       rafId.current = null;
-      preview.current?.remove();
+      const frame = preview.current?.parentElement;
+      (frame?.classList.contains("rail-drag-preview-frame") ? frame : preview.current)?.remove();
       preview.current = null;
       line.current?.remove();
       line.current = null;

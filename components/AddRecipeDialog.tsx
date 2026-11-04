@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ImportTab } from "@/types/recipe";
 import { IMAGE_SUBMIT_LABEL, ImportPanel } from "@/components/ImportPanel";
-import { Select } from "@/components/Select";
+import { MenuSelect } from "@/components/MenuSelect";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
 import { track } from "@/lib/analytics";
@@ -147,21 +147,15 @@ export function AddRecipeDialog({
       <div className="recipe-add-dialog__body">
         {chapterTarget && (
           <div className="recipe-add-dialog__target">
-            <label className="recipe-add-dialog__target-label" htmlFor="recipe-add-chapter">
-              Adding to
-            </label>
-            <Select
-              id="recipe-add-chapter"
-              variant="compact"
-              value={chapterTarget.value ?? ""}
-              onChange={(event) => chapterTarget.onChange(event.target.value)}
-            >
-              {chapterTarget.options.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
+            <MenuSelect
+              label="Adding to"
+              placeholder="Choose a chapter"
+              value={chapterTarget.value}
+              options={chapterTarget.options.map((option) => ({ value: option.id, label: option.label }))}
+              onChange={(value) => {
+                if (value !== null) chapterTarget.onChange(value);
+              }}
+            />
           </div>
         )}
         <ImportPanel

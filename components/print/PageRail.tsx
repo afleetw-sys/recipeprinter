@@ -54,6 +54,7 @@ import {
   isOrganizeViewActive,
   matchesFilter,
   matchesOrganizeView,
+  organizerPhoto,
   type OrganizeFilter,
   type OrganizeRecipeContext,
 } from "@/lib/organizeFilter";
@@ -74,6 +75,11 @@ const RAIL_SCALE: Record<PrintCardSize, number> = {
 // How far outside the rail's scroll viewport a thumbnail starts rendering, so it
 // is ready before it scrolls into view (no visible pop-in).
 const RAIL_THUMB_OVERSCAN = "600px 0px";
+
+/** The move menu's destination for recipes in no chapter (see
+    `tileMenuSections`), and what the organizer calls them. */
+const NOT_IN_A_CHAPTER = "not-in-a-chapter";
+export const NOT_IN_A_CHAPTER_LABEL = "Not in a chapter";
 
 /** How the organizer orders the recipes inside each section: the cook's own
     arrangement, or A–Z by recipe title. Section order is never touched. */
@@ -241,6 +247,8 @@ interface PageRailProps {
   makeSectionFromSelection: (selection?: ReadonlySet<string>) => void;
   /** Tile-menu move: drops `ids` at the end of `sectionId`, in book order. */
   moveRecipesToSection: (ids: string[], sectionId: string) => void;
+  /** Moves recipes into the group in no chapter. */
+  removeRecipesFromChapter: (ids: string[]) => void;
   railSortMode: RailSortMode;
   applyRailSort: (mode: RailSortMode) => void;
   addMenuOpen: boolean;
@@ -314,6 +322,7 @@ export function PageRail(props: PageRailProps) {
     moveSectionInBook,
     makeSectionFromSelection,
     moveRecipesToSection,
+    removeRecipesFromChapter,
     railSortMode,
     applyRailSort,
     addMenuOpen,
@@ -584,12 +593,27 @@ export function PageRail(props: PageRailProps) {
     };
   }, [addMenuOpen]);
 
+  /** The chapter name a recipe is under, or nothing when it is in none. */
+  const sectionTitleOfItem = (itemId: string) => {
+    const at = sectionAndIndexForItem(itemId);
+    return at ? sections.find((section) => section.id === at.sectionId)?.title?.trim() : undefined;
+  };
+  // The recipes in no chapter are a group with no name, offered first as
+  // "Not in a chapter", the organizer's own heading for them, rather than as
+  // a chapter called "Untitled". There may be no such group yet (every
+  // recipe in a chapter), so it is not a section id but its own value.
   const tileMenuSections = tileMenu
-    ? sections.filter((section) => {
-        const ids = itemIdsForSection(section.id);
-        // A section every moved recipe is already in has nowhere to move them.
-        return !tileMenu.ids.every((id) => ids.includes(id));
-      })
+    ? [
+        ...(tileMenu.ids.some((id) => sectionTitleOfItem(id))
+          ? [{ id: NOT_IN_A_CHAPTER, title: NOT_IN_A_CHAPTER_LABEL }]
+          : []),
+        ...sections.filter((section) => {
+          if (!section.title?.trim()) return false;
+          const ids = itemIdsForSection(section.id);
+          // A section every moved recipe is already in has nowhere to move them.
+          return !tileMenu.ids.every((id) => ids.includes(id));
+        }),
+      ]
     : [];
 
   /**
@@ -992,7 +1016,7 @@ export function PageRail(props: PageRailProps) {
                     whole-book actions rather than on any single section. */}
                 <button
                   type="button"
-                  className="btn btn-primary btn-compact recipe-organize-bar__add-section"
+                  className="btn btn-primary btn-header recipe-organize-bar__add-section"
                   data-rail-new-section
                   onClick={() => {
                     if (effectiveRailSelection.size > 0) makeSectionFromSelection();
@@ -1253,7 +1277,7 @@ export function PageRail(props: PageRailProps) {
                       <div className="recipe-organize-start__actions">
                         <button
                           type="button"
-                          className="btn btn-primary btn-compact"
+                          className="btn btn-primary btn-header"
                           onClick={() => openAddRecipeBelow()}
                         >
                           <PlusIcon size={ICON_SIZE.md} />
@@ -1261,7 +1285,7 @@ export function PageRail(props: PageRailProps) {
                         </button>
                         <button
                           type="button"
-                          className="btn btn-secondary btn-compact"
+                          className="btn btn-secondary btn-header"
                           onClick={() => addSectionDivider()}
                         >
                           <PlusIcon size={ICON_SIZE.md} />
@@ -1282,6 +1306,41 @@ export function PageRail(props: PageRailProps) {
                       sectionFolded(group.sectionId) ? "recipe-page-rail__section-group--collapsed" : ""
                     }`}
                   >
+                  {/* The recipes in no chapter get a heading like a chapter's:
+                      what they are, how many, and Add recipe at the right.
+                      The heading is also where a recipe dragged here lands
+                      when there are none left to drop beside. */}
+                  {organizeMode &&
+                    group.sectionId &&
+                    !sections.find((entry) => entry.id === group.sectionId)?.title?.trim() && (
+                    <div
+                      className="recipe-page-rail__section-header recipe-page-rail__section-header--ungrouped"
+                      data-rail-section-head={group.sectionId}
+                    >
+                      <span className="recipe-page-rail__section-name">
+                        {namedSectionIds.length > 0 ? NOT_IN_A_CHAPTER_LABEL : "Recipes"}
+                      </span>
+                      <span className="recipe-page-rail__section-count">
+                        {(() => {
+                          const count =
+                            sections.find((entry) => entry.id === group.sectionId)?.items.filter((item) => !item.pageKind)
+                              .length ?? 0;
+                          return count === 1 ? "1 recipe" : `${count} recipes`;
+                        })()}
+                      </span>
+                      {!organizeFiltering && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-header recipe-page-rail__section-add"
+                          onClick={() => openAddToSection(group.sectionId!)}
+                          onPointerDown={(event) => event.stopPropagation()}
+                        >
+                          <PlusIcon size={ICON_SIZE.sm} />
+                          Add recipe
+                        </button>
+                      )}
+                    </div>
+                  )}
                   {(() => {
                   // Same rule as the flat rail below: anchor to the LAST unit
                   // for that recipe so a two-page recipe draws one spinner.
@@ -1322,7 +1381,11 @@ export function PageRail(props: PageRailProps) {
                 // keeps pointing at whatever page was last shown — an import card
                 // has no index of its own — so without this the rail claimed two
                 // current rows at once.
+                // The organizer has no preview beside it, so no recipe in it is
+                // the one on screen: none is marked. Selecting (Cmd/Ctrl or
+                // Shift-click) still shows, as that is a choice made here.
                 const isActive =
+                  !organizeMode &&
                   !activeImportId &&
                   unit.index === activeNavIndex &&
                   (unit.soleUnit || focusedSheet === unit.focusSheet);
@@ -1398,11 +1461,25 @@ export function PageRail(props: PageRailProps) {
                             return count === 1 ? "1 recipe" : `${count} recipes`;
                           })()}
                         </span>
-                        {/* Add recipe, move, rename and delete wait in a menu so
-                            the chapter name stays the main thing. A folded
-                            chapter shows its name and count only, but still
-                            answers a right-click, so the menu is mounted for
-                            it with no button showing. */}
+                        {!organizeFiltering && !sectionFolded(section.id) && (
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-header recipe-page-rail__section-add"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openAddToSection(section.id);
+                            }}
+                            onPointerDown={(event) => event.stopPropagation()}
+                          >
+                            <PlusIcon size={ICON_SIZE.sm} />
+                            Add recipe
+                          </button>
+                        )}
+                        {/* Move, rename and delete wait in a menu so the
+                            chapter name stays the main thing. A folded chapter
+                            shows its name and count only, but still answers a
+                            right-click, so the menu is mounted for it with no
+                            button showing. */}
                           <div
                             className="recipe-page-rail__section-menu"
                             ref={chapterMenuId === section.id ? chapterMenuRef : undefined}
@@ -1430,20 +1507,6 @@ export function PageRail(props: PageRailProps) {
                                 label={`Actions for ${section.title}`}
                                 align="end"
                               >
-                                {!organizeFiltering && (
-                                  <button
-                                    type="button"
-                                    role="menuitem"
-                                    className="cp-menu__item"
-                                    onClick={() => {
-                                      setChapterMenuId(null);
-                                      openAddToSection(section.id);
-                                    }}
-                                  >
-                                    <PlusIcon size={ICON_SIZE.sm} />
-                                    Add recipe
-                                  </button>
-                                )}
                                 {!organizeFiltering && (
                                   <>
                                     <button
@@ -1566,6 +1629,19 @@ export function PageRail(props: PageRailProps) {
                         }}
                       >
                         <span className="recipe-page-rail__num">{unit.num}</span>
+                        {/* The organizer's picture: the recipe's own photo,
+                            small, so the cards stay a list of names. One
+                            without a photo keeps the empty square, so every
+                            title starts in the same place. */}
+                        {organizeMode && recipeNav && (() => {
+                          const context = organizeContexts.get(recipeNav.recipeId);
+                          const photo = context ? organizerPhoto(context) : undefined;
+                          return (
+                            <span className="recipe-page-rail__photo" aria-hidden>
+                              {photo && <img src={photo} alt="" loading="lazy" decoding="async" draggable={false} />}
+                            </span>
+                          );
+                        })()}
                         {showThumbs && (
                         <LazyRailThumb
                           scrollRef={railScrollRef}
@@ -1644,31 +1720,13 @@ export function PageRail(props: PageRailProps) {
                       <span>Drag a recipe here, or add a new one.</span>
                       <button
                         type="button"
-                        className="btn btn-secondary btn-compact"
+                        className="btn btn-secondary btn-header"
                         onClick={() => openAddToSection(group.sectionId!)}
                       >
                         <PlusIcon size={ICON_SIZE.sm} />
                         Add recipe
                       </button>
                     </div>
-                  )}
-                  {/* A named chapter's Add recipe is also in its heading's
-                      menu. The ungrouped recipes have no heading, so they keep
-                      the card. */}
-                  {organizeMode &&
-                    group.sectionId &&
-                    !organizeFiltering &&
-                    !sections.find((entry) => entry.id === group.sectionId)?.title?.trim() && (
-                    <button
-                      type="button"
-                      className="recipe-page-rail__section-add-card"
-                      data-rail-section-add={group.sectionId}
-                      onClick={() => openAddToSection(group.sectionId!)}
-                      aria-label={`Add a recipe to ${sectionTitleForId(group.sectionId)}`}
-                    >
-                      <PlusIcon size={ICON_SIZE.md} />
-                      <span>Add recipe</span>
-                    </button>
                   )}
                   </div>
                   {renderAddPages(addsAfterGroup.get(groupIdx) ?? [])}
@@ -1801,7 +1859,11 @@ export function PageRail(props: PageRailProps) {
               anchor={tileMenu}
               heading={tileMenu.label}
               sections={tileMenuSections}
-              onMove={(sectionId) => moveRecipesToSection(tileMenu.ids, sectionId)}
+              onMove={(sectionId) =>
+                sectionId === NOT_IN_A_CHAPTER
+                  ? removeRecipesFromChapter(tileMenu.ids)
+                  : moveRecipesToSection(tileMenu.ids, sectionId)
+              }
               onNewSection={() => makeSectionFromSelection(new Set(tileMenu.ids))}
               onClose={() => setTileMenu(null)}
             />

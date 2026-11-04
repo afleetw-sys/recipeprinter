@@ -2,6 +2,7 @@
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { RecipeCardFace } from "@/components/RecipeCardPrint";
+import { ElementPageProvider } from "@/lib/pageLooks";
 import type { RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
 import type { Recipe } from "@/types/recipe";
 
@@ -57,6 +58,47 @@ describe("RecipeCardFace source line", () => {
         expect(sourceLine(recipe, { editable: true, cookbookMode })).toBe(
           sourceLine(recipe, { editable: false, cookbookMode }),
         );
+      });
+    }
+  }
+});
+
+describe("The source link's text size", () => {
+  // A cookbook's link is part of its details line, so clicking it brings up
+  // the size control and Time and servings sizes it. A recipe card's link is
+  // in the card's footer and was part of nothing: no size control, no size.
+  // On both, editing or not, the link is part of the details and takes its
+  // size.
+  for (const cookbookMode of [false, true]) {
+    for (const editable of [false, true]) {
+      it(`follows the details (${cookbookMode ? "cookbook" : "card"}, ${editable ? "editing" : "printed"})`, () => {
+        const recipe: Recipe = {
+          title: "Blondies",
+          sourceUrl: "https://example.com/blondies",
+          ingredients: [{ name: "1 cup flour" }],
+          instructions: [{ step: 1, text: "Bake." }],
+        };
+        const { container } = render(
+          <ElementPageProvider page="recipe:r1" looks={{ "recipe:r1": { elements: { details: { textSize: 1.5 } } } }}>
+            <RecipeCardFace
+              recipe={recipe}
+              ingredients={recipe.ingredients}
+              instructions={recipe.instructions}
+              side="front"
+              showHeader
+              layout="standard"
+              hasBackFace={false}
+              showSourceUrl
+              template="classic"
+              cookbookMode={cookbookMode}
+              inlineEdit={editable ? inlineEdit : undefined}
+            />
+          </ElementPageProvider>,
+        );
+        const link = container.querySelector<HTMLElement>(".recipe-card__footer-source, .recipe-card__source-line");
+        expect(link?.dataset.element).toBe("details");
+        expect(link?.dataset.elementPage).toBe("recipe:r1");
+        expect(link?.style.getPropertyValue("--recipe-font-scale")).toBe("1.5");
       });
     }
   }

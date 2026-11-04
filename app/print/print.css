@@ -207,16 +207,16 @@
   gap: 4px;
 }
 
-/* Sort, Collapse and each section's Delete sit in rows with 30px buttons, so
-   in here the icon button takes that box — and with it the 8px corner the
-   radius scale gives a 30px control, rather than the 12px a 40px one gets.
-   Scoped to the organizer on purpose: elsewhere .icon-button is a 40px touch
-   target rather than a member of a button row. */
+/* The organizer is a whole page, so its controls are the page header's size:
+   Buy & Print's 32px with its 9px corner (`.btn-header`), the icon buttons
+   included (Amelia, 2026-11-04: everything one size, and that one). Scoped to
+   the organizer on purpose: elsewhere .icon-button is a 40px touch target
+   rather than a member of a button row. */
 .recipe-print-shell--organizing .icon-button {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-color: var(--cp-line-strong);
-  border-radius: 8px;
+  border-radius: 9px;
   background: transparent;
 }
 
@@ -301,7 +301,7 @@
 }
 .recipe-organize-bar__hint {
   margin: 0;
-  font-size: var(--cp-fs-caption);
+  font-size: var(--cp-fs-small);
   line-height: 1.35;
   color: var(--cp-ink-soft);
 }
@@ -324,8 +324,14 @@
   display: flex;
   flex: 1 0 100%;
   align-items: center;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 8px;
+  margin-top: 10px;
+}
+/* The close button sits inside the search field's own height. */
+.recipe-print-shell--organizing .recipe-organize-bar__search .icon-button {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
 }
 
 /* Sort: an icon button at the head of the organizer's actions that opens its
@@ -358,10 +364,10 @@
      its end. */
   flex: 1 1 auto;
   min-width: 0;
-  height: 30px;
-  padding: 0 0 0 9px;
+  height: 32px;
+  padding: 0 2px 0 12px;
   border: 1px solid var(--cp-line-strong);
-  border-radius: 8px;
+  border-radius: 9px;
   background: var(--cp-card);
   color: var(--cp-ink-soft);
 }
@@ -372,7 +378,7 @@
 .recipe-organize-bar__search-input {
   flex: 1;
   min-width: 0;
-  height: 28px;
+  height: 30px;
   border: 0;
   background: transparent;
   color: var(--cp-ink);
@@ -381,11 +387,6 @@
 }
 .recipe-organize-bar__search-input:focus {
   outline: none;
-}
-/* The close button sits inside the field's own height. */
-.recipe-print-shell--organizing .recipe-organize-bar__search .icon-button {
-  width: 28px;
-  height: 28px;
 }
 /* The field shows its own close button; the browser's clear cross is a second. */
 .recipe-organize-bar__search-input::-webkit-search-cancel-button {
@@ -561,21 +562,27 @@
      calc() tracks and these percentages. The per-frame FLIP measures the live
      layout each frame, so the recipe tiles slide into their cells in step with
      the expansion. This class is the end state the JS animates toward. */
-  /* Only the rail's width changes: the base rule's tracks already read
-     `--rail-w`, so the collapse arrow (which rides the same variable) stays on
-     the rail's edge, and `--rail-collapsed` further down still wins and folds
-     the organizer away. The organizer has a width of its own, remembered
-     apart from the page rail's, since the two are dragged for different jobs.
-
-     The preview and settings stay fully usable beside it. They used to dim
-     and stop taking clicks, which meant leaving the organizer to fix the
-     recipe you had just found in it. */
+  /* The organizer takes the whole width (Amelia, 2026-11-04). The preview and
+     the settings fold to nothing beside it and are hidden, so they take no
+     clicks and no Tab until you leave: organizing is a step of its own, left
+     by its Back button, not something done while moving around the book.
+     `visibility`, not just opacity, is what takes them out of the Tab order. */
   .recipe-print-page .recipe-print-shell--organize-wide {
-    --rail-w: clamp(
-      320px,
-      var(--organize-rail-user-w, 50%),
-      calc(100% - var(--panel-w) - 320px)
-    );
+    --rail-w: 100%;
+    --panel-w: 0px;
+    /* The folded preview still overflows its zero-width column, and a
+       `hidden` box can still be scrolled by focus: opening a menu slid the
+       whole organizer sideways. `clip` cannot be scrolled at all. */
+    overflow: clip;
+  }
+  .recipe-print-shell--organize-wide > .recipe-page-canvas,
+  .recipe-print-shell--organize-wide > .recipe-config-panel,
+  .recipe-print-shell--organize-wide > .recipe-rail-resizer,
+  .recipe-print-shell--organize-wide > .recipe-panel-toggle {
+    overflow: hidden;
+    padding-inline: 0;
+    border-width: 0;
+    visibility: hidden;
   }
 
   /* The draggable boundary between the rail and the preview. A strip a few
@@ -645,17 +652,22 @@
     padding: 0 20px 18px;
   }
 
-  /* A compact cookbook organizer: each chapter is a lightly framed section
-     (a faint border and fill, modest padding), and its recipes are a dense
-     two-column list of plain rows inside it. No box around each recipe and
-     no divider lines between them, so it reads as neither a wall of cards
-     nor a spreadsheet. */
+  /* A cookbook organizer: each chapter is a lightly framed section, and its
+     recipes are cards inside it, as many across as fit at a readable width
+     (Amelia, 2026-11-04): four or more on a big screen, fewer as it narrows.
+     Each card is its own outlined thing to pick up and drag, not a line in a
+     list. */
   .recipe-print-shell--organizing .recipe-page-rail__section-group {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 2px 6px;
-    margin-top: 8px;
-    padding: 4px 8px 8px;
+    /* At most five: a card is never narrower than 240px, nor than a fifth
+       of the row (less the gaps), so a very wide screen stops at five. */
+    grid-template-columns: repeat(auto-fill, minmax(max(min(240px, 100%), calc((100% - 4 * 10px) / 5)), 1fr));
+    gap: 10px;
+    margin-top: 16px;
+    /* Room around the cards inside the frame, so a chapter reads as a box
+       holding recipes rather than recipes with a line drawn tight round them
+       (Amelia, 2026-11-04). */
+    padding: 16px 20px 20px;
     border: 1px solid color-mix(in srgb, var(--cp-line) 70%, transparent);
     border-radius: 12px;
     background: var(--cp-card);
@@ -668,26 +680,33 @@
   }
   /* Folded: the heading line alone. */
   .recipe-print-shell--organizing .recipe-page-rail__section-group--collapsed {
-    padding-bottom: 4px;
+    padding-block: 10px;
+  }
+  /* The heading's space above the cards has no cards under it here, and left
+     its line sitting high in the bar. */
+  .recipe-print-shell--organizing .recipe-page-rail__section-group--collapsed .recipe-page-rail__section-header {
+    padding-bottom: 0;
   }
 
   .recipe-print-shell--organizing .recipe-page-rail__section-group > .recipe-page-rail__row {
     display: contents;
   }
 
-  /* Each recipe: one 44px row of page number and title. */
+  /* Each recipe: a card of page number and title, outlined in the hairline
+     everything here separates on (no shadow: it is not floating). */
   .recipe-print-shell--organizing .recipe-page-rail__item {
-    padding: 0 8px;
-    border: 0;
-    border-radius: 6px;
-    background: transparent;
+    padding: 0 12px;
+    border: 1px solid var(--cp-line);
+    border-radius: 10px;
+    background: var(--cp-card);
   }
   .recipe-print-shell--organizing .recipe-page-rail__item:hover {
-    background: var(--cp-overlay-hover);
+    border-color: var(--cp-line-strong);
+    background: var(--cp-card);
     transform: none;
   }
-  /* Current or selected: the shared fill and a border drawn INSIDE the row
-     (an inset outline), so it never makes the row taller. */
+  /* Current or selected: the shared fill and border, drawn over the card's
+     own border (an inset outline), so it never makes the card bigger. */
   .recipe-print-shell--organizing .recipe-page-rail__item.is-active,
   .recipe-print-shell--organizing .recipe-page-rail__item.is-selected {
     background: var(--cp-selected-fill);
@@ -696,10 +715,28 @@
     outline-offset: -1px;
   }
   .recipe-print-shell--organizing .recipe-page-rail__item-main {
-    grid-template-columns: 26px 1fr;
-    column-gap: 6px;
+    grid-template-columns: 26px 36px 1fr;
+    column-gap: 10px;
     min-height: 0;
-    height: 44px;
+    height: 56px;
+  }
+  /* A small square of the recipe's photo beside its title. */
+  .recipe-page-rail__photo {
+    display: block;
+    width: 36px;
+    height: 36px;
+    overflow: hidden;
+    border-radius: 6px;
+    background: var(--cp-overlay-hover);
+  }
+  .recipe-print-shell--organizing .recipe-page-rail__label {
+    grid-column: 3;
+  }
+  .recipe-page-rail__photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
   .recipe-print-shell--organizing .recipe-page-rail__num {
     align-self: center;
@@ -707,32 +744,6 @@
   .recipe-print-shell--organizing .recipe-page-rail__title {
     font-size: var(--cp-fs-small);
     font-weight: 600;
-  }
-
-  /* The ungrouped recipes' "Add recipe": the empty slot at the end of the
-     list. It spans both columns and keeps a recipe row's geometry (44px tall,
-     the + where the page number sits, the words where titles start), with a
-     dashed hairline so it reads as a place for one more recipe. As a small
-     pill in one column it floated under the first recipe like a stray button. */
-  .recipe-print-shell--organizing .recipe-page-rail__section-add-card {
-    grid-column: 1 / -1;
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: 16px; /* 8px pad + 16px icon + 16px = the titles' 40px start */
-    min-height: 44px;
-    margin-top: 6px;
-    padding: 0 7px; /* + the 1px border = a row's 8px */
-    border: 1px dashed var(--cp-line-strong);
-    border-radius: 6px;
-    background: transparent;
-    color: var(--cp-ink-soft);
-    font-size: var(--cp-fs-small);
-    font-weight: 600;
-  }
-  .recipe-print-shell--organizing .recipe-page-rail__section-add-card:hover {
-    border-color: var(--cp-accent);
-    background: var(--cp-accent-soft);
-    color: var(--cp-ink);
   }
 
   /* A chapter mid-fold keeps its recipes shown, so the closing frame clips
@@ -765,7 +776,7 @@
 
   .recipe-print-shell--organizing .recipe-page-rail__section-header {
     grid-column: 1 / -1;
-    padding: 0 0 2px;
+    padding: 0 0 6px;
     color: var(--cp-ink);
     font-size: var(--cp-fs-h2);
     text-transform: none;
@@ -804,31 +815,24 @@
     white-space: nowrap;
   }
 
-  .recipe-page-rail__section-add-card {
-    display: flex;
-    /* A FLOOR, not a height. As a grid item this stretches to its row, so the
-       number only has to be smaller than a recipe tile -- at 132px it was
-       taller than the 115px tiles and dragged its whole row up with it, so the
-       one tile sharing that row came out a different size from every other. */
-    min-height: 88px;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px;
-    border: 1px dashed var(--cp-line-strong);
-    border-radius: 12px;
-    background: transparent;
-    color: var(--cp-ink-soft);
-    font-size: var(--cp-fs-small);
-    font-weight: 700;
-    transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+  /* Add recipe in a chapter's heading, and in the heading of the recipes in
+     no chapter, beside the count at the right. */
+  .recipe-page-rail__section-add {
+    flex: 0 0 auto;
+    margin-left: 6px;
+    white-space: nowrap;
   }
-
-  .recipe-page-rail__section-add-card:hover {
-    border-color: var(--cp-accent);
-    background: var(--cp-accent-soft);
-    color: var(--cp-ink);
+  /* The recipes in no chapter: a heading like a chapter's, minus the frame,
+     the fold and the grip. Its name takes the room the chapter's name field
+     does, so the count and Add recipe sit at the right as they do there. */
+  .recipe-page-rail__section-name {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 6px;
+    font-weight: 800;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail__section-header--ungrouped {
+    padding: 8px 0 4px;
   }
 
   .recipe-print-shell--organizing .recipe-page-rail__section-title-input {
@@ -867,11 +871,10 @@
    same `.recipe-page-rail__item` elements slide (via a Web Animations FLIP in
    runOrganizeFlip) from their page-list positions into the organizer-grid
    positions and back. The mode chrome that only exists while organizing —
-   section headers, the "Add recipe" cards, the organizer bar — fades in behind
+   section headers, the organizer bar — fades in behind
    the moving tiles instead of popping. */
 .recipe-print-shell--organize-animating .recipe-organize-bar,
-.recipe-print-shell--organize-animating .recipe-page-rail__section-header,
-.recipe-print-shell--organize-animating .recipe-page-rail__section-add-card {
+.recipe-print-shell--organize-animating .recipe-page-rail__section-header {
   animation: cb-organize-chrome-in 320ms ease both;
 }
 
@@ -887,8 +890,7 @@
     transition: none;
   }
   .recipe-print-shell--organize-animating .recipe-organize-bar,
-  .recipe-print-shell--organize-animating .recipe-page-rail__section-header,
-  .recipe-print-shell--organize-animating .recipe-page-rail__section-add-card {
+  .recipe-print-shell--organize-animating .recipe-page-rail__section-header {
     animation: none;
   }
 }
@@ -1182,6 +1184,16 @@
   border-radius: 999px;
   background: var(--cp-accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-accent) 24%, transparent);
+}
+/* A whole target outlined, not a place between two: a folded chapter's bar. */
+.rail-drop-line.rail-drop-line--box {
+  border: 2px solid var(--cp-accent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--cp-accent) 8%, transparent);
+  box-shadow: none;
+}
+.rail-drop-line--box::before {
+  display: none;
 }
 .rail-drop-line::before {
   content: "";
@@ -1926,6 +1938,17 @@
 }
 .recipe-text-toolbar__size svg {
   flex: none;
+}
+.recipe-text-toolbar__size-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+/* In Customize theme's rows the crown goes before the dropdown, so the
+   dropdowns stay lined up at the panel's edge and a crowned row says which
+   size to put back to Default. */
+.recipe-customize__part-row .pro-badge {
+  order: -1;
 }
 /* A size being typed while the list is open: underlined like text being
    entered, until Enter applies it. */
@@ -9193,6 +9216,25 @@ textarea.recipe-card__toc-title {
   overflow-wrap: anywhere;
 }
 
+/* The link is part of the recipe's details (lib/pageLooks.tsx), so a details
+   size sets its own `--recipe-font-scale`. The footer's size is the theme's,
+   at the book's scale; the link keeps that and grows or shrinks by how far
+   its own scale is from the book's. */
+.recipe-card__footer {
+  --recipe-card-footer-book-scale: var(--recipe-font-scale, 1);
+}
+.recipe-card__footer-source[data-element] {
+  font-size: calc(1em * var(--recipe-font-scale, 1) / var(--recipe-card-footer-book-scale, 1));
+}
+/* And the room kept clear for the footer grows with a bigger link (the card
+   sets `--recipe-card-footer-link-scale`, the details' size). Never smaller
+   than the theme's own. */
+.recipe-card {
+  --recipe-card-footer-reserve: calc(
+    0.28in * max(1, var(--recipe-card-footer-link-scale, var(--recipe-font-scale, 1)) / var(--recipe-font-scale, 1))
+  );
+}
+
 /* The footer is pinned to the bottom of the fixed-size card (see
    `.recipe-card__footer`'s `position: absolute` above) so content must leave
    room for it instead of running underneath. Reserved only where the footer
@@ -9848,17 +9890,6 @@ textarea.recipe-card__toc-title {
   margin-bottom: 16px;
 }
 
-.recipe-add-dialog__target-label {
-  flex: 0 0 auto;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-small);
-  font-weight: var(--cp-fw-medium);
-}
-
-.recipe-add-dialog__target .select-shell {
-  flex: 1 1 auto;
-  min-width: 0;
-}
 
 /* Outside `__body` so it stays put while the added list scrolls. */
 .recipe-add-dialog__footer {

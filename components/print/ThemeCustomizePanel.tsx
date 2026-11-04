@@ -124,7 +124,7 @@ export function ThemeCustomizePanel({
 const RECIPE_PARTS: Array<{ element: string; label: string }> = [
   { element: "title", label: "Titles" },
   { element: "notes", label: "Notes" },
-  { element: "details", label: "Time and servings" },
+  { element: "details", label: "Time, servings and link" },
   { element: "ingredients-headings", label: "Ingredient headings" },
   { element: "ingredients", label: "Ingredients" },
   { element: "steps-headings", label: "Step headings" },

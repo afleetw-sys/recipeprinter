@@ -48,7 +48,7 @@ import type { RecipeCardEditTarget } from "@/lib/recipeCardLayout";
 import { formatRecipeTime } from "@/lib/time";
 import { composeNote } from "@/lib/recipeNote";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
-import { PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
+import { NOT_IN_A_CHAPTER_LABEL, PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
 import { deckIndexForPendingSlot, landingForRecipe } from "@/lib/pendingDeckSlot";
 import {
@@ -1252,9 +1252,28 @@ export default function PrintPage() {
         // just under the header. Dragging a recipe up past the first one in
         // its own chapter crosses the header, and that is where it meant to
         // go; a folded or empty chapter still takes a drop here too.
-        const sectionHead = geometry.sectionHeads.find((entry) => contains(entry.rect));
+        // A folded chapter is only its bar, with nowhere below the heading to
+        // open a gap: the whole bar is the target, outlined (Amelia,
+        // 2026-11-04).
+        const foldedBar = (sectionId: string) =>
+          railScrollRef.current
+            ?.querySelector(`[data-rail-section-head="${sectionId}"]`)
+            ?.closest<HTMLElement>(".recipe-page-rail__section-group--collapsed") ?? null;
+        const sectionHead = geometry.sectionHeads.find((entry) => {
+          if (contains(entry.rect)) return true;
+          const bar = foldedBar(entry.id);
+          return bar ? contains(bar.getBoundingClientRect()) : false;
+        });
         if (sectionHead) {
           const sectionId = sectionHead.id;
+          const bar = foldedBar(sectionId);
+          if (bar) {
+            const rect = bar.getBoundingClientRect();
+            return {
+              indicator: { top: rect.top, left: rect.left, width: rect.width, height: rect.height, box: true },
+              commit: () => projectMeta.moveItems(movingIds, sectionId, 0),
+            };
+          }
           const rect = sectionHead.rect;
           return {
             indicator: { top: rect.bottom - 1, left: rect.left, width: rect.width, height: 3 },
@@ -2832,6 +2851,14 @@ export default function PrintPage() {
       itemIdsForSection(sectionId).filter((itemId) => !moving.has(itemId)).length,
     );
     track("cookbook_recipes_moved_to_section", { count: ids.length, via: "tile_menu" });
+  }
+
+  /** Out of their chapter, into the recipes in no chapter: the book's group
+      with no name, or a new one at the end when every recipe is in a
+      chapter. */
+  function removeRecipesFromChapter(ids: string[]) {
+    const target = sections.find((section) => !section.title?.trim())?.id ?? projectMeta.addSection();
+    moveRecipesToSection(ids, target);
   }
 
   /** What this page has set up on screen, as the layout half of a project's
@@ -5524,7 +5551,7 @@ export default function PrintPage() {
       if (section.title?.trim()) return [{ id: section.id, label: section.title.trim() }];
       if (hasUngrouped || (section.items.length === 0 && section.id !== pendingAddSectionId)) return [];
       hasUngrouped = true;
-      return [{ id: section.id, label: "No chapter" }];
+      return [{ id: section.id, label: NOT_IN_A_CHAPTER_LABEL }];
     });
     return {
       options,
@@ -6107,13 +6134,13 @@ export default function PrintPage() {
         chapter={(() => {
           const options = projectMeta.meta.sections.map((section) => ({
             id: section.id,
-            title: section.title?.trim() || "No chapter",
+            title: section.title?.trim() || NOT_IN_A_CHAPTER_LABEL,
           }));
           const currentId =
             projectMeta.meta.sections.find((section) => section.itemIds.includes(recipeItem.id))?.id ?? "";
           return {
             currentId,
-            currentTitle: options.find((option) => option.id === currentId)?.title ?? "No chapter",
+            currentTitle: options.find((option) => option.id === currentId)?.title ?? NOT_IN_A_CHAPTER_LABEL,
             options,
             onMove: (sectionId: string) => moveRecipeToSection(recipeItem.id, sectionId),
             onNewChapter: () => moveRecipeToNewSection(recipeItem.id),
@@ -7043,8 +7070,12 @@ export default function PrintPage() {
                     extra "has a recipe" check here hid Save on an empty book
                     on desktop only, leaving a signed-out cook no way to keep
                     it. */}
+                {/* A cookbook saves itself, so its "Saved" is a state, read
+                    first, before the undo and redo that change it (Amelia,
+                    2026-11-04). On cards it is the Save button, beside Print. */}
+                {cookbookMode && renderSaveControl("header")}
                 {historyControls("header")}
-                {renderSaveControl("header")}
+                {!cookbookMode && renderSaveControl("header")}
 
                 {/* Print is always here, as it is on a phone's bottom bar:
                     the page is for printing, and a button that appears only
@@ -7134,7 +7165,9 @@ export default function PrintPage() {
         } ${organizeWide ? "recipe-print-shell--organize-wide" : ""} ${
           organizeAnimating ? "recipe-print-shell--organize-animating" : ""
         } ${
-          sidePanelsHidden ? "recipe-print-shell--rail-collapsed recipe-print-shell--panel-collapsed" : ""
+          // The organizer is the whole page; panels hidden before it can't
+          // fold it away.
+          sidePanelsHidden && !organizeWide ? "recipe-print-shell--rail-collapsed recipe-print-shell--panel-collapsed" : ""
         }`}
         style={
           {
@@ -7238,6 +7271,7 @@ export default function PrintPage() {
           addBlankPage={() => addBlankPage()}
           makeSectionFromSelection={makeSectionFromSelection}
           moveRecipesToSection={moveRecipesToSection}
+          removeRecipesFromChapter={removeRecipesFromChapter}
           railSortMode={railSortMode}
           applyRailSort={applyRailSort}
           addMenuOpen={addMenuOpen}

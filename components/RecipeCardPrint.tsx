@@ -1322,6 +1322,15 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     return blocks;
   }
 
+  // The footer's link is part of the details, at their size. The room kept
+  // clear above the footer grows with it (see `--recipe-card-footer-reserve`
+  // in print.css), so a bigger link never runs under the steps.
+  const linkScale = el("details").style?.["--recipe-font-scale" as keyof CSSProperties];
+  const cardStyle = {
+    ...(titleFit && titleFit < 1 ? { "--recipe-title-fit": titleFit } : {}),
+    ...(linkScale !== undefined ? { "--recipe-card-footer-link-scale": linkScale } : {}),
+  } as CSSProperties;
+
   if (blank) {
     return (
       <article
@@ -1352,7 +1361,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
          stays put (see "Right-to-left recipes" in app/print/print.css). */
       lang={recipe.language}
       dir={recipeTextDirection(recipe.language)}
-      style={titleFit && titleFit < 1 ? ({ "--recipe-title-fit": titleFit } as CSSProperties) : undefined}
+      style={Object.keys(cardStyle).length > 0 ? cardStyle : undefined}
     >
       <div className="recipe-card__accent" aria-hidden />
       <TemplateDecoration
@@ -1766,6 +1775,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           {showSourceUrl && showHeader && (
             canEdit && inlineEdit && (source || editingNow({ kind: "sourceUrl" })) ? (
               <input
+                {...el("details")}
                 ref={focusIfEditing({ kind: "sourceUrl" })}
                 className={`recipe-card__inline-input recipe-card__footer-source${source ? "" : " recipe-card__inline-input--new"}`}
                 dir="auto"
@@ -1782,7 +1792,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 onKeyDown={handleEditKeyDown}
               />
             ) : (
-              source && <span className="recipe-card__footer-source">{source}</span>
+              source && <span {...el("details")} className="recipe-card__footer-source">{source}</span>
             )
           )}
         </footer>
