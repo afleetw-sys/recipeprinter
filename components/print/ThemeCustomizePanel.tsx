@@ -102,15 +102,18 @@ export function ThemeCustomizePanel({
         </div>
       )}
 
-      {/* Pinned to the panel's foot, under whatever scrolls above it. */}
-      {customized && (
-        <div className="recipe-customize__foot">
+      {/* Pinned to the panel's foot, under whatever scrolls above it. A
+          theme as it ships has nothing to reset, so the foot just says so. */}
+      <div className="recipe-customize__foot">
+        {customized ? (
           <button type="button" className="btn-ghost btn-compact recipe-customize__reset" onClick={onReset}>
             <UndoIcon size={ICON_SIZE.sm} />
             Reset to theme defaults
           </button>
-        </div>
-      )}
+        ) : (
+          <p className="recipe-customize__defaults">Using theme defaults</p>
+        )}
+      </div>
     </div>
   );
 }

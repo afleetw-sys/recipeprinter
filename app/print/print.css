@@ -3682,6 +3682,18 @@ textarea.recipe-page-fields__input {
   display: inline-flex;
   align-items: center;
 }
+/* A theme as it ships: the Reset button's place, said in plain text, at the
+   button's height so the foot doesn't change size when one replaces the
+   other. Lined up with the button's label. */
+.recipe-customize__defaults {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  margin: 0;
+  padding: 0 11px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+}
 
 .recipe-template-seasonal-toggle[aria-expanded="true"] svg {
   transform: rotate(180deg);
@@ -8510,6 +8522,11 @@ textarea.recipe-card__toc-title {
   outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
   outline-offset: 2px;
   border-radius: 3px;
+}
+/* A card's "Serves 4" outlines whole, label and all, like a cookbook fact;
+   not its count again inside that. */
+.recipe-card__meta-serves .recipe-card__inline-input--meta:hover {
+  outline: none;
 }
 
 /* An ingredient's words as one block beside its bullet, so a ring round them
