@@ -1940,6 +1940,10 @@
    size. */
 .text-size-menu.text-size-menu {
   min-width: 8.5em;
+  /* The list's top padding is its heading's instead (below): a sticky
+     heading sticks under the padding, and the sizes scrolled up through
+     that gap above it. */
+  padding-top: 0;
   max-height: min(22rem, calc(100vh - 32px));
   overflow-y: auto;
   /* It still scrolls (wheel, trackpad, touch); it just draws no bar, which
@@ -1957,8 +1961,8 @@
   top: 0;
   z-index: 1;
   margin: 0;
-  padding: 2px 10px 4px;
-  background: inherit;
+  padding: 8px 10px 4px;
+  background: var(--cp-card);
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-micro, 10px);
   font-weight: 700;
