@@ -1177,6 +1177,16 @@
   background: var(--cp-accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-accent) 24%, transparent);
 }
+/* A whole target outlined, not a place between two: a folded chapter's bar. */
+.rail-drop-line.rail-drop-line--box {
+  border: 2px solid var(--cp-accent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--cp-accent) 8%, transparent);
+  box-shadow: none;
+}
+.rail-drop-line--box::before {
+  display: none;
+}
 .rail-drop-line::before {
   content: "";
   position: absolute;

@@ -1252,9 +1252,28 @@ export default function PrintPage() {
         // just under the header. Dragging a recipe up past the first one in
         // its own chapter crosses the header, and that is where it meant to
         // go; a folded or empty chapter still takes a drop here too.
-        const sectionHead = geometry.sectionHeads.find((entry) => contains(entry.rect));
+        // A folded chapter is only its bar, with nowhere below the heading to
+        // open a gap: the whole bar is the target, outlined (Amelia,
+        // 2026-11-04).
+        const foldedBar = (sectionId: string) =>
+          railScrollRef.current
+            ?.querySelector(`[data-rail-section-head="${sectionId}"]`)
+            ?.closest<HTMLElement>(".recipe-page-rail__section-group--collapsed") ?? null;
+        const sectionHead = geometry.sectionHeads.find((entry) => {
+          if (contains(entry.rect)) return true;
+          const bar = foldedBar(entry.id);
+          return bar ? contains(bar.getBoundingClientRect()) : false;
+        });
         if (sectionHead) {
           const sectionId = sectionHead.id;
+          const bar = foldedBar(sectionId);
+          if (bar) {
+            const rect = bar.getBoundingClientRect();
+            return {
+              indicator: { top: rect.top, left: rect.left, width: rect.width, height: rect.height, box: true },
+              commit: () => projectMeta.moveItems(movingIds, sectionId, 0),
+            };
+          }
           const rect = sectionHead.rect;
           return {
             indicator: { top: rect.bottom - 1, left: rect.left, width: rect.width, height: 3 },

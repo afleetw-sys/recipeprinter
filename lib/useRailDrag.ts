@@ -6,7 +6,9 @@ export type RailDragKind = "recipe" | "section";
 
 /** Where a live drag would land: a viewport-space indicator line + the commit. */
 export interface RailDropResolved {
-  indicator: { top: number; left: number; width: number; height?: number };
+  /** `box` outlines the area instead of drawing a line: a whole target, like
+      a folded chapter's bar. */
+  indicator: { top: number; left: number; width: number; height?: number; box?: boolean };
   /** The organizer's grid opens an empty tile-sized slot where the card will
       land instead of drawing a line, and the other cards move aside for it,
       the way a phone's home screen does: placed before or after the element
@@ -212,12 +214,24 @@ export function useRailDrag(
         el.style.display = "none";
         return;
       }
+      // A whole target (a folded chapter) is outlined, not opened, so a gap
+      // left open elsewhere closes and the carried card shows in its place.
+      if (resolved?.indicator.box && slot.current) {
+        slot.current.remove();
+        slot.current = null;
+        if (hiddenSource.current) {
+          hiddenSource.current.style.display = "";
+          hiddenSource.current = null;
+        }
+        onLayoutChangeRef.current?.();
+      }
       if (resolved) {
         el.style.display = "block";
         el.style.top = `${resolved.indicator.top}px`;
         el.style.left = `${resolved.indicator.left}px`;
         el.style.width = `${resolved.indicator.width}px`;
         el.style.height = `${resolved.indicator.height ?? 3}px`;
+        el.classList.toggle("rail-drop-line--box", Boolean(resolved.indicator.box));
       } else {
         el.style.display = "none";
       }
