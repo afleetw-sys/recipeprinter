@@ -15,9 +15,13 @@ import type { RecipePrintTemplate } from "@/types/recipe";
  * is 3.8:1, Counter's badges 2.5:1, Diner's outlined title 3.4:1), so their
  * choices are as bright as they are.
  *
+ * Names are plain (Red, Blue, Green): each theme's Blue is its own shade, but
+ * a cook choosing one wants the color, not a paint-chip name for it.
+ *
  * Poster takes no accent: its color is its band, ten pop colors that take
  * turns by recipe, and the choice there is that band (`POSTER_COLORS`).
- * Christmas, Fall and Halloween take nothing: their art is in fixed colors.
+ * Garden, Christmas, Fall and Halloween take nothing: their illustrations
+ * (Garden's tomatoes and hills) are in fixed colors.
  */
 export interface AccentOption {
   id: string;
@@ -27,98 +31,91 @@ export interface AccentOption {
 
 export const THEME_PALETTES: Partial<Record<RecipePrintTemplate, readonly AccentOption[]>> = {
   classic: [
-    { id: "navy", label: "Navy", hex: "#2b4a7c" },
-    { id: "forest", label: "Forest", hex: "#2f6b4f" },
-    { id: "burgundy", label: "Burgundy", hex: "#8a2c3b" },
+    { id: "navy", label: "Blue", hex: "#2b4a7c" },
+    { id: "forest", label: "Green", hex: "#2f6b4f" },
+    { id: "burgundy", label: "Red", hex: "#8a2c3b" },
     { id: "teal", label: "Teal", hex: "#1f6f78" },
-    { id: "slate", label: "Slate", hex: "#4a5563" },
-    { id: "plum", label: "Plum", hex: "#5d3f73" },
+    { id: "slate", label: "Gray", hex: "#4a5563" },
+    { id: "plum", label: "Purple", hex: "#5d3f73" },
   ],
   heirloom: [
-    { id: "oxblood", label: "Oxblood", hex: "#7d1f26" },
-    { id: "bottle", label: "Bottle green", hex: "#2f5a3c" },
-    { id: "ink", label: "Ink blue", hex: "#2c3e66" },
-    { id: "tobacco", label: "Tobacco", hex: "#7a4a22" },
-    { id: "plum", label: "Plum", hex: "#5a2e4f" },
+    { id: "oxblood", label: "Red", hex: "#7d1f26" },
+    { id: "bottle", label: "Green", hex: "#2f5a3c" },
+    { id: "ink", label: "Blue", hex: "#2c3e66" },
+    { id: "tobacco", label: "Brown", hex: "#7a4a22" },
+    { id: "plum", label: "Purple", hex: "#5a2e4f" },
   ],
   // Brights, as bright as Bistro's own coral against its blue checks.
   bistro: [
-    { id: "raspberry", label: "Raspberry", hex: "#d6336c" },
+    { id: "raspberry", label: "Pink", hex: "#d6336c" },
     { id: "orange", label: "Orange", hex: "#e2611a" },
-    { id: "kelly", label: "Kelly green", hex: "#2c9a55" },
+    { id: "kelly", label: "Green", hex: "#2c9a55" },
     { id: "teal", label: "Teal", hex: "#14958c" },
-    { id: "grape", label: "Grape", hex: "#8e44c9" },
+    { id: "grape", label: "Purple", hex: "#8e44c9" },
   ],
   pantry: [
-    { id: "slate", label: "Slate blue", hex: "#4b5d73" },
-    { id: "sage", label: "Sage", hex: "#55684f" },
-    { id: "clay", label: "Clay", hex: "#9a4f36" },
-    { id: "plum", label: "Plum", hex: "#5f4562" },
-    { id: "ink", label: "Ink", hex: "#2f3a4a" },
+    { id: "slate", label: "Blue", hex: "#4b5d73" },
+    { id: "sage", label: "Green", hex: "#55684f" },
+    { id: "clay", label: "Brown", hex: "#9a4f36" },
+    { id: "plum", label: "Purple", hex: "#5f4562" },
+    { id: "ink", label: "Gray", hex: "#2f3a4a" },
   ],
   counter: [
-    { id: "tomato", label: "Tomato", hex: "#d9534f" },
+    { id: "tomato", label: "Red", hex: "#d9534f" },
     { id: "teal", label: "Teal", hex: "#2f8f86" },
-    { id: "mustard", label: "Mustard", hex: "#b97e14" },
-    { id: "cobalt", label: "Cobalt", hex: "#4a74c9" },
+    { id: "mustard", label: "Gold", hex: "#b97e14" },
+    { id: "cobalt", label: "Blue", hex: "#4a74c9" },
     { id: "pink", label: "Pink", hex: "#d4607f" },
   ],
   keepsake: [
-    { id: "sepia", label: "Sepia", hex: "#6e4a2f" },
-    { id: "rosewood", label: "Rosewood", hex: "#7f3a3f" },
+    { id: "sepia", label: "Brown", hex: "#6e4a2f" },
+    { id: "rosewood", label: "Red", hex: "#7f3a3f" },
     { id: "olive", label: "Olive", hex: "#5c5a2e" },
-    { id: "navy", label: "Faded navy", hex: "#3c4d6b" },
-    { id: "moss", label: "Moss", hex: "#4d5e3a" },
+    { id: "navy", label: "Blue", hex: "#3c4d6b" },
+    { id: "moss", label: "Green", hex: "#4d5e3a" },
   ],
   typewriter: [
-    { id: "ink", label: "Ink blue", hex: "#233a6b" },
-    { id: "ribbon", label: "Ribbon red", hex: "#a32a2a" },
-    { id: "green", label: "Green ink", hex: "#2f5a3a" },
-    { id: "sepia", label: "Sepia", hex: "#5e4630" },
-    { id: "violet", label: "Violet ink", hex: "#4b3a78" },
+    { id: "ink", label: "Blue", hex: "#233a6b" },
+    { id: "ribbon", label: "Red", hex: "#a32a2a" },
+    { id: "green", label: "Green", hex: "#2f5a3a" },
+    { id: "sepia", label: "Brown", hex: "#5e4630" },
+    { id: "violet", label: "Purple", hex: "#4b3a78" },
   ],
   document: [
-    { id: "navy", label: "Navy", hex: "#2f4a7a" },
+    { id: "navy", label: "Blue", hex: "#2f4a7a" },
     { id: "teal", label: "Teal", hex: "#1f6f6b" },
-    { id: "forest", label: "Forest", hex: "#3e6b3a" },
-    { id: "brick", label: "Brick", hex: "#9c3b25" },
-    { id: "berry", label: "Berry", hex: "#8e2a52" },
-    { id: "plum", label: "Plum", hex: "#5e3a78" },
-  ],
-  garden: [
-    { id: "moss", label: "Moss", hex: "#4a6b3a" },
-    { id: "fern", label: "Fern", hex: "#3f6b4a" },
-    { id: "sage", label: "Sage", hex: "#56684f" },
-    { id: "eggplant", label: "Eggplant", hex: "#5a3d5c" },
-    { id: "slate", label: "Slate", hex: "#4a5a66" },
+    { id: "forest", label: "Green", hex: "#3e6b3a" },
+    { id: "brick", label: "Red", hex: "#9c3b25" },
+    { id: "berry", label: "Pink", hex: "#8e2a52" },
+    { id: "plum", label: "Purple", hex: "#5e3a78" },
   ],
   quilt: [
-    { id: "barn", label: "Barn red", hex: "#9a2e25" },
-    { id: "indigo", label: "Indigo", hex: "#33457a" },
-    { id: "mustard", label: "Mustard", hex: "#80600f" },
-    { id: "plum", label: "Plum", hex: "#6a3355" },
+    { id: "barn", label: "Red", hex: "#9a2e25" },
+    { id: "indigo", label: "Blue", hex: "#33457a" },
+    { id: "mustard", label: "Gold", hex: "#80600f" },
+    { id: "plum", label: "Purple", hex: "#6a3355" },
     { id: "teal", label: "Teal", hex: "#2a6466" },
   ],
   market: [
-    { id: "tomato", label: "Tomato", hex: "#b5402c" },
-    { id: "eggplant", label: "Eggplant", hex: "#5e3a6b" },
-    { id: "leaf", label: "Leaf", hex: "#3a6e35" },
-    { id: "carrot", label: "Carrot", hex: "#a14a12" },
-    { id: "blueberry", label: "Blueberry", hex: "#34518a" },
+    { id: "tomato", label: "Red", hex: "#b5402c" },
+    { id: "eggplant", label: "Purple", hex: "#5e3a6b" },
+    { id: "leaf", label: "Green", hex: "#3a6e35" },
+    { id: "carrot", label: "Orange", hex: "#a14a12" },
+    { id: "blueberry", label: "Blue", hex: "#34518a" },
   ],
   supper: [
-    { id: "bottle", label: "Bottle green", hex: "#2e5940" },
-    { id: "navy", label: "Navy", hex: "#2c3f63" },
-    { id: "chocolate", label: "Chocolate", hex: "#5a3626" },
-    { id: "plum", label: "Plum", hex: "#5a2e4c" },
-    { id: "rust", label: "Rust", hex: "#8a3b17" },
+    { id: "bottle", label: "Green", hex: "#2e5940" },
+    { id: "navy", label: "Blue", hex: "#2c3f63" },
+    { id: "chocolate", label: "Brown", hex: "#5a3626" },
+    { id: "plum", label: "Purple", hex: "#5a2e4c" },
+    { id: "rust", label: "Orange", hex: "#8a3b17" },
   ],
   diner: [
-    { id: "pink", label: "Hot pink", hex: "#e23e7a" },
-    { id: "cobalt", label: "Cobalt", hex: "#2f6fd6" },
+    { id: "pink", label: "Pink", hex: "#e23e7a" },
+    { id: "cobalt", label: "Blue", hex: "#2f6fd6" },
     { id: "teal", label: "Teal", hex: "#1a9a90" },
     { id: "orange", label: "Orange", hex: "#d85a12" },
-    { id: "grape", label: "Grape", hex: "#7a4cc2" },
+    { id: "grape", label: "Purple", hex: "#7a4cc2" },
   ],
 };
 
@@ -169,14 +166,14 @@ export function normalizeAccent(value: unknown, template: RecipePrintTemplate): 
 export const POSTER_COLORS: readonly AccentOption[] = [
   { id: "0", label: "Lime", hex: "#bbf55b" },
   { id: "1", label: "Lavender", hex: "#b5aacb" },
-  { id: "2", label: "Sea green", hex: "#64a9a4" },
-  { id: "3", label: "Apricot", hex: "#eca360" },
-  { id: "4", label: "Cornflower", hex: "#749dcf" },
-  { id: "5", label: "Butter", hex: "#f0e999" },
-  { id: "6", label: "Magenta", hex: "#ac5280" },
-  { id: "7", label: "Sky", hex: "#bfd3e9" },
-  { id: "8", label: "Clay", hex: "#ac7a63" },
-  { id: "9", label: "Mint", hex: "#87c39c" },
+  { id: "2", label: "Teal", hex: "#64a9a4" },
+  { id: "3", label: "Orange", hex: "#eca360" },
+  { id: "4", label: "Blue", hex: "#749dcf" },
+  { id: "5", label: "Yellow", hex: "#f0e999" },
+  { id: "6", label: "Pink", hex: "#ac5280" },
+  { id: "7", label: "Light blue", hex: "#bfd3e9" },
+  { id: "8", label: "Brown", hex: "#ac7a63" },
+  { id: "9", label: "Green", hex: "#87c39c" },
 ];
 
 export function normalizePosterColor(value: unknown): number | null {
