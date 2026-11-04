@@ -37,6 +37,7 @@ import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { WebsitePhotosOption } from "@/components/print/WebsitePhotosOption";
 import { MobileStructureSheet, type MobileBookSheet } from "@/components/print/MobileStructureSheet";
 import { EditTips } from "@/components/print/EditTips";
+import { CardPhotosTiles } from "@/components/print/PrintSetupControls";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
 import { PageSettings, type LookOption, type PageField } from "@/components/print/PageSettings";
@@ -3508,9 +3509,10 @@ export default function PrintPage() {
   // which only Pro can add. A setting stored while Pro is ignored once it
   // lapses, and while the job is down to one recipe.
   const twoPerSheetOffered = cardSize === "card-6x4" && !cookbookMode && !singleRecipeOnly && recipeCount >= 2;
-  /** Recipe cards' phone "Every recipe" sheet: offered once there can be more
-      than one recipe and some recipe has a photo or a link to show or hide. */
-  const cardEveryRecipe = !cookbookMode && !singleRecipeOnly && (anyRecipeHasImage || anyRecipeHasSourceUrl);
+  /** Recipe cards' phone Photos sheet (None / In card): offered once there can
+      be more than one card and some card has a photo. One card's own photo
+      picker is that card's setting. */
+  const cardPhotosSheet = !cookbookMode && !singleRecipeOnly && anyRecipeHasImage;
   // An unbought cookbook's free preview size (lib/cookbookFreeSize): how many
   // more recipes this book can take, or null when nothing caps it (a bought
   // book, a card project, or the allowance not live yet).
@@ -7455,7 +7457,10 @@ export default function PrintPage() {
                 they now sit in this sheet, as they sit under "Every recipe" in
                 the desktop panel. With exactly one recipe possible there is no
                 "every" (`singleRecipeOnly`): that page's own toolbar covers it. */}
-            {(cookbookMode || cardEveryRecipe) && (
+            {/* Recipe cards have no "Every recipe" (Amelia, 2026-11-04): a link
+                a card doesn't want is deleted on the page, and the one choice
+                left for every card is its Photos, so the button says that. */}
+            {(cookbookMode || cardPhotosSheet) && (
               <button
                 type="button"
                 className={`recipe-mobile-toolbar__btn ${bookSheet === "recipes" ? "is-active" : ""}`}
@@ -7470,7 +7475,7 @@ export default function PrintPage() {
                 <span className="recipe-mobile-toolbar__btn-icon">
                   <ImageIcon size={ICON_SIZE.lg} />
                 </span>
-                Every recipe
+                {cookbookMode ? "Every recipe" : "Photos"}
               </button>
             )}
           </div>
@@ -7545,24 +7550,16 @@ export default function PrintPage() {
           </MobileSheet>
         )}
 
-        {/* Cards' "Every recipe": the same two checkboxes the desktop panel's
-            group holds (see PrintSetupControls). A cookbook's sheet lives in
-            MobileStructureSheet, with its photo layouts. */}
-        {cardEveryRecipe && (
+        {/* Recipe cards' Photos, the same tiles the desktop panel has. */}
+        {cardPhotosSheet && (
           <MobileSheet
             open={bookSheet === "recipes"}
             onClose={() => setBookSheet(null)}
-            title="Every recipe"
+            title="Photos"
             className="recipe-structure-sheet"
           >
             <div className="recipe-structure-sheet__settings">
-              {anyRecipeHasImage && (
-                <Checkbox
-                    label="Recipe photo"
-                    checked={showPhoto}
-                    onChange={(event) => setAllShowPhoto(event.target.checked)}
-                />
-              )}
+              <CardPhotosTiles showPhoto={showPhoto} setShowPhoto={setAllShowPhoto} idPrefix="sheet-card-photos" />
             </div>
           </MobileSheet>
         )}
