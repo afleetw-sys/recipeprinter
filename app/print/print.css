@@ -4998,6 +4998,26 @@ textarea.recipe-page-fields__input {
   font-size: calc(var(--cp-fs-caption) / var(--page-scale, 1));
 }
 
+/* Looks like a secondary `.btn-header` at the workspace's size, so its sizes
+   are divided by the page's scale like the words above it. */
+.photo-placeholder__button {
+  display: inline-flex;
+  align-items: center;
+  min-height: calc(32 * var(--placeholder-px));
+  margin-top: calc(8 * var(--placeholder-px));
+  padding: 0 calc(12 * var(--placeholder-px));
+  border: var(--placeholder-px) solid var(--cp-line-strong);
+  border-radius: calc(9 * var(--placeholder-px));
+  background: transparent;
+  color: var(--cp-ink);
+  font-size: calc(var(--cp-fs-small) / var(--page-scale, 1));
+  font-weight: 600;
+  transition: background 150ms ease;
+}
+.recipe-spread__page.is-focused .photo-placeholder:hover .photo-placeholder__button {
+  background: var(--cp-overlay-hover);
+}
+
 .recipe-spread__page.is-focused .photo-placeholder {
   cursor: pointer;
 }
