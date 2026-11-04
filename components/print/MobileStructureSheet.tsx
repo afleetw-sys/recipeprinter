@@ -151,11 +151,6 @@ export function MobileStructureSheet({
                 recipe can be given a link by hand, and this is the book-wide
                 default it is measured against. */}
             <div className="recipe-structure-sheet__settings">
-              <Checkbox
-                  label="Recipe link"
-                  checked={showSourceUrl}
-                  onChange={(event) => setShowSourceUrl(event.target.checked)}
-              />
               <div
                 data-photo-style-section
                 className={`recipe-photo-style-group ${photoStyleTip ? "is-highlighted" : ""}`}

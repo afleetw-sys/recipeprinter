@@ -7588,13 +7588,6 @@ export default function PrintPage() {
                     onChange={(event) => setAllShowPhoto(event.target.checked)}
                 />
               )}
-              {anyRecipeHasSourceUrl && (
-                <Checkbox
-                    label="Recipe link"
-                    checked={showSourceUrl}
-                    onChange={(event) => setBookShowSourceUrl(event.target.checked)}
-                />
-              )}
             </div>
           </MobileSheet>
         )}

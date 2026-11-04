@@ -141,15 +141,11 @@ export function PrintSetupControls({
               there is no reason to hide them all at once. A book saved with
               the old switch off keeps that setting (`showDescription`), so
               no blurb it hid comes back. */}
-          {/* Always offered in a cookbook, not only once a recipe has a link:
-              a recipe can be given one by hand from its own toolbar, and this is
-              the book-wide default that link is measured against. Toggling it
-              resets every recipe's own choice, as the Photos tiles below do. */}
-          <Checkbox
-              label="Recipe link"
-              checked={showSourceUrl}
-              onChange={(event) => setShowSourceUrl(event.target.checked)}
-          />
+          {/* No "Recipe link" switch (Amelia, 2026-11-03). A recipe that has a
+              link shows it, and a cook who doesn't want it deletes it from the
+              page. A book saved with the old switch off keeps its links off
+              (`showSourceUrl`), and the page toolbar's link button still shows
+              or hides one recipe's link. */}
           {/* The same section label as Themes below it. It was plain text while
               an "Every recipe" eyebrow headed this group; with the Book tab
               saying what these apply to, Photos is a section like Themes. */}
@@ -203,20 +199,13 @@ export function PrintSetupControls({
           link toggle). A second control for the same one recipe, sitting in a
           different panel, was redundant at best and disagreed with itself at
           worst; it's only offered once there's a real "every" for it to mean. */}
-      {!cookbookMode && multiRecipeCapable && (anyRecipeHasImage || anyRecipeHasSourceUrl) && (
+      {!cookbookMode && multiRecipeCapable && anyRecipeHasImage && (
         <CheckboxGroup label="Every recipe" className="recipe-config-section recipe-config-section--settings">
           {anyRecipeHasImage && (
             <Checkbox
                 label="Recipe photo"
                 checked={showPhoto}
                 onChange={(event) => setShowPhoto(event.target.checked)}
-            />
-          )}
-          {anyRecipeHasSourceUrl && (
-            <Checkbox
-                label="Recipe link"
-                checked={showSourceUrl}
-                onChange={(event) => setShowSourceUrl(event.target.checked)}
             />
           )}
         </CheckboxGroup>

@@ -437,7 +437,6 @@ export function PrintDeck(props: PrintDeckProps) {
     showSourceUrl,
     setShowSourceUrl,
     showDescription,
-    singleRecipeOnly,
     sheets,
     navItems,
     spreads,
@@ -743,13 +742,14 @@ export function PrintDeck(props: PrintDeckProps) {
     // instead (the link's counterpart to the photo picker's per-recipe "None"),
     // and choosing what the book already does drops the override so the recipe
     // follows the book again. Multi-recipe recipe cards have no per-recipe
-    // placement, so there the panel's "Every recipe" section stays the one place
-    // to reach it.
+    // placement, so there it flips the cards' setting, as on a single card.
     const linkCookbook = Boolean(projectMeta.meta.cookbookMode);
+    // On every recipe page, recipe cards too: with the panel's "Recipe link"
+    // switch gone (Amelia, 2026-11-03), this is how a link that was turned
+    // off comes back. On recipe cards there's no per-recipe choice, so it
+    // shows or hides the cards' links together, as that switch did.
     const recipeForLink =
-      (singleRecipeOnly || linkCookbook) && navItem.kind === "recipe"
-        ? items?.find((item) => item.id === navItem.recipeId)?.recipe
-        : null;
+      navItem.kind === "recipe" ? items?.find((item) => item.id === navItem.recipeId)?.recipe : null;
     const linkShown =
       navItem.kind === "recipe"
         ? recipeLinkOn(showSourceUrl, linkCookbook, projectMeta.meta.itemPlacements?.[navItem.recipeId])
@@ -1514,9 +1514,6 @@ export function PrintDeck(props: PrintDeckProps) {
               styles: projectMeta.meta.pageLooks,
               onChange: (page, element, size) => projectMeta.setElementStyle(page, element, { textSize: size }),
               proMarked: textSizeProMarked,
-              resetLabel: projectMeta.meta.cookbookMode
-                ? "Use the book's text size"
-                : "Use the card's text size",
             }}
           />
           {/* Its twin, for a drag that ran across several lines rather than a
