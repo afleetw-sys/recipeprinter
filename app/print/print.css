@@ -1894,31 +1894,65 @@
   flex: none;
   color: var(--cp-ink-soft);
 }
-/* An element's own text size (SizeStepper): minus, the size in points,
-   plus. The box is as tall as the bar's buttons and takes a typed size. */
+/* An element's own text size (SizeDropdown): one box, the size in points on
+   the left (it takes a typed size) and a chevron on the right that opens the
+   list of sizes, split by a hairline, like a design app's size field. */
 .recipe-text-toolbar__size {
   display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 0 2px;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-label);
-}
-.recipe-text-toolbar__size-input {
-  width: 3.2em;
+  align-items: stretch;
   height: 22px;
-  padding: 0 2px;
   border: 1px solid var(--cp-line);
   border-radius: 6px;
   background: var(--cp-card);
-  color: var(--cp-ink);
-  font: inherit;
-  font-variant-numeric: tabular-nums;
-  text-align: center;
+  overflow: hidden;
 }
-.recipe-text-toolbar__size-input:focus-visible {
+.recipe-text-toolbar__size:focus-within {
   outline: var(--cp-focus-ring);
   outline-offset: var(--cp-focus-ring-offset);
+}
+.recipe-text-toolbar__size-input {
+  width: 3em;
+  padding: 0 4px 0 7px;
+  border: 0;
+  background: transparent;
+  color: var(--cp-ink);
+  font: inherit;
+  font-size: var(--cp-fs-label);
+  font-variant-numeric: tabular-nums;
+}
+.recipe-text-toolbar__size-input:focus {
+  outline: none;
+}
+.recipe-text-toolbar .recipe-text-toolbar__size-open.recipe-text-toolbar__size-open {
+  min-height: 0;
+  height: 100%;
+  border-left: 1px solid var(--cp-line);
+  border-radius: 0;
+  color: var(--cp-ink-soft);
+}
+
+/* The list of sizes: a check beside the one in use, "Default" beside the one
+   the element has with no size of its own. Scrolls, opened on the current
+   size. */
+.text-size-menu.text-size-menu {
+  min-width: 8.5em;
+  max-height: min(22rem, calc(100vh - 32px));
+  overflow-y: auto;
+}
+.text-size-menu__item.text-size-menu__item {
+  display: grid;
+  grid-template-columns: 1.25em auto 1fr;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.text-size-menu__check {
+  display: inline-flex;
+}
+.text-size-menu__default {
+  justify-self: end;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
 }
 
 /* Each row previews itself: Heading in a heading's weight. */

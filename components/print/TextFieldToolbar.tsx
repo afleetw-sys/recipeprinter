@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDownIcon, ICON_SIZE, MinusIcon, PlusIcon, UndoIcon } from "@/components/icons";
+import { CheckIcon, ChevronDownIcon, ICON_SIZE } from "@/components/icons";
 import { TextStyleControl } from "@/components/print/TextStyleControl";
 import { textBarScale } from "@/lib/deckZoom";
 import { readLineSelection } from "@/lib/lineSelection";
@@ -169,14 +169,13 @@ export function TextFieldToolbar({
   const sizeGroup =
     elementSize && elementNode && elementPage && elementName ? (
       <div className="recipe-page-toolbar__group" role="group" aria-label="Text size">
-        <SizeStepper
+        <SizeDropdown
           // Looked up on every draw, not handed over once: typing in the size
           // box closes the field, and the element is redrawn as text.
           getNode={() =>
             field.isConnected ? field.closest<HTMLElement>("[data-element][data-element-page]") : elementByAddress()
           }
           size={pageElements(elementSize.styles, elementPage)?.[elementName]?.textSize}
-          resetLabel={elementSize.resetLabel}
           proMarked={elementSize.proMarked}
           onChange={(size) => elementSize.onChange(elementPage, elementName, size)}
         />
@@ -329,8 +328,6 @@ export interface ElementSizeWiring {
   /** `undefined` = back to the book's size. */
   onChange: (page: string, element: string, size: number | undefined) => void;
   proMarked: boolean;
-  /** The reset button's name: "Use the book's text size" in a cookbook. */
-  resetLabel: string;
 }
 
 /** Presses on the bar don't take focus from the field being edited, so the
@@ -367,45 +364,63 @@ function roundHalf(points: number): number {
   return Math.round(points * 2) / 2;
 }
 
+/** The sizes the list offers, in points, before it's cut to what this
+    element allows and its Default is put in its place. */
+const SIZE_PRESETS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32, 36, 40, 48, 56, 64, 72, 80, 96];
+
 /**
- * This element's own text size: minus, the size in points, plus. The box
- * takes a typed size too. A reset button appears once the element has a size
- * of its own, and puts it back to following the book.
+ * This element's text size, the way a design app sets one: a box showing the
+ * size in points, which takes a typed size, and a chevron opening a list of
+ * sizes. The list marks the current size with a check and the element's
+ * Default (what it is with no size of its own: the book's Text size for it)
+ * with the word Default; picking Default puts the element back to following
+ * the book.
  *
  * Points because that's what a printed size is measured in, the number Word
  * and Google Docs show. Stored as a multiple of the theme's Normal size
  * (lib/pageLooks.tsx), so everything inside the element (an ingredients list's
  * headings, a step's number) grows with its main text.
  */
-function SizeStepper({
+function SizeDropdown({
   getNode,
   size,
-  resetLabel,
   proMarked,
   onChange,
 }: {
   getNode: () => HTMLElement | null;
   size: number | undefined;
-  resetLabel: string;
   proMarked: boolean;
   onChange: (size: number | undefined) => void;
 }) {
   // The element as drawn: its biggest text, and the scale it's drawn at (its
   // own size, or the book's). Their ratio is its size at the theme's Normal,
-  // which stays true while a change is still on its way to the page.
+  // which stays true while a change is still on its way to the page. The
+  // book's scale is what the element inherits, read above its own.
   const node = getNode();
-  const drawnScale = node ? parseFloat(getComputedStyle(node).getPropertyValue("--recipe-font-scale")) || 1 : 1;
+  const scaleOf = (el: Element | null | undefined) =>
+    el ? parseFloat(getComputedStyle(el).getPropertyValue("--recipe-font-scale")) || 1 : 1;
+  const drawnScale = scaleOf(node);
+  const bookScale = scaleOf(node?.parentElement);
   const normalPoints = node ? printedPoints(node) / drawnScale : 0;
   const shownPoints = roundHalf(normalPoints * (size ?? drawnScale));
+  const defaultPoints = roundHalf(normalPoints * bookScale);
+  const minPoints = roundHalf(normalPoints * MIN_TEXT_SIZE);
+  const maxPoints = roundHalf(normalPoints * MAX_TEXT_SIZE);
+
   const [draft, setDraft] = useState<string | null>(null);
+  const [openAt, setOpenAt] = useState<{ x: number; y: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   const setPoints = (points: number) => {
     if (!Number.isFinite(points) || normalPoints <= 0) return;
+    // The Default size is following the book, not a size of its own.
+    if (roundHalf(points) === defaultPoints) {
+      onChange(undefined);
+      return;
+    }
     const scale = Math.min(MAX_TEXT_SIZE, Math.max(MIN_TEXT_SIZE, points / normalPoints));
     onChange(Math.round(scale * 1000) / 1000);
   };
-  const minPoints = roundHalf(normalPoints * MIN_TEXT_SIZE);
-  const maxPoints = roundHalf(normalPoints * MAX_TEXT_SIZE);
   const commitDraft = () => {
     if (draft === null) return;
     const typed = parseFloat(draft.replace(",", "."));
@@ -413,23 +428,13 @@ function SizeStepper({
     if (Number.isFinite(typed) && roundHalf(typed) !== shownPoints) setPoints(roundHalf(typed));
   };
 
+  const sizes = Array.from(
+    new Set([...SIZE_PRESETS.filter((points) => points >= minPoints && points <= maxPoints), defaultPoints, shownPoints]),
+  ).sort((a, b) => a - b);
+
   return (
     <>
-      <button
-        type="button"
-        className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon"
-        aria-label="Smaller text"
-        title="Smaller text"
-        disabled={shownPoints <= minPoints}
-        onMouseDown={(event) => {
-          event.preventDefault();
-          // Down to the next whole point: 9.6 goes to 9, then 8.
-          setPoints(Math.ceil(shownPoints - 0.01) - 1);
-        }}
-      >
-        <MinusIcon size={ICON_SIZE.xs} aria-hidden />
-      </button>
-      <label className="recipe-text-toolbar__size">
+      <div className="recipe-text-toolbar__size">
         <input
           className="recipe-text-toolbar__size-input"
           inputMode="decimal"
@@ -455,40 +460,112 @@ function SizeStepper({
             }
           }}
         />
-        <span aria-hidden>pt</span>
-      </label>
-      <button
-        type="button"
-        className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon"
-        aria-label="Bigger text"
-        title="Bigger text"
-        disabled={shownPoints >= maxPoints}
-        onMouseDown={(event) => {
-          event.preventDefault();
-          setPoints(Math.floor(shownPoints + 0.01) + 1);
-        }}
-      >
-        <PlusIcon size={ICON_SIZE.xs} aria-hidden />
-      </button>
+        <button
+          ref={triggerRef}
+          type="button"
+          className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon recipe-text-toolbar__size-open"
+          aria-haspopup="menu"
+          aria-expanded={openAt ? true : undefined}
+          aria-label="Text sizes"
+          title="Text size"
+          onMouseDown={(event) => {
+            event.preventDefault();
+            if (openAt) {
+              setOpenAt(null);
+              return;
+            }
+            // Under the whole box, not just the chevron, the way a size
+            // field's list opens.
+            const box = (event.currentTarget.parentElement ?? event.currentTarget).getBoundingClientRect();
+            setOpenAt({ x: box.left, y: box.bottom + 4 });
+          }}
+        >
+          <ChevronDownIcon size={ICON_SIZE.xs} aria-hidden />
+        </button>
+      </div>
       {proMarked && size !== undefined && size !== DEFAULT_FONT_SCALE && (
         <ProBadge variant="inline" label={false} tooltip="This text size is Pro" />
       )}
-      {size !== undefined && (
-        <button
-          type="button"
-          className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon"
-          aria-label={resetLabel}
-          title={resetLabel}
-          onMouseDown={(event) => {
-            event.preventDefault();
+      {openAt && (
+        <SizeMenu
+          anchor={openAt}
+          triggerRef={triggerRef}
+          sizes={sizes}
+          current={shownPoints}
+          defaultPoints={defaultPoints}
+          onPick={(points) => {
+            setOpenAt(null);
             setDraft(null);
-            onChange(undefined);
+            setPoints(points);
           }}
-        >
-          <UndoIcon size={ICON_SIZE.xs} aria-hidden />
-        </button>
+          onClose={() => setOpenAt(null)}
+        />
       )}
     </>
+  );
+}
+
+function SizeMenu({
+  anchor,
+  triggerRef,
+  sizes,
+  current,
+  defaultPoints,
+  onPick,
+  onClose,
+}: {
+  anchor: { x: number; y: number };
+  triggerRef: RefObject<HTMLButtonElement | null>;
+  sizes: number[];
+  current: number;
+  defaultPoints: number;
+  onPick: (points: number) => void;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
+    node.style.left = `${Math.max(8, Math.min(anchor.x, window.innerWidth - rect.width - 8))}px`;
+    node.style.top = `${Math.max(8, Math.min(anchor.y, window.innerHeight - rect.height - 8))}px`;
+    // Opens on the size in use, not at the top of a long list.
+    node.querySelector<HTMLElement>("[aria-checked='true']")?.scrollIntoView({ block: "center" });
+  }, [anchor]);
+  useMenuDismiss([ref, triggerRef], onClose);
+  return createPortal(
+    <div
+      ref={ref}
+      className="cp-menu rail-tile-menu add-line-menu text-size-menu no-print"
+      role="menu"
+      aria-label="Text size"
+      style={{ top: anchor.y, left: anchor.x }}
+      onMouseDown={(event) => event.preventDefault()}
+    >
+      {sizes.map((points) => {
+        const active = points === current;
+        return (
+          <button
+            key={points}
+            type="button"
+            role="menuitemradio"
+            aria-checked={active}
+            className={`cp-menu__item text-size-menu__item ${active ? "is-active" : ""}`}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              onPick(points);
+            }}
+          >
+            <span className="text-size-menu__check" aria-hidden>
+              {active && <CheckIcon size={ICON_SIZE.sm} />}
+            </span>
+            <span className="text-size-menu__points">{points}</span>
+            {points === defaultPoints && <span className="text-size-menu__default">Default</span>}
+          </button>
+        );
+      })}
+    </div>,
+    document.body,
   );
 }
 
