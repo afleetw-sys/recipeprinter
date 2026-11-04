@@ -171,13 +171,14 @@ function EachPartSizes({
       </button>
       {open && (
         <div id="recipe-customize-part-rows">
-          <p className="recipe-customize__parts-hint">Titles, ingredients, steps and more, for every recipe. Text size still moves them all.</p>
+          <p className="recipe-customize__parts-hint">Text size still moves them all.</p>
           <div className="recipe-customize__part-rows">
             {parts.map((part) => (
               <div key={part.element} className="recipe-customize__part-row">
                 <span className="recipe-customize__part-label">{part.label}</span>
                 <SizeDropdown
                   partLabel={part.label}
+                  partHeading={false}
                   getNode={() => drawn(part.element)}
                   defaultScale={fontScale}
                   size={sizes?.[part.element]?.textSize}
