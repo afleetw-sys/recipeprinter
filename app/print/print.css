@@ -6112,7 +6112,9 @@ textarea.recipe-page-fields__input {
 }
 .recipe-template--heirloom .recipe-card__cover-ornament::before,
 .recipe-template--heirloom .recipe-card__chapter-ornament::before {
-  content: "\275E";
+  /* ❧ (U+2767). It was \275E, a heavy closing quotation mark (❞), which
+     printed a big "99" over every Heirloom chapter and cover title. */
+  content: "\2767";
   font-size: 0.44in;
 }
 
@@ -6255,14 +6257,11 @@ textarea.recipe-page-fields__input {
   margin-left: auto;
   margin-right: auto;
 }
-/* Keepsake chapter also gets the inset frame. */
-.recipe-template--keepsake .recipe-card__chapter-frame {
-  display: block;
-  position: absolute;
-  inset: 0.5in;
-  z-index: 0;
-  border: 2px solid var(--recipe-accent);
-}
+/* Keepsake's chapter draws no inset frame of its own: the card's double
+   border is its frame. One was declared here, but the theme's
+   `.recipe-card > * { position: relative }` below beat its `absolute`, so it
+   never framed anything: with nothing in it, it collapsed to a dot beside the
+   star (or a line across a page without a photo). */
 
 /* Bistro & Counter chapters keep the photo band but tint it to their palette
    (handled by the base gradient reading their --recipe-accent vars); Counter
