@@ -179,6 +179,10 @@ export type SeoLandingPage = {
    */
   hub?: { label: string; slugs: string[] };
   lede: string;
+  /** Words of `lede`, exactly as written there, that start a new cookbook
+      when clicked (CookbookStartButton as a link): for a page whose recipes
+      could all go in one book. */
+  ledeCookbookLink?: string;
   /** One-sentence subtitle under the how-to section's heading. Renders only
       alongside `howTo` — nothing on its own if that's unset. */
   intro?: string;
@@ -1442,7 +1446,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-paprika-recipes",
-    contentUpdated: "2026-10-06",
+    contentUpdated: "2026-11-04",
     copyReviewed: "2026-10-02",
 
     primaryKeyword: "print Paprika recipes",
@@ -1466,11 +1470,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroFrame: "none",
     title: "Print Recipes From Paprika | RecipePrinter",
     description:
-      "Export your Paprika recipes, open the file in RecipePrinter, and print selected recipes as full pages or 4x6 recipe cards.",
+      "Open your Paprika export in RecipePrinter and print recipes one at a time as free full pages, or several together as 4x6 recipe cards with Pro.",
     h1: "Print recipes from Paprika",
     anchor: "Print Paprika recipes",
     lede:
-      "Export your Paprika recipe library, open the Paprika export in RecipePrinter, and choose the recipes you want to print. Make full-page recipes, save them as PDFs, or use RecipePrinter Pro to print 4x6 recipe cards.",
+      "Open your Paprika export and print any recipe free as a clean, ready-to-cook page. Printing several at once is part of Pro, or you can make a cookbook from all of them.",
+    ledeCookbookLink: "make a cookbook from all of them",
     howToHeading: "How to print recipes from Paprika",
     howTo: [
       {

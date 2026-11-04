@@ -116,7 +116,7 @@ export function LandingHero({
   verticalPadding = "default",
 }: {
   h1: string;
-  lede: string;
+  lede: ReactNode;
   actions?: ReactNode;
   note?: string;
   /** The product photo. Optional: an overview page that opens on words alone
