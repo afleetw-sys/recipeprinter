@@ -116,6 +116,20 @@ function CaptureBlock({ page }: { page: SeoLandingPage }) {
   );
 }
 
+/** The subtitle with `phrase` (when given and found) as a link that starts a
+    new cookbook: a button, since a book is made on the way to /print. */
+function ledeWithCookbookLink(lede: string, phrase: string | undefined): ReactNode {
+  const at = phrase ? lede.indexOf(phrase) : -1;
+  if (!phrase || at < 0) return lede;
+  return (
+    <>
+      {lede.slice(0, at)}
+      <CookbookStartButton variant="link" label={phrase} />
+      {lede.slice(at + phrase.length)}
+    </>
+  );
+}
+
 type PhraseLink = { phrase: string; href: string };
 
 /** Every mention of the plan leads to what it costs and includes. */
@@ -192,7 +206,7 @@ export default function SeoLandingPage({ params }: PageProps) {
 
       <LandingHero
         h1={page.h1}
-        lede={page.lede}
+        lede={ledeWithCookbookLink(page.lede, page.ledeCookbookLink)}
         above={<Breadcrumb trail={breadcrumbTrail(page)} />}
         note={page.statusNote}
         asideAlign="center-once"
