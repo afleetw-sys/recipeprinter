@@ -35,6 +35,7 @@ import {
 } from "@/lib/authRedirect";
 import { purgeAnonymousUser as purgeAnonymousUserFor } from "@/lib/anonymousSession";
 import { syncAnalyticsIdentity, track } from "@/lib/analytics";
+import { sessionEndCause } from "@/lib/sessionEnd";
 import {
   readCookPilotWasSignedIn,
   rememberCookPilotSignedIn,
@@ -248,6 +249,10 @@ function resolveRedirectOnce(): void {
     });
 }
 
+/** Who this page last saw signed in, and since when, so a sign-out can be
+    told apart from a page that simply loaded signed out. */
+let signedInOnPage: { uid: string; atMs: number } | null = null;
+
 /** Starts the single `onAuthStateChanged` subscription on first use. */
 function startAuthSubscription(): void {
   if (unsubscribeAuth) return;
@@ -266,6 +271,16 @@ function startAuthSubscription(): void {
     // A redirect result is still being read, so "no user" is "not yet".
     if (!nextUser && redirectInFlight) return;
     rememberCookPilotSignedIn(Boolean(nextUser));
+    // Before the identity sync below ends the person, so it counts against
+    // the account that was signed out.
+    if (!nextUser && signedInOnPage) {
+      track("signed_out", {
+        cause: sessionEndCause(),
+        minutesSignedIn: Math.round((Date.now() - signedInOnPage.atMs) / 60_000),
+      });
+    }
+    if (!nextUser) signedInOnPage = null;
+    else if (signedInOnPage?.uid !== nextUser.uid) signedInOnPage = { uid: nextUser.uid, atMs: Date.now() };
     // The one place a real CookPilot account becomes known, or stops being:
     // identify the PostHog person (opaque Firebase uid, no PII), and end it on
     // sign-out so the next person on a shared device isn't recorded as them.
@@ -435,11 +450,18 @@ function EmailCodeEntry({
     setError(null);
     track("auth_attempted", { method: "email_code" });
     try {
+      const startedAt = Date.now();
       const result = await verifyEmailCode(email, value);
+      const verifyMs = Date.now() - startedAt;
       if (result.status === "ok") {
         await signInWithCustomToken(getFirebaseAuth(), result.token);
         forgetPendingCode();
-        track("auth_succeeded", { method: "email_code", created: result.created });
+        track("auth_succeeded", {
+          method: "email_code",
+          created: result.created,
+          verifyMs,
+          signInMs: Date.now() - startedAt - verifyMs,
+        });
         onSignedIn(result.created);
         return;
       }

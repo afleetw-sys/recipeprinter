@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { signOut } from "firebase/auth";
+import { signOutOnPurpose } from "@/lib/sessionEnd";
 import { readPendingCode } from "@/lib/emailCodePending";
 import {
   AccountIcon,
@@ -405,7 +405,7 @@ export default function AccountAvatarButton({
                   // leaving from there goes home rather than straight to a prompt
                   // to sign back in. Anywhere else, you stay where you were.
                   if (window.location.pathname.startsWith("/account")) router.replace("/");
-                  void signOut(getFirebaseAuth());
+                  void signOutOnPurpose(getFirebaseAuth());
                 }}
               >
                 <LogoutIcon size={ICON_SIZE.md} className="shrink-0 text-ink-soft" />
