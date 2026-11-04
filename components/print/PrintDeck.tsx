@@ -29,6 +29,7 @@ import {
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
 import { AddLineMenu } from "@/components/print/AddLineMenu";
+import { PhotoHoverHint } from "@/components/print/PhotoHoverHint";
 import { ZoomControl } from "@/components/print/ZoomControl";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { TwoUpPrintPages } from "@/components/print/TwoUpPrintPages";
@@ -1470,6 +1471,7 @@ export function PrintDeck(props: PrintDeckProps) {
           // parked the cover off-centre and hid the fact there was more.
           data-single-recipe={singleRecipePrintView && !cookbookView ? "true" : "false"}
         >
+          <PhotoHoverHint surfaces={PHOTO_SURFACES} />
           {/* Body/heading and bold/italic, floating over the line being typed
               rather than joining the page's bar. It anchors itself to whatever
               field has focus, so it is mounted once for the whole deck. */}

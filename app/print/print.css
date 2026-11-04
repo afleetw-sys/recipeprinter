@@ -1935,9 +1935,14 @@
   text-underline-offset: 2px;
 }
 
-/* Customize theme's Each part: one row per part of a recipe, its name and
+/* Customize theme's Fine-tune sizes: one row per part of a recipe, its name and
    the text bar's own size dropdown, boxed here like the panel's other
    dropdowns since it isn't sitting in a toolbar. */
+/* Its toggle sits where a section label would, not 14px below the last
+   setting like the seasonal themes' does. */
+.recipe-customize__parts-toggle {
+  margin: 0;
+}
 .recipe-customize__parts-hint {
   margin: 2px 0 8px;
   color: var(--cp-ink-soft);
@@ -8860,6 +8865,32 @@ textarea.recipe-card__toc-title {
 .recipe-spread__page.is-focused .recipe-image-spread__photo:hover {
   outline: 1px solid color-mix(in srgb, var(--cp-accent) 40%, transparent);
   outline-offset: 2px;
+}
+
+/* And says what a click does (PhotoHoverHint): a light tint over the photo
+   with "Change photo" in its middle. Laid over the photo from outside the
+   page, so it doesn't scale with it. Under the workspace's sticky chrome,
+   which the page scrolls beneath. */
+.photo-hover-hint {
+  position: fixed;
+  z-index: calc(var(--z-sticky) - 1);
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--cp-ink) 22%, transparent);
+  pointer-events: none;
+}
+.photo-hover-hint__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--cp-card);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--cp-shadow-xs);
 }
 
 /* Cover lines behave like a recipe's: click the text to edit it, and a line
