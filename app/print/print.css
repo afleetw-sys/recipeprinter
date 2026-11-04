@@ -569,6 +569,10 @@
   .recipe-print-page .recipe-print-shell--organize-wide {
     --rail-w: 100%;
     --panel-w: 0px;
+    /* The folded preview still overflows its zero-width column, and a
+       `hidden` box can still be scrolled by focus: opening a menu slid the
+       whole organizer sideways. `clip` cannot be scrolled at all. */
+    overflow: clip;
   }
   .recipe-print-shell--organize-wide > .recipe-page-canvas,
   .recipe-print-shell--organize-wide > .recipe-config-panel,
@@ -699,10 +703,28 @@
     outline-offset: -1px;
   }
   .recipe-print-shell--organizing .recipe-page-rail__item-main {
-    grid-template-columns: 26px 1fr;
-    column-gap: 6px;
+    grid-template-columns: 26px 36px 1fr;
+    column-gap: 10px;
     min-height: 0;
     height: 56px;
+  }
+  /* A small square of the recipe's photo beside its title. */
+  .recipe-page-rail__photo {
+    display: block;
+    width: 36px;
+    height: 36px;
+    overflow: hidden;
+    border-radius: 6px;
+    background: var(--cp-overlay-hover);
+  }
+  .recipe-print-shell--organizing .recipe-page-rail__label {
+    grid-column: 3;
+  }
+  .recipe-page-rail__photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
   .recipe-print-shell--organizing .recipe-page-rail__num {
     align-self: center;

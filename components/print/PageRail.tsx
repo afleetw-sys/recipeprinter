@@ -54,6 +54,7 @@ import {
   isOrganizeViewActive,
   matchesFilter,
   matchesOrganizeView,
+  organizerPhoto,
   type OrganizeFilter,
   type OrganizeRecipeContext,
 } from "@/lib/organizeFilter";
@@ -1601,6 +1602,19 @@ export function PageRail(props: PageRailProps) {
                         }}
                       >
                         <span className="recipe-page-rail__num">{unit.num}</span>
+                        {/* The organizer's picture: the recipe's own photo,
+                            small, so the cards stay a list of names. One
+                            without a photo keeps the empty square, so every
+                            title starts in the same place. */}
+                        {organizeMode && recipeNav && (() => {
+                          const context = organizeContexts.get(recipeNav.recipeId);
+                          const photo = context ? organizerPhoto(context) : undefined;
+                          return (
+                            <span className="recipe-page-rail__photo" aria-hidden>
+                              {photo && <img src={photo} alt="" loading="lazy" decoding="async" draggable={false} />}
+                            </span>
+                          );
+                        })()}
                         {showThumbs && (
                         <LazyRailThumb
                           scrollRef={railScrollRef}

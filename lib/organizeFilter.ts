@@ -46,8 +46,17 @@ const hasText = (value: string | undefined | null) => Boolean(value && value.tri
     photo is set. Whether the book currently PRINTS it is a setting, not a
     missing photo. */
 export function hasPhoto(context: OrganizeRecipeContext): boolean {
-  if (context.ownPhotosOnly) return hasText(bookRecipeImage(context.item, context.placement, true, context.websitePhotos));
-  return hasText(context.item.recipe?.image) || hasText(context.placement?.heroImageUrl);
+  return hasText(organizerPhoto(context));
+}
+
+/** The photo the organizer shows on a recipe's card: the one `hasPhoto`
+    counts, so a card with no picture is exactly a "No photo" recipe. */
+export function organizerPhoto(context: OrganizeRecipeContext): string | undefined {
+  if (context.ownPhotosOnly) return bookRecipeImage(context.item, context.placement, true, context.websitePhotos);
+  for (const url of [context.item.recipe?.image, context.placement?.heroImageUrl]) {
+    if (hasText(url)) return url!;
+  }
+  return undefined;
 }
 
 export function matchesFilter(filter: OrganizeFilter, context: OrganizeRecipeContext): boolean {
