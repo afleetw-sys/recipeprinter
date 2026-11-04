@@ -558,6 +558,10 @@ export default function PrintPage() {
   }, [jobIds]);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editingSectionTitle, setEditingSectionTitle] = useState("");
+  /** A chapter just made: its page opens with "New chapter" selected, so the
+      first key typed replaces it. Cleared by the first edit, so a redraw
+      while typing never selects the name again. */
+  const [newSectionTitleId, setNewSectionTitleId] = useState<string | null>(null);
   // Both side panels fold away together to give the page more room. Session
   // state on purpose, not a stored preference: hiding them is something you do
   // to look at a page, not how you want the workspace set up from now on.
@@ -1233,6 +1237,7 @@ export default function PrintPage() {
                 clearRailSelection();
                 setEditingSectionId(sectionId);
                 setEditingSectionTitle("New chapter");
+                setNewSectionTitleId(sectionId);
                 setPendingFocusNavId(sectionId);
               },
             };
@@ -1555,6 +1560,7 @@ export default function PrintPage() {
   const editSectionTitle = useCallback(
     (sectionId: string, value: string) => {
       setEditingSectionTitle(value);
+      setNewSectionTitleId(null);
       // Moving to a different section's title must not discard the one still
       // pending — land it before this one takes over the slot.
       const pending = pendingSectionRenameRef.current;
@@ -1584,6 +1590,7 @@ export default function PrintPage() {
     }
     setEditingSectionId(null);
     setEditingSectionTitle("");
+    setNewSectionTitleId(null);
   }
 
   function renameSectionEverywhere(sectionId: string, value: string) {
@@ -1599,6 +1606,7 @@ export default function PrintPage() {
     const sectionId = projectMeta.addSection(title);
     setEditingSectionId(sectionId);
     setEditingSectionTitle(title);
+    setNewSectionTitleId(sectionId);
     setPendingFocusNavId(sectionId);
     setPendingRailChapterFocusId(sectionId);
   }
@@ -2118,7 +2126,10 @@ export default function PrintPage() {
       projectMeta.moveItems([recipeId], sectionId, 0);
       setEditingSectionId(sectionId);
       setEditingSectionTitle("New chapter");
-      showToast("Chapter added. Give it a name.");
+      // To its page, name selected, like every other way of making one. The
+      // toast that asked for a name is gone: the name is in front of them.
+      setNewSectionTitleId(sectionId);
+      setPendingFocusNavId(sectionId);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [projectMeta],
@@ -5584,6 +5595,7 @@ export default function PrintPage() {
     clearRailSelection();
     setEditingSectionId(sectionId);
     setEditingSectionTitle("New chapter");
+    setNewSectionTitleId(sectionId);
     setPendingFocusNavId(sectionId);
     track("cookbook_section_created_from_selection", { count: ids.length });
   }
@@ -7237,6 +7249,7 @@ export default function PrintPage() {
           editingSectionId={editingSectionId}
           setEditingSectionId={setEditingSectionId}
           editingSectionTitle={editingSectionTitle}
+          newSectionTitleId={newSectionTitleId}
           setEditingSectionTitle={setEditingSectionTitle}
           editSectionTitle={editSectionTitle}
           commitSectionEdit={commitSectionEdit}

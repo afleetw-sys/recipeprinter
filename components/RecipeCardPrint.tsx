@@ -11,6 +11,7 @@ import {
 import {
   Fragment,
   memo,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -1765,6 +1766,9 @@ export interface DividerCardInlineEdit {
    * it.
    */
   titleEditing: boolean;
+  /** The chapter was just made: its title opens with the whole name selected,
+      so typing replaces "New chapter" instead of adding to it. */
+  titleSelected?: boolean;
   titleValue: string;
   onTitleOpen: () => void;
   onTitleChange: (value: string) => void;
@@ -1875,6 +1879,15 @@ export const DividerFace = memo(function DividerFace({
   showEmptyFields?: boolean;
 }) {
   const el = useElements();
+  // A chapter just made opens its title with "New chapter" selected, so the
+  // first key replaces it. Once, when the field opens: the page clears
+  // `titleSelected` on the first edit, so a redraw while typing doesn't take
+  // the selection back.
+  const titleFieldRef = useRef<HTMLTextAreaElement | null>(null);
+  const titleSelected = Boolean(inlineEdit?.titleEditing && inlineEdit.titleSelected);
+  useEffect(() => {
+    if (titleSelected) titleFieldRef.current?.select();
+  }, [titleSelected]);
   const canEdit = Boolean(inlineEdit);
   const showEmpty = canEdit && showEmptyFields;
   // Which of the two straight-through lines is open, if any. Local for the same
@@ -2097,6 +2110,7 @@ export const DividerFace = memo(function DividerFace({
         {inlineEdit?.titleEditing ? (
           <textarea
             {...el("title")}
+            ref={titleFieldRef}
             autoFocus
             rows={1}
             className="recipe-card__inline-textarea recipe-card__divider-title"

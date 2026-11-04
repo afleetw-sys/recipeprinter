@@ -275,6 +275,8 @@ interface PrintDeckProps {
   addField: ReturnType<typeof useRecipeInlineEditor>["addField"];
   activeInlineEdit: ReturnType<typeof useRecipeInlineEditor>["activeInlineEdit"];
   editingSectionId: string | null;
+  /** A chapter just made, whose name opens selected (see the page). */
+  newSectionTitleId: string | null;
   setEditingSectionId: Dispatch<SetStateAction<string | null>>;
   editingSectionTitle: string;
   setEditingSectionTitle: Dispatch<SetStateAction<string>>;
@@ -469,6 +471,7 @@ export function PrintDeck(props: PrintDeckProps) {
     addField,
     activeInlineEdit,
     editingSectionId,
+    newSectionTitleId,
     setEditingSectionId,
     editingSectionTitle,
     setEditingSectionTitle,
@@ -1118,6 +1121,7 @@ export function PrintDeck(props: PrintDeckProps) {
     return {
       sectionId,
       titleEditing: editingSectionId === sectionId,
+      titleSelected: newSectionTitleId === sectionId,
       titleValue: editingSectionTitle,
       onTitleOpen: () => startSectionEdit(sectionId),
       onTitleChange: (value: string) => editSectionTitle(sectionId, value),
