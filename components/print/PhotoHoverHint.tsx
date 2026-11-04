@@ -66,7 +66,10 @@ export function PhotoHoverHint({ surfaces }: { surfaces: string }) {
     >
       <span className="photo-hover-hint__label">
         <ImageIcon size={ICON_SIZE.sm} />
-        {rect.width >= 96 && "Change photo"}
+        {/* Always a word: an in-page photo on a cookbook spread is ~40px at
+            the deck's usual zoom, too small for an icon to say anything.
+            There the pill is wider than the photo, which is fine. */}
+        {rect.width >= 120 ? "Change photo" : "Change"}
       </span>
     </div>,
     document.body,
