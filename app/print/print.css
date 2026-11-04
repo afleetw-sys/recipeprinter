@@ -647,17 +647,16 @@
     padding: 0 20px 18px;
   }
 
-  /* A compact cookbook organizer: each chapter is a lightly framed section
-     (a faint border and fill, modest padding), and its recipes are a dense
-     two-column list of plain rows inside it. No box around each recipe and
-     no divider lines between them, so it reads as neither a wall of cards
-     nor a spreadsheet. */
+  /* A cookbook organizer: each chapter is a lightly framed section, and its
+     recipes are cards inside it, three across now the organizer has the
+     whole page (Amelia, 2026-11-04). Each card is its own outlined thing to
+     pick up and drag, not a line in a list. */
   .recipe-print-shell--organizing .recipe-page-rail__section-group {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 2px 6px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
     margin-top: 8px;
-    padding: 4px 8px 8px;
+    padding: 4px 12px 12px;
     border: 1px solid color-mix(in srgb, var(--cp-line) 70%, transparent);
     border-radius: 12px;
     background: var(--cp-card);
@@ -677,19 +676,21 @@
     display: contents;
   }
 
-  /* Each recipe: one 44px row of page number and title. */
+  /* Each recipe: a card of page number and title, outlined in the hairline
+     everything here separates on (no shadow: it is not floating). */
   .recipe-print-shell--organizing .recipe-page-rail__item {
-    padding: 0 8px;
-    border: 0;
-    border-radius: 6px;
-    background: transparent;
+    padding: 0 12px;
+    border: 1px solid var(--cp-line);
+    border-radius: 10px;
+    background: var(--cp-card);
   }
   .recipe-print-shell--organizing .recipe-page-rail__item:hover {
-    background: var(--cp-overlay-hover);
+    border-color: var(--cp-line-strong);
+    background: var(--cp-card);
     transform: none;
   }
-  /* Current or selected: the shared fill and a border drawn INSIDE the row
-     (an inset outline), so it never makes the row taller. */
+  /* Current or selected: the shared fill and border, drawn over the card's
+     own border (an inset outline), so it never makes the card bigger. */
   .recipe-print-shell--organizing .recipe-page-rail__item.is-active,
   .recipe-print-shell--organizing .recipe-page-rail__item.is-selected {
     background: var(--cp-selected-fill);
@@ -701,7 +702,7 @@
     grid-template-columns: 26px 1fr;
     column-gap: 6px;
     min-height: 0;
-    height: 44px;
+    height: 56px;
   }
   .recipe-print-shell--organizing .recipe-page-rail__num {
     align-self: center;
@@ -712,7 +713,7 @@
   }
 
   /* The ungrouped recipes' "Add recipe": the empty slot at the end of the
-     list. It spans both columns and keeps a recipe row's geometry (44px tall,
+     list. It spans every column and keeps a recipe card's geometry (56px tall,
      the + where the page number sits, the words where titles start), with a
      dashed hairline so it reads as a place for one more recipe. As a small
      pill in one column it floated under the first recipe like a stray button. */
@@ -720,12 +721,11 @@
     grid-column: 1 / -1;
     flex-direction: row;
     justify-content: flex-start;
-    gap: 16px; /* 8px pad + 16px icon + 16px = the titles' 40px start */
-    min-height: 44px;
-    margin-top: 6px;
-    padding: 0 7px; /* + the 1px border = a row's 8px */
+    gap: 16px; /* 16px icon + 16px = a card's 26px number + 6px gap */
+    min-height: 56px;
+    padding: 0 12px; /* the same border and padding as a card */
     border: 1px dashed var(--cp-line-strong);
-    border-radius: 6px;
+    border-radius: 10px;
     background: transparent;
     color: var(--cp-ink-soft);
     font-size: var(--cp-fs-small);
