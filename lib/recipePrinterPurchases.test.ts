@@ -15,6 +15,7 @@ import {
 import { synthesizeCustomerInfoFromMirror } from "./proAccessFallback";
 import { meterGateFor } from "./importMeter";
 import { FONT_SCALES } from "./fontScale";
+import { PHOTO_SCALES } from "./photoScale";
 
 /**
  * A minimal `CustomerInfo` stand-in: every function under test only ever
@@ -361,6 +362,20 @@ describe("computeProLocks — the print page's Pro-gate matrix", () => {
       expect(computeProLocks({ ...free, fontScale }).proLocked, `free at ${fontScale}`).toBe(changed);
       expect(computeProLocks({ ...free, fontScale, cookbookMode: true }).proLocked, `cookbook at ${fontScale}`).toBe(false);
       expect(computeProLocks({ ...pro, fontScale }).proLocked, `Pro at ${fontScale}`).toBe(false);
+    }
+  });
+
+  // A photo size other than Normal wore the Pro crown on a free card but was
+  // never part of the lock, so it printed without Pro. Every size the panel
+  // crowns locks Print, on cards only, and never for Pro.
+  test("any photo size but Normal locks Print on cards for a free account, never in a cookbook or for Pro", () => {
+    const free = { ...baseArgs, customerInfo: NO_ENTITLEMENTS, cardSize: "letter" as const };
+    const pro = { ...free, customerInfo: customerWith({ pro: { productIdentifier: "pro_monthly" } }) };
+    for (const photoScale of PHOTO_SCALES) {
+      const changed = photoScale !== 1;
+      expect(computeProLocks({ ...free, photoScale }).proLocked, `free at ${photoScale}`).toBe(changed);
+      expect(computeProLocks({ ...free, photoScale, cookbookMode: true }).proLocked, `cookbook at ${photoScale}`).toBe(false);
+      expect(computeProLocks({ ...pro, photoScale }).proLocked, `Pro at ${photoScale}`).toBe(false);
     }
   });
 

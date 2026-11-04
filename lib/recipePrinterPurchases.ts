@@ -317,6 +317,9 @@ export function computeProLocks({
   cardSize,
   recipeCount,
   fontScale = 1,
+  photoScale = 1,
+  accent = null,
+  artChanged = false,
   elementTextSized = false,
 }: {
   customerInfo: CustomerInfo | null;
@@ -328,6 +331,13 @@ export function computeProLocks({
   /** The cook's text size (lib/fontScale.ts); anything but Normal is Pro on
       recipe cards. Previewing it is free, like a locked theme. */
   fontScale?: number;
+  /** The cook's photo size (lib/photoScale.ts): Pro the same way. */
+  photoScale?: number;
+  /** The theme's accent changed (lib/themeAccent.ts): Pro the same way. */
+  accent?: string | null;
+  /** One piece of art for every recipe where the theme takes turns (Poster's
+      band, Supper's utensil): Pro the same way. */
+  artChanged?: boolean;
   /** A single element on a recipe card has a text size other than Normal
       (lib/pageLooks.tsx): Pro the same way. */
   elementTextSized?: boolean;
@@ -341,9 +351,13 @@ export function computeProLocks({
     !hasTemplateOrProEntitlement(customerInfo, template) &&
     !cookbookMode;
   const cardSizeLocked = !cookbookMode && !canUseCardSize(customerInfo, cardSize);
-  // A cookbook includes every theme, and the text size with them.
+  // A cookbook includes every theme, and how each looks with them: every
+  // part of Customize theme the panel crowns on a card (text size, photo
+  // size, accent, a part's own size) is this one lock.
   const fontScaleLocked =
-    !cookbookMode && (fontScale !== 1 || elementTextSized) && !hasProEntitlement(customerInfo);
+    !cookbookMode &&
+    (fontScale !== 1 || photoScale !== 1 || accent !== null || artChanged || elementTextSized) &&
+    !hasProEntitlement(customerInfo);
   // Printing more than one recipe in one job (outside a cookbook, which has
   // its own separate purchase model) is its own Pro-gated capability — see
   // `hasMultiRecipeEntitlement`. There's nothing to preview here the way a

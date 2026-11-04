@@ -42,6 +42,13 @@ describe("Customize theme's Fine-tune sizes rows", () => {
           setFontScale={() => {}}
           photoScale={1}
           setPhotoScale={() => {}}
+          accent={null}
+          setAccent={() => {}}
+          posterColor={null}
+          setPosterColor={() => {}}
+          utensil={null}
+          setUtensil={() => {}}
+          template="classic"
           customized
           onReset={() => {}}
           onBack={() => {}}

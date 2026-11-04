@@ -11,6 +11,12 @@ import { ImageIcon } from "@/components/icons";
  * come out at the workspace's own caption size on screen rather than shrinking
  * with the page. The in-page box is too small for words at that size, so it
  * shows the icon alone and says what it is to assistive tech.
+ *
+ * The full page also shows a button, so it reads as something to press and
+ * not only a note (Amelia, 2026-11-04). Drawn, not a <button>: the whole
+ * placeholder is already the click target, and the same page is drawn inside
+ * the rail's thumbnail buttons, where a button can't nest. The page toolbar's
+ * Add photo is the keyboard way in.
  */
 export function PhotoPlaceholder({ variant }: { variant: "page" | "inline" }) {
   if (variant === "inline") {
@@ -29,6 +35,9 @@ export function PhotoPlaceholder({ variant }: { variant: "page" | "inline" }) {
       </span>
       <span className="photo-placeholder__title">Add a photo</span>
       <span className="photo-placeholder__note">Upload a photo of your own to make this book yours.</span>
+      <span className="photo-placeholder__button" aria-hidden>
+        Add photo
+      </span>
     </div>
   );
 }

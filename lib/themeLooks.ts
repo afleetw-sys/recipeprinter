@@ -1,10 +1,19 @@
 import { DEFAULT_FONT_SCALE, normalizeFontScale, type FontScale } from "@/lib/fontScale";
 import { DEFAULT_PHOTO_SCALE, legacyPhotoScale, normalizePhotoScale, type PhotoScale } from "@/lib/photoScale";
 import { RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
+import {
+  normalizeAccent,
+  normalizePosterColor,
+  normalizeUtensil,
+  type AccentColor,
+  type SupperUtensil,
+} from "@/lib/themeAccent";
 import type { RecipePrintTemplate } from "@/types/recipe";
 
 /**
- * What a cook has customized about one theme: its text size and photo size.
+ * What a cook has customized about one theme: its text size, photo size,
+ * accent color, and for a theme whose art takes turns by recipe, one piece for
+ * every recipe instead (Poster's band color, Supper's utensil).
  * Each theme keeps its own. Changing Bistro's text size leaves Garden's alone,
  * and switching back to Bistro brings Bistro's back, so trying themes never
  * costs a cook what they set up in one.
@@ -16,6 +25,12 @@ import type { RecipePrintTemplate } from "@/types/recipe";
 export interface ThemeLook {
   fontScale?: FontScale;
   photoScale?: PhotoScale;
+  /** Absent: the theme's own accent (lib/themeAccent.ts). */
+  accent?: AccentColor;
+  /** Poster: one band color for every recipe. Absent: they take turns. */
+  posterColor?: number;
+  /** Supper: one utensil for every recipe. Absent: they take turns. */
+  utensil?: SupperUtensil;
 }
 
 export type ThemeLooks = Partial<Record<RecipePrintTemplate, ThemeLook>>;
@@ -23,11 +38,19 @@ export type ThemeLooks = Partial<Record<RecipePrintTemplate, ThemeLook>>;
 export interface ResolvedThemeLook {
   fontScale: FontScale;
   photoScale: PhotoScale;
+  /** null: the theme's own accent. */
+  accent: AccentColor | null;
+  /** null: taking turns. */
+  posterColor: number | null;
+  utensil: SupperUtensil | null;
 }
 
 export const DEFAULT_THEME_LOOK: ResolvedThemeLook = {
   fontScale: DEFAULT_FONT_SCALE,
   photoScale: DEFAULT_PHOTO_SCALE,
+  accent: null,
+  posterColor: null,
+  utensil: null,
 };
 
 export function lookFor(looks: ThemeLooks, template: RecipePrintTemplate): ResolvedThemeLook {
@@ -35,13 +58,22 @@ export function lookFor(looks: ThemeLooks, template: RecipePrintTemplate): Resol
   return {
     fontScale: look?.fontScale ?? DEFAULT_FONT_SCALE,
     photoScale: look?.photoScale ?? DEFAULT_PHOTO_SCALE,
+    accent: look?.accent ?? null,
+    posterColor: look?.posterColor ?? null,
+    utensil: look?.utensil ?? null,
   };
 }
 
 /** Whether this theme differs from how it ships. Customizing a recipe card is
     Pro; this is what the lock reads. */
 export function isCustomized(look: ResolvedThemeLook): boolean {
-  return look.fontScale !== DEFAULT_FONT_SCALE || look.photoScale !== DEFAULT_PHOTO_SCALE;
+  return (
+    look.fontScale !== DEFAULT_FONT_SCALE ||
+    look.photoScale !== DEFAULT_PHOTO_SCALE ||
+    look.accent !== null ||
+    look.posterColor !== null ||
+    look.utensil !== null
+  );
 }
 
 /** `looks` with this theme's look changed. A theme back at every default is
@@ -58,6 +90,9 @@ export function withLook(
   const look: ThemeLook = {};
   if (next.fontScale !== DEFAULT_FONT_SCALE) look.fontScale = next.fontScale;
   if (next.photoScale !== DEFAULT_PHOTO_SCALE) look.photoScale = next.photoScale;
+  if (next.accent !== null) look.accent = next.accent;
+  if (next.posterColor !== null) look.posterColor = next.posterColor;
+  if (next.utensil !== null) look.utensil = next.utensil;
   return { ...rest, [template]: look };
 }
 
@@ -73,10 +108,13 @@ export function normalizeThemeLooks(stored: unknown, legacy: { fontScale?: unkno
     for (const option of RECIPE_PRINT_TEMPLATE_OPTIONS) {
       const raw = (stored as Record<string, unknown>)[option.id];
       if (!raw || typeof raw !== "object") continue;
-      const { fontScale, photoScale } = raw as Record<string, unknown>;
+      const { fontScale, photoScale, accent, posterColor, utensil } = raw as Record<string, unknown>;
       looks = withLook(looks, option.id, {
         fontScale: normalizeFontScale(fontScale),
         photoScale: normalizePhotoScale(photoScale),
+        accent: normalizeAccent(accent, option.id),
+        posterColor: option.id === "poster" ? normalizePosterColor(posterColor) : null,
+        utensil: option.id === "supper" ? normalizeUtensil(utensil) : null,
       });
     }
     return looks;

@@ -468,6 +468,7 @@ const SIZE_PRESETS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28
  */
 export function SizeDropdown({
   partLabel,
+  partHeading = true,
   getNode,
   defaultScale,
   size,
@@ -477,6 +478,9 @@ export function SizeDropdown({
   /** What the size applies to ("Steps", "Title"), said at the top of the list:
       the size is the whole part's, not just the line being typed in. */
   partLabel?: string;
+  /** Say `partLabel` at the top of the list. Off where the part is already
+      named beside the dropdown (Customize theme's Fine-tune sizes). */
+  partHeading?: boolean;
   getNode: () => HTMLElement | null;
   /** The size this element has with no size of its own, when it isn't simply
       what it inherits from around it (a recipe part set for every recipe;
@@ -630,6 +634,7 @@ export function SizeDropdown({
           anchor={openAt}
           triggerRef={triggerRef}
           partLabel={partLabel}
+          partHeading={partHeading}
           sizes={sizes}
           current={shownPoints}
           defaultPoints={defaultPoints}
@@ -649,6 +654,7 @@ function SizeMenu({
   anchor,
   triggerRef,
   partLabel,
+  partHeading,
   sizes,
   current,
   defaultPoints,
@@ -658,6 +664,7 @@ function SizeMenu({
   anchor: { x: number; y: number };
   triggerRef: RefObject<HTMLButtonElement | null>;
   partLabel?: string;
+  partHeading: boolean;
   sizes: number[];
   current: number;
   defaultPoints: number;
@@ -686,7 +693,7 @@ function SizeMenu({
     >
       {/* Which part these sizes are for, held at the top while the sizes
           scroll under it. */}
-      {partLabel && (
+      {partLabel && partHeading && (
         <p className="text-size-menu__part" aria-hidden>
           {partLabel}
         </p>

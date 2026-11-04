@@ -53,6 +53,8 @@ import type {
 } from "@/types/recipe";
 import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
 import { chapterIntroFromRecipes } from "@/lib/chapterIntro";
+import { SUPPER_UTENSILS } from "@/lib/themeAccent";
+import { useThemeArt } from "@/lib/themeArt";
 
 // Layout-budget engine (the character-cost heuristics that decide what fits on
 // a front/back face) lives in lib/recipeCardLayout.ts — this file re-exports
@@ -440,15 +442,27 @@ function HalloweenArt() {
 // the bottom strip of the artist's frame (public/images/utensil-*.svg): the
 // utensil plus a patch of card colour that opens the gap in the line. The frame
 // itself is CSS, drawn at the artwork's proportions so it fits any card shape.
-const SUPPER_UTENSILS = ["fork", "spoon", "knife"] as const;
-
 function SupperFrame({ index = 0 }: { index?: number }) {
-  const utensil = SUPPER_UTENSILS[((index % 3) + 3) % 3];
+  // Taking turns unless the cook chose one for every recipe (lib/themeArt.tsx).
+  const chosen = useThemeArt().utensil;
+  const utensil = chosen ?? SUPPER_UTENSILS[((index % 3) + 3) % 3];
   return (
     <>
       <div className="recipe-card__supper-frame" aria-hidden />
       {/* eslint-disable-next-line @next/next/no-img-element -- fixed decorative vector art, not a photo to optimize */}
       <img className="recipe-card__supper-utensil" src={`/images/utensil-${utensil}.svg`} alt="" aria-hidden />
+      {/* The same utensil in the theme's accent, for a cook who picked one
+          (lib/themeAccent.ts): the card-colored patch that opens the line,
+          and the utensil as a shape (utensil-*-mark.svg) filled with the
+          accent. An <img> can't be recolored, so print.css swaps this in for
+          it only then; untouched, the artist's file is what prints. */}
+      <span className="recipe-card__supper-utensil-tint" data-utensil={utensil} aria-hidden>
+        <span className="recipe-card__supper-utensil-patch" />
+        <span
+          className="recipe-card__supper-utensil-mark"
+          style={{ "--utensil-mark": `url("/images/utensil-${utensil}-mark.svg")` } as CSSProperties}
+        />
+      </span>
     </>
   );
 }
@@ -585,6 +599,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   showEmptyFields?: boolean;
 }) {
   const el = useElements();
+  const themeArt = useThemeArt();
   const source = sourceLabel(recipe);
   const meta = metaBits(recipe);
   // "This text can be clicked and typed into." True for the active card at all
@@ -1348,7 +1363,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       }`}
       data-has-back={hasBackFace ? "true" : undefined}
       data-preview-hidden={previewHidden ? "true" : undefined}
-      data-poster-color={template === "poster" ? posterColor(recipeIndex) : undefined}
+      data-poster-color={template === "poster" ? (themeArt.posterColor ?? posterColor(recipeIndex)) : undefined}
       /* A cookbook page carries a page number and chapter name in its foot.
          Themes with art there hold the recipe higher to make room for them,
          and the measurer renders with the same flag, so it measures the same

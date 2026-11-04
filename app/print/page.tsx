@@ -221,6 +221,8 @@ import {
   recipePageAddress,
 } from "@/lib/pageLooks";
 import type { PhotoScale } from "@/lib/photoScale";
+import { accentRootProps, type AccentColor, type SupperUtensil } from "@/lib/themeAccent";
+import { ThemeArtProvider } from "@/lib/themeArt";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, photoSizeOffered, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { asDerived, latestHistoryStep, undoEdit, useEditHistory } from "@/lib/editHistory";
 import { HistoryControls } from "@/components/print/HistoryControls";
@@ -397,13 +399,28 @@ export default function PrintPage() {
       size (lib/themeLooks.ts). Each theme keeps its own, so the page shows
       the current theme's. Pro on recipe cards; included in a cookbook. */
   const [themeLooks, setThemeLooks] = useState<ThemeLooks>({});
-  const { fontScale, photoScale } = lookFor(themeLooks, template);
+  const themeLook = lookFor(themeLooks, template);
+  const { fontScale, photoScale, accent, posterColor, utensil } = themeLook;
+  const accentRoot = accentRootProps(accent, template);
+  const themeArt = useMemo(() => ({ posterColor, utensil }), [posterColor, utensil]);
   const setFontScale = useCallback(
     (value: FontScale) => setThemeLooks((looks) => withLook(looks, template, { fontScale: value })),
     [template],
   );
   const setPhotoScale = useCallback(
     (value: PhotoScale) => setThemeLooks((looks) => withLook(looks, template, { photoScale: value })),
+    [template],
+  );
+  const setAccent = useCallback(
+    (value: AccentColor | null) => setThemeLooks((looks) => withLook(looks, template, { accent: value })),
+    [template],
+  );
+  const setPosterColor = useCallback(
+    (value: number | null) => setThemeLooks((looks) => withLook(looks, template, { posterColor: value })),
+    [template],
+  );
+  const setUtensil = useCallback(
+    (value: SupperUtensil | null) => setThemeLooks((looks) => withLook(looks, template, { utensil: value })),
     [template],
   );
   const resetThemeLook = useCallback(
@@ -3585,6 +3602,9 @@ export default function PrintPage() {
       cardSize,
       recipeCount,
       fontScale,
+      photoScale,
+      accent,
+      artChanged: posterColor !== null || utensil !== null,
       // Only the recipes still here: a deleted recipe's sizes stay in the map
       // and must not keep asking for Pro.
       elementTextSized: hasNonNormalTextSize(
@@ -7032,13 +7052,17 @@ export default function PrintPage() {
    * recipe read as having broken something.
    */
   return (
+    <ThemeArtProvider value={themeArt}>
     <div
       className={`h-dvh recipe-print-page ${printWatermarked ? "rp-print-locked" : ""} ${
         // A Pro benefit: no "Printed with RecipePrinter" line, on any theme.
         // On the page root, not the shell, because the off-screen measurers
         // (`measurers` below) must lay cards out exactly as the deck does.
         brandHidden ? "recipe-print-page--pro" : ""
-      }`}
+      } ${accentRoot.className}`}
+      // The theme's accent, if the cook changed it: every page here (deck,
+      // rail, what prints) takes it from the root (lib/themeAccent.ts).
+      style={accentRoot.style}
     >
       {measurers}
       {/* The header sits in its own wrapper so `.recipe-print-page` stays a
@@ -7393,8 +7417,14 @@ export default function PrintPage() {
           setFontScale={setFontScale}
           photoScale={photoScale}
           setPhotoScale={setPhotoScale}
+          accent={accent}
+          setAccent={setAccent}
+          posterColor={posterColor}
+          setPosterColor={setPosterColor}
+          utensil={utensil}
+          setUtensil={setUtensil}
           themeCustomized={
-            isCustomized({ fontScale, photoScale }) || Boolean(projectMeta.meta.pageLooks?.[RECIPES_ADDRESS])
+            isCustomized(themeLook) || Boolean(projectMeta.meta.pageLooks?.[RECIPES_ADDRESS])
           }
           resetThemeLook={() => {
             resetThemeLook();
@@ -7955,5 +7985,6 @@ export default function PrintPage() {
         </div>
       )}
     </div>
+    </ThemeArtProvider>
   );
 }

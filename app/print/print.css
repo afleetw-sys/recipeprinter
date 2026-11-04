@@ -1185,6 +1185,67 @@
   background: var(--cp-accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-accent) 24%, transparent);
 }
+/* ── The cook's accent (lib/themeAccent.ts) ─────────────────────────────────
+   Set on the page root as `--recipe-accent-custom` with `.recipe-accent-custom`
+   when the cook picks one; nothing here applies otherwise, so every theme as
+   it ships is untouched.
+
+   A theme's color isn't one variable. It is spread over the accent (labels,
+   step numbers, often the title), a second accent (header bars, bullets, the
+   colored title on some), bullets and a tinted step badge, and which of those
+   IS the theme's color differs by theme. So each theme says which of its
+   colors the pick replaces (Amelia, 2026-11-04: changing two labels did
+   nothing you could see). A theme's deliberate second color (Bistro's blue,
+   Pantry's gold) stays: it is the other
+   half of the pairing, not the color being chosen. Poster's color is its
+   band (one for every recipe, or taking turns: lib/themeArt.tsx), and
+   Garden, Quilt, Christmas, Fall and Halloween take no accent; their art is
+   in fixed colors.
+
+   Each block is on the theme's `.recipe-card-set` (where it declares its
+   palette) or a blank page carrying the theme class, never the theme
+   picker's thumbnails. !important: a theme's own palette rules can be more
+   specific than these. */
+.recipe-accent-custom {
+  --rpa: var(--recipe-accent-custom);
+  /* A shade under it, for a second accent that was a darker relative. */
+  --rpa-dark: color-mix(in srgb, var(--recipe-accent-custom) 72%, #000);
+}
+/* The usual set: the pick is the accent, its shade the second, the bullets,
+   and a light tint of it under the step numbers. */
+.recipe-accent-custom :is(.recipe-template--classic, .recipe-template--heirloom, .recipe-template--keepsake, .recipe-template--market):not(.recipe-template-option__thumb *) {
+  --recipe-accent: var(--rpa) !important;
+  --recipe-accent-2: var(--rpa-dark) !important;
+  --recipe-bullet: var(--rpa) !important;
+  --recipe-step-bg: color-mix(in srgb, var(--rpa) 14%, var(--recipe-bg)) !important;
+  --recipe-accent-strong: var(--rpa-dark);
+}
+/* One-color themes whose step numbers sit on plain or paper-colored ground:
+   the color changes, the ground doesn't. */
+.recipe-accent-custom :is(.recipe-template--document, .recipe-template--typewriter, .recipe-template--supper):not(.recipe-template-option__thumb *) {
+  --recipe-accent: var(--rpa) !important;
+  --recipe-accent-2: var(--rpa-dark) !important;
+  --recipe-bullet: var(--rpa) !important;
+}
+/* Two-color themes: the pick replaces the first, the second stays. */
+.recipe-accent-custom .recipe-template--bistro:not(.recipe-template-option__thumb *) {
+  --recipe-accent: var(--rpa) !important;
+  --recipe-step-bg: color-mix(in srgb, var(--rpa) 14%, var(--recipe-bg)) !important;
+}
+.recipe-accent-custom .recipe-template--pantry:not(.recipe-template-option__thumb *) {
+  --recipe-accent: var(--rpa) !important;
+}
+/* Diner and Counter set their labels in near-black and their color (Diner's
+   red title, Counter's orange badges and bullets) in the second accent: the
+   pick replaces that, and the labels stay dark. */
+.recipe-accent-custom :is(.recipe-template--diner, .recipe-template--counter):not(.recipe-template-option__thumb *) {
+  --recipe-accent-2: var(--rpa) !important;
+  --recipe-bullet: var(--rpa) !important;
+}
+.recipe-accent-custom .recipe-template--diner:not(.recipe-template-option__thumb *) {
+  --recipe-step-bg: color-mix(in srgb, var(--rpa) 26%, var(--recipe-bg)) !important;
+}
+
 /* A whole target outlined, not a place between two: a folded chapter's bar. */
 .rail-drop-line.rail-drop-line--box {
   border: 2px solid var(--cp-accent);
@@ -3692,6 +3753,31 @@ textarea.recipe-page-fields__input {
 .recipe-text-size__ticks span.is-selected {
   background: var(--cp-accent);
 }
+/* Customize theme's accent swatches: round, a hairline round each so a pale
+   one still reads on the panel, and the shared selected ring on the chosen
+   one, set off from the swatch by the panel's own color. */
+.recipe-accent-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.recipe-accent-swatch {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--swatch) 70%, #000);
+  border-radius: 999px;
+  background: var(--swatch);
+  cursor: pointer;
+}
+.recipe-accent-swatch.is-selected {
+  box-shadow: 0 0 0 2px var(--cp-card), 0 0 0 4px var(--cp-selected-border);
+}
+.recipe-accent-swatch:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: 4px;
+}
 /* The view fills the panel so its foot can sit at the bottom; the foot
    sticks there while the settings above it scroll. */
 .recipe-config-section--customize {
@@ -3716,6 +3802,9 @@ textarea.recipe-page-fields__input {
 .recipe-customize__defaults {
   display: flex;
   align-items: center;
+  /* The check sits where Reset's undo arrow does, the same gap from the
+     words, so swapping one for the other moves nothing. */
+  gap: 8px;
   min-height: 30px;
   margin: 0;
   padding: 0 11px;
@@ -4998,6 +5087,26 @@ textarea.recipe-page-fields__input {
   font-size: calc(var(--cp-fs-caption) / var(--page-scale, 1));
 }
 
+/* Looks like a secondary `.btn-header` at the workspace's size, so its sizes
+   are divided by the page's scale like the words above it. */
+.photo-placeholder__button {
+  display: inline-flex;
+  align-items: center;
+  min-height: calc(32 * var(--placeholder-px));
+  margin-top: calc(8 * var(--placeholder-px));
+  padding: 0 calc(12 * var(--placeholder-px));
+  border: var(--placeholder-px) solid var(--cp-line-strong);
+  border-radius: calc(9 * var(--placeholder-px));
+  background: transparent;
+  color: var(--cp-ink);
+  font-size: calc(var(--cp-fs-small) / var(--page-scale, 1));
+  font-weight: 600;
+  transition: background 150ms ease;
+}
+.recipe-spread__page.is-focused .photo-placeholder:hover .photo-placeholder__button {
+  background: var(--cp-overlay-hover);
+}
+
 .recipe-spread__page.is-focused .photo-placeholder {
   cursor: pointer;
 }
@@ -6003,7 +6112,9 @@ textarea.recipe-page-fields__input {
 }
 .recipe-template--heirloom .recipe-card__cover-ornament::before,
 .recipe-template--heirloom .recipe-card__chapter-ornament::before {
-  content: "\275E";
+  /* ❧ (U+2767). It was \275E, a heavy closing quotation mark (❞), which
+     printed a big "99" over every Heirloom chapter and cover title. */
+  content: "\2767";
   font-size: 0.44in;
 }
 
@@ -6146,14 +6257,11 @@ textarea.recipe-page-fields__input {
   margin-left: auto;
   margin-right: auto;
 }
-/* Keepsake chapter also gets the inset frame. */
-.recipe-template--keepsake .recipe-card__chapter-frame {
-  display: block;
-  position: absolute;
-  inset: 0.5in;
-  z-index: 0;
-  border: 2px solid var(--recipe-accent);
-}
+/* Keepsake's chapter draws no inset frame of its own: the card's double
+   border is its frame. One was declared here, but the theme's
+   `.recipe-card > * { position: relative }` below beat its `absolute`, so it
+   never framed anything: with nothing in it, it collapsed to a dot beside the
+   star (or a line across a page without a photo). */
 
 /* Bistro & Counter chapters keep the photo band but tint it to their palette
    (handled by the base gradient reading their --recipe-accent vars); Counter
@@ -7352,6 +7460,39 @@ textarea.recipe-card__toc-title {
     92% center;
   background-repeat: no-repeat;
   background-size: var(--heirloom-band-art);
+}
+
+/* A picked accent (lib/themeAccent.ts): the same utensils as shapes filled
+   with it. A background SVG keeps the artist's red, so the files become the
+   mask over a fill of the accent, at the same places and sizes. Untouched,
+   the rule above is what draws. */
+.recipe-accent-custom .recipe-template--heirloom:not(.recipe-template-option__thumb *) .recipe-card::before {
+  background-image: none;
+  background-color: var(--recipe-accent);
+  -webkit-mask-image:
+    url("/images/heirloom-whisk.svg"),
+    url("/images/heirloom-spatula.svg"),
+    url("/images/heirloom-turner.svg"),
+    url("/images/heirloom-tongs.svg"),
+    url("/images/heirloom-whisk.svg"),
+    url("/images/heirloom-spatula.svg"),
+    url("/images/heirloom-turner.svg"),
+    url("/images/heirloom-tongs.svg");
+  mask-image:
+    url("/images/heirloom-whisk.svg"),
+    url("/images/heirloom-spatula.svg"),
+    url("/images/heirloom-turner.svg"),
+    url("/images/heirloom-tongs.svg"),
+    url("/images/heirloom-whisk.svg"),
+    url("/images/heirloom-spatula.svg"),
+    url("/images/heirloom-turner.svg"),
+    url("/images/heirloom-tongs.svg");
+  -webkit-mask-position: 8% center, 20% center, 32% center, 44% center, 56% center, 68% center, 80% center, 92% center;
+  mask-position: 8% center, 20% center, 32% center, 44% center, 56% center, 68% center, 80% center, 92% center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: var(--heirloom-band-art);
+  mask-size: var(--heirloom-band-art);
 }
 
 /* …and on a 6x4 the band gives way to the source link rather than the other
@@ -11006,7 +11147,9 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--market .recipe-card__step-number {
-  color: #2f6463;
+  /* A shade under the accent; a custom accent supplies its own (see
+     "The cook's accent" below). */
+  color: var(--recipe-accent-strong, #2f6463);
 }
 
 .recipe-template--market .recipe-card__photo-img {
@@ -11035,7 +11178,7 @@ textarea.recipe-card__toc-title {
   left: 0;
   right: 0;
   height: var(--market-bar);
-  background: #498988;
+  background: var(--recipe-accent); /* Market's teal: a picked accent recolors the bar. */
 }
 
 .recipe-card__market-band {
@@ -11133,15 +11276,67 @@ textarea.recipe-card__toc-title {
 .recipe-card__supper-frame {
   inset: var(--supper-inset);
   box-sizing: border-box;
-  border: calc(16 * var(--supper-u)) solid #7a151b;
+  /* Supper's red, its accent, so a picked accent recolors the frame. */
+  border: calc(16 * var(--supper-u)) solid var(--recipe-accent);
   border-radius: calc(48 * var(--supper-u));
 }
 
-.recipe-card__supper-utensil {
+.recipe-card__supper-utensil,
+.recipe-card__supper-utensil-tint {
   left: var(--supper-inset);
   width: calc(100% - 2 * var(--supper-inset));
   height: auto;
   bottom: calc(var(--supper-inset) - 28 * var(--supper-u));
+}
+
+/* The accent version of the utensil (see `SupperFrame`): the strip at the
+   art's 1452 x 110 proportions, its card-colored patch where the artist's
+   rect is, and the utensil as a mask filled with the accent. Shown, in place
+   of the image, only with a picked accent. */
+.recipe-card__supper-utensil-tint {
+  position: absolute;
+  display: none;
+  aspect-ratio: 1452 / 110;
+  pointer-events: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.recipe-accent-custom .recipe-template--supper:not(.recipe-template-option__thumb *) .recipe-card__supper-utensil {
+  display: none;
+}
+.recipe-accent-custom .recipe-template--supper:not(.recipe-template-option__thumb *) .recipe-card:not(.recipe-card--cover):not(.recipe-card--chapter-with-photo) .recipe-card__supper-utensil-tint {
+  display: block;
+}
+.recipe-card__supper-utensil-patch,
+.recipe-card__supper-utensil-mark {
+  position: absolute;
+}
+.recipe-card__supper-utensil-patch {
+  background: var(--recipe-bg);
+}
+.recipe-card__supper-utensil-tint[data-utensil="fork"] .recipe-card__supper-utensil-patch {
+  left: 37.38%;
+  top: 25.719%;
+  width: 25.24%;
+  height: 70.645%;
+}
+.recipe-card__supper-utensil-tint[data-utensil="spoon"] .recipe-card__supper-utensil-patch {
+  left: 37.401%;
+  top: 7.878%;
+  width: 25.198%;
+  height: 88.485%;
+}
+.recipe-card__supper-utensil-tint[data-utensil="knife"] .recipe-card__supper-utensil-patch {
+  left: 37.632%;
+  top: 36.625%;
+  width: 24.735%;
+  height: 59.739%;
+}
+.recipe-card__supper-utensil-mark {
+  inset: 0;
+  background: var(--recipe-accent);
+  -webkit-mask: var(--utensil-mark) center / 100% 100% no-repeat;
+  mask: var(--utensil-mark) center / 100% 100% no-repeat;
 }
 
 /* ── Diner ─────────────────────────────────────────────────────────────────
@@ -11179,7 +11374,8 @@ textarea.recipe-card__toc-title {
   font-weight: 400;
   line-height: 1.15;
   letter-spacing: 0;
-  color: #db3937;
+  /* Diner's red: its second accent, so a custom accent recolors it. */
+  color: var(--recipe-accent-2);
   -webkit-text-stroke: calc(4 * var(--diner-u)) #000;
   paint-order: stroke fill;
   text-shadow: calc(-5 * var(--diner-u)) calc(4 * var(--diner-u)) 0 #000;
@@ -11438,7 +11634,7 @@ textarea.recipe-card__toc-title {
   right: var(--poster-inset);
   bottom: calc(24 * var(--poster-u));
   box-sizing: border-box;
-  border: calc(16 * var(--poster-u)) solid #1f1f1f;
+  border: calc(16 * var(--poster-u)) solid var(--recipe-accent); /* Poster's black: a picked accent recolors the frame. */
   background: #ffffff;
 }
 

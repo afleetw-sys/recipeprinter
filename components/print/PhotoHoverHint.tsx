@@ -8,12 +8,18 @@ import { ImageIcon, ICON_SIZE } from "@/components/icons";
     thumbnails or the pages around it. */
 const ACTIVE_PAGE = ".recipe-page-slide.is-active, .recipe-spread__page.is-focused";
 
+/** The only photo that gets the overlay: a recipe's in-page photo, small
+    enough to read as part of the card rather than as something to click. A
+    full-page photo, a chapter's and a cover's are the whole picture already
+    (Amelia, 2026-11-04: it kept showing over them). */
+const IN_PAGE_PHOTO = ".recipe-card__photo";
+
 /**
  * "Change photo" over the photo under the mouse, so a photo reads as
  * something to click, not only as a hairline outline (Amelia, 2026-11-04).
- * Recipe cards and cookbooks alike: every surface in `surfaces` on the active
- * page. A photo still waiting to be added says "Add a photo" on itself, so it
- * gets nothing here.
+ * Recipe cards and cookbooks alike, but only over a recipe's in-page photo on
+ * the active page (`IN_PAGE_PHOTO`). A photo still waiting to be added says
+ * "Add a photo" on itself, so it gets nothing here.
  *
  * One overlay for the whole deck, laid over the photo from outside the page.
  * The photos are a mix of <img>s (no ::after) and boxes whose ::after some
@@ -35,7 +41,12 @@ export function PhotoHoverHint({ surfaces }: { surfaces: string }) {
       const target = event.target as Element | null;
       const surface = target?.closest?.(surfaces) ?? null;
       const photo =
-        surface && !surface.closest(".photo-placeholder") && surface.closest(ACTIVE_PAGE) ? surface : null;
+        surface &&
+        surface.matches(IN_PAGE_PHOTO) &&
+        !surface.closest(".photo-placeholder") &&
+        surface.closest(ACTIVE_PAGE)
+          ? surface
+          : null;
       if (photo === current) return;
       current = photo;
       setRect(photo ? photo.getBoundingClientRect() : null);

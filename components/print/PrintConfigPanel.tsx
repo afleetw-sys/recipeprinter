@@ -12,6 +12,7 @@ import type { PhotoStyle } from "@/lib/project";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import type { FontScale } from "@/lib/fontScale";
 import type { PhotoScale } from "@/lib/photoScale";
+import type { AccentColor, SupperUtensil } from "@/lib/themeAccent";
 
 interface PrintConfigPanelProps {
   configPanelRef: RefObject<HTMLElement>;
@@ -33,6 +34,12 @@ interface PrintConfigPanelProps {
   setFontScale: (value: FontScale) => void;
   photoScale: PhotoScale;
   setPhotoScale: (value: PhotoScale) => void;
+  accent: AccentColor | null;
+  setAccent: (value: AccentColor | null) => void;
+  posterColor: number | null;
+  setPosterColor: (value: number | null) => void;
+  utensil: SupperUtensil | null;
+  setUtensil: (value: SupperUtensil | null) => void;
   themeCustomized: boolean;
   resetThemeLook: () => void;
   /** Customize theme's Each part: the size every recipe's part has, and its
@@ -95,6 +102,12 @@ export function PrintConfigPanel({
   setFontScale,
   photoScale,
   setPhotoScale,
+  accent,
+  setAccent,
+  posterColor,
+  setPosterColor,
+  utensil,
+  setUtensil,
   themeCustomized,
   resetThemeLook,
   recipePartSizes,
@@ -216,6 +229,13 @@ export function PrintConfigPanel({
             setFontScale={setFontScale}
             photoScale={photoScale}
             setPhotoScale={setPhotoScale}
+            accent={accent}
+            setAccent={setAccent}
+            posterColor={posterColor}
+            setPosterColor={setPosterColor}
+            utensil={utensil}
+            setUtensil={setUtensil}
+            template={template}
             customized={themeCustomized}
             onReset={resetThemeLook}
             recipePartSizes={recipePartSizes}
