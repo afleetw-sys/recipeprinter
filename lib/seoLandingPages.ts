@@ -1442,7 +1442,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-paprika-recipes",
-    contentUpdated: "2026-10-06",
+    contentUpdated: "2026-11-04",
     copyReviewed: "2026-10-02",
 
     primaryKeyword: "print Paprika recipes",
@@ -1466,11 +1466,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroFrame: "none",
     title: "Print Recipes From Paprika | RecipePrinter",
     description:
-      "Export your Paprika recipes, open the file in RecipePrinter, and print selected recipes as full pages or 4x6 recipe cards.",
+      "Open your Paprika export in RecipePrinter and print recipes one at a time as free full pages, or several together as 4x6 recipe cards with Pro.",
     h1: "Print recipes from Paprika",
     anchor: "Print Paprika recipes",
     lede:
-      "Export your Paprika recipe library, open the Paprika export in RecipePrinter, and choose the recipes you want to print. Make full-page recipes, save them as PDFs, or use RecipePrinter Pro to print 4x6 recipe cards.",
+      "Export your Paprika recipe library, open it in RecipePrinter, and pick the recipes you want. Print them one at a time as full pages or PDFs for free, or use RecipePrinter Pro to print several together and make 4x6 recipe cards.",
     howToHeading: "How to print recipes from Paprika",
     howTo: [
       {
