@@ -301,7 +301,7 @@
 }
 .recipe-organize-bar__hint {
   margin: 0;
-  font-size: var(--cp-fs-caption);
+  font-size: var(--cp-fs-small);
   line-height: 1.35;
   color: var(--cp-ink-soft);
 }
