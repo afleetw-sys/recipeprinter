@@ -682,6 +682,11 @@
   .recipe-print-shell--organizing .recipe-page-rail__section-group--collapsed {
     padding-block: 10px;
   }
+  /* The heading's space above the cards has no cards under it here, and left
+     its line sitting high in the bar. */
+  .recipe-print-shell--organizing .recipe-page-rail__section-group--collapsed .recipe-page-rail__section-header {
+    padding-bottom: 0;
+  }
 
   .recipe-print-shell--organizing .recipe-page-rail__section-group > .recipe-page-rail__row {
     display: contents;
