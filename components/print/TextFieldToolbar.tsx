@@ -141,13 +141,27 @@ export function TextFieldToolbar({
       `.recipe-page-canvas [data-element-page="${CSS.escape(address.page)}"][data-element="${CSS.escape(address.element)}"]`,
     );
   };
+  // Where the line being edited sat inside its element. Once the field
+  // closes (the size box took the focus), the bar stays over that same spot,
+  // not over the whole element: anchoring to the ingredients or steps as a
+  // block jumped the bar up the page the moment a size was clicked.
+  const lineOffsetRef = useRef<{ dx: number; dy: number; width: number; height: number } | null>(null);
   const getAnchorRect = useCallback(
-    () =>
-      field?.isConnected
-        ? field.getBoundingClientRect()
-        : field
-          ? (elementByAddress()?.getBoundingClientRect() ?? null)
-          : null,
+    () => {
+      if (!field) return null;
+      if (field.isConnected) {
+        const rect = field.getBoundingClientRect();
+        const block = field.closest("[data-element]")?.getBoundingClientRect();
+        lineOffsetRef.current = block
+          ? { dx: rect.left - block.left, dy: rect.top - block.top, width: rect.width, height: rect.height }
+          : null;
+        return rect;
+      }
+      const block = elementByAddress()?.getBoundingClientRect();
+      if (!block) return null;
+      const line = lineOffsetRef.current;
+      return line ? new DOMRect(block.left + line.dx, block.top + line.dy, line.width, line.height) : block;
+    },
     // elementByAddress reads a ref.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [field],
@@ -170,6 +184,7 @@ export function TextFieldToolbar({
     elementSize && elementNode && elementPage && elementName ? (
       <div className="recipe-page-toolbar__group" role="group" aria-label="Text size">
         <SizeDropdown
+          partLabel={ELEMENT_LABELS[elementName]}
           // Looked up on every draw, not handed over once: typing in the size
           // box closes the field, and the element is redrawn as text.
           getNode={() =>
@@ -338,23 +353,42 @@ function keepFieldFocus(event: ReactMouseEvent) {
   event.preventDefault();
 }
 
-/** The printed size, in points, of the biggest text in an element: an
-    ingredients list's lines rather than its headings, a step's words rather
-    than its number. That's the size the cook is choosing; everything else in
-    the element keeps its size relative to it. */
+/** Text that labels or prompts rather than being the element's words: a
+    list's "Steps" heading, a step's number, "+ Add below", a fact's label. */
+const NOT_MAIN_TEXT = "button, [data-field-prompt], [class*='__label'], [class*='add-line'], [class*='step-number']";
+
+/**
+ * The printed size, in points, of the text most of an element is written in:
+ * an ingredients list's lines rather than its heading, a step's words rather
+ * than its number. That's the size the cook is choosing; everything else in
+ * the element keeps its size relative to it. Measured by characters, so a
+ * heading that a theme sets bigger than the lines doesn't stand in for them.
+ */
 function printedPoints(node: HTMLElement): number {
-  let px = 0;
-  const consider = (el: Element) => {
+  const chars = new Map<number, number>();
+  const count = (el: Element, length: number) => {
     const size = parseFloat(getComputedStyle(el).fontSize);
-    if (Number.isFinite(size) && size > px) px = size;
+    if (Number.isFinite(size) && length > 0) chars.set(size, (chars.get(size) ?? 0) + length);
   };
-  if (node.matches("textarea, input, [contenteditable='true']")) consider(node);
+  // A line being typed in is a field, whose words are its value.
+  const fields = node.matches("textarea, input") ? [node] : Array.from(node.querySelectorAll("textarea, input"));
+  for (const field of fields) count(field, (field as HTMLTextAreaElement).value.trim().length);
   const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
   for (let text = walker.nextNode(); text; text = walker.nextNode()) {
-    if (text.textContent?.trim() && text.parentElement) consider(text.parentElement);
+    const parent = text.parentElement;
+    const length = text.textContent?.trim().length ?? 0;
+    if (!parent || !length || parent.closest(NOT_MAIN_TEXT)) continue;
+    count(parent, length);
   }
-  node.querySelectorAll("textarea, input").forEach(consider);
-  if (px === 0) consider(node);
+  let px = 0;
+  let most = 0;
+  chars.forEach((length, size) => {
+    if (length > most || (length === most && size > px)) {
+      most = length;
+      px = size;
+    }
+  });
+  if (px === 0) px = parseFloat(getComputedStyle(node).fontSize) || 0;
   // CSS px are 1/96in, points 1/72in. The deck is scaled with a transform,
   // which computed sizes don't see, so this is the size on paper.
   return px * 0.75;
@@ -363,6 +397,30 @@ function printedPoints(node: HTMLElement): number {
 function roundHalf(points: number): number {
   return Math.round(points * 2) / 2;
 }
+
+/** What each element is called on the size control. Every element a page
+    marks (lib/pageLooks.tsx) is named here; one that isn't shows no label. */
+const ELEMENT_LABELS: Record<string, string> = {
+  title: "Title",
+  notes: "Notes",
+  details: "Details",
+  ingredients: "Ingredients",
+  steps: "Steps",
+  subtitle: "Subtitle",
+  intro: "Description",
+  caption: "Caption",
+  kicker: "Label",
+  entries: "Contents",
+  "cover-kicker": "Subtitle",
+  "cover-title": "Title",
+  "cover-byline": "Author",
+  "cover-edition": "Edition",
+  "dedication-heading": "Heading",
+  "dedication-text": "Message",
+  "dedication-signature": "Signature",
+  "back-blurb": "Message",
+  "back-credit": "Credit",
+};
 
 /** The sizes the list offers, in points, before it's cut to what this
     element allows and its Default is put in its place. */
@@ -382,11 +440,15 @@ const SIZE_PRESETS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28
  * headings, a step's number) grows with its main text.
  */
 function SizeDropdown({
+  partLabel,
   getNode,
   size,
   proMarked,
   onChange,
 }: {
+  /** What the size applies to ("Steps", "Title"), said on the control: the
+      size is the whole part's, not just the line being typed in. */
+  partLabel?: string;
   getNode: () => HTMLElement | null;
   size: number | undefined;
   proMarked: boolean;
@@ -435,10 +497,15 @@ function SizeDropdown({
   return (
     <>
       <div className="recipe-text-toolbar__size">
+        {partLabel && (
+          <span className="recipe-text-toolbar__size-part" aria-hidden>
+            {partLabel}
+          </span>
+        )}
         <input
           className="recipe-text-toolbar__size-input"
           inputMode="decimal"
-          aria-label="Text size in points"
+          aria-label={partLabel ? `${partLabel} text size in points` : "Text size in points"}
           value={draft ?? String(shownPoints)}
           onFocus={(event) => {
             setDraft(String(shownPoints));

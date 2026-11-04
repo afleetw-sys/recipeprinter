@@ -1917,6 +1917,16 @@
   outline: var(--cp-focus-ring);
   outline-offset: var(--cp-focus-ring-offset);
 }
+/* What the size applies to ("Steps"), quieter than the number it names. */
+.recipe-text-toolbar__size-part {
+  padding-left: 7px;
+  /* The number sits right after it, so the number's own lead is enough. */
+  margin-right: -3px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
 .recipe-text-toolbar__size-input {
   width: 2.6em;
   height: 100%;
