@@ -9193,6 +9193,25 @@ textarea.recipe-card__toc-title {
   overflow-wrap: anywhere;
 }
 
+/* The link is part of the recipe's details (lib/pageLooks.tsx), so a details
+   size sets its own `--recipe-font-scale`. The footer's size is the theme's,
+   at the book's scale; the link keeps that and grows or shrinks by how far
+   its own scale is from the book's. */
+.recipe-card__footer {
+  --recipe-card-footer-book-scale: var(--recipe-font-scale, 1);
+}
+.recipe-card__footer-source[data-element] {
+  font-size: calc(1em * var(--recipe-font-scale, 1) / var(--recipe-card-footer-book-scale, 1));
+}
+/* And the room kept clear for the footer grows with a bigger link (the card
+   sets `--recipe-card-footer-link-scale`, the details' size). Never smaller
+   than the theme's own. */
+.recipe-card {
+  --recipe-card-footer-reserve: calc(
+    0.28in * max(1, var(--recipe-card-footer-link-scale, var(--recipe-font-scale, 1)) / var(--recipe-font-scale, 1))
+  );
+}
+
 /* The footer is pinned to the bottom of the fixed-size card (see
    `.recipe-card__footer`'s `position: absolute` above) so content must leave
    room for it instead of running underneath. Reserved only where the footer
