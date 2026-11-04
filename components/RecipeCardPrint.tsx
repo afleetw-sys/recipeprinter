@@ -1021,8 +1021,16 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   // it.
   const cardWords = recipeCardWords(recipe.language);
 
+  /** A list's headings, its own "Ingredients" and the section headings in
+      it, are an element of their own: sized apart from the lines, following
+      them until the cook gives the headings a size (lib/pageLooks.tsx). */
+  function headingsElement(kind: RecipeHeadingKind | "ingredientSection" | "instructionSection") {
+    return kind === "ingredientsHeading" || kind === "ingredientSection" ? "ingredients-headings" : "steps-headings";
+  }
+
   function sectionLabel(kind: RecipeHeadingKind, suffix: ReactNode, addButton: ReactNode) {
     const target: RecipeCardEditTarget = { kind };
+    const headings = el(headingsElement(kind));
     const heading = recipeHeading(recipe, kind);
     const defaultHeading = cardWords[kind];
     const defaultLang = cardWords.lang;
@@ -1031,7 +1039,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     const headingLang = recipe[kind] === undefined ? defaultLang : undefined;
     if (canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, target)) {
       return (
-        <h2 className="recipe-card__label">
+        <h2 {...headings} className="recipe-card__label">
           <textarea
             ref={focusIfEditing(target)}
             className="recipe-card__inline-textarea recipe-card__label-input"
@@ -1049,6 +1057,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       if (showEmpty && canEdit) {
         return (
           <h2
+            {...headings}
             className="recipe-card__label recipe-card__label--empty"
             lang={defaultLang}
             onClick={() => startEdit(target, defaultHeading)}
@@ -1062,7 +1071,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
         );
       }
       return suffix ? (
-        <h2 className="recipe-card__label">
+        <h2 {...headings} className="recipe-card__label">
           <span className="recipe-card__label-inline">
             {suffix}
             {addButton}
@@ -1072,6 +1081,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     }
     return (
       <h2
+        {...headings}
         className={`recipe-card__label ${canEdit ? "recipe-card__label--editable" : ""}`}
         lang={headingLang}
         onClick={canEdit ? () => startEdit(target, heading) : undefined}
@@ -1090,8 +1100,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     index: number,
     title: string,
   ) {
+    const headings = el(headingsElement(kind));
     if (!canEdit || !inlineEdit) {
-      return <h3 className="recipe-card__section-title">{title}</h3>;
+      return <h3 {...headings} className="recipe-card__section-title">{title}</h3>;
     }
     const target: RecipeCardEditTarget = { kind, index };
     const isEditingThis = sameTarget(inlineEdit.editingTarget, target);
@@ -1105,6 +1116,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     if (!isEditingThis) {
       return (
         <h3
+          {...headings}
           className="recipe-card__section-title recipe-card__section-title--editable"
           data-line-kind={kind}
           data-line-index={index}
@@ -1119,7 +1131,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       /* Still a heading being edited, and the toolbar's line-kind switch is
          what turns it back into a line — the conversion stays two-way, it just
          happens in the bar rather than in a control pinned over the card. */
-      <span className="recipe-card__section-title-edit">
+      <span {...headings} className="recipe-card__section-title-edit">
         <textarea
           ref={focusIfEditing(target)}
           className="recipe-card__inline-textarea recipe-card__section-title"
@@ -1557,7 +1569,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                   {ingredientChunks.map((chunk, i) => (
                     <div key={i} ref={ingredientColumns.itemRef(i)}>
                       {chunk.groupTitle !== undefined && (
-                        <h3 className="recipe-card__section-title">{chunk.groupTitle}</h3>
+                        <h3 {...el("ingredients-headings")} className="recipe-card__section-title">{chunk.groupTitle}</h3>
                       )}
                       <ul>{renderIngredientProbeItem(chunk.item)}</ul>
                     </div>
@@ -1651,7 +1663,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                   {instructionChunks.map((chunk, i) => (
                     <div key={i} ref={methodColumns.itemRef(i)}>
                       {chunk.groupTitle !== undefined && (
-                        <h3 className="recipe-card__section-title">{chunk.groupTitle}</h3>
+                        <h3 {...el("steps-headings")} className="recipe-card__section-title">{chunk.groupTitle}</h3>
                       )}
                       <ol>{renderInstructionProbeItem(chunk.item)}</ol>
                     </div>

@@ -1917,16 +1917,6 @@
   outline: var(--cp-focus-ring);
   outline-offset: var(--cp-focus-ring-offset);
 }
-/* What the size applies to ("Steps"), quieter than the number it names. */
-.recipe-text-toolbar__size-part {
-  padding-left: 7px;
-  /* The number sits right after it, so the number's own lead is enough. */
-  margin-right: -3px;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 600;
-  white-space: nowrap;
-}
 .recipe-text-toolbar__size-input {
   width: 2.6em;
   height: 100%;
@@ -1963,6 +1953,28 @@
   min-width: 8.5em;
   max-height: min(22rem, calc(100vh - 32px));
   overflow-y: auto;
+  /* It still scrolls (wheel, trackpad, touch); it just draws no bar, which
+     in a list this narrow took a third of its width. */
+  scrollbar-width: none;
+}
+.text-size-menu.text-size-menu::-webkit-scrollbar {
+  display: none;
+}
+/* Which part the sizes are for ("Steps"): small, at the top, and held there
+   while the list scrolls under it. The menu's own background behind it, so
+   rows scrolling up pass under it rather than through it. */
+.text-size-menu__part {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 2px 10px 4px;
+  background: inherit;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-micro, 10px);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 .text-size-menu__item.text-size-menu__item {
   display: grid;

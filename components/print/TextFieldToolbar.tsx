@@ -133,13 +133,20 @@ export function TextFieldToolbar({
   // The element the bar is about, by address, so it can be found again after
   // its field closes and is redrawn as text (typing a size into the bar's own
   // box takes the focus, which closes the field).
-  const addressRef = useRef<{ page: string; element: string } | null>(null);
+  // `index` tells apart the copies one element can have on a page (each
+  // section heading of a list is the list's headings).
+  const addressRef = useRef<{ page: string; element: string; index: number } | null>(null);
+  const copiesOf = (page: string, element: string) =>
+    Array.from(
+      document.querySelectorAll<HTMLElement>(
+        `.recipe-page-canvas [data-element-page="${CSS.escape(page)}"][data-element="${CSS.escape(element)}"]`,
+      ),
+    ).filter((copy) => !copy.closest("[aria-hidden='true'], [data-preview-hidden='true']"));
   const elementByAddress = (): HTMLElement | null => {
     const address = addressRef.current;
     if (!address) return null;
-    return document.querySelector<HTMLElement>(
-      `.recipe-page-canvas [data-element-page="${CSS.escape(address.page)}"][data-element="${CSS.escape(address.element)}"]`,
-    );
+    const copies = copiesOf(address.page, address.element);
+    return copies[address.index] ?? copies[0] ?? null;
   };
   // Where the line being edited sat inside its element. Once the field
   // closes (the size box took the focus), the bar stays over that same spot,
@@ -179,7 +186,13 @@ export function TextFieldToolbar({
     : elementByAddress();
   const elementPage = elementNode?.dataset.elementPage;
   const elementName = elementNode?.dataset.element;
-  if (elementPage && elementName) addressRef.current = { page: elementPage, element: elementName };
+  if (field.isConnected && elementNode && elementPage && elementName) {
+    addressRef.current = {
+      page: elementPage,
+      element: elementName,
+      index: Math.max(0, copiesOf(elementPage, elementName).indexOf(elementNode)),
+    };
+  }
   const sizeGroup =
     elementSize && elementNode && elementPage && elementName ? (
       <div className="recipe-page-toolbar__group" role="group" aria-label="Text size">
@@ -371,13 +384,16 @@ function printedPoints(node: HTMLElement): number {
     if (Number.isFinite(size) && length > 0) chars.set(size, (chars.get(size) ?? 0) + length);
   };
   // A line being typed in is a field, whose words are its value.
+  // Only this element's own words: a list's headings are an element of
+  // their own inside it, with a size of their own.
+  const own = (el: Element) => el.closest("[data-element]") === node || el === node;
   const fields = node.matches("textarea, input") ? [node] : Array.from(node.querySelectorAll("textarea, input"));
-  for (const field of fields) count(field, (field as HTMLTextAreaElement).value.trim().length);
+  for (const field of fields) if (own(field)) count(field, (field as HTMLTextAreaElement).value.trim().length);
   const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
   for (let text = walker.nextNode(); text; text = walker.nextNode()) {
     const parent = text.parentElement;
     const length = text.textContent?.trim().length ?? 0;
-    if (!parent || !length || parent.closest(NOT_MAIN_TEXT)) continue;
+    if (!parent || !length || !own(parent) || parent.closest(NOT_MAIN_TEXT)) continue;
     count(parent, length);
   }
   let px = 0;
@@ -406,6 +422,8 @@ const ELEMENT_LABELS: Record<string, string> = {
   details: "Details",
   ingredients: "Ingredients",
   steps: "Steps",
+  "ingredients-headings": "Ingredients headings",
+  "steps-headings": "Steps headings",
   subtitle: "Subtitle",
   intro: "Description",
   caption: "Caption",
@@ -446,8 +464,8 @@ function SizeDropdown({
   proMarked,
   onChange,
 }: {
-  /** What the size applies to ("Steps", "Title"), said on the control: the
-      size is the whole part's, not just the line being typed in. */
+  /** What the size applies to ("Steps", "Title"), said at the top of the list:
+      the size is the whole part's, not just the line being typed in. */
   partLabel?: string;
   getNode: () => HTMLElement | null;
   size: number | undefined;
@@ -497,11 +515,6 @@ function SizeDropdown({
   return (
     <>
       <div className="recipe-text-toolbar__size">
-        {partLabel && (
-          <span className="recipe-text-toolbar__size-part" aria-hidden>
-            {partLabel}
-          </span>
-        )}
         <input
           className="recipe-text-toolbar__size-input"
           inputMode="decimal"
@@ -557,6 +570,7 @@ function SizeDropdown({
         <SizeMenu
           anchor={openAt}
           triggerRef={triggerRef}
+          partLabel={partLabel}
           sizes={sizes}
           current={shownPoints}
           defaultPoints={defaultPoints}
@@ -575,6 +589,7 @@ function SizeDropdown({
 function SizeMenu({
   anchor,
   triggerRef,
+  partLabel,
   sizes,
   current,
   defaultPoints,
@@ -583,6 +598,7 @@ function SizeMenu({
 }: {
   anchor: { x: number; y: number };
   triggerRef: RefObject<HTMLButtonElement | null>;
+  partLabel?: string;
   sizes: number[];
   current: number;
   defaultPoints: number;
@@ -605,10 +621,17 @@ function SizeMenu({
       ref={ref}
       className="cp-menu rail-tile-menu add-line-menu text-size-menu no-print"
       role="menu"
-      aria-label="Text size"
+      aria-label={partLabel ? `${partLabel} text size` : "Text size"}
       style={{ top: anchor.y, left: anchor.x }}
       onMouseDown={(event) => event.preventDefault()}
     >
+      {/* Which part these sizes are for, held at the top while the sizes
+          scroll under it. */}
+      {partLabel && (
+        <p className="text-size-menu__part" aria-hidden>
+          {partLabel}
+        </p>
+      )}
       {sizes.map((points) => {
         const active = points === current;
         return (
