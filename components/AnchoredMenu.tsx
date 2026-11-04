@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
@@ -62,10 +62,10 @@ export function AnchoredMenu({
   useMenuDismiss([anchorRef, menuRef], close);
 
   // Measured after render because the menu's own size decides where it fits.
-  useLayoutEffect(() => {
+  const place = useCallback(() => {
     const anchor = anchorRef.current;
     const menu = menuRef.current;
-    if (!anchor || !menu) return;
+    if (!anchor || !menu) return false;
     const at = anchor.getBoundingClientRect();
     const size = menu.getBoundingClientRect();
     const gap = 4;
@@ -79,9 +79,24 @@ export function AnchoredMenu({
         : below;
     menu.style.left = `${left}px`;
     menu.style.top = `${top}px`;
+    // Shown before focusing: a hidden row cannot take focus.
+    menu.style.visibility = "";
     (menu.querySelector<HTMLElement>('[role^="menuitem"][aria-checked="true"]') ??
       menu.querySelector<HTMLElement>('[role^="menuitem"]'))?.focus();
+    return true;
   }, [anchorRef, align]);
+  // An anchor that is only attached while the menu is open (one ref shared by
+  // a list of triggers) is attached AFTER this layout effect in the same
+  // commit, so it is missing here. Then the menu is placed in the passive
+  // effect, which runs once every ref is attached; it starts hidden so it is
+  // never seen in the corner first.
+  const placedRef = useRef(false);
+  useLayoutEffect(() => {
+    placedRef.current = place();
+  }, [place]);
+  useEffect(() => {
+    if (!placedRef.current) placedRef.current = place();
+  }, [place]);
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const rows = Array.from(
@@ -108,6 +123,7 @@ export function AnchoredMenu({
       className={`cp-menu anchored-menu ${className}`.trim()}
       role="menu"
       aria-label={label}
+      style={{ visibility: "hidden" }}
       onKeyDown={onKeyDown}
     >
       {children}
