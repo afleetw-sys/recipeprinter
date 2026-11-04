@@ -76,6 +76,11 @@ const RAIL_SCALE: Record<PrintCardSize, number> = {
 // is ready before it scrolls into view (no visible pop-in).
 const RAIL_THUMB_OVERSCAN = "600px 0px";
 
+/** The move menu's destination for recipes in no chapter (see
+    `tileMenuSections`), and what the organizer calls them. */
+const NOT_IN_A_CHAPTER = "not-in-a-chapter";
+export const NOT_IN_A_CHAPTER_LABEL = "Not in a chapter";
+
 /** How the organizer orders the recipes inside each section: the cook's own
     arrangement, or A–Z by recipe title. Section order is never touched. */
 // Owned by types/recipe.ts now that it is saved with the book; re-exported
@@ -593,15 +598,22 @@ export function PageRail(props: PageRailProps) {
     const at = sectionAndIndexForItem(itemId);
     return at ? sections.find((section) => section.id === at.sectionId)?.title?.trim() : undefined;
   };
-  // The recipes in no chapter are a group with no name; moving there is
-  // "Remove from chapter", not a chapter called "Untitled".
+  // The recipes in no chapter are a group with no name, offered first as
+  // "Not in a chapter", the organizer's own heading for them, rather than as
+  // a chapter called "Untitled". There may be no such group yet (every
+  // recipe in a chapter), so it is not a section id but its own value.
   const tileMenuSections = tileMenu
-    ? sections.filter((section) => {
-        if (!section.title?.trim()) return false;
-        const ids = itemIdsForSection(section.id);
-        // A section every moved recipe is already in has nowhere to move them.
-        return !tileMenu.ids.every((id) => ids.includes(id));
-      })
+    ? [
+        ...(tileMenu.ids.some((id) => sectionTitleOfItem(id))
+          ? [{ id: NOT_IN_A_CHAPTER, title: NOT_IN_A_CHAPTER_LABEL }]
+          : []),
+        ...sections.filter((section) => {
+          if (!section.title?.trim()) return false;
+          const ids = itemIdsForSection(section.id);
+          // A section every moved recipe is already in has nowhere to move them.
+          return !tileMenu.ids.every((id) => ids.includes(id));
+        }),
+      ]
     : [];
 
   /**
@@ -1306,7 +1318,7 @@ export function PageRail(props: PageRailProps) {
                       data-rail-section-head={group.sectionId}
                     >
                       <span className="recipe-page-rail__section-name">
-                        {namedSectionIds.length > 0 ? "Not in a chapter" : "Recipes"}
+                        {namedSectionIds.length > 0 ? NOT_IN_A_CHAPTER_LABEL : "Recipes"}
                       </span>
                       <span className="recipe-page-rail__section-count">
                         {(() => {
@@ -1847,13 +1859,12 @@ export function PageRail(props: PageRailProps) {
               anchor={tileMenu}
               heading={tileMenu.label}
               sections={tileMenuSections}
-              onMove={(sectionId) => moveRecipesToSection(tileMenu.ids, sectionId)}
-              onNewSection={() => makeSectionFromSelection(new Set(tileMenu.ids))}
-              onRemoveFromChapter={
-                tileMenu.ids.some((id) => sectionTitleOfItem(id))
-                  ? () => removeRecipesFromChapter(tileMenu.ids)
-                  : undefined
+              onMove={(sectionId) =>
+                sectionId === NOT_IN_A_CHAPTER
+                  ? removeRecipesFromChapter(tileMenu.ids)
+                  : moveRecipesToSection(tileMenu.ids, sectionId)
               }
+              onNewSection={() => makeSectionFromSelection(new Set(tileMenu.ids))}
               onClose={() => setTileMenu(null)}
             />
           )}

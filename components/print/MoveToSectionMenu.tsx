@@ -40,7 +40,6 @@ export function MoveToSectionMenu({
   sections,
   onMove,
   onNewSection,
-  onRemoveFromChapter,
   onClose,
 }: {
   /** Viewport coordinates to open at: the pointer, or a trigger's corner. */
@@ -53,8 +52,6 @@ export function MoveToSectionMenu({
   onMove: (sectionId: string) => void;
   /** Omit to hide the "Add chapter" row. */
   onNewSection?: () => void;
-  /** Takes the recipes out of their chapter. Omit when none is in one. */
-  onRemoveFromChapter?: () => void;
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -106,19 +103,6 @@ export function MoveToSectionMenu({
         >
           <PlusIcon size={ICON_SIZE.sm} />
           Add chapter
-        </button>
-      )}
-      {onRemoveFromChapter && (
-        <button
-          type="button"
-          role="menuitem"
-          className="cp-menu__item"
-          onClick={() => {
-            onRemoveFromChapter();
-            onClose();
-          }}
-        >
-          Remove from chapter
         </button>
       )}
     </div>,

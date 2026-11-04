@@ -258,7 +258,18 @@ export function useRailDrag(
         badge.textContent = String(count);
         clone.appendChild(badge);
       }
-      document.body.appendChild(clone);
+      // The copy goes on <body>, outside the organizer whose rules lay a card
+      // out (number, photo, title in a row). Inside a frame carrying the
+      // organizer's class it keeps that layout instead of falling back to the
+      // page rail's, which stacked the photo above the title.
+      if (g.node.closest(".recipe-print-shell--organizing")) {
+        const frame = document.createElement("div");
+        frame.className = "recipe-print-shell--organizing rail-drag-preview-frame";
+        frame.appendChild(clone);
+        document.body.appendChild(frame);
+      } else {
+        document.body.appendChild(clone);
+      }
       preview.current = clone;
 
       const indicator = document.createElement("div");
@@ -281,7 +292,8 @@ export function useRailDrag(
     const teardown = () => {
       if (rafId.current != null) cancelAnimationFrame(rafId.current);
       rafId.current = null;
-      preview.current?.remove();
+      const frame = preview.current?.parentElement;
+      (frame?.classList.contains("rail-drag-preview-frame") ? frame : preview.current)?.remove();
       preview.current = null;
       line.current?.remove();
       line.current = null;

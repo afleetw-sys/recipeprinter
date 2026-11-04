@@ -48,7 +48,7 @@ import type { RecipeCardEditTarget } from "@/lib/recipeCardLayout";
 import { formatRecipeTime } from "@/lib/time";
 import { composeNote } from "@/lib/recipeNote";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
-import { PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
+import { NOT_IN_A_CHAPTER_LABEL, PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
 import { deckIndexForPendingSlot, landingForRecipe } from "@/lib/pendingDeckSlot";
 import {
@@ -5532,7 +5532,7 @@ export default function PrintPage() {
       if (section.title?.trim()) return [{ id: section.id, label: section.title.trim() }];
       if (hasUngrouped || (section.items.length === 0 && section.id !== pendingAddSectionId)) return [];
       hasUngrouped = true;
-      return [{ id: section.id, label: "No chapter" }];
+      return [{ id: section.id, label: NOT_IN_A_CHAPTER_LABEL }];
     });
     return {
       options,
@@ -6115,13 +6115,13 @@ export default function PrintPage() {
         chapter={(() => {
           const options = projectMeta.meta.sections.map((section) => ({
             id: section.id,
-            title: section.title?.trim() || "No chapter",
+            title: section.title?.trim() || NOT_IN_A_CHAPTER_LABEL,
           }));
           const currentId =
             projectMeta.meta.sections.find((section) => section.itemIds.includes(recipeItem.id))?.id ?? "";
           return {
             currentId,
-            currentTitle: options.find((option) => option.id === currentId)?.title ?? "No chapter",
+            currentTitle: options.find((option) => option.id === currentId)?.title ?? NOT_IN_A_CHAPTER_LABEL,
             options,
             onMove: (sectionId: string) => moveRecipeToSection(recipeItem.id, sectionId),
             onNewChapter: () => moveRecipeToNewSection(recipeItem.id),
