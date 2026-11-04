@@ -7051,8 +7051,12 @@ export default function PrintPage() {
                     extra "has a recipe" check here hid Save on an empty book
                     on desktop only, leaving a signed-out cook no way to keep
                     it. */}
+                {/* A cookbook saves itself, so its "Saved" is a state, read
+                    first, before the undo and redo that change it (Amelia,
+                    2026-11-04). On cards it is the Save button, beside Print. */}
+                {cookbookMode && renderSaveControl("header")}
                 {historyControls("header")}
-                {renderSaveControl("header")}
+                {!cookbookMode && renderSaveControl("header")}
 
                 {/* Print is always here, as it is on a phone's bottom bar:
                     the page is for printing, and a button that appears only

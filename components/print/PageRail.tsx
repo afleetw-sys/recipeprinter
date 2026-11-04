@@ -1369,7 +1369,11 @@ export function PageRail(props: PageRailProps) {
                 // keeps pointing at whatever page was last shown — an import card
                 // has no index of its own — so without this the rail claimed two
                 // current rows at once.
+                // The organizer has no preview beside it, so no recipe in it is
+                // the one on screen: none is marked. Selecting (Cmd/Ctrl or
+                // Shift-click) still shows, as that is a choice made here.
                 const isActive =
+                  !organizeMode &&
                   !activeImportId &&
                   unit.index === activeNavIndex &&
                   (unit.soleUnit || focusedSheet === unit.focusSheet);
