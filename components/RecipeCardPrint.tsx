@@ -853,7 +853,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     const time = formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) || "";
     const servings = recipe.servings ?? recipe.yield;
     // A fact with nothing in it is not drawn (see the meta line), except as
-    // its field while the "+" menu has it open.
+    // its field while the "+" menu has it open: the same field as editing
+    // one that's there, only empty, not the boxed prompt other added lines
+    // open as.
     const timeOpen = editingNow({ kind: "cookTime" });
     const servingsOpen = editingNow({ kind: "servings" });
     if (!time && !timeOpen && !servings && !servingsOpen) return null;
@@ -873,7 +875,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             {canEdit && inlineEdit ? (
               <input
                 ref={focusIfEditing({ kind: "cookTime" })}
-                className={`recipe-card__inline-input recipe-card__fact-value${time ? "" : " recipe-card__inline-input--new"}`}
+                className="recipe-card__inline-input recipe-card__fact-value"
                 dir="auto"
                 value={
                   sameTarget(inlineEdit.editingTarget, { kind: "cookTime" })
@@ -906,7 +908,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             {canEdit && inlineEdit ? (
               <input
                 ref={focusIfEditing({ kind: "servings" })}
-                className={`recipe-card__inline-input recipe-card__fact-value${servings ? "" : " recipe-card__inline-input--new"}`}
+                className="recipe-card__inline-input recipe-card__fact-value"
                 dir="auto"
                 value={
                   sameTarget(inlineEdit.editingTarget, { kind: "servings" })
@@ -1445,7 +1447,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 {metaTimeShown && (
                   <input
                     ref={focusIfEditing({ kind: "cookTime" })}
-                    className={`recipe-card__inline-input recipe-card__inline-input--meta${metaTime ? "" : " recipe-card__inline-input--new"}`}
+                    className="recipe-card__inline-input recipe-card__inline-input--meta"
                     dir="auto"
                     value={
                       sameTarget(inlineEdit.editingTarget, { kind: "cookTime" })
@@ -1479,7 +1481,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                     Serves{" "}
                     <input
                       ref={focusIfEditing({ kind: "servings" })}
-                      className={`recipe-card__inline-input recipe-card__inline-input--meta${metaServes ? "" : " recipe-card__inline-input--new"}`}
+                      className="recipe-card__inline-input recipe-card__inline-input--meta"
                       dir="auto"
                       value={
                         sameTarget(inlineEdit.editingTarget, { kind: "servings" })
