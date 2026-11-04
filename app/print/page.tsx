@@ -4613,8 +4613,7 @@ export default function PrintPage() {
    * The reasons cookbooks lost this before are answered differently. A card
    * job that was once a cookbook no longer counts as one — the switch back to
    * recipe cards is gone, and this reads `cookbookMode`, never the stash. And
-   * the save is not silent: the header (cards) or the rail (cookbooks) says
-   * "Saving…" then "Saved", the first save of a card job says so in a toast,
+   * the save is not silent: the header says "Saving…" then "Saved", the first save of a card job says so in a toast,
    * and a failure surfaces in the header with a retry.
    */
   const keptOnItsOwnRef = useRef<string | null>(null);
@@ -4644,27 +4643,12 @@ export default function PrintPage() {
 
 
   /**
-   * How many recipes a cookbook holds, and whether it is kept — at the top of
-   * the page rail, above Add recipes. There is no separate name for the book
-   * here: its title is the one on its cover, edited on the page itself, and the
-   * header keeps the product's name the way every other page does.
-   *
-   * Saved is only ever said for a signed-in cook whose book is in the account
-   * (`savedToProfile`) or is on its way there. A failure is not repeated here:
-   * the header's save control already carries it, with the retry.
+   * How many recipes a cookbook holds, at the top of the page rail, above Add
+   * recipes. There is no separate name for the book here: its title is the one
+   * on its cover, edited on the page itself. Whether it's saved is said in the
+   * header, beside Buy & Print, the same as for recipe cards
+   * (`renderSaveControl`).
    */
-  const bookSaveNote =
-    cookPilotUser && saveStatus === "saving" ? (
-      <span className="rp-save-status" role="status" aria-live="polite">
-        <SpinnerIcon size={ICON_SIZE.sm} />
-        {SAVE_STATUS_LABEL.saving}
-      </span>
-    ) : cookPilotUser && savedToProfile && !(saveStatus && SAVE_FAILURES.has(saveStatus)) ? (
-      <span className="rp-save-status" role="status" aria-live="polite">
-        <CheckIcon size={ICON_SIZE.sm} />
-        {SAVE_STATUS_LABEL.saved}
-      </span>
-    ) : null;
   const railBookHeader = cookbookMode ? (
     <div className="recipe-page-rail__book">
       <p className="recipe-page-rail__book-meta">
@@ -4673,7 +4657,6 @@ export default function PrintPage() {
             ? `${recipeCount} ${recipeCount === 1 ? "recipe" : "recipes"}`
             : `Free preview: ${recipeCount} of ${FREE_COOKBOOK_RECIPES} recipes`}
         </span>
-        {bookSaveNote}
       </p>
     </div>
   ) : null;
@@ -5023,9 +5006,10 @@ export default function PrintPage() {
    *
    * - a failure: the word as a button that retries, in the error colour;
    * - saving: a quiet spinner and "Saving…";
-   * - kept: a quiet, persistent check and "Saved". A cookbook says this in
-   *   the page rail beside its recipe count (`bookSaveNote`), so its header
-   *   keeps it screen-reader-only instead of saying it twice;
+   * - kept: a quiet, persistent check and "Saved", for a cookbook too, free
+   *   or bought. It used to sit in a cookbook's page rail beside the recipe
+   *   count; it's here, beside Buy & Print, on every project (Amelia,
+   *   2026-11-03), and the rail keeps only the count;
    * - not kept and nothing to report: nothing.
    *
    * The one place a button survives is a SIGNED-OUT cook with a project worth
@@ -5052,15 +5036,6 @@ export default function PrintPage() {
           </button>
         );
       }
-      // A cookbook's rail already says Saving/Saved; still announced here
-      // for anyone on a screen reader, just not painted twice.
-      if (cookbookMode) {
-        return (
-          <span className="sr-only" role="status" aria-live="polite">
-            {SAVE_STATUS_LABEL[saveStatus]}
-          </span>
-        );
-      }
       if (saveStatus === "saving") {
         return (
           <span className="rp-save-status" role="status" aria-live="polite">
@@ -5071,7 +5046,7 @@ export default function PrintPage() {
       }
     }
     if (savedToProfile) {
-      return cookbookMode ? null : (
+      return (
         <span className="rp-save-status" role="status" aria-live="polite">
           <CheckIcon size={ICON_SIZE.sm} />
           {SAVE_STATUS_LABEL.saved}
@@ -6986,7 +6961,7 @@ export default function PrintPage() {
           /*
             The wordmark stays, for cookbooks too. A cookbook's own name lives
             at the top of the page rail, above Add recipes (see `railBookHeader`),
-            where it sits with the count and the save state it belongs with. The right says what you can DO to it, in
+            where it sits with the count. The right says how it stands and what you can DO to it, in
             the order you'd reach for them: how it stands, then the action that
             finishes it.
           */

@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
-import { FONT_SCALES, type FontScale } from "@/lib/fontScale";
 import type { SheetSlot } from "@/lib/usePrintSheets";
 
 /**
@@ -38,10 +37,22 @@ import type { SheetSlot } from "@/lib/usePrintSheets";
 export type { PageLook, PageLooks } from "@/types/recipe";
 import type { ElementStyle as StoredElementStyle, PageLook, PageLooks } from "@/types/recipe";
 
-/** An element's style as the app draws it: a text size that is one of the
-    swept steps. */
+/**
+ * How far an element's own text size can go, as a multiple of its theme's
+ * Normal size. Any value between, not only the book's five steps: the cook
+ * picks a printed size in points. Recipe pages fit whatever comes (they move
+ * and shrink their lines); a book page that overflows says so
+ * (lib/pageOverflow.ts), which is what keeps the range safe now that it isn't
+ * a handful of swept steps.
+ */
+export const MIN_TEXT_SIZE = 0.5;
+export const MAX_TEXT_SIZE = 2;
+
+/** An element's style as the app draws it. */
 export interface ElementStyle extends StoredElementStyle {
-  textSize?: FontScale;
+  /** A multiple of the theme's Normal size for this element, replacing the
+      book's Text size for it. */
+  textSize?: number;
 }
 
 /** Element name -> its style, for one page. */
@@ -50,15 +61,20 @@ export type PageElementStyles = Record<string, ElementStyle>;
 /** The elements of a recipe page. The pagination budget reads these. */
 export type RecipeElement = "title" | "notes" | "details" | "ingredients" | "steps";
 
-function isFontScale(value: unknown): value is FontScale {
-  return (FONT_SCALES as readonly unknown[]).includes(value);
+/** A stored size the app can draw, or undefined: kept inside the range and
+    to three places, so a hand-edited document can't put 40x on a page. */
+export function cleanTextSize(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  const clamped = Math.min(MAX_TEXT_SIZE, Math.max(MIN_TEXT_SIZE, value));
+  return Math.round(clamped * 1000) / 1000;
 }
 
 function cleanStyle(value: unknown): ElementStyle | undefined {
   if (!value || typeof value !== "object") return undefined;
   const raw = value as Record<string, unknown>;
   const style: ElementStyle = {};
-  if (isFontScale(raw.textSize)) style.textSize = raw.textSize;
+  const textSize = cleanTextSize(raw.textSize);
+  if (textSize !== undefined) style.textSize = textSize;
   return Object.keys(style).length > 0 ? style : undefined;
 }
 
@@ -83,7 +99,7 @@ function cleanLook(value: unknown): PageLook | undefined {
 }
 
 /** Keeps only what the app can draw: an old or hand-edited document can't put
-    an unswept size on a page. Empty looks and empty styles are dropped. */
+    a size outside the range on a page. Empty looks and empty styles are dropped. */
 export function normalizePageLooks(value: unknown): PageLooks | undefined {
   if (!value || typeof value !== "object") return undefined;
   const out: PageLooks = {};
@@ -180,10 +196,10 @@ export function pageAddressForSlot(slot: SheetSlot | null | undefined): string |
 export function recipeTextSizes(
   looks: PageLooks | undefined,
   recipeId: string,
-): Partial<Record<RecipeElement, FontScale>> | undefined {
+): Partial<Record<RecipeElement, number>> | undefined {
   const elements = pageElements(looks, recipePageAddress(recipeId));
   if (!elements) return undefined;
-  const out: Partial<Record<RecipeElement, FontScale>> = {};
+  const out: Partial<Record<RecipeElement, number>> = {};
   for (const [name, style] of Object.entries(elements)) {
     if (style.textSize !== undefined) out[name as RecipeElement] = style.textSize;
   }
@@ -196,7 +212,7 @@ export function recipeTextSizes(
     back, which is cheaper than pushing it out. */
 export function recipeBudgetScale(
   bookScale: number,
-  sizes: Partial<Record<RecipeElement, FontScale>> | undefined,
+  sizes: Partial<Record<RecipeElement, number>> | undefined,
 ): number {
   if (!sizes) return bookScale;
   return Math.max(sizes.ingredients ?? bookScale, sizes.steps ?? bookScale, sizes.notes ?? bookScale);
@@ -207,7 +223,7 @@ export function recipeBudgetScale(
     the smallest type Normal allows. */
 export function recipeFloorScale(
   bookScale: number,
-  sizes: Partial<Record<RecipeElement, FontScale>> | undefined,
+  sizes: Partial<Record<RecipeElement, number>> | undefined,
 ): number {
   if (!sizes) return bookScale;
   return Math.min(sizes.ingredients ?? bookScale, sizes.steps ?? bookScale, sizes.notes ?? bookScale);

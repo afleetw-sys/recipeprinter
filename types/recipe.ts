@@ -22,8 +22,8 @@ export type PrintCardSize = "letter" | "card-6x4";
 /**
  * One element's own style on a page (a recipe's steps, a cover's title),
  * overriding what its theme and the book's settings give it. Today only its
- * text size: one of `FONT_SCALES` (lib/fontScale.ts), which REPLACES the book's
- * size for this element. Read through lib/pageLooks.tsx, which drops anything
+ * text size: a multiple of the theme's Normal size for this element, between
+ * `MIN_TEXT_SIZE` and `MAX_TEXT_SIZE`, which REPLACES the book's size for it. Read through lib/pageLooks.tsx, which drops anything
  * the app can't draw.
  */
 export interface ElementStyle {

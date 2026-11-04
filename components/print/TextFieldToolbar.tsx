@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDownIcon, ICON_SIZE } from "@/components/icons";
+import { ChevronDownIcon, ICON_SIZE, MinusIcon, PlusIcon, UndoIcon } from "@/components/icons";
 import { TextStyleControl } from "@/components/print/TextStyleControl";
 import { textBarScale } from "@/lib/deckZoom";
 import { readLineSelection } from "@/lib/lineSelection";
@@ -12,8 +12,8 @@ import { useFloatingBarPlacement } from "@/lib/useFloatingBarPlacement";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 import type { RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
 import { ProBadge } from "@/components/ProBadge";
-import { DEFAULT_FONT_SCALE, FONT_SCALES, FONT_SCALE_LABELS, type FontScale } from "@/lib/fontScale";
-import { pageElements, type PageLooks } from "@/lib/pageLooks";
+import { DEFAULT_FONT_SCALE } from "@/lib/fontScale";
+import { MAX_TEXT_SIZE, MIN_TEXT_SIZE, pageElements, type PageLooks } from "@/lib/pageLooks";
 
 /**
  * The card's inline fields, and nothing else on the page.
@@ -96,6 +96,9 @@ export function TextFieldToolbar({
       cancelPendingClear();
       blurTimer.current = window.setTimeout(() => {
         blurTimer.current = null;
+        // Into the bar itself (its size box): the bar stays with the element
+        // it was showing, even though that element's field has closed.
+        if (barRef.current?.contains(document.activeElement)) return;
         setField(inlineFieldFrom(document.activeElement));
       }, 0);
     };
@@ -127,8 +130,26 @@ export function TextFieldToolbar({
     return () => document.removeEventListener("selectionchange", read);
   }, []);
 
+  // The element the bar is about, by address, so it can be found again after
+  // its field closes and is redrawn as text (typing a size into the bar's own
+  // box takes the focus, which closes the field).
+  const addressRef = useRef<{ page: string; element: string } | null>(null);
+  const elementByAddress = (): HTMLElement | null => {
+    const address = addressRef.current;
+    if (!address) return null;
+    return document.querySelector<HTMLElement>(
+      `.recipe-page-canvas [data-element-page="${CSS.escape(address.page)}"][data-element="${CSS.escape(address.element)}"]`,
+    );
+  };
   const getAnchorRect = useCallback(
-    () => (field?.isConnected ? field.getBoundingClientRect() : null),
+    () =>
+      field?.isConnected
+        ? field.getBoundingClientRect()
+        : field
+          ? (elementByAddress()?.getBoundingClientRect() ?? null)
+          : null,
+    // elementByAddress reads a ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [field],
   );
   // Typing wraps the line onto a second row, which moves everything under it,
@@ -139,17 +160,25 @@ export function TextFieldToolbar({
 
   // The element this field is part of: a recipe's ingredients, a cover's
   // title. Every element on every page carries its address.
-  const elementNode = field.closest<HTMLElement>("[data-element][data-element-page]");
+  const elementNode = field.isConnected
+    ? field.closest<HTMLElement>("[data-element][data-element-page]")
+    : elementByAddress();
   const elementPage = elementNode?.dataset.elementPage;
   const elementName = elementNode?.dataset.element;
+  if (elementPage && elementName) addressRef.current = { page: elementPage, element: elementName };
   const sizeGroup =
-    elementSize && elementPage && elementName ? (
+    elementSize && elementNode && elementPage && elementName ? (
       <div className="recipe-page-toolbar__group" role="group" aria-label="Text size">
-        <SizeSelect
+        <SizeStepper
+          // Looked up on every draw, not handed over once: typing in the size
+          // box closes the field, and the element is redrawn as text.
+          getNode={() =>
+            field.isConnected ? field.closest<HTMLElement>("[data-element][data-element-page]") : elementByAddress()
+          }
           size={pageElements(elementSize.styles, elementPage)?.[elementName]?.textSize}
-          followLabel={elementSize.followLabel}
+          resetLabel={elementSize.resetLabel}
           proMarked={elementSize.proMarked}
-          onPick={(size) => elementSize.onChange(elementPage, elementName, size)}
+          onChange={(size) => elementSize.onChange(elementPage, elementName, size)}
         />
       </div>
     ) : null;
@@ -165,7 +194,7 @@ export function TextFieldToolbar({
         style={{ "--rp-text-bar-scale": textBarScale(zoom) } as CSSProperties}
         role="toolbar"
         aria-label="Chapter description"
-        onMouseDown={(event) => event.preventDefault()}
+        onMouseDown={keepFieldFocus}
       >
         {introReset && (
         <div className="recipe-page-toolbar__group">
@@ -240,7 +269,7 @@ export function TextFieldToolbar({
       aria-label="Text formatting"
       // The buttons each do this for themselves; the bar's own padding needs it
       // too, or a press that lands between two of them commits the edit.
-      onMouseDown={(event) => event.preventDefault()}
+      onMouseDown={keepFieldFocus}
     >
       {lineKind && inlineEdit && (
         <div className="recipe-page-toolbar__group" role="group" aria-label="Line type">
@@ -298,135 +327,168 @@ export function TextFieldToolbar({
 export interface ElementSizeWiring {
   styles: PageLooks | undefined;
   /** `undefined` = back to the book's size. */
-  onChange: (page: string, element: string, size: FontScale | undefined) => void;
+  onChange: (page: string, element: string, size: number | undefined) => void;
   proMarked: boolean;
-  /** "Same as book" in a cookbook, "Same as card" on recipe cards. */
-  followLabel: string;
+  /** The reset button's name: "Use the book's text size" in a cookbook. */
+  resetLabel: string;
+}
+
+/** Presses on the bar don't take focus from the field being edited, so the
+    edit isn't ended by them. The size box is the one exception: it has to
+    take focus to be typed in. */
+function keepFieldFocus(event: ReactMouseEvent) {
+  if ((event.target as HTMLElement).closest("input")) return;
+  event.preventDefault();
+}
+
+/** The printed size, in points, of the biggest text in an element: an
+    ingredients list's lines rather than its headings, a step's words rather
+    than its number. That's the size the cook is choosing; everything else in
+    the element keeps its size relative to it. */
+function printedPoints(node: HTMLElement): number {
+  let px = 0;
+  const consider = (el: Element) => {
+    const size = parseFloat(getComputedStyle(el).fontSize);
+    if (Number.isFinite(size) && size > px) px = size;
+  };
+  if (node.matches("textarea, input, [contenteditable='true']")) consider(node);
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+  for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+    if (text.textContent?.trim() && text.parentElement) consider(text.parentElement);
+  }
+  node.querySelectorAll("textarea, input").forEach(consider);
+  if (px === 0) consider(node);
+  // CSS px are 1/96in, points 1/72in. The deck is scaled with a transform,
+  // which computed sizes don't see, so this is the size on paper.
+  return px * 0.75;
+}
+
+function roundHalf(points: number): number {
+  return Math.round(points * 2) / 2;
 }
 
 /**
- * This element's own text size, as a dropdown naming it ("Large ⌄"), or
- * "Size ⌄" while it follows the book. The same five sizes as the book-wide
- * Text size, plus the way back to following it.
+ * This element's own text size: minus, the size in points, plus. The box
+ * takes a typed size too. A reset button appears once the element has a size
+ * of its own, and puts it back to following the book.
  *
- * Like the rest of the bar it acts on `mousedown` with the default prevented,
- * so the field keeps focus and the edit isn't ended by choosing a size.
+ * Points because that's what a printed size is measured in, the number Word
+ * and Google Docs show. Stored as a multiple of the theme's Normal size
+ * (lib/pageLooks.tsx), so everything inside the element (an ingredients list's
+ * headings, a step's number) grows with its main text.
  */
-function SizeSelect({
+function SizeStepper({
+  getNode,
   size,
-  followLabel,
+  resetLabel,
   proMarked,
-  onPick,
+  onChange,
 }: {
-  size: FontScale | undefined;
-  followLabel: string;
+  getNode: () => HTMLElement | null;
+  size: number | undefined;
+  resetLabel: string;
   proMarked: boolean;
-  onPick: (size: FontScale | undefined) => void;
+  onChange: (size: number | undefined) => void;
 }) {
-  const [openAt, setOpenAt] = useState<{ x: number; y: number } | null>(null);
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
-  const label = size === undefined ? "Size" : FONT_SCALE_LABELS[size];
+  // The element as drawn: its biggest text, and the scale it's drawn at (its
+  // own size, or the book's). Their ratio is its size at the theme's Normal,
+  // which stays true while a change is still on its way to the page.
+  const node = getNode();
+  const drawnScale = node ? parseFloat(getComputedStyle(node).getPropertyValue("--recipe-font-scale")) || 1 : 1;
+  const normalPoints = node ? printedPoints(node) / drawnScale : 0;
+  const shownPoints = roundHalf(normalPoints * (size ?? drawnScale));
+  const [draft, setDraft] = useState<string | null>(null);
+
+  const setPoints = (points: number) => {
+    if (!Number.isFinite(points) || normalPoints <= 0) return;
+    const scale = Math.min(MAX_TEXT_SIZE, Math.max(MIN_TEXT_SIZE, points / normalPoints));
+    onChange(Math.round(scale * 1000) / 1000);
+  };
+  const minPoints = roundHalf(normalPoints * MIN_TEXT_SIZE);
+  const maxPoints = roundHalf(normalPoints * MAX_TEXT_SIZE);
+  const commitDraft = () => {
+    if (draft === null) return;
+    const typed = parseFloat(draft.replace(",", "."));
+    setDraft(null);
+    if (Number.isFinite(typed) && roundHalf(typed) !== shownPoints) setPoints(roundHalf(typed));
+  };
+
   return (
     <>
       <button
-        ref={triggerRef}
         type="button"
-        className="recipe-page-toolbar__btn recipe-text-toolbar__select"
-        aria-haspopup="menu"
-        aria-expanded={openAt ? true : undefined}
-        aria-label={size === undefined ? `Text size: ${followLabel}` : `Text size: ${label}`}
-        title="Text size"
+        className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon"
+        aria-label="Smaller text"
+        title="Smaller text"
+        disabled={shownPoints <= minPoints}
         onMouseDown={(event) => {
           event.preventDefault();
-          if (openAt) {
-            setOpenAt(null);
-            return;
-          }
-          const rect = event.currentTarget.getBoundingClientRect();
-          setOpenAt({ x: rect.left, y: rect.bottom + 4 });
+          // Down to the next whole point: 9.6 goes to 9, then 8.
+          setPoints(Math.ceil(shownPoints - 0.01) - 1);
         }}
       >
-        <span>{label}</span>
-        <ChevronDownIcon size={ICON_SIZE.xs} aria-hidden />
+        <MinusIcon size={ICON_SIZE.xs} aria-hidden />
       </button>
-      {openAt && (
-        <SizeMenu
-          anchor={openAt}
-          triggerRef={triggerRef}
-          size={size}
-          followLabel={followLabel}
-          proMarked={proMarked}
-          onPick={(next) => {
-            setOpenAt(null);
-            if (next !== size) onPick(next);
+      <label className="recipe-text-toolbar__size">
+        <input
+          className="recipe-text-toolbar__size-input"
+          inputMode="decimal"
+          aria-label="Text size in points"
+          value={draft ?? String(shownPoints)}
+          onFocus={(event) => {
+            setDraft(String(shownPoints));
+            event.currentTarget.select();
           }}
-          onClose={() => setOpenAt(null)}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commitDraft}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              // Applied, and the box goes back to showing the size as drawn
+              // (a size past the range comes back as the nearest allowed).
+              commitDraft();
+            }
+            if (event.key === "Escape") {
+              event.preventDefault();
+              setDraft(null);
+              event.currentTarget.blur();
+            }
+          }}
         />
+        <span aria-hidden>pt</span>
+      </label>
+      <button
+        type="button"
+        className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon"
+        aria-label="Bigger text"
+        title="Bigger text"
+        disabled={shownPoints >= maxPoints}
+        onMouseDown={(event) => {
+          event.preventDefault();
+          setPoints(Math.floor(shownPoints + 0.01) + 1);
+        }}
+      >
+        <PlusIcon size={ICON_SIZE.xs} aria-hidden />
+      </button>
+      {proMarked && size !== undefined && size !== DEFAULT_FONT_SCALE && (
+        <ProBadge variant="inline" label={false} tooltip="This text size is Pro" />
+      )}
+      {size !== undefined && (
+        <button
+          type="button"
+          className="recipe-page-toolbar__btn recipe-page-toolbar__btn--icon"
+          aria-label={resetLabel}
+          title={resetLabel}
+          onMouseDown={(event) => {
+            event.preventDefault();
+            setDraft(null);
+            onChange(undefined);
+          }}
+        >
+          <UndoIcon size={ICON_SIZE.xs} aria-hidden />
+        </button>
       )}
     </>
-  );
-}
-
-function SizeMenu({
-  anchor,
-  triggerRef,
-  size,
-  followLabel,
-  proMarked,
-  onPick,
-  onClose,
-}: {
-  anchor: { x: number; y: number };
-  triggerRef: RefObject<HTMLButtonElement | null>;
-  size: FontScale | undefined;
-  followLabel: string;
-  proMarked: boolean;
-  onPick: (size: FontScale | undefined) => void;
-  onClose: () => void;
-}) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  useLayoutEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    const rect = node.getBoundingClientRect();
-    node.style.left = `${Math.max(8, Math.min(anchor.x, window.innerWidth - rect.width - 8))}px`;
-    node.style.top = `${Math.max(8, Math.min(anchor.y, window.innerHeight - rect.height - 8))}px`;
-  }, [anchor]);
-  useMenuDismiss([ref, triggerRef], onClose);
-  const item = (value: FontScale | undefined, text: string, key: string) => {
-    const active = value === size;
-    return (
-      <button
-        key={key}
-        type="button"
-        role="menuitemradio"
-        aria-checked={active}
-        className={`cp-menu__item ${active ? "is-active" : ""}`}
-        onMouseDown={(event) => {
-          event.preventDefault();
-          onPick(value);
-        }}
-      >
-        {text}
-        {proMarked && value !== undefined && value !== DEFAULT_FONT_SCALE && (
-          <ProBadge variant="inline" label={false} tooltip="This text size is Pro" />
-        )}
-      </button>
-    );
-  };
-  return createPortal(
-    <div
-      ref={ref}
-      className="cp-menu rail-tile-menu add-line-menu no-print"
-      role="menu"
-      aria-label="Text size"
-      style={{ top: anchor.y, left: anchor.x }}
-      onMouseDown={(event) => event.preventDefault()}
-    >
-      {item(undefined, followLabel, "follow")}
-      {FONT_SCALES.map((scale) => item(scale, FONT_SCALE_LABELS[scale], String(scale)))}
-    </div>,
-    document.body,
   );
 }
 

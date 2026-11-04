@@ -1295,7 +1295,8 @@
   gap: 8px;
 }
 
-/* A cookbook's recipe count and whether it is kept, above Add recipes. */
+/* A cookbook's recipe count, above Add recipes. Whether it's saved is in the
+   header, beside Buy & Print. */
 .recipe-page-rail__book {
   display: flex;
   flex-direction: column;
@@ -1305,8 +1306,6 @@
 .recipe-page-rail__book-meta {
   display: flex;
   align-items: center;
-  /* The count sits left and the save state right, whether or not there is a
-     save state to show. */
   justify-content: space-between;
   gap: 4px 8px;
   margin: 0;
@@ -1895,6 +1894,33 @@
   flex: none;
   color: var(--cp-ink-soft);
 }
+/* An element's own text size (SizeStepper): minus, the size in points,
+   plus. The box is as tall as the bar's buttons and takes a typed size. */
+.recipe-text-toolbar__size {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 2px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-label);
+}
+.recipe-text-toolbar__size-input {
+  width: 3.2em;
+  height: 22px;
+  padding: 0 2px;
+  border: 1px solid var(--cp-line);
+  border-radius: 6px;
+  background: var(--cp-card);
+  color: var(--cp-ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.recipe-text-toolbar__size-input:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+
 /* Each row previews itself: Heading in a heading's weight. */
 .line-kind-menu .line-kind-menu__item--body {
   font-weight: 500;
@@ -2803,10 +2829,19 @@
   /* Up under the title: the title's row is as tall as the collapse button
      beside it, which left a gap that split the heading from what it says. */
   margin: -6px 0 0;
-  padding: 0 8px;
+  /* Part of the gap under it lives here, outside the scrolling list, so
+     settings scrolled up stop short of the note instead of running into it
+     (Amelia, 2026-11-03). The list's own top padding scrolls away with it. */
+  padding: 0 8px 12px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-small);
   line-height: 1.4;
+}
+/* Under the note, the list starts 10px further down, so the first setting
+   sits the same 22px below it as it always has; only the 12px above stays
+   when the list scrolls. Beats the desktop rule below on specificity. */
+.recipe-config-panel__note + .recipe-config-panel__scroll {
+  padding-top: 10px;
 }
 /* A recessed track with the chosen tab raised out of it, so both halves read
    as one control (the bare shared pill left "Page" as loose text). Flat: a

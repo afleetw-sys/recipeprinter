@@ -1510,7 +1510,9 @@ export function PrintDeck(props: PrintDeckProps) {
               styles: projectMeta.meta.pageLooks,
               onChange: (page, element, size) => projectMeta.setElementStyle(page, element, { textSize: size }),
               proMarked: textSizeProMarked,
-              followLabel: projectMeta.meta.cookbookMode ? "Same as book" : "Same as card",
+              resetLabel: projectMeta.meta.cookbookMode
+                ? "Use the book's text size"
+                : "Use the card's text size",
             }}
           />
           {/* Its twin, for a drag that ran across several lines rather than a
