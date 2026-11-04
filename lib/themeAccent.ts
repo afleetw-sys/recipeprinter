@@ -23,15 +23,24 @@ export const ACCENT_COLORS = [
 
 export type AccentColor = (typeof ACCENT_COLORS)[number]["id"];
 
-/** Each theme's own accent, as print.css sets it, for the swatch that puts it
-    back. Read from the theme blocks there; a theme's accent changing there
-    should change here. */
+/** Themes whose art is in fixed colors: a new accent would fight it, so
+    they don't offer one (print.css has no accent rules for them). */
+const FIXED_COLOR_THEMES: ReadonlySet<RecipePrintTemplate> = new Set<RecipePrintTemplate>(["christmas", "fall", "halloween"]);
+
+export function themeTakesAccent(template: RecipePrintTemplate): boolean {
+  return !FIXED_COLOR_THEMES.has(template);
+}
+
+/** Each theme's own color, the one a pick replaces, for the swatch that puts
+    it back: its accent, or for Diner and Counter (dark labels, the color in
+    their second accent) that second one. Read from the theme blocks in
+    print.css; a theme's color changing there should change here. */
 export const THEME_ACCENTS: Record<RecipePrintTemplate, string> = {
   classic: "#3f6094",
   heirloom: "#9c262f",
   bistro: "#d55c49",
   pantry: "#596873",
-  counter: "#2f2f2f",
+  counter: "#e8845b",
   keepsake: "#6e352b",
   typewriter: "#45413b",
   document: "#111111",
@@ -39,7 +48,7 @@ export const THEME_ACCENTS: Record<RecipePrintTemplate, string> = {
   quilt: "#8c370d",
   market: "#498988",
   supper: "#7a151b",
-  diner: "#1f1a17",
+  diner: "#db3937",
   poster: "#1f1f1f",
   christmas: "#c92e31",
   fall: "#91583b",

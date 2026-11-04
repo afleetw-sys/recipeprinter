@@ -1185,12 +1185,85 @@
   background: var(--cp-accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-accent) 24%, transparent);
 }
-/* The cook's accent for this theme (lib/themeAccent.ts), set on the page
-   root. Each theme declares its own accent on its `.recipe-card-set` (or a
-   blank page's theme class), so the override goes there, past any theme's
-   own selector. The theme picker's thumbnails keep their own colors. */
-.recipe-accent-custom :is(.recipe-card-set, [class*="recipe-template--"]):not(.recipe-template-option__thumb *) {
-  --recipe-accent: var(--recipe-accent-custom) !important;
+/* ── The cook's accent (lib/themeAccent.ts) ─────────────────────────────────
+   Set on the page root as `--recipe-accent-custom` with `.recipe-accent-custom`
+   when the cook picks one; nothing here applies otherwise, so every theme as
+   it ships is untouched.
+
+   A theme's color isn't one variable. It is spread over the accent (labels,
+   step numbers, often the title), a second accent (header bars, bullets, the
+   colored title on some), bullets and a tinted step badge, and which of those
+   IS the theme's color differs by theme. So each theme says which of its
+   colors the pick replaces (Amelia, 2026-11-04: changing two labels did
+   nothing you could see). A theme's deliberate second color (Bistro's blue,
+   Pantry's gold, Garden's terracotta, Quilt's green) stays: it is the other
+   half of the pairing, not the color being chosen. Christmas, Fall and
+   Halloween take no accent at all; their art is in fixed colors.
+
+   Each block is on the theme's `.recipe-card-set` (where it declares its
+   palette) or a blank page carrying the theme class, never the theme
+   picker's thumbnails. !important: a theme's own palette rules can be more
+   specific than these. */
+.recipe-accent-custom {
+  --rpa: var(--recipe-accent-custom);
+  /* A shade under it, for a second accent that was a darker relative. */
+  --rpa-dark: color-mix(in srgb, var(--recipe-accent-custom) 72%, #000);
+}
+/* The usual set: the pick is the accent, its shade the second, the bullets,
+   and a light tint of it under the step numbers. */
+.recipe-accent-custom :is(.recipe-template--classic, .recipe-template--heirloom, .recipe-template--keepsake, .recipe-template--market):not(.recipe-template-option__thumb *) {
+  --recipe-accent: var(--rpa) !important;
+  --recipe-accent-2: var(--rpa-dark) !important;
+  --recipe-bullet: var(--rpa) !important;
+  --recipe-step-bg: color-mix(in srgb, var(--rpa) 14%, var(--recipe-bg)) !important;
+  --recipe-accent-strong: var(--rpa-dark);
+}
+/* One-color themes whose step numbers sit on plain or paper-colored ground:
+   the color changes, the ground doesn't. */
+.recipe-accent-custom :is(.recipe-template--document, .recipe-template--typewriter, .recipe-template--supper):not(.recipe-template-option__thumb *) {
+  --recipe-accent: var(--rpa) !important;
+  --recipe-accent-2: var(--rpa-dark) !important;
+  --recipe-bullet: var(--rpa) !important;
+}
+/* Poster: its black badge under white numbers becomes the pick, solid. */
+.recipe-accent-custom .recipe-template--poster:not(.recipe-template-option__thumb *) {
+  --recipe-accent: var(--rpa) !important;
+  --recipe-accent-2: var(--rpa) !important;
+  --recipe-bullet: var(--rpa) !important;
+  --recipe-step-bg: var(--rpa) !important;
+}
+/* Two-color themes: the pick replaces the first, the second stays. */
+.recipe-accent-custom .recipe-template--bistro:not(.recipe-template-option__thumb *) {
+  --recipe-accent: var(--rpa) !important;
+  --recipe-step-bg: color-mix(in srgb, var(--rpa) 14%, var(--recipe-bg)) !important;
+}
+.recipe-accent-custom .recipe-template--pantry:not(.recipe-template-option__thumb *) {
+  --recipe-accent: var(--rpa) !important;
+}
+.recipe-accent-custom .recipe-template--garden:not(.recipe-template-option__thumb *) {
+  --recipe-accent: var(--rpa) !important;
+  --recipe-accent-2: var(--rpa) !important;
+  --recipe-step-bg: color-mix(in srgb, var(--rpa) 18%, var(--recipe-bg)) !important;
+}
+.recipe-accent-custom .recipe-template--quilt:not(.recipe-template-option__thumb *) {
+  --recipe-accent: var(--rpa) !important;
+}
+/* Diner and Counter set their labels in near-black and their color (Diner's
+   red title, Counter's orange badges and bullets) in the second accent: the
+   pick replaces that, and the labels stay dark. */
+.recipe-accent-custom :is(.recipe-template--diner, .recipe-template--counter):not(.recipe-template-option__thumb *) {
+  --recipe-accent-2: var(--rpa) !important;
+  --recipe-bullet: var(--rpa) !important;
+}
+.recipe-accent-custom .recipe-template--diner:not(.recipe-template-option__thumb *) {
+  --recipe-step-bg: color-mix(in srgb, var(--rpa) 26%, var(--recipe-bg)) !important;
+}
+/* Themes whose title is set in the page's ink: a picked color is the title's
+   too, which is most of what a color choice is for. Themes that already
+   color their title get it through the accent above; Diner and Counter keep
+   their dark ink type. */
+.recipe-accent-custom :is(.recipe-template--document, .recipe-template--typewriter, .recipe-template--classic, .recipe-template--pantry, .recipe-template--market, .recipe-template--garden, .recipe-template--poster):not(.recipe-template-option__thumb *) .recipe-card__title {
+  color: var(--rpa) !important;
 }
 
 /* A whole target outlined, not a place between two: a folded chapter's bar. */
@@ -11062,7 +11135,9 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--market .recipe-card__step-number {
-  color: #2f6463;
+  /* A shade under the accent; a custom accent supplies its own (see
+     "The cook's accent" below). */
+  color: var(--recipe-accent-strong, #2f6463);
 }
 
 .recipe-template--market .recipe-card__photo-img {
@@ -11235,7 +11310,8 @@ textarea.recipe-card__toc-title {
   font-weight: 400;
   line-height: 1.15;
   letter-spacing: 0;
-  color: #db3937;
+  /* Diner's red: its second accent, so a custom accent recolors it. */
+  color: var(--recipe-accent-2);
   -webkit-text-stroke: calc(4 * var(--diner-u)) #000;
   paint-order: stroke fill;
   text-shadow: calc(-5 * var(--diner-u)) calc(4 * var(--diner-u)) 0 #000;

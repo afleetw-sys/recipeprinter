@@ -13,7 +13,7 @@ import {
   normalizePhotoScale,
   type PhotoScale,
 } from "@/lib/photoScale";
-import { ACCENT_COLORS, THEME_ACCENTS, type AccentColor } from "@/lib/themeAccent";
+import { ACCENT_COLORS, THEME_ACCENTS, themeTakesAccent, type AccentColor } from "@/lib/themeAccent";
 import type { RecipePrintTemplate } from "@/types/recipe";
 
 /**
@@ -80,7 +80,9 @@ export function ThemeCustomizePanel({
         </h3>
       </div>
 
-      <AccentColorControl accent={accent} setAccent={setAccent} template={template} proMarked={proMarked} />
+      {themeTakesAccent(template) && (
+        <AccentColorControl accent={accent} setAccent={setAccent} template={template} proMarked={proMarked} />
+      )}
 
       <TextSizeControl fontScale={fontScale} setFontScale={setFontScale} proMarked={proMarked} />
 
