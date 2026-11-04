@@ -5,7 +5,7 @@ import { RecipeCardFace, type RecipePrintTemplate } from "@/components/RecipeCar
 import type { PageSheet } from "@/lib/usePrintSheets";
 import { pairCardsOnLetter, type TwoUpCard } from "@/lib/twoUpPages";
 import { fontScaleVars, type FontScale } from "@/lib/fontScale";
-import { ElementPageProvider, pageAddressForSlot, type ElementStyles } from "@/lib/elementStyles";
+import { ElementPageProvider, pageAddressForSlot, type PageLooks } from "@/lib/pageLooks";
 import { photoScaleVars, type PhotoScale } from "@/lib/photoScale";
 
 /**
@@ -29,7 +29,7 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
   doubleSided,
   fontScale,
   photoScale,
-  elementStyles,
+  pageLooks,
 }: {
   sheets: PageSheet[];
   template: RecipePrintTemplate;
@@ -40,7 +40,7 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
   doubleSided: boolean;
   fontScale?: FontScale;
   photoScale?: PhotoScale;
-  elementStyles?: ElementStyles;
+  pageLooks?: PageLooks;
 }) {
   const pages = useMemo(() => pairCardsOnLetter(sheets), [sheets]);
   if (pages.length === 0) return null;
@@ -73,7 +73,7 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
               {page.cards.map((card, half) => (
                 <div key={half} className={`rp-twoup__slot ${card ? "rp-twoup__slot--filled" : ""}`}>
                   {card && (
-                    <ElementPageProvider page={pageAddressForSlot(card.slot)} styles={elementStyles}>
+                    <ElementPageProvider page={pageAddressForSlot(card.slot)} looks={pageLooks}>
                     <RecipeCardFace
                       recipe={card.slot.recipe}
                       ingredients={card.slot.front.ingredients}
@@ -109,7 +109,7 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
                     className={`rp-twoup__slot ${card?.slot.back ? "rp-twoup__slot--filled" : ""}`}
                   >
                     {card && (
-                      <ElementPageProvider page={pageAddressForSlot(card.slot)} styles={elementStyles}>
+                      <ElementPageProvider page={pageAddressForSlot(card.slot)} looks={pageLooks}>
                         <BackFace card={card} template={template} />
                       </ElementPageProvider>
                     )}

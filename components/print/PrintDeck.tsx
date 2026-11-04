@@ -57,7 +57,7 @@ import { isPhotoOpenClick, photoDialogKey, type PhotoPress } from "@/lib/photoOp
 import { LineSelectionToolbar } from "@/components/print/LineSelectionToolbar";
 import { TextFieldToolbar } from "@/components/print/TextFieldToolbar";
 import { usePageOverflow } from "@/lib/pageOverflow";
-import { pageAddressForSlot } from "@/lib/elementStyles";
+import { pageAddressForSlot } from "@/lib/pageLooks";
 import type { useRecipeInlineEditor } from "@/lib/useRecipeInlineEditor";
 import { PageToolbar, PageToolbarItem } from "@/components/print/PageToolbar";
 import { FailedImportCard } from "@/components/print/FailedImportCard";
@@ -1157,7 +1157,7 @@ export function PrintDeck(props: PrintDeckProps) {
       size={previewCardSize}
       template={previewTemplate}
       fontScale={previewFontScale}
-      elementStyles={projectMeta.meta.elementStyles}
+      pageLooks={projectMeta.meta.pageLooks}
       elementTargets={focused}
       photoScale={previewPhotoScale}
       doubleSided={continueOnBack}
@@ -1507,7 +1507,7 @@ export function PrintDeck(props: PrintDeckProps) {
             zoom={deckZoom}
             introReset={activeIntroReset}
             elementSize={{
-              styles: projectMeta.meta.elementStyles,
+              styles: projectMeta.meta.pageLooks,
               onChange: (page, element, size) => projectMeta.setElementStyle(page, element, { textSize: size }),
               proMarked: textSizeProMarked,
               followLabel: projectMeta.meta.cookbookMode ? "Same as book" : "Same as card",
@@ -1574,7 +1574,7 @@ export function PrintDeck(props: PrintDeckProps) {
               showCutLines={showCutLines}
               doubleSided={continueOnBack}
               fontScale={previewFontScale}
-              elementStyles={projectMeta.meta.elementStyles}
+              pageLooks={projectMeta.meta.pageLooks}
               photoScale={previewPhotoScale}
             />
           )}
@@ -2121,7 +2121,7 @@ export function PrintDeck(props: PrintDeckProps) {
                     size={previewCardSize}
                     template={previewTemplate}
                     fontScale={previewFontScale}
-                    elementStyles={projectMeta.meta.elementStyles}
+                    pageLooks={projectMeta.meta.pageLooks}
                     elementTargets={isActive}
                     photoScale={previewPhotoScale}
                     doubleSided={continueOnBack}

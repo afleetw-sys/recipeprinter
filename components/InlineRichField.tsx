@@ -1,6 +1,6 @@
 "use client";
 
-import type { ElementProps } from "@/lib/elementStyles";
+import type { ElementProps } from "@/lib/pageLooks";
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { nodesToRichText, richTextToHtml } from "@/lib/richText";
 
@@ -51,7 +51,7 @@ export function InlineRichField({
   /** Enter splits the line here, for ingredients and steps. Absent = Enter
       finishes the edit, which is what the single-value fields want. */
   onSplit?: (before: string, after: string) => void;
-  /** A page part's marker and size (lib/elementStyles.tsx), when the field IS
+  /** A page part's marker and size (lib/pageLooks.tsx), when the field IS
       the part rather than a line inside one. */
   elementProps?: ElementProps;
 }) {

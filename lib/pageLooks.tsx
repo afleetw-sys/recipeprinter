@@ -5,39 +5,47 @@ import { FONT_SCALES, type FontScale } from "@/lib/fontScale";
 import type { SheetSlot } from "@/lib/usePrintSheets";
 
 /**
- * The cook's own styling of single elements on single pages.
+ * How the cook has styled each page, one record per page whatever its kind.
  *
- * Every page is still drawn from its data (a recipe, a cover, a chapter) by its
- * theme. What this adds is a layer on top, the way a design tool keeps a style
- * per element: each element a page draws has a stable address, its page and
- * its name ("recipe:<id>" / "ingredients", "cover" / "cover-title"), and an
- * address can carry an `ElementStyle` that overrides what the theme and the
- * book's settings would give it.
+ * Every page is drawn from its data (a recipe, a cover, a chapter) by its
+ * theme. A page look is a layer on top, the way a design tool keeps a style
+ * per frame and per element: each page has a stable address (`cover`,
+ * `recipe:<id>`, `section:<id>`, `page:<id>`, `toc`), and its `PageLook` holds
+ * what the cook changed about it. Today that is only its elements' own styles
+ * (`elements`: a recipe's steps, a cover's title, each with a text size).
  *
- * Today the only thing an element can carry is its text size. The shape is
- * deliberately a bag of properties per address rather than a map of sizes, so a
- * font, colour, alignment or position for an element joins it here, beside
- * `textSize`, without another field on every page type or another migration.
+ * Why one record per page: a page-level property used to mean a new field on
+ * whichever type that page happened to be stored in (CoverConfig, Section,
+ * RecipePagePlacement, QueueItem.pageContent), and threading it through each
+ * one's save, load, export and drawing. Here it is one property on one record,
+ * saved and opened with the rest of the book's settings, and every page kind
+ * reads it the same way.
  *
- * Addresses, not positions in a list: a recipe's id and a part's name survive
- * reordering, editing and re-importing, which an index into the ingredients
- * would not. A page that is deleted leaves its entry behind, which draws
- * nothing; anything that counts styles (the Pro check) prunes first with
- * `pruneElementStyles`.
+ * Addresses, not positions: a recipe's id and an element's name survive
+ * reordering, editing and re-importing, which an index would not. A deleted
+ * page leaves its record behind, which draws nothing; anything that counts
+ * looks (the Pro check) prunes first with `prunePageLooks`.
+ *
+ * MOVING AN EXISTING FIELD IN (a chapter's photo, a cover's layout): an open
+ * tab still running the previous release keeps its code across client-side
+ * navigation, reads the field where it used to be and autosaves without
+ * this record. So a field that moves keeps being WRITTEN to its old place as
+ * well for a release or two, and is READ from here when here has it and from
+ * the old place otherwise. Then an older tab's save, which drops `pageLooks`
+ * entirely, leaves a book the new code still reads correctly. Only once no
+ * older release can be open does the old field stop being written.
  */
-export interface ElementStyle {
-  /**
-   * One of the five book sizes (`FONT_SCALES`), and it REPLACES the book's
-   * size for this element rather than multiplying it, so nothing ever prints
-   * outside the range the layout harness sweeps. Absent = follow the book.
-   */
+export type { PageLook, PageLooks } from "@/types/recipe";
+import type { ElementStyle as StoredElementStyle, PageLook, PageLooks } from "@/types/recipe";
+
+/** An element's style as the app draws it: a text size that is one of the
+    swept steps. */
+export interface ElementStyle extends StoredElementStyle {
   textSize?: FontScale;
 }
 
 /** Element name -> its style, for one page. */
 export type PageElementStyles = Record<string, ElementStyle>;
-/** Page address -> its elements. Saved with the project (`settings.elementStyles`). */
-export type ElementStyles = Record<string, PageElementStyles>;
 
 /** The elements of a recipe page. The pagination budget reads these. */
 export type RecipeElement = "title" | "notes" | "details" | "ingredients" | "steps";
@@ -54,65 +62,80 @@ function cleanStyle(value: unknown): ElementStyle | undefined {
   return Object.keys(style).length > 0 ? style : undefined;
 }
 
-/** Keeps only what the app can draw: an old or hand-edited document can't put
-    an unswept size on a page. Empty pages and empty styles are dropped. */
-export function normalizeElementStyles(value: unknown): ElementStyles | undefined {
+/** One page's elements as the app draws them. */
+export function pageElements(looks: PageLooks | undefined, page: string | undefined): PageElementStyles | undefined {
+  return page ? (looks?.[page]?.elements as PageElementStyles | undefined) : undefined;
+}
+
+function cleanLook(value: unknown): PageLook | undefined {
   if (!value || typeof value !== "object") return undefined;
-  const out: ElementStyles = {};
-  for (const [page, elements] of Object.entries(value as Record<string, unknown>)) {
-    if (!elements || typeof elements !== "object") continue;
-    const clean: PageElementStyles = {};
-    for (const [element, style] of Object.entries(elements as Record<string, unknown>)) {
+  const raw = value as Record<string, unknown>;
+  const look: PageLook = {};
+  if (raw.elements && typeof raw.elements === "object") {
+    const elements: PageElementStyles = {};
+    for (const [name, style] of Object.entries(raw.elements as Record<string, unknown>)) {
       const cleaned = cleanStyle(style);
-      if (cleaned) clean[element] = cleaned;
+      if (cleaned) elements[name] = cleaned;
     }
-    if (Object.keys(clean).length > 0) out[page] = clean;
+    if (Object.keys(elements).length > 0) look.elements = elements;
+  }
+  return Object.keys(look).length > 0 ? look : undefined;
+}
+
+/** Keeps only what the app can draw: an old or hand-edited document can't put
+    an unswept size on a page. Empty looks and empty styles are dropped. */
+export function normalizePageLooks(value: unknown): PageLooks | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const out: PageLooks = {};
+  for (const [page, look] of Object.entries(value as Record<string, unknown>)) {
+    const cleaned = cleanLook(look);
+    if (cleaned) out[page] = cleaned;
   }
   return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/** Puts one page's look back, dropping it when it's empty. */
+function withLook(looks: PageLooks | undefined, page: string, look: PageLook): PageLooks | undefined {
+  const next: PageLooks = { ...(looks ?? {}) };
+  const cleaned = cleanLook(look);
+  if (cleaned) next[page] = cleaned;
+  else delete next[page];
+  return Object.keys(next).length > 0 ? next : undefined;
 }
 
 /** Merges `patch` into one element's style. A property set to `undefined`
     goes back to following the book. */
 export function withElementStyle(
-  styles: ElementStyles | undefined,
+  looks: PageLooks | undefined,
   page: string,
   element: string,
-  patch: Partial<Record<keyof ElementStyle, ElementStyle[keyof ElementStyle] | undefined>>,
-): ElementStyles | undefined {
-  const merged: Record<string, unknown> = { ...(styles?.[page]?.[element] ?? {}) };
+  patch: { [K in keyof ElementStyle]?: ElementStyle[K] | undefined },
+): PageLooks | undefined {
+  const look = looks?.[page] ?? {};
+  const merged: Record<string, unknown> = { ...(look.elements?.[element] ?? {}) };
   for (const [key, value] of Object.entries(patch)) {
     if (value === undefined) delete merged[key];
     else merged[key] = value;
   }
-  const elements: PageElementStyles = { ...(styles?.[page] ?? {}) };
-  const cleaned = cleanStyle(merged);
-  if (cleaned) elements[element] = cleaned;
-  else delete elements[element];
-  const next: ElementStyles = { ...(styles ?? {}) };
-  if (Object.keys(elements).length > 0) next[page] = elements;
-  else delete next[page];
-  return Object.keys(next).length > 0 ? next : undefined;
+  return withLook(looks, page, { ...look, elements: { ...look.elements, [element]: merged } });
 }
 
 /** Drops the pages that are no longer in the project (a deleted recipe, a
     removed chapter). `livePages` holds every address a page could have now. */
-export function pruneElementStyles(
-  styles: ElementStyles | undefined,
-  livePages: ReadonlySet<string>,
-): ElementStyles | undefined {
-  if (!styles) return undefined;
-  const next: ElementStyles = {};
-  for (const [page, elements] of Object.entries(styles)) {
-    if (livePages.has(page)) next[page] = elements;
+export function prunePageLooks(looks: PageLooks | undefined, livePages: ReadonlySet<string>): PageLooks | undefined {
+  if (!looks) return undefined;
+  const next: PageLooks = {};
+  for (const [page, look] of Object.entries(looks)) {
+    if (livePages.has(page)) next[page] = look;
   }
   return Object.keys(next).length > 0 ? next : undefined;
 }
 
 /** Whether any element anywhere is at a text size other than Normal: on
     recipe cards that is Pro, like the book-wide size. */
-export function hasNonNormalTextSize(styles: ElementStyles | undefined): boolean {
-  return Object.values(styles ?? {}).some((elements) =>
-    Object.values(elements).some((style) => style.textSize !== undefined && style.textSize !== 1),
+export function hasNonNormalTextSize(looks: PageLooks | undefined): boolean {
+  return Object.values(looks ?? {}).some((look) =>
+    Object.values(look.elements ?? {}).some((style) => style.textSize !== undefined && style.textSize !== 1),
   );
 }
 
@@ -155,10 +178,10 @@ export function pageAddressForSlot(slot: SheetSlot | null | undefined): string |
 
 /** A recipe page's elements' text sizes, for its pagination budget. */
 export function recipeTextSizes(
-  styles: ElementStyles | undefined,
+  looks: PageLooks | undefined,
   recipeId: string,
 ): Partial<Record<RecipeElement, FontScale>> | undefined {
-  const elements = styles?.[recipePageAddress(recipeId)];
+  const elements = pageElements(looks, recipePageAddress(recipeId));
   if (!elements) return undefined;
   const out: Partial<Record<RecipeElement, FontScale>> = {};
   for (const [name, style] of Object.entries(elements)) {
@@ -214,17 +237,17 @@ const ElementPageContext = createContext<ElementPageValue>({});
 /** Around one page's face: which page it is and its elements' styles. */
 export function ElementPageProvider({
   page,
-  styles,
+  looks,
   targets = false,
   children,
 }: {
   page: string | undefined;
-  styles: ElementStyles | undefined;
+  looks: PageLooks | undefined;
   targets?: boolean;
   children: ReactNode;
 }) {
   return (
-    <ElementPageContext.Provider value={{ page, elements: page ? styles?.[page] : undefined, targets }}>
+    <ElementPageContext.Provider value={{ page, elements: pageElements(looks, page), targets }}>
       {children}
     </ElementPageContext.Provider>
   );

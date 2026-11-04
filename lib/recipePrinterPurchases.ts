@@ -329,7 +329,7 @@ export function computeProLocks({
       recipe cards. Previewing it is free, like a locked theme. */
   fontScale?: number;
   /** A single element on a recipe card has a text size other than Normal
-      (lib/elementStyles.tsx): Pro the same way. */
+      (lib/pageLooks.tsx): Pro the same way. */
   elementTextSized?: boolean;
 }): ProLocks {
   // Every theme (and every Pro-only card size) is included with the cookbook

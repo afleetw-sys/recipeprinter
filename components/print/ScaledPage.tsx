@@ -44,8 +44,9 @@ import {
   ElementPageProvider,
   pageAddressForSlot,
   elementProps,
-  type ElementStyles,
-} from "@/lib/elementStyles";
+  pageElements,
+  type PageLooks,
+} from "@/lib/pageLooks";
 import { photoScaleVars, type PhotoScale } from "@/lib/photoScale";
 
 /**
@@ -90,7 +91,7 @@ function ScaledPageBody({
   preset,
   fontScale,
   photoScale,
-  elementStyles,
+  pageLooks,
   elementTargets = false,
 }: {
   sheet: PageSheet;
@@ -171,8 +172,8 @@ function ScaledPageBody({
   fontScale?: FontScale;
   /** The cook's photo size, on recipe pages only. */
   photoScale?: PhotoScale;
-  /** Sizes of single parts of pages (lib/elementStyles.tsx). */
-  elementStyles?: ElementStyles;
+  /** Sizes of single parts of pages (lib/pageLooks.tsx). */
+  pageLooks?: PageLooks;
   /** This is the deck's page being edited: words with no field of their own
       can be clicked for the text bar's Size. Never the export or the rail. */
   elementTargets?: boolean;
@@ -568,7 +569,7 @@ function ScaledPageBody({
                   <p
                     {...elementProps(
                       pageAddressForSlot(anySlot),
-                      elementStyles?.[pageAddressForSlot(anySlot) ?? ""],
+                      pageElements(pageLooks, pageAddressForSlot(anySlot)),
                       "caption",
                       undefined,
                       elementTargets,
@@ -833,7 +834,7 @@ function ScaledPageBody({
                   <ElementPageProvider
                     key={`front-${slotIndex}`}
                     page={pageAddressForSlot(slot)}
-                    styles={elementStyles}
+                    looks={pageLooks}
                     targets={elementTargets}
                   >
                     <RecipeCardFace
@@ -888,7 +889,7 @@ function ScaledPageBody({
                     <ElementPageProvider
                       key={`back-${slotIndex}`}
                       page={pageAddressForSlot(slot)}
-                      styles={elementStyles}
+                      looks={pageLooks}
                       targets={elementTargets}
                     >
                       <RecipeCardFace
@@ -952,7 +953,7 @@ export const ScaledPage = memo(function ScaledPage(props: ScaledPageProps) {
   return (
     <ElementPageProvider
       page={pageAddressForSlot(first)}
-      styles={props.elementStyles}
+      looks={props.pageLooks}
       targets={props.elementTargets}
     >
       <ScaledPageBody {...props} />

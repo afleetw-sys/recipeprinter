@@ -72,6 +72,7 @@ import {
   savePrintProject,
   savedProjectOpensAsCookbook,
   assemblePrintProject,
+  bookSettingsToMeta,
   projectContentFromMeta,
   type PrintLayoutSettings,
   loadPrintProject,
@@ -214,10 +215,9 @@ import { useFreeThemeOnOpen } from "@/lib/useFreeThemeOnOpen";
 import type { FontScale } from "@/lib/fontScale";
 import {
   hasNonNormalTextSize,
-  normalizeElementStyles,
-  pruneElementStyles,
+  prunePageLooks,
   recipePageAddress,
-} from "@/lib/elementStyles";
+} from "@/lib/pageLooks";
 import type { PhotoScale } from "@/lib/photoScale";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { openingPageFor } from "@/lib/frontMatterPage";
@@ -989,7 +989,7 @@ export default function PrintPage() {
     template,
     fontScale,
     photoScale,
-    elementStyles: projectMeta.meta.elementStyles,
+    pageLooks: projectMeta.meta.pageLooks,
     // The preview page IS the book's real sheet, and so is the card every
     // recipe is measured against (see `presetCardDims`).
     preset: projectMeta.meta.cookbookPreset,
@@ -3481,8 +3481,8 @@ export default function PrintPage() {
       // Only the recipes still here: a deleted recipe's sizes stay in the map
       // and must not keep asking for Pro.
       elementTextSized: hasNonNormalTextSize(
-        pruneElementStyles(
-          projectMeta.meta.elementStyles,
+        prunePageLooks(
+          projectMeta.meta.pageLooks,
           new Set((items ?? []).map((item) => recipePageAddress(item.id))),
         ),
       ),
@@ -4172,18 +4172,8 @@ export default function PrintPage() {
           // exactly right: those never had one.
           projectTitle: project.projectTitle,
           cookbookMode: savedProjectOpensAsCookbook(project),
-          cookbookWelcomeCompleted: project.settings.cookbookWelcomeCompleted,
           cookbookPreset: project.settings.bookPreset,
-          tableOfContents: project.settings.tableOfContents,
-          sectionDividers: project.settings.sectionDividers,
-          tocKicker: project.settings.tocKicker,
-          tocTitle: project.settings.tocTitle,
-          photoStyle: project.settings.photoStyle,
-          ownPhotosOnly: project.settings.ownPhotosOnly,
-          websitePhotos: project.settings.websitePhotos,
-          elementStyles: normalizeElementStyles(project.settings.elementStyles),
-          railSortMode: project.settings.railSortMode,
-          lastImportSource: project.settings.lastImportSource,
+          ...bookSettingsToMeta(project.settings),
           cover: project.cover,
           backCover: project.backCover,
           dedication: project.dedication,

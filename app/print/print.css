@@ -76,7 +76,7 @@
   --recipe-card-ingredient-gap: calc(var(--recipe-card-ingredient-gap-base) * var(--recipe-font-scale, 1));
 }
 
-/* One part of a page at its own text size (lib/elementStyles.tsx): the part's
+/* One part of a page at its own text size (lib/pageLooks.tsx): the part's
    element carries its own `--recipe-font-scale`. The role sizes above are
    worked out where they are declared, so they are declared again here, where
    that variable is the part's. Each base is inherited from the page, so 6x4,
@@ -8708,7 +8708,7 @@ textarea.recipe-card__toc-title {
 
 /* Words with no field of their own (an added page's lines, a chapter caption,
    the contents entries) can still be clicked to size them from the text bar
-   (lib/elementStyles.tsx), so they read as clickable like the fields do. */
+   (lib/pageLooks.tsx), so they read as clickable like the fields do. */
 [data-element][tabindex="-1"] {
   cursor: pointer;
 }

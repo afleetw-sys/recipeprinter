@@ -23,7 +23,7 @@ import { RichText } from "@/components/RichText";
 import { PhotoPlaceholder } from "@/components/print/PhotoPlaceholder";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { composeNote } from "@/lib/recipeNote";
-import { useElements } from "@/lib/elementStyles";
+import { useElements } from "@/lib/pageLooks";
 import { InlineRichField, type CaretRange } from "@/components/InlineRichField";
 import { photoGridLayout } from "@/lib/photoGrid";
 import { useWideColumns } from "@/lib/measureHeights";

@@ -19,6 +19,32 @@
  */
 export type PrintCardSize = "letter" | "card-6x4";
 
+/**
+ * One element's own style on a page (a recipe's steps, a cover's title),
+ * overriding what its theme and the book's settings give it. Today only its
+ * text size: one of `FONT_SCALES` (lib/fontScale.ts), which REPLACES the book's
+ * size for this element. Read through lib/pageLooks.tsx, which drops anything
+ * the app can't draw.
+ */
+export interface ElementStyle {
+  textSize?: number;
+}
+
+/**
+ * How one page looks beyond what its content and theme decide, kept in one
+ * record per page whatever kind of page it is. A new page-level property
+ * (a background, a photo's crop) belongs here, beside `elements`, rather than
+ * in another field on CoverConfig, Section or RecipePagePlacement. See
+ * lib/pageLooks.tsx for the addresses and for how an existing field moves in.
+ */
+export interface PageLook {
+  /** Element name -> its own style. */
+  elements?: Record<string, ElementStyle>;
+}
+
+/** Page address ("cover", "recipe:<id>", "section:<id>") -> its look. */
+export type PageLooks = Record<string, PageLook>;
+
 export type RecipePrintTemplate =
   | "document"
   | "classic"
@@ -528,12 +554,10 @@ export interface PrintProjectSettings {
       book saved before, whose `fontScale` was every theme's. Read through
       `normalizeThemeLooks`, never directly. */
   themeLooks?: Partial<Record<RecipePrintTemplate, { fontScale?: number; photoScale?: number }>>;
-  /** The cook's own style for single elements on single pages (a recipe's
-      title, a cover's author line), keyed by page address and then element
-      name: today a text size, later a font, colour or position beside it. See
-      lib/elementStyles.tsx. Absent = every element follows the theme and the
-      book's settings. */
-  elementStyles?: Record<string, Record<string, { textSize?: number }>>;
+  /** How the cook has styled single pages and the elements on them, keyed by
+      page address. See lib/pageLooks.tsx. Absent = every page follows its
+      theme and the book's settings. */
+  pageLooks?: PageLooks;
   /** Book-only settings — stay undefined/off until "Make it a cookbook" has
       been used to opt into the cookbook experience. */
   cookbookMode?: boolean;

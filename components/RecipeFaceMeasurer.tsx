@@ -247,7 +247,7 @@ export function RecipeFaceMeasurer({
       so these have to be the same two values the preview root carries. */
   cardVars?: React.CSSProperties;
   /** The size the first page-split guess is made at, when this recipe's own
-      elements differ from the book (lib/elementStyles.tsx). Defaults to
+      elements differ from the book (lib/pageLooks.tsx). Defaults to
       `fontScale`. */
   budgetScale?: number;
   /** The smallest body text size on this recipe, which the shrink floor

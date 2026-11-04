@@ -11,7 +11,7 @@ import {
 import { openingPageFor } from "@/lib/frontMatterPage";
 import { isPrintCardSize, isRecipePrintTemplate } from "@/lib/printSettings";
 import { normalizeFontScale } from "@/lib/fontScale";
-import { normalizeElementStyles } from "@/lib/elementStyles";
+import { normalizePageLooks } from "@/lib/pageLooks";
 import { normalizePhotoScale } from "@/lib/photoScale";
 import {
   coverWrapGeometry,
@@ -371,7 +371,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   // size has to reach this measurement as well as the pages: handed only to
   // the pages, the book would be paginated at Normal and printed bigger.
   const fontScale = normalizeFontScale(settings.fontScale);
-  const elementStyles = useMemo(() => normalizeElementStyles(settings.elementStyles), [settings.elementStyles]);
+  const pageLooks = useMemo(() => normalizePageLooks(settings.pageLooks), [settings.pageLooks]);
   const photoScale = normalizePhotoScale(settings.photoScale);
   const cookbookMode = Boolean(settings.cookbookMode);
   // Mirrors the derivations the workspace makes (see `photosOn` / `sourceUrlOn`
@@ -436,7 +436,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     template,
     fontScale,
     photoScale,
-    elementStyles,
+    pageLooks,
     // The book's real page — what every recipe is measured against, and what
     // the preview draws too, so the two cannot disagree.
     preset: payload.preset,
@@ -501,7 +501,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
             size={cardSize}
             template={template}
             fontScale={fontScale}
-            elementStyles={elementStyles}
+            pageLooks={pageLooks}
             photoScale={photoScale}
             doubleSided={settings.doubleSided}
             cookbookMode={cookbookMode}

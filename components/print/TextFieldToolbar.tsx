@@ -13,7 +13,7 @@ import { useMenuDismiss } from "@/lib/useMenuDismiss";
 import type { RecipeCardInlineEdit } from "@/lib/recipeCardLayout";
 import { ProBadge } from "@/components/ProBadge";
 import { DEFAULT_FONT_SCALE, FONT_SCALES, FONT_SCALE_LABELS, type FontScale } from "@/lib/fontScale";
-import type { ElementStyles } from "@/lib/elementStyles";
+import { pageElements, type PageLooks } from "@/lib/pageLooks";
 
 /**
  * The card's inline fields, and nothing else on the page.
@@ -69,7 +69,7 @@ export function TextFieldToolbar({
       is offered on that one field and nowhere else. */
   introReset?: { derived: string; onReset: () => void };
   /** The Size control: the element the field belongs to, at its own size or
-      the book's (lib/elementStyles.tsx). Absent = no Size on this bar. */
+      the book's (lib/pageLooks.tsx). Absent = no Size on this bar. */
   elementSize?: ElementSizeWiring;
 }) {
   const [field, setField] = useState<HTMLElement | null>(null);
@@ -146,7 +146,7 @@ export function TextFieldToolbar({
     elementSize && elementPage && elementName ? (
       <div className="recipe-page-toolbar__group" role="group" aria-label="Text size">
         <SizeSelect
-          size={elementSize.styles?.[elementPage]?.[elementName]?.textSize}
+          size={pageElements(elementSize.styles, elementPage)?.[elementName]?.textSize}
           followLabel={elementSize.followLabel}
           proMarked={elementSize.proMarked}
           onPick={(size) => elementSize.onChange(elementPage, elementName, size)}
@@ -296,7 +296,7 @@ export function TextFieldToolbar({
 }
 
 export interface ElementSizeWiring {
-  styles: ElementStyles | undefined;
+  styles: PageLooks | undefined;
   /** `undefined` = back to the book's size. */
   onChange: (page: string, element: string, size: FontScale | undefined) => void;
   proMarked: boolean;

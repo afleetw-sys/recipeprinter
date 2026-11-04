@@ -15,7 +15,7 @@ import type {
   StashedCookbook,
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
-import { normalizeElementStyles, withElementStyle, type ElementStyle, type ElementStyles } from "@/lib/elementStyles";
+import { normalizePageLooks, withElementStyle, type ElementStyle, type PageLooks } from "@/lib/pageLooks";
 import {
   META_RECOVERY_OWNER_KEY,
   recoveryMirrorsAgree,
@@ -177,8 +177,8 @@ export interface ProjectMeta {
   ownPhotosOnly?: boolean;
   /** See `PrintProjectSettings.websitePhotos`. */
   websitePhotos?: boolean;
-  /** See `PrintProjectSettings.elementStyles` and lib/elementStyles.tsx. */
-  elementStyles?: ElementStyles;
+  /** See `PrintProjectSettings.pageLooks` and lib/pageLooks.tsx. */
+  pageLooks?: PageLooks;
   /** Whether the cookbook renders a table-of-contents page. */
   tableOfContents?: boolean;
   /** Editable TOC heading text (the entries themselves are derived from the
@@ -399,7 +399,7 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
       : undefined,
     projectId: cleanText(raw.projectId) ?? uid(),
     projectTitle: cleanText(raw.projectTitle),
-    elementStyles: normalizeElementStyles(raw.elementStyles),
+    pageLooks: normalizePageLooks(raw.pageLooks),
     sections: settled
       ? sections
       : sections.map((section) => ({ ...section, subtitle: removed(section.subtitle) })),
@@ -1097,12 +1097,12 @@ export function useProjectMeta() {
   );
 
   /** Changes one element's own style; a property set to `undefined` goes
-      back to following the book (see lib/elementStyles.tsx). */
+      back to following the book (see lib/pageLooks.tsx). */
   const setElementStyle = useCallback(
     (page: string, element: string, patch: { [K in keyof ElementStyle]?: ElementStyle[K] | undefined }) => {
       update((current) => ({
         ...current,
-        elementStyles: withElementStyle(current.elementStyles, page, element, patch),
+        pageLooks: withElementStyle(current.pageLooks, page, element, patch),
       }));
     },
     [update],
