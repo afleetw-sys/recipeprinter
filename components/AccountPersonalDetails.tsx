@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { signOut, updateProfile } from "firebase/auth";
+import { updateProfile } from "firebase/auth";
+import { signOutOnPurpose } from "@/lib/sessionEnd";
 import type { User } from "firebase/auth";
 import { refreshCookPilotAuthUser } from "@/components/CookPilotAuth";
 import { accountInitials } from "@/components/AccountAvatarButton";
@@ -151,7 +152,7 @@ export function AccountPersonalDetails({ user }: { user: User }) {
                 // "Sign in to see your account" gate, so signing out in place
                 // answered "Sign out" with a prompt to sign straight back in.
                 router.replace("/");
-                void signOut(getFirebaseAuth());
+                void signOutOnPurpose(getFirebaseAuth());
               }}
             >
               Sign out

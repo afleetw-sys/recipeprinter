@@ -10,9 +10,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * screen without a second try reaching the server.
  */
 
-const { sendEmailCode, verifyEmailCode } = vi.hoisted(() => ({
+const { sendEmailCode, verifyEmailCode, runtime } = vi.hoisted(() => ({
   sendEmailCode: vi.fn(),
   verifyEmailCode: vi.fn(),
+  runtime: { production: false },
+}));
+vi.mock("@/lib/appEnvironment", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/appEnvironment")>()),
+  isProductionRuntime: () => runtime.production,
 }));
 
 vi.mock("@/lib/emailCode", async () => {
@@ -51,6 +56,8 @@ vi.mock("firebase/auth", () => {
 });
 
 import { CookPilotLoginForm } from "@/components/CookPilotAuth";
+import { rememberPendingCode } from "@/lib/emailCodePending";
+import { resetWokenFunctionsForTest } from "@/lib/wakeFunctions";
 
 let now = Date.parse("2026-10-18T12:18:57Z");
 
@@ -96,5 +103,39 @@ describe("email code sign-in, password account", () => {
     expect(screen.queryByRole("alert")).not.toBeNull();
     fireEvent.change(codeField(), { target: { value: "3" } });
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+});
+
+// 2026-11-03: email-code sign-ins took 4 to 13 seconds after the code was
+// entered. The code check was asleep: 4.6s to answer cold, 0.14s running.
+describe("email code sign-in, speed", () => {
+  it("starts the code check before the code is entered, however the code screen is reached", async () => {
+    runtime.production = true;
+    vi.stubEnv("NEXT_PUBLIC_FIREBASE_PROJECT_ID", "cookpilot-test");
+    try {
+      for (const arrival of ["typed their email", "came back from their email app"] as const) {
+        resetWokenFunctionsForTest();
+        sessionStorage.clear();
+        const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null));
+        if (arrival === "came back from their email app") {
+          rememberPendingCode({ email: "cook@example.com", hasPassword: false, sentAtMs: now });
+        }
+        render(<CookPilotLoginForm onAuthenticated={() => {}} />);
+        if (arrival === "typed their email") {
+          fireEvent.change(screen.getByRole("textbox", { name: "Email" }), { target: { value: "cook@example.com" } });
+          fireEvent.submit(screen.getByRole("textbox", { name: "Email" }).closest("form")!);
+        }
+        await waitFor(() => codeField());
+
+        const woken = fetchSpy.mock.calls.map(([url]) => String(url));
+        expect(woken.some((url) => url.endsWith("/recipePrinterEmailCodeVerify")), arrival).toBe(true);
+        expect(verifyEmailCode).not.toHaveBeenCalled();
+        cleanup();
+        fetchSpy.mockRestore();
+      }
+    } finally {
+      runtime.production = false;
+      vi.unstubAllEnvs();
+    }
   });
 });
