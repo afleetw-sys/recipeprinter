@@ -3216,9 +3216,10 @@ export default function PrintPage() {
   // Resumes checkout once an account exists, for a cook who chose a Pro plan
   // and was then sent through a phone's sign-in redirect — which reloads the
   // page and would otherwise lose the plan they already chose inside
-  // `ProUpgradeDialog`. A same-tab sign-in (popup or email/password) never
-  // reaches this effect at all: the dialog calls `onChoose` itself the
-  // moment `CookPilotLoginForm` reports success, with no reload in between.
+  // `ProUpgradeDialog`. A same-tab sign-in (popup, email code, password) runs
+  // this too, in the same tick as the dialog's own `onChoose`, because the
+  // intent is still stored. `useProPurchase` drops the second request while
+  // the first checkout is open; that guard is what keeps this to one checkout.
   // No project to wait on here, unlike the save intent above — just an
   // account.
   useEffect(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { track, truncateReason } from "@/lib/analytics";
@@ -64,6 +64,13 @@ export function useProPurchase({
   onFreshPurchase,
 }: UseProPurchaseOptions) {
   const [proBusy, setProBusy] = useState(false);
+  // `proBusy` is state, so two calls in the same tick both read it as false.
+  // Signing in inside the upgrade dialog on /print does exactly that (the
+  // dialog's onChoose and the page's resume-after-sign-in effect), and
+  // RevenueCat refuses the second checkout with "another request in flight"
+  // (backend 7638), which Stripe shows as "Something went wrong" over the
+  // real one. The ref sees the first call immediately.
+  const checkoutOpenRef = useRef(false);
 
   /** Buys Pro, then hands control back to `onSettled` with the outcome —
    *  called for every ending (success, cancel, or failure), never just the
@@ -84,6 +91,11 @@ export function useProPurchase({
       onSettled("already-active");
       return;
     }
+
+    // Already checking out: drop this request without settling it. The open
+    // checkout settles for both, and settling twice would resume a print twice.
+    if (checkoutOpenRef.current) return;
+    checkoutOpenRef.current = true;
 
     setProBusy(true);
     clearToast();
@@ -149,6 +161,7 @@ export function useProPurchase({
       showErrorToast(friendlyPurchaseSetupError(error));
       onSettled("failed");
     } finally {
+      checkoutOpenRef.current = false;
       setProBusy(false);
     }
   }
