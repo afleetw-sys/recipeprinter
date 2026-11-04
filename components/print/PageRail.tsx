@@ -1634,8 +1634,13 @@ export function PageRail(props: PageRailProps) {
                     !sectionFolded(group.sectionId) &&
                     sections.find((entry) => entry.id === group.sectionId)?.title?.trim() &&
                     itemIdsForSection(group.sectionId).length === 0 && (
-                    <div className="recipe-organize-chapter-empty">
-                      <span>No recipes yet.</span>
+                    // `data-rail-section-add` makes the whole empty area a
+                    // drop target, since its words say to drag a recipe here.
+                    <div
+                      className="recipe-organize-chapter-empty"
+                      data-rail-section-add={group.sectionId}
+                    >
+                      <span>Drag a recipe here, or add a new one.</span>
                       <button
                         type="button"
                         className="btn btn-secondary btn-compact"

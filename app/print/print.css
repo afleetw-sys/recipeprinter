@@ -446,15 +446,17 @@
 }
 
 /* An organizer chapter with no recipes in it yet. */
+/* A centered note and button spanning the chapter's two recipe columns. */
 .recipe-organize-chapter-empty {
+  grid-column: 1 / -1;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 4px 0 8px 22px;
+  gap: 10px;
+  padding: 16px 12px 12px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-small);
+  text-align: center;
 }
 
 /* The organizer with no recipes in the book yet. */
@@ -707,25 +709,29 @@
     font-weight: 600;
   }
 
-  /* The ungrouped recipes' "Add recipe": a quiet row, not a card. */
-  /* An outlined button in the organizer, the secondary-button shape: as bare
-     text it read as a caption under the list rather than a thing to press. */
+  /* The ungrouped recipes' "Add recipe": the empty slot at the end of the
+     list. It spans both columns and keeps a recipe row's geometry (44px tall,
+     the + where the page number sits, the words where titles start), with a
+     dashed hairline so it reads as a place for one more recipe. As a small
+     pill in one column it floated under the first recipe like a stray button. */
   .recipe-print-shell--organizing .recipe-page-rail__section-add-card {
+    grid-column: 1 / -1;
     flex-direction: row;
-    justify-content: center;
-    justify-self: start;
-    width: fit-content;
-    min-height: 36px;
-    padding: 0 14px;
-    border: 1px solid var(--cp-line-strong);
-    border-radius: var(--cp-radius-control);
-    background: var(--cp-card);
-    color: var(--cp-ink);
+    justify-content: flex-start;
+    gap: 16px; /* 8px pad + 16px icon + 16px = the titles' 40px start */
+    min-height: 44px;
+    margin-top: 6px;
+    padding: 0 7px; /* + the 1px border = a row's 8px */
+    border: 1px dashed var(--cp-line-strong);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-small);
     font-weight: 600;
   }
   .recipe-print-shell--organizing .recipe-page-rail__section-add-card:hover {
-    border-color: var(--cp-line-strong);
-    background: var(--cp-surface-soft);
+    border-color: var(--cp-accent);
+    background: var(--cp-accent-soft);
     color: var(--cp-ink);
   }
 
