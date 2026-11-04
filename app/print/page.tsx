@@ -7134,7 +7134,9 @@ export default function PrintPage() {
         } ${organizeWide ? "recipe-print-shell--organize-wide" : ""} ${
           organizeAnimating ? "recipe-print-shell--organize-animating" : ""
         } ${
-          sidePanelsHidden ? "recipe-print-shell--rail-collapsed recipe-print-shell--panel-collapsed" : ""
+          // The organizer is the whole page; panels hidden before it can't
+          // fold it away.
+          sidePanelsHidden && !organizeWide ? "recipe-print-shell--rail-collapsed recipe-print-shell--panel-collapsed" : ""
         }`}
         style={
           {

@@ -561,21 +561,23 @@
      calc() tracks and these percentages. The per-frame FLIP measures the live
      layout each frame, so the recipe tiles slide into their cells in step with
      the expansion. This class is the end state the JS animates toward. */
-  /* Only the rail's width changes: the base rule's tracks already read
-     `--rail-w`, so the collapse arrow (which rides the same variable) stays on
-     the rail's edge, and `--rail-collapsed` further down still wins and folds
-     the organizer away. The organizer has a width of its own, remembered
-     apart from the page rail's, since the two are dragged for different jobs.
-
-     The preview and settings stay fully usable beside it. They used to dim
-     and stop taking clicks, which meant leaving the organizer to fix the
-     recipe you had just found in it. */
+  /* The organizer takes the whole width (Amelia, 2026-11-04). The preview and
+     the settings fold to nothing beside it and are hidden, so they take no
+     clicks and no Tab until you leave: organizing is a step of its own, left
+     by its Back button, not something done while moving around the book.
+     `visibility`, not just opacity, is what takes them out of the Tab order. */
   .recipe-print-page .recipe-print-shell--organize-wide {
-    --rail-w: clamp(
-      320px,
-      var(--organize-rail-user-w, 50%),
-      calc(100% - var(--panel-w) - 320px)
-    );
+    --rail-w: 100%;
+    --panel-w: 0px;
+  }
+  .recipe-print-shell--organize-wide > .recipe-page-canvas,
+  .recipe-print-shell--organize-wide > .recipe-config-panel,
+  .recipe-print-shell--organize-wide > .recipe-rail-resizer,
+  .recipe-print-shell--organize-wide > .recipe-panel-toggle {
+    overflow: hidden;
+    padding-inline: 0;
+    border-width: 0;
+    visibility: hidden;
   }
 
   /* The draggable boundary between the rail and the preview. A strip a few
