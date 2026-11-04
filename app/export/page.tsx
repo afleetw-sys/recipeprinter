@@ -13,6 +13,8 @@ import { isPrintCardSize, isRecipePrintTemplate } from "@/lib/printSettings";
 import { normalizeFontScale } from "@/lib/fontScale";
 import { normalizePageLooks } from "@/lib/pageLooks";
 import { normalizePhotoScale } from "@/lib/photoScale";
+import { accentRootProps } from "@/lib/themeAccent";
+import { lookFor, normalizeThemeLooks } from "@/lib/themeLooks";
 import {
   coverWrapGeometry,
   coverWrapGeometryFromSheet,
@@ -270,6 +272,10 @@ function CoverWrapDocument({ payload }: { payload: ExportPayload }) {
   const template = isRecipePrintTemplate(project.settings.template)
     ? project.settings.template
     : "classic";
+  // The cook's accent for this theme, as the interior has it.
+  const accentRoot = accentRootProps(
+    lookFor(normalizeThemeLooks(project.settings.themeLooks, project.settings), template).accent,
+  );
   // The printer's own numbers when we have them, ours only as a fallback.
   const geometry = payload.coverSheet
     ? coverWrapGeometryFromSheet(preset, payload.coverSheet)
@@ -302,8 +308,8 @@ function CoverWrapDocument({ payload }: { payload: ExportPayload }) {
 
   return (
     <div
-      className="recipe-page-deck rp-exporting rp-page-cover-wrap"
-      style={wrapStyle}
+      className={`recipe-page-deck rp-exporting rp-page-cover-wrap ${accentRoot.className}`}
+      style={{ ...wrapStyle, ...accentRoot.style }}
       data-export-root="true"
     >
       {/* The wrap's sheet size depends on the book's page count, so it cannot
@@ -373,6 +379,8 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   const fontScale = normalizeFontScale(settings.fontScale);
   const pageLooks = useMemo(() => normalizePageLooks(settings.pageLooks), [settings.pageLooks]);
   const photoScale = normalizePhotoScale(settings.photoScale);
+  // The cook's accent for this theme (lib/themeAccent.ts), as on screen.
+  const accentRoot = accentRootProps(lookFor(normalizeThemeLooks(settings.themeLooks, settings), template).accent);
   const cookbookMode = Boolean(settings.cookbookMode);
   // Mirrors the derivations the workspace makes (see `photosOn` / `sourceUrlOn`
   // in app/print/page.tsx): a toggle only takes effect if the content can honour
@@ -478,8 +486,8 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     <div
       className={`recipe-page-deck rp-exporting ${preset.pageClass}${preset.coilBound ? " rp-coil" : ""} ${
         cookbookMode ? "recipe-page-deck--book" : ""
-      }${payload.brandHidden ? " recipe-print-page--pro" : ""}`}
-      style={exportStyle}
+      }${payload.brandHidden ? " recipe-print-page--pro" : ""} ${accentRoot.className}`}
+      style={{ ...exportStyle, ...accentRoot.style }}
       data-export-root="true"
       data-photo-finish={payload.photoFinish ?? "standard"}
     >

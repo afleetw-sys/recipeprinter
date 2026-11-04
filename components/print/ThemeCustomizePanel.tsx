@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { ProBadge } from "@/components/ProBadge";
 import { CheckIcon, ChevronDownIcon, ChevronLeftIcon, ICON_SIZE, UndoIcon } from "@/components/icons";
 import { StepSizeControl, TextSizeControl } from "@/components/print/TextSizeControl";
@@ -13,6 +13,8 @@ import {
   normalizePhotoScale,
   type PhotoScale,
 } from "@/lib/photoScale";
+import { ACCENT_COLORS, THEME_ACCENTS, type AccentColor } from "@/lib/themeAccent";
+import type { RecipePrintTemplate } from "@/types/recipe";
 
 /**
  * The settings panel's Customize view: everything about how the current theme
@@ -32,6 +34,9 @@ export function ThemeCustomizePanel({
   setFontScale,
   photoScale,
   setPhotoScale,
+  accent,
+  setAccent,
+  template,
   customized,
   onReset,
   onBack,
@@ -47,6 +52,11 @@ export function ThemeCustomizePanel({
   setFontScale: (value: FontScale) => void;
   photoScale: PhotoScale;
   setPhotoScale: (value: PhotoScale) => void;
+  /** The theme's accent color, null for its own (lib/themeAccent.ts). */
+  accent: AccentColor | null;
+  setAccent: (value: AccentColor | null) => void;
+  /** Which theme, for its own accent's swatch. */
+  template: RecipePrintTemplate;
   /** Whether this theme differs from how it ships. */
   customized: boolean;
   onReset: () => void;
@@ -69,6 +79,8 @@ export function ThemeCustomizePanel({
           {proMarked && <ProBadge variant="inline" label={false} tooltip="Customizing a theme is Pro" />}
         </h3>
       </div>
+
+      <AccentColorControl accent={accent} setAccent={setAccent} template={template} proMarked={proMarked} />
 
       <TextSizeControl fontScale={fontScale} setFontScale={setFontScale} proMarked={proMarked} />
 
@@ -108,6 +120,60 @@ export function ThemeCustomizePanel({
             Using theme defaults
           </p>
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The theme's accent: its own first, then a short list every theme can read
+ * (lib/themeAccent.ts). One pick, so a radio group of round swatches, with the
+ * name of the one chosen across from the heading the way Text size names its
+ * step.
+ */
+function AccentColorControl({
+  accent,
+  setAccent,
+  template,
+  proMarked,
+}: {
+  accent: AccentColor | null;
+  setAccent: (value: AccentColor | null) => void;
+  template: RecipePrintTemplate;
+  proMarked: boolean;
+}) {
+  const options: Array<{ id: AccentColor | null; label: string; hex: string }> = [
+    { id: null, label: "Theme's own", hex: THEME_ACCENTS[template] },
+    ...ACCENT_COLORS.map((color) => ({ id: color.id, label: color.label, hex: color.hex })),
+  ];
+  const current = options.find((option) => option.id === accent) ?? options[0];
+  return (
+    <div className="recipe-config-section">
+      <div className="recipe-text-size__head">
+        <span className="recipe-config-label" id="recipe-accent-label">
+          Accent color
+        </span>
+        <span className="recipe-text-size__name">
+          {proMarked && accent !== null && (
+            <ProBadge variant="inline" label={false} tooltip="This accent color is Pro" />
+          )}
+          {current.label}
+        </span>
+      </div>
+      <div className="recipe-accent-swatches" role="radiogroup" aria-labelledby="recipe-accent-label">
+        {options.map((option) => (
+          <button
+            key={option.id ?? "theme"}
+            type="button"
+            role="radio"
+            aria-checked={option.id === accent}
+            aria-label={option.label}
+            title={option.label}
+            className={`recipe-accent-swatch ${option.id === accent ? "is-selected" : ""}`}
+            style={{ "--swatch": option.hex } as CSSProperties}
+            onClick={() => setAccent(option.id)}
+          />
+        ))}
       </div>
     </div>
   );

@@ -221,6 +221,7 @@ import {
   recipePageAddress,
 } from "@/lib/pageLooks";
 import type { PhotoScale } from "@/lib/photoScale";
+import { accentRootProps, type AccentColor } from "@/lib/themeAccent";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, photoSizeOffered, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { asDerived, latestHistoryStep, undoEdit, useEditHistory } from "@/lib/editHistory";
 import { HistoryControls } from "@/components/print/HistoryControls";
@@ -397,13 +398,18 @@ export default function PrintPage() {
       size (lib/themeLooks.ts). Each theme keeps its own, so the page shows
       the current theme's. Pro on recipe cards; included in a cookbook. */
   const [themeLooks, setThemeLooks] = useState<ThemeLooks>({});
-  const { fontScale, photoScale } = lookFor(themeLooks, template);
+  const { fontScale, photoScale, accent } = lookFor(themeLooks, template);
+  const accentRoot = accentRootProps(accent);
   const setFontScale = useCallback(
     (value: FontScale) => setThemeLooks((looks) => withLook(looks, template, { fontScale: value })),
     [template],
   );
   const setPhotoScale = useCallback(
     (value: PhotoScale) => setThemeLooks((looks) => withLook(looks, template, { photoScale: value })),
+    [template],
+  );
+  const setAccent = useCallback(
+    (value: AccentColor | null) => setThemeLooks((looks) => withLook(looks, template, { accent: value })),
     [template],
   );
   const resetThemeLook = useCallback(
@@ -3585,6 +3591,8 @@ export default function PrintPage() {
       cardSize,
       recipeCount,
       fontScale,
+      photoScale,
+      accent,
       // Only the recipes still here: a deleted recipe's sizes stay in the map
       // and must not keep asking for Pro.
       elementTextSized: hasNonNormalTextSize(
@@ -7038,7 +7046,10 @@ export default function PrintPage() {
         // On the page root, not the shell, because the off-screen measurers
         // (`measurers` below) must lay cards out exactly as the deck does.
         brandHidden ? "recipe-print-page--pro" : ""
-      }`}
+      } ${accentRoot.className}`}
+      // The theme's accent, if the cook changed it: every page here (deck,
+      // rail, what prints) takes it from the root (lib/themeAccent.ts).
+      style={accentRoot.style}
     >
       {measurers}
       {/* The header sits in its own wrapper so `.recipe-print-page` stays a
@@ -7393,8 +7404,10 @@ export default function PrintPage() {
           setFontScale={setFontScale}
           photoScale={photoScale}
           setPhotoScale={setPhotoScale}
+          accent={accent}
+          setAccent={setAccent}
           themeCustomized={
-            isCustomized({ fontScale, photoScale }) || Boolean(projectMeta.meta.pageLooks?.[RECIPES_ADDRESS])
+            isCustomized({ fontScale, photoScale, accent }) || Boolean(projectMeta.meta.pageLooks?.[RECIPES_ADDRESS])
           }
           resetThemeLook={() => {
             resetThemeLook();

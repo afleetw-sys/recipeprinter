@@ -1185,6 +1185,14 @@
   background: var(--cp-accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--cp-accent) 24%, transparent);
 }
+/* The cook's accent for this theme (lib/themeAccent.ts), set on the page
+   root. Each theme declares its own accent on its `.recipe-card-set` (or a
+   blank page's theme class), so the override goes there, past any theme's
+   own selector. The theme picker's thumbnails keep their own colors. */
+.recipe-accent-custom :is(.recipe-card-set, [class*="recipe-template--"]):not(.recipe-template-option__thumb *) {
+  --recipe-accent: var(--recipe-accent-custom) !important;
+}
+
 /* A whole target outlined, not a place between two: a folded chapter's bar. */
 .rail-drop-line.rail-drop-line--box {
   border: 2px solid var(--cp-accent);
@@ -3691,6 +3699,31 @@ textarea.recipe-page-fields__input {
 }
 .recipe-text-size__ticks span.is-selected {
   background: var(--cp-accent);
+}
+/* Customize theme's accent swatches: round, a hairline round each so a pale
+   one still reads on the panel, and the shared selected ring on the chosen
+   one, set off from the swatch by the panel's own color. */
+.recipe-accent-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.recipe-accent-swatch {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--swatch) 70%, #000);
+  border-radius: 999px;
+  background: var(--swatch);
+  cursor: pointer;
+}
+.recipe-accent-swatch.is-selected {
+  box-shadow: 0 0 0 2px var(--cp-card), 0 0 0 4px var(--cp-selected-border);
+}
+.recipe-accent-swatch:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: 4px;
 }
 /* The view fills the panel so its foot can sit at the bottom; the foot
    sticks there while the settings above it scroll. */
