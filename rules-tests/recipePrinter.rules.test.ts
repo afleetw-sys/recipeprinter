@@ -457,6 +457,56 @@ describe("Recipe Printer Storage namespace", () => {
     );
     await assertFails(debugRef.getDownloadURL());
   });
+
+  test("public files open by their path, but nobody can list a folder that isn't theirs", async () => {
+    // `read` is get AND list. On these paths it was `if true`, so anyone could
+    // `listAll("recipeprinter/exports")` and download every customer's book, or
+    // list `photos/users` (the legacy rule matched "users") to walk every
+    // account's photos. A file stays readable by its path; listing is closed.
+    const files = [
+      "recipeprinter/exports/request-uuid/My-Cookbook.pdf",
+      "recipeprinter/photos/users/owner/photo.jpg",
+      "recipeprinter/photos/users/owner/adopted/project-1/photo.jpg",
+      "recipeprinter/photos/anonymous/abcdefghijklmnopqrst/photo.jpg",
+      "recipeprinter/photos/legacy-owner/photo.jpg",
+    ];
+    await environment.withSecurityRulesDisabled(async (context) => {
+      for (const path of files) {
+        await context.storage().ref(path).putString("bytes", "raw", { contentType: "image/jpeg" });
+      }
+    });
+
+    const callers = [
+      environment.unauthenticatedContext().storage(),
+      environment.authenticatedContext("stranger").storage(),
+    ];
+    const folders = [
+      "recipeprinter",
+      "recipeprinter/exports",
+      "recipeprinter/exports/request-uuid",
+      "recipeprinter/photos",
+      "recipeprinter/photos/users",
+      "recipeprinter/photos/users/owner",
+      "recipeprinter/photos/anonymous",
+      "recipeprinter/photos/anonymous/abcdefghijklmnopqrst",
+      "recipeprinter/photos/legacy-owner",
+    ];
+    for (const storage of callers) {
+      for (const path of files) {
+        // The download URL is how an <img> and the cookbook download open a
+        // file: a plain request with no sign-in. It has to keep working.
+        const url = await assertSucceeds(storage.ref(path).getDownloadURL());
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`${path} did not download: HTTP ${response.status}`);
+      }
+      for (const folder of folders) await assertFails(storage.ref(folder).listAll());
+    }
+
+    // Deleting a project lists the owner's own adopted-photo folder
+    // (lib/printProjects.ts), so the owner keeps that.
+    const ownerStorage = environment.authenticatedContext("owner").storage();
+    await assertSucceeds(ownerStorage.ref("recipeprinter/photos/users/owner/adopted/project-1").listAll());
+  });
 });
 
 describe("the project content subdocument", () => {

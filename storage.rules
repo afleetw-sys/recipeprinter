@@ -47,14 +47,16 @@ service firebase.storage {
     // Written only by functions-pdf's own admin credentials (see
     // exportStorage.ts in the CookPilot repo), which bypass these rules
     // entirely — there is deliberately no `allow write` here for any client.
-    // Public read for the same reason a recipe photo is: the path segment is
+    // Public `get` for the same reason a recipe photo is: the path segment is
     // an unguessable request UUID and the URL additionally carries its own
-    // download token, matching every other upload in this file. Self-cleaned
-    // by the function after ~2 days; see that file's own comment for why
-    // this is NOT a bucket lifecycle rule.
+    // download token, matching every other upload in this file. Never `list`:
+    // `read` is get AND list, and `{path=**}` also matches the folder itself,
+    // so `allow read` here let anyone list every customer's export and the
+    // UUID hid nothing. Self-cleaned by the function after ~2 days; see that
+    // file's own comment for why this is NOT a bucket lifecycle rule.
     match /recipeprinter/exports/{path=**} {
-      allow read: if true;
-      allow write: if false;
+      allow get: if true;
+      allow list, write: if false;
     }
 
     // ── Recipe Printer owner-isolated storage ──────────────────────────────
@@ -62,8 +64,12 @@ service firebase.storage {
     // uid of its own, and its uploads would otherwise land here for books
     // nobody keeps. Signed-out photos stay in the browser until the book is
     // saved to an account (RecipePrinter lib/localPhotos).
+    // A photo opens by its path for anyone (it is printed in shared books);
+    // only its owner may list the folder (deleting a project lists its
+    // adopted photos, lib/printProjects.ts).
     match /recipeprinter/photos/users/{uid}/{path=**} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if signedIn() && request.auth.uid == uid;
       allow create, update: if signedIn()
         && request.auth.token.get("firebase", {}).get("sign_in_provider", "") != "anonymous"
         && request.auth.uid == uid
@@ -76,8 +82,8 @@ service firebase.storage {
     // books and share links can point here, and swept by the daily RecipePrinter
     // storage job once nothing does.
     match /recipeprinter/photos/anonymous/{anonymousOwnerId}/{path=**} {
-      allow read: if true;
-      allow write: if false;
+      allow get: if true;
+      allow list, write: if false;
     }
 
     // Write-only drop box for the exact input that failed to import.
@@ -134,10 +140,12 @@ service firebase.storage {
     //
     // Excluding the reserved new roots still matters. Overlapping Storage
     // matches are ORed, so a broad legacy allow must never bypass the owner
-    // checks above.
+    // checks above. That is why this is `get` and never `list`: with
+    // `legacyOwner` = "users" it matches the `photos/users` folder itself, and
+    // a `read` here listed every account's photo prefix.
     match /recipeprinter/photos/{legacyOwner}/{allPaths=**} {
-      allow read: if true;
-      allow write: if false;
+      allow get: if true;
+      allow list, write: if false;
     }
 
     // The pre-namespace debug location. Create-only like its replacement above
