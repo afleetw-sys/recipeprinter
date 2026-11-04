@@ -306,6 +306,9 @@ export function TextFieldToolbar({
           />
         </div>
       )}
+      {/* The size beside the line's kind (Body / Heading): both say what the
+          text is set as, so they sit together, ahead of bold and italic. */}
+      {sizeGroup}
       {isTitle && inlineEdit && (
         <div className="recipe-page-toolbar__group" role="group" aria-label="Title case">
           {/* Rewrites the text rather than styling it: Title Case can't be
@@ -345,7 +348,6 @@ export function TextFieldToolbar({
         </div>
       )}
       {styleGroup}
-      {sizeGroup}
     </div>,
     document.body,
   );
