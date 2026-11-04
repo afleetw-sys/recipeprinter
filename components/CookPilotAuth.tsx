@@ -36,6 +36,7 @@ import {
 import { purgeAnonymousUser as purgeAnonymousUserFor } from "@/lib/anonymousSession";
 import { syncAnalyticsIdentity, track } from "@/lib/analytics";
 import { sessionEndCause } from "@/lib/sessionEnd";
+import { warmEmailCodeCheck, warmEmailCodeSignIn } from "@/lib/wakeFunctions";
 import {
   readCookPilotWasSignedIn,
   rememberCookPilotSignedIn,
@@ -432,6 +433,10 @@ function EmailCodeEntry({
   /** Extra ways out, under the button. */
   children?: ReactNode;
 }) {
+  // Reading the email takes longer than the check takes to start.
+  useEffect(() => {
+    warmEmailCodeCheck();
+  }, []);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
@@ -642,6 +647,7 @@ export function CookPilotLoginForm({
     // email instead of starting it after Continue is pressed.
     void import("@/lib/firebase/functions");
     void prewarmCookPilotAuth();
+    warmEmailCodeSignIn();
     // Back from Mail (a reload, or a tab the phone dropped) to the code step.
     const pending = readPendingCode();
     if (pending && !getFirebaseAuth().currentUser) {
