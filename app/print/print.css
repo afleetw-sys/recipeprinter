@@ -2024,8 +2024,28 @@
    dropdowns since it isn't sitting in a toolbar. */
 /* Its toggle sits where a section label would, not 14px below the last
    setting like the seasonal themes' does. */
-.recipe-customize__parts-toggle {
+/* Fine-tune sizes belongs to Text size, so it reads as a line under its
+   slider rather than a heading of its own (Amelia, 2026-11-05): sentence
+   case at the panel's small size, pulled up close to the slider, and its
+   rows set in under it on a hairline. */
+.recipe-customize__parts {
+  margin-top: -8px;
+}
+/* Scoped: the shared toggle rule it reuses comes later in this file. */
+.recipe-customize__parts .recipe-customize__parts-toggle {
+  width: auto;
+  align-self: flex-start;
   margin: 0;
+  padding: 2px 0;
+  font-size: var(--cp-fs-small);
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.recipe-customize__parts-body {
+  margin-top: 4px;
+  padding-left: 12px;
+  border-left: 1px solid var(--cp-line);
 }
 .recipe-customize__parts-hint {
   margin: 2px 0 8px;
