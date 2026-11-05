@@ -306,7 +306,7 @@ function EachPartSizes({
         <ChevronDownIcon size={ICON_SIZE.sm} />
       </button>
       {open && (
-        <div id="recipe-customize-part-rows">
+        <div id="recipe-customize-part-rows" className="recipe-customize__parts-body">
           <p className="recipe-customize__parts-hint">Text size still moves them all.</p>
           <div className="recipe-customize__part-rows">
             {parts.map((part) => (
