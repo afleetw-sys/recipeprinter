@@ -33,6 +33,28 @@ describe("referrer classification", () => {
     expect(matchReferrer("duckduckgo.com")).toBe("DuckDuckGo");
   });
 
+  // search.brave.com was the only referrer in PostHog's "Referral" bucket
+  // (2026-11-05): a search visit counted as a referral. Every engine people
+  // actually use has to land as itself, in Search.
+  it("files every search engine under its own name in Search, not Referral", () => {
+    const engines = [
+      "search.brave.com",
+      "search.yahoo.com",
+      "uk.search.yahoo.com",
+      "www.ecosia.org",
+      "kagi.com",
+      "www.startpage.com",
+      "yandex.ru",
+      "www.baidu.com",
+      "www.qwant.com",
+    ];
+    for (const host of engines) {
+      const source = land("/", `https://${host}/`).source;
+      expect(source, host).not.toBe("Referral");
+      expect(categoryOf(source), host).toBe("Search");
+    }
+  });
+
   it("recognizes social networks and their subdomains", () => {
     expect(matchReferrer("www.pinterest.com")).toBe("Pinterest");
     expect(matchReferrer("pin.it")).toBe("Pinterest");
