@@ -208,3 +208,43 @@ test("the page toolbar can be wider than a small page", async ({ page, isMobile 
     }).toPass({ timeout: 5_000 });
   }
 });
+
+/**
+ * On a phone the bar is the screen's width, but it was still shifted half a
+ * page toward whichever side of a spread was tapped. The contents page's hint
+ * fills that width, so on a left-hand page it ran off the screen's left edge
+ * with its first words cut off. Every page of a book, either side of its
+ * spread, keeps its whole bar on screen.
+ */
+test("a cookbook page's bar stays on a phone's screen, whichever side of the spread", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const tab = page.getByRole("tab", { name: /Cookbook/ });
+  await expect(async () => {
+    await tab.click();
+    await expect(tab).toHaveAttribute("aria-selected", "true", { timeout: 1_000 });
+  }).toPass();
+  await page.getByRole("button", { name: /Start a cookbook/ }).first().click();
+  await expect(page).toHaveURL(/\/print$/);
+  await page.getByRole("button", { name: /^Add recipes?$/ }).filter({ visible: true }).first().click();
+  const field = page.getByPlaceholder("Paste a recipe link").filter({ visible: true }).first();
+  await field.fill(LINK);
+  await field.press("Enter");
+  await expect(page.locator("#recipe-add-dialog-title")).toHaveCount(0);
+  // The contents page is in the book once the recipe is.
+  await expect(page.getByRole("list", { name: "Contents entries" })).toHaveCount(1);
+
+  const halves = page.locator(".recipe-spread__page");
+  const count = await halves.count();
+  for (let i = 0; i < count; i += 1) {
+    const half = halves.nth(i);
+    // Twice: the first tap can bring the spread into view, the second focuses the half.
+    await half.click();
+    await half.click();
+    await expect(async () => {
+      const rect = await bar(page).evaluate((el) => el.getBoundingClientRect().toJSON());
+      expect(rect.left, `page ${i + 1}`).toBeGreaterThanOrEqual(-0.5);
+      expect(rect.right, `page ${i + 1}`).toBeLessThanOrEqual(390.5);
+    }).toPass({ timeout: 5_000 });
+  }
+});
