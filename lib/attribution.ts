@@ -31,6 +31,14 @@ export type KnownTrafficSource =
   | "Google Search"
   | "Bing Search"
   | "DuckDuckGo"
+  | "Brave Search"
+  | "Yahoo Search"
+  | "Ecosia"
+  | "Kagi"
+  | "Startpage"
+  | "Yandex"
+  | "Baidu"
+  | "Qwant"
   | "ChatGPT"
   | "Perplexity"
   | "Claude"
@@ -95,6 +103,15 @@ export const REFERRER_RULES: ReadonlyArray<{
   { source: "Google Search", pattern: /(^|\.)google(\.[a-z]{2,3}){1,2}$/ },
   { source: "Bing Search", pattern: /(^|\.)bing\.com$/ },
   { source: "DuckDuckGo", pattern: /(^|\.)duckduckgo\.com$/ },
+  // Brave's engine only: brave.com itself is the browser's own site.
+  { source: "Brave Search", pattern: /^search\.brave\.com$/ },
+  { source: "Yahoo Search", pattern: /(^|\.)search\.yahoo(\.[a-z]{2,3}){1,2}$/ },
+  { source: "Ecosia", pattern: /(^|\.)ecosia\.org$/ },
+  { source: "Kagi", pattern: /(^|\.)kagi\.com$/ },
+  { source: "Startpage", pattern: /(^|\.)startpage\.com$/ },
+  { source: "Yandex", pattern: /(^|\.)(yandex(\.[a-z]{2,3}){1,2}|ya\.ru)$/ },
+  { source: "Baidu", pattern: /(^|\.)baidu\.com$/ },
+  { source: "Qwant", pattern: /(^|\.)qwant\.com$/ },
   // --- Social / referral networks.
   { source: "Pinterest", pattern: /(^|\.)(pinterest(\.[a-z]{2,3}){1,2}|pin\.it)$/ },
   { source: "Reddit", pattern: /(^|\.)reddit\.com$/ },
@@ -188,6 +205,9 @@ export const UTM_SOURCE_ALIASES: ReadonlyArray<{
   { source: "Google Search", keywords: ["google", "googleads", "google-ads", "adwords", "gads"] },
   { source: "Bing Search", keywords: ["bing", "msn"] },
   { source: "DuckDuckGo", keywords: ["duckduckgo", "ddg"] },
+  { source: "Brave Search", keywords: ["brave"] },
+  { source: "Yahoo Search", keywords: ["yahoo"] },
+  { source: "Ecosia", keywords: ["ecosia"] },
   { source: "ChatGPT", keywords: ["chatgpt", "openai"] },
   { source: "Perplexity", keywords: ["perplexity"] },
   { source: "Claude", keywords: ["claude", "anthropic"] },
@@ -283,6 +303,14 @@ const CATEGORY_BY_SOURCE: Readonly<Record<KnownTrafficSource, TrafficCategory>> 
   "Google Search": "Search",
   "Bing Search": "Search",
   DuckDuckGo: "Search",
+  "Brave Search": "Search",
+  "Yahoo Search": "Search",
+  Ecosia: "Search",
+  Kagi: "Search",
+  Startpage: "Search",
+  Yandex: "Search",
+  Baidu: "Search",
+  Qwant: "Search",
   ChatGPT: "AI",
   Perplexity: "AI",
   Claude: "AI",
