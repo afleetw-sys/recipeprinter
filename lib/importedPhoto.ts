@@ -28,12 +28,17 @@ export function storeImportedPhoto(source: File | string): Promise<string | unde
   })().catch(() => undefined);
 }
 
-/** The parsed recipe with the stored photo as its image, unless it already has one. */
+/**
+ * The parsed recipes with the stored photo as the first one's image, unless it
+ * already has one. Only the first: when one photo holds several recipes, the
+ * picture of all of them is no one recipe's photo.
+ */
 export async function withImportedPhoto(
-  recipe: Recipe,
+  recipes: Recipe[],
   storedPhoto: Promise<string | undefined> | undefined,
-): Promise<Recipe> {
-  if (!storedPhoto || recipe.image) return recipe;
+): Promise<Recipe[]> {
+  const [first, ...rest] = recipes;
+  if (!first || !storedPhoto || first.image) return recipes;
   const image = await storedPhoto;
-  return image ? { ...recipe, image } : recipe;
+  return image ? [{ ...first, image }, ...rest] : recipes;
 }

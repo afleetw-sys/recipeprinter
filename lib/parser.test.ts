@@ -505,9 +505,34 @@ describe("parseImages — a photographed card's notes", () => {
       },
     });
 
-    const recipe = await parseImages(["data:image/jpeg;base64,AAAA"]);
+    const [recipe] = await parseImages(["data:image/jpeg;base64,AAAA"]);
 
     expect(recipe.note).toBe("Best eaten the same day.");
+  });
+});
+
+// The queue already adds every recipe a photo holds (to a cookbook or for Pro),
+// and CookPilot already reads them all when asked. Nothing asked: a photo of
+// three recipes always came back as one.
+describe("parseImages — a photo with several recipes", () => {
+  afterEach(() => callable.mockReset());
+
+  it("asks for every recipe, and returns each with its own notes", async () => {
+    const base = COOKPILOT_RESULT.data.recipe;
+    const recipes = [
+      { ...base, title: "Lemon bars", notes: "Chill overnight." },
+      { ...base, title: "Shortbread" },
+      { ...base, title: "Fudge", notes: "Use a buttered pan." },
+    ];
+    callable.mockResolvedValue({
+      data: { recipeJSON: JSON.stringify(recipes[0]), recipesJSON: JSON.stringify(recipes) },
+    });
+
+    const result = await parseImages(["data:image/jpeg;base64,AAAA"]);
+
+    expect(callable).toHaveBeenCalledWith(expect.objectContaining({ multiRecipe: true }));
+    expect(result.map((recipe) => recipe.title)).toEqual(["Lemon bars", "Shortbread", "Fudge"]);
+    expect(result.map((recipe) => recipe.note)).toEqual(["Chill overnight.", undefined, "Use a buttered pan."]);
   });
 });
 
