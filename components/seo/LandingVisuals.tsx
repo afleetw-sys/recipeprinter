@@ -385,12 +385,18 @@ export function ComparisonTable({
   // Cornflower, not clay. Clay is the system's "this TELLS you something"
   // colour and it carries the paywall and the warnings, so a column of clay
   // ticks reads as a column of cautions — the opposite of what a tick means.
-  const ours = "bg-[var(--cp-accent-soft)]";
+  //
+  // Wide screens only. On a phone each feature's name spans the full width
+  // above its two answers, so the band can't run unbroken: it came out as a
+  // stack of disconnected grey blocks. There the two answers are split by a
+  // hairline instead, under the names stated once at the top.
+  const ours = "sm:bg-[var(--cp-accent-soft)]";
+  const theirsOnPhone = "max-sm:border-l max-sm:border-line";
 
   const cell = (v: ComparisonValue, mine: boolean) => (
     <td
-      className={`px-cp-4 py-cp-4 align-middle max-sm:block max-sm:pb-cp-3 max-sm:pt-cp-1 ${
-        mine ? ours : ""
+      className={`px-cp-4 py-cp-4 align-middle max-sm:block max-sm:pb-cp-4 max-sm:pt-cp-2 ${
+        mine ? ours : theirsOnPhone
       }`}
     >
       {/* The column header says this on screen; a phone's grid layout can
@@ -441,7 +447,7 @@ export function ComparisonTable({
             >
               RecipePrinter
             </th>
-            <th scope="col" className="border-b border-line-strong px-cp-4 pb-cp-3 pt-cp-4 text-cp-body font-extrabold tracking-[-0.02em] text-ink max-sm:block">
+            <th scope="col" className={`${theirsOnPhone} border-b border-line-strong px-cp-4 pb-cp-3 pt-cp-4 text-cp-body font-extrabold tracking-[-0.02em] text-ink max-sm:block`}>
               {competitor}
             </th>
           </tr>
