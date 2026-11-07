@@ -12454,9 +12454,3 @@ textarea.recipe-card__toc-title {
   font-weight: 600;
   white-space: nowrap;
 }
-.rp-phone-more-menu .cp-menu__item[aria-disabled="true"] {
-  cursor: default;
-}
-.rp-phone-more-menu .cp-menu__item[aria-disabled="true"]:hover {
-  background: transparent;
-}

@@ -40,11 +40,11 @@ export function PhoneMoreMenu({
             type="button"
             role="menuitem"
             className="cp-menu__item"
-            aria-disabled={onSave ? undefined : true}
             onClick={() => {
-              if (!onSave) return;
+              // Closes either way: pressing Save when everything already is
+              // still means "done here".
               setOpen(false);
-              onSave();
+              onSave?.();
             }}
           >
             <CloudCheckIcon size={ICON_SIZE.md} />
