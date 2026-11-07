@@ -113,7 +113,7 @@ import { applyRecipeTargetEdit, useRecipeInlineEditor } from "@/lib/useRecipeInl
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
 import { useRailSelection } from "@/lib/useRailSelection";
 import { PAGE_DIMS } from "@/lib/printGeometry";
-import { addRecipeTarget } from "@/lib/addRecipeTarget";
+import { addRecipeTarget, replacementTarget } from "@/lib/addRecipeTarget";
 import { useDeckMobile, useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
@@ -5660,10 +5660,12 @@ export default function PrintPage() {
       openProUpgradeDialog("add_more_recipes");
       return;
     }
+    // Read before the remove, while the failed item still has a place.
+    const target = replacementTarget(id, sections);
     queue.remove(id);
-    setPendingAddSectionId(sections[0]?.id ?? null);
-    setPendingAddIndex(0);
-    setPendingAddAfterRecipeId(null);
+    setPendingAddSectionId(target?.sectionId ?? null);
+    setPendingAddIndex(target?.index ?? 0);
+    setPendingAddAfterRecipeId(target?.anchorId ?? null);
     setShowAddRecipeDialog(true);
   }
   function navigateToRecipe(itemId: string) {
@@ -6891,10 +6893,13 @@ export default function PrintPage() {
     // If the recipe didn't actually move pages, no navigation reset fires to
     // consume the keep-editing ref, so clear it here to avoid a stale skip.
     if (targetIndex === activeNavIndex) keepEditingRef.current = null;
+    // The loading card was the current one; the page it became is now. On
+    // cards the deck is already parked on that slot, so `goToSlide` changes
+    // nothing that would clear it, and the rail was left marking no page.
+    setActiveImportId(null);
     // Select the arrived page itself, not just its spread (see
     // `landingForRecipe`).
     if (landing.sheet !== null) {
-      setActiveImportId(null);
       if (targetIndex === activeNavIndex) setFocusedSheetIndex(landing.sheet);
       else pendingFocusSheetRef.current = landing.sheet;
     }
