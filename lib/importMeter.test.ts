@@ -93,7 +93,7 @@ function setup(gates: { cookbookMode?: boolean; clientPro?: boolean } = {}) {
 
 beforeEach(() => {
   parseUrlAll.mockResolvedValue([recipe("Borscht")]);
-  parseImages.mockResolvedValue(recipe("Borscht"));
+  parseImages.mockResolvedValue([recipe("Borscht")]);
   parseText.mockResolvedValue(recipe("Borscht"));
   callCookPilotParser.mockImplementation(async (_name: string, data: { op: string }) =>
     data.op === "reserve" ? RESERVED : { ok: true, mode: "enforce", used: 5, limit: 10, nextFreeAt: NEXT_FREE },

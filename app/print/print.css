@@ -4682,6 +4682,10 @@ textarea.recipe-page-fields__input {
        Never narrower than the page, either: zoomed past the screen, the bar
        needs the page's whole width to slide along as it pans. */
     --controls-w: max(100%, calc(100vw - 32px));
+    /* Centred on the screen, not shifted toward the tapped half of a spread
+       (`--preview-offset`). A bar as wide as the screen has nowhere to shift
+       to: on a left-hand page the contents hint ran off the left edge. */
+    margin-left: calc((100% - var(--controls-w)) / 2);
   }
 
   .recipe-config-panel {

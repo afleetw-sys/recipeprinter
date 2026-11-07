@@ -537,20 +537,50 @@ async function parseUrlBeforeDeadline(
   );
 }
 
-/** Image import, CookPilot's `parseRecipeFromImages` (expects data-URL strings). */
-export async function parseImages(images: string[]): Promise<Recipe> {
+/**
+ * The recipes in an image parse's reply: each one in `recipesJSON` when the
+ * photos held several, or the one recipe otherwise.
+ */
+function photoRecipeNodes(data: unknown): unknown[] {
+  const record = data && typeof data === "object" ? (data as Record<string, unknown>) : null;
+  const raw = record?.recipesJSON;
+  if (typeof raw === "string") {
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch {
+      /* Fall back to the single recipe the reply always carries. */
+    }
+  }
+  return [data];
+}
+
+/**
+ * Image import, CookPilot's `parseRecipeFromImages` (expects data-URL strings).
+ * Returns one or more recipes: photos of one recipe yield exactly one, and a
+ * photo of several (a cookbook page with three on it) yields each of them. As
+ * with a roundup link, the queue decides how many the cook keeps: all of them
+ * in a cookbook (up to its free size) or for Pro, the first otherwise.
+ */
+export async function parseImages(images: string[]): Promise<Recipe[]> {
   try {
-    const data = await callCookPilotParser("parseRecipeFromImages", { images });
-    const recipe = adaptCookPilotRecipe(data);
-    if (!recipe) {
+    // `multiRecipe`, as `parseUrlAll` sends it: without it CookPilot reads
+    // several recipes on a photo as one.
+    const data = await callCookPilotParser("parseRecipeFromImages", { images, multiRecipe: true });
+    const recipes = photoRecipeNodes(data).flatMap((node) => {
+      const recipe = adaptCookPilotRecipe(node);
+      if (!recipe) return [];
+      // A photographed card is the cook's own writing, so its notes become the recipe's note.
+      const notes = sourceNotesFromResponse(node);
+      return [notes ? { ...recipe, note: notes } : recipe];
+    });
+    if (recipes.length === 0) {
       throw new ImportError(
-        "We couldn't find a recipe in those photos. Make sure the whole recipe — title, ingredients, and steps — is in the shot and in focus, and add one recipe at a time.",
+        "We couldn't find a recipe in those photos. Make sure the whole recipe — title, ingredients, and steps — is in the shot and in focus.",
         "no_recipe",
       );
     }
-    // A photographed card is the cook's own writing, so its notes become the recipe's note.
-    const notes = sourceNotesFromResponse(data);
-    return notes ? { ...recipe, note: notes } : recipe;
+    return recipes;
   } catch (err) {
     throw friendlyError(
       err,
