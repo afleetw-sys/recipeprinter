@@ -6,9 +6,18 @@ import { CheckIcon, ICON_SIZE } from "@/components/icons";
 import type { ComparisonValue } from "@/lib/seoLandingPages";
 
 /** Below this width the table scrolls sideways rather than squeezing its
-    answers into slivers. Shared by the table and its pinned header strip so
-    their columns stay lined up. */
-const PHONE_MIN_WIDTH = "max-sm:min-w-[320px]";
+    answers into slivers: wide enough that every cell keeps its full padding
+    and "RecipePrinter Pro" sits on one line. Shared by the table and its
+    pinned header strip so their columns stay lined up. */
+const PHONE_MIN_WIDTH = "max-sm:min-w-[460px]";
+
+/** The feature column on a phone: frozen at the left edge while the answers
+    scroll under it, with a hairline marking where they pass. */
+const FROZEN = "max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-card";
+// A drawn line, not a border: a collapsed table border stays behind when its
+// cell sticks.
+const FROZEN_EDGE =
+  "max-sm:after:absolute max-sm:after:inset-y-0 max-sm:after:right-0 max-sm:after:w-px max-sm:after:bg-line-strong max-sm:after:content-['']";
 
 /**
  * A head-to-head feature table for a competitor comparison page.
@@ -26,8 +35,9 @@ const PHONE_MIN_WIDTH = "max-sm:min-w-[320px]";
  * Phones get the same three columns, one row per feature, because that is
  * what makes the table quick to read. Two earlier phone layouts put each
  * feature's name on its own line above its answers: that doubled every row
- * and broke the tinted band into blocks. Where the answers don't fit, the
- * table scrolls sideways.
+ * and broke the tinted band into blocks. The columns keep a readable width
+ * and full padding, so on most phones the table scrolls sideways, with the
+ * feature names frozen at the left like a spreadsheet's first column.
  *
  * On a phone the product names are pinned under the site header as the page
  * scrolls, so a row halfway down still says which column is which. They are a
@@ -50,6 +60,7 @@ export function ComparisonTable({
   }[];
 }) {
   const stripRef = useRef<HTMLDivElement>(null);
+  const stripCornerRef = useRef<HTMLDivElement>(null);
 
   // The tint that makes our column a single vertical band. Applied to every
   // cell in the column, including the header and the group-label rows, so it
@@ -59,7 +70,7 @@ export function ComparisonTable({
   // colour and it carries the paywall and the warnings, so a column of clay
   // ticks reads as a column of cautions — the opposite of what a tick means.
   const ours = "bg-[var(--cp-accent-soft)]";
-  const pad = "px-cp-4 max-sm:px-cp-2";
+  const pad = "px-cp-4 max-sm:px-cp-3";
   const nameCell = `${pad} pb-cp-3 pt-cp-4 text-cp-body font-extrabold tracking-[-0.02em] text-ink max-sm:pt-cp-3 max-sm:text-cp-small`;
 
   const cell = (v: ComparisonValue, mine: boolean) => (
@@ -75,7 +86,7 @@ export function ComparisonTable({
           <span className="sr-only">No</span>
         </span>
       ) : (
-        <span className="inline-flex items-baseline gap-cp-2 max-sm:gap-cp-1">
+        <span className="inline-flex items-baseline gap-cp-2">
           <span className="glyph-accent flex-none translate-y-0.5">
             <CheckIcon size={ICON_SIZE.sm} />
           </span>
@@ -95,9 +106,9 @@ export function ComparisonTable({
   // Same split on both: the strip's grid and the table's columns.
   const columns = (
     <colgroup>
-      <col className="max-sm:w-[30%]" />
-      <col className="w-[26%] max-sm:w-[35%]" />
-      <col className="w-[26%] max-sm:w-[35%]" />
+      <col className="max-sm:w-[28%]" />
+      <col className="w-[26%] max-sm:w-[36%]" />
+      <col className="w-[26%] max-sm:w-[36%]" />
     </colgroup>
   );
 
@@ -109,8 +120,10 @@ export function ComparisonTable({
         aria-hidden
         className="sticky top-[59px] z-[1] overflow-hidden rounded-t-2xl border-b border-line-strong bg-card sm:hidden"
       >
-        <div ref={stripRef} className={`grid w-full grid-cols-[30%_35%_35%] ${PHONE_MIN_WIDTH}`}>
-          <div />
+        <div ref={stripRef} className={`grid w-full grid-cols-[28%_36%_36%] ${PHONE_MIN_WIDTH}`}>
+          {/* Held still against the strip's own movement, like the frozen
+              column below it. */}
+          <div ref={stripCornerRef} className={`relative z-[1] bg-card ${FROZEN_EDGE}`} />
           <div className={`${nameCell} ${ours}`}>RecipePrinter</div>
           <div className={nameCell}>{competitor}</div>
         </div>
@@ -118,8 +131,9 @@ export function ComparisonTable({
       <div
         className="max-sm:overflow-x-auto max-sm:rounded-b-2xl"
         onScroll={(event) => {
-          const strip = stripRef.current;
-          if (strip) strip.style.transform = `translateX(${-event.currentTarget.scrollLeft}px)`;
+          const x = event.currentTarget.scrollLeft;
+          if (stripRef.current) stripRef.current.style.transform = `translateX(${-x}px)`;
+          if (stripCornerRef.current) stripCornerRef.current.style.transform = `translateX(${x}px)`;
         }}
       >
         <table className={`w-full border-collapse text-left max-sm:table-fixed ${PHONE_MIN_WIDTH}`}>
@@ -145,7 +159,7 @@ export function ComparisonTable({
                     cells beside it rather than breaking onto two lines. */}
                 <th
                   scope="colgroup"
-                  className={`${pad} whitespace-nowrap pb-cp-2 text-cp-caption font-bold uppercase tracking-[0.11em] text-ink-soft ${
+                  className={`${pad} ${FROZEN} whitespace-nowrap pb-cp-2 text-cp-caption font-bold uppercase tracking-[0.11em] text-ink-soft ${
                     groupIndex === 0 ? "pt-cp-3" : "pt-cp-6"
                   }`}
                 >
@@ -160,7 +174,7 @@ export function ComparisonTable({
                 <tr key={row.feature} className="border-t border-line">
                   <th
                     scope="row"
-                    className={`${pad} py-cp-4 text-cp-body font-medium leading-snug text-ink max-sm:text-cp-small max-sm:font-semibold`}
+                    className={`${pad} ${FROZEN} ${FROZEN_EDGE} py-cp-4 text-cp-body font-medium leading-snug text-ink max-sm:text-cp-small max-sm:font-semibold`}
                   >
                     {row.feature}
                   </th>
