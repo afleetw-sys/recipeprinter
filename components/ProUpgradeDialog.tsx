@@ -291,8 +291,27 @@ export function ProUpgradeDialog({
                 {label}
               </button>
             ))}
-            {otherOpen ? (
+            <button
+              type="button"
+              className="btn btn-secondary w-full"
+              aria-expanded={otherOpen}
+              aria-controls="pro-decline-other-form"
+              onClick={() => setOtherOpen((open) => !open)}
+              style={
+                otherOpen
+                  ? {
+                      borderColor: "var(--cp-selected-border)",
+                      background: "var(--cp-selected-fill)",
+                      color: "var(--cp-selected-text)",
+                    }
+                  : undefined
+              }
+            >
+              Other
+            </button>
+            {otherOpen && (
               <form
+                id="pro-decline-other-form"
                 className="flex flex-col gap-cp-2"
                 onSubmit={(event) => {
                   event.preventDefault();
@@ -300,13 +319,11 @@ export function ProUpgradeDialog({
                   if (detail) answerDecline("other", detail);
                 }}
               >
-                <label className="field-label" htmlFor="pro-decline-other">
-                  Your reason
-                </label>
                 <textarea
-                  id="pro-decline-other"
                   className="field"
-                  rows={3}
+                  aria-label="Your reason"
+                  placeholder="Your reason"
+                  rows={2}
                   maxLength={500}
                   value={otherText}
                   onChange={(event) => setOtherText(event.target.value)}
@@ -316,10 +333,6 @@ export function ProUpgradeDialog({
                   Send
                 </button>
               </form>
-            ) : (
-              <button type="button" className="btn btn-secondary w-full" onClick={() => setOtherOpen(true)}>
-                Other
-              </button>
             )}
           </div>
         </>
