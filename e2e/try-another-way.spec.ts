@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./guarded";
-import { firestoreRunning, grantPro, returningUser, signIn } from "./account";
+import { feedbackAlreadySeen, firestoreRunning, grantPro, returningUser, signIn } from "./account";
 import { deckSettled } from "./workspace";
 
 /**
@@ -35,6 +35,10 @@ async function addRecipe(page: Page, link: string) {
 test("a failed import's replacement lands in its place, and the deck stays there", async ({ page, request }) => {
   const { email, uid } = await returningUser(request);
   await grantPro(request, uid);
+  // The one-time feedback dialog comes up a moment after a second card import,
+  // whenever that lands, even under the Add dialog. It isn't what this is
+  // about, so it has already been seen.
+  await feedbackAlreadySeen(request, uid);
   await signIn(page, email);
   const field = page.getByPlaceholder("Paste a recipe link");
   await field.fill(GOOD);
@@ -61,7 +65,10 @@ test("a failed import's replacement lands in its place, and the deck stays there
   const { top, max } = await deck.evaluate((el) => ({ top: el.scrollTop, max: el.scrollHeight - el.clientHeight }));
   expect(max).toBeGreaterThan(0);
   expect(top).toBeGreaterThan(max - 40);
-  // ...and the recipe that arrived is the last one in it, not the first.
-  await expect(page.getByRole("navigation", { name: "Pages" }).getByRole("button").filter({ hasText: /Lemon/i }).last())
-    .toHaveAttribute("aria-current", "true");
+  // ...and the recipe that arrived is the current page, the last in the rail
+  // (a phone has no rail; the scroll above is the whole of it there).
+  const rail = page.getByRole("navigation", { name: "Pages" });
+  if (await rail.isVisible()) {
+    await expect(rail.getByRole("button").filter({ hasText: /Lemon/i }).last()).toHaveAttribute("aria-current", "true");
+  }
 });

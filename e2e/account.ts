@@ -119,6 +119,19 @@ export async function grantPro(request: APIRequestContext, uid: string) {
   expect(response.ok()).toBe(true);
 }
 
+/** The account has already been shown the one-time feedback dialog
+    (lib/postPrintDialog.ts), so it can't come up in the middle of a test. */
+export async function feedbackAlreadySeen(request: APIRequestContext, uid: string) {
+  const response = await request.patch(
+    `${FIRESTORE}/${PRODUCT}/${uid}?updateMask.fieldPaths=feedbackPromptSeenAt`,
+    {
+      headers: AS_OWNER,
+      data: { fields: { feedbackPromptSeenAt: { timestampValue: new Date().toISOString() } } },
+    },
+  );
+  expect(response.ok()).toBe(true);
+}
+
 /** A saved project as the server holds it: the listed document and its
     recipes (`content/main`), as raw JSON text to search. */
 export async function savedProjectText(request: APIRequestContext, uid: string, projectId: string): Promise<string> {
