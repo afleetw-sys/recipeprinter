@@ -28,7 +28,9 @@ export type ProDeclineReason =
   | "too_expensive"
   | "no_more_subscriptions"
   | "free_is_enough"
-  | "just_looking";
+  | "not_used_enough"
+  | "just_looking"
+  | "other";
 
 /** What product a paywall or purchase refers to. "premium_template" is kept
  *  for historical event compatibility — new template purchases no longer
@@ -427,8 +429,9 @@ type EventProps = {
    *  `pro_decline_answered` for the skip rate. */
   pro_decline_asked: Record<string, never>;
   /** One tap on the "Not upgrading today?" question. Closing it without a tap
-   *  sends nothing, so skips are `pro_decline_asked` minus these. */
-  pro_decline_answered: { reason: ProDeclineReason };
+   *  sends nothing, so skips are `pro_decline_asked` minus these. "other" carries
+   *  what the cook typed as `detail` (trimmed, at most 500 characters). */
+  pro_decline_answered: { reason: ProDeclineReason; detail?: string };
   /** The Monthly/Annual tile was picked in the upgrade dialog — an interest
    *  signal, fired the moment the toggle changes, before Continue is ever
    *  pressed. Separate from `pro_continue_clicked` so the funnel can tell

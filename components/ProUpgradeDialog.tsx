@@ -36,6 +36,7 @@ const DECLINE_REASONS: { reason: ProDeclineReason; label: string }[] = [
   { reason: "too_expensive", label: "Too expensive" },
   { reason: "no_more_subscriptions", label: "I don't want another subscription" },
   { reason: "free_is_enough", label: "Free does what I need" },
+  { reason: "not_used_enough", label: "I don't use it often enough" },
   { reason: "just_looking", label: "Just looking for now" },
 ];
 
@@ -105,6 +106,9 @@ export function ProUpgradeDialog({
   const [invited, setInvited] = useState<"copy" | "native_share" | null>(null);
   const [showLink, setShowLink] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  // "Other" on the decline question: opens a box for the cook's own reason.
+  const [otherOpen, setOtherOpen] = useState(false);
+  const [otherText, setOtherText] = useState("");
   const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>("monthly");
   const [pendingCycle, setPendingCycle] = useState<ProBillingCycle | null>(null);
   const [formBusy, setFormBusy] = useState(false);
@@ -180,8 +184,8 @@ export function ProUpgradeDialog({
     onClose();
   }
 
-  function answerDecline(reason: ProDeclineReason) {
-    track("pro_decline_answered", { reason });
+  function answerDecline(reason: ProDeclineReason, detail?: string) {
+    track("pro_decline_answered", detail ? { reason, detail } : { reason });
     onClose();
   }
 
@@ -287,6 +291,36 @@ export function ProUpgradeDialog({
                 {label}
               </button>
             ))}
+            {otherOpen ? (
+              <form
+                className="flex flex-col gap-cp-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const detail = otherText.trim().slice(0, 500);
+                  if (detail) answerDecline("other", detail);
+                }}
+              >
+                <label className="field-label" htmlFor="pro-decline-other">
+                  Your reason
+                </label>
+                <textarea
+                  id="pro-decline-other"
+                  className="field"
+                  rows={3}
+                  maxLength={500}
+                  value={otherText}
+                  onChange={(event) => setOtherText(event.target.value)}
+                  autoFocus
+                />
+                <button type="submit" className="btn btn-primary w-full" disabled={!otherText.trim()}>
+                  Send
+                </button>
+              </form>
+            ) : (
+              <button type="button" className="btn btn-secondary w-full" onClick={() => setOtherOpen(true)}>
+                Other
+              </button>
+            )}
           </div>
         </>
       ) : step === "plan" ? (
