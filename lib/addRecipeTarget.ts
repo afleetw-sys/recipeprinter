@@ -44,6 +44,29 @@ export function addRecipeTarget(
     if (section) return { sectionId: section.id, index: 0, anchorId: section.id };
   }
 
+  return endOfBook(sections);
+}
+
+/**
+ * Where "Try another way" puts a recipe: the failed import's own place. It is
+ * the same recipe asked for again, and its loading card stands where the
+ * failed one did. This used to be the top of the first chapter, so on a long
+ * job the recipe landed on the first page and the deck jumped up to it, away
+ * from the loading card at the bottom.
+ */
+export function replacementTarget(
+  failedId: string,
+  sections: readonly AddTargetSection[],
+): AddRecipeTarget | null {
+  for (const section of sections) {
+    const at = section.items.findIndex((item) => item.id === failedId);
+    if (at === -1) continue;
+    return { sectionId: section.id, index: at, anchorId: at > 0 ? section.items[at - 1]!.id : section.id };
+  }
+  return sections.length === 0 ? null : endOfBook(sections);
+}
+
+function endOfBook(sections: readonly AddTargetSection[]): AddRecipeTarget {
   const last = sections[sections.length - 1]!;
   return {
     sectionId: last.id,

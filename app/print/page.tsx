@@ -113,8 +113,8 @@ import { applyRecipeTargetEdit, useRecipeInlineEditor } from "@/lib/useRecipeInl
 import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/useRailDrag";
 import { useRailSelection } from "@/lib/useRailSelection";
 import { PAGE_DIMS } from "@/lib/printGeometry";
-import { addRecipeTarget } from "@/lib/addRecipeTarget";
-import { useDeckScroller } from "@/lib/useDeckScroller";
+import { addRecipeTarget, replacementTarget } from "@/lib/addRecipeTarget";
+import { useDeckMobile, useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { useProPurchase } from "@/lib/useProPurchase";
@@ -226,6 +226,7 @@ import { ThemeArtProvider } from "@/lib/themeArt";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, photoSizeOffered, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { asDerived, latestHistoryStep, undoEdit, useEditHistory } from "@/lib/editHistory";
 import { HistoryControls } from "@/components/print/HistoryControls";
+import { PhoneMoreMenu } from "@/components/print/PhoneMoreMenu";
 import { openingPageFor } from "@/lib/frontMatterPage";
 import type {
   CookbookFrontMatter,
@@ -5167,6 +5168,20 @@ export default function PrintPage() {
   }
 
   /**
+   * The same save state on a phone, folded into the top bar's "⋯" menu, which
+   * has no room for it beside undo, redo and the account. A failure stays in
+   * the bar as `renderSaveControl` draws it: it is the one state that must be
+   * seen without opening anything.
+   */
+  function renderPhoneSaveControl() {
+    if (saveStatus && SAVE_FAILURES.has(saveStatus)) return renderSaveControl();
+    if (saveStatus === "saving") return <PhoneMoreMenu saveState={SAVE_STATUS_LABEL.saving} />;
+    if (savedToProfile) return <PhoneMoreMenu saveState="All changes saved" />;
+    if (cookPilotUser || !keptAutomatically) return null;
+    return <PhoneMoreMenu saveState="Not saved yet" onSave={() => void handleSaveProject()} />;
+  }
+
+  /**
    * The one place Pro is offered as a product, not as a lock icon on
    * whichever control a cook happened to reach first.
    *
@@ -5190,6 +5205,21 @@ export default function PrintPage() {
    */
   function renderProUpgradeButton(size: "header" | "compact" = "compact") {
     if (cookbookMode || hasProEntitlement(effectiveCustomerInfo.customerInfo)) return null;
+    // The crown alone on a phone, the size of the buttons beside it: the bar
+    // has undo, redo, the "⋯" and the account to fit as well.
+    if (size === "compact") {
+      return (
+        <button
+          type="button"
+          className="icon-button rp-history-button rp-history-button--compact rp-upgrade-icon"
+          aria-label="Upgrade to Pro"
+          title="Upgrade to Pro"
+          onClick={() => openProUpgradeDialog("topbar_button")}
+        >
+          <CrownIcon size={ICON_SIZE.md} />
+        </button>
+      );
+    }
     return (
       <button
         type="button"
@@ -5197,8 +5227,7 @@ export default function PrintPage() {
         onClick={() => openProUpgradeDialog("topbar_button")}
       >
         <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-        {/* "Upgrade" alone on a phone, where the bar is tight. */}
-        <span>Upgrade<span className="max-sm:hidden"> to Pro</span></span>
+        <span>Upgrade to Pro</span>
       </button>
     );
   }
@@ -5660,10 +5689,12 @@ export default function PrintPage() {
       openProUpgradeDialog("add_more_recipes");
       return;
     }
+    // Read before the remove, while the failed item still has a place.
+    const target = replacementTarget(id, sections);
     queue.remove(id);
-    setPendingAddSectionId(sections[0]?.id ?? null);
-    setPendingAddIndex(0);
-    setPendingAddAfterRecipeId(null);
+    setPendingAddSectionId(target?.sectionId ?? null);
+    setPendingAddIndex(target?.index ?? 0);
+    setPendingAddAfterRecipeId(target?.anchorId ?? null);
     setShowAddRecipeDialog(true);
   }
   function navigateToRecipe(itemId: string) {
@@ -6481,7 +6512,12 @@ export default function PrintPage() {
   const previewDims = cookbookMode
     ? presetCardDims(getCookbookPreset(projectMeta.meta.cookbookPreset))
     : PAGE_DIMS[previewCardSize];
-  const spreadWidth = previewDims.w * 2;
+  // A phone shows a book like a PDF: a spread's two pages one above the
+  // other, each the full width of the screen, rather than both shrunk to fit
+  // side by side. So a slide there is one page wide.
+  const deckMobile = useDeckMobile();
+  const stackSpreads = cookbookView && deckMobile;
+  const spreadWidth = stackSpreads ? previewDims.w : previewDims.w * 2;
   // Sheet index → its representative nav item index (the first nav item on it).
   const navIndexForSheet = useMemo(() => {
     const map = new Map<number, number>();
@@ -6886,10 +6922,13 @@ export default function PrintPage() {
     // If the recipe didn't actually move pages, no navigation reset fires to
     // consume the keep-editing ref, so clear it here to avoid a stale skip.
     if (targetIndex === activeNavIndex) keepEditingRef.current = null;
+    // The loading card was the current one; the page it became is now. On
+    // cards the deck is already parked on that slot, so `goToSlide` changes
+    // nothing that would clear it, and the rail was left marking no page.
+    setActiveImportId(null);
     // Select the arrived page itself, not just its spread (see
     // `landingForRecipe`).
     if (landing.sheet !== null) {
-      setActiveImportId(null);
       if (targetIndex === activeNavIndex) setFocusedSheetIndex(landing.sheet);
       else pendingFocusSheetRef.current = landing.sheet;
     }
@@ -7305,7 +7344,7 @@ export default function PrintPage() {
 
         {/* Center: large preview of the selected page */}
         <PrintDeck
-          saveControl={renderSaveControl()}
+          saveControl={renderPhoneSaveControl()}
           historyControls={historyControls("compact")}
           proUpgradeButton={renderProUpgradeButton()}
           textSizeProMarked={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
@@ -7314,6 +7353,7 @@ export default function PrintPage() {
           previewMeasuring={previewMeasuring}
           previewDims={previewDims}
           spreadWidth={spreadWidth}
+          stackSpreads={stackSpreads}
           previewCardSize={previewCardSize}
           previewTemplate={previewTemplate}
           previewFontScale={previewFontScale}
