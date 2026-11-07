@@ -29,6 +29,7 @@ export type ProDeclineReason =
   | "no_more_subscriptions"
   | "free_is_enough"
   | "not_used_enough"
+  // No longer offered (removed 2026-11-07); kept so past events still read.
   | "just_looking"
   | "other";
 

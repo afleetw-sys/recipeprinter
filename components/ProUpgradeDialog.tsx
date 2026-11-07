@@ -37,7 +37,6 @@ const DECLINE_REASONS: { reason: ProDeclineReason; label: string }[] = [
   { reason: "no_more_subscriptions", label: "I don't want another subscription" },
   { reason: "free_is_enough", label: "Free does what I need" },
   { reason: "not_used_enough", label: "I don't use it often enough" },
-  { reason: "just_looking", label: "Just looking for now" },
 ];
 
 /**
