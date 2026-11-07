@@ -1756,9 +1756,8 @@
 
 /* A phone's page count ("3 / 12", DeckPageCount): a zero-height row between
    the top bar and the deck, so the badge floats over the deck without taking
-   any room from it, 8px inside the top-left corner of the page snapped to
-   the top (`--deck-page-left` from useDeckScroller, for a page narrower than
-   the screen). */
+   any room from it, in the screen's own top-left corner rather than the
+   page's: the page sits in from the edge, and the count is not part of it. */
 .recipe-deck-page-count {
   display: none;
 }
@@ -1774,7 +1773,7 @@
   .recipe-deck-page-count__badge {
     position: absolute;
     top: 8px;
-    left: var(--deck-page-left, 8px);
+    left: 8px;
     padding: 3px 9px;
     border-radius: 999px;
     background: var(--cp-ink);
@@ -1832,12 +1831,11 @@
 
 /* A phone shows one page per screen, a swipe to the next, like a story app.
    Each page is its own cell exactly as tall as the deck (`--deck-h`, from
-   useDeckScroller), so the next page never shows, with the page at its top,
-   right under the top bar: whatever the page's shape leaves over goes below
-   it, not split into bands either side. Nothing is kept around the page for
-   the toolbar, which floats over the top of it. A card's slide is its cell;
-   a book's
-   spread is two cells, one above the other, so a spread's pages are two
+   useDeckScroller), so the next page never shows. The page sits under a band
+   just tall enough for its toolbar and the page count (`--deck-page-top`),
+   so they never cover its title, and is as large as fits below that band:
+   whatever the page's shape leaves over goes below it. A card's slide is its
+   cell; a book's spread is two cells, one above the other, so a spread's pages are two
    screens rather than two halves of one, each under half the screen wide.
    The page counter says which page is selected, so there is no ring and no
    dimming to say it. */
@@ -1849,6 +1847,7 @@
     align-content: start;
     box-sizing: border-box;
     min-height: var(--deck-h, 100%);
+    padding-top: var(--deck-page-top, 56px);
     scroll-snap-align: start;
     scroll-snap-stop: always;
   }
@@ -1886,11 +1885,10 @@
     margin-top: 12px;
     margin-bottom: 0;
   }
-  /* Edge to edge, like a PDF on a phone: the page IS the screen's width, so
-     no card edge, corner or shadow around it. */
+  /* Nearly the screen's width, with a hairline for its edge and no shadow:
+     nothing floats here, the page is the screen's subject. */
   .recipe-page-deck .recipe-page-scaler,
   .recipe-page-deck .recipe-spread__blank {
-    border: 0;
     border-radius: 0;
     box-shadow: none;
   }
@@ -4745,9 +4743,9 @@ textarea.recipe-page-fields__input {
     align-items: safe center;
     gap: 0;
     min-height: 0;
-    /* None: the page is the screen's full width, the way a PDF reader
-       shows one (`deckSideRoom` in useDeckScroller), and the first page
-       starts at the top. */
+    /* None: each page is sized 12px short of the screen's width either side
+       (`deckSideRoom` in useDeckScroller) and centred in its cell, which
+       holds the room above it. */
     padding: 0;
     overflow-x: hidden;
     overflow-y: auto;

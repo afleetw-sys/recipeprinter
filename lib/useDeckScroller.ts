@@ -43,11 +43,15 @@ export function isDeckMobile(): boolean {
   return typeof window !== "undefined" && window.matchMedia(DECK_MOBILE_QUERY).matches;
 }
 
-/** The deck's side padding, both sides together (print.css): a phone's page
-    runs edge to edge, the way a PDF reader shows one. */
+/** The deck's side padding, both sides together (print.css). A phone keeps
+    a little either side of its page, so the page's edge shows. */
 function deckSideRoom(): number {
-  return isDeckMobile() ? 0 : 40;
+  return isDeckMobile() ? 24 : 40;
 }
+
+/** On a phone, the room above each page for its floating toolbar and the page
+    count (print.css), so neither covers the top of the page, the title. */
+const MOBILE_PAGE_TOP = 56;
 
 /** `isDeckMobile`, kept current as the window crosses the breakpoint. For
     what decides layout in JS rather than a class CSS can switch. */
@@ -369,14 +373,10 @@ export function useDeckScroller({
       const mobile = isDeckMobile();
       if (mobile) {
         // A phone pages: a cell the deck's height per page (print.css), set
-        // on the canvas so the page counter and swipe hint beside the deck
-        // can place themselves by it too, and the page counter sits 8px
-        // inside the page's top-left corner.
+        // on the canvas so the swipe hint beside the deck can place itself by
+        // it too.
         el.parentElement?.style.setProperty("--deck-h", `${availH}px`);
-        el.parentElement?.style.setProperty(
-          "--deck-page-left",
-          `${Math.max(0, (el.clientWidth - pageWidth * scale) / 2) + 8}px`,
-        );
+        el.parentElement?.style.setProperty("--deck-page-top", `${MOBILE_PAGE_TOP}px`);
       }
       const topPad = mobile
         ? 0
@@ -482,11 +482,11 @@ export function useDeckScroller({
         // A recipe card at that size is blown up on a laptop: a 4x6 filling the
         // window reads as a poster. So a card's 100% is three quarters of it
         // (what 75% used to be, 2026-11-03); Full Page keeps the whole fit. A
-        // phone fills its screen: a page per cell, as large as fits in it
-        // (print.css).
+        // phone shows a page per cell (print.css), as large as fits under the
+        // band its toolbar floats in.
         const cardShare = cardSize === "letter" ? 1 : CARD_FIT_SHARE;
         const fit = mobile
-          ? Math.max(0.12, Math.min(1.05, widthScale, availH / pageHeight))
+          ? Math.max(0.12, Math.min(1.05, widthScale, (availH - MOBILE_PAGE_TOP) / pageHeight))
           : Math.max(0.12, Math.min(widthScale, snapportScale) * cardShare);
         setFitScale(fit);
         applyDeckGeometry(el, fit * zoom);
