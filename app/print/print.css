@@ -1840,9 +1840,11 @@
    useDeckScroller), so the next page never shows. The page sits under a band
    just tall enough for its toolbar and the page count (`--deck-page-top`),
    so they never cover its title, and is as large as fits below that band:
-   whatever the page's shape leaves over goes below it. A card's slide is its
-   cell; a book's spread is two cells, one above the other, so a spread's pages are two
-   screens rather than two halves of one, each under half the screen wide.
+   whatever the page's shape leaves over goes below it. A book's spread is two
+   cells, one above the other, so a spread's pages are two screens rather than
+   two halves of one, each under half the screen wide. A card's slide is its
+   cell, but only as tall as its card: a 4x6 is a third of the screen, and a
+   screen each was mostly empty, so the next card shows below it.
    The page counter says which page is selected, so there is no ring and no
    dimming to say it. */
 @media screen and (max-width: 820px) {
@@ -1856,6 +1858,9 @@
     padding-top: var(--deck-page-top, 56px);
     scroll-snap-align: start;
     scroll-snap-stop: always;
+  }
+  .recipe-page-deck > .recipe-page-slide:not(.recipe-page-slide--spread) {
+    min-height: 0;
   }
   /* The spread holds the toolbar and its cells; the cells are what snap. */
   .recipe-page-deck > .recipe-page-slide.recipe-page-slide--spread {
@@ -12419,4 +12424,23 @@ textarea.recipe-card__toc-title {
   width: 30px;
   height: 30px;
   border-radius: 8px;
+}
+
+/* The phone top bar's "⋯" menu (PhoneMoreMenu): a row's state reads at its
+   far end, quieter than the action it belongs to. */
+.rp-phone-more-menu {
+  min-width: 240px;
+}
+.rp-phone-more-menu__state {
+  margin-left: auto;
+  padding-left: 16px;
+  color: var(--cp-ink-soft);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.rp-phone-more-menu .cp-menu__item[aria-disabled="true"] {
+  cursor: default;
+}
+.rp-phone-more-menu .cp-menu__item[aria-disabled="true"]:hover {
+  background: transparent;
 }

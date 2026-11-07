@@ -189,9 +189,9 @@ export function pendingSlotIndexIn(
 }
 
 interface PrintDeckProps {
-  /** Save state / button, pre-rendered by the page (`renderSaveControl`) so
-      the mobile topbar reports the exact same thing the desktop header does
-      — see that function's doc comment in app/print/page.tsx. */
+  /** The save state for the phone's top bar, pre-rendered by the page
+      (`renderPhoneSaveControl`): the "⋯" menu that holds it, or a failed
+      save's Retry. */
   saveControl: ReactNode;
   /** Undo and redo, pre-rendered by the page (lib/editHistory). Up here
       rather than in the bottom bar, which has no room to spare. */
@@ -1567,9 +1567,8 @@ export function PrintDeck(props: PrintDeckProps) {
                   behind a second trigger. */}
               {/* Print is NOT here any more. It moved to the bottom bar, where the
                   thumb is and where the tools it finishes already live. */}
-              {/* Same save control the desktop header carries (see
-                  `renderSaveControl` in app/print/page.tsx) — right next to
-                  the account control, the same order the desktop bar keeps. */}
+              {/* The save state, in its "⋯" menu (`renderPhoneSaveControl`
+                  in app/print/page.tsx), beside the account control. */}
               {historyControls}
               {saveControl}
               {/* Same order as the desktop header: Save, then the Pro

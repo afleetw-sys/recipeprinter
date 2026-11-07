@@ -226,6 +226,7 @@ import { ThemeArtProvider } from "@/lib/themeArt";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, photoSizeOffered, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { asDerived, latestHistoryStep, undoEdit, useEditHistory } from "@/lib/editHistory";
 import { HistoryControls } from "@/components/print/HistoryControls";
+import { PhoneMoreMenu } from "@/components/print/PhoneMoreMenu";
 import { openingPageFor } from "@/lib/frontMatterPage";
 import type {
   CookbookFrontMatter,
@@ -5167,6 +5168,20 @@ export default function PrintPage() {
   }
 
   /**
+   * The same save state on a phone, folded into the top bar's "⋯" menu, which
+   * has no room for it beside undo, redo and the account. A failure stays in
+   * the bar as `renderSaveControl` draws it: it is the one state that must be
+   * seen without opening anything.
+   */
+  function renderPhoneSaveControl() {
+    if (saveStatus && SAVE_FAILURES.has(saveStatus)) return renderSaveControl();
+    if (saveStatus === "saving") return <PhoneMoreMenu saveState={SAVE_STATUS_LABEL.saving} />;
+    if (savedToProfile) return <PhoneMoreMenu saveState="All changes saved" />;
+    if (cookPilotUser || !keptAutomatically) return null;
+    return <PhoneMoreMenu saveState="Not saved yet" onSave={() => void handleSaveProject()} />;
+  }
+
+  /**
    * The one place Pro is offered as a product, not as a lock icon on
    * whichever control a cook happened to reach first.
    *
@@ -7315,7 +7330,7 @@ export default function PrintPage() {
 
         {/* Center: large preview of the selected page */}
         <PrintDeck
-          saveControl={renderSaveControl()}
+          saveControl={renderPhoneSaveControl()}
           historyControls={historyControls("compact")}
           proUpgradeButton={renderProUpgradeButton()}
           textSizeProMarked={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
