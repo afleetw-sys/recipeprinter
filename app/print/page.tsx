@@ -5205,6 +5205,21 @@ export default function PrintPage() {
    */
   function renderProUpgradeButton(size: "header" | "compact" = "compact") {
     if (cookbookMode || hasProEntitlement(effectiveCustomerInfo.customerInfo)) return null;
+    // The crown alone on a phone, the size of the buttons beside it: the bar
+    // has undo, redo, the "⋯" and the account to fit as well.
+    if (size === "compact") {
+      return (
+        <button
+          type="button"
+          className="icon-button rp-history-button rp-history-button--compact rp-upgrade-icon"
+          aria-label="Upgrade to Pro"
+          title="Upgrade to Pro"
+          onClick={() => openProUpgradeDialog("topbar_button")}
+        >
+          <CrownIcon size={ICON_SIZE.md} />
+        </button>
+      );
+    }
     return (
       <button
         type="button"
@@ -5212,8 +5227,7 @@ export default function PrintPage() {
         onClick={() => openProUpgradeDialog("topbar_button")}
       >
         <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-        {/* "Upgrade" alone on a phone, where the bar is tight. */}
-        <span>Upgrade<span className="max-sm:hidden"> to Pro</span></span>
+        <span>Upgrade to Pro</span>
       </button>
     );
   }

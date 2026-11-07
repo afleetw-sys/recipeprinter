@@ -4244,6 +4244,12 @@ textarea.recipe-page-fields__input {
     z-index: 84;
   }
 
+  .recipe-mobile-topbar__start {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
   .recipe-mobile-topbar__logo {
     display: inline-flex;
     align-items: center;
@@ -12424,6 +12430,16 @@ textarea.recipe-card__toc-title {
   width: 30px;
   height: 30px;
   border-radius: 8px;
+}
+
+/* The phone's upgrade, a crown alone (`renderProUpgradeButton`): the premium
+   gold so it still reads as the offer, at the size of the buttons beside it. */
+.rp-upgrade-icon {
+  border-color: var(--cp-premium);
+  color: var(--cp-premium-bright);
+}
+.rp-upgrade-icon:hover:not(:disabled) {
+  background: var(--cp-premium-soft);
 }
 
 /* The phone top bar's "⋯" menu (PhoneMoreMenu): a row's state reads at its

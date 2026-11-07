@@ -1556,9 +1556,14 @@ export function PrintDeck(props: PrintDeckProps) {
                 to the mark repeats what the mark already is, and this bar is
                 tight enough on a phone that a page-title bar right below it
                 already says which app you're in. */}
-            <Link href="/" className="recipe-mobile-topbar__logo" aria-label="RecipePrinter home">
-              <LogoMark size={26} rounded={0} />
-            </Link>
+            {/* Undo and redo sit with the logo, on the left: the right side
+                holds the "⋯", the upgrade and the account. */}
+            <div className="recipe-mobile-topbar__start">
+              <Link href="/" className="recipe-mobile-topbar__logo" aria-label="RecipePrinter home">
+                <LogoMark size={26} rounded={0} />
+              </Link>
+              {historyControls}
+            </div>
             <span className="recipe-mobile-topbar__count" ref={setPageCountSlot} />
             <div className="recipe-mobile-topbar__actions">
               {/* The gear icon that opened a separate "Print settings" sheet
@@ -1569,12 +1574,12 @@ export function PrintDeck(props: PrintDeckProps) {
                   thumb is and where the tools it finishes already live. */}
               {/* The save state, in its "⋯" menu (`renderPhoneSaveControl`
                   in app/print/page.tsx), beside the account control. */}
-              {historyControls}
               {saveControl}
               {/* Same order as the desktop header: Save, then the Pro
-                  upsell — see `renderProUpgradeButton` in app/print/page.tsx
-                  for why this is reachable on its own rather than only
-                  showing up as a lock icon on some other control. */}
+                  upsell, a crown alone here — see `renderProUpgradeButton`
+                  in app/print/page.tsx for why this is reachable on its own
+                  rather than only showing up as a lock icon on some other
+                  control. */}
               {proUpgradeButton}
               {/* The same account control the desktop header carries.
                   "Where is my account" should not have a different answer on
