@@ -534,6 +534,8 @@ export function PrintDeck(props: PrintDeckProps) {
   // The deck element itself, for the page counter: the deck can be replaced
   // while the counter stays mounted, so it is handed the live one.
   const [deckEl, setDeckEl] = useState<HTMLDivElement | null>(null);
+  // Where the page count goes: the middle of the phone's top bar.
+  const [pageCountSlot, setPageCountSlot] = useState<HTMLElement | null>(null);
   const attachDeck = useCallback(
     (node: HTMLDivElement | null) => {
       deckRef(node);
@@ -934,7 +936,7 @@ export function PrintDeck(props: PrintDeckProps) {
           {navItem.kind === "toc" && !navItem.continued && (
             <div className="recipe-page-toolbar__group recipe-page-toolbar__hint">
               <InfoIcon size={ICON_SIZE.sm} aria-hidden />
-              <span>Edit a chapter or recipe to change what&apos;s listed here.</span>
+              <span>Updates as you edit chapters and recipes.</span>
             </div>
           )}
           {navItem.flip && (
@@ -1557,6 +1559,7 @@ export function PrintDeck(props: PrintDeckProps) {
             <Link href="/" className="recipe-mobile-topbar__logo" aria-label="RecipePrinter home">
               <LogoMark size={26} rounded={0} />
             </Link>
+            <span className="recipe-mobile-topbar__count" ref={setPageCountSlot} />
             <div className="recipe-mobile-topbar__actions">
               {/* The gear icon that opened a separate "Print settings" sheet
                   is gone — cut lines / two-sided now live inline in the Size
@@ -1596,7 +1599,7 @@ export function PrintDeck(props: PrintDeckProps) {
               photoScale={previewPhotoScale}
             />
           )}
-          <DeckPageCount deck={deckEl} onSheetInView={setSheetInView} />
+          <DeckPageCount deck={deckEl} countSlot={pageCountSlot} onSheetInView={setSheetInView} />
           <div
             className={`recipe-page-deck ${cookbookView ? "recipe-page-deck--book" : ""}`}
             id="recipe-page-deck"

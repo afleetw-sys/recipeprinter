@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDownIcon, ICON_SIZE } from "@/components/icons";
 import { localStore } from "@/lib/storage";
 import { useDeckMobile } from "@/lib/useDeckScroller";
@@ -39,17 +40,20 @@ function readCount(deck: HTMLElement): Count {
 }
 
 /**
- * A phone's "3 / 12" in the top-left corner, the way a PDF reader shows where
+ * A phone's "3 / 12", centred in the top bar the way a PDF reader shows where
  * you are, and the first time, a "Swipe up" hint over the first page. The page counted is the one taking up most of the screen, read
  * from the deck itself, so it agrees with what you see: stacked spreads,
  * hidden blanks and all.
  */
 export function DeckPageCount({
   deck,
+  countSlot,
   onSheetInView,
 }: {
   /** The deck to count, as it is now. */
   deck: HTMLElement | null;
+  /** Where the count is drawn: the top bar, not over the page. */
+  countSlot: HTMLElement | null;
   /** The book page on screen (the one a tap on it would focus), or null for
       anything else, so the page toolbar can act on the page you can see. */
   onSheetInView?: (sheet: number | null) => void;
@@ -108,13 +112,18 @@ export function DeckPageCount({
   if (!mobile || count.total < 2) return null;
   return (
     <div className="recipe-deck-page-count no-print">
-      <p className="recipe-deck-page-count__badge">
-        <span className="sr-only">Page </span>
-        {count.page}
-        <span aria-hidden> / </span>
-        <span className="sr-only"> of </span>
-        {count.total}
-      </p>
+      {countSlot
+        ? createPortal(
+            <p className="recipe-deck-page-count__badge">
+              <span className="sr-only">Page </span>
+              {count.page}
+              <span aria-hidden> / </span>
+              <span className="sr-only"> of </span>
+              {count.total}
+            </p>,
+            countSlot,
+          )
+        : null}
       {!hintSeen && count.page === 1 ? (
         <p className="recipe-deck-swipe-hint" aria-hidden>
           <ChevronDownIcon size={ICON_SIZE.sm} />

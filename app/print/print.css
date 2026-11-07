@@ -1754,10 +1754,9 @@
   }
 }
 
-/* A phone's page count ("3 / 12", DeckPageCount): a zero-height row between
-   the top bar and the deck, so the badge floats over the deck without taking
-   any room from it, in the screen's own top-left corner rather than the
-   page's: the page sits in from the edge, and the count is not part of it. */
+/* A phone's page count ("3 / 12", DeckPageCount) is drawn centred in the top
+   bar (`.recipe-mobile-topbar__count`). What stays here is a zero-height row
+   between the top bar and the deck, holding the swipe hint. */
 .recipe-deck-page-count {
   display: none;
 }
@@ -1770,18 +1769,25 @@
     height: 0;
     pointer-events: none;
   }
-  .recipe-deck-page-count__badge {
+  /* Centred on the screen, not between the logo and the buttons, and out of
+     the bar's flow so it moves neither. */
+  .recipe-mobile-topbar__count {
     position: absolute;
-    top: 8px;
-    left: 8px;
-    padding: 3px 9px;
-    border-radius: 999px;
-    background: var(--cp-ink);
-    color: var(--cp-card);
+    top: max(10px, env(safe-area-inset-top));
+    bottom: 10px;
+    left: 50%;
+    display: flex;
+    align-items: center;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+  .recipe-deck-page-count__badge {
+    margin: 0;
+    color: var(--cp-ink-soft);
     font-size: var(--cp-fs-small);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
-    opacity: 0.82;
+    white-space: nowrap;
   }
 }
 
@@ -1875,10 +1881,8 @@
   .recipe-page-canvas__controls {
     top: 0;
     align-items: flex-start;
-    /* Clear of the page count in the top-left corner (DeckPageCount): a
-       recipe's bar is nearly the screen's width and slid over it. */
     box-sizing: border-box;
-    padding-left: 64px;
+    padding-left: 8px;
     padding-right: 8px;
   }
   .recipe-page-canvas__controls > .recipe-page-toolbar {
