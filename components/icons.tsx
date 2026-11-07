@@ -301,6 +301,13 @@ export const CheckIcon = (p: IconProps) => (
   </Base>
 );
 
+export const CloudCheckIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M17.5 19H8a6 6 0 1 1 5.7-7.9h1.8a4 4 0 1 1 2 7.9Z" />
+    <path d="M9 14.5l2 2 3.5-3.5" />
+  </Base>
+);
+
 // A classic filled crown — three points topped with small jewels, sitting on
 // a rounded band — the "requires Pro" mark (ProBadge). The familiar
 // "king's crown" silhouette rather than an abstract shape, filled solid so

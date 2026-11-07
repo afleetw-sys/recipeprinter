@@ -1754,9 +1754,153 @@
   }
 }
 
-/* One page of a book spread (PrintDeck's `cell`): no box of its own. */
+/* A phone's page count ("3 / 12", DeckPageCount) is drawn centred in the top
+   bar (`.recipe-mobile-topbar__count`). What stays here is a zero-height row
+   between the top bar and the deck, holding the swipe hint. */
+.recipe-deck-page-count {
+  display: none;
+}
+@media screen and (max-width: 820px) {
+  .recipe-deck-page-count {
+    position: relative;
+    z-index: 4;
+    display: block;
+    flex: none;
+    height: 0;
+    pointer-events: none;
+  }
+  /* Centred on the screen, not between the logo and the buttons, and out of
+     the bar's flow so it moves neither. */
+  .recipe-mobile-topbar__count {
+    position: absolute;
+    top: max(10px, env(safe-area-inset-top));
+    bottom: 10px;
+    left: 50%;
+    display: flex;
+    align-items: center;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+  .recipe-deck-page-count__badge {
+    margin: 0;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-small);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+}
+
+/* "Swipe up for the next page" (DeckPageCount), once, over the bottom of
+   the first page, the way a story app shows it the first time. */
+.recipe-deck-swipe-hint {
+  display: none;
+}
+@media screen and (max-width: 820px) {
+  .recipe-deck-swipe-hint {
+    position: absolute;
+    top: calc(var(--deck-h, 70vh) - 72px);
+    left: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: var(--cp-ink);
+    color: var(--cp-card);
+    font-size: var(--cp-fs-small);
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0.88;
+    transform: translateX(-50%);
+  }
+  .recipe-deck-swipe-hint svg {
+    transform: rotate(180deg);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .recipe-deck-swipe-hint svg {
+      animation: rp-swipe-hint-bob 1.4s ease-in-out infinite;
+    }
+  }
+}
+@keyframes rp-swipe-hint-bob {
+  0%, 100% { transform: rotate(180deg) translateY(0); }
+  50% { transform: rotate(180deg) translateY(4px); }
+}
+
+/* One page of a book spread (PrintDeck's `cell`). No box of its own beside
+   the facing page; on a phone it is a screen of its own (below). */
 .recipe-spread__cell {
   display: contents;
+}
+
+/* A phone shows one page per screen, a swipe to the next, like a story app.
+   Each page is its own cell exactly as tall as the deck (`--deck-h`, from
+   useDeckScroller), so the next page never shows. The page sits under a band
+   just tall enough for its toolbar and the page count (`--deck-page-top`),
+   so they never cover its title, and is as large as fits below that band:
+   whatever the page's shape leaves over goes below it. A book's spread is two
+   cells, one above the other, so a spread's pages are two screens rather than
+   two halves of one, each under half the screen wide. A card's slide is its
+   cell, but only as tall as its card: a 4x6 is a third of the screen, and a
+   screen each was mostly empty, so the next card shows below it.
+   The page counter says which page is selected, so there is no ring and no
+   dimming to say it. */
+@media screen and (max-width: 820px) {
+  .recipe-page-deck > .recipe-page-slide:not(.recipe-page-slide--spread),
+  .recipe-spread__cell {
+    display: grid;
+    place-items: center;
+    align-content: start;
+    box-sizing: border-box;
+    min-height: var(--deck-h, 100%);
+    padding-top: var(--deck-page-top, 56px);
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+  .recipe-page-deck > .recipe-page-slide:not(.recipe-page-slide--spread) {
+    min-height: 0;
+  }
+  /* The spread holds the toolbar and its cells; the cells are what snap. */
+  .recipe-page-deck > .recipe-page-slide.recipe-page-slide--spread {
+    scroll-snap-align: none;
+  }
+  .recipe-spread {
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .recipe-page-slide:not(.is-active) {
+    opacity: 1;
+  }
+  .recipe-spread__page.is-focused .recipe-page-scaler,
+  .recipe-spread--image-focused,
+  .recipe-spread--section-focused {
+    outline: none;
+  }
+  /* The page toolbar hangs DOWN from its line over the top of its own page,
+     not up from it: drawn above, a page's bar sat at the bottom of the screen
+     before it, which a page per screen leaves on show. Stuck at the deck's
+     top while its page is on screen. */
+  .recipe-page-canvas__controls {
+    top: 0;
+    align-items: flex-start;
+    box-sizing: border-box;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .recipe-page-canvas__controls > .recipe-page-toolbar {
+    margin-top: 12px;
+    margin-bottom: 0;
+  }
+  /* Nearly the screen's width, with a hairline for its edge and no shadow:
+     nothing floats here, the page is the screen's subject. */
+  .recipe-page-deck .recipe-page-scaler,
+  .recipe-page-deck .recipe-spread__blank {
+    border-radius: 0;
+    box-shadow: none;
+  }
 }
 
 /* Floats above the card by default: for every slide but the first, there's
@@ -4080,6 +4224,8 @@ textarea.recipe-page-fields__input {
     justify-content: space-between;
     gap: 12px;
     padding: max(10px, env(safe-area-inset-top)) 16px 10px;
+    /* A hairline, not a shadow: pages run edge to edge right under it. */
+    border-bottom: 1px solid var(--cp-line);
     background: var(--cp-card);
   }
 
@@ -4096,6 +4242,12 @@ textarea.recipe-page-fields__input {
      still allowed to cover everything. */
   .recipe-mobile-topbar:has([data-account-menu-open]) {
     z-index: 84;
+  }
+
+  .recipe-mobile-topbar__start {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
   .recipe-mobile-topbar__logo {
@@ -4592,13 +4744,10 @@ textarea.recipe-page-fields__input {
     overflow: hidden;
   }
 
-  /* Phones scroll the deck up and down, the same stack as the desktop. It
-     used to be a sideways filmstrip, which on a phone meant a page sized to
-     leave room for its neighbours either side and a cookbook spread squeezed
-     into what was left. Vertically a page takes the full width and the next
-     one peeks in underneath. `useDeckScroller` sets `--deck-top-pad` so the
-     first and last pages can rest in the middle, and its 72px snap inset is
-     what keeps the page toolbar clear above the page it belongs to. */
+  /* Phones scroll the deck up and down, a page per screen (see the cells
+     after the page count, above). It used to be a sideways filmstrip, which
+     on a phone meant a page sized to leave room for its neighbours either
+     side and a cookbook spread squeezed into what was left. */
   .recipe-page-deck {
     display: flex;
     flex: 1 1 auto;
@@ -4607,15 +4756,16 @@ textarea.recipe-page-fields__input {
        than the deck has to overflow on the side scrolling can reach. */
     align-items: center;
     align-items: safe center;
-    gap: 16px;
+    gap: 0;
     min-height: 0;
-    padding: var(--deck-top-pad, 44vh) 20px;
+    /* None: each page is sized 12px short of the screen's width either side
+       (`deckSideRoom` in useDeckScroller) and centred in its cell, which
+       holds the room above it. */
+    padding: 0;
     overflow-x: hidden;
     overflow-y: auto;
-    scroll-padding-top: 72px;
-    scroll-padding-bottom: 72px;
-    /* `mandatory`, matching the desktop deck — a swipe snaps as it decelerates,
-       landing on a page rather than resting between two. */
+    /* A swipe lands on exactly one page, its top at the top of the screen
+       (the cells above). */
     scroll-snap-type: y mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
@@ -4625,8 +4775,8 @@ textarea.recipe-page-fields__input {
     touch-action: pan-x pan-y;
   }
 
-  /* Zoomed in past fit (set by `useDeckScroller`), the page is bigger than
-     the window, so the deck stops snapping and pans sideways too. */
+  /* Zoomed in past fit (set by `useDeckScroller`), the page is wider than
+     the window, so the deck pans sideways too. */
   .recipe-page-deck[data-free-scroll="true"] {
     overflow-x: auto;
     scroll-snap-type: none;
@@ -4636,35 +4786,10 @@ textarea.recipe-page-fields__input {
     display: grid;
     place-items: center;
     flex: 0 0 auto;
-    scroll-snap-align: center;
     opacity: 1;
     cursor: default;
   }
 
-  .recipe-page-slide:not(.is-active) {
-    display: grid;
-    opacity: 0.72;
-  }
-
-  /* The same edge the desktop page rail uses for its selected thumbnail
-     (`.recipe-page-rail__item.is-active`, above) — the rail itself is hidden
-     on this width (`.recipe-page-rail { display: none }`), so nothing else on
-     screen says which card of the deck is the one in focus. Direct child, not
-     a descendant selector: a cookbook spread's two halves already get their
-     own per-page ring (`.recipe-spread__page.is-focused`), and this would
-     otherwise double up on both of them at once.
-     An outline, not a border-color/box-shadow swap: those sit flush against
-     the card's own edge, and read as part of the card rather than as a
-     selection mark around it. `outline-offset` is what buys the gap — the
-     same reason `.recipe-spread__page.is-focused` (below) uses outline too.
-     `[data-single-recipe="true"]` excludes the one-recipe deck: with nothing
-     else to swipe to, there's no "which one is focused" question for the
-     ring to answer, and it would just be a permanent blue box around the
-     only card on screen. */
-  .recipe-page-canvas:not([data-single-recipe="true"]) .recipe-page-slide.is-active > .recipe-page-scaler {
-    outline: 2px solid var(--cp-selected-border);
-    outline-offset: 4px;
-  }
 
   /* This is a horizontal swipe deck, not a vertical stack, so the flip
      control always floats here (even for the first slide) — there's no
@@ -12305,4 +12430,27 @@ textarea.recipe-card__toc-title {
   width: 30px;
   height: 30px;
   border-radius: 8px;
+}
+
+/* The phone's upgrade, a crown alone (`renderProUpgradeButton`): the premium
+   gold so it still reads as the offer, at the size of the buttons beside it. */
+.rp-upgrade-icon {
+  border-color: var(--cp-premium);
+  color: var(--cp-premium-bright);
+}
+.rp-upgrade-icon:hover:not(:disabled) {
+  background: var(--cp-premium-soft);
+}
+
+/* The phone top bar's "⋯" menu (PhoneMoreMenu): a row's state reads at its
+   far end, quieter than the action it belongs to. */
+.rp-phone-more-menu {
+  min-width: 240px;
+}
+.rp-phone-more-menu__state {
+  margin-left: auto;
+  padding-left: 16px;
+  color: var(--cp-ink-soft);
+  font-weight: 600;
+  white-space: nowrap;
 }
