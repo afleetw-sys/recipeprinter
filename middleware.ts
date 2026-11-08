@@ -27,6 +27,7 @@ import { VISITOR_COUNTRY_COOKIE } from "@/lib/usdPriceLabel";
  * them to production would make every PR preview point at the wrong build.
  */
 const CANONICAL_HOST = "www.recipeprinter.com";
+const VISITOR_REGION_COOKIE = "rp_region";
 
 /**
  * Hand the visitor's country to the browser, so prices can say "US$" outside
@@ -34,18 +35,22 @@ const CANONICAL_HOST = "www.recipeprinter.com";
  * this header; there is no browser API that answers the same question, and a
  * locale or timezone is where someone's settings are, not where they are.
  * Readable by script on purpose, since reading it is the whole job. Only a
- * country code, and only rewritten when it changes.
+ * country code (and a state code, below), each only rewritten when it changes.
  */
 function withVisitorCountry(request: NextRequest, response: NextResponse): NextResponse {
   const country = request.headers.get("x-vercel-ip-country")?.toUpperCase();
   if (!country || !/^[A-Z]{2}$/.test(country)) return response;
-  if (request.cookies.get(VISITOR_COUNTRY_COOKIE)?.value === country) return response;
-  response.cookies.set(VISITOR_COUNTRY_COOKIE, country, {
-    path: "/",
-    maxAge: 60 * 60 * 24,
-    sameSite: "lax",
-    secure: true,
-  });
+  const cookie = { path: "/", maxAge: 60 * 60 * 24, sameSite: "lax", secure: true } as const;
+  if (request.cookies.get(VISITOR_COUNTRY_COOKIE)?.value !== country) {
+    response.cookies.set(VISITOR_COUNTRY_COOKIE, country, cookie);
+  }
+  // The state or province too (e.g. "CA"), only for the ad tags: Reddit's
+  // Limited Data Use needs it to know which state's privacy law applies
+  // (lib/adTags.ts). Still no more precise than that.
+  const region = request.headers.get("x-vercel-ip-country-region")?.toUpperCase();
+  if (region && /^[A-Z0-9]{1,3}$/.test(region) && request.cookies.get(VISITOR_REGION_COOKIE)?.value !== region) {
+    response.cookies.set(VISITOR_REGION_COOKIE, region, cookie);
+  }
   return response;
 }
 

@@ -719,12 +719,23 @@ function releaseCheckoutMount() {
 }
 
 /** A purchase that went through: what was charged before tax, and the
-    store's id for it (the same one the RevenueCat webhook records). */
+    store's id for it (the same one the RevenueCat webhook records). The amount
+    is null when it can't be known in the browser (see
+    CHECKOUT_TAKES_DISCOUNT_CODES), so no ad platform is sent a guess. */
 export interface PaidPurchase {
   transactionId: string | null;
-  amountMicros: number;
-  currency: string;
+  amountMicros: number | null;
+  currency: string | null;
 }
+
+/**
+ * Whether checkout offers a discount-code field. While it doesn't, the price
+ * of the package bought is exactly what was charged before tax, and that is
+ * what the ad platforms are told a sale was worth (lib/adTags.ts). RevenueCat
+ * doesn't hand the browser the charged amount, so turning a code field on
+ * would make that price a guess: the amount is then left out instead.
+ */
+const CHECKOUT_TAKES_DISCOUNT_CODES = false;
 
 interface CheckoutResult {
   customerInfo: CustomerInfo;
@@ -759,17 +770,15 @@ async function checkout(
       customerEmail: email ?? undefined,
       metadata,
       skipSuccessPage: true,
+      showDiscountCodeField: CHECKOUT_TAKES_DISCOUNT_CODES,
     });
     return {
       customerInfo: result.customerInfo,
       cancelled: false,
       paid: {
         transactionId: result.storeTransaction?.storeTransactionId ?? null,
-        // Checkout has no promo-code field (showDiscountCodeField is off), so
-        // the package's price is exactly what was charged before tax. Turning
-        // a code field on would break that.
-        amountMicros: rcPackage.webBillingProduct.price.amountMicros,
-        currency: rcPackage.webBillingProduct.price.currency,
+        amountMicros: CHECKOUT_TAKES_DISCOUNT_CODES ? null : rcPackage.webBillingProduct.price.amountMicros,
+        currency: CHECKOUT_TAKES_DISCOUNT_CODES ? null : rcPackage.webBillingProduct.price.currency,
       },
     };
   } catch (error) {
