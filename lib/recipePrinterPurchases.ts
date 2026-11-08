@@ -718,6 +718,20 @@ function releaseCheckoutMount() {
     .forEach((node) => vendorSubtreeRoot(node).remove());
 }
 
+/** A purchase that went through: what was charged before tax, and the
+    store's id for it (the same one the RevenueCat webhook records). */
+export interface PaidPurchase {
+  transactionId: string | null;
+  amountMicros: number;
+  currency: string;
+}
+
+interface CheckoutResult {
+  customerInfo: CustomerInfo;
+  cancelled: boolean;
+  paid?: PaidPurchase;
+}
+
 /**
  * Take one package to checkout.
  *
@@ -738,7 +752,7 @@ async function checkout(
   rcPackage: Package,
   email: string | null | undefined,
   metadata: Record<string, string>,
-): Promise<{ customerInfo: CustomerInfo; cancelled: boolean }> {
+): Promise<CheckoutResult> {
   try {
     const result = await purchases.purchase({
       rcPackage,
@@ -746,7 +760,18 @@ async function checkout(
       metadata,
       skipSuccessPage: true,
     });
-    return { customerInfo: result.customerInfo, cancelled: false };
+    return {
+      customerInfo: result.customerInfo,
+      cancelled: false,
+      paid: {
+        transactionId: result.storeTransaction?.storeTransactionId ?? null,
+        // Checkout has no promo-code field (showDiscountCodeField is off), so
+        // the package's price is exactly what was charged before tax. Turning
+        // a code field on would break that.
+        amountMicros: rcPackage.webBillingProduct.price.amountMicros,
+        currency: rcPackage.webBillingProduct.price.currency,
+      },
+    };
   } catch (error) {
     const { ErrorCode } = await loadPurchasesModule();
     if (isPurchasesError(error) && error.errorCode === ErrorCode.UserCancelledError) {
@@ -790,7 +815,7 @@ export async function purchaseRecipePrinterCookbook({
   email?: string | null;
   projectId: string;
   discountEligible: boolean;
-}): Promise<{ customerInfo: CustomerInfo; cancelled: boolean }> {
+}): Promise<CheckoutResult> {
   const purchases = await getPurchases(userId);
   const rcPackage = await packageForCookbook(purchases, discountEligible);
   // Give the cookbook-unlock webhook a reliable purchase→project map. Webhook
