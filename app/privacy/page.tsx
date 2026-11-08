@@ -90,10 +90,10 @@ export default function PrivacyPage() {
             where problems occur. You can opt out at any time.
           </li>
           <li>
-            We use Google Ads to measure which of our ads lead to a purchase.
-            Google may not use this to show you personalized ads, and we do not
-            use it in the EU, the UK, or Switzerland. The analytics opt-out
-            stops it too.
+            We use Google Ads and Reddit Ads to measure which of our ads lead to
+            a purchase. Neither may use this to show you personalized ads, and
+            we do not use them in the EU, the UK, or Switzerland. The analytics
+            opt-out stops them too.
           </li>
           <li>
             We do not sell your personal information, and we do not share it
@@ -253,12 +253,14 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Advertising measurement.</strong> Outside the EU, the UK,
-            and Switzerland, a Google Ads tag records the pages you visit on
-            this site and whether you arrived from one of our Google ads, so
-            that when you buy a cookbook we can tell which ad, if any, led to
-            it. For a purchase, it sends the amount, the currency, and a
-            transaction number. It does not send your name, email address, or
-            the content of your recipes. See{" "}
+            and Switzerland, a Google Ads tag and a Reddit Ads pixel record the
+            pages you visit on this site and whether you arrived from one of
+            our ads on Google or Reddit, so that when you buy a cookbook we can
+            tell which ad, if any, led to it. For a purchase, they send the
+            amount, the currency, and a transaction number. Reddit is also sent
+            your approximate country and state, which tells it which privacy
+            law applies. They do not send your name, email address, or the
+            content of your recipes. See{" "}
             <a href="#storage-and-cookies" className={sectionLink}>
               section 8
             </a>{" "}
@@ -299,8 +301,8 @@ export default function PrivacyPage() {
         <LegalSubheading>What we do not collect</LegalSubheading>
         <p>
           We do not use remarketing, personalized advertising, or data brokers,
-          and the only advertising tag on the site is the Google Ads
-          measurement described above. Automatic capture of every click, which our analytics
+          and the only advertising tags on the site are the Google Ads and
+          Reddit Ads measurement described above. Automatic capture of every click, which our analytics
           tool offers, is turned off, and we record only the events described
           above. We do not collect payment card details, and we do not ask for
           health information, although a recipe may indicate something about
@@ -480,12 +482,13 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Advertising measurement.</strong> Outside the EU, the UK,
-            and Switzerland, Google Ads sets first-party cookies on
-            recipeprinter.com (named starting with <code>_gcl</code>) that hold
-            the click identifier from an ad you followed, and Google may read
-            its own cookies on google.com, so that a later purchase can be
-            matched to that ad. The analytics opt-out and Global Privacy Control
-            both stop the tag from loading; see{" "}
+            and Switzerland, Google Ads and Reddit Ads set first-party cookies
+            on recipeprinter.com (named starting with <code>_gcl</code> and{" "}
+            <code>_rdt</code>) that hold a random identifier and the click
+            identifier from an ad you followed, and each may read its own
+            cookies on google.com or reddit.com, so that a later purchase can be
+            matched to that ad. The analytics opt-out and Global Privacy
+            Control both stop these tags from loading; see{" "}
             <a href="#your-choices" className={sectionLink}>
               section 13
             </a>
@@ -641,8 +644,8 @@ export default function PrivacyPage() {
               recipeprinter.com/?optout
             </span>{" "}
             and this browser will stop sending analytics, including page views
-            and session replay, and will stop loading the Google Ads
-            measurement tag. The setting is saved in your browser&apos;s local
+            and session replay, and will stop loading the Google Ads and
+            Reddit Ads measurement tags. The setting is saved in your browser&apos;s local
             storage, so it remains after a reload but is removed if you clear
             site data. If your browser sends the Global Privacy Control signal,
             we treat it the same way, with nothing to set.
@@ -763,10 +766,12 @@ export default function PrivacyPage() {
         </p>
         <p>
           Our Google Ads measurement runs with Google&apos;s restricted data
-          processing turned on and ad personalization turned off, so Google
-          processes that data as our service provider, to measure our own ads,
-          and may not use it to build a profile of you or show you personalized
-          ads. Global Privacy Control and the analytics opt-out both stop it.
+          processing turned on and ad personalization turned off, and our Reddit
+          Ads measurement runs with Reddit&apos;s Limited Data Use turned on for
+          every visitor. So Google and Reddit process that data as our service
+          providers, to measure our own ads, and may not use it to build a
+          profile of you or show you personalized ads. Global Privacy Control
+          and the analytics opt-out both stop it.
         </p>
         <p>
           If we decline your request, you may appeal by replying to our

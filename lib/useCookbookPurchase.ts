@@ -5,7 +5,7 @@ import type { User } from "firebase/auth";
 import { COOKBOOK_DISCOUNT_PRICE_FALLBACK, COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import { track, truncateReason } from "@/lib/analytics";
-import { reportCookbookPurchase } from "@/lib/googleTag";
+import { reportCookbookPurchase } from "@/lib/adTags";
 import {
   purchaseRecipePrinterCookbook,
 } from "@/lib/recipePrinterPurchases";

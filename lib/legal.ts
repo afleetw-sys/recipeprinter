@@ -61,8 +61,8 @@ export const GOVERNING_LAW = {
  * change on the same day forever.
  */
 export const PRIVACY_LAST_UPDATED = {
-  iso: "2026-11-07",
-  display: "November 7, 2026",
+  iso: "2026-11-08",
+  display: "November 8, 2026",
 } as const;
 
 export const TERMS_LAST_UPDATED = {
@@ -122,6 +122,14 @@ export const SUBPROCESSORS: Subprocessor[] = [
     data:
       "Pages visited on this site, the click identifier from an ad you followed, browser and device details, IP address, and for a purchase its amount, currency, and transaction number. Not your name, email address, or recipes.",
     policyUrl: "https://policies.google.com/privacy",
+  },
+  {
+    name: "Reddit Ads",
+    purpose:
+      "Measuring which of our ads on Reddit lead to a cookbook purchase, under Reddit's Limited Data Use. Never used in the EU, the UK, or Switzerland, or for retargeting or personalized ads.",
+    data:
+      "Pages visited on this site, the click identifier from an ad you followed, a random identifier, browser and device details, IP address, your approximate country and state, and for a purchase its amount, currency, and transaction number. Not your name, email address, or recipes.",
+    policyUrl: "https://www.reddit.com/policies/privacy-policy",
   },
   {
     name: "RevenueCat",
