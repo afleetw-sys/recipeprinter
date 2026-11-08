@@ -111,3 +111,27 @@ export function initGoogleTag(): void {
   script.src = `https://www.googletagmanager.com/gtm.js?id=${GTM_CONTAINER_ID}`;
   document.head.appendChild(script);
 }
+
+const COOKBOOK_PURCHASE_CONVERSION = "AW-18072225757/n0FuCLyxmLQdEN2PwalD";
+
+/**
+ * A paid cookbook, for Google Ads. Called once, after checkout resolves as
+ * paid: never on a click, a cancel or a page load. `gtag` exists only when
+ * the tag loaded, so every opt-out and region rule above applies here too.
+ * The transaction id stops Google counting the same purchase twice.
+ */
+export function reportCookbookPurchase(paid: {
+  transactionId: string | null;
+  amountMicros: number;
+  currency: string;
+}): void {
+  if (typeof window === "undefined") return;
+  const gtag = (window as GtagWindow).gtag;
+  if (!gtag) return;
+  gtag("event", "conversion", {
+    send_to: COOKBOOK_PURCHASE_CONVERSION,
+    value: Math.round(paid.amountMicros / 10_000) / 100,
+    currency: paid.currency,
+    transaction_id: paid.transactionId ?? "",
+  });
+}
