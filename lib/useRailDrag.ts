@@ -30,6 +30,11 @@ export interface RailDragController {
 
 // Movement (px) before a press becomes a drag rather than a click.
 const DRAG_THRESHOLD = 6;
+// How far (px) the pointer has to move before the drop target is worked out
+// again. Opening the slot moves the cards under a pointer that has not moved,
+// and asking afresh then could name the place the slot just left, so the slot
+// flickered between two places on its own.
+const RESOLVE_MOVE = 4;
 // Distance from the scroll container's edge that triggers auto-scroll, and the
 // per-frame scroll speed at the very edge.
 const EDGE = 48;
@@ -94,6 +99,8 @@ export function useRailDrag(
   const settleTimer = useRef<number | null>(null);
   // What the slot was opened for, which a pointer resting on the slot keeps.
   const lastResolved = useRef<RailDropResolved | null>(null);
+  // Where the pointer was, and the rail's scroll, when `lastResolved` was asked.
+  const lastResolvedAt = useRef<{ x: number; y: number; scrollTop: number } | null>(null);
   const rafId = useRef<number | null>(null);
   const didDragRef = useRef(false);
 
@@ -201,8 +208,21 @@ export function useRailDrag(
 
     const resolveAt = (g: Gesture) => {
       if (lastResolved.current?.slot && overSlot(g)) return lastResolved.current;
+      // A still hand keeps its answer: only the pointer moving, or the rail
+      // scrolling under it, is a reason for the slot to move.
+      const at = lastResolvedAt.current;
+      const scrollTop = scrollRef.current?.scrollTop ?? 0;
+      if (
+        lastResolved.current &&
+        at &&
+        at.scrollTop === scrollTop &&
+        Math.hypot(g.x - at.x, g.y - at.y) < RESOLVE_MOVE
+      ) {
+        return lastResolved.current;
+      }
       const resolved = resolveRef.current(g.kind, g.id, g.x, g.y);
       lastResolved.current = resolved;
+      lastResolvedAt.current = { x: g.x, y: g.y, scrollTop };
       return resolved;
     };
 
@@ -335,6 +355,7 @@ export function useRailDrag(
       document.body.style.cursor = "";
       gesture.current = null;
       lastResolved.current = null;
+      lastResolvedAt.current = null;
     };
 
     const onMove = (event: PointerEvent) => {
