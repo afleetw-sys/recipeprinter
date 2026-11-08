@@ -61,8 +61,8 @@ export const GOVERNING_LAW = {
  * change on the same day forever.
  */
 export const PRIVACY_LAST_UPDATED = {
-  iso: "2026-10-26",
-  display: "October 26, 2026",
+  iso: "2026-11-07",
+  display: "November 7, 2026",
 } as const;
 
 export const TERMS_LAST_UPDATED = {
@@ -114,6 +114,14 @@ export const SUBPROCESSORS: Subprocessor[] = [
     data:
       "A random device identifier, page addresses on this site, the events listed above, coarse device and browser details, and your IP address (used to derive an approximate location, then discarded by PostHog).",
     policyUrl: "https://posthog.com/privacy",
+  },
+  {
+    name: "Google Ads",
+    purpose:
+      "Measuring which of our ads lead to a cookbook purchase, under restricted data processing. Never used in the EU, the UK, or Switzerland, or for remarketing or personalized ads.",
+    data:
+      "Pages visited on this site, the click identifier from an ad you followed, browser and device details, IP address, and for a purchase its amount, currency, and transaction number. Not your name, email address, or recipes.",
+    policyUrl: "https://policies.google.com/privacy",
   },
   {
     name: "RevenueCat",
