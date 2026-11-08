@@ -33,43 +33,6 @@ async function addRecipe(page: Page, link: string) {
 }
 
 test("a failed import's replacement lands in its place, and the deck stays there", async ({ page, request }) => {
-  await page.addInitScript(() => {
-    const log: unknown[] = [];
-    (window as unknown as { __deckLog: unknown[] }).__deckLog = log;
-    const t0 = performance.now();
-    const deckOf = (el: unknown) => el instanceof HTMLElement && el.id === "recipe-page-deck";
-    const info = (el: HTMLElement, kind: string, value: unknown) => {
-      log.push({
-        t: Math.round(performance.now() - t0), kind, value, top: el.scrollTop, sh: el.scrollHeight, ch: el.clientHeight,
-        cards: el.querySelectorAll(".recipe-card").length, pending: !!el.querySelector("[data-pending-page]"),
-        measuring: !!document.querySelector(".recipe-print-shell--measuring"), snap: el.style.scrollSnapType,
-        stack: (new Error().stack || "").split("\n").slice(2, 7).map((l) => l.replace(/https?:\/\/[^ ]*\/_next\/static\/chunks\//, "")).join(" | "),
-      });
-    };
-    const oScrollTo = Element.prototype.scrollTo;
-    Element.prototype.scrollTo = function (this: Element, ...a: unknown[]) {
-      if (deckOf(this)) info(this as HTMLElement, "scrollTo", JSON.stringify(a[0]));
-      return (oScrollTo as (...x: unknown[]) => void).apply(this, a);
-    } as typeof Element.prototype.scrollTo;
-    const d = Object.getOwnPropertyDescriptor(Element.prototype, "scrollTop")!;
-    Object.defineProperty(Element.prototype, "scrollTop", { ...d, set(this: Element, v: number) { if (deckOf(this)) info(this as HTMLElement, "scrollTop=", v); d.set!.call(this, v); } });
-    let lastTop = -1, lastSnap = "?", lastCards = -1;
-    const poll = () => {
-      const el = document.getElementById("recipe-page-deck");
-      if (el) {
-        if (el.scrollTop !== lastTop || el.style.scrollSnapType !== lastSnap || el.querySelectorAll(".recipe-card").length !== lastCards) {
-          lastTop = el.scrollTop; lastSnap = el.style.scrollSnapType; lastCards = el.querySelectorAll(".recipe-card").length;
-          info(el, "observed", lastTop);
-        }
-        if (!(el as unknown as { __se?: boolean }).__se) {
-          (el as unknown as { __se?: boolean }).__se = true;
-          el.addEventListener("scrollend", () => info(el, "scrollend", el.scrollTop));
-        }
-      }
-      requestAnimationFrame(poll);
-    };
-    requestAnimationFrame(poll);
-  });
   const { email, uid } = await returningUser(request);
   await grantPro(request, uid);
   // The one-time feedback dialog comes up a moment after a second card import,
@@ -93,20 +56,22 @@ test("a failed import's replacement lands in its place, and the deck stays there
   const deck = page.locator("#recipe-page-deck");
   const cards = page.locator("#recipe-page-deck .recipe-card");
   const before = await cards.count();
-  await page.evaluate(() => (window as unknown as { __deckLog: unknown[] }).__deckLog.push("TRY-ANOTHER-WAY"));
   await page.getByRole("button", { name: "Try another way" }).click();
   await submitLink(page, `${GOOD}-4`);
   await expect(cards).toHaveCount(before + 1);
   await deckSettled(page);
 
   // The deck is still at the end of the job, where the failed card was...
-  const { top, max } = await deck.evaluate((el) => ({ top: el.scrollTop, max: el.scrollHeight - el.clientHeight }));
-  await new Promise((r) => setTimeout(r, 1500));
-  const after = await deck.evaluate((el) => el.scrollTop);
-  const deckLog = await page.evaluate(() => (window as unknown as { __deckLog: unknown[] }).__deckLog);
-  console.log("DECKLOG " + JSON.stringify({ top, max, after, deckLog }));
-  expect(max).toBeGreaterThan(0);
-  expect(top).toBeGreaterThan(max - 40);
+  // Polled, not read once: the deck glides there with a smooth scroll, and
+  // WebKit can leave scrollTop untouched for a couple of frames after it is
+  // asked, so deckSettled() can see "still" before the glide has begun. The
+  // bug this guards (a jump back to the first page) never reaches the end.
+  await expect
+    .poll(() => deck.evaluate((el) => {
+      const max = el.scrollHeight - el.clientHeight;
+      return max > 0 && el.scrollTop > max - 40;
+    }))
+    .toBe(true);
   // ...and the recipe that arrived is the current page, the last in the rail
   // (a phone has no rail; the scroll above is the whole of it there).
   const rail = page.getByRole("navigation", { name: "Pages" });

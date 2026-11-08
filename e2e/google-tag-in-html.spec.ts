@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
  * "set up Google tag on your website" for recipeprinter.com: the tag was only
  * ever added by script after the page loaded, so the page Google read had no
  * sign of it. The loader is now in every page's own HTML, with its privacy
- * checks running before it loads anything (lib/googleTag.ts).
+ * checks running before it loads anything (lib/adTags.ts).
  *
  * Raw HTML, no browser: this is what a scanner sees, and nothing runs.
  */
