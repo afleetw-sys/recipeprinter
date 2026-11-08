@@ -76,15 +76,17 @@ export function FrontDoorUpgradeButton() {
     <>
       <button
         type="button"
-        className="btn btn-premium btn-header"
+        className="btn btn-premium btn-header rp-upgrade-collapsible"
+        aria-label="Upgrade to Pro"
+        title="Upgrade to Pro"
         onClick={() => {
           if (hosts.size > 0) requestUpgrade("topbar_button");
           else setOwnSignal((signal) => signal + 1);
         }}
       >
         <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-        {/* "Upgrade" alone on a phone, where the bar is tight. */}
-        <span>Upgrade<span className="max-sm:hidden"> to Pro</span></span>
+        {/* The crown alone at 820px and under, as on /print's phone bar. */}
+        <span className="rp-upgrade-collapsible__label">Upgrade to Pro</span>
       </button>
       {ownSignal > 0 && <FrontDoorUpgradeDialog openSignal={ownSignal} trigger="topbar_button" spent={false} />}
     </>

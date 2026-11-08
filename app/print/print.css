@@ -13109,16 +13109,6 @@ textarea.recipe-card__toc-title {
   border-radius: 8px;
 }
 
-/* The phone's upgrade, a crown alone (`renderProUpgradeButton`): the premium
-   gold so it still reads as the offer, at the size of the buttons beside it. */
-.rp-upgrade-icon {
-  border-color: var(--cp-premium);
-  color: var(--cp-premium-bright);
-}
-.rp-upgrade-icon:hover:not(:disabled) {
-  background: var(--cp-premium-soft);
-}
-
 /* The phone top bar's "⋯" menu (PhoneMoreMenu): a row's state reads at its
    far end, quieter than the action it belongs to. */
 .rp-phone-more-menu {
