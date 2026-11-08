@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { capturePageleave, capturePageview, initAnalytics, track } from "@/lib/analytics";
+import { initGoogleTag } from "@/lib/googleTag";
 import { screenshotShortcutFrom } from "@/lib/screenshotShortcut";
 
 // useSearchParams opts the subtree into client-side rendering, so it has to
@@ -15,6 +16,7 @@ function PageviewTracker() {
   // Declared first so init always precedes the first pageview capture.
   useEffect(() => {
     initAnalytics();
+    initGoogleTag();
   }, []);
 
   useEffect(() => {
