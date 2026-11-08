@@ -32,13 +32,18 @@ function paprikaExport() {
   return { name: "Export All Recipes.paprikarecipes", mimeType: "application/octet-stream", buffer: Buffer.from(zipSync(files)) };
 }
 
-/** Opens Recipe apps, reads the export, ticks Select all and adds them. */
-async function addEveryPaprikaRecipe(page: Page) {
+/** Opens Recipe apps, reads the export, ticks Select all and adds them: with
+    the picker's own button on the home page, with Done in /print's dialog. */
+async function addEveryPaprikaRecipe(page: Page, finish: "picker" | "done") {
   await page.getByRole("button", { name: "Recipe apps" }).filter({ visible: true }).first().click();
   await page.locator('input[type="file"][accept*="paprika"]').first().setInputFiles(paprikaExport());
   await expect(page.getByText("Kasha").filter({ visible: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Select all" }).filter({ visible: true }).click();
-  await page.locator(".import-source-commit .btn-primary").filter({ visible: true }).click();
+  if (finish === "done") {
+    await page.getByRole("button", { name: "Done", exact: true }).filter({ visible: true }).click();
+  } else {
+    await page.locator(".import-source-commit .btn-primary").filter({ visible: true }).click();
+  }
 }
 
 /** Every recipe in the print job, by the titles on its pages. */
@@ -89,12 +94,12 @@ test("a Pro member's Select all brings every Paprika recipe, from the home page 
   // stops offering it.
   await expect(page.getByRole("button", { name: /Upgrade to Pro/ })).toHaveCount(0, { timeout: 30_000 });
   await page.getByRole("button", { name: /^Add more\b/ }).filter({ visible: true }).first().click();
-  await addEveryPaprikaRecipe(page);
+  await addEveryPaprikaRecipe(page, "done");
   await expectEveryRecipeOnPrint(page);
 
   // From the home page, into a fresh job.
   await page.evaluate(() => sessionStorage.clear());
   await page.goto("/");
-  await addEveryPaprikaRecipe(page);
+  await addEveryPaprikaRecipe(page, "picker");
   await expectEveryRecipeOnPrint(page);
 });
