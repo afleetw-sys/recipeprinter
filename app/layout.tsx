@@ -6,6 +6,7 @@ import { TranslatedPageGuard } from "@/components/TranslatedPageGuard";
 import { KeyboardInsetWatcher } from "@/components/KeyboardInsetWatcher";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { ReferralHostLoader } from "@/components/ReferralHostLoader";
+import { googleTagInlineScript } from "@/lib/googleTag";
 import { ActionTitles } from "@/components/ActionTitles";
 import {
   SITE_URL,
@@ -310,6 +311,11 @@ export default function RootLayout({
       lang="en"
       className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${tinos.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${berkshireSwash.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${fraunces.variable} ${figtree.variable} ${creepster.variable} ${lora.variable} ${karla.variable}`}
     >
+      <head>
+        {/* The Google Ads tag, in the HTML so Google can find it; its privacy
+            checks run inside before it loads anything (lib/googleTag.ts). */}
+        <script id="google-tag" dangerouslySetInnerHTML={{ __html: googleTagInlineScript() }} />
+      </head>
       <body>
         <TranslatedPageGuard />
         <KeyboardInsetWatcher />
