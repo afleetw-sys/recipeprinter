@@ -10,11 +10,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * 2026-10-10 once an audit found it empty, and the rules no longer allow it. */
 
 const reads = vi.hoisted(() => ({
-  namespaced: null as null | Array<{ id: string; data: Record<string, unknown> }>,
+  namespaced: null as null | "never" | Array<{ id: string; data: Record<string, unknown> }>,
   paths: [] as string[],
 }));
+const network = vi.hoisted(() => ({ restarts: 0 }));
 
-function snapshot(docs: Array<{ id: string; data: Record<string, unknown> }> | null) {
+function snapshot(docs: Array<{ id: string; data: Record<string, unknown> }> | null | "never") {
+  // A connection that went quiet without dropping: Firestore still believes it
+  // is online, so it neither answers nor gives up.
+  if (docs === "never") return new Promise<never>(() => {});
   if (docs === null) return Promise.reject(new Error("unavailable"));
   return Promise.resolve({
     empty: docs.length === 0,
@@ -31,7 +35,12 @@ vi.mock("firebase/firestore", () => ({
     return snapshot(reads.namespaced);
   },
 }));
-vi.mock("@/lib/firebase/db", () => ({ getDb: () => ({}) }));
+vi.mock("@/lib/firebase/db", () => ({
+  getDb: () => ({}),
+  restartFirestoreNetwork: () => {
+    network.restarts += 1;
+  },
+}));
 
 class MemoryStorage {
   private values = new Map<string, string>();
@@ -45,6 +54,7 @@ class MemoryStorage {
 const memory = new MemoryStorage();
 
 import { loadPrintProjectSummaries } from "@/lib/printProjects";
+import { loadCookbookProjectUnlockIds } from "@/lib/cookbookUnlocks";
 
 const BOOK = { id: "book-a", data: { id: "book-a", title: "Nana's Kitchen", updatedAt: 2 } };
 
@@ -56,6 +66,7 @@ beforeEach(() => {
   });
   reads.namespaced = [BOOK];
   reads.paths = [];
+  network.restarts = 0;
 });
 
 describe("reading the saved-projects list", () => {
@@ -81,5 +92,46 @@ describe("reading the saved-projects list", () => {
     await loadPrintProjectSummaries("user-1");
     reads.namespaced = null;
     await expect(loadPrintProjectSummaries("user-1")).rejects.toThrow(/couldn't read/i);
+  });
+
+  /* A Mac Safari tab left open for an hour (2026-11-08, PostHog recording
+     01a1bbba): every client-side visit to /projects sat on "Loading projects…"
+     with no error and no Try again, and a reload loaded the list in 50 ms.
+     Firestore only rejects a server read once it decides it is offline; a
+     connection that hangs while still looking open never gets that verdict, so
+     the read waited forever and so did the page. Every read the library waits
+     on must settle by itself, and the stuck connection is restarted so that
+     Try again can work without a reload. */
+  it("settles every library read when Firestore never answers", async () => {
+    // Only the clock: the loaders' dynamic imports resolve on the real
+    // setImmediate/nextTick, which a full fake would freeze.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      reads.namespaced = "never";
+      const loads: Array<[string, () => Promise<unknown>]> = [
+        ["saved projects", () => loadPrintProjectSummaries("user-1")],
+        ["cookbook unlocks", () => loadCookbookProjectUnlockIds("user-1")],
+      ];
+      for (const [name, load] of loads) {
+        network.restarts = 0;
+        let settled = false;
+        void load().then(
+          () => (settled = true),
+          () => (settled = true),
+        );
+        // Once the read is out (past the loader's dynamic imports)...
+        const sent = reads.paths.length;
+        for (let i = 0; i < 100 && reads.paths.length === sent; i += 1) {
+          await new Promise((resolve) => globalThis.setImmediate(resolve));
+        }
+        expect(reads.paths.length, `${name} read sent`).toBe(sent + 1);
+        // ...the cook waits half a minute, and the read must have settled.
+        await vi.advanceTimersByTimeAsync(30_000);
+        expect(settled, `${name} settled`).toBe(true);
+        expect(network.restarts, `${name} restarted the connection`).toBe(1);
+      }
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

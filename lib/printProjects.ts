@@ -25,6 +25,7 @@ import {
   recipePrinterProjectsPath,
   recipePrinterUserPhotoRoot,
 } from "@/lib/firebase/recipePrinterPaths";
+import { withServerReadDeadline } from "@/lib/serverReadDeadline";
 
 /** The subdocument holding the recipes. One per project; see `PrintProjectContent`. */
 const CONTENT_DOC = ["content", "main"] as const;
@@ -601,10 +602,11 @@ export async function savePrintProject(project: PrintProject): Promise<PrintProj
  * whole and are summarized here, so nothing regresses while they migrate.
  */
 export async function loadPrintProjectSummaries(ownerUid: string): Promise<PrintProjectSummary[]> {
-  const [{ collection, getDocsFromServer, orderBy, query }, { getDb }] = await Promise.all([
-    import("firebase/firestore"),
-    import("@/lib/firebase/db"),
-  ]);
+  const [{ collection, getDocsFromServer, orderBy, query }, { getDb, restartFirestoreNetwork }] =
+    await Promise.all([
+      import("firebase/firestore"),
+      import("@/lib/firebase/db"),
+    ]);
   const db = getDb();
   /**
    * A failed read is not an empty library. Resolving `[]` here made the two
@@ -622,9 +624,16 @@ export async function loadPrintProjectSummaries(ownerUid: string): Promise<Print
    * From the server, never the cache. Offline, plain `getDocs` doesn't reject:
    * it answers from the local cache, which in a fresh session is empty, so a
    * dropped connection read as "No saved projects yet" instead of failing.
+   *
+   * And never unanswered: a connection that hangs without dropping left this
+   * read pending forever, and /projects on "Loading projects…" with it. See
+   * lib/serverReadDeadline.
    */
-  const snapshot = await getDocsFromServer(
-    query(collection(db, ...recipePrinterProjectsPath(ownerUid)), orderBy("updatedAt", "desc")),
+  const snapshot = await withServerReadDeadline(
+    getDocsFromServer(
+      query(collection(db, ...recipePrinterProjectsPath(ownerUid)), orderBy("updatedAt", "desc")),
+    ),
+    restartFirestoreNetwork,
   ).catch(() => null);
   if (!snapshot) {
     throw new Error("Couldn't read saved projects.");
