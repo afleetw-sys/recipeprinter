@@ -84,7 +84,17 @@ export default defineConfig({
     // export page is left to Chromium, the only browser that ever opens it:
     // the PDF renderer.
     { name: "webkit", use: { ...devices["Desktop Safari"] }, testIgnore: [/export\.spec/, /layout-harness\.spec/] },
-    { name: "iphone", use: { ...devices["iPhone 15"] }, testIgnore: [/export\.spec/, /layout-harness\.spec/] },
+    // The phone runs only what a phone changes: its own layout (bottom bar,
+    // toolbar, welcome), its sign-in (a redirect), Safari's print sheet, and
+    // the flows that had phone-only bugs. Everything else is the same WebKit
+    // as desktop Safari above, and re-running it here was a fifth of the run.
+    // A new spec about phones goes in this list.
+    {
+      name: "iphone",
+      use: { ...devices["iPhone 15"] },
+      testMatch:
+        /\/(mobile-bar|page-toolbar|cookbook-welcome|cookbook|signin|print-button|quiet-print|paste-before-load|try-another-way)\.spec\.ts$/,
+    },
     // Firefox, for printing only: it is the one other engine a cook prints
     // from (Edge, Brave, Arc are Chromium; every iPhone browser is WebKit),
     // and it has print bugs of its own (Christmas printed blank).

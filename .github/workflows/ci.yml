@@ -108,6 +108,15 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Three machines at once, each running a third of the tests. One machine
+    # runs two tests at a time, which made this the 13-minute job everything
+    # else waited on; split, it finishes with the others. Every test still
+    # runs, and one failing third doesn't stop the rest, so a red run names
+    # every failure.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     # Playwright's own image: the browsers and every system library they need
     # are already in it, at the version package-lock.json pins (checked by
     # lib/playwrightImage.test.ts; bump both together). Installing them on
@@ -141,13 +150,13 @@ jobs:
           key: firebase-emulators-14.27.0
 
       - name: Browser tests
-        run: npm run test:e2e
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/3
 
       # Screenshots and a step-by-step trace of whatever failed. Fixture data
       # only, never a real customer's.
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 7
