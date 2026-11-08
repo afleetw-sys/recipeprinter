@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ImportTab } from "@/types/recipe";
 import { IMAGE_SUBMIT_LABEL, ImportPanel } from "@/components/ImportPanel";
 import { MenuSelect } from "@/components/MenuSelect";
-import { ICON_SIZE, XIcon } from "@/components/icons";
+import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
 import { track } from "@/lib/analytics";
 import type { QueueItem } from "@/types/recipe";
@@ -66,12 +66,15 @@ export function AddRecipeDialog({
   title?: string;
 }) {
   /** Filled in by the import panel; lets Add finish the entry in the form. */
-  const commitImportRef = useRef<(() => boolean) | null>(null);
+  const commitImportRef = useRef<(() => boolean | Promise<boolean>) | null>(null);
+  /** Done is adding the recipes ticked in a library, which takes a moment. */
+  const [finishing, setFinishing] = useState(false);
   /** A URL field needs one line; a paste box and a dropzone need a dialog. */
   const [mode, setMode] = useState<ImportTab>(lastSource);
   /**
-   * The recipe-app sources have no form to submit: they add on pick, straight
-   * from their own lists. So that tab's button finishes rather than adds.
+   * The recipe-app sources have no form to submit: Done adds whatever is ticked
+   * in the open library and closes, so there is no Add-then-Done pair there
+   * either. It says Done because nothing ticked is a plain close.
    *
    * It used to drop the footer entirely, on the reasoning that an Add which
    * adds nothing is a lie. True, but the fix was the wrong half: every other
@@ -177,7 +180,7 @@ export function AddRecipeDialog({
                 surface: "dialog",
                 source: recipes[0]!.method,
               });
-              // The recipe-app sources add on pick rather than on submit, so
+              // The recipe-app sources add from their own lists, on Done, so
               // this is their equivalent of the three handlers above.
               onSourceUsed("apps");
             }
@@ -195,9 +198,10 @@ export function AddRecipeDialog({
           the difference between: adding IS finishing. Whatever is happening to
           the recipe afterwards shows on the deck this dialog was covering.
 
-          `commitImportRef` no-ops when there is nothing uncommitted, which is
-          always the case on the recipe-apps tab, so the same handler serves
-          both labels.
+          `commitImportRef` no-ops when there is nothing uncommitted. On the
+          recipe-apps tab it adds what is ticked in the open library, and
+          answers `false` if some of it did not come over, so the message
+          saying so stays on screen.
 
           It answers `false` when the panel refused what was in the form — an
           unreadable photo, a link that isn't one. Closing over that message was
@@ -207,11 +211,25 @@ export function AddRecipeDialog({
         <button
           type="button"
           className="btn btn-primary w-full"
-          onClick={() => {
-            if (commitImportRef.current?.() === false) return;
+          disabled={finishing}
+          onClick={async () => {
+            const result = commitImportRef.current?.();
+            if (result instanceof Promise) {
+              setFinishing(true);
+              let ok = false;
+              try {
+                ok = await result;
+              } finally {
+                setFinishing(false);
+              }
+              if (!ok) return;
+            } else if (result === false) {
+              return;
+            }
             onClose();
           }}
         >
+          {finishing && <SpinnerIcon size={ICON_SIZE.md} />}
           {addsOnPick
             ? "Done"
             : mode === "image"

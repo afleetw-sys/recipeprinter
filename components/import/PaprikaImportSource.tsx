@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { track, truncateReason, type ImportFailureCode } from "@/lib/analytics";
 import { filterImportSummaries, type ImportSummary } from "@/lib/importSummary";
 import {
@@ -24,7 +24,7 @@ import {
   setPaprikaLibrary,
 } from "@/lib/paprikaLibrary";
 import type { QueueItem } from "@/types/recipe";
-import { RecipeSourceList } from "@/components/import/RecipeSourceList";
+import { RecipeSourceList, type LibraryCommitRef } from "@/components/import/RecipeSourceList";
 import { BookIcon, ICON_SIZE, PaprikaLogoIcon, UploadIcon } from "@/components/icons";
 
 /**
@@ -113,6 +113,7 @@ export function PaprikaImportSource({
   commitLabel,
   commitLeavesPage = false,
   onCommitEmpty,
+  commitRef,
   onLibraryChange,
   onChooseAnotherFile,
   replaceError,
@@ -127,6 +128,8 @@ export function PaprikaImportSource({
   /** And whether pressing it navigates, which decides its icon. */
   commitLeavesPage?: boolean;
   onCommitEmpty?: () => void;
+  /** See `LibraryCommitRef`: the add dialog's Done adds the selection. */
+  commitRef?: LibraryCommitRef;
   /** Lets the integrations list re-read the open file's name and count. */
   onLibraryChange?: () => void;
   /** Opens the file dialog again, which lives on the card. */
@@ -212,12 +215,13 @@ export function PaprikaImportSource({
    * not stays ticked, which makes "try again" the same button with a smaller
    * count on it. See `partialAddMessage`.
    */
-  async function handleCommit() {
-    if (committing || selectedIds.size === 0) return;
+  async function handleCommit(): Promise<boolean> {
+    if (committing) return false;
+    if (selectedIds.size === 0) return true;
     const targets = Array.from(selectedIds)
       .map((queueId) => byQueueId.get(queueId))
       .filter((entry): entry is PaprikaEntry => Boolean(entry));
-    if (targets.length === 0) return;
+    if (targets.length === 0) return true;
     setError(null);
     setCommitting(true);
     try {
@@ -233,10 +237,20 @@ export function PaprikaImportSource({
       onAddRecipes(queueItems);
       setSelectedIds((current) => new Set(Array.from(current).filter((id) => failed.has(id))));
       if (failed.size > 0) setError(partialAddMessage(queueItems.length, failed.size));
+      return failed.size === 0;
     } finally {
       setCommitting(false);
     }
   }
+
+  // Re-registered every render so Done always commits the current selection.
+  useEffect(() => {
+    if (!commitRef) return;
+    commitRef.current = handleCommit;
+    return () => {
+      commitRef.current = null;
+    };
+  });
 
   // Nothing is cleared here any more. The dialog opens on the card, and only a
   // file that actually READ replaces this one: clearing first meant a cook who
@@ -302,6 +316,7 @@ export function PaprikaImportSource({
         commitLabel={commitLabel}
         commitLeavesPage={commitLeavesPage}
         onCommitEmpty={onCommitEmpty}
+        hideCommit={Boolean(commitRef)}
         /* "Choose a recipe, or upgrade to print several" means nothing to a
            file with one recipe in it, so it is only offered when there is a
            choice to make. */

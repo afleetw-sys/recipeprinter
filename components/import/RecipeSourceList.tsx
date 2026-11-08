@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType, ReactNode } from "react";
+import type { ComponentType, MutableRefObject, ReactNode } from "react";
 import type { ImportSummary } from "@/lib/importSummary";
 import { formatRecipeTime } from "@/lib/time";
 import { EmptyState } from "@/components/EmptyState";
@@ -34,6 +34,19 @@ import {
  * print list says so and cannot be ticked: it is in, and the place it comes
  * back out is the print page.
  */
+
+/**
+ * Filled in by an open library source with its commit, so a surface that owns
+ * its own finishing button (the add dialog's Done) can add the selection
+ * itself. The source drops its own pinned button while one is given: a Done
+ * that adds what is ticked and an Add beside it that does the same thing is
+ * one step dressed as two.
+ *
+ * Resolves `true` when the dialog may close: nothing was ticked, or every
+ * ticked recipe came over. `false` when some did not, because the message
+ * saying so is in the list and closing would take it away.
+ */
+export type LibraryCommitRef = MutableRefObject<(() => Promise<boolean>) | null>;
 
 function RecipeRow({
   summary,
@@ -191,6 +204,7 @@ export function RecipeSourceList({
   commitLabel,
   commitLeavesPage = false,
   onCommitEmpty,
+  hideCommit = false,
   onUpgrade,
   committing = false,
   queryText,
@@ -235,6 +249,9 @@ export function RecipeSourceList({
   /** Start with nothing: the button works with no recipe selected and calls
       this instead of `onCommit`. */
   onCommitEmpty?: () => void;
+  /** The surface around the picker commits for it (see `LibraryCommitRef`),
+      so the pinned button is not drawn. */
+  hideCommit?: boolean;
   /** Opens the Pro upgrade dialog. Offered as one line under the heading while
       `singleSelect` (a Free account choosing its one recipe), so the limit is
       stated where it is met instead of discovered at the second tap. */
@@ -420,7 +437,7 @@ export function RecipeSourceList({
 
           It says what the panel's other submit buttons say — see `commitLabel`.
           The count it used to carry is up beside "Select all". */}
-      {!locked && !loading && (selectedCount > 0 || summaries.length > 0) && (
+      {!hideCommit && !locked && !loading && (selectedCount > 0 || summaries.length > 0) && (
         <div className="import-source-commit">
           <button
             type="button"
