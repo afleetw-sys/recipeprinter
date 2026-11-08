@@ -773,8 +773,16 @@ function urlFlag(params: URLSearchParams, key: string): boolean | null {
   return raw === null || raw === "" || raw === "1" || raw === "true";
 }
 
+/** The browser is sending Global Privacy Control, which the privacy policy
+    promises we honor: no analytics, no ad measurement. */
+export function sendsGlobalPrivacyControl(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl === true;
+}
+
 /**
- * Boots PostHog, unless this browser is one of ours.
+ * Boots PostHog, unless this browser is one of ours, or its owner said no
+ * with Global Privacy Control.
  *
  * Three layers keep our own traffic out, because any one of them alone
  * leaks:
@@ -801,6 +809,7 @@ export function initAnalytics(): void {
 
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   if (!key || !isProductionRuntime()) return;
+  if (sendsGlobalPrivacyControl()) return;
   // `/export` is only ever opened by the cookbook PDF renderer's headless
   // Chrome on Cloud Run, never by a person. It sits under the root layout like
   // every route, so without this each paid export (and every health-check

@@ -90,9 +90,14 @@ export default function PrivacyPage() {
             where problems occur. You can opt out at any time.
           </li>
           <li>
-            We do not sell your personal information, we do not share it for
-            cross-context behavioral advertising, and we do not use advertising
-            trackers.
+            We use Google Ads to measure which of our ads lead to a purchase.
+            Google may not use this to show you personalized ads, and we do not
+            use it in the EU, the UK, or Switzerland. The analytics opt-out
+            stops it too.
+          </li>
+          <li>
+            We do not sell your personal information, and we do not share it
+            for cross-context behavioral advertising.
           </li>
           <li>
             You can ask us to delete your account and the information stored
@@ -247,6 +252,19 @@ export default function PrivacyPage() {
             city-level location.
           </li>
           <li>
+            <strong>Advertising measurement.</strong> Outside the EU, the UK,
+            and Switzerland, a Google Ads tag records the pages you visit on
+            this site and whether you arrived from one of our Google ads, so
+            that when you buy a cookbook we can tell which ad, if any, led to
+            it. For a purchase, it sends the amount, the currency, and a
+            transaction number. It does not send your name, email address, or
+            the content of your recipes. See{" "}
+            <a href="#storage-and-cookies" className={sectionLink}>
+              section 8
+            </a>{" "}
+            for the cookies it uses.
+          </li>
+          <li>
             <strong>Server logs and usage limits.</strong> Our hosting provider
             keeps standard request logs. Our usage limits briefly count requests
             by IP address in memory, to keep the recipe-reading service
@@ -280,8 +298,9 @@ export default function PrivacyPage() {
 
         <LegalSubheading>What we do not collect</LegalSubheading>
         <p>
-          We do not use advertising networks, third-party advertising cookies,
-          or data brokers. Automatic capture of every click, which our analytics
+          We do not use remarketing, personalized advertising, or data brokers,
+          and the only advertising tag on the site is the Google Ads
+          measurement described above. Automatic capture of every click, which our analytics
           tool offers, is turned off, and we record only the events described
           above. We do not collect payment card details, and we do not ask for
           health information, although a recipe may indicate something about
@@ -330,6 +349,12 @@ export default function PrivacyPage() {
               section 13
             </a>
             .
+          </li>
+          <li>
+            <strong>To measure which of our ads lead to purchases</strong>, so
+            we spend on advertising that works.{" "}
+            <em>Legitimate interests</em>, in understanding our own
+            advertising. We do not do this in the EU, the UK, or Switzerland.
           </li>
           <li>
             <strong>To prevent abuse</strong> of shared resources, and to
@@ -431,8 +456,8 @@ export default function PrivacyPage() {
         title="Cookies and browser storage"
       >
         <p>
-          RecipePrinter does not use advertising cookies or third-party tracking
-          cookies. The cookies and browser storage it does use fall into three
+          RecipePrinter does not use cookies for remarketing or personalized
+          advertising. The cookies and browser storage it uses fall into four
           categories.
         </p>
         <LegalList>
@@ -448,6 +473,19 @@ export default function PrivacyPage() {
             <strong>Analytics.</strong> Our analytics provider sets a cookie and
             a local storage entry containing the random device identifier
             described above. You can opt out at any time; see{" "}
+            <a href="#your-choices" className={sectionLink}>
+              section 13
+            </a>
+            .
+          </li>
+          <li>
+            <strong>Advertising measurement.</strong> Outside the EU, the UK,
+            and Switzerland, Google Ads sets first-party cookies on
+            recipeprinter.com (named starting with <code>_gcl</code>) that hold
+            the click identifier from an ad you followed, and Google may read
+            its own cookies on google.com, so that a later purchase can be
+            matched to that ad. The analytics opt-out and Global Privacy Control
+            both stop the tag from loading; see{" "}
             <a href="#your-choices" className={sectionLink}>
               section 13
             </a>
@@ -477,8 +515,8 @@ export default function PrivacyPage() {
         title="Service providers and disclosures"
       >
         <p>
-          We do not sell personal information or share it for advertising. We
-          use the service providers below, each of which receives only what it
+          We do not sell personal information or share it for cross-context
+          behavioral advertising. We use the service providers below, each of which receives only what it
           needs to perform its function and may use it only on our instructions.
           Each provider&apos;s name links to its own privacy policy.
         </p>
@@ -603,10 +641,11 @@ export default function PrivacyPage() {
               recipeprinter.com/?optout
             </span>{" "}
             and this browser will stop sending analytics, including page views
-            and session replay. The setting is saved in your browser&apos;s local
+            and session replay, and will stop loading the Google Ads
+            measurement tag. The setting is saved in your browser&apos;s local
             storage, so it remains after a reload but is removed if you clear
-            site data. We also honor the Global Privacy Control signal where your
-            browser sends it.
+            site data. If your browser sends the Global Privacy Control signal,
+            we treat it the same way, with nothing to set.
           </li>
           <li>
             <strong>Delete a project.</strong> Deleting a saved project removes
@@ -721,6 +760,13 @@ export default function PrivacyPage() {
           Share My Personal Information&rdquo; link on this site. We do not use
           or disclose sensitive personal information for any purpose that would
           give rise to a right to limit its use.
+        </p>
+        <p>
+          Our Google Ads measurement runs with Google&apos;s restricted data
+          processing turned on and ad personalization turned off, so Google
+          processes that data as our service provider, to measure our own ads,
+          and may not use it to build a profile of you or show you personalized
+          ads. Global Privacy Control and the analytics opt-out both stop it.
         </p>
         <p>
           If we decline your request, you may appeal by replying to our
