@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { captureException } from "@/lib/analytics";
+import { useReloadOnChunkError } from "@/lib/printErrorRecovery";
 
 /**
  * The last resort: a throw in the root layout itself, which app/error.tsx sits
@@ -23,6 +24,8 @@ export default function GlobalError({
     console.warn("RecipePrinter: root layout crashed", error);
     captureException(error, { surface: "root", digest: error.digest ?? "" });
   }, [error]);
+  // A tab left open across a deploy: fetch the current build straight away.
+  const reloading = useReloadOnChunkError(error);
 
   return (
     <html lang="en">
@@ -43,27 +46,34 @@ export default function GlobalError({
         }}
       >
         <p style={{ fontSize: "1.25rem", fontWeight: 700, margin: 0 }}>
-          RecipePrinter ran into a problem
+          {reloading
+            ? "Loading the latest version…"
+            : "RecipePrinter ran into a problem"}
         </p>
-        <p style={{ color: "#57534e", margin: 0, maxWidth: "24rem" }}>
-          Reloading usually clears it. Anything you have saved is unaffected.
-        </p>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          style={{
-            font: "inherit",
-            fontWeight: 600,
-            padding: "0.625rem 1.25rem",
-            borderRadius: "0.5rem",
-            border: "1px solid #1c1917",
-            background: "#1c1917",
-            color: "#faf9f7",
-            cursor: "pointer",
-          }}
-        >
-          Reload
-        </button>
+        {!reloading && (
+          <>
+            <p style={{ color: "#57534e", margin: 0, maxWidth: "24rem" }}>
+              Reloading usually clears it. Anything you have saved is
+              unaffected.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              style={{
+                font: "inherit",
+                fontWeight: 600,
+                padding: "0.625rem 1.25rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #1c1917",
+                background: "#1c1917",
+                color: "#faf9f7",
+                cursor: "pointer",
+              }}
+            >
+              Reload
+            </button>
+          </>
+        )}
       </body>
     </html>
   );

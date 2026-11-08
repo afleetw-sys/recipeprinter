@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { captureException } from "@/lib/analytics";
+import { useReloadOnChunkError } from "@/lib/printErrorRecovery";
 
 /**
  * Error boundary for every route that isn't /print.
@@ -32,6 +33,25 @@ export default function AppError({
     console.warn("RecipePrinter: page crashed", error);
     captureException(error, { surface: "app", digest: error.digest ?? "" });
   }, [error]);
+  // A tab left open across a deploy: fetch the current build rather than
+  // offer a Try again that asks for the same missing file.
+  const reloading = useReloadOnChunkError(error);
+
+  if (reloading) {
+    return (
+      <div className="h-full flex flex-col">
+        <SiteHeader sticky chrome="page" lead={null} />
+        <div
+          className="flex-1 flex flex-col items-center justify-center gap-cp-3 text-center px-cp-6"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="inline-block h-7 w-7 animate-spin rounded-full border-2 border-line border-t-brand" />
+          <p className="text-ink-soft">Loading the latest version…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col">
