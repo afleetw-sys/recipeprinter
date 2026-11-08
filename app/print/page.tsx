@@ -114,6 +114,7 @@ import { useRailDrag, type RailDragKind, type RailDropResolved } from "@/lib/use
 import { useRailSelection } from "@/lib/useRailSelection";
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import { addRecipeTarget, replacementTarget } from "@/lib/addRecipeTarget";
+import { proStatusKnown, useRunWhenKnown } from "@/lib/proStatusGate";
 import { useDeckMobile, useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
@@ -721,6 +722,9 @@ export default function PrintPage() {
   const [mirroredEntitlements, setMirroredEntitlements] =
     useState<Record<string, RecipePrinterMirroredEntitlement> | null>(null);
   const [mirrorSyncedAtMs, setMirrorSyncedAtMs] = useState<number | null>(null);
+  // Which account's profile read has finished, either way, so the page can
+  // tell "no Pro" from "not answered yet" (see lib/proStatusGate.ts).
+  const [profileSettledUid, setProfileSettledUid] = useState<string | null>(null);
   // When this account's first-ever cookbook was granted (server-written,
   // write-once — see lib/cookbookProduct.ts's isFirstCookbookDiscountEligible).
   // Null means never. Set optimistically the instant a discounted purchase
@@ -5412,9 +5416,11 @@ export default function PrintPage() {
         setMirroredEntitlements(profile.mirroredEntitlements);
         setMirrorSyncedAtMs(profile.syncedAtMs);
         setFirstCookbookGrantedAt(profile.firstCookbookGrantedAt);
+        setProfileSettledUid(cookPilotUser.uid);
       })
       .catch((error) => {
         if (cancelled) return;
+        setProfileSettledUid(cookPilotUser.uid);
         console.warn("RecipePrinter: could not load account profile", error);
         // Leave mirroredEntitlements/mirrorSyncedAtMs at whatever they were —
         // a Firestore read failure here shouldn't discard an already-loaded
@@ -5632,7 +5638,24 @@ export default function PrintPage() {
     openProUpgradeDialog(IMPORT_LIMIT_TRIGGER);
     return true;
   }
+  // "Add more" and "Try another way" clicked before the account's Pro status
+  // has answered wait for it, rather than showing a Pro member the upgrade
+  // dialog (lib/proStatusGate.ts).
+  const proKnown = proStatusKnown({
+    authReady: cookPilotAuthReady,
+    signedIn: Boolean(cookPilotUser),
+    liveStatus: customerInfoStatus,
+    profileSettled: Boolean(cookPilotUser) && profileSettledUid === cookPilotUser?.uid,
+  });
+  const whenProKnown = useRunWhenKnown<{ kind: "add"; navItem: NavItem | null } | { kind: "replace"; id: string }>(
+    proKnown,
+    (intent) => (intent.kind === "add" ? openAddRecipeBelow(intent.navItem) : tryAnotherImportWay(intent.id)),
+  );
   function openAddRecipeBelow(navItem: NavItem | null = activeNavItem) {
+    if (!proKnown) {
+      whenProKnown({ kind: "add", navItem });
+      return;
+    }
     // Out of free imports: the paywall, not a form to fill in and be refused
     // from. Checked first, so the dialog names the limit they actually hit
     // rather than "print multiple recipes".
@@ -5683,6 +5706,10 @@ export default function PrintPage() {
    * doesn't free up anything for it to be replacing.
    */
   function tryAnotherImportWay(id: string) {
+    if (!proKnown) {
+      whenProKnown({ kind: "replace", id });
+      return;
+    }
     if (importPaywallIfSpent()) return;
     if (multiRecipeAddLocked) {
       track("pro_feature_encountered", { feature: "batch_print", source: "add_more_recipes" });
