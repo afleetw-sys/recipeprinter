@@ -1,7 +1,4 @@
-import { sendsGlobalPrivacyControl } from "@/lib/analytics";
-import { isProductionRuntime } from "@/lib/appEnvironment";
-import { localStore } from "@/lib/storage";
-import { readVisitorCountry } from "@/lib/visitorCurrency";
+import { SITE_URL } from "@/lib/seo";
 
 /**
  * The Google tag for Google Ads (container GTM-T9LW4QJF, which sends to
@@ -23,93 +20,114 @@ import { readVisitorCountry } from "@/lib/visitorCurrency";
  * Ad personalisation (remarketing) is denied by default, because the privacy
  * policy says we don't share data for cross-context behavioural advertising.
  *
+ * It runs as an inline script in every page's <head> (app/layout.tsx), not
+ * from React after the page loads. Google Ads checks a site for its tag by
+ * reading the page, and a tag added later by script looked like no tag at all
+ * ("set up Google tag on your website"). The checks above all run inline,
+ * before anything loads.
+ *
  * No `<noscript>` iframe: it would load before any of these checks can run.
  */
 export const GTM_CONTAINER_ID = "GTM-T9LW4QJF";
 
 // EEA (EU + Iceland, Liechtenstein, Norway), UK and Switzerland.
-const CONSENT_REQUIRED_COUNTRIES: ReadonlySet<string> = new Set([
+const CONSENT_REQUIRED_COUNTRIES = [
   "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU",
   "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES",
   "SE", "IS", "LI", "NO", "GB", "CH",
-]);
+];
 
 type GtagWindow = Window & {
   dataLayer?: unknown[];
   gtag?: (...args: unknown[]) => void;
 };
 
-let started = false;
-
-/** Reads a URL flag, treating a bare `?flag` and `?flag=1` the same. */
-function urlFlag(params: URLSearchParams, key: string): boolean | null {
-  if (!params.has(key)) return null;
-  const raw = params.get(key);
-  return raw === null || raw === "" || raw === "1" || raw === "true";
+interface GoogleTagConfig {
+  containerId: string;
+  productionHosts: string[];
+  blockedCountries: string[];
+  /** PostHog's project key, which names the localStorage entry its opt-out lives in. */
+  postHogKey: string;
 }
 
-/** The `?optout` choice PostHog saved (`opt_out_capturing_persistence_type: "localStorage"`). */
-function postHogOptedOut(): boolean {
-  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-  if (!key) return false;
-  const stored = localStore.get(`__ph_opt_in_out_${key}`);
-  return stored === "0" || stored === "false";
-}
+/**
+ * The whole loader, run inline in <head> as `(bootGoogleTag)(config)`. It
+ * must stand alone: it is turned into text, so it can't reach anything
+ * outside itself, and it sticks to syntax every browser we support parses.
+ */
+function bootGoogleTag(config: GoogleTagConfig): void {
+  var w = window as GtagWindow;
+  var loc = window.location;
+  var params = new URLSearchParams(loc.search);
+  var flag = function (key: string): boolean | null {
+    if (!params.has(key)) return null;
+    var raw = params.get(key);
+    return raw === null || raw === "" || raw === "1" || raw === "true";
+  };
+  var production = config.productionHosts.indexOf(loc.hostname) !== -1;
+  if (!production && flag("gtm") !== true) return;
+  if (loc.pathname.indexOf("/export") === 0 || loc.pathname.indexOf("/print-check") === 0) return;
 
-export function initGoogleTag(): void {
-  if (started || typeof window === "undefined") return;
-
-  const params = new URLSearchParams(window.location.search);
-  const production = isProductionRuntime();
-  if (!production && urlFlag(params, "gtm") !== true) return;
-
-  const path = window.location.pathname;
-  if (path.startsWith("/export") || path.startsWith("/print-check")) return;
-
-  const optOut = urlFlag(params, "optout");
+  var optOut = flag("optout");
   if (optOut === true) return;
-  if (optOut !== false && postHogOptedOut()) return;
-  if (sendsGlobalPrivacyControl()) return;
+  if (optOut !== false && config.postHogKey) {
+    var stored: string | null = null;
+    try {
+      stored = window.localStorage.getItem("__ph_opt_in_out_" + config.postHogKey);
+    } catch {
+      stored = null;
+    }
+    if (stored === "0" || stored === "false") return;
+  }
+  if ((navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl === true) return;
 
   // Dev hosts have no country cookie, so only a known one blocks there.
-  const country = readVisitorCountry();
-  if (country ? CONSENT_REQUIRED_COUNTRIES.has(country) : production) return;
+  var match = document.cookie.match(/(?:^|; )rp_country=([A-Z]{2})(?:;|$)/);
+  var country = match ? match[1] : null;
+  if (country ? config.blockedCountries.indexOf(country) !== -1 : production) return;
 
-  started = true;
-  const w = window as GtagWindow;
   w.dataLayer = w.dataLayer || [];
   // gtag() must push the real `arguments` object; Google's code checks for it.
   w.gtag = function gtag() {
     // eslint-disable-next-line prefer-rest-params
     w.dataLayer!.push(arguments);
   };
-
-  if (production) {
-    w.gtag("consent", "default", {
-      ad_storage: "granted",
-      ad_user_data: "granted",
-      ad_personalization: "denied",
-      analytics_storage: "granted",
-    });
-  } else {
-    // An install check from a dev host: no cookies, nothing personalised.
-    w.gtag("consent", "default", {
-      ad_storage: "denied",
-      ad_user_data: "denied",
-      ad_personalization: "denied",
-      analytics_storage: "denied",
-    });
-  }
-
+  w.gtag(
+    "consent",
+    "default",
+    production
+      ? { ad_storage: "granted", ad_user_data: "granted", ad_personalization: "denied", analytics_storage: "granted" }
+      : // An install check from a dev host: no cookies, nothing personalised.
+        { ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "denied" },
+  );
   // Google acts as our service provider (CCPA), measuring our own ads only.
   w.gtag("set", "restricted_data_processing", true);
+  w.dataLayer.push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
 
-  w.dataLayer.push({ "gtm.start": Date.now(), event: "gtm.js" });
-
-  const script = document.createElement("script");
+  var script = document.createElement("script");
   script.async = true;
-  script.src = `https://www.googletagmanager.com/gtm.js?id=${GTM_CONTAINER_ID}`;
+  script.src = "https://www.googletagmanager.com/gtm.js?id=" + config.containerId;
   document.head.appendChild(script);
+}
+
+function productionHosts(): string[] {
+  try {
+    var apex = new URL(SITE_URL).hostname.replace(/^www\./, "");
+    return [apex, "www." + apex];
+  } catch {
+    return ["recipeprinter.com", "www.recipeprinter.com"];
+  }
+}
+
+/** The inline <head> script (app/layout.tsx). */
+export function googleTagInlineScript(): string {
+  const config: GoogleTagConfig = {
+    containerId: GTM_CONTAINER_ID,
+    productionHosts: productionHosts(),
+    blockedCountries: CONSENT_REQUIRED_COUNTRIES,
+    postHogKey: process.env.NEXT_PUBLIC_POSTHOG_KEY ?? "",
+  };
+  return `(${bootGoogleTag.toString()})(${JSON.stringify(config).replace(/</g, "\\u003c")});`;
 }
 
 const COOKBOOK_PURCHASE_CONVERSION = "AW-18072225757/n0FuCLyxmLQdEN2PwalD";
