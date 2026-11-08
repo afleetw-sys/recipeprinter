@@ -157,30 +157,51 @@ interface UseDeckScrollerOptions {
 // scrolls don't pile up listeners/timers.
 const pendingSnapRestore = new WeakMap<HTMLElement, () => void>();
 
-function scrollDeckTo(deck: HTMLDivElement, options: ScrollToOptions) {
+export function scrollDeckTo(deck: HTMLDivElement, options: ScrollToOptions) {
   if (options.behavior === "smooth") {
     // Mandatory snapping fights a programmatic smooth scroll — it can pull the
     // animation to an intermediate card. So suspend snapping for the duration
-    // of the animation and restore it the instant the scroll LANDS (scrollend,
-    // with a timeout fallback for browsers without it).
+    // of the animation and restore it the instant the scroll LANDS.
     //
     // Restoring on landing — rather than on the user's next gesture — is what
     // makes mandatory feel like a single snap: we always scroll to the exact
     // rounded centre, which IS a snap point, so re-enabling snapping finds us
     // already snapped and moves nothing. Turning it back on mid-gesture instead
     // is what made mandatory read as a double snap.
+    //
+    // "Landed" is watched for, not timed. Safari has no `scrollend`, and the
+    // 600ms timer that stood in for it turned snapping back on under any
+    // scroll still moving then (a busy or slow device), which pulled the deck
+    // back to the page it was leaving. The scroll has landed when it reaches
+    // the target, or stops moving (the cook took over, or the browser
+    // clamped it), with a cap so snapping can't stay off for good.
     pendingSnapRestore.get(deck)?.();
     deck.style.scrollSnapType = "none";
-    let timer = 0;
+    const target = options.top;
+    const started = performance.now();
+    let frame = 0;
+    let last = deck.scrollTop;
+    let stillFrames = 0;
     const restore = () => {
       deck.style.scrollSnapType = "";
       deck.removeEventListener("scrollend", restore);
-      window.clearTimeout(timer);
+      window.cancelAnimationFrame(frame);
       pendingSnapRestore.delete(deck);
+    };
+    const watch = () => {
+      const now = deck.scrollTop;
+      stillFrames = now === last ? stillFrames + 1 : 0;
+      last = now;
+      const arrived = target === undefined || Math.abs(now - target) < 1;
+      if (arrived || stillFrames >= 8 || performance.now() - started > 3000) {
+        restore();
+        return;
+      }
+      frame = window.requestAnimationFrame(watch);
     };
     pendingSnapRestore.set(deck, restore);
     deck.addEventListener("scrollend", restore, { once: true });
-    timer = window.setTimeout(restore, 600);
+    frame = window.requestAnimationFrame(watch);
   }
   deck.scrollTo(options);
 }
