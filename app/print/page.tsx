@@ -1321,13 +1321,84 @@ export default function PrintPage() {
         }
 
         const candidates = rows.filter((row) => row.rect.width > 0 && row.rect.height > 0);
-        if (candidates.length === 0) return null;
         const distanceTo = (rect: DOMRect) => {
           const dx = Math.max(rect.left - clientX, 0, clientX - rect.right);
           const dy = Math.max(rect.top - clientY, 0, clientY - rect.bottom);
           return dx * dx + dy * dy;
         };
-        const target = candidates.reduce((closest, row) =>
+
+        // The chapter the pointer is in owns the drop: anywhere inside its
+        // frame, cards or empty space, puts the recipe in that chapter. It used
+        // to go to the nearest card in the whole book, so the space beside a
+        // chapter's last card handed the recipe to the chapter above. Between
+        // frames, the nearest chapter takes it, so there is no dead gap.
+        const chapters = geometry.sections.filter((entry) => entry.rect.width > 0 && entry.rect.height > 0);
+        const chapter =
+          chapters.find((entry) => contains(entry.rect)) ??
+          (chapters.length > 0
+            ? chapters.reduce((closest, entry) =>
+                distanceTo(entry.rect) < distanceTo(closest.rect) ? entry : closest,
+              )
+            : null);
+        const inside = (outer: DOMRect, inner: DOMRect) => {
+          const x = inner.left + inner.width / 2;
+          const y = inner.top + inner.height / 2;
+          return x >= outer.left && x <= outer.right && y >= outer.top && y <= outer.bottom;
+        };
+        const chapterRows = chapter ? candidates.filter((row) => inside(chapter.rect, row.rect)) : candidates;
+
+        if (chapter) {
+          const sectionId = chapter.id;
+          const atEnd = () =>
+            projectMeta.moveItems(
+              movingIds,
+              sectionId,
+              itemIdsForSection(sectionId).filter((x) => !moving.has(x)).length,
+            );
+          // A folded chapter is its bar: the whole bar is the target.
+          const bar = foldedBar(sectionId);
+          if (bar) {
+            const rect = bar.getBoundingClientRect();
+            return {
+              indicator: { top: rect.top, left: rect.left, width: rect.width, height: rect.height, box: true },
+              commit: () => projectMeta.moveItems(movingIds, sectionId, 0),
+            };
+          }
+          if (chapterRows.length === 0) {
+            // Nothing to drop beside: the gap opens under the heading (or in
+            // the empty chapter's own box), and the recipe is the chapter's.
+            const add = geometry.sectionAdds.find((entry) => entry.id === sectionId);
+            const head = geometry.sectionHeads.find((entry) => entry.id === sectionId);
+            const rect = add?.rect ?? head?.rect ?? chapter.rect;
+            return {
+              indicator: { top: rect.top, left: rect.left, width: rect.width },
+              slot: add
+                ? { anchor: `[data-rail-section-add="${sectionId}"]`, place: "before" }
+                : head
+                  ? { anchor: `[data-rail-section-head="${sectionId}"]`, place: "after" }
+                  : undefined,
+              commit: atEnd,
+            };
+          }
+          // Past the last card in reading order (beside it, or below its row):
+          // the end of the chapter, not before some card in the row above.
+          const last = chapterRows[chapterRows.length - 1]!;
+          if (clientY > last.rect.bottom || (clientY >= last.rect.top && clientX > last.rect.right)) {
+            return {
+              indicator: {
+                top: last.rect.top,
+                left: last.rect.right + 1,
+                width: 3,
+                height: last.rect.height,
+              },
+              slot: { anchor: `[data-rail-recipe="${last.id}"]`, place: "after" },
+              commit: atEnd,
+            };
+          }
+        }
+
+        if (chapterRows.length === 0) return null;
+        const target = chapterRows.reduce((closest, row) =>
           distanceTo(row.rect) < distanceTo(closest.rect) ? row : closest,
         );
         // The organizer lays recipes out in a grid, in reading order. Over a
