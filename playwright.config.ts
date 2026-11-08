@@ -83,7 +83,23 @@ export default defineConfig({
     // reached customers (print sizing, one print per tab, iOS editing). The
     // export page is left to Chromium, the only browser that ever opens it:
     // the PDF renderer.
-    { name: "webkit", use: { ...devices["Desktop Safari"] }, testIgnore: [/export\.spec/, /layout-harness\.spec/] },
+    //
+    // Nor does desktop Safari repeat what the engine can't change, which was a
+    // quarter of the run: saving and reopening (work-survives cuts the network
+    // itself, so it behaves the same in every browser), Pro and cookbook
+    // unlocks, link import, the organizer, email sign-in, and the raw-HTML tag
+    // check, which opens no browser at all. Each still runs in Chromium, and
+    // cookbook and sign-in run on the iPhone too, so WebKit still sees them.
+    // A spec about how a page looks or prints stays on both.
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
+      testIgnore: [
+        /export\.spec/,
+        /layout-harness\.spec/,
+        /\/(work-survives|pro|cookbook|import|organize|signin|google-tag-in-html)\.spec\.ts$/,
+      ],
+    },
     // The phone runs only what a phone changes: its own layout (bottom bar,
     // toolbar, welcome), its sign-in (a redirect), Safari's print sheet, and
     // the flows that had phone-only bugs. Everything else is the same WebKit

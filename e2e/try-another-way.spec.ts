@@ -62,9 +62,16 @@ test("a failed import's replacement lands in its place, and the deck stays there
   await deckSettled(page);
 
   // The deck is still at the end of the job, where the failed card was...
-  const { top, max } = await deck.evaluate((el) => ({ top: el.scrollTop, max: el.scrollHeight - el.clientHeight }));
-  expect(max).toBeGreaterThan(0);
-  expect(top).toBeGreaterThan(max - 40);
+  // Polled, not read once: the deck glides there with a smooth scroll, and
+  // WebKit can leave scrollTop untouched for a couple of frames after it is
+  // asked, so deckSettled() can see "still" before the glide has begun. The
+  // bug this guards (a jump back to the first page) never reaches the end.
+  await expect
+    .poll(() => deck.evaluate((el) => {
+      const max = el.scrollHeight - el.clientHeight;
+      return max > 0 && el.scrollTop > max - 40;
+    }))
+    .toBe(true);
   // ...and the recipe that arrived is the current page, the last in the rail
   // (a phone has no rail; the scroll above is the whole of it there).
   const rail = page.getByRole("navigation", { name: "Pages" });
