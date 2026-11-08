@@ -8,6 +8,7 @@ import {
   PaprikaImportSource,
   readPaprikaExport,
 } from "@/components/import/PaprikaImportSource";
+import type { LibraryCommitRef } from "@/components/import/RecipeSourceList";
 import {
   getCachedCookPilotTotal,
   loadCookPilotRecipeTotal,
@@ -216,6 +217,7 @@ export function RecipeAppsPanel({
   commitLabel,
   commitLeavesPage = false,
   onCommitEmpty,
+  commitRef,
   reselects = 0,
   locked = false,
   singleSelect,
@@ -228,6 +230,11 @@ export function RecipeAppsPanel({
   /** And whether pressing it navigates, which decides its icon. */
   commitLeavesPage?: boolean;
   onCommitEmpty?: () => void;
+  /** Handed to whichever library is open. Given by the add dialog, whose Done
+      adds the selection, so the library drops its own Add button. See
+      `LibraryCommitRef`. Nothing registers on the list of apps, so Done there
+      just closes. */
+  commitRef?: LibraryCommitRef;
   /** Bumped when the Recipe apps tab is pressed while already on it. Closes
       the open library and shows the sources again. */
   reselects?: number;
@@ -414,6 +421,7 @@ export function RecipeAppsPanel({
             commitLabel={commitLabel}
             commitLeavesPage={commitLeavesPage}
             onCommitEmpty={onCommitEmpty}
+            commitRef={commitRef}
             locked={locked}
             singleSelect={effectiveSingleSelect}
             onLockedTap={onUpgradeTap}
@@ -432,6 +440,7 @@ export function RecipeAppsPanel({
             commitLabel={commitLabel}
             commitLeavesPage={commitLeavesPage}
             onCommitEmpty={onCommitEmpty}
+            commitRef={commitRef}
             onLibraryChange={() => setLibraryNonce((value) => value + 1)}
             locked={locked}
             singleSelect={effectiveSingleSelect}

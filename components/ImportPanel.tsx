@@ -39,6 +39,7 @@ import {
 } from "@/components/icons";
 import { FrontDoorUpgradeHost } from "@/components/FrontDoorUpgrade";
 import { ButtonToggle } from "@/components/ButtonToggle";
+import type { LibraryCommitRef } from "@/components/import/RecipeSourceList";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
 // Compact import switch: a link and the recipe apps are first-class;
@@ -138,8 +139,10 @@ export function ImportPanel({
   onAddText: (text: string) => void;
   onAddReadyRecipes: (recipes: QueueItem[]) => number;
   /** Filled in by this panel with a function that submits whatever is in the
-      form, so a parent's own "done" button can finish the job. */
-  commitRef?: MutableRefObject<(() => boolean) | null>;
+      form, so a parent's own "done" button can finish the job. On the Recipe
+      apps tab that is the library's ticked recipes, which take a moment to
+      read, so the answer can arrive as a promise. */
+  commitRef?: MutableRefObject<(() => boolean | Promise<boolean>) | null>;
   /** The form's own submit (Enter in a field) handed its entry off. A surface
       that closes on its own Add should close on this too, or Enter adds the
       recipe and leaves the dialog sitting there as if nothing happened. */
@@ -460,9 +463,8 @@ export function ImportPanel({
   /**
    * Whether there is something typed, pasted or chosen that has not been added.
    *
-   * The recipe-app sources are excluded on purpose: they add through their own
-   * lists rather than through this form, so there is never anything of theirs
-   * left sitting in the field.
+   * The recipe-app sources are excluded on purpose: their selection lives in
+   * the open library, which commits through `appsCommitRef` instead.
    */
   function hasUncommittedInput(): boolean {
     if (mode === "url") return url.trim().length > 0;
@@ -485,11 +487,17 @@ export function ImportPanel({
    * and a committed entry is finished. Only a refusal answers `false`, because
    * the reason is on screen and closing would take it away with it.
    */
+  const appsCommitRef: LibraryCommitRef = useRef(null);
   useEffect(() => {
     if (!commitRef) return;
     // The Image tab's "Read my photo" with nothing chosen says so rather than
     // closing the dialog as if a photo had gone in.
-    commitRef.current = () => (hasUncommittedInput() || mode === "image" ? handleSubmit() : true);
+    commitRef.current = () => {
+      // Recipe apps: Done adds whatever is ticked in the open library. Nothing
+      // open, or nothing ticked, is a plain close.
+      if (mode === "apps") return appsCommitRef.current ? appsCommitRef.current() : true;
+      return hasUncommittedInput() || mode === "image" ? handleSubmit() : true;
+    };
     return () => {
       commitRef.current = null;
     };
@@ -590,6 +598,10 @@ export function ImportPanel({
             locked={libraryLocked}
             singleSelect={librarySingleSelect}
             onCommitEmpty={onStartEmpty}
+            /* With the submit hidden, the parent's own button finishes the
+               job, so it commits the library's selection too and the library
+               drops its own Add. */
+            commitRef={hideSubmit && commitRef ? appsCommitRef : undefined}
             onLockedTap={onLibraryLockedTap}
           />
         </div>

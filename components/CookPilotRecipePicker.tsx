@@ -34,7 +34,7 @@ import {
 } from "@/lib/importSelection";
 import type { QueueItem } from "@/types/recipe";
 import { EmptyState } from "@/components/EmptyState";
-import { RecipeSourceList } from "@/components/import/RecipeSourceList";
+import { RecipeSourceList, type LibraryCommitRef } from "@/components/import/RecipeSourceList";
 import {
   CookPilotLogoIcon,
   ExternalIcon,
@@ -129,6 +129,7 @@ function SignedInCookPilotImport({
   commitLabel,
   commitLeavesPage,
   onCommitEmpty,
+  commitRef,
   locked,
   singleSelect,
   onLockedTap,
@@ -139,6 +140,7 @@ function SignedInCookPilotImport({
   commitLabel: string;
   commitLeavesPage: boolean;
   onCommitEmpty?: () => void;
+  commitRef?: LibraryCommitRef;
   /** See `RecipeSourceList`'s own `locked` doc — this account already has the
       one recipe a free, non-cookbook plan can print. */
   locked: boolean;
@@ -371,12 +373,13 @@ function SignedInCookPilotImport({
    * and leaves the ones that did not still ticked — so "try again" is the same
    * button, already counting only what is left. See `partialAddMessage`.
    */
-  async function handleCommit() {
-    if (committing || selectedIds.size === 0) return;
+  async function handleCommit(): Promise<boolean> {
+    if (committing) return false;
+    if (selectedIds.size === 0) return true;
     const targets = Array.from(selectedIds)
       .map((queueId) => byQueueId.get(queueId))
       .filter((summary): summary is CookPilotRecipeSummary => Boolean(summary));
-    if (targets.length === 0) return;
+    if (targets.length === 0) return true;
     setError(null);
     setCommitting(true);
     try {
@@ -387,14 +390,25 @@ function SignedInCookPilotImport({
       if (failedIds.length > 0) {
         setError(partialAddMessage(queueItems.length, failedIds.length));
       }
+      return failedIds.length === 0;
     } catch (err) {
       // The whole read failed (offline, signed out mid-add), so nothing was
       // added and everything stays selected.
       setError(friendlyRecipeLibraryError(err, "We couldn't add those recipes. Please try again."));
+      return false;
     } finally {
       setCommitting(false);
     }
   }
+
+  // Re-registered every render so Done always commits the current selection.
+  useEffect(() => {
+    if (!commitRef) return;
+    commitRef.current = handleCommit;
+    return () => {
+      commitRef.current = null;
+    };
+  });
 
   return (
     <RecipeSourceList
@@ -425,6 +439,7 @@ function SignedInCookPilotImport({
       commitLabel={commitLabel}
       commitLeavesPage={commitLeavesPage}
       onCommitEmpty={onCommitEmpty}
+      hideCommit={Boolean(commitRef)}
       onUpgrade={onLockedTap}
       committing={committing}
       locked={locked}
@@ -495,6 +510,7 @@ export function CookPilotImportSource({
   commitLabel,
   commitLeavesPage = false,
   onCommitEmpty,
+  commitRef,
   locked = false,
   singleSelect = false,
   onLockedTap,
@@ -506,6 +522,9 @@ export function CookPilotImportSource({
   /** And whether pressing it navigates, which decides its icon. */
   commitLeavesPage?: boolean;
   onCommitEmpty?: () => void;
+  /** See `LibraryCommitRef`: the add dialog's Done adds the selection. Left
+      empty while signed out, so Done just closes. */
+  commitRef?: LibraryCommitRef;
   /** See `RecipeSourceList`'s own `locked` doc. */
   locked?: boolean;
   /** See `SignedInCookPilotImport`'s own `singleSelect` doc. */
@@ -542,6 +561,7 @@ export function CookPilotImportSource({
           commitLabel={commitLabel}
           commitLeavesPage={commitLeavesPage}
           onCommitEmpty={onCommitEmpty}
+          commitRef={commitRef}
           locked={locked}
           singleSelect={singleSelect}
           onLockedTap={onLockedTap}
