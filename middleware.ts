@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { VISITOR_COUNTRY_COOKIE } from "@/lib/usdPriceLabel";
+import {
+  ANONYMOUS_OWNER_COOKIE,
+  ANONYMOUS_OWNER_COOKIE_MAX_AGE_S,
+  isAnonymousOwnerId,
+} from "@/lib/anonymousOwner";
 
 /**
  * Send the production deployment's own `*.vercel.app` alias to the real domain.
@@ -54,14 +59,41 @@ function withVisitorCountry(request: NextRequest, response: NextResponse): NextR
   return response;
 }
 
+/**
+ * Send the browser's anonymous id back as a cookie the server set.
+ *
+ * The free import meter counts a signed-out cook by `rp_anon`
+ * (lib/anonymousOwner.ts). Set only by script, WebKit (every iOS browser) keeps
+ * it 7 days at most, 24 hours after a Google arrival; a cookie in a server
+ * response has no such cap. Only an id the browser already holds is refreshed:
+ * minting one here could outrank an older id in its localStorage and reset that
+ * cook's count, which is the bypass this closes.
+ */
+function withAnonymousOwner(request: NextRequest, response: NextResponse): NextResponse {
+  const id = request.cookies.get(ANONYMOUS_OWNER_COOKIE)?.value;
+  if (!isAnonymousOwnerId(id)) return response;
+  response.cookies.set(ANONYMOUS_OWNER_COOKIE, id, {
+    path: "/",
+    maxAge: ANONYMOUS_OWNER_COOKIE_MAX_AGE_S,
+    sameSite: "lax",
+    secure: request.nextUrl.protocol === "https:",
+  });
+  return response;
+}
+
+/** What every page that isn't redirected carries back. */
+function pageResponse(request: NextRequest): NextResponse {
+  return withAnonymousOwner(request, withVisitorCountry(request, NextResponse.next()));
+}
+
 export function middleware(request: NextRequest) {
   if (process.env.VERCEL_ENV !== "production") {
-    return withVisitorCountry(request, NextResponse.next());
+    return pageResponse(request);
   }
 
   const host = request.headers.get("host")?.toLowerCase();
   if (!host || host === CANONICAL_HOST || host === "recipeprinter.com") {
-    return withVisitorCountry(request, NextResponse.next());
+    return pageResponse(request);
   }
 
   const url = request.nextUrl.clone();
