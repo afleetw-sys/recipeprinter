@@ -228,6 +228,37 @@ function useExportReady(contentReady: boolean): void {
             if (!settled) stragglers.push(src);
           });
         }),
+      ).then(() =>
+        // The probes prove each photo can be fetched and decoded, but the PDF
+        // prints the photos on the pages, not the probes. Those are
+        // `loading="lazy"` (right for editing), so past the first screen they
+        // had not even been requested when this page said ready, and nothing
+        // made Chromium reuse the probe's copy: the renderer fetched them again
+        // during `page.pdf()`, behind its own photo queue, and a big book's
+        // last recipes printed blank. Load every drawn photo now and wait for
+        // it. Photos in a `display: none` subtree never finish (see above), so
+        // only drawn ones are waited on; the probe already covers the rest.
+        Promise.all(
+          Array.from(document.images)
+            .filter((image) => image.getClientRects().length > 0)
+            .map((image) => {
+              image.loading = "eager";
+              let settled = false;
+              const decode = image.decode().then(
+                () => {
+                  settled = true;
+                },
+                () => {
+                  settled = true;
+                  failed.push(image.currentSrc || image.src);
+                  console.warn("export: a photo on the page failed to load");
+                },
+              );
+              return withDeadline(decode, IMAGE_WAIT_MS).then(() => {
+                if (!settled) stragglers.push(image.currentSrc || image.src);
+              });
+            }),
+        ),
       ).then(() => {
         if (stragglers.length > 0) {
           console.warn(
