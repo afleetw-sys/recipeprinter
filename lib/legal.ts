@@ -134,7 +134,7 @@ export const SUBPROCESSORS: Subprocessor[] = [
   {
     name: "Meta Ads",
     purpose:
-      "Measuring which of our ads on Facebook and Instagram lead to a cookbook purchase, under Meta's Limited Data Use where state privacy law provides for it. Never used in the EU, the UK, or Switzerland, or for retargeting.",
+      "Measuring which of our ads on Facebook and Instagram lead to a cookbook purchase. Under Meta's Limited Data Use in California and the other states Meta covers; elsewhere Meta may also use it under its own terms. Never used in the EU, the UK, or Switzerland, or for retargeting.",
     data:
       "Pages visited on this site, starting a cookbook and opening its checkout, the click identifier from an ad you followed, a random identifier, browser and device details, IP address, and for a purchase its amount, currency, and transaction number, sent from your browser and from our payment system with your approximate country and state. Not your name, email address, photos, or recipes.",
     policyUrl: "https://www.facebook.com/privacy/policy/",

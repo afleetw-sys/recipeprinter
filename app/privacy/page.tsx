@@ -91,14 +91,19 @@ export default function PrivacyPage() {
           </li>
           <li>
             We use Google Ads, Reddit Ads, and Meta Ads to measure which of our
-            ads lead to a purchase. None of them may use this to show you
-            personalized ads where privacy law limits it, and we do not use them
-            in the EU, the UK, or Switzerland. The analytics opt-out stops them
-            too.
+            ads lead to a purchase. We do not use them in the EU, the UK, or
+            Switzerland, and the analytics opt-out and Global Privacy Control
+            stop all three, anywhere.
           </li>
           <li>
-            We do not sell your personal information, and we do not share it
-            for cross-context behavioral advertising.
+            We do not sell your personal information. Google and Reddit may not
+            use what they measure here for personalized ads. Meta may not in
+            California and the other states where Meta applies its Limited
+            Data Use; elsewhere, Meta may use it under its own terms. See{" "}
+            <a href="#us-states" className={sectionLink}>
+              section 16
+            </a>
+            .
           </li>
           <li>
             You can ask us to delete your account and the information stored
@@ -529,10 +534,15 @@ export default function PrivacyPage() {
         title="Service providers and disclosures"
       >
         <p>
-          We do not sell personal information or share it for cross-context
-          behavioral advertising. We use the service providers below, each of which receives only what it
-          needs to perform its function and may use it only on our instructions.
-          Each provider&apos;s name links to its own privacy policy.
+          We do not sell personal information. We use the service providers
+          below, each of which receives only what it needs to perform its
+          function and may use it only on our instructions. The one exception is
+          Meta outside the states where it applies Limited Data Use, where it
+          may also use our ad measurement under its own terms (see{" "}
+          <a href="#us-states" className={sectionLink}>
+            section 16
+          </a>
+          ). Each provider&apos;s name links to its own privacy policy.
         </p>
         <div className="mt-cp-2 flex flex-col gap-cp-4">
           {SUBPROCESSORS.map((service) => (
@@ -765,15 +775,31 @@ export default function PrivacyPage() {
           .
         </p>
         <p>
+          <strong>We do not sell personal information.</strong> We have not done
+          so in the past twelve months, and we do not do so for anyone under 16.
+          We do not use or disclose sensitive personal information for any
+          purpose that would give rise to a right to limit its use.
+        </p>
+        <p>
           <strong>
-            We do not sell personal information, and we do not share it for
-            cross-context behavioral advertising.
-          </strong>{" "}
-          We have not done so in the past twelve months, and we do not do so for
-          anyone under 16. For that reason, there is no &ldquo;Do Not Sell or
-          Share My Personal Information&rdquo; link on this site. We do not use
-          or disclose sensitive personal information for any purpose that would
-          give rise to a right to limit its use.
+            In California, we do not share personal information for
+            cross-context behavioral advertising
+          </strong>
+          , and have not in the past twelve months, because every advertising
+          platform we use processes it there as our service provider (see
+          below). For that reason, there is no &ldquo;Do Not Sell or Share My
+          Personal Information&rdquo; link on this site.
+        </p>
+        <p>
+          <strong>Opting out of targeted advertising.</strong> Wherever you
+          live, Global Privacy Control or the analytics opt-out (see{" "}
+          <a href="#your-choices" className={sectionLink}>
+            section 13
+          </a>
+          ) stops all of our ad measurement in your browser, and a cookbook you
+          buy from that browser is not reported to Meta by our payment system
+          either. We treat either one as your request to opt out of targeted
+          advertising under any state law that gives you that right.
         </p>
         <p>
           Our Google Ads measurement runs with Google&apos;s restricted data
@@ -783,10 +809,12 @@ export default function PrivacyPage() {
           providers, to measure our own ads, and may not use it to build a
           profile of you or show you personalized ads. Our Meta Ads measurement,
           from the pixel and from our payment system, is sent with Meta&apos;s
-          Limited Data Use, which Meta applies in the states whose privacy laws
-          provide for it; there, Meta processes that data as our service
-          provider on the same terms. Global Privacy Control and the analytics
-          opt-out both stop all of it.
+          Limited Data Use, which Meta applies by your location in California
+          and the other states it covers; there, Meta processes that data as
+          our service provider on the same terms. In other places, Meta may also
+          use it under its own terms, which can include improving the ads it
+          shows. Global Privacy Control and the analytics opt-out both stop all
+          of it.
         </p>
         <p>
           If we decline your request, you may appeal by replying to our
