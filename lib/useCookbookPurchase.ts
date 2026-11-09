@@ -5,7 +5,7 @@ import type { User } from "firebase/auth";
 import { COOKBOOK_DISCOUNT_PRICE_FALLBACK, COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import { track, truncateReason } from "@/lib/analytics";
-import { reportCookbookPurchase } from "@/lib/adTags";
+import { reportCookbookCheckoutStarted, reportCookbookPurchase } from "@/lib/adTags";
 import {
   purchaseRecipePrinterCookbook,
 } from "@/lib/recipePrinterPurchases";
@@ -198,6 +198,7 @@ export function useCookbookPurchase({
         customerId,
         ...(usingDiscount ? { discount: "pro_first" as const } : {}),
       });
+      reportCookbookCheckoutStarted();
       const result = await purchaseRecipePrinterCookbook({
         userId: customerId,
         email: cookPilotUser.email,

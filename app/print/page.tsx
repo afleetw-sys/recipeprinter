@@ -173,6 +173,7 @@ import {
   presetCardDims,
 } from "@/lib/cookbookPresets";
 import { track } from "@/lib/analytics";
+import { reportCookbookCreated } from "@/lib/adTags";
 import {
   BookIcon,
   PagesIcon,
@@ -1893,6 +1894,8 @@ export default function PrintPage() {
         recipeCount: items?.filter(isRecipeEntry).length ?? 0,
         template: bookTemplate ?? template,
       });
+      // A restored book (undefined from the scaffold) was created before.
+      if (bookTemplate !== undefined) reportCookbookCreated();
       // The homepage's Cookbook tab already was this welcome (see
       // `cookbookIntroduced`); a second one would stand between the cook and
       // the book they just asked to open.
