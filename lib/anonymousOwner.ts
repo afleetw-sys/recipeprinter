@@ -23,14 +23,26 @@ import { uid } from "@/lib/ids";
  * PostHog's cookie on the same device came through every one of those visits.
  * The cookie wins when the two disagree, and each read writes the id back to
  * both, so whichever one a browser drops is refilled on the next visit.
+ *
+ * Written by script alone, that cookie still did not last: WebKit (every iOS
+ * browser) keeps a script-set cookie 7 days at most, 24 hours after a Google
+ * arrival, and on 2026-11-08 a cook opened a new tab with neither cookie nor
+ * stored id and got a fresh 10 imports. So middleware.ts also sends the cookie
+ * back from the server on every page, which WebKit does not cap.
  */
 export const ANONYMOUS_OWNER_STORAGE_KEY = "recipeprinter:anonymous-owner:v1";
 export const ANONYMOUS_OWNER_COOKIE = "rp_anon";
 
 // 400 days is the longest any browser keeps a cookie (Chrome's cap).
-const COOKIE_MAX_AGE_S = 400 * 24 * 60 * 60;
+export const ANONYMOUS_OWNER_COOKIE_MAX_AGE_S = 400 * 24 * 60 * 60;
+const COOKIE_MAX_AGE_S = ANONYMOUS_OWNER_COOKIE_MAX_AGE_S;
 // What CookPilot accepts as an `rpAnonId`, so a mangled cookie is never sent.
 const ID_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
+
+/** Whether `value` is an id CookPilot would accept as an `rpAnonId`. */
+export function isAnonymousOwnerId(value: string | undefined | null): value is string {
+  return typeof value === "string" && ID_PATTERN.test(value);
+}
 
 function readCookie(): string | null {
   try {
