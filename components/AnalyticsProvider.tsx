@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { capturePageleave, capturePageview, initAnalytics, track } from "@/lib/analytics";
+import { reportMetaPageView } from "@/lib/adTags";
 import { screenshotShortcutFrom } from "@/lib/screenshotShortcut";
 
 // useSearchParams opts the subtree into client-side rendering, so it has to
@@ -31,6 +32,9 @@ function PageviewTracker() {
     const query = searchParams?.toString();
     const url = `${window.location.origin}${pathname}${query ? `?${query}` : ""}`;
     capturePageview(url);
+    // Meta's first PageView came from the inline loader; this sends the
+    // route changes after it, once each.
+    reportMetaPageView(`${pathname}${query ? `?${query}` : ""}`);
     // The cleanup runs on a route change, which is the moment this pageview
     // actually ended. It does NOT run on a real unload, so posthog-js's own
     // `$pageleave` still covers that case and neither is counted twice.

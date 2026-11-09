@@ -13,6 +13,7 @@ import {
 import type { User } from "firebase/auth";
 import { isProductionRuntime } from "@/lib/appEnvironment";
 import { localStore } from "@/lib/storage";
+import { metaCheckoutAttributes } from "@/lib/adTags";
 import {
   RECIPEPRINTER_COOKBOOK_DISCOUNT_PACKAGE_ID,
   RECIPEPRINTER_COOKBOOK_DISCOUNT_PRODUCT_ID,
@@ -830,8 +831,12 @@ export async function purchaseRecipePrinterCookbook({
   // Give the cookbook-unlock webhook a reliable purchase→project map. Webhook
   // payloads carry subscriber attributes, but not the purchase-time `metadata`
   // below — so set both (attribute for the server, metadata kept for parity).
-  // See docs/cookbook-unlock-webhook.md.
-  await purchases.setAttributes({ cookbook_project_id: projectId }).catch(() => undefined);
+  // See docs/cookbook-unlock-webhook.md. The Meta keys tell the same webhook
+  // whether this browser may be measured, for the server copy of the Purchase
+  // (lib/adTags.ts `metaCheckoutAttributes`); they are cleared when it may not.
+  await purchases
+    .setAttributes({ cookbook_project_id: projectId, ...metaCheckoutAttributes() })
+    .catch(() => undefined);
 
   return checkout(purchases, rcPackage, email, {
     product: "recipeprinter",
