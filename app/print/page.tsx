@@ -3921,7 +3921,11 @@ export default function PrintPage() {
     // `printNow` turns it back on in this same task when that is what happens.
     releasePrintPress();
     if (cookbookPurchaseBusy || proBusy) return;
-    if (!printLayoutReady) {
+    // With no recipes there is nothing to measure, so the layout never reports
+    // ready and this waited forever: Buy & Print on a brand-new book span and
+    // never reached sign-in or checkout (2026-11-08). A book can be bought
+    // first and filled after.
+    if (!printLayoutReady && recipeCount > 0) {
       // Remember it and let the effect below fire once the layout settles,
       // instead of turning them away — the button shows a spinner meanwhile.
       setPrintPending(true);
@@ -3944,6 +3948,14 @@ export default function PrintPage() {
       // handlePrint, which now clears the gate and exports. Signed out, the
       // hook asks for sign-in instead of opening checkout.
       void purchaseCookbookAndContinue((freshPurchase) => {
+        // Bought before it has any recipes: there's nothing to print yet, so
+        // say what comes next instead of opening an empty export.
+        if (recipeCount === 0) {
+          if (freshPurchase && cookPilotUser) void handleSaveProject();
+          setToastTone("info");
+          setToastMessage("Your cookbook is paid for. Add recipes, then print it.");
+          return;
+        }
         if (freshPurchase) setCookbookJustPurchased(true);
         // Buying a book is asking us to keep it.
         //
