@@ -290,3 +290,38 @@ test("a cookbook at the biggest text size exports the pages its preview shows, i
   expect(await recipeFaceCount(preview, "#recipe-page-deck")).toBe(exported);
   await preview.close();
 });
+
+// The ready signal decoded a detached copy of each photo, while the photos on
+// the pages stayed `loading="lazy"` and unrequested. The renderer then saved
+// the PDF with the book's own photos still loading, and in a big book the last
+// recipes, last in its photo queue, came out blank. When the page says ready,
+// every photo drawn on it has loaded.
+test("every photo on the book's pages has loaded by the time it says ready", async ({ page }) => {
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC",
+    "base64",
+  );
+  await page.route("**/images/export-photo-*.png", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    await route.fulfill({ contentType: "image/png", body: png });
+  });
+  const book = structuredClone(fixture);
+  book.project.settings.showPhoto = true;
+  const template = book.project.sections[0].items[0];
+  book.project.sections[0].items = Array.from({ length: 24 }, (_, i) => {
+    const item = structuredClone(template);
+    item.id = `photo-recipe-${i}`;
+    item.title = item.recipe.title = `Photo Recipe ${i + 1}`;
+    (item.recipe as { image?: string }).image = `/images/export-photo-${i}.png`;
+    return item;
+  });
+  await openExport(page, book);
+
+  const unloaded = await page.$$eval<(string | null)[], HTMLImageElement>(".recipe-card-page img", (images) =>
+    images
+      .filter((img) => img.getClientRects().length > 0)
+      .filter((img) => !(img.complete && img.naturalWidth > 0))
+      .map((img) => img.getAttribute("src")),
+  );
+  expect(unloaded).toEqual([]);
+});
