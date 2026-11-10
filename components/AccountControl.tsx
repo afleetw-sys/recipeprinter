@@ -7,6 +7,8 @@ import { AccountIcon, CheckIcon, ICON_SIZE, SpinnerIcon } from "@/components/ico
 import { ImportUsageBadge } from "@/components/ImportUsageBadge";
 import { onCookPilotSignedInChange, readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
 import { readPendingCode } from "@/lib/emailCodePending";
+import { accountMenuLoadAtMount } from "@/lib/accountMenuLoad";
+import { hasAuthRedirectPending } from "@/lib/authRedirect";
 
 /**
  * The header's right-hand side: save state, and the way in to your account.
@@ -171,16 +173,22 @@ export function AccountControl({
   const handleMenuMounted = useCallback(() => setMenuMounted(true), []);
   useEffect(() => {
     if (showMenu) return;
-    // An emailed code waiting to be typed (the page was reloaded, or the phone
-    // dropped the tab while they were in Mail): load the menu now, and it brings
-    // the sign-in dialog back on the code step.
-    if (readPendingCode()) {
+    const load = accountMenuLoadAtMount({
+      // An emailed code waiting to be typed (the page was reloaded, or the phone
+      // dropped the tab while they were in Mail): the menu brings the sign-in
+      // dialog back on the code step.
+      pendingEmailCode: Boolean(readPendingCode()),
+      // Back from Google or Apple on a phone: the menu is what reads the result.
+      redirectPending: hasAuthRedirectPending(),
+      wasSignedIn: readCookPilotWasSignedIn(),
+    });
+    if (load === "now") {
       setShowMenu(true);
       return;
     }
-    // Only for a browser that has an account behind it. Everyone else waits
-    // for a real click, which is what keeps auth off the content pages.
-    if (!readCookPilotWasSignedIn()) return;
+    // Everyone else waits for a real click, which is what keeps auth off the
+    // content pages.
+    if (load === "on-click") return;
     if (typeof window === "undefined") return;
     // Safari has no requestIdleCallback; a short timer is close enough for
     // something whose only job is "not during first paint".
