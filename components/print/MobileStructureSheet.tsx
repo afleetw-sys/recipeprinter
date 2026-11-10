@@ -37,6 +37,10 @@ interface MobileStructureSheetProps {
 
 /** Which of the book-wide sheets is open, from the bottom bar's tiles. */
 /** "page": the selected page's settings, the desktop panel's Page tab. */
+/** Under a phone's Photos sheet title, cookbook or cards: the sheet sets every
+    recipe's photo, and one recipe's own is changed on its page's toolbar. */
+export const PHOTOS_SHEET_NOTE = "This applies to every recipe. Change just one from its toolbar.";
+
 export type MobileBookSheet = "recipes" | "page" | null;
 
 /**
@@ -44,8 +48,8 @@ export type MobileBookSheet = "recipes" | "page" | null;
  * Settings panel instead; these are the touch-native equivalents, since the
  * mobile config drawer only ever opens the Themes section.
  *
- * - "Every recipe" (its own tile in the bottom bar): what every recipe
- *   carries (its link and its photo layout), as the desktop panel groups it.
+ * - "Photos" (its own tile in the bottom bar): every recipe's photo layout,
+ *   as the desktop panel's "Every recipe" group holds it.
  *   The phone's old "Pages" sheet of cover/dedication/contents checkboxes is
  *   gone, as it went from desktop: a page is deleted with its own Delete and
  *   comes back from the page overview (MobilePagesSheet).
@@ -92,7 +96,8 @@ export function MobileStructureSheet({
         <MobileSheet
           open={bookSheet === "recipes"}
           onClose={() => setBookSheet(null)}
-          title="Every recipe"
+          title="Photos"
+          subtitle={PHOTOS_SHEET_NOTE}
           className="recipe-structure-sheet"
         >
             {/* The desktop panel's "Every recipe" group: the link, then the
@@ -104,7 +109,9 @@ export function MobileStructureSheet({
                 data-photo-style-section
                 className={`recipe-photo-style-group ${photoStyleTip ? "is-highlighted" : ""}`}
               >
-                <span className="recipe-config-sublabel" id="sheet-photos-label">
+                {/* The sheet is titled Photos; this names the tiles for a
+                    screen reader without saying it twice on screen. */}
+                <span className="sr-only" id="sheet-photos-label">
                   Photos
                 </span>
                 <div

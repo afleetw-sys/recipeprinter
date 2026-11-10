@@ -35,7 +35,7 @@ import { navigateAfterOverlayHistory, useBackDismiss } from "@/lib/useBackDismis
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { WebsitePhotosOption } from "@/components/print/WebsitePhotosOption";
-import { MobileStructureSheet, type MobileBookSheet } from "@/components/print/MobileStructureSheet";
+import { MobileStructureSheet, PHOTOS_SHEET_NOTE, type MobileBookSheet } from "@/components/print/MobileStructureSheet";
 import { MobilePagesPanel } from "@/components/print/MobilePagesPanel";
 import { EditTips } from "@/components/print/EditTips";
 import { CardPhotosTiles } from "@/components/print/PrintSetupControls";
@@ -7801,7 +7801,7 @@ export default function PrintPage() {
                 <span className="recipe-mobile-toolbar__btn-icon">
                   <ImageIcon size={ICON_SIZE.lg} />
                 </span>
-                {cookbookMode ? "Every recipe" : "Photos"}
+                Photos
               </button>
             )}
           </div>
@@ -7919,6 +7919,7 @@ export default function PrintPage() {
             open={bookSheet === "recipes"}
             onClose={() => setBookSheet(null)}
             title="Photos"
+            subtitle={PHOTOS_SHEET_NOTE}
             className="recipe-structure-sheet"
           >
             <div className="recipe-structure-sheet__settings">

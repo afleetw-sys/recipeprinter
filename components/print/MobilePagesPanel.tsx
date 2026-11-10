@@ -62,8 +62,8 @@ function LazyThumb({ root, children }: { root: HTMLElement | null; children: Rea
  * A phone's page overview: a strip of every page as a thumbnail that opens
  * under the top bar and pushes the deck down, rather than a sheet over it.
  * Opened from the page count's caret ("2 / 4 ⌄") or the bottom bar's Pages
- * tile, which are the same toggle. Tap a page to go to it (that closes the
- * strip); the caret, the X or Escape close it without going anywhere.
+ * tile, which are the same toggle. Tap a page to go to it; the strip stays
+ * open and marks it. The caret, the X or Escape close it.
  *
  * A cookbook's Organize opens from here, and a deleted cover, dedication,
  * contents or back cover comes back from the spot it left, as it does in the
@@ -190,10 +190,9 @@ export function MobilePagesPanel({
                   type="button"
                   className="recipe-pages-panel__page"
                   aria-current={isCurrent ? "page" : undefined}
-                  onClick={() => {
-                    onClose();
-                    onGoToPage(index);
-                  }}
+                  // Stays open: the strip is for moving around the book, and
+                  // the page you go to is marked in it as you go.
+                  onClick={() => onGoToPage(index)}
                 >
                   <LazyThumb root={strip}>
                     <ScaledPage
