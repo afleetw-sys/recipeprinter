@@ -1,4 +1,5 @@
 import { browserPopupRedirectResolver, type Auth, type PopupRedirectResolver } from "firebase/auth";
+import { useFirebaseEmulators } from "@/lib/firebase/emulators";
 
 /**
  * The Google/Apple sign-in resolver, and a way to start its slow parts before
@@ -55,6 +56,9 @@ export const signInResolver = SharedResolver as unknown as PopupRedirectResolver
  */
 export function warmProviderSignIn(auth: Auth, via: "popup" | "redirect"): void {
   if (typeof window === "undefined") return;
+  // Against the emulators there is nothing to win, and warming would fetch
+  // Google's gapi script from a test run that must never leave localhost.
+  if (useFirebaseEmulators) return;
   const resolver = sharedResolver();
   try {
     if (via === "popup") {
