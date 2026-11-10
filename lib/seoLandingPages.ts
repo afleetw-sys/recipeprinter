@@ -2174,9 +2174,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "recipe-binder",
-    contentUpdated: "2026-10-06",
-    copyReviewed: "2026-10-02",
-    importSubmitLabel: "Start a cookbook",
+    contentUpdated: "2026-11-10",
+    copyReviewed: "2026-11-10",
+    importSubmitLabel: "Start a recipe binder",
     startsCookbook: true,
     layout: "capture-first",
     primaryKeyword: "how to make a recipe binder",
@@ -2190,67 +2190,117 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "printable recipe binder",
       "recipe binder pages",
       "recipe binder printables",
+      "recipe binder with table of contents",
       "family recipe binder",
       "recipe binder from online recipes",
     ],
     shortLabel: "A binder",
     pickerGroup: "output",
     intent: "Organization SEO",
-    title: "Recipe Binder Ideas & Printable Pages | RecipePrinter",
+    heroImage: "organize-cookbook",
+    heroImageAlt:
+      "A recipe binder being sorted into sections in RecipePrinter, with a section page beside the list.",
+    heroFrame: "none",
+    title: "Make a Recipe Binder with Sections & a Table of Contents | RecipePrinter",
     description:
-      "Build a recipe binder from recipes you find online, in apps, screenshots, photos, or handwritten cards. Print consistent pages and organize them your way.",
-    h1: "Build a recipe binder from the recipes you use",
+      "Turn recipes from websites, apps, screenshots, photos, and handwritten cards into a printable recipe binder, with section pages, a table of contents, and page numbers.",
+    h1: "Make a recipe binder from the recipes you use",
     breadcrumbLabel: "Recipe binder",
     anchor: "Make a recipe binder",
     lede:
-      "Turn recipes from websites, social media, screenshots, photos, apps, and handwritten cards into clean printable pages for a recipe binder you can keep adding to over time.",
+      "Bring in recipes from anywhere and sort them into sections. RecipePrinter lays them out as matching US Letter pages, with a cover, a table of contents, and page numbers, ready to print at home and put in a 3-ring binder.",
+    howToHeading: "How to make a recipe binder",
+    howTo: [
+      {
+        name: "Add your recipes",
+        text: "Paste a recipe link, pick recipes from a recipe app, upload a photo or screenshot, or type the recipe in, and each one becomes a page you can edit.",
+      },
+      {
+        name: "Sort them into sections",
+        text: "Group the recipes the way you cook, such as breakfast, mains, and baking, and each section opens on its own page, like a tab divider.",
+      },
+      {
+        name: "Choose 3-ring when you save",
+        text: "Pick \"Spiral, comb or 3-ring\" and you get one US Letter PDF to send to your own printer.",
+      },
+      {
+        name: "Punch the pages and file them",
+        text: "Hole-punch the stack or slide the pages into sheet protectors, and your binder is ready for the kitchen.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "Recipes from anywhere, pages that match",
+        body:
+          "A link from a food blog, a recipe from an app, a screenshot from a group chat, a photo of a handwritten card: each one comes out in the same layout and the same type, so the binder reads as one collection instead of a stack of printouts.",
+        image: "addrecipes-cookbook",
+        imageAlt:
+          "The Add recipes dialog with its four sources: a recipe link, a recipe app, an image, or pasted text.",
+      },
+      {
+        heading: "Saved for a 3-ring binder",
+        body:
+          "When the binder is ready, choose \"Spiral, comb or 3-ring\" in the print dialog. You get one US Letter PDF for a home printer, with the cover first and the pages in order, so nothing needs sorting when it comes off the printer.",
+        image: "print-cookbook",
+        imageAlt:
+          "The Print your cookbook dialog with \"Spiral, comb or 3-ring\" chosen for how the pages will be bound.",
+      },
+      {
+        heading: "Just want the recipe pages?",
+        body:
+          "If you don't need a cover, a table of contents, or section pages, skip the cookbook. Choose Recipe cards, keep the size on Full Page, and print each recipe free as you find it, no account needed. Printing several recipes in one go comes with RecipePrinter Pro.",
+        image: "souvlaki",
+        imageAlt: "One printed letter page holding the whole Chicken Tzatziki Bowls recipe, beside the finished bowl.",
+        links: [{ phrase: "Printing several recipes in one go", href: "/print-multiple-recipes" }],
+      },
+    ],
     faqHeading: "Recipe binder questions",
     faqs: [
       {
-        question: "Should a recipe binder use cards or full pages?",
+        question: "How do I make a recipe binder with RecipePrinter?",
         answer:
-          "Full letter pages are usually the simplest choice for a recipe binder because they fit standard sheet protectors and give longer recipes more room. 4x6 cards work better in a recipe box, though you can still store cards in binder sleeves made for that size. 4x6 recipe cards are available with RecipePrinter Pro.",
+          "Start a recipe binder, add your recipes, and sort them into sections. RecipePrinter adds the cover, section pages, table of contents, and page numbers. When you save, choose \"Spiral, comb or 3-ring\" for a US Letter PDF you can print at home.",
       },
       {
-        question: "Can I make a binder from recipes I found online?",
+        question: "How much does a recipe binder cost?",
         answer:
-          "Yes. RecipePrinter can turn recipes from websites, social media, screenshots, photos, recipe apps, and handwritten cards into consistent printable pages you can add to the same binder.",
+          `Previewing is free with up to ${FREE_COOKBOOK_RECIPES} recipes. A one-time ${COOKBOOK_PRICE_FALLBACK} for that binder lets you download it and add more than ${FREE_COOKBOOK_RECIPES} recipes. After that, add recipes and download updated copies anytime at no extra cost. You don't need RecipePrinter Pro.`,
+      },
+      {
+        question: "Do I have to include a cover and table of contents?",
+        answer:
+          "If you only want the recipe pages, use Recipe cards with the Full Page size instead. Each recipe prints on its own page, free and one at a time, and you put the binder together yourself.",
+      },
+      {
+        question: "How do I add new recipes to my binder later?",
+        answer:
+          "Open the same binder, add the new recipes to the sections they belong in, and download an updated copy. Print just the new pages, plus the table of contents if you want it current.",
+      },
+      {
+        question: "Should a recipe binder use cards or full pages?",
+        answer:
+          "Full letter pages are usually the simplest choice for a binder, because they fit standard sheet protectors and give longer recipes more room. 4x6 cards suit a recipe box, though binder sleeves made for that size work too. 4x6 recipe cards are available with RecipePrinter Pro.",
       },
       {
         question: "What size binder is best for recipes?",
         answer:
-          "A standard US Letter three-ring binder is the simplest choice for recipes printed at home. It works with common sheet protectors and gives longer recipes enough room.",
+          "A standard US Letter three-ring binder. RecipePrinter's binder pages are US Letter, so they fit common sheet protectors and tab dividers.",
       },
       {
         question: "How should I organize recipes in a binder?",
         answer:
-          "Start with broad categories you already use when deciding what to cook, such as breakfast, main dishes, sides, baking, and desserts. Add or split sections later as your collection grows.",
+          "Start with broad sections you already use when deciding what to cook, such as breakfast, main dishes, sides, baking, and desserts. Add or split sections later as your collection grows.",
         links: [
           { href: "/organize-recipes", label: "More recipe organization ideas" },
         ],
       },
-      {
-        question: "How do I make printable recipe binder pages?",
-        answer:
-          "Paste a recipe link, upload a screenshot or photo, import from a supported recipe app, or add the recipe text. RecipePrinter formats the recipe into a clean printable page you can add to a binder.",
-      },
-      {
-        question: "Can I print multiple recipes for my binder at once?",
-        answer:
-          "Yes, with RecipePrinter Pro. You can also print recipes one at a time for free and add them to your binder manually.",
-      },
-      {
-        question: "Do I need RecipePrinter Pro to make a recipe binder?",
-        answer:
-          "No. You can print individual full-page recipes one at a time and organize them in a binder yourself. RecipePrinter Pro is useful when you want to work with multiple recipes together or use Pro-only formats such as 4x6 recipe cards.",
-      },
     ],
     links: [
       { href: "/organize-recipes", label: "Organize recipes" },
-      { href: "/print-paprika-recipes", label: "Print Paprika recipes" },
+      { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
+      { href: "/print-multiple-recipes", label: "Print multiple recipes" },
       { href: "/recipe-card-printer", label: "Printable recipe cards" },
       { href: "/family-recipe-book", label: "Family recipe book ideas" },
-      { href: "/screen-free-cooking", label: "Cook without your phone" },
     ],
   },
   {
