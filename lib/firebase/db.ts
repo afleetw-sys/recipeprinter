@@ -22,6 +22,21 @@ export function getDb(): Firestore {
   return dbInstance;
 }
 
+/**
+ * Close and reopen Firestore's connection, for one that has stopped answering
+ * without dropping (see lib/serverReadDeadline). Firestore cannot tell such a
+ * connection apart from a healthy one, so it never replaces it by itself; until
+ * now only a reload did. Leaves a print's pause alone: that pause is undone by
+ * its own resume.
+ */
+export function restartFirestoreNetwork(): void {
+  if (!dbInstance || paused) return;
+  const db = dbInstance;
+  void disableNetwork(db)
+    .then(() => (paused ? undefined : enableNetwork(db)))
+    .catch(() => undefined);
+}
+
 /** Longest Firestore stays closed for a print that never starts. */
 const PRINT_PAUSE_CAP_MS = 10_000;
 let paused = false;

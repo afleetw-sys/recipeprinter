@@ -1682,7 +1682,9 @@
    you can't act on — backwards for the one card in the deck that most needs
    a click. */
 .recipe-page-slide.recipe-page-failed:not(.is-active),
-.recipe-page-slide.recipe-page-failed:not(.is-active):hover {
+.recipe-page-slide.recipe-page-failed:not(.is-active):hover,
+.recipe-page-slide.recipe-page-first-recipe,
+.recipe-page-slide.recipe-page-first-recipe:hover {
   opacity: 1;
 }
 
@@ -1788,6 +1790,29 @@
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+  }
+  /* The count opens the page overview: a quiet button, the caret saying so. */
+  .recipe-deck-page-count__button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 38px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    pointer-events: auto;
+  }
+  .recipe-deck-page-count__button:hover,
+  .recipe-deck-page-count__button[aria-expanded="true"] {
+    background: var(--cp-surface-strong);
+    color: var(--cp-ink);
+  }
+  .recipe-deck-page-count__button svg {
+    transition: transform 150ms ease;
+  }
+  .recipe-deck-page-count__button[aria-expanded="true"] svg {
+    transform: rotate(180deg);
   }
 }
 
@@ -4263,6 +4288,30 @@ textarea.recipe-page-fields__input {
     gap: 10px;
   }
 
+  /* The bar's icon buttons (undo, redo, the "⋯", the upgrade crown, the
+     signed-out account glyph) drop their box on a phone and take the room it
+     used for a bigger target and glyph. The crown keeps its gold glyph; the
+     signed-in avatar keeps its accent fill, which IS its shape. */
+  .recipe-mobile-topbar .icon-button {
+    width: 38px;
+    height: 38px;
+    border-color: transparent;
+    border-radius: 10px;
+  }
+  .recipe-mobile-topbar .rp-history-button {
+    background: transparent;
+  }
+  .recipe-mobile-topbar .icon-button:hover:not(:disabled) {
+    border-color: transparent;
+  }
+  .recipe-mobile-topbar .rp-history-button:hover:not(:disabled) {
+    background: var(--cp-surface-strong);
+  }
+  .recipe-mobile-topbar .icon-button svg {
+    width: 20px;
+    height: 20px;
+  }
+
   @media (max-width: 440px) {
     .recipe-mobile-topbar {
       gap: 8px;
@@ -4828,7 +4877,9 @@ textarea.recipe-page-fields__input {
     max-height: min(70vh, 560px);
     height: auto;
     margin: 0;
-    padding: 16px 16px max(18px, env(safe-area-inset-bottom));
+    /* No bottom padding on the sheet itself: the list scrolls right to the
+       sheet's edge, and the room at the end lives in the scroll (below). */
+    padding: 16px 16px 0;
     border: 0;
     border-radius: 20px 20px 0 0;
     box-shadow: var(--cp-shadow-sheet);
@@ -4872,7 +4923,7 @@ textarea.recipe-page-fields__input {
 
   .recipe-config-panel__scroll {
     max-height: none;
-    padding-bottom: 72px;
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
     overflow-y: auto;
   }
 
@@ -5258,6 +5309,149 @@ textarea.recipe-page-fields__input {
 
 .recipe-spread__page.is-focused .photo-placeholder {
   cursor: pointer;
+}
+
+/* An empty cookbook's "Add your first recipe" page (PrintDeck): the image
+   page's placeholder, asking for a recipe instead. It sits outside any scaled
+   page, so it is at the workspace's own sizes already. */
+.recipe-first-recipe {
+  padding: 16px;
+  cursor: pointer;
+}
+
+.recipe-first-recipe__action {
+  margin-top: 8px;
+}
+
+.recipe-first-recipe:hover {
+  border-color: color-mix(in srgb, var(--cp-accent) 45%, var(--cp-line-strong));
+  background: var(--cp-surface-muted);
+}
+
+.recipe-first-recipe:focus-visible {
+  outline: none;
+  box-shadow: var(--cp-focus-ring);
+}
+
+/* The phone's page overview (MobilePagesPanel): a strip under the top bar
+   that pushes the deck down, every page as a thumbnail with its name. The page
+   in view is marked the way a selected tile is everywhere else. */
+.recipe-pages-panel {
+  position: relative;
+  z-index: 5;
+  flex: none;
+  border-bottom: 1px solid var(--cp-line);
+  background: var(--cp-card);
+}
+.recipe-pages-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 0 16px;
+}
+.recipe-pages-panel__title {
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body);
+  font-weight: 700;
+}
+.recipe-pages-panel__strip {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 16px 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  list-style: none;
+}
+.recipe-pages-panel__strip::-webkit-scrollbar {
+  display: none;
+}
+.recipe-pages-panel__strip > li {
+  flex: none;
+}
+.recipe-pages-panel__page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cp-ink-soft);
+}
+.recipe-pages-panel__thumb {
+  display: block;
+  overflow: hidden;
+  width: 72px;
+  aspect-ratio: 8.5 / 11;
+  border: 1px solid var(--cp-line);
+  border-radius: 6px;
+  background: var(--cp-card);
+  pointer-events: none;
+}
+.recipe-pages-panel__page[aria-current="page"] .recipe-pages-panel__thumb {
+  border-color: var(--cp-selected-border);
+  box-shadow: var(--cp-selected-ring);
+}
+.recipe-pages-panel__page[aria-current="page"] {
+  color: var(--cp-selected-text);
+}
+.recipe-pages-panel__page:focus-visible {
+  outline: none;
+}
+.recipe-pages-panel__page:focus-visible .recipe-pages-panel__thumb {
+  box-shadow: var(--cp-focus-ring);
+}
+.recipe-pages-panel__label {
+  max-width: 72px;
+  overflow: hidden;
+  font-size: var(--cp-fs-caption);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recipe-pages-panel__add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+  border: 1px dashed var(--cp-line-strong);
+  border-radius: 6px;
+  background: var(--cp-surface-soft);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-caption);
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+}
+
+/* A phone cookbook's Add sheet: recipe, chapter or blank page. */
+.recipe-add-sheet {
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px 16px;
+}
+.recipe-add-sheet__option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--cp-radius-control);
+  background: transparent;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body);
+  font-weight: 600;
+  text-align: left;
+}
+.recipe-add-sheet__option:hover {
+  background: var(--cp-surface-strong);
 }
 
 .recipe-spread__page.is-focused .photo-placeholder:hover {

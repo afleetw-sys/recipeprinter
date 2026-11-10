@@ -226,7 +226,10 @@ test("a cookbook page's bar stays on a phone's screen, whichever side of the spr
   }).toPass();
   await page.getByRole("button", { name: /Start a cookbook/ }).first().click();
   await expect(page).toHaveURL(/\/print$/);
-  await page.getByRole("button", { name: /^Add recipes?$/ }).filter({ visible: true }).first().click();
+  // Every new book opens with its welcome, the Cookbook tab's included, and
+  // its Start adding recipes is the way into Add at every width (a phone's
+  // cookbook Add asks recipe or chapter first).
+  await page.getByRole("button", { name: "Start adding recipes" }).click();
   const field = page.getByPlaceholder("Paste a recipe link").filter({ visible: true }).first();
   await field.fill(LINK);
   await field.press("Enter");

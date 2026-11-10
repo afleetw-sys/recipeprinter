@@ -180,7 +180,6 @@ export function PrinterWorkspace({
   async function handoff(
     payload: PendingImport,
     kind: ImportKind = importKind,
-    { introduced = false }: { introduced?: boolean } = {},
   ) {
     // Out of free imports: the upgrade dialog opens here, and nothing is
     // stashed or navigated to. Card imports that go to a parser only; a
@@ -201,7 +200,7 @@ export function PrinterWorkspace({
     // nothing has been added to it yet, so replacing its id costs nothing.
     // Left alone for the Recipe cards tab — the id this page already minted
     // on mount is exactly what a recipe-cards import should land in.
-    if (kind === "cookbook") startNewProject({ cookbook: true, introduced });
+    if (kind === "cookbook") startNewProject({ cookbook: true });
     // Counted here rather than where the parse starts: by then every import in
     // the product looks like it happened on /print. See `recipe_import_submitted`.
     track("recipe_import_submitted", { surface: "home", source: sourceOf(payload) });
@@ -305,7 +304,7 @@ export function PrinterWorkspace({
             busy={opening}
             onStart={() => {
               if (opening) return;
-              void handoff({ kind: "empty" }, "cookbook", { introduced: true });
+              void handoff({ kind: "empty" }, "cookbook");
             }}
           />
           {handoffError && (

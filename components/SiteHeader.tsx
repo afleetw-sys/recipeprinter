@@ -83,7 +83,7 @@ export function SiteHeader({
         ["--rp-header-surface" as string]:
           sticky && chrome === true ? "var(--cp-chrome-ground)" : "var(--cp-page)",
       }}
-      className={`no-print relative flex items-center justify-between gap-cp-3 sm:gap-cp-4 px-cp-4 sm:px-cp-6 flex-nowrap min-h-[59px] sm:min-h-[55px] ${
+      className={`rp-site-header no-print relative flex items-center justify-between gap-cp-3 sm:gap-cp-4 px-cp-4 sm:px-cp-6 flex-nowrap min-h-[59px] sm:min-h-[55px] ${
         sticky
           ? /* `--z-sticky` (globals.css), not a bare Tailwind number — this
                header is what establishes the account dropdown's own stacking

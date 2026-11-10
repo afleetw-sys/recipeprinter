@@ -13,10 +13,6 @@ import type { Section } from "@/types/recipe";
 interface MobileStructureSheetProps {
   projectMeta: ReturnType<typeof useProjectMeta>;
   sections: Section[];
-  toggleDedication: () => void;
-  toggleCover: (side: "front" | "back") => void;
-  /** Adds a blank page after the page being looked at. */
-  onAddBlankPage?: () => void;
   bookPhotoStyle: PhotoStyle | null;
   applyBookPhotoStyle: (mode: PhotoStyle) => void;
   /** Set when the cook has been choosing the same photo layout recipe by
@@ -41,20 +37,21 @@ interface MobileStructureSheetProps {
 
 /** Which of the book-wide sheets is open, from the bottom bar's tiles. */
 /** "page": the selected page's settings, the desktop panel's Page tab. */
-export type MobileBookSheet = "extras" | "recipes" | "page" | null;
+export type MobileBookSheet = "recipes" | "page" | null;
 
 /**
  * The mobile cookbook sheets. Desktop uses the page rail and the Book
  * Settings panel instead; these are the touch-native equivalents, since the
  * mobile config drawer only ever opens the Themes section.
  *
- * - "Pages" and "Every recipe" (each its own tile in the bottom bar):
- *   the book-wide settings, grouped the way the desktop panel groups them,
- *   pages the book gains and then what every recipe carries (its link and
- *   its photo layout). They used to share one "Book" sheet.
- * - "Organize" (its own tile in the bottom bar, after Add): the
- *   reorderable list of chapters and recipes, named for the desktop rail's
- *   "Organize recipes" view it stands in for.
+ * - "Every recipe" (its own tile in the bottom bar): what every recipe
+ *   carries (its link and its photo layout), as the desktop panel groups it.
+ *   The phone's old "Pages" sheet of cover/dedication/contents checkboxes is
+ *   gone, as it went from desktop: a page is deleted with its own Delete and
+ *   comes back from the page overview (MobilePagesSheet).
+ * - "Organize" (from the page overview, opened from the page count in the top
+ *   bar): the reorderable list of chapters and recipes, named for the
+ *   desktop rail's "Organize recipes" view it stands in for.
  *
  * The structure list used to sit under the settings too. It is what a cook
  * comes back to again and again, and it answers a different question from
@@ -63,8 +60,6 @@ export type MobileBookSheet = "extras" | "recipes" | "page" | null;
 export function MobileStructureSheet({
   projectMeta,
   sections,
-  toggleDedication,
-  toggleCover,
   bookPhotoStyle,
   applyBookPhotoStyle,
   photoStyleTip,
@@ -82,7 +77,6 @@ export function MobileStructureSheet({
   setBookSheet,
   structureSheetOpen,
   setStructureSheetOpen,
-  onAddBlankPage,
 }: MobileStructureSheetProps) {
     if (!projectMeta.meta.cookbookMode) return null;
     const orderedIds = sections.flatMap((section) => section.items.map((item) => item.id));
@@ -95,51 +89,6 @@ export function MobileStructureSheet({
     const metaSections = projectMeta.meta.sections;
     return (
       <>
-        <MobileSheet
-          open={bookSheet === "extras"}
-          onClose={() => setBookSheet(null)}
-          title="Pages"
-          className="recipe-structure-sheet"
-        >
-            {/* The same controls as the desktop "Book Settings" panel's
-                Pages group. */}
-            <div className="recipe-structure-sheet__settings">
-              <Checkbox
-                  label="Front cover"
-                  checked={Boolean(projectMeta.meta.cover)}
-                  onChange={() => toggleCover("front")}
-              />
-              <Checkbox
-                  label="Dedication"
-                  checked={Boolean(projectMeta.meta.frontMatter || projectMeta.meta.dedication)}
-                  onChange={toggleDedication}
-              />
-              <Checkbox
-                  label="Table of contents"
-                  checked={Boolean(projectMeta.meta.tableOfContents)}
-                  onChange={(event) => projectMeta.setTableOfContents(event.target.checked)}
-              />
-              <Checkbox
-                  label="Back cover"
-                  checked={Boolean(projectMeta.meta.backCover)}
-                  onChange={() => toggleCover("back")}
-              />
-              {onAddBlankPage && (
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-compact"
-                  onClick={() => {
-                    setBookSheet(null);
-                    onAddBlankPage();
-                  }}
-                >
-                  <PlusIcon size={ICON_SIZE.sm} />
-                  Add blank page
-                </button>
-              )}
-            </div>
-        </MobileSheet>
-
         <MobileSheet
           open={bookSheet === "recipes"}
           onClose={() => setBookSheet(null)}

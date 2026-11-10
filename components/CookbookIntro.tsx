@@ -28,9 +28,6 @@ const STEPS = [
  * drawing of one read as fake, and a ghosted outline said nothing about what
  * you get. The button sits under it, not on it, so the pair never reads as
  * an ad.
- *
- * Because this already says what the book is and what it costs, /print opens
- * straight into the book without its welcome dialog (`introduced`).
  */
 export function CookbookIntro({ busy, onStart }: { busy: boolean; onStart: () => void }) {
   const { label: local } = useVisitorPrices();
