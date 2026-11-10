@@ -22,6 +22,7 @@ import {
   appleProvider,
   googleProvider,
   prewarmCookPilotAuth,
+  prewarmProviderSignIn,
   signInWithTrackedProvider,
   useCookPilotAuth,
 } from "@/components/CookPilotAuth";
@@ -176,7 +177,10 @@ export default function AccountAvatarButton({
   // The provider buttons open a popup from the press itself, which a browser
   // only allows if nothing has to be fetched first.
   useEffect(() => {
-    if (open && ready && !user) void prewarmCookPilotAuth();
+    if (open && ready && !user) {
+      void prewarmCookPilotAuth();
+      prewarmProviderSignIn();
+    }
   }, [open, ready, user]);
 
   /**

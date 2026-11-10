@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   GoogleAuthProvider,
-  browserPopupRedirectResolver,
   type AuthProvider,
   OAuthProvider,
   sendPasswordResetEmail,
@@ -37,6 +36,7 @@ import { purgeAnonymousUser as purgeAnonymousUserFor } from "@/lib/anonymousSess
 import { syncAnalyticsIdentity, track } from "@/lib/analytics";
 import { sessionEndCause } from "@/lib/sessionEnd";
 import { warmEmailCodeCheck, warmEmailCodeSignIn } from "@/lib/wakeFunctions";
+import { signInResolver, warmProviderSignIn } from "@/lib/signInResolver";
 import {
   readCookPilotWasSignedIn,
   rememberCookPilotSignedIn,
@@ -87,14 +87,14 @@ export async function signInWithCookPilotProvider(provider: AuthProvider) {
     // to read. If the redirect cannot even start, nothing is coming back.
     markAuthRedirectPending();
     try {
-      await signInWithRedirect(auth, provider, browserPopupRedirectResolver);
+      await signInWithRedirect(auth, provider, signInResolver);
     } catch (error) {
       clearAuthRedirectPending();
       throw error;
     }
     return;
   }
-  await signInWithPopup(auth, provider, browserPopupRedirectResolver);
+  await signInWithPopup(auth, provider, signInResolver);
 }
 
 /**
@@ -144,6 +144,18 @@ export function purgeAnonymousUser(user: User): Promise<void> {
 }
 
 let authReadyPromise: Promise<void> | null = null;
+
+/**
+ * A Google/Apple choice is on screen: start what pressing it would wait for
+ * (see lib/signInResolver). The press itself stays one step.
+ */
+export function prewarmProviderSignIn(): void {
+  try {
+    warmProviderSignIn(getFirebaseAuth(), shouldUseRedirectSignIn() ? "redirect" : "popup");
+  } catch {
+    // Firebase not configured: the buttons will say so when pressed.
+  }
+}
 
 /** Starts IndexedDB session restoration before a CookPilot surface needs it. */
 export function prewarmCookPilotAuth(): Promise<void> {
@@ -230,7 +242,7 @@ function resolveRedirectOnce(): void {
     if (!current || current.isAnonymous) publishAuthState({ user: null, ready: true });
   };
   const timer = window.setTimeout(settle, REDIRECT_READ_TIMEOUT_MS);
-  redirectPromise = getRedirectResult(getFirebaseAuth(), browserPopupRedirectResolver)
+  redirectPromise = getRedirectResult(getFirebaseAuth(), signInResolver)
     .then((result) => {
       // A redirect left this tab and came back. `no_result` (nobody signed in, no
       // error) is what browsers that block third-party storage do to it, so this
@@ -647,6 +659,7 @@ export function CookPilotLoginForm({
     // email instead of starting it after Continue is pressed.
     void import("@/lib/firebase/functions");
     void prewarmCookPilotAuth();
+    prewarmProviderSignIn();
     warmEmailCodeSignIn();
     // Back from Mail (a reload, or a tab the phone dropped) to the code step.
     const pending = readPendingCode();
