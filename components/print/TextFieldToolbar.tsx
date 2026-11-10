@@ -23,6 +23,26 @@ import { MAX_TEXT_SIZE, MIN_TEXT_SIZE, RECIPES_ADDRESS, ownPageElements, type Pa
  * card's when they are inside one — the settings panel and the add-recipe
  * dialog are full of inputs this bar has no business following.
  */
+/** Where a toolbar dropdown opens: under its button (`y`), or over it
+    (`above`, the button's top) when there is no room under it. */
+type MenuAnchor = { x: number; y: number; above?: number };
+
+/**
+ * The dropdown's top, inside what is VISIBLE: on a phone the bar sits just
+ * above the keyboard, so "below the button" is behind the keys, and the
+ * window's own height (which Safari doesn't shrink for the keyboard) can't
+ * say so. Under the button when it fits, else over it.
+ */
+function menuTop(anchor: MenuAnchor, height: number): number {
+  const viewport = window.visualViewport;
+  const top = viewport?.offsetTop ?? 0;
+  const bottom = top + (viewport?.height ?? window.innerHeight);
+  if (anchor.y + height <= bottom - 8 || anchor.above === undefined) {
+    return Math.max(top + 8, Math.min(anchor.y, bottom - height - 8));
+  }
+  return Math.max(top + 8, anchor.above - height);
+}
+
 function inlineFieldFrom(node: EventTarget | null): HTMLElement | null {
   if (!(node instanceof HTMLElement)) return null;
   if (node.isContentEditable) return node;
@@ -175,7 +195,13 @@ export function TextFieldToolbar({
   );
   // Typing wraps the line onto a second row, which moves everything under it,
   // so the field is watched as well as the viewport.
-  useFloatingBarPlacement({ barRef, getAnchorRect, observe: field, active: Boolean(field) });
+  useFloatingBarPlacement({
+    barRef,
+    getAnchorRect,
+    observe: field,
+    active: Boolean(field),
+    dockAboveKeyboard: true,
+  });
 
   if (!field || spansLines) return null;
 
@@ -508,7 +534,7 @@ export function SizeDropdown({
   const maxPoints = roundHalf(normalPoints * MAX_TEXT_SIZE);
 
   const [draft, setDraft] = useState<string | null>(null);
-  const [openAt, setOpenAt] = useState<{ x: number; y: number } | null>(null);
+  const [openAt, setOpenAt] = useState<MenuAnchor | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   const setPoints = (points: number) => {
@@ -590,7 +616,7 @@ export function SizeDropdown({
       return;
     }
     const box = event.currentTarget.getBoundingClientRect();
-    setOpenAt({ x: box.left, y: box.bottom + 4 });
+    setOpenAt({ x: box.left, y: box.bottom + 4, above: box.top - 4 });
   };
 
   return (
@@ -616,7 +642,7 @@ export function SizeDropdown({
             if ((event.key === "Enter" || event.key === " ") && !openAt) {
               event.preventDefault();
               const box = event.currentTarget.getBoundingClientRect();
-              setOpenAt({ x: box.left, y: box.bottom + 4 });
+              setOpenAt({ x: box.left, y: box.bottom + 4, above: box.top - 4 });
             }
           }}
         >
@@ -661,7 +687,7 @@ function SizeMenu({
   onPick,
   onClose,
 }: {
-  anchor: { x: number; y: number };
+  anchor: MenuAnchor;
   triggerRef: RefObject<HTMLButtonElement | null>;
   partLabel?: string;
   partHeading: boolean;
@@ -677,7 +703,7 @@ function SizeMenu({
     if (!node) return;
     const rect = node.getBoundingClientRect();
     node.style.left = `${Math.max(8, Math.min(anchor.x, window.innerWidth - rect.width - 8))}px`;
-    node.style.top = `${Math.max(8, Math.min(anchor.y, window.innerHeight - rect.height - 8))}px`;
+    node.style.top = `${menuTop(anchor, rect.height)}px`;
     // Opens on the size in use, not at the top of a long list.
     node.querySelector<HTMLElement>("[aria-checked='true']")?.scrollIntoView({ block: "center" });
   }, [anchor]);
@@ -740,7 +766,7 @@ function LineKindSelect({
   isHeading: boolean;
   onPick: (kind: "body" | "heading") => void;
 }) {
-  const [openAt, setOpenAt] = useState<{ x: number; y: number } | null>(null);
+  const [openAt, setOpenAt] = useState<MenuAnchor | null>(null);
   // Part of the menu as far as closing goes: a press on it is not "outside",
   // or that press closed the menu and then, as the same press, opened it again.
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -761,7 +787,7 @@ function LineKindSelect({
             return;
           }
           const rect = event.currentTarget.getBoundingClientRect();
-          setOpenAt({ x: rect.left, y: rect.bottom + 4 });
+          setOpenAt({ x: rect.left, y: rect.bottom + 4, above: rect.top - 4 });
         }}
       >
         <span>{label}</span>
@@ -790,7 +816,7 @@ function LineKindMenu({
   onPick,
   onClose,
 }: {
-  anchor: { x: number; y: number };
+  anchor: MenuAnchor;
   triggerRef: RefObject<HTMLButtonElement | null>;
   isHeading: boolean;
   onPick: (kind: "body" | "heading") => void;
@@ -806,7 +832,7 @@ function LineKindMenu({
     if (!node) return;
     const rect = node.getBoundingClientRect();
     node.style.left = `${Math.max(8, Math.min(anchor.x, window.innerWidth - rect.width - 8))}px`;
-    node.style.top = `${Math.max(8, Math.min(anchor.y, window.innerHeight - rect.height - 8))}px`;
+    node.style.top = `${menuTop(anchor, rect.height)}px`;
   }, [anchor]);
   useMenuDismiss([ref, triggerRef], onClose);
   const item = (kind: "body" | "heading", text: string) => {

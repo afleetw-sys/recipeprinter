@@ -2116,6 +2116,34 @@
   padding: 0 3px;
 }
 
+/* Docked just above a phone's keyboard (useFloatingBarPlacement's
+   `dockAboveKeyboard`), where it is pressed with a thumb, not a pointer: no
+   zoom scaling, as it isn't over the page any more, and buttons a finger can
+   hit. Scrolls sideways rather than running off a narrow screen. */
+.recipe-text-toolbar[data-docked] {
+  transform: none;
+  max-width: calc(100vw - 16px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px;
+  border-radius: 14px;
+}
+.recipe-text-toolbar[data-docked]::-webkit-scrollbar {
+  display: none;
+}
+.recipe-text-toolbar[data-docked] .recipe-page-toolbar__group {
+  flex: none;
+  gap: 2px;
+  padding: 0 4px;
+}
+.recipe-text-toolbar[data-docked] .recipe-page-toolbar__btn {
+  min-height: 40px;
+  border-radius: 10px;
+}
+.recipe-text-toolbar[data-docked] .recipe-page-toolbar__btn--icon {
+  width: 40px;
+}
+
 .recipe-text-toolbar .recipe-page-toolbar__btn {
   min-height: 22px;
   border-radius: 6px;
@@ -4973,10 +5001,20 @@ textarea.recipe-page-fields__input {
     background: rgba(15, 23, 42, 0.28);
   }
 
+  /* While the keyboard is up the bottom bar stays down, behind it, and the
+     text bar docks above the keys instead (data-keyboard-open, set by
+     KeyboardInsetWatcher). Hidden rather than only left behind the keyboard:
+     Chrome on Android shrinks the page for the keyboard
+     (interactive-widget=resizes-content), which would lift a bar pinned to
+     the bottom straight back up on top of it. */
+  html[data-keyboard-open] .recipe-mobile-actions {
+    visibility: hidden;
+  }
+
   .recipe-mobile-actions {
     position: fixed;
     right: 0;
-    bottom: var(--rp-keyboard-inset, 0px);
+    bottom: 0;
     left: 0;
     z-index: 75;
     display: flex;

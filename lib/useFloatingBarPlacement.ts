@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, type RefObject } from "react";
+import { readKeyboard } from "@/lib/keyboard";
+import { isDeckMobile } from "@/lib/useDeckScroller";
 
 /** How far a bar sits off what it belongs to, and off the viewport edge. */
 const GAP = 8;
@@ -25,6 +27,7 @@ export function useFloatingBarPlacement({
   getAnchorRect,
   observe,
   active,
+  dockAboveKeyboard = false,
 }: {
   barRef: RefObject<HTMLElement | null>;
   /** The rect the bar hangs off, read fresh on every placement. */
@@ -33,17 +36,39 @@ export function useFloatingBarPlacement({
       wraps onto a second row moves everything under it). */
   observe?: Element | null;
   active: boolean;
+  /** On the phone layout, sit just above the on-screen keyboard instead of
+      over the line, and only while the keyboard is up. A bar hanging off a
+      line on a phone landed under the cook's thumb or behind the keys, and
+      with the keyboard down there is nothing being typed to format. */
+  dockAboveKeyboard?: boolean;
 }) {
   const place = useCallback(() => {
     const bar = barRef.current;
     const anchor = bar ? getAnchorRect() : null;
     if (!bar || !anchor) return;
-    const self = bar.getBoundingClientRect();
     const viewport = window.visualViewport;
     const viewTop = viewport?.offsetTop ?? 0;
     const viewLeft = viewport?.offsetLeft ?? 0;
     const viewHeight = viewport?.height ?? window.innerHeight;
     const viewWidth = viewport?.width ?? window.innerWidth;
+
+    if (dockAboveKeyboard && isDeckMobile()) {
+      bar.setAttribute("data-docked", "");
+      if (!readKeyboard().open) {
+        bar.style.visibility = "hidden";
+        return;
+      }
+      // The bottom of what is visible is the top of the keyboard, whichever
+      // way the browser makes room for it (lib/keyboard.ts).
+      const docked = bar.getBoundingClientRect();
+      bar.style.left = `${viewLeft + Math.max(MARGIN, (viewWidth - docked.width) / 2)}px`;
+      bar.style.top = `${viewTop + viewHeight - docked.height - MARGIN}px`;
+      bar.style.visibility = "visible";
+      return;
+    }
+    bar.removeAttribute("data-docked");
+
+    const self = bar.getBoundingClientRect();
 
     // Centred on the anchor, then pulled back inside the viewport. Settled
     // before the vertical, because whether the bar clears the page toolbar
@@ -78,7 +103,7 @@ export function useFloatingBarPlacement({
       Math.min(top, viewTop + viewHeight - self.height - MARGIN),
     )}px`;
     bar.style.visibility = "visible";
-  }, [barRef, getAnchorRect]);
+  }, [barRef, getAnchorRect, dockAboveKeyboard]);
 
   // Before paint, so the bar is never seen at the top-left corner it renders at.
   useLayoutEffect(place);
@@ -91,6 +116,11 @@ export function useFloatingBarPlacement({
     window.addEventListener("resize", place);
     window.visualViewport?.addEventListener("resize", place);
     window.visualViewport?.addEventListener("scroll", place);
+    // The keyboard can go down with the field still focused (iOS's hide-key),
+    // and that is a resize of the visual viewport, handled above; focus
+    // moving is the other way it comes and goes.
+    document.addEventListener("focusin", place);
+    document.addEventListener("focusout", place);
     const observer = observe ? new ResizeObserver(place) : null;
     if (observe && observer) observer.observe(observe);
     return () => {
@@ -98,6 +128,8 @@ export function useFloatingBarPlacement({
       window.removeEventListener("resize", place);
       window.visualViewport?.removeEventListener("resize", place);
       window.visualViewport?.removeEventListener("scroll", place);
+      document.removeEventListener("focusin", place);
+      document.removeEventListener("focusout", place);
       observer?.disconnect();
     };
   }, [active, observe, place]);
