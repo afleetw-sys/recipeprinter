@@ -116,7 +116,7 @@ import { useRailSelection } from "@/lib/useRailSelection";
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import { addRecipeTarget, replacementTarget } from "@/lib/addRecipeTarget";
 import { proStatusKnown, useRunWhenKnown } from "@/lib/proStatusGate";
-import { useDeckMobile, useDeckScroller } from "@/lib/useDeckScroller";
+import { isDeckMobile, useDeckMobile, useDeckScroller } from "@/lib/useDeckScroller";
 import { usePremiumTemplatePurchase } from "@/lib/usePremiumTemplatePurchase";
 import { useCookbookPurchase } from "@/lib/useCookbookPurchase";
 import { useProPurchase } from "@/lib/useProPurchase";
@@ -5934,7 +5934,7 @@ export default function PrintPage() {
     const { mode, remaining } = pendingPhotoStyleTip;
     setPendingPhotoStyleTip(null);
     markPhotoStyleTipSeen();
-    const phone = window.matchMedia("(max-width: 820px)").matches;
+    const phone = isDeckMobile();
     setPhotoStyleTip({ mode, surface: phone ? "sheet" : "panel" });
     track("photo_style_tip_shown", { mode, remaining });
     if (phone) {

@@ -31,12 +31,18 @@ const ZOOM_SETTLE_MS = 140;
 const FREE_SCROLL_EXIT_SLACK = 16;
 
 /**
- * Below this the deck is a horizontal filmstrip with no rail beside it; above
- * it, a vertical stack with the rail. Exported because the print page has to
- * ask the same question, and a second copy of the number is a second thing to
- * remember to change.
+ * Which layout /print uses: the phone one (a page per screen, the top bar and
+ * the bottom bar of tools) or the desktop one (the rail, the deck and the
+ * settings panel). Exported because the print page has to ask the same
+ * question, and a second copy is a second thing to remember to change.
+ *
+ * A narrow window, or a touch screen up to the largest iPad's landscape width
+ * (1366px). A tablet gets the phone layout both ways up (Amelia, 2026-11-10):
+ * it used to switch at 820px alone, so most iPads were the phone layout held
+ * upright and the desktop one turned sideways. print.css spells the same
+ * query out in its phone blocks; its desktop blocks are the opposite.
  */
-export const DECK_MOBILE_QUERY = "(max-width: 820px)";
+export const DECK_MOBILE_QUERY = "(max-width: 820px), (pointer: coarse) and (max-width: 1366px)";
 
 /** Server-safe: false before hydration, where there is no viewport to measure. */
 export function isDeckMobile(): boolean {
@@ -52,6 +58,12 @@ function deckSideRoom(): number {
 /** On a phone, the room above each page for its floating toolbar and the page
     count (print.css), so neither covers the top of the page, the title. */
 const MOBILE_PAGE_TOP = 56;
+
+/** And the room below a page whose height is what limits it (a tablet, or a
+    short phone): without it the page's foot sat flush on the bottom bar and
+    read as running under it. A phone held upright runs out of width first,
+    so this never touches it. */
+const MOBILE_PAGE_BOTTOM = 16;
 
 /** `isDeckMobile`, kept current as the window crosses the breakpoint. For
     what decides layout in JS rather than a class CSS can switch. */
@@ -507,7 +519,7 @@ export function useDeckScroller({
         // band its toolbar floats in.
         const cardShare = cardSize === "letter" ? 1 : CARD_FIT_SHARE;
         const fit = mobile
-          ? Math.max(0.12, Math.min(1.05, widthScale, (availH - MOBILE_PAGE_TOP) / pageHeight))
+          ? Math.max(0.12, Math.min(1.05, widthScale, (availH - MOBILE_PAGE_TOP - MOBILE_PAGE_BOTTOM) / pageHeight))
           : Math.max(0.12, Math.min(widthScale, snapportScale) * cardShare);
         setFitScale(fit);
         applyDeckGeometry(el, fit * zoom);
