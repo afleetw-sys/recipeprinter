@@ -71,6 +71,10 @@ test("an empty cookbook can be bought before it has any recipes, signed out or i
   }).toPass();
   await page.getByRole("button", { name: /Start a cookbook/ }).first().click();
   await expect(page).toHaveURL(/\/print$/);
+  // Every new book opens with its welcome, the Cookbook tab's included.
+  await expect(page.locator(".cookbook-welcome")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".cookbook-welcome")).toHaveCount(0);
 
   // Signed out, pressing it asks for an account before checkout.
   await expect(printButton(page)).toHaveText("Buy & Print");

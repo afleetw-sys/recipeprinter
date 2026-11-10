@@ -5,9 +5,7 @@ import { expect, test } from "./guarded";
  * to just close itself, leaving a cook with an empty book and no idea where
  * adding happens. Pressing it has to put them in the Add recipes dialog.
  *
- * Started empty from a cookbook landing page, so nothing is imported. Not from
- * the homepage's Cookbook tab: that tab is the welcome, and opens the book
- * without this one.
+ * Started empty from a cookbook landing page, so nothing is imported.
  */
 test("the new-cookbook welcome's Start adding recipes opens Add recipes", async ({ page }) => {
   await page.goto("/cookbook-maker");
@@ -43,6 +41,10 @@ test("a new signed-out cookbook offers Save at every width", async ({ page }) =>
     }).toPass();
     await page.getByRole("button", { name: /Start a cookbook/ }).first().click();
     await expect(page).toHaveURL(/\/print$/);
+    // Every new book opens with its welcome, the Cookbook tab's included.
+    await expect(page.locator(".cookbook-welcome")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".cookbook-welcome")).toHaveCount(0);
 
     const save =
       name === "phone"
