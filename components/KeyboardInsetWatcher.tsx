@@ -1,16 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-
-function isEditable(node: EventTarget | null): boolean {
-  if (!(node instanceof HTMLElement)) return false;
-  return (
-    node.tagName === "INPUT" ||
-    node.tagName === "TEXTAREA" ||
-    node.tagName === "SELECT" ||
-    node.isContentEditable
-  );
-}
+import { readKeyboard } from "@/lib/keyboard";
 
 /**
  * Keeps `--rp-keyboard-inset` in sync with how much the on-screen keyboard is
@@ -33,11 +24,13 @@ export function KeyboardInsetWatcher() {
     const viewport = window.visualViewport;
     if (!viewport) return;
 
+    // `data-keyboard-open` on <html> is for what changes while typing: the
+    // phone's bottom bar steps aside, the text bar docks above the keys
+    // (lib/keyboard.ts says how it is measured).
     function update() {
-      const inset = isEditable(document.activeElement)
-        ? Math.max(0, window.innerHeight - viewport!.height - viewport!.offsetTop)
-        : 0;
+      const { open, inset } = readKeyboard();
       document.documentElement.style.setProperty("--rp-keyboard-inset", `${inset}px`);
+      document.documentElement.toggleAttribute("data-keyboard-open", open);
     }
 
     update();

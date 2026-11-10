@@ -95,7 +95,10 @@ test("every phone tool's label fits inside its tile, whatever its length", async
  *
  * A book opened from session storage: no import, nothing billed.
  */
-test("a phone offers a page's own settings only when the desktop panel does", async ({ page }) => {
+test("a phone offers a page's own settings only when the desktop panel does", async ({ page, hasTouch }) => {
+  // A touch screen gets the phone layout at any tablet width, so there is no
+  // desktop panel to compare with; the desktop projects make this check.
+  test.skip(Boolean(hasTouch), "a touch screen never shows the desktop panel");
   await page.addInitScript(() => {
     if (sessionStorage.getItem("recipeprinter:queue:v1")) return;
     const item = {
