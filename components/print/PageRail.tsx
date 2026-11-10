@@ -144,7 +144,7 @@ function LazyRailThumb({
     the rail's short "Add …" button standing where it would be. */
 export type BookPageSlot = "cover" | "dedication" | "toc" | "back-cover";
 
-const BOOK_PAGE_ADD_LABEL: Record<BookPageSlot, string> = {
+export const BOOK_PAGE_ADD_LABEL: Record<BookPageSlot, string> = {
   cover: "Add cover",
   dedication: "Add dedication",
   toc: "Add table of contents",

@@ -36,6 +36,7 @@ import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCard
 import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { WebsitePhotosOption } from "@/components/print/WebsitePhotosOption";
 import { MobileStructureSheet, type MobileBookSheet } from "@/components/print/MobileStructureSheet";
+import { MobilePagesPanel } from "@/components/print/MobilePagesPanel";
 import { EditTips } from "@/components/print/EditTips";
 import { CardPhotosTiles } from "@/components/print/PrintSetupControls";
 import { MobileSheet } from "@/components/print/MobileSheet";
@@ -1896,10 +1897,10 @@ export default function PrintPage() {
       });
       // A restored book (undefined from the scaffold) was created before.
       if (bookTemplate !== undefined) reportCookbookCreated();
-      // The homepage's Cookbook tab already was this welcome (see
-      // `cookbookIntroduced`); a second one would stand between the cook and
-      // the book they just asked to open.
-      if (!offerAfter || projectMeta.meta.cookbookIntroduced) {
+      // Every new book gets the welcome, the homepage's Cookbook tab
+      // included. That tab used to count as the welcome and skip this, so a
+      // book started there opened with no onboarding at all.
+      if (!offerAfter) {
         setBookHiddenUntilBuilt(false);
         return;
       }
@@ -2187,27 +2188,6 @@ export default function PrintPage() {
       track("cookbook_front_matter_enabled", { kind: "dedication" });
       setPendingFocusNavId("cover-dedication");
     }
-  }
-
-  /** The mobile Pages sheet's checkboxes (phones have no rail to put an Add
-      button in). Unticking a cover asks first, the same question the page's
-      own Delete asks. */
-  function toggleCover(side: "front" | "back") {
-    const current = side === "front" ? projectMeta.meta.cover : projectMeta.meta.backCover;
-    if (current) {
-      setPendingDelete({ kind: "cover", side, title: side === "front" ? "the cover" : "the back cover" });
-      return;
-    }
-    addBookPage(side === "front" ? "cover" : "back-cover");
-  }
-
-  function toggleDedication() {
-    if (projectMeta.meta.frontMatter || projectMeta.meta.dedication) {
-      projectMeta.setFrontMatter(undefined);
-      projectMeta.setDedication(undefined);
-      return;
-    }
-    addBookPage("dedication");
   }
 
   /**
@@ -6557,6 +6537,16 @@ export default function PrintPage() {
   // The bottom bar's Pages and Every recipe tiles: book-wide settings, one
   // sheet each, kept apart from the structure list above.
   const [bookSheet, setBookSheet] = useState<MobileBookSheet>(null);
+  // The phone's page overview, from the page count in the top bar, and a
+  // cookbook's Add, which asks recipe or chapter before doing either.
+  const [pagesPanelOpen, setPagesPanelOpen] = useState(false);
+  const [addSheetOpen, setAddSheetOpen] = useState(false);
+  const closePagesPanel = useCallback(() => setPagesPanelOpen(false), []);
+  const togglePagesPanel = () => {
+    setSizeMenuOpen(false);
+    setBookSheet(null);
+    setPagesPanelOpen((open) => !open);
+  };
 
   // On a phone the tip lives in the "Every recipe" sheet. Closing the sheet
   // without answering is an answer, and leaving the tip in state would bring
@@ -7497,6 +7487,52 @@ export default function PrintPage() {
           deckZoom={deckZoom}
           onRequestDelete={requestDeleteNavItem}
           onAddDedication={missingBookPages.includes("dedication") ? () => addBookPage("dedication") : undefined}
+          onOpenPages={togglePagesPanel}
+          pagesOpen={pagesPanelOpen}
+          pagesPanel={
+            <MobilePagesPanel
+              open={pagesPanelOpen}
+              onClose={closePagesPanel}
+              navItems={navItems}
+              sheets={sheets}
+              currentNavIndex={
+                cookbookView
+                  ? focusedSheet !== null
+                    ? navIndexForSheet.get(focusedSheet) ?? null
+                    : null
+                  : activeNavIndex
+              }
+              onGoToPage={(navIndex) => {
+                const nav = navItems[navIndex];
+                if (!nav) return;
+                if (!cookbookView) {
+                  goToPageSlide(navIndex);
+                  return;
+                }
+                const spreadIndex = spreads.findIndex(
+                  (spread) => spread.left === nav.sheetIndex || spread.right === nav.sheetIndex,
+                );
+                if (spreadIndex !== -1) focusSheetInSpread(spreadIndex, nav.sheetIndex);
+              }}
+              cardSize={cardSize}
+              previewCardSize={previewCardSize}
+              template={previewTemplate}
+              fontScale={previewFontScale}
+              doubleSided={continueOnBack}
+              showDescription={showDescription}
+              cookbookMode={cookbookMode}
+              missingBookPages={missingBookPages}
+              onAddBookPage={addBookPage}
+              onOrganize={
+                cookbookMode
+                  ? () => {
+                      setBookSheet(null);
+                      setStructureSheetOpen(true);
+                    }
+                  : undefined
+              }
+            />
+          }
           onMoveRecipeToSection={moveRecipeToSection}
           onMoveRecipeToNewSection={moveRecipeToNewSection}
           openPhotoDialog={openPhotoDialog}
@@ -7638,8 +7674,18 @@ export default function PrintPage() {
           <div className="recipe-mobile-toolbar">
             <button
               type="button"
-              className="recipe-mobile-toolbar__btn"
-              onClick={() => openAddRecipeBelow()}
+              className={`recipe-mobile-toolbar__btn ${addSheetOpen ? "is-active" : ""}`}
+              aria-haspopup={cookbookMode ? "dialog" : undefined}
+              onClick={() => {
+                // A cookbook adds a recipe OR a chapter, so it asks which.
+                if (cookbookMode) {
+                  setSizeMenuOpen(false);
+                  setBookSheet(null);
+                  setAddSheetOpen(true);
+                  return;
+                }
+                openAddRecipeBelow();
+              }}
             >
               {/* The crown REPLACES the plus rather than sitting in a corner
                   over it — a corner badge needs room to hang off, which
@@ -7657,32 +7703,22 @@ export default function PrintPage() {
               {/* "Add recipe" for a blank project, "Add more" once there is
                   one — the desktop rail's same rule, read off the same count
                   (an import still parsing counts), so the two never disagree. */}
-              {recipeCount > 0 ? "Add more" : "Add recipe"}
+              {cookbookMode ? "Add" : recipeCount > 0 ? "Add more" : "Add recipe"}
             </button>
-            {/* The pages a book gains beyond its recipes. Cookbook mode only;
-                its Photos sibling sits further along, beside Links, since both
-                are about what every recipe carries. */}
-            {/* Organize: the mobile stand-in for the drag-only desktop rail,
-                which is hidden on touch. A tile like the others, straight
-                after Add because it is about the same recipes; it used to
-                float over the deck. The glyph is PowerPoint's Slide Sorter:
-                every page laid out small. */}
+            {/* Pages: the same overview the page count's caret opens, a strip of
+                every page under the top bar (MobilePagesPanel), with Organize
+                in it. One toggle, two ways to reach it. */}
             {cookbookMode && (
               <button
                 type="button"
-                className={`recipe-mobile-toolbar__btn ${structureSheetOpen ? "is-active" : ""}`}
-                aria-pressed={structureSheetOpen}
-                aria-haspopup="dialog"
-                onClick={() => {
-                  setSizeMenuOpen(false);
-                  setBookSheet(null);
-                  setStructureSheetOpen((open) => !open);
-                }}
+                className={`recipe-mobile-toolbar__btn ${pagesPanelOpen ? "is-active" : ""}`}
+                aria-expanded={pagesPanelOpen}
+                onClick={togglePagesPanel}
               >
                 <span className="recipe-mobile-toolbar__btn-icon">
                   <PagesIcon size={ICON_SIZE.lg} />
                 </span>
-                Organize
+                Pages
               </button>
             )}
             {/* The page in front of the cook, as the desktop panel's Page tab
@@ -7705,24 +7741,6 @@ export default function PrintPage() {
                   <SettingsIcon size={ICON_SIZE.lg} />
                 </span>
                 This page
-              </button>
-            )}
-            {cookbookMode && (
-              <button
-                type="button"
-                className={`recipe-mobile-toolbar__btn ${bookSheet === "extras" ? "is-active" : ""}`}
-                aria-pressed={bookSheet === "extras"}
-                aria-haspopup="dialog"
-                onClick={() => {
-                  setSizeMenuOpen(false);
-                  setStructureSheetOpen(false);
-                  setBookSheet((open) => (open === "extras" ? null : "extras"));
-                }}
-              >
-                <span className="recipe-mobile-toolbar__btn-icon">
-                  <PagePlusIcon size={ICON_SIZE.lg} />
-                </span>
-                Pages
               </button>
             )}
             {/* Size is a recipe-card concept only — hidden in cookbook mode,
@@ -7822,12 +7840,49 @@ export default function PrintPage() {
           </div>
         </div>
 
+        {cookbookMode && (
+          <MobileSheet open={addSheetOpen} onClose={() => setAddSheetOpen(false)} title="Add">
+            <div className="recipe-add-sheet">
+              <button
+                type="button"
+                className="recipe-add-sheet__option"
+                onClick={() => {
+                  setAddSheetOpen(false);
+                  openAddRecipeBelow();
+                }}
+              >
+                <PlusIcon size={ICON_SIZE.lg} />
+                Recipe
+              </button>
+              <button
+                type="button"
+                className="recipe-add-sheet__option"
+                onClick={() => {
+                  setAddSheetOpen(false);
+                  addSectionDivider();
+                }}
+              >
+                <BookIcon size={ICON_SIZE.lg} />
+                Chapter
+              </button>
+              <button
+                type="button"
+                className="recipe-add-sheet__option"
+                onClick={() => {
+                  setAddSheetOpen(false);
+                  addBlankPage();
+                }}
+              >
+                <PagePlusIcon size={ICON_SIZE.lg} />
+                Blank page
+              </button>
+            </div>
+          </MobileSheet>
+        )}
+
         <MobileStructureSheet
           projectMeta={projectMeta}
           sections={sections}
-          toggleDedication={toggleDedication}
-          toggleCover={toggleCover}
-          onAddBlankPage={() => addBlankPage()}
           bookPhotoStyle={bookPhotoStyle}
           applyBookPhotoStyle={applyBookPhotoStyle}
           photoStyleTip={photoStyleTip?.surface === "sheet" ? photoStyleTip : null}

@@ -83,7 +83,6 @@ const UNTRACKED_META_KEYS = new Set([
   "lastImportSource",
   "cookbookIntent",
   "cookbookBornFresh",
-  "cookbookIntroduced",
 ]);
 
 const LIST_CHANNELS = new Set<HistoryChannel>(["queue", "job"]);

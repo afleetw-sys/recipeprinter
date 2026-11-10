@@ -889,11 +889,26 @@ describe("adding recipes", () => {
     );
   }
 
-  it("welcomes a cookbook started from the library's New cookbook", async () => {
-    seedMeta({ cookbookIntent: true, cookbookBornFresh: true });
-    await renderPrintPage();
-    await settle(3000);
-    expect(dialogs.welcome.open).toBe(true);
+  it("welcomes every new cookbook, however it was started", async () => {
+    // The homepage's Cookbook tab used to stamp `cookbookIntroduced` and skip
+    // the welcome, so a book begun there opened without it. Every entry point
+    // gets it now; the stamp is still read here because older stored meta can
+    // carry it.
+    const starts: Array<[string, Record<string, unknown>, unknown]> = [
+      ["library's New cookbook", {}, null],
+      ["homepage Cookbook tab", { cookbookIntroduced: true }, { kind: "empty" }],
+      ["a Start a cookbook button elsewhere", {}, { kind: "empty" }],
+    ];
+    for (const [via, extra, pending] of starts) {
+      cleanup();
+      sessionStorage.clear();
+      dialogs.welcome = {};
+      if (pending) sessionStorage.setItem("recipeprinter:pending-import:v1", JSON.stringify(pending));
+      seedMeta({ cookbookIntent: true, cookbookBornFresh: true, ...extra });
+      await renderPrintPage();
+      await settle(3000);
+      expect(dialogs.welcome.open, via).toBe(true);
+    }
   });
 
   it("keeps every recipe picked from an app on the homepage's Cookbook tab", async () => {

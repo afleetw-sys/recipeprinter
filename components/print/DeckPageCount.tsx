@@ -49,6 +49,8 @@ export function DeckPageCount({
   deck,
   countSlot,
   onSheetInView,
+  onOpenPages,
+  pagesOpen = false,
 }: {
   /** The deck to count, as it is now. */
   deck: HTMLElement | null;
@@ -57,6 +59,10 @@ export function DeckPageCount({
   /** The book page on screen (the one a tap on it would focus), or null for
       anything else, so the page toolbar can act on the page you can see. */
   onSheetInView?: (sheet: number | null) => void;
+  /** Opens the page overview (MobilePagesSheet). The count becomes the
+      button for it, with a caret saying it opens. */
+  onOpenPages?: () => void;
+  pagesOpen?: boolean;
 }) {
   const mobile = useDeckMobile();
   const [count, setCount] = useState<Count>({ page: 1, total: 0, sheet: null });
@@ -114,13 +120,30 @@ export function DeckPageCount({
     <div className="recipe-deck-page-count no-print">
       {countSlot
         ? createPortal(
-            <p className="recipe-deck-page-count__badge">
-              <span className="sr-only">Page </span>
-              {count.page}
-              <span aria-hidden> / </span>
-              <span className="sr-only"> of </span>
-              {count.total}
-            </p>,
+            onOpenPages ? (
+              <button
+                type="button"
+                className="recipe-deck-page-count__badge recipe-deck-page-count__button"
+                aria-expanded={pagesOpen}
+                onClick={onOpenPages}
+              >
+                <span className="sr-only">Page </span>
+                {count.page}
+                <span aria-hidden> / </span>
+                <span className="sr-only"> of </span>
+                {count.total}
+                <span className="sr-only">, show all pages</span>
+                <ChevronDownIcon size={ICON_SIZE.sm} />
+              </button>
+            ) : (
+              <p className="recipe-deck-page-count__badge">
+                <span className="sr-only">Page </span>
+                {count.page}
+                <span aria-hidden> / </span>
+                <span className="sr-only"> of </span>
+                {count.total}
+              </p>
+            ),
             countSlot,
           )
         : null}

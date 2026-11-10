@@ -19,7 +19,6 @@ import {
   ChevronRightIcon,
   ICON_SIZE,
   ImageIcon,
-  InfoIcon,
   AlertIcon,
   MoveToSectionIcon,
   PagePlusIcon,
@@ -261,6 +260,13 @@ interface PrintDeckProps {
   /** Puts the dedication back. Set only while the book has none, so a blank
       page 1 (the book opens on a photo spread) can offer it right there. */
   onAddDedication?: () => void;
+  /** Toggles the phone's page overview from the page count in the top bar. */
+  onOpenPages?: () => void;
+  /** Whether that overview is open, for the caret. */
+  pagesOpen?: boolean;
+  /** The overview itself (MobilePagesPanel), drawn under the top bar so it
+      pushes the deck down rather than covering it. */
+  pagesPanel?: ReactNode;
   /** Move one recipe into another chapter. Cookbook only — a deck of loose
       cards has no sections to move between. `undefined` there rather than a
       no-op, so the control is absent rather than present and inert. */
@@ -474,6 +480,9 @@ export function PrintDeck(props: PrintDeckProps) {
     deckZoom,
     onRequestDelete,
     onAddDedication,
+    onOpenPages,
+    pagesOpen,
+    pagesPanel,
     onMoveRecipeToSection,
     onMoveRecipeToNewSection,
     openPhotoDialog,
@@ -912,31 +921,12 @@ export function PrintDeck(props: PrintDeckProps) {
         } as CSSProperties}
       >
         <PageToolbar>
-          {/* The contents page is generated, and anyone looking at it needs
-              telling why the entries will not take a cursor — more so now that
-              the two lines above them will. It used to say so from INSIDE the
-              page, which made a note about the workspace take up space in the
-              artwork — pushing the entries down, and counting toward the layout
-              the pagination measures. It also used to wait for an edit mode
-              that no longer exists, which is why it is simply present on the
-              page it explains.
-              It is a group in the toolbar rather than a banner of its own: the
-              bar is already the floating thing that acts on this page, it
-              already separates its groups with a hairline, and one object
-              reads as chrome where two read as an interruption. */}
           {/* Words running past their box print cut off, and nothing else
-              would say so. Stays while it's true, like the contents hint,
-              and the words themselves are outlined on the page. */}
+              would say so. Stays while it's true, and the words themselves are outlined on the page. */}
           {overflowing.length > 0 && (
             <div className="recipe-page-toolbar__group recipe-page-toolbar__hint recipe-page-toolbar__hint--warning" role="status">
               <AlertIcon size={ICON_SIZE.sm} aria-hidden />
               <span>Some text doesn&apos;t fit on this page. A smaller text size or fewer words will make it fit.</span>
-            </div>
-          )}
-          {navItem.kind === "toc" && !navItem.continued && (
-            <div className="recipe-page-toolbar__group recipe-page-toolbar__hint">
-              <InfoIcon size={ICON_SIZE.sm} aria-hidden />
-              <span>Updates as you edit chapters and recipes.</span>
             </div>
           )}
           {navItem.flip && (
@@ -1316,6 +1306,28 @@ export function PrintDeck(props: PrintDeckProps) {
   const pendingAnchorIndex = pendingAnchorIndexIn(navItems, pendingAddAfterRecipeId);
   /** In a book the deck is spreads, not pages: the placeholder follows the
       spread holding the page it is anchored to. */
+  /**
+   * A cookbook with nothing in it yet (no recipe, no chapter, nothing on its
+   * way in) gets one page where the recipes will start: after the contents,
+   * before the back cover, shaped like a page and asking for the first recipe.
+   * Screen only, and not a page of the book: it is gone the moment a recipe or
+   * an import arrives, and never prints. A chapter brings its own "Add recipe"
+   * on the page beside it, so a book with one doesn't need this too.
+   */
+  const emptyBookPageAfterSpread = (() => {
+    if (!cookbookView || previewMeasuring) return null;
+    if (parsingImports.length > 0 || failedImports.length > 0) return null;
+    if (navItems.some((nav) => nav.kind === "recipe" || nav.kind === "divider")) return null;
+    const isBackCover = (sheetIndex: number | null) =>
+      sheetIndex !== null &&
+      Boolean(
+        sheets[sheetIndex]?.slots.some((slot) => slot?.kind === "cover" && slot.side === "back"),
+      );
+    for (let index = spreads.length - 1; index >= 0; index -= 1) {
+      if (!isBackCover(spreads[index].left) && !isBackCover(spreads[index].right)) return index;
+    }
+    return null;
+  })();
   const pendingAnchorSpreadIndex = (() => {
     if (!cookbookView || pendingAnchorIndex === null) return null;
     const sheet = navItems[pendingAnchorIndex]?.sheetIndex;
@@ -1603,7 +1615,14 @@ export function PrintDeck(props: PrintDeckProps) {
               photoScale={previewPhotoScale}
             />
           )}
-          <DeckPageCount deck={deckEl} countSlot={pageCountSlot} onSheetInView={setSheetInView} />
+          {pagesPanel}
+          <DeckPageCount
+            deck={deckEl}
+            countSlot={pageCountSlot}
+            onSheetInView={setSheetInView}
+            onOpenPages={onOpenPages}
+            pagesOpen={pagesOpen}
+          />
           <div
             className={`recipe-page-deck ${cookbookView ? "recipe-page-deck--book" : ""}`}
             id="recipe-page-deck"
@@ -2064,6 +2083,42 @@ export function PrintDeck(props: PrintDeckProps) {
                         {failedPages}
                         {pendingPages}
                       </>
+                    )}
+                    {index === emptyBookPageAfterSpread && (
+                      <div className="recipe-page-slide recipe-page-slide--spread recipe-page-slide--single recipe-page-first-recipe no-print">
+                        <div className="recipe-spread recipe-spread--single">
+                          <div className="recipe-spread__cell">
+                            <div
+                              className="recipe-spread__blank recipe-spread__blank--first-recipe"
+                              style={{
+                                width: `${previewDims.w * deckScale}px`,
+                                height: `${previewDims.h * deckScale}px`,
+                              }}
+                            >
+                              <button
+                                type="button"
+                                className="photo-placeholder photo-placeholder--page recipe-first-recipe"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openAddRecipeBelow(null);
+                                }}
+                              >
+                                <span className="photo-placeholder__icon">
+                                  <PagePlusIcon size={18} />
+                                </span>
+                                <span className="photo-placeholder__title">Add your first recipe</span>
+                                <span className="photo-placeholder__note">
+                                  Your recipes start here, right after the contents.
+                                </span>
+                                <span className="btn btn-primary btn-compact recipe-first-recipe__action">
+                                  <PlusIcon size={ICON_SIZE.md} />
+                                  Add recipe
+                                </span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     )}
                     </Fragment>
                   );

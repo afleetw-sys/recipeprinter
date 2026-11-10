@@ -210,9 +210,6 @@ export interface ProjectMeta {
       book on arrival"; once `scaffoldCookbook` runs, this records that the
       project was born a cookbook, with no prior recipe-cards state. */
   cookbookBornFresh?: boolean;
-  /** Started from the homepage's Cookbook tab, which explains the book and
-      its price itself, so /print opens the new book without the welcome. */
-  cookbookIntroduced?: boolean;
   /** This book's unwritten optional lines (a cover's author and edition, a
       dedication's message and signature, a back cover's lines, a chapter's
       subtitle) are told apart from removed ones: `undefined` shows its "+"
@@ -1353,14 +1350,13 @@ export function useProjectMeta() {
    * (docs/import-meter-plan.md, section 1.3).
    */
   const startNewProject = useCallback(
-    (options: { cookbook?: boolean; introduced?: boolean } = {}) => {
+    (options: { cookbook?: boolean } = {}) => {
       resetHistory();
       commit({
         ...EMPTY_META,
         projectId: uid(),
         cookbookIntent: options.cookbook || undefined,
         cookbookBornFresh: options.cookbook || undefined,
-        cookbookIntroduced: (options.cookbook && options.introduced) || undefined,
         // A new book starts its optional lines with sample text (see the field).
         optionalLinesExplicit: true,
         sampleLines: true,
