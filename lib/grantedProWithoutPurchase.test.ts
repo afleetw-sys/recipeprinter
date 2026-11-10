@@ -39,6 +39,7 @@ beforeEach(() => {
   sdk.configure.mockReset().mockReturnValue({
     getCustomerInfo: sdk.getCustomerInfo,
     getOfferings: vi.fn().mockResolvedValue({ current: null, all: {} }),
+    preload: vi.fn().mockResolvedValue(undefined),
     changeUser: vi.fn().mockResolvedValue(undefined),
   });
 });

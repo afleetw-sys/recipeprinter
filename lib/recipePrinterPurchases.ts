@@ -1,6 +1,7 @@
 import type {
   CustomerInfo,
   Offering,
+  Offerings,
   Package,
   Purchases,
   PurchasesError,
@@ -466,8 +467,72 @@ export async function loadRecipePrinterCustomerInfo(
   // Prices ride along with the entitlement read: every surface that learns who
   // this customer is (account page, /print, the homepage banner) then quotes
   // RevenueCat's real prices without each having to remember to ask.
-  void loadRecipePrinterPrices(purchases);
+  void loadRecipePrinterPrices(purchases, userId);
+  prefetchCheckout(purchases, userId);
   return purchases.getCustomerInfo();
+}
+
+/**
+ * Where Stripe.js comes from: the exact URL RevenueCat's bundled Stripe loader
+ * looks for. It reuses a `<script>` already on the page with this src instead
+ * of adding its own, so loading it ourselves first is a head start, not a
+ * second copy. lib/checkoutLoad.test.ts reads the version out of the installed
+ * SDK, so an upgrade that moves to a new Stripe.js fails there, not silently.
+ */
+export const STRIPE_JS_URL = "https://js.stripe.com/dahlia/stripe.js";
+
+/**
+ * Start downloading Stripe.js now, alongside the RevenueCat requests checkout
+ * waits on, rather than after them (it used to be the second-last step of a
+ * strictly serial chain). Only on a click to buy: Stripe.js is a third party
+ * with its own cookies, so it has no business on a page nobody is paying on.
+ */
+function loadStripeEarly(): void {
+  if (typeof document === "undefined") return;
+  if (document.querySelector('script[src^="https://js.stripe.com/"]')) return;
+  const script = document.createElement("script");
+  script.src = STRIPE_JS_URL;
+  // RevenueCat's loader waits for a found script's `load`/`error` events, so a
+  // tag that has already failed would hang checkout forever. Take it away and
+  // the loader adds a fresh one of its own.
+  script.addEventListener("error", () => script.remove(), { once: true });
+  (document.head || document.body).appendChild(script);
+}
+
+const OFFERINGS_FRESH_MS = 10 * 60 * 1000;
+const offeringsCache = new Map<string, { at: number; offerings: Promise<Offerings> }>();
+
+/**
+ * Offerings for this customer in the page's currency, fetched once and shared
+ * by the price sheet, the prefetch and checkout itself. Each fetch is two
+ * requests in a row (offerings, then their products), which checkout used to
+ * pay at the click every time. A failure is forgotten so the next ask retries,
+ * and an answer is kept ten minutes, so a tab left open does not sell from a
+ * price list days old.
+ */
+function cachedOfferings(purchases: Purchases, userId: string): Promise<Offerings> {
+  const currency = visitorCurrency();
+  const key = `${userId}|${currency}`;
+  const hit = offeringsCache.get(key);
+  if (hit && Date.now() - hit.at < OFFERINGS_FRESH_MS) return hit.offerings;
+  const offerings = purchases.getOfferings({ currency });
+  const entry = { at: Date.now(), offerings };
+  offeringsCache.set(key, entry);
+  offerings.catch(() => {
+    if (offeringsCache.get(key) === entry) offeringsCache.delete(key);
+  });
+  return offerings;
+}
+
+/**
+ * Everything checkout needs that does not need the click: the offerings and
+ * RevenueCat's branding (`purchase()` awaits `preload()` before it even asks
+ * for a checkout session). Only for a customer whose SDK is already
+ * configured, so it can never be the reason a customer record exists.
+ */
+function prefetchCheckout(purchases: Purchases, userId: string): void {
+  cachedOfferings(purchases, userId).catch(() => undefined);
+  void purchases.preload().catch(() => undefined);
 }
 
 let pricesRequested = false;
@@ -483,11 +548,11 @@ let pricesRequested = false;
  * the dollars the customer will really be charged. Once per visit, and a
  * failure just leaves the built-in table showing.
  */
-async function loadRecipePrinterPrices(purchases: Purchases): Promise<void> {
+async function loadRecipePrinterPrices(purchases: Purchases, userId: string): Promise<void> {
   if (!localCurrenciesLive() || pricesRequested) return;
   pricesRequested = true;
   try {
-    const { all } = await purchases.getOfferings({ currency: visitorCurrency() });
+    const { all } = await cachedOfferings(purchases, userId);
     const price = (offeringId: string, packageId: string, productId: string) =>
       findPackage(all[offeringId] ?? null, packageId, productId)?.webBillingProduct.price;
     const prices: Record<PricedProduct, ReturnType<typeof price>> = {
@@ -619,8 +684,12 @@ export async function syncRecipePrinterCustomerAttributes({
  * can differ from the country cookie the displayed price came from. Naming it
  * is what makes the checkout charge the currency the paywall showed.
  */
-async function offeringFor(purchases: Purchases, offeringId: string): Promise<Offering | null> {
-  const offerings = await purchases.getOfferings({ currency: visitorCurrency() });
+async function offeringFor(
+  purchases: Purchases,
+  userId: string,
+  offeringId: string,
+): Promise<Offering | null> {
+  const offerings = await cachedOfferings(purchases, userId);
   return offerings.all[offeringId] ?? offerings.current ?? null;
 }
 
@@ -801,9 +870,10 @@ async function checkout(
  */
 async function packageForCookbook(
   purchases: Purchases,
+  userId: string,
   discountEligible: boolean,
 ): Promise<Package> {
-  const offering = await offeringFor(purchases, RECIPEPRINTER_COOKBOOK_OFFERING_ID);
+  const offering = await offeringFor(purchases, userId, RECIPEPRINTER_COOKBOOK_OFFERING_ID);
   const rcPackage = discountEligible
     ? findPackage(
         offering,
@@ -826,17 +896,25 @@ export async function purchaseRecipePrinterCookbook({
   projectId: string;
   discountEligible: boolean;
 }): Promise<CheckoutResult> {
+  loadStripeEarly();
   const purchases = await getPurchases(userId);
-  const rcPackage = await packageForCookbook(purchases, discountEligible);
-  // Give the cookbook-unlock webhook a reliable purchase→project map. Webhook
-  // payloads carry subscriber attributes, but not the purchase-time `metadata`
-  // below — so set both (attribute for the server, metadata kept for parity).
-  // See docs/cookbook-unlock-webhook.md. The Meta keys tell the same webhook
-  // whether this browser may be measured, for the server copy of the Purchase
-  // (lib/adTags.ts `metaCheckoutAttributes`); they are cleared when it may not.
-  await purchases
-    .setAttributes({ cookbook_project_id: projectId, ...metaCheckoutAttributes() })
-    .catch(() => undefined);
+  // All at once: none of these needs another's answer, and run in a row they
+  // were most of the wait for the payment form (see lib/checkoutLoad.test.ts).
+  const [rcPackage] = await Promise.all([
+    packageForCookbook(purchases, userId, discountEligible),
+    purchases.preload(),
+    // Give the cookbook-unlock webhook a reliable purchase→project map. Webhook
+    // payloads carry subscriber attributes, but not the purchase-time `metadata`
+    // below — so set both (attribute for the server, metadata kept for parity).
+    // See docs/cookbook-unlock-webhook.md. The Meta keys tell the same webhook
+    // whether this browser may be measured, for the server copy of the Purchase
+    // (lib/adTags.ts `metaCheckoutAttributes`); they are cleared when it may not.
+    // Still settled before checkout opens, so the attributes are on the
+    // customer before any purchase can be.
+    purchases
+      .setAttributes({ cookbook_project_id: projectId, ...metaCheckoutAttributes() })
+      .catch(() => undefined),
+  ]);
 
   return checkout(purchases, rcPackage, email, {
     product: "recipeprinter",
@@ -846,9 +924,13 @@ export async function purchaseRecipePrinterCookbook({
   });
 }
 
-async function packageForPro(purchases: Purchases, cycle: ProBillingCycle): Promise<Package> {
+async function packageForPro(
+  purchases: Purchases,
+  userId: string,
+  cycle: ProBillingCycle,
+): Promise<Package> {
   const rcPackage = findPackage(
-    await offeringFor(purchases, RECIPEPRINTER_PRO_OFFERING_ID),
+    await offeringFor(purchases, userId, RECIPEPRINTER_PRO_OFFERING_ID),
     proPackageId(cycle),
     proProductId(cycle),
   );
@@ -865,8 +947,9 @@ export async function purchaseRecipePrinterPro({
   email?: string | null;
   cycle: ProBillingCycle;
 }): Promise<{ customerInfo: CustomerInfo; cancelled: boolean }> {
+  loadStripeEarly();
   const purchases = await getPurchases(userId);
-  const rcPackage = await packageForPro(purchases, cycle);
+  const [rcPackage] = await Promise.all([packageForPro(purchases, userId, cycle), purchases.preload()]);
   return checkout(purchases, rcPackage, email, {
     product: "recipeprinter",
     offer: "pro",

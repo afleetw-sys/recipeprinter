@@ -82,6 +82,7 @@ beforeEach(() => {
     getOfferings: sdk.getOfferings,
     purchase: sdk.purchase,
     getCustomerInfo: sdk.getCustomerInfo,
+    preload: vi.fn().mockResolvedValue(undefined),
     setAttributes: vi.fn().mockResolvedValue(undefined),
     changeUser: vi.fn().mockResolvedValue(undefined),
   });
@@ -99,10 +100,8 @@ describe("checkout", () => {
     await purchases.purchaseRecipePrinterPro({ userId: "uid", cycle: "annual" });
     await purchases.purchaseRecipePrinterCookbook({ userId: "uid", projectId: "p1", discountEligible: true });
 
-    expect(sdk.getOfferings.mock.calls.map(([params]) => params)).toEqual([
-      { currency: "CAD" },
-      { currency: "CAD" },
-    ]);
+    // One fetch serves both checkouts (lib/checkoutLoad.test.ts), and it names CAD.
+    expect(sdk.getOfferings.mock.calls.map(([params]) => params)).toEqual([{ currency: "CAD" }]);
     const sold = sdk.purchase.mock.calls.map(([params]) => params.rcPackage.webBillingProduct);
     expect(sold.map((product) => [product.identifier, product.price.currency])).toEqual([
       ["pro_annual", "CAD"],
