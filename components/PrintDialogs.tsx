@@ -85,9 +85,6 @@ export function PrintDialogs({
                 <PlusIcon size={ICON_SIZE.md} />
                 Start a new recipe
               </button>
-              <button type="button" className="btn btn-ghost" onClick={onCloseDonateDialog}>
-                Maybe later
-              </button>
               <button
                 type="button"
                 className="another-recipe__feedback"
