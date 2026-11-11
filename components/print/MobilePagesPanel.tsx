@@ -102,10 +102,7 @@ export function MobilePagesPanel({
   cookbookMode,
   missingBookPages,
   onAddBookPage,
-  onRecipeLongPress,
   onChapterMenu,
-  organizing,
-  setOrganizing,
   sectionOfNav,
   itemIdsForSection,
   onRenameChapter,
@@ -132,12 +129,8 @@ export function MobilePagesPanel({
   cookbookMode: boolean;
   missingBookPages: readonly BookPageSlot[];
   onAddBookPage: (page: BookPageSlot) => void;
-  /** A long press on a recipe outside Organize: its "Move to" menu. */
-  onRecipeLongPress?: (point: { x: number; y: number }, recipeId: string, title: string) => void;
   /** A chapter's "⋯", or a long press on its heading: its menu. */
   onChapterMenu?: (point: { x: number; y: number }, sectionId: string) => void;
-  organizing: boolean;
-  setOrganizing: (next: boolean) => void;
   /** The chapter (or the unnamed group) a page belongs to. */
   sectionOfNav: (nav: NavItem) => string | null;
   itemIdsForSection: (sectionId: string) => string[];
@@ -148,6 +141,10 @@ export function MobilePagesPanel({
   onReorderRecipe: (id: string, sectionId: string, index: number) => void;
   onAddChapter: () => void;
 }) {
+  // A cookbook's Pages is always Organize (Amelia, 2026-11-10): a tap on a
+  // page goes to it, a tick selects a recipe, and holding one drags it.
+  // Recipe cards have no chapters to organize, so theirs is just the grid.
+  const organizing = cookbookMode;
   const viewRef = useRef<HTMLElement | null>(null);
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
   const [top, setTop] = useState(0);
@@ -158,21 +155,20 @@ export function MobilePagesPanel({
   const [drop, setDrop] = useState<{ recipeId?: string; after?: boolean; sectionId?: string } | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
 
-  // Starts under the top bar (whose caret closes it again) and runs to the
-  // bottom of the screen; the bottom tools step aside while it's open. In
-  // Organize it covers the top bar too: the book is the whole screen, and
-  // Done is the way out (Amelia, 2026-11-10).
+  // Hangs straight off the bottom of the top bar, where the page count
+  // becomes its tab (print.css, `html[data-pages-view]`), and runs to the
+  // bottom of the screen; the bottom tools step aside while it's open.
   useLayoutEffect(() => {
     if (!open) return;
     const bar = document.querySelector<HTMLElement>(".recipe-mobile-topbar");
-    if (bar) setTop(organizing ? 0 : bar.getBoundingClientRect().bottom);
-  }, [open, organizing]);
+    if (bar) setTop(bar.getBoundingClientRect().bottom);
+  }, [open]);
   useEffect(() => {
     if (!open) return;
     const root = document.documentElement;
-    root.setAttribute("data-pages-view", organizing ? "organize" : "pages");
+    root.setAttribute("data-pages-view", "");
     return () => root.removeAttribute("data-pages-view");
-  }, [open, organizing]);
+  }, [open]);
 
   // Columns from the width: three on a phone, more on a tablet.
   useEffect(() => {
@@ -197,8 +193,8 @@ export function MobilePagesPanel({
   }, [open, scroller]);
 
   useEffect(() => {
-    if (!organizing) setSelected([]);
-  }, [organizing]);
+    if (!open) setSelected([]);
+  }, [open]);
 
   // A recipe that's been deleted leaves the selection with it.
   useEffect(() => {
@@ -211,15 +207,12 @@ export function MobilePagesPanel({
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      if (organizing) setOrganizing(false);
-      else onClose();
+      if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, organizing, onClose, setOrganizing]);
+  }, [open, onClose]);
 
-  const pressRecipe = useLongPress<NavItem>((point, nav) => onRecipeLongPress?.(point, nav.recipeId, nav.label));
   const pressChapter = useLongPress<string>((point, sectionId) => onChapterMenu?.(point, sectionId));
 
   // Press and hold a recipe in Organize to drag it. Its own touch listeners,
@@ -415,31 +408,26 @@ export function MobilePagesPanel({
     : [];
 
   return (
+    <>
+    {/* Everything outside the sheet dims and closes it when tapped, so the
+        sheet is plainly what to look at. */}
+    <button type="button" className="recipe-pages-view__scrim no-print" aria-label="Close pages" onClick={onClose} />
     <section
       ref={viewRef}
-      className={`recipe-pages-view no-print ${organizing ? "is-organizing" : ""}`}
+      className="recipe-pages-view no-print"
       style={{ top }}
       aria-label="Pages"
     >
       <div className="recipe-pages-view__head">
-        <h2 className="recipe-pages-view__title">{organizing ? "Organize" : "Pages"}</h2>
-        {cookbookMode && (
-          <button
-            type="button"
-            className={`btn btn-compact ${organizing ? "btn-primary" : "btn-secondary"}`}
-            onClick={() => setOrganizing(!organizing)}
-          >
-            {organizing ? "Done" : "Organize"}
-          </button>
-        )}
-        {!organizing && (
-          <button type="button" className="icon-close-btn" aria-label="Close pages" onClick={onClose}>
-            <XIcon size={ICON_SIZE.md} />
-          </button>
-        )}
+        <h2 className="recipe-pages-view__title">Pages</h2>
+        <button type="button" className="icon-close-btn" aria-label="Close pages" onClick={onClose}>
+          <XIcon size={ICON_SIZE.md} />
+        </button>
       </div>
       {organizing && (
-        <p className="recipe-pages-view__hint">Tap recipes to select them, or press and hold one to drag it.</p>
+        <p className="recipe-pages-view__hint">
+          Tap a page to go to it. Tick recipes to move them, or press and hold one to drag it.
+        </p>
       )}
       <div ref={setScroller} className="recipe-pages-view__scroll">
         {groups.map((group) => (
@@ -515,15 +503,13 @@ export function MobilePagesPanel({
                     >
                       <button
                         type="button"
-                        className={`recipe-pages-view__page rp-long-press ${picked ? "is-selected" : ""} ${
-                          organizing && !isRecipe ? "is-fixed" : ""
-                        }`}
-                        aria-current={!organizing && index === currentNavIndex ? "page" : undefined}
-                        aria-pressed={organizing && isRecipe ? picked : undefined}
+                        className={`recipe-pages-view__page rp-long-press ${picked ? "is-selected" : ""}`}
+                        aria-current={index === currentNavIndex ? "page" : undefined}
                         data-drop-recipe={organizing && isRecipe ? nav.recipeId : undefined}
-                        {...(!organizing && isRecipe && onRecipeLongPress ? pressRecipe(nav) : {})}
                         onClick={() => {
-                          if (organizing) {
+                          // Once something's ticked, taps tick more (a page
+                          // that can't be ticked stays put), as on Pinterest.
+                          if (selected.length > 0) {
                             if (isRecipe) toggle(nav.recipeId);
                             return;
                           }
@@ -549,14 +535,20 @@ export function MobilePagesPanel({
                               cookbookMode={cookbookMode}
                             />
                           </LazyThumb>
-                          {organizing && isRecipe && (
-                            <span className="recipe-pages-view__check" aria-hidden>
-                              {picked && <CheckIcon size={ICON_SIZE.sm} />}
-                            </span>
-                          )}
                         </span>
                         <span className="recipe-pages-view__label">{nav.label}</span>
                       </button>
+                      {organizing && isRecipe && (
+                        <button
+                          type="button"
+                          className={`recipe-pages-view__check ${picked ? "is-checked" : ""}`}
+                          aria-pressed={picked}
+                          aria-label={`Select ${nav.label}`}
+                          onClick={() => toggle(nav.recipeId)}
+                        >
+                          {picked && <CheckIcon size={ICON_SIZE.sm} />}
+                        </button>
+                      )}
                     </li>
                   );
                 })}
@@ -618,5 +610,6 @@ export function MobilePagesPanel({
         />
       )}
     </section>
+    </>
   );
 }

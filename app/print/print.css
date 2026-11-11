@@ -2364,19 +2364,6 @@
   padding: 0 4px;
 }
 
-/* The page's kind ("Cover", "Contents"), first in a cookbook page's bar: a
-   quiet label, not a control, in the bar's own type. */
-/* Doubled class: the bar's `__group:first-child` rule zeroes a first group's
-   left padding (buttons bring their own), which put this word hard against
-   the bar's rounded edge. */
-.recipe-page-toolbar__page-name.recipe-page-toolbar__page-name {
-  padding: 0 14px;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-caption);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
 /* Not a button group but a said-thing, so it takes the bar's hairline and
    rhythm and none of its weight: muted, regular, and wrapping rather than
    forcing the bar wider than the page it floats over. */
@@ -2442,6 +2429,27 @@
 
 .recipe-page-toolbar__group:first-child { padding-left: 0; }
 .recipe-page-toolbar__group:last-child { padding-right: 0; }
+
+/* The page's kind ("Cover", "Contents"), first in a phone's cookbook bar: a
+   label, not a control, so it sits in a tinted chip of its own, apart from
+   the buttons, with no rule after it (Amelia, 2026-11-10). After the
+   `:first-child` reset above on purpose: at the same specificity before it,
+   that reset zeroed this padding and put the word hard against the bar's
+   rounded edge (e2e/page-toolbar.spec.ts). */
+.recipe-page-toolbar__group.recipe-page-toolbar__page-name {
+  align-self: stretch;
+  margin-right: 4px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--cp-surface-muted);
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.recipe-page-toolbar__group.recipe-page-toolbar__page-name + .recipe-page-toolbar__group {
+  border-left-color: transparent;
+}
 
 /* The divider between groups. A line rather than a gap: at this size a gap
    alone reads as sloppy spacing, and the reference toolbars this follows all
@@ -5367,8 +5375,8 @@ textarea.recipe-page-fields__input {
   right: 0;
   bottom: 0;
   left: 0;
-  /* Over the top bar in Organize (it starts at 0 there), under menus and
-     dialogs. */
+  /* Over the page and the scrim, under the top bar (whose page count is
+     the sheet's tab), menus and dialogs. */
   z-index: 70;
   padding-bottom: env(safe-area-inset-bottom);
   display: flex;
@@ -5382,14 +5390,100 @@ textarea.recipe-page-fields__input {
   gap: 8px;
   padding: 10px 8px 6px 16px;
 }
-/* Full screen in Organize: the head clears the status bar itself. */
-.recipe-pages-view.is-organizing .recipe-pages-view__head {
-  padding-top: max(10px, env(safe-area-inset-top));
-}
 /* While the Pages view is open the bottom tools and Buy & Print step aside:
    the grid runs to the bottom of the screen. */
 html[data-pages-view] .recipe-mobile-actions {
   display: none;
+}
+
+/* Pages grows out of the page count ("1 / 12 ⌃") as a sheet, and everything
+   else dims (Amelia, 2026-11-10): a scrim over the page behind, and the top
+   bar lifted above it with all but the count faded and out of reach. The
+   count turns into the sheet's tab, the same colour and joined to it with no
+   gap, so it reads as what opened the sheet and what closes it. */
+.recipe-pages-view__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 69;
+  border: 0;
+  background: var(--cp-scrim);
+  animation: rp-pages-scrim-in 200ms ease-out both;
+}
+html[data-pages-view] .recipe-mobile-topbar {
+  z-index: 71;
+  background: transparent;
+  border-bottom-color: transparent;
+  /* A tap on the dimmed bar falls through to the scrim and closes the sheet;
+     only the count (pointer-events: auto on it) still answers. */
+  pointer-events: none;
+}
+html[data-pages-view] .recipe-mobile-topbar__start,
+html[data-pages-view] .recipe-mobile-topbar__actions {
+  opacity: 0.3;
+  pointer-events: none;
+}
+/* The tab: the count runs down to the bar's bottom edge, where the sheet
+   starts, in the sheet's colour, with the inside corners curving out into the
+   sheet. The bottom padding matches the bar's, so the numbers don't move. */
+/* -2px: over the bar's own 1px border and the sheet's top edge, so no line
+   shows where the tab meets the sheet. */
+html[data-pages-view] .recipe-mobile-topbar__count {
+  bottom: -2px;
+  align-items: stretch;
+}
+html[data-pages-view] .recipe-deck-page-count__button {
+  position: relative;
+  padding: 0 14px 12px;
+  border-radius: 14px 14px 0 0;
+  background: var(--cp-page);
+  color: var(--cp-ink);
+}
+html[data-pages-view] .recipe-deck-page-count__button::before,
+html[data-pages-view] .recipe-deck-page-count__button::after {
+  position: absolute;
+  bottom: 0;
+  /* 1px wider, tucked under the tab, so no subpixel seam shows between. */
+  width: 15px;
+  height: 14px;
+  content: "";
+  pointer-events: none;
+}
+html[data-pages-view] .recipe-deck-page-count__button::before {
+  right: calc(100% - 1px);
+  background: radial-gradient(circle at 0 0, transparent 14px, var(--cp-page) 14.5px);
+}
+html[data-pages-view] .recipe-deck-page-count__button::after {
+  left: calc(100% - 1px);
+  background: radial-gradient(circle at 100% 0, transparent 14px, var(--cp-page) 14.5px);
+}
+.recipe-pages-view {
+  border-radius: 20px 20px 0 0;
+  box-shadow: var(--cp-shadow-sheet);
+  /* From the count's width at the top centre, out to the whole sheet. */
+  /* `backwards`: the clip holds only while it plays, so it never crops the
+     sheet's shadow afterwards. */
+  animation: rp-pages-grow 260ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+@keyframes rp-pages-grow {
+  from {
+    clip-path: inset(0 38% 92% 38% round 14px);
+    opacity: 0.6;
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 20px 20px 0 0);
+    opacity: 1;
+  }
+}
+@keyframes rp-pages-scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .recipe-pages-view,
+  .recipe-pages-view__scrim {
+    animation: none;
+  }
 }
 .recipe-pages-view__title {
   flex: 1 1 auto;
@@ -5509,10 +5603,6 @@ html[data-pages-view] .recipe-mobile-actions {
 .recipe-pages-view__page:focus-visible .recipe-pages-view__frame {
   box-shadow: var(--cp-focus-ring);
 }
-/* In Organize only recipes move; the book's own pages hold their place. */
-.recipe-pages-view__page.is-fixed {
-  opacity: 0.55;
-}
 /* min-width 0: a flex item is otherwise at least as wide as its unbroken
    text, so a long name ("Our Favorite Recipes") ran into the next column in
    Safari instead of ending in "…". */
@@ -5526,20 +5616,40 @@ html[data-pages-view] .recipe-mobile-actions {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Its own button over the page's top corner: the page goes to itself, the
+   tick selects. A 36px target around a 22px circle. */
 .recipe-pages-view__check {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 0;
+  right: 0;
+  z-index: 1;
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cp-on-accent);
+}
+.recipe-pages-view__check::before {
+  position: absolute;
+  inset: 7px;
   border: 1.5px solid var(--cp-line-strong);
   border-radius: 999px;
   background: var(--cp-card);
-  color: var(--cp-on-accent);
+  content: "";
 }
-.recipe-pages-view__page.is-selected .recipe-pages-view__check {
+.recipe-pages-view__check > svg {
+  position: relative;
+}
+.recipe-pages-view__check:focus-visible {
+  outline: none;
+}
+.recipe-pages-view__check:focus-visible::before {
+  box-shadow: var(--cp-focus-ring);
+}
+.recipe-pages-view__check.is-checked::before {
   border-color: var(--cp-accent);
   background: var(--cp-accent);
 }

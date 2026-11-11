@@ -37,7 +37,6 @@ import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { WebsitePhotosOption } from "@/components/print/WebsitePhotosOption";
 import { MobileStructureSheet, PHOTOS_SHEET_NOTE, type MobileBookSheet } from "@/components/print/MobileStructureSheet";
 import { MobilePagesPanel } from "@/components/print/MobilePagesPanel";
-import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
 import { PointMenu } from "@/components/print/PointMenu";
 import { NOT_IN_A_CHAPTER, recipeMoveDestinations } from "@/lib/recipeMoveDestinations";
 import { CardPhotosTiles } from "@/components/print/PrintSetupControls";
@@ -6525,29 +6524,15 @@ export default function PrintPage() {
   // cookbook's Add, which asks recipe or chapter before doing either.
   const [pagesPanelOpen, setPagesPanelOpen] = useState(false);
   const [addSheetOpen, setAddSheetOpen] = useState(false);
-  // What a phone's long press opened (lib/useLongPress): a recipe's "Move to"
-  // or a chapter's menu, the two menus right-click opens in the desktop rail.
-  const [phoneMenu, setPhoneMenu] = useState<
-    | { kind: "recipe"; x: number; y: number; id: string; title: string }
-    | { kind: "chapter"; x: number; y: number; id: string }
-    | null
-  >(null);
-  const openRecipePhoneMenu = useCallback(
-    (point: { x: number; y: number }, id: string, title: string) =>
-      setPhoneMenu({ kind: "recipe", ...point, id, title }),
-    [],
-  );
+  // A chapter's menu from a phone's long press (lib/useLongPress), the menu
+  // right-click opens in the desktop rail. Recipes are moved in the Pages
+  // view's Organize: tick them, then Move to chapter.
+  const [phoneMenu, setPhoneMenu] = useState<{ kind: "chapter"; x: number; y: number; id: string } | null>(null);
   const openChapterPhoneMenu = useCallback(
     (point: { x: number; y: number }, id: string) => setPhoneMenu({ kind: "chapter", ...point, id }),
     [],
   );
-  // Organize, inside the Pages view (Pinterest's board organize), rather
-  // than a sheet of its own. Closing the view ends it.
-  const [pagesOrganizing, setPagesOrganizing] = useState(false);
-  const closePagesPanel = useCallback(() => {
-    setPagesPanelOpen(false);
-    setPagesOrganizing(false);
-  }, []);
+  const closePagesPanel = useCallback(() => setPagesPanelOpen(false), []);
   const togglePagesPanel = () => {
     setSizeMenuOpen(false);
     setBookSheet(null);
@@ -7530,11 +7515,8 @@ export default function PrintPage() {
               cookbookMode={cookbookMode}
               missingBookPages={missingBookPages}
               onAddBookPage={addBookPage}
-              onRecipeLongPress={cookbookMode ? openRecipePhoneMenu : undefined}
               onChapterMenu={cookbookMode ? openChapterPhoneMenu : undefined}
               sections={sections}
-              organizing={pagesOrganizing}
-              setOrganizing={setPagesOrganizing}
               sectionOfNav={(nav) =>
                 nav.kind === "section-photo"
                   ? nav.recipeId
@@ -7919,23 +7901,6 @@ export default function PrintPage() {
           setBookSheet={setBookSheet}
         />
 
-        {phoneMenu?.kind === "recipe" && (
-          <MoveToSectionMenu
-            anchor={phoneMenu}
-            heading={`Move \u201c${phoneMenu.title}\u201d to`}
-            sections={recipeMoveDestinations([phoneMenu.id], sections, itemIdsForSection, (itemId) => {
-              const at = sectionAndIndexForItem(itemId);
-              return at ? sections.find((section) => section.id === at.sectionId)?.title?.trim() : undefined;
-            })}
-            onMove={(sectionId) =>
-              sectionId === NOT_IN_A_CHAPTER
-                ? removeRecipesFromChapter([phoneMenu.id])
-                : moveRecipesToSection([phoneMenu.id], sectionId)
-            }
-            onNewSection={() => makeSectionFromSelection(new Set([phoneMenu.id]))}
-            onClose={() => setPhoneMenu(null)}
-          />
-        )}
         {phoneMenu?.kind === "chapter" &&
           (() => {
             const order = projectMeta.meta.sections ?? [];
@@ -7963,9 +7928,8 @@ export default function PrintPage() {
                     label: "Rename chapter",
                     icon: <PencilIcon size={ICON_SIZE.sm} />,
                     onSelect: () => {
-                      // The name is typed over in the Pages view's Organize.
+                      // The name is typed over in the Pages view.
                       setPagesPanelOpen(true);
-                      setPagesOrganizing(true);
                       const id = phoneMenu.id;
                       window.setTimeout(() => {
                         const input = document.querySelector<HTMLInputElement>(
