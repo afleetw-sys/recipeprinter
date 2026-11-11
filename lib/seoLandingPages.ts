@@ -2198,10 +2198,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Organization SEO",
     heroImage: "binder-cover",
     heroAnnotation: "Printed at home, filed in a 3-ring binder",
-    title: "Printable Recipe Binder with Sections & a Table of Contents | RecipePrinter",
+    title: "Make a Printable Recipe Binder | RecipePrinter",
     description:
       "Turn recipes from websites, apps, photos, and handwritten cards into a printable recipe binder with section pages and a table of contents. No retyping.",
-    h1: "Make a printable recipe binder from the recipes you already use",
+    h1: "Make a printable recipe binder",
     breadcrumbLabel: "Recipe binder",
     anchor: "Make a recipe binder",
     lede:
