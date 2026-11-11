@@ -5391,9 +5391,12 @@ textarea.recipe-page-fields__input {
   padding: 10px 8px 6px 16px;
 }
 /* While the Pages view is open the bottom tools and Buy & Print step aside:
-   the grid runs to the bottom of the screen. */
+   under the scrim, so they dim with the page and the sheet grows down over
+   them, rather than vanishing on the first frame and popping back after the
+   sheet has closed. */
 html[data-pages-view] .recipe-mobile-actions {
-  display: none;
+  z-index: 68;
+  pointer-events: none;
 }
 
 /* Pages grows out of the page count ("1 / 12 ⌃") as a sheet, and everything
@@ -5477,24 +5480,31 @@ html[data-pages-view] .recipe-deck-page-count__button::after {
 .recipe-pages-view {
   border-radius: 20px 20px 0 0;
   box-shadow: var(--cp-shadow-sheet);
-  /* Unfolds down and out from under the tab: it starts exactly the count's
-     width (--rp-tab-left/right, measured by MobilePagesPanel) and no height,
-     and opens to the whole sheet on an iOS-sheet curve. No fade on the sheet
-     itself, which only muddied it; its contents fade in a beat behind.
-     `backwards`: the clip holds only while it plays, so it never crops the
-     sheet's shadow afterwards. */
+  /* Unfolds down and out from under the tab: it starts the count's width
+     (--rp-tab-scale and --rp-tab-shift, measured by MobilePagesPanel) and
+     almost no height, and opens to the whole sheet on an iOS-sheet curve.
+     Transform, not clip-path: WebKit runs a clip-path animation on the main
+     thread, where opening the sheet's contents stalled it and it jumped; a
+     transform runs on the compositor and keeps moving. The contents fade in
+     only once it's mostly open, so their stretch never shows. */
+  transform-origin: 50% 0;
   animation: rp-pages-grow 320ms cubic-bezier(0.32, 0.72, 0, 1) backwards;
 }
 .recipe-pages-view > * {
-  animation: rp-pages-content-in 220ms ease-out 80ms backwards;
+  animation: rp-pages-content-in 200ms ease-out 110ms backwards;
 }
 @keyframes rp-pages-grow {
   from {
-    clip-path: inset(0 var(--rp-tab-right, 40%) 100% var(--rp-tab-left, 40%) round 0 0 14px 14px);
+    transform: translateX(var(--rp-tab-shift, 0)) scale(var(--rp-tab-scale, 0.3), 0.02);
   }
   to {
-    clip-path: inset(0 0 0 0 round 20px 20px 0 0);
+    transform: none;
   }
+}
+/* Pages draw once the sheet has opened (LazyThumb waits for it), so they
+   come in softly rather than popping. */
+.recipe-pages-view__thumb > * {
+  animation: rp-pages-fade-in 180ms ease-out both;
 }
 @keyframes rp-pages-content-in {
   from {
@@ -5517,17 +5527,17 @@ html[data-pages-view] .recipe-deck-page-count__button::after {
   animation: rp-pages-shrink 200ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 .recipe-pages-view.is-closing > * {
-  animation: rp-pages-fade-out 120ms ease-in both;
+  animation: rp-pages-fade-out 90ms ease-in both;
 }
 .recipe-pages-view__scrim.is-closing {
   animation: rp-pages-fade-out 200ms ease-in both;
 }
 @keyframes rp-pages-shrink {
   from {
-    clip-path: inset(0 0 0 0 round 20px 20px 0 0);
+    transform: none;
   }
   to {
-    clip-path: inset(0 var(--rp-tab-right, 40%) 100% var(--rp-tab-left, 40%) round 0 0 14px 14px);
+    transform: translateX(var(--rp-tab-shift, 0)) scale(var(--rp-tab-scale, 0.3), 0.02);
   }
 }
 @keyframes rp-pages-fade-out {
@@ -5548,6 +5558,7 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
 @media (prefers-reduced-motion: reduce) {
   .recipe-pages-view,
   .recipe-pages-view > *,
+  .recipe-pages-view__thumb > *,
   .recipe-pages-view__scrim,
   .recipe-mobile-topbar,
   .recipe-mobile-topbar__start,
