@@ -4591,6 +4591,14 @@ textarea.recipe-page-fields__input {
     transform: translateY(0);
   }
 
+  /* A closed sheet waits just under the screen, and its upward shadow still
+     reached up into it: every closed sheet together laid a dark band across
+     the bottom of the screen, over the bottom bar and over any sheet that was
+     open. The shadow belongs to an open sheet only. */
+  .recipe-mobile-sheet:not(.is-open) {
+    box-shadow: none;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .recipe-mobile-sheet {
       transition: none;
@@ -4989,6 +4997,18 @@ textarea.recipe-page-fields__input {
     max-height: none;
     padding-bottom: max(18px, env(safe-area-inset-bottom));
     overflow-y: auto;
+  }
+
+  /* Customize's Reset bar runs to the bottom of the screen on white, rather
+     than stopping above the scroll's end room with the settings showing
+     under it. The end room moves inside the bar. */
+  .recipe-config-panel__scroll .recipe-config-section--customize {
+    margin-bottom: calc(-1 * max(18px, env(safe-area-inset-bottom)));
+  }
+  .recipe-config-panel__scroll .recipe-customize__foot {
+    bottom: calc(-1 * max(18px, env(safe-area-inset-bottom)));
+    padding-bottom: calc(10px + max(18px, env(safe-area-inset-bottom)));
+    background: var(--cp-card);
   }
 
   /* The fixed Print bar at the bottom of the screen is always reachable, so
