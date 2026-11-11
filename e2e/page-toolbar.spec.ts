@@ -251,3 +251,50 @@ test("a cookbook page's bar stays on a phone's screen, whichever side of the spr
     }).toPass({ timeout: 5_000 });
   }
 });
+
+/**
+ * A phone's cookbook bar opens with the page's name ("Cover", "Contents").
+ * The bar's `__group:first-child { padding-left: 0 }` matched it at the same
+ * specificity and came later, so the name sat hard against the bar's rounded
+ * edge, twice now. Every kind of page keeps its name clear of that edge.
+ */
+test("a phone's page name stands clear of the bar's edge, on every kind of page", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const tab = page.getByRole("tab", { name: /Cookbook/ });
+  await expect(async () => {
+    await tab.click();
+    await expect(tab).toHaveAttribute("aria-selected", "true", { timeout: 1_000 });
+  }).toPass();
+  await page.getByRole("button", { name: /Start a cookbook/ }).first().click();
+  await expect(page).toHaveURL(/\/print$/);
+  await page.getByRole("button", { name: "Start adding recipes" }).click();
+  const field = page.getByPlaceholder("Paste a recipe link").filter({ visible: true }).first();
+  await field.fill(LINK);
+  await field.press("Enter");
+  await expect(page.locator("#recipe-add-dialog-title")).toHaveCount(0);
+  await expect(page.getByRole("list", { name: "Contents entries" })).toHaveCount(1);
+
+  const halves = page.locator(".recipe-spread__page");
+  const count = await halves.count();
+  const seen = new Set<string>();
+  for (let i = 0; i < count; i += 1) {
+    const half = halves.nth(i);
+    await half.click();
+    await half.click();
+    const name = bar(page).locator(".recipe-page-toolbar__page-name");
+    if ((await name.count()) === 0) continue;
+    const inset = await name.evaluate((el) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const toolbar = el.closest(".recipe-page-toolbar")!;
+      return {
+        label: el.textContent ?? "",
+        gap: range.getBoundingClientRect().left - toolbar.getBoundingClientRect().left,
+      };
+    });
+    seen.add(inset.label);
+    expect(inset.gap, inset.label).toBeGreaterThanOrEqual(14);
+  }
+  expect(seen.size).toBeGreaterThan(1);
+});

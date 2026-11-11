@@ -1,25 +1,42 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
-import { ChevronRightIcon, PlusIcon, XIcon, ICON_SIZE } from "@/components/icons";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { CheckIcon, ICON_SIZE, MoreHorizontalIcon, PlusIcon, TrashIcon, XIcon } from "@/components/icons";
+import { ChapterNameInput } from "@/components/print/ChapterNameInput";
+import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
 import { ScaledPage } from "@/components/print/ScaledPage";
 import { BOOK_PAGE_ADD_LABEL, type BookPageSlot } from "@/components/print/PageRail";
 import type { PrintCardSize, RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import { coverSideOf } from "@/lib/pageDeletion";
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import type { FontScale } from "@/lib/fontScale";
+import { NOT_IN_A_CHAPTER, NOT_IN_A_CHAPTER_LABEL, recipeMoveDestinations } from "@/lib/recipeMoveDestinations";
+import { useLongPress } from "@/lib/useLongPress";
 import type { NavItem, PageSheet } from "@/lib/usePrintSheets";
+import type { Section } from "@/types/recipe";
 
-/** A thumbnail's width on screen: big enough to tell pages apart, small enough
-    that a phone shows four and a bit, which says the row scrolls. */
-const THUMB_WIDTH = 72;
+/** The smallest a thumbnail gets before a row loses a column. Three to a row
+    on a phone (Amelia, 2026-11-10); more on a tablet's wider screen. */
+const MIN_TILE = 96;
+const GAP = 12;
+/** How long a finger rests on a recipe, in Organize, before it's a drag. */
+/** How long the sheet takes to open out of the tab, and to shrink back into it (print.css). */
+const OPEN_MS = 320;
+const CLOSE_MS = 200;
+const DRAG_HOLD_MS = 350;
 
-/**
- * Where a page sits in the front-to-back order of a book's optional pages, so
- * a deleted one's "Add …" tile can stand where it would be: the cover, then the
- * dedication, then the contents, then everything else, then the back cover.
- */
-function bookOrder(nav: NavItem): number {
+type Group = {
+  key: string;
+  /** The chapter this group is, or null for the front of the book, the
+      recipes in no chapter, and the back. */
+  sectionId: string | null;
+  heading: string | null;
+  tiles: Array<{ nav: NavItem; index: number } | { add: BookPageSlot }>;
+};
+
+/** Where a page sits among a book's optional pages, so a deleted one's "Add …"
+    tile stands where it would be. */
+function frontOrder(nav: NavItem): number {
   if (nav.kind === "toc") return 2;
   if (nav.kind !== "cover") return 3;
   const side = coverSideOf(nav);
@@ -27,13 +44,15 @@ function bookOrder(nav: NavItem): number {
 }
 const SLOT_ORDER: Record<BookPageSlot, number> = { cover: 0, dedication: 1, toc: 2, "back-cover": 4 };
 
-/** Mounts its page only once it scrolls near the strip's view: a long book
-    would otherwise draw every page the moment the strip opens. */
-function LazyThumb({ root, children }: { root: HTMLElement | null; children: ReactNode }) {
+/** Mounts a page only once it scrolls near the view: a long book would
+    otherwise draw every page the moment the view opens. */
+function LazyThumb({ root, ready, children }: { root: HTMLElement | null; ready: boolean; children: ReactNode }) {
   const ref = useRef<HTMLSpanElement | null>(null);
   const [shown, setShown] = useState(false);
   useEffect(() => {
-    if (shown) return;
+    // Not while the sheet is still opening: drawing a screenful of pages
+    // took the frames the opening needed, so it stalled and then jumped.
+    if (shown || !ready) return;
     const el = ref.current;
     if (!el || typeof IntersectionObserver === "undefined") {
       setShown(true);
@@ -46,34 +65,37 @@ function LazyThumb({ root, children }: { root: HTMLElement | null; children: Rea
           observer.disconnect();
         }
       },
-      { root, rootMargin: "0px 300px" },
+      { root, rootMargin: "400px 0px" },
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [root, shown]);
+  }, [root, shown, ready]);
   return (
-    <span ref={ref} className="recipe-pages-panel__thumb">
+    <span ref={ref} className="recipe-pages-view__thumb">
       {shown ? children : null}
     </span>
   );
 }
 
 /**
- * A phone's page overview: a strip of every page as a thumbnail that opens
- * under the top bar and pushes the deck down, rather than a sheet over it.
- * Opened from the page count's caret ("2 / 4 ⌄") or the bottom bar's Pages
- * tile, which are the same toggle. Tap a page to go to it; the strip stays
- * open and marks it. The caret, the X or Escape close it.
+ * A phone's Pages view (Amelia, 2026-11-10): opened from the page count's
+ * caret or the Pages tile, it takes over the space between the top bar and the
+ * bottom tools, so the book is the whole screen. Pages run left to right,
+ * three to a row, a chapter's under its own heading the way a Pinterest
+ * board's sections sit. Tap a page to go to it.
  *
- * A cookbook's Organize opens from here, and a deleted cover, dedication,
- * contents or back cover comes back from the spot it left, as it does in the
- * desktop rail.
+ * Organize happens here, not in a sheet of its own, the way Pinterest
+ * organizes a board: tap Organize, tick recipes, and move them to a chapter
+ * or delete them from the bar at the bottom; or press and hold a recipe and
+ * drag it to a new spot. Chapter names can be typed over, and each chapter's
+ * "⋯" holds its own moves and Delete.
  */
 export function MobilePagesPanel({
   open,
   onClose,
   navItems,
   sheets,
+  sections,
   currentNavIndex,
   onGoToPage,
   cardSize,
@@ -85,13 +107,22 @@ export function MobilePagesPanel({
   cookbookMode,
   missingBookPages,
   onAddBookPage,
-  onOrganize,
+  onChapterMenu,
+  sectionOfNav,
+  itemIdsForSection,
+  onRenameChapter,
+  onMoveRecipes,
+  onNewChapterFrom,
+  onDeleteRecipes,
+  onReorderRecipe,
+  onAddChapter,
 }: {
   open: boolean;
   onClose: () => void;
   navItems: NavItem[];
   sheets: PageSheet[];
-  /** The page in view, marked in the strip. */
+  sections: Section[];
+  /** The page in view, marked in the grid. */
   currentNavIndex: number | null;
   onGoToPage: (navIndex: number) => void;
   cardSize: PrintCardSize;
@@ -103,122 +134,575 @@ export function MobilePagesPanel({
   cookbookMode: boolean;
   missingBookPages: readonly BookPageSlot[];
   onAddBookPage: (page: BookPageSlot) => void;
-  /** Cookbook only: opens the organizer. */
-  onOrganize?: () => void;
+  /** A chapter's "⋯", or a long press on its heading: its menu. */
+  onChapterMenu?: (point: { x: number; y: number }, sectionId: string) => void;
+  /** The chapter (or the unnamed group) a page belongs to. */
+  sectionOfNav: (nav: NavItem) => string | null;
+  itemIdsForSection: (sectionId: string) => string[];
+  onRenameChapter: (sectionId: string, name: string) => void;
+  onMoveRecipes: (ids: string[], sectionId: string) => void;
+  onNewChapterFrom: (ids: string[]) => void;
+  onDeleteRecipes: (ids: string[]) => void;
+  onReorderRecipe: (id: string, sectionId: string, index: number) => void;
+  onAddChapter: () => void;
 }) {
-  const [strip, setStrip] = useState<HTMLOListElement | null>(null);
+  // A cookbook's Pages is always Organize (Amelia, 2026-11-10): a tap on a
+  // page goes to it, a tick selects a recipe, and holding one drags it.
+  // Recipe cards have no chapters to organize, so theirs is just the grid.
+  const organizing = cookbookMode;
+  const viewRef = useRef<HTMLElement | null>(null);
+  const scrimRef = useRef<HTMLButtonElement | null>(null);
+  const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
+  const [top, setTop] = useState(0);
+  // Where the page count sits, so the sheet grows out of exactly its width.
+  const [tab, setTab] = useState({ scale: 0.3, shift: 0 });
+  // The opening has finished, so the thumbnails can draw.
+  const [settled, setSettled] = useState(false);
+  // On screen while open, and for the close animation after. Set during
+  // render on opening, so it is never a frame behind `open`.
+  const [shown, setShown] = useState(open);
+  if (open && !shown) setShown(true);
+  const leaving = shown && !open;
+  const [cols, setCols] = useState(3);
+  const [tileW, setTileW] = useState(MIN_TILE);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [moveAt, setMoveAt] = useState<{ x: number; y: number } | null>(null);
+  const [drop, setDrop] = useState<{ recipeId?: string; after?: boolean; sectionId?: string } | null>(null);
+  const [dragging, setDragging] = useState<string | null>(null);
 
-  // Open on the page you are looking at, not the start of a long book. Only
-  // the strip scrolls: `scrollIntoView` would also move the deck under it.
+  // Hangs straight off the bottom of the top bar, where the page count
+  // becomes its tab (print.css, `html[data-pages-view]`), and runs to the
+  // bottom of the screen; the bottom tools step aside while it's open.
+  useLayoutEffect(() => {
+    if (!open) return;
+    // The count is measured in its tab shape (wider than the closed pill),
+    // so the sheet starts exactly the tab's width.
+    document.documentElement.setAttribute("data-pages-view", "");
+    const bar = document.querySelector<HTMLElement>(".recipe-mobile-topbar");
+    if (bar) setTop(bar.getBoundingClientRect().bottom);
+    const count = bar?.querySelector<HTMLElement>(".recipe-deck-page-count__button");
+    if (count) {
+      const box = count.getBoundingClientRect();
+      const width = window.innerWidth;
+      setTab({
+        scale: Math.min(1, Math.max(0.05, box.width / width)),
+        shift: box.left + box.width / 2 - width / 2,
+      });
+    }
+  }, [open]);
+
+  // Closing plays the opening backwards, back into the tab, before it goes.
+  // The motion is CSS; this only keeps the sheet mounted until it ends.
   useEffect(() => {
-    if (!open || !strip) return;
-    const current = strip.querySelector<HTMLElement>("[aria-current='page']");
-    if (!current) return;
-    const li = current.closest("li") ?? current;
-    strip.scrollLeft = li.offsetLeft - (strip.clientWidth - li.offsetWidth) / 2;
-  }, [open, strip]);
+    if (!leaving) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timer = window.setTimeout(() => setShown(false), reduce ? 0 : CLOSE_MS);
+    return () => window.clearTimeout(timer);
+  }, [leaving]);
+
+  // Closing starts its animation at once and tells the page a frame later.
+  // The page's re-render is long enough to hold the screen still for a
+  // moment; this way the shrink is already running on the compositor while
+  // it happens, instead of waiting behind it.
+  const closeRequested = useRef(false);
+  const requestClose = useCallback(() => {
+    if (closeRequested.current) return;
+    closeRequested.current = true;
+    viewRef.current?.classList.add("is-closing");
+    scrimRef.current?.classList.add("is-closing");
+    document.documentElement.setAttribute("data-pages-view", "closing");
+    requestAnimationFrame(() => window.setTimeout(onClose, 0));
+  }, [onClose]);
+  useEffect(() => {
+    if (open) closeRequested.current = false;
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      setSettled(false);
+      return;
+    }
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timer = window.setTimeout(() => setSettled(true), reduce ? 0 : OPEN_MS);
+    return () => window.clearTimeout(timer);
+  }, [open]);
+
+  // "" while open; "closing" while it shrinks back, when the top bar comes
+  // back to full strength but the count stays the sheet's tab.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (!shown) {
+      root.removeAttribute("data-pages-view");
+      return;
+    }
+    root.setAttribute("data-pages-view", open ? "" : "closing");
+  }, [open, shown]);
+  useEffect(() => () => document.documentElement.removeAttribute("data-pages-view"), []);
+
+  // Columns from the width: three on a phone, more on a tablet. Measured
+  // before the first paint: measured after it, the grid painted at a guessed
+  // size and then jumped, mid-animation.
+  const [measured, setMeasured] = useState(false);
+  useLayoutEffect(() => {
+    if (!open || !scroller) return;
+    const measure = () => {
+      const width = scroller.clientWidth - 32;
+      const next = Math.max(3, Math.floor((width + GAP) / (MIN_TILE + 44 + GAP)));
+      setCols(next);
+      setTileW(Math.floor((width - GAP * (next - 1)) / next));
+      setMeasured(true);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(scroller);
+    return () => observer.disconnect();
+  }, [open, scroller]);
+
+  // Opens on the page in view, once the grid is at its real size, and
+  // before it's painted, so it never shows the top and then jumps.
+  const scrolledToCurrent = useRef(false);
+  useLayoutEffect(() => {
+    if (!open) {
+      scrolledToCurrent.current = false;
+      setMeasured(false);
+      return;
+    }
+    if (!scroller || !measured || scrolledToCurrent.current) return;
+    scrolledToCurrent.current = true;
+    const current = scroller.querySelector<HTMLElement>("[aria-current='page']");
+    if (current) scroller.scrollTop = Math.max(0, current.offsetTop - scroller.clientHeight / 3);
+  }, [open, scroller, measured]);
+
+  useEffect(() => {
+    if (!open) setSelected([]);
+  }, [open]);
+
+  // A recipe that's been deleted leaves the selection with it.
+  useEffect(() => {
+    setSelected((current) => {
+      const next = current.filter((id) => navItems.some((nav) => nav.kind === "recipe" && nav.recipeId === id));
+      return next.length === current.length ? current : next;
+    });
+  }, [navItems]);
 
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") requestClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, requestClose]);
 
-  if (!open) return null;
+  const pressChapter = useLongPress<string>((point, sectionId) => onChapterMenu?.(point, sectionId));
 
-  const scale = THUMB_WIDTH / PAGE_DIMS[cardSize].w;
+  // Press and hold a recipe in Organize to drag it. Its own touch listeners,
+  // not React's, so the scroll can be held still once a drag has begun.
+  const dragState = useRef<{
+    id: string;
+    tile: HTMLElement;
+    startX: number;
+    startY: number;
+    timer: number | null;
+    live: boolean;
+    raf: number;
+    x: number;
+    y: number;
+  } | null>(null);
+  const dropRef = useRef(drop);
+  dropRef.current = drop;
+  const reorderRef = useRef({ onReorderRecipe, itemIdsForSection, sectionOfNav, navItems });
+  reorderRef.current = { onReorderRecipe, itemIdsForSection, sectionOfNav, navItems };
+  useEffect(() => {
+    if (!open || !organizing || !scroller) return;
+    const targetAt = (x: number, y: number) => {
+      const hit = document.elementFromPoint(x, y);
+      const tile = hit?.closest<HTMLElement>("[data-drop-recipe]");
+      if (tile) {
+        const box = tile.getBoundingClientRect();
+        return { recipeId: tile.dataset.dropRecipe!, after: x > box.left + box.width / 2 };
+      }
+      const head = hit?.closest<HTMLElement>("[data-drop-section]");
+      if (head) return { sectionId: head.dataset.dropSection! };
+      return null;
+    };
+    const autoScroll = () => {
+      const state = dragState.current;
+      if (!state?.live) return;
+      const box = scroller.getBoundingClientRect();
+      const edge = 56;
+      if (state.y < box.top + edge) scroller.scrollTop -= 8;
+      else if (state.y > box.bottom - edge) scroller.scrollTop += 8;
+      state.raf = requestAnimationFrame(autoScroll);
+    };
+    const onStart = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      const tile = (event.target as Element | null)?.closest<HTMLElement>("[data-drop-recipe]");
+      if (!touch || !tile || event.touches.length !== 1) return;
+      const state = {
+        id: tile.dataset.dropRecipe!,
+        tile,
+        startX: touch.clientX,
+        startY: touch.clientY,
+        timer: null as number | null,
+        live: false,
+        raf: 0,
+        x: touch.clientX,
+        y: touch.clientY,
+      };
+      state.timer = window.setTimeout(() => {
+        state.live = true;
+        tile.classList.add("is-dragging");
+        setDragging(state.id);
+        state.raf = requestAnimationFrame(autoScroll);
+      }, DRAG_HOLD_MS);
+      dragState.current = state;
+    };
+    const onMove = (event: TouchEvent) => {
+      const state = dragState.current;
+      const touch = event.touches[0];
+      if (!state || !touch) return;
+      state.x = touch.clientX;
+      state.y = touch.clientY;
+      if (!state.live) {
+        // Moved before the hold: it's a scroll.
+        if (Math.hypot(touch.clientX - state.startX, touch.clientY - state.startY) > 10) {
+          if (state.timer) window.clearTimeout(state.timer);
+          dragState.current = null;
+        }
+        return;
+      }
+      event.preventDefault();
+      state.tile.style.transform = `translate(${touch.clientX - state.startX}px, ${touch.clientY - state.startY}px)`;
+      const target = targetAt(touch.clientX, touch.clientY);
+      setDrop(target && target.recipeId !== state.id ? target : null);
+    };
+    const finish = (commit: boolean) => {
+      const state = dragState.current;
+      dragState.current = null;
+      if (!state) return;
+      if (state.timer) window.clearTimeout(state.timer);
+      cancelAnimationFrame(state.raf);
+      state.tile.style.transform = "";
+      state.tile.classList.remove("is-dragging");
+      setDragging(null);
+      const target = dropRef.current;
+      setDrop(null);
+      if (!commit || !state.live || !target) return;
+      const { onReorderRecipe: reorder, itemIdsForSection: idsOf, sectionOfNav: sectionOf, navItems: navs } =
+        reorderRef.current;
+      if (target.sectionId) {
+        reorder(state.id, target.sectionId, 0);
+        return;
+      }
+      const onto = navs.find((nav) => nav.kind === "recipe" && nav.recipeId === target.recipeId);
+      const sectionId = onto ? sectionOf(onto) : null;
+      if (!sectionId || !target.recipeId) return;
+      const ids = idsOf(sectionId).filter((id) => id !== state.id);
+      const at = ids.indexOf(target.recipeId);
+      if (at === -1) return;
+      reorder(state.id, sectionId, at + (target.after ? 1 : 0));
+    };
+    const onEnd = (event: TouchEvent) => {
+      if (dragState.current?.live) event.preventDefault();
+      finish(true);
+    };
+    const onCancel = () => finish(false);
+    scroller.addEventListener("touchstart", onStart, { passive: true });
+    scroller.addEventListener("touchmove", onMove, { passive: false });
+    scroller.addEventListener("touchend", onEnd, { passive: false });
+    scroller.addEventListener("touchcancel", onCancel);
+    return () => {
+      scroller.removeEventListener("touchstart", onStart);
+      scroller.removeEventListener("touchmove", onMove);
+      scroller.removeEventListener("touchend", onEnd);
+      scroller.removeEventListener("touchcancel", onCancel);
+      finish(false);
+    };
+  }, [open, organizing, scroller]);
+
+  if (!shown) return null;
+
+  // Group the book: the front matter, then each chapter (or the recipes in no
+  // chapter) under its heading, then the back cover.
+  const named = sections.filter((section) => section.title?.trim());
+  const groups: Group[] = [];
   const missing = cookbookMode ? [...missingBookPages] : [];
-  const addTile = (page: BookPageSlot) => (
-    <li key={`add-${page}`}>
-      <button
-        type="button"
-        className="recipe-pages-panel__add"
-        style={{ width: THUMB_WIDTH, aspectRatio: `${PAGE_DIMS[cardSize].w} / ${PAGE_DIMS[cardSize].h}` }}
-        onClick={() => {
-          onClose();
-          onAddBookPage(page);
-        }}
-      >
-        <PlusIcon size={ICON_SIZE.sm} />
-        {BOOK_PAGE_ADD_LABEL[page]}
-      </button>
-    </li>
-  );
+  const groupFor = (nav: NavItem): { key: string; sectionId: string | null; heading: string | null } => {
+    if (!cookbookMode) return { key: "all", sectionId: null, heading: null };
+    if (nav.kind === "toc" || (nav.kind === "cover" && coverSideOf(nav) !== "back")) {
+      return { key: "front", sectionId: null, heading: null };
+    }
+    if (nav.kind === "cover") return { key: "back", sectionId: null, heading: null };
+    const sectionId = sectionOfNav(nav);
+    const section = sectionId ? sections.find((entry) => entry.id === sectionId) : undefined;
+    const title = section?.title?.trim();
+    if (sectionId && title) return { key: sectionId, sectionId, heading: title };
+    return { key: "loose", sectionId: sectionId ?? null, heading: named.length > 0 ? NOT_IN_A_CHAPTER_LABEL : null };
+  };
+  navItems.forEach((nav, index) => {
+    if (!sheets[nav.sheetIndex]) return;
+    const at = groupFor(nav);
+    let group = groups[groups.length - 1];
+    if (!group || group.key !== at.key) {
+      group = { key: at.key, sectionId: at.sectionId, heading: at.heading, tiles: [] };
+      groups.push(group);
+    }
+    if (at.key === "front" || at.key === "back") {
+      const order = frontOrder(nav);
+      missing
+        .filter((page) => SLOT_ORDER[page] < order)
+        .forEach((page) => {
+          missing.splice(missing.indexOf(page), 1);
+          group.tiles.push({ add: page });
+        });
+    }
+    group.tiles.push({ nav, index });
+  });
+  // An empty chapter still has a heading to drop onto, in book order.
+  named.forEach((section) => {
+    if (groups.some((group) => group.key === section.id)) return;
+    const backAt = groups.findIndex((group) => group.key === "back");
+    const empty: Group = { key: section.id, sectionId: section.id, heading: section.title!.trim(), tiles: [] };
+    if (backAt === -1) groups.push(empty);
+    else groups.splice(backAt, 0, empty);
+  });
+  if (missing.length) {
+    const last = groups.find((group) => group.key === "back") ?? (() => {
+      const back: Group = { key: "back", sectionId: null, heading: null, tiles: [] };
+      groups.push(back);
+      return back;
+    })();
+    missing.forEach((page) => last.tiles.push({ add: page }));
+  }
+
+  const scale = tileW / PAGE_DIMS[cardSize].w;
+  const tileH = Math.round(tileW * (PAGE_DIMS[cardSize].h / PAGE_DIMS[cardSize].w));
+  const toggle = (id: string) =>
+    setSelected((current) => (current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id]));
+  const destinations = moveAt
+    ? recipeMoveDestinations(selected, sections, itemIdsForSection, (itemId) => {
+        const nav = navItems.find((entry) => entry.kind === "recipe" && entry.recipeId === itemId);
+        const sectionId = nav ? sectionOfNav(nav) : null;
+        return sectionId ? sections.find((section) => section.id === sectionId)?.title?.trim() : undefined;
+      })
+    : [];
 
   return (
-    <section className="recipe-pages-panel no-print" aria-label="Pages">
-      <div className="recipe-pages-panel__head">
-        <h2 className="recipe-pages-panel__title">Pages</h2>
-        {onOrganize && (
-          <button
-            type="button"
-            className="btn btn-secondary btn-compact"
-            onClick={() => {
-              onClose();
-              onOrganize();
-            }}
-          >
-            Organize
-            <ChevronRightIcon size={ICON_SIZE.sm} />
-          </button>
-        )}
-        <button
-          type="button"
-          className="icon-close-btn recipe-pages-panel__close"
-          aria-label="Close pages"
-          onClick={onClose}
-        >
+    <>
+    {/* Everything outside the sheet dims and closes it when tapped, so the
+        sheet is plainly what to look at. */}
+    <button
+      ref={scrimRef}
+      type="button"
+      className={`recipe-pages-view__scrim no-print ${open ? "" : "is-closing"}`}
+      aria-label="Close pages"
+      onClick={requestClose}
+    />
+    <section
+      ref={viewRef}
+      className={`recipe-pages-view no-print ${open ? "" : "is-closing"}`}
+      style={
+        {
+          top,
+          "--rp-tab-scale": tab.scale,
+          "--rp-tab-shift": `${tab.shift}px`,
+        } as CSSProperties
+      }
+      aria-label="Pages"
+    >
+      <div className="recipe-pages-view__head">
+        <h2 className="recipe-pages-view__title">Pages</h2>
+        <button type="button" className="icon-close-btn" aria-label="Close pages" onClick={requestClose}>
           <XIcon size={ICON_SIZE.md} />
         </button>
       </div>
-      <ol ref={setStrip} className="recipe-pages-panel__strip">
-        {navItems.map((nav, index) => {
-          const sheet = sheets[nav.sheetIndex];
-          if (!sheet) return null;
-          const order = cookbookMode ? bookOrder(nav) : 3;
-          const before = missing.filter((page) => SLOT_ORDER[page] < order);
-          before.forEach((page) => missing.splice(missing.indexOf(page), 1));
-          const isCurrent = index === currentNavIndex;
-          return (
-            <Fragment key={`${nav.kind}-${nav.recipeId}-${nav.sheetIndex}-${nav.slotIndex}`}>
-              {before.map(addTile)}
-              <li>
-                <button
-                  type="button"
-                  className="recipe-pages-panel__page"
-                  aria-current={isCurrent ? "page" : undefined}
-                  // Stays open: the strip is for moving around the book, and
-                  // the page you go to is marked in it as you go.
-                  onClick={() => onGoToPage(index)}
-                >
-                  <LazyThumb root={strip}>
-                    <ScaledPage
-                      sheet={sheet}
-                      isLastSheet={nav.sheetIndex === sheets.length - 1}
-                      activeSlotIndex={nav.slotIndex}
-                      activeSide="front"
-                      scale={scale}
-                      size={previewCardSize}
-                      template={template}
-                      fontScale={fontScale}
-                      doubleSided={doubleSided}
-                      showDescription={showDescription}
-                      showCutLines={false}
-                      showDecoration={false}
-                      cookbookMode={cookbookMode}
-                    />
-                  </LazyThumb>
-                  <span className="recipe-pages-panel__label">{nav.label}</span>
-                </button>
-              </li>
-            </Fragment>
-          );
-        })}
-        {missing.map(addTile)}
-      </ol>
+      {organizing && (
+        <p className="recipe-pages-view__hint">
+          Tap a page to go to it. Tick recipes to move them, or press and hold one to drag it.
+        </p>
+      )}
+      <div ref={setScroller} className="recipe-pages-view__scroll">
+        {groups.map((group) => (
+          <div key={group.key} className="recipe-pages-view__group">
+            {group.heading && (
+              <div
+                className={`recipe-pages-view__heading rp-long-press ${
+                  drop?.sectionId && drop.sectionId === group.sectionId ? "is-drop-target" : ""
+                }`}
+                data-drop-section={group.sectionId ?? undefined}
+                {...(group.sectionId && group.key !== "loose" && onChapterMenu ? pressChapter(group.sectionId) : {})}
+              >
+                {organizing && group.sectionId && group.key !== "loose" ? (
+                  <ChapterNameInput
+                    data-chapter-name-input={group.sectionId}
+                    className="recipe-pages-view__chapter-name"
+                    value={sections.find((section) => section.id === group.sectionId)?.title ?? ""}
+                    placeholder="Chapter name"
+                    aria-label="Chapter name"
+                    onRename={(value) => onRenameChapter(group.sectionId!, value)}
+                  />
+                ) : (
+                  <h3>{group.heading}</h3>
+                )}
+                {group.sectionId && group.key !== "loose" && onChapterMenu && (
+                  <button
+                    type="button"
+                    className="icon-button icon-button--bare recipe-pages-view__chapter-more"
+                    aria-label={`Actions for ${group.heading}`}
+                    onClick={(event) => {
+                      const box = event.currentTarget.getBoundingClientRect();
+                      onChapterMenu({ x: box.right - 200, y: box.bottom + 4 }, group.sectionId!);
+                    }}
+                  >
+                    <MoreHorizontalIcon size={ICON_SIZE.md} />
+                  </button>
+                )}
+              </div>
+            )}
+            {group.tiles.length === 0 ? (
+              <p className="recipe-pages-view__empty" data-drop-section={group.sectionId ?? undefined}>
+                {organizing ? "Drag a recipe here." : "No recipes yet."}
+              </p>
+            ) : (
+              <ol className="recipe-pages-view__grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+                {group.tiles.map((tile) => {
+                  if ("add" in tile) {
+                    return (
+                      <li key={`add-${tile.add}`}>
+                        <button
+                          type="button"
+                          className="recipe-pages-view__add"
+                          style={{ height: tileH }}
+                          onClick={() => onAddBookPage(tile.add)}
+                        >
+                          <PlusIcon size={ICON_SIZE.sm} />
+                          {BOOK_PAGE_ADD_LABEL[tile.add]}
+                        </button>
+                      </li>
+                    );
+                  }
+                  const { nav, index } = tile;
+                  const sheet = sheets[nav.sheetIndex];
+                  const isRecipe = nav.kind === "recipe";
+                  const picked = isRecipe && selected.includes(nav.recipeId);
+                  const dropHere = isRecipe && drop?.recipeId === nav.recipeId;
+                  return (
+                    <li
+                      key={`${nav.kind}-${nav.recipeId}-${nav.sheetIndex}-${nav.slotIndex}`}
+                      className={`${dropHere ? (drop?.after ? "is-drop-after" : "is-drop-before") : ""} ${
+                        dragging === nav.recipeId ? "is-dragging-source" : ""
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        className={`recipe-pages-view__page rp-long-press ${picked ? "is-selected" : ""}`}
+                        aria-current={index === currentNavIndex ? "page" : undefined}
+                        data-drop-recipe={organizing && isRecipe ? nav.recipeId : undefined}
+                        onClick={() => {
+                          // Once something's ticked, taps tick more (a page
+                          // that can't be ticked stays put), as on Pinterest.
+                          if (selected.length > 0) {
+                            if (isRecipe) toggle(nav.recipeId);
+                            return;
+                          }
+                          onClose();
+                          onGoToPage(index);
+                        }}
+                      >
+                        <span className="recipe-pages-view__frame" style={{ height: tileH }}>
+                          <LazyThumb root={scroller} ready={settled}>
+                            <ScaledPage
+                              sheet={sheet}
+                              isLastSheet={nav.sheetIndex === sheets.length - 1}
+                              activeSlotIndex={nav.slotIndex}
+                              activeSide="front"
+                              scale={scale}
+                              size={previewCardSize}
+                              template={template}
+                              fontScale={fontScale}
+                              doubleSided={doubleSided}
+                              showDescription={showDescription}
+                              showCutLines={false}
+                              showDecoration={false}
+                              cookbookMode={cookbookMode}
+                            />
+                          </LazyThumb>
+                        </span>
+                        <span className="recipe-pages-view__label">{nav.label}</span>
+                      </button>
+                      {organizing && isRecipe && (
+                        <button
+                          type="button"
+                          className={`recipe-pages-view__check ${picked ? "is-checked" : ""}`}
+                          aria-pressed={picked}
+                          aria-label={`Select ${nav.label}`}
+                          onClick={() => toggle(nav.recipeId)}
+                        >
+                          {picked && <CheckIcon size={ICON_SIZE.sm} />}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </div>
+        ))}
+      </div>
+      {organizing && (
+        <div className="recipe-pages-view__bar">
+          {selected.length > 0 ? (
+            <>
+              <span className="recipe-pages-view__count">
+                {selected.length} selected
+              </span>
+              <button
+                type="button"
+                className="btn btn-secondary btn-compact"
+                onClick={(event) => {
+                  const box = event.currentTarget.getBoundingClientRect();
+                  setMoveAt({ x: box.left, y: box.top - 8 });
+                }}
+              >
+                Move to chapter
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-ghost--danger btn-compact"
+                // The selection stays until they're gone: cancelling the
+                // confirm keeps what was ticked.
+                onClick={() => onDeleteRecipes(selected)}
+              >
+                <TrashIcon size={ICON_SIZE.sm} />
+                Delete
+              </button>
+            </>
+          ) : (
+            <button type="button" className="btn btn-secondary btn-compact" onClick={onAddChapter}>
+              <PlusIcon size={ICON_SIZE.sm} />
+              Add chapter
+            </button>
+          )}
+        </div>
+      )}
+      {moveAt && (
+        <MoveToSectionMenu
+          anchor={moveAt}
+          heading={selected.length > 1 ? `Move ${selected.length} recipes to` : "Move to"}
+          sections={destinations}
+          onMove={(sectionId) => {
+            onMoveRecipes(selected, sectionId === NOT_IN_A_CHAPTER ? NOT_IN_A_CHAPTER : sectionId);
+            setSelected([]);
+          }}
+          onNewSection={() => {
+            onNewChapterFrom(selected);
+            setSelected([]);
+          }}
+          onClose={() => setMoveAt(null)}
+        />
+      )}
     </section>
+    </>
   );
 }

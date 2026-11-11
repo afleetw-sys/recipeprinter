@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { CheckIcon, ChevronDownIcon, ICON_SIZE } from "@/components/icons";
+import { CheckIcon, ChevronDownIcon, ICON_SIZE, PlusIcon } from "@/components/icons";
 import { TextStyleControl } from "@/components/print/TextStyleControl";
 import { textBarScale } from "@/lib/deckZoom";
 import { readLineSelection } from "@/lib/lineSelection";
@@ -320,6 +320,19 @@ export function TextFieldToolbar({
    */
   const styleGroup = richText ? <TextStyleControl /> : null;
 
+  // A new row under this ingredient or step, as the card's own "+ Add below"
+  // does. That one is hidden on the row being typed in, and on a phone it's a
+  // small target on a scaled page, so the bar above the keyboard carries it
+  // (CSS shows it only there). On press, like the card's: the row being typed
+  // is committed by the insert itself, not by a blur first.
+  const addBelow =
+    inlineEdit && target && (target.kind === "ingredient" || target.kind === "step")
+      ? () =>
+          target.kind === "ingredient"
+            ? inlineEdit.onInsertIngredient(target.index + 1)
+            : inlineEdit.onInsertStep(target.index + 1)
+      : null;
+
   return createPortal(
     <div
       ref={barRef}
@@ -381,6 +394,21 @@ export function TextFieldToolbar({
         </div>
       )}
       {styleGroup}
+      {addBelow && (
+        <div className="recipe-page-toolbar__group recipe-text-toolbar__add-below">
+          <button
+            type="button"
+            className="recipe-page-toolbar__btn"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              addBelow();
+            }}
+          >
+            <PlusIcon size={ICON_SIZE.sm} />
+            Add below
+          </button>
+        </div>
+      )}
     </div>,
     document.body,
   );

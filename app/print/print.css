@@ -901,13 +901,6 @@
   }
 }
 
-/* The editing tip is a phone-layout thing (see the block in the phone media
-   query below). It renders inside the deck at every size, so it is off until
-   that block turns it on. */
-.recipe-edit-tips {
-  display: none;
-}
-
 @media screen and (max-width: 820px), screen and (pointer: coarse) and (max-width: 1366px) {
   /* The side-panels button is a DESKTOP control: everything that makes it
      one lives in the min-width:821px block, and there are no side panels here
@@ -2149,6 +2142,19 @@
 .recipe-text-toolbar[data-docked] .recipe-page-toolbar__btn--icon {
   width: 40px;
 }
+/* "Add below" is the keyboard bar's: on desktop the card's own "+ Add below"
+   sits right under the row. */
+.recipe-text-toolbar__add-below {
+  display: none;
+}
+.recipe-text-toolbar[data-docked] .recipe-text-toolbar__add-below {
+  display: inline-flex;
+}
+.recipe-text-toolbar__add-below .recipe-page-toolbar__btn {
+  gap: 4px;
+  padding: 0 10px;
+  white-space: nowrap;
+}
 
 .recipe-text-toolbar .recipe-page-toolbar__btn {
   min-height: 22px;
@@ -2423,6 +2429,27 @@
 
 .recipe-page-toolbar__group:first-child { padding-left: 0; }
 .recipe-page-toolbar__group:last-child { padding-right: 0; }
+
+/* The page's kind ("Cover", "Contents"), first in a phone's cookbook bar: a
+   label, not a control, so it sits in a tinted chip of its own, apart from
+   the buttons, with no rule after it (Amelia, 2026-11-10). After the
+   `:first-child` reset above on purpose: at the same specificity before it,
+   that reset zeroed this padding and put the word hard against the bar's
+   rounded edge (e2e/page-toolbar.spec.ts). */
+.recipe-page-toolbar__group.recipe-page-toolbar__page-name {
+  align-self: stretch;
+  margin-right: 4px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--cp-surface-muted);
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.recipe-page-toolbar__group.recipe-page-toolbar__page-name + .recipe-page-toolbar__group {
+  border-left-color: transparent;
+}
 
 /* The divider between groups. A line rather than a gap: at this size a gap
    alone reads as sloppy spacing, and the reference toolbars this follows all
@@ -5040,43 +5067,6 @@ textarea.recipe-page-fields__input {
     background: var(--cp-page);
   }
 
-  /* One line of how-to, the first thing in the action bar, just above its
-     tools. It used to hang under the active page, which meant a tip under
-     every page you scrolled to and room kept between pages for it. Centred,
-     quiet, and it ignores pointers, so it can never eat a tap. The bar's gap
-     (10px) sits under it; the negative margin trims that to 6 so the line
-     reads as a caption to the tools rather than a row of its own. */
-  .recipe-edit-tips {
-    display: block;
-    margin-bottom: -4px;
-    pointer-events: none;
-    color: var(--cp-ink-soft);
-    font-size: 12.5px;
-    font-style: italic;
-    line-height: 1.3;
-    text-align: center;
-  }
-
-  .recipe-edit-tips__text {
-    animation: recipe-edit-tip-in 260ms ease-out;
-  }
-
-  @keyframes recipe-edit-tip-in {
-    from {
-      opacity: 0;
-      transform: translateY(3px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .recipe-edit-tips__text {
-      animation: none;
-    }
-  }
 }
 
 /* Same 0.125in-per-side safety shrink as the base `.recipe-print-preview`
@@ -5377,92 +5367,410 @@ textarea.recipe-page-fields__input {
   box-shadow: var(--cp-focus-ring);
 }
 
-/* The phone's page overview (MobilePagesPanel): a strip under the top bar
-   that pushes the deck down, every page as a thumbnail with its name. The page
-   in view is marked the way a selected tile is everywhere else. */
-.recipe-pages-panel {
-  position: relative;
-  z-index: 5;
-  flex: none;
-  border-bottom: 1px solid var(--cp-line);
-  background: var(--cp-card);
-}
-.recipe-pages-panel__head {
+/* The phone's Pages view (MobilePagesPanel): it takes over the space between
+   the top bar and the bottom tools, covering the preview, and lays the book
+   out three pages to a row under chapter headings. Organize happens in it. */
+.recipe-pages-view {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  /* Over the page and the scrim, under the top bar (whose page count is
+     the sheet's tab), menus and dialogs. */
+  z-index: 70;
+  padding-bottom: env(safe-area-inset-bottom);
   display: flex;
+  flex-direction: column;
+  background: var(--cp-page);
+}
+.recipe-pages-view__head {
+  display: flex;
+  flex: none;
   align-items: center;
   gap: 8px;
-  padding: 8px 8px 0 16px;
+  padding: 10px 8px 6px 16px;
 }
-.recipe-pages-panel__title {
+/* While the Pages view is open the bottom tools and Buy & Print step aside:
+   under the scrim, so they dim with the page and the sheet grows down over
+   them, rather than vanishing on the first frame and popping back after the
+   sheet has closed. */
+html[data-pages-view] .recipe-mobile-actions {
+  z-index: 68;
+  pointer-events: none;
+}
+
+/* Pages grows out of the page count ("1 / 12 ⌃") as a sheet, and everything
+   else dims (Amelia, 2026-11-10): a scrim over the page behind, and the top
+   bar lifted above it with all but the count faded and out of reach. The
+   count turns into the sheet's tab, the same colour and joined to it with no
+   gap, so it reads as what opened the sheet and what closes it. */
+.recipe-pages-view__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 69;
+  border: 0;
+  background: var(--cp-scrim);
+  animation: rp-pages-fade-in 240ms ease-out both;
+}
+/* The bar, its buttons and the count ease into and out of their sheet look
+   in step with the scrim, rather than switching on the first frame (the bar
+   went see-through before the scrim behind it had darkened). */
+.recipe-mobile-topbar {
+  transition:
+    background-color 240ms ease-out,
+    border-color 240ms ease-out;
+}
+.recipe-mobile-topbar__start,
+.recipe-mobile-topbar__actions {
+  transition: opacity 240ms ease-out;
+}
+.recipe-deck-page-count__button {
+  transition:
+    background-color 160ms ease-out,
+    color 160ms ease-out;
+}
+html[data-pages-view] .recipe-mobile-topbar {
+  z-index: 71;
+  background: transparent;
+  border-bottom-color: transparent;
+  /* A tap on the dimmed bar falls through to the scrim and closes the sheet;
+     only the count (pointer-events: auto on it) still answers. */
+  pointer-events: none;
+}
+html[data-pages-view] .recipe-mobile-topbar__start,
+html[data-pages-view] .recipe-mobile-topbar__actions {
+  opacity: 0.3;
+  pointer-events: none;
+}
+/* The tab: the count runs down to the bar's bottom edge, where the sheet
+   starts, in the sheet's colour, with the inside corners curving out into the
+   sheet. The bottom padding matches the bar's, so the numbers don't move. */
+/* -2px: over the bar's own 1px border and the sheet's top edge, so no line
+   shows where the tab meets the sheet. */
+html[data-pages-view] .recipe-mobile-topbar__count {
+  bottom: -2px;
+  align-items: stretch;
+}
+html[data-pages-view] .recipe-deck-page-count__button {
+  position: relative;
+  padding: 0 14px 12px;
+  border-radius: 14px 14px 0 0;
+  background: var(--cp-page);
+  color: var(--cp-ink);
+}
+html[data-pages-view] .recipe-deck-page-count__button::before,
+html[data-pages-view] .recipe-deck-page-count__button::after {
+  animation: rp-pages-fade-in 160ms ease-out both;
+  position: absolute;
+  bottom: 0;
+  /* 1px wider, tucked under the tab, so no subpixel seam shows between. */
+  width: 15px;
+  height: 14px;
+  content: "";
+  pointer-events: none;
+}
+html[data-pages-view] .recipe-deck-page-count__button::before {
+  right: calc(100% - 1px);
+  background: radial-gradient(circle at 0 0, transparent 14px, var(--cp-page) 14.5px);
+}
+html[data-pages-view] .recipe-deck-page-count__button::after {
+  left: calc(100% - 1px);
+  background: radial-gradient(circle at 100% 0, transparent 14px, var(--cp-page) 14.5px);
+}
+.recipe-pages-view {
+  border-radius: 20px 20px 0 0;
+  box-shadow: var(--cp-shadow-sheet);
+  /* Unfolds down and out from under the tab: it starts the count's width
+     (--rp-tab-scale and --rp-tab-shift, measured by MobilePagesPanel) and
+     almost no height, and opens to the whole sheet on an iOS-sheet curve.
+     Transform, not clip-path: WebKit runs a clip-path animation on the main
+     thread, where opening the sheet's contents stalled it and it jumped; a
+     transform runs on the compositor and keeps moving. The contents fade in
+     only once it's mostly open, so their stretch never shows. */
+  transform-origin: 50% 0;
+  animation: rp-pages-grow 320ms cubic-bezier(0.32, 0.72, 0, 1) backwards;
+}
+.recipe-pages-view > * {
+  animation: rp-pages-content-in 200ms ease-out 110ms backwards;
+}
+@keyframes rp-pages-grow {
+  from {
+    transform: translateX(var(--rp-tab-shift, 0)) scale(var(--rp-tab-scale, 0.3), 0.02);
+  }
+  to {
+    transform: none;
+  }
+}
+/* Pages draw once the sheet has opened (LazyThumb waits for it), so they
+   come in softly rather than popping. */
+.recipe-pages-view__thumb > * {
+  animation: rp-pages-fade-in 180ms ease-out both;
+}
+@keyframes rp-pages-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@keyframes rp-pages-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+/* Closing: the same way back, quicker, into the tab, and the scrim lifts.
+   MobilePagesPanel keeps it mounted until this ends (CLOSE_MS). */
+.recipe-pages-view.is-closing,
+.recipe-pages-view__scrim.is-closing {
+  pointer-events: none;
+}
+.recipe-pages-view.is-closing {
+  animation: rp-pages-shrink 200ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+.recipe-pages-view.is-closing > * {
+  animation: rp-pages-fade-out 90ms ease-in both;
+}
+.recipe-pages-view__scrim.is-closing {
+  animation: rp-pages-fade-out 200ms ease-in both;
+}
+@keyframes rp-pages-shrink {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translateX(var(--rp-tab-shift, 0)) scale(var(--rp-tab-scale, 0.3), 0.02);
+  }
+}
+@keyframes rp-pages-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+/* While it shrinks the bar comes back to full strength; the count stays the
+   sheet's tab until the sheet has gone into it. */
+html[data-pages-view="closing"] .recipe-mobile-topbar {
+  background: var(--cp-card);
+  border-bottom-color: var(--cp-line);
+}
+html[data-pages-view="closing"] .recipe-mobile-topbar__start,
+html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .recipe-pages-view,
+  .recipe-pages-view > *,
+  .recipe-pages-view__thumb > *,
+  .recipe-pages-view__scrim,
+  .recipe-mobile-topbar,
+  .recipe-mobile-topbar__start,
+  .recipe-mobile-topbar__actions,
+  .recipe-deck-page-count__button,
+  .recipe-deck-page-count__button::before,
+  .recipe-deck-page-count__button::after {
+    animation: none;
+    transition: none;
+  }
+}
+.recipe-pages-view__title {
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-dialog-title);
+  font-weight: 800;
+}
+.recipe-pages-view__hint {
+  flex: none;
+  margin: 0;
+  padding: 0 16px 6px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+}
+.recipe-pages-view__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 4px 16px 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.recipe-pages-view__group + .recipe-pages-view__group {
+  margin-top: 20px;
+}
+.recipe-pages-view__heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+}
+.recipe-pages-view__heading h3 {
   flex: 1 1 auto;
   margin: 0;
   color: var(--cp-ink);
   font-size: var(--cp-fs-body);
   font-weight: 700;
 }
-.recipe-pages-panel__strip {
-  display: flex;
-  gap: 10px;
+.recipe-pages-view__heading.is-drop-target {
+  box-shadow: var(--cp-selected-ring);
+}
+.recipe-pages-view__chapter-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--cp-line);
+  border-radius: var(--cp-radius-control);
+  background: var(--cp-card);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body);
+  font-weight: 700;
+}
+.recipe-pages-view__chapter-name:focus {
+  outline: none;
+  border-color: var(--cp-selected-border);
+  box-shadow: var(--cp-focus-ring);
+}
+.recipe-pages-view__empty {
   margin: 0;
-  padding: 10px 16px 12px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
+  padding: 18px 12px;
+  border: 1px dashed var(--cp-line-strong);
+  border-radius: 10px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  text-align: center;
+}
+.recipe-pages-view__grid {
+  display: grid;
+  gap: 16px 12px;
+  margin: 0;
+  padding: 0;
   list-style: none;
 }
-.recipe-pages-panel__strip::-webkit-scrollbar {
-  display: none;
+.recipe-pages-view__grid > li {
+  position: relative;
+  min-width: 0;
 }
-.recipe-pages-panel__strip > li {
-  flex: none;
-}
-.recipe-pages-panel__page {
+.recipe-pages-view__page {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 6px;
+  width: 100%;
+  min-width: 0;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--cp-ink-soft);
+  text-align: left;
 }
-.recipe-pages-panel__thumb {
+.recipe-pages-view__frame {
+  position: relative;
   display: block;
   overflow: hidden;
-  width: 72px;
-  aspect-ratio: 8.5 / 11;
+  width: 100%;
   border: 1px solid var(--cp-line);
   border-radius: 6px;
   background: var(--cp-card);
+}
+.recipe-pages-view__thumb {
+  display: block;
   pointer-events: none;
 }
-.recipe-pages-panel__page[aria-current="page"] .recipe-pages-panel__thumb {
+.recipe-pages-view__page[aria-current="page"] .recipe-pages-view__frame,
+.recipe-pages-view__page.is-selected .recipe-pages-view__frame {
   border-color: var(--cp-selected-border);
   box-shadow: var(--cp-selected-ring);
 }
-.recipe-pages-panel__page[aria-current="page"] {
+.recipe-pages-view__page[aria-current="page"] {
   color: var(--cp-selected-text);
 }
-.recipe-pages-panel__page:focus-visible {
+.recipe-pages-view__page:focus-visible {
   outline: none;
 }
-.recipe-pages-panel__page:focus-visible .recipe-pages-panel__thumb {
+.recipe-pages-view__page:focus-visible .recipe-pages-view__frame {
   box-shadow: var(--cp-focus-ring);
 }
-.recipe-pages-panel__label {
-  max-width: 72px;
+/* min-width 0: a flex item is otherwise at least as wide as its unbroken
+   text, so a long name ("Our Favorite Recipes") ran into the next column in
+   Safari instead of ending in "…". */
+.recipe-pages-view__label {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   font-size: var(--cp-fs-caption);
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.recipe-pages-panel__add {
+/* Its own button over the page's top corner: the page goes to itself, the
+   tick selects. A 36px target around a 22px circle. */
+.recipe-pages-view__check {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cp-on-accent);
+}
+.recipe-pages-view__check::before {
+  position: absolute;
+  inset: 7px;
+  border: 1.5px solid var(--cp-line-strong);
+  border-radius: 999px;
+  background: var(--cp-card);
+  content: "";
+}
+.recipe-pages-view__check > svg {
+  position: relative;
+}
+.recipe-pages-view__check:focus-visible {
+  outline: none;
+}
+.recipe-pages-view__check:focus-visible::before {
+  box-shadow: var(--cp-focus-ring);
+}
+.recipe-pages-view__check.is-checked::before {
+  border-color: var(--cp-accent);
+  background: var(--cp-accent);
+}
+/* The page under a finger that's dragging it: lifted, and out of the way of
+   what it's dropped onto. */
+.recipe-pages-view__page.is-dragging {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+  box-shadow: var(--cp-shadow-md);
+  opacity: 0.9;
+}
+/* Where a dragged recipe will land: a bar on that side of the page. */
+.recipe-pages-view__grid > li.is-drop-before::before,
+.recipe-pages-view__grid > li.is-drop-after::after {
+  position: absolute;
+  top: 0;
+  bottom: 22px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--cp-accent);
+  content: "";
+}
+.recipe-pages-view__grid > li.is-drop-before::before {
+  left: -8px;
+}
+.recipe-pages-view__grid > li.is-drop-after::after {
+  right: -8px;
+}
+.recipe-pages-view__add {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  width: 100%;
   padding: 6px;
   border: 1px dashed var(--cp-line-strong);
   border-radius: 6px;
@@ -5472,6 +5780,22 @@ textarea.recipe-page-fields__input {
   font-weight: 600;
   line-height: 1.25;
   text-align: center;
+}
+.recipe-pages-view__bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--cp-line);
+  background: var(--cp-card);
+}
+.recipe-pages-view__count {
+  flex: 1 1 auto;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+  font-weight: 600;
 }
 
 /* A phone cookbook's Add sheet: recipe, chapter or blank page. */
@@ -10119,6 +10443,15 @@ textarea.recipe-card__toc-title {
      words inside it. */
   flex: 0 0 auto;
   max-width: 100%;
+}
+
+/* Rows a long press opens a menu on (lib/useLongPress): iOS would otherwise
+   put its own copy/select callout over that menu, and start a text
+   selection under the finger. */
+.rp-long-press {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 @keyframes print-success-fade {
