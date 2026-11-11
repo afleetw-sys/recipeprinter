@@ -40,6 +40,21 @@ test("a pasted link becomes a printable recipe with every ingredient and step", 
   }
 });
 
+test("importing never opens Ready for another recipe?, however many cards came before", async ({ page }) => {
+  // This browser has imported a card already, so this is the second: the
+  // import that used to open it. The dialog is for after a print or a
+  // download only (Amelia, 2026-11-11).
+  await page.addInitScript(() => {
+    localStorage.setItem("recipeprinter:card-imports:v1", "1");
+  });
+  await importLink(page, LINK);
+
+  await expect(page.locator(".recipe-card").filter({ hasText: reply.recipe.title }).first()).toBeVisible();
+  // It was offered 1.2s after the card arrived.
+  await page.waitForTimeout(2_500);
+  await expect(page.locator("#print-success-title")).toHaveCount(0);
+});
+
 test("a link with nothing behind it says so, and offers another way in", async ({ page }) => {
   await importLink(page, "https://example.com/recipes/anything");
 

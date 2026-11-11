@@ -2512,7 +2512,7 @@ export default function PrintPage() {
   /**
    * "Ready for another recipe?" (components/PrintDialogs.tsx), in the invite's
    * place while the referral program is hidden: once per person, after the
-   * first card export or the second card import, whichever comes first.
+   * first card print or download. Never after an import.
    * Not for Pro, who can already put several recipes in one print.
    */
   function offerFeedbackDialog(delayMs: number) {
@@ -2527,14 +2527,15 @@ export default function PrintPage() {
     }, delayMs);
   }
 
-  // The second card import offers the invite (or the feedback dialog) too,
-  // after the card has had a moment on screen.
+  // The second card import offers the referral invite too, after the card
+  // has had a moment on screen. Never "Ready for another recipe?": that is
+  // for after a print or a download only, not for a cook who has just
+  // brought a recipe in (Amelia, 2026-11-11; e2e/import.spec.ts).
   useEffect(() => {
     if (cookbookMode) return;
     const onImported = () => {
       if (cardImportCount() < INVITE_AFTER_IMPORTS) return;
       if (referralInviteAllowed()) offerReferralInvite(1200);
-      else offerFeedbackDialog(1200);
     };
     window.addEventListener(CARD_IMPORTED_EVENT, onImported);
     return () => window.removeEventListener(CARD_IMPORTED_EVENT, onImported);
@@ -4018,8 +4019,7 @@ export default function PrintPage() {
       });
       track("card_download_started", { output, recipeCount });
       // A download is an export like Print: the same one-time invite (or
-      // feedback dialog), whichever of print, download or a second import
-      // comes first.
+      // feedback dialog), whichever of print or download comes first.
       if (referralInviteAllowed()) offerReferralInvite(600);
       else offerFeedbackDialog(600);
     } catch (error) {
