@@ -532,6 +532,13 @@
   padding: 4px 8px;
   border-radius: 6px;
 }
+/* Rules the photo page off from the lines, edge to edge across the menu
+   with the same breathing room above and below. */
+.add-line-menu__rule {
+  height: 1px;
+  margin: 4px -4px;
+  background: var(--cp-line);
+}
 
 .recipe-page-rail__section-title-input {
   min-width: 0;
@@ -2431,24 +2438,20 @@
 .recipe-page-toolbar__group:last-child { padding-right: 0; }
 
 /* The page's kind ("Cover", "Contents"), first in a phone's cookbook bar: a
-   label, not a control, so it sits in a tinted chip of its own, apart from
-   the buttons, with no rule after it (Amelia, 2026-11-10). After the
-   `:first-child` reset above on purpose: at the same specificity before it,
-   that reset zeroed this padding and put the word hard against the bar's
-   rounded edge (e2e/page-toolbar.spec.ts). */
+   label, not a control. It is set as a small-caps eyebrow, with no fill (a
+   tinted chip read as a pressed button), and the usual rule after it keeps
+   it apart from the buttons (Amelia, 2026-11-11). After the `:first-child`
+   reset above on purpose: at the same specificity before it, that reset
+   zeroed this padding and put the word hard against the bar's rounded edge
+   (e2e/page-toolbar.spec.ts). */
 .recipe-page-toolbar__group.recipe-page-toolbar__page-name {
-  align-self: stretch;
-  margin-right: 4px;
-  padding: 0 12px;
-  border-radius: 10px;
-  background: var(--cp-surface-muted);
+  padding: 0 12px 0 14px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   white-space: nowrap;
-}
-.recipe-page-toolbar__group.recipe-page-toolbar__page-name + .recipe-page-toolbar__group {
-  border-left-color: transparent;
 }
 
 /* The divider between groups. A line rather than a gap: at this size a gap
