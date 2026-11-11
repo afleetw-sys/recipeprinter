@@ -5359,92 +5359,223 @@ textarea.recipe-page-fields__input {
   box-shadow: var(--cp-focus-ring);
 }
 
-/* The phone's page overview (MobilePagesPanel): a strip under the top bar
-   that pushes the deck down, every page as a thumbnail with its name. The page
-   in view is marked the way a selected tile is everywhere else. */
-.recipe-pages-panel {
-  position: relative;
-  z-index: 5;
-  flex: none;
-  border-bottom: 1px solid var(--cp-line);
-  background: var(--cp-card);
-}
-.recipe-pages-panel__head {
+/* The phone's Pages view (MobilePagesPanel): it takes over the space between
+   the top bar and the bottom tools, covering the preview, and lays the book
+   out three pages to a row under chapter headings. Organize happens in it. */
+.recipe-pages-view {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  /* Over the top bar in Organize (it starts at 0 there), under menus and
+     dialogs. */
+  z-index: 70;
+  padding-bottom: env(safe-area-inset-bottom);
   display: flex;
+  flex-direction: column;
+  background: var(--cp-page);
+}
+.recipe-pages-view__head {
+  display: flex;
+  flex: none;
   align-items: center;
   gap: 8px;
-  padding: 8px 8px 0 16px;
+  padding: 10px 8px 6px 16px;
 }
-.recipe-pages-panel__title {
+/* Full screen in Organize: the head clears the status bar itself. */
+.recipe-pages-view.is-organizing .recipe-pages-view__head {
+  padding-top: max(10px, env(safe-area-inset-top));
+}
+/* While the Pages view is open the bottom tools and Buy & Print step aside:
+   the grid runs to the bottom of the screen. */
+html[data-pages-view] .recipe-mobile-actions {
+  display: none;
+}
+.recipe-pages-view__title {
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-dialog-title);
+  font-weight: 800;
+}
+.recipe-pages-view__hint {
+  flex: none;
+  margin: 0;
+  padding: 0 16px 6px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+}
+.recipe-pages-view__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 4px 16px 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.recipe-pages-view__group + .recipe-pages-view__group {
+  margin-top: 20px;
+}
+.recipe-pages-view__heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+}
+.recipe-pages-view__heading h3 {
   flex: 1 1 auto;
   margin: 0;
   color: var(--cp-ink);
   font-size: var(--cp-fs-body);
   font-weight: 700;
 }
-.recipe-pages-panel__strip {
-  display: flex;
-  gap: 10px;
+.recipe-pages-view__heading.is-drop-target {
+  box-shadow: var(--cp-selected-ring);
+}
+.recipe-pages-view__chapter-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--cp-line);
+  border-radius: var(--cp-radius-control);
+  background: var(--cp-card);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-body);
+  font-weight: 700;
+}
+.recipe-pages-view__chapter-name:focus {
+  outline: none;
+  border-color: var(--cp-selected-border);
+  box-shadow: var(--cp-focus-ring);
+}
+.recipe-pages-view__empty {
   margin: 0;
-  padding: 10px 16px 12px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
+  padding: 18px 12px;
+  border: 1px dashed var(--cp-line-strong);
+  border-radius: 10px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-caption);
+  text-align: center;
+}
+.recipe-pages-view__grid {
+  display: grid;
+  gap: 16px 12px;
+  margin: 0;
+  padding: 0;
   list-style: none;
 }
-.recipe-pages-panel__strip::-webkit-scrollbar {
-  display: none;
+.recipe-pages-view__grid > li {
+  position: relative;
+  min-width: 0;
 }
-.recipe-pages-panel__strip > li {
-  flex: none;
-}
-.recipe-pages-panel__page {
+.recipe-pages-view__page {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 6px;
+  width: 100%;
+  min-width: 0;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--cp-ink-soft);
+  text-align: left;
 }
-.recipe-pages-panel__thumb {
+.recipe-pages-view__frame {
+  position: relative;
   display: block;
   overflow: hidden;
-  width: 72px;
-  aspect-ratio: 8.5 / 11;
+  width: 100%;
   border: 1px solid var(--cp-line);
   border-radius: 6px;
   background: var(--cp-card);
+}
+.recipe-pages-view__thumb {
+  display: block;
   pointer-events: none;
 }
-.recipe-pages-panel__page[aria-current="page"] .recipe-pages-panel__thumb {
+.recipe-pages-view__page[aria-current="page"] .recipe-pages-view__frame,
+.recipe-pages-view__page.is-selected .recipe-pages-view__frame {
   border-color: var(--cp-selected-border);
   box-shadow: var(--cp-selected-ring);
 }
-.recipe-pages-panel__page[aria-current="page"] {
+.recipe-pages-view__page[aria-current="page"] {
   color: var(--cp-selected-text);
 }
-.recipe-pages-panel__page:focus-visible {
+.recipe-pages-view__page:focus-visible {
   outline: none;
 }
-.recipe-pages-panel__page:focus-visible .recipe-pages-panel__thumb {
+.recipe-pages-view__page:focus-visible .recipe-pages-view__frame {
   box-shadow: var(--cp-focus-ring);
 }
-.recipe-pages-panel__label {
-  max-width: 72px;
+/* In Organize only recipes move; the book's own pages hold their place. */
+.recipe-pages-view__page.is-fixed {
+  opacity: 0.55;
+}
+/* min-width 0: a flex item is otherwise at least as wide as its unbroken
+   text, so a long name ("Our Favorite Recipes") ran into the next column in
+   Safari instead of ending in "…". */
+.recipe-pages-view__label {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   font-size: var(--cp-fs-caption);
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.recipe-pages-panel__add {
+.recipe-pages-view__check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--cp-line-strong);
+  border-radius: 999px;
+  background: var(--cp-card);
+  color: var(--cp-on-accent);
+}
+.recipe-pages-view__page.is-selected .recipe-pages-view__check {
+  border-color: var(--cp-accent);
+  background: var(--cp-accent);
+}
+/* The page under a finger that's dragging it: lifted, and out of the way of
+   what it's dropped onto. */
+.recipe-pages-view__page.is-dragging {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+  box-shadow: var(--cp-shadow-md);
+  opacity: 0.9;
+}
+/* Where a dragged recipe will land: a bar on that side of the page. */
+.recipe-pages-view__grid > li.is-drop-before::before,
+.recipe-pages-view__grid > li.is-drop-after::after {
+  position: absolute;
+  top: 0;
+  bottom: 22px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--cp-accent);
+  content: "";
+}
+.recipe-pages-view__grid > li.is-drop-before::before {
+  left: -8px;
+}
+.recipe-pages-view__grid > li.is-drop-after::after {
+  right: -8px;
+}
+.recipe-pages-view__add {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  width: 100%;
   padding: 6px;
   border: 1px dashed var(--cp-line-strong);
   border-radius: 6px;
@@ -5454,6 +5585,22 @@ textarea.recipe-page-fields__input {
   font-weight: 600;
   line-height: 1.25;
   text-align: center;
+}
+.recipe-pages-view__bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--cp-line);
+  background: var(--cp-card);
+}
+.recipe-pages-view__count {
+  flex: 1 1 auto;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+  font-weight: 600;
 }
 
 /* A phone cookbook's Add sheet: recipe, chapter or blank page. */

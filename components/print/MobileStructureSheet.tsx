@@ -1,14 +1,11 @@
 "use client";
 
 import type { Dispatch, ReactNode, SetStateAction } from "react";
-import { Checkbox, SelectTile } from "@/components/Controls";
-import { ChevronDownIcon, TrashIcon, PlusIcon, ICON_SIZE } from "@/components/icons";
+import { SelectTile } from "@/components/Controls";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
 import { PhotoStyleTip, type PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
-import { ChapterNameInput } from "@/components/print/ChapterNameInput";
-import { useLongPress } from "@/lib/useLongPress";
-import { namedSectionCount, useProjectMeta, type PhotoStyle } from "@/lib/project";
+import { useProjectMeta, type PhotoStyle } from "@/lib/project";
 import type { Section } from "@/types/recipe";
 
 interface MobileStructureSheetProps {
@@ -24,21 +21,8 @@ interface MobileStructureSheetProps {
   websitePhotosField?: ReactNode;
   showSourceUrl: boolean;
   setShowSourceUrl: (next: boolean) => void;
-  renameSectionEverywhere: (sectionId: string, value: string) => void;
-  moveSectionInBook: (sectionId: string, direction: -1 | 1) => void;
-  requestDeleteSection: (sectionId: string) => void;
-  navigateToRecipe: (itemId: string) => void;
-  moveRecipeInBook: (itemId: string, direction: -1 | 1) => void;
-  addStructureSection: () => void;
   bookSheet: MobileBookSheet;
   setBookSheet: Dispatch<SetStateAction<MobileBookSheet>>;
-  structureSheetOpen: boolean;
-  setStructureSheetOpen: Dispatch<SetStateAction<boolean>>;
-  /** A long press on a recipe: what right-clicking one in the desktop rail
-      does (Move to a chapter). */
-  onRecipeLongPress?: (point: { x: number; y: number }, itemId: string, title: string) => void;
-  /** A long press on a chapter's heading: its menu, as right-click opens it. */
-  onChapterLongPress?: (point: { x: number; y: number }, sectionId: string) => void;
 }
 
 /** Which of the book-wide sheets is open, from the bottom bar's tiles. */
@@ -58,14 +42,10 @@ export type MobileBookSheet = "recipes" | "page" | null;
  *   as the desktop panel's "Every recipe" group holds it.
  *   The phone's old "Pages" sheet of cover/dedication/contents checkboxes is
  *   gone, as it went from desktop: a page is deleted with its own Delete and
- *   comes back from the page overview (MobilePagesSheet).
- * - "Organize" (from the page overview, opened from the page count in the top
- *   bar): the reorderable list of chapters and recipes, named for the
- *   desktop rail's "Organize recipes" view it stands in for.
+ *   comes back from the page overview (MobilePagesPanel).
  *
- * The structure list used to sit under the settings too. It is what a cook
- * comes back to again and again, and it answers a different question from
- * how the book is set up, so it has its own way in.
+ * Organize used to be a sheet here too. It now happens inside the Pages view
+ * (MobilePagesPanel), the way Pinterest organizes a board.
  */
 export function MobileStructureSheet({
   projectMeta,
@@ -77,32 +57,10 @@ export function MobileStructureSheet({
   websitePhotosField,
   showSourceUrl,
   setShowSourceUrl,
-  renameSectionEverywhere,
-  moveSectionInBook,
-  requestDeleteSection,
-  navigateToRecipe,
-  moveRecipeInBook,
-  addStructureSection,
   bookSheet,
   setBookSheet,
-  structureSheetOpen,
-  setStructureSheetOpen,
-  onRecipeLongPress,
-  onChapterLongPress,
 }: MobileStructureSheetProps) {
-    const pressRecipe = useLongPress<{ id: string; title: string }>((point, recipe) =>
-      onRecipeLongPress?.(point, recipe.id, recipe.title),
-    );
-    const pressChapter = useLongPress<string>((point, sectionId) => onChapterLongPress?.(point, sectionId));
     if (!projectMeta.meta.cookbookMode) return null;
-    const orderedIds = sections.flatMap((section) => section.items.map((item) => item.id));
-    const recipeCount = orderedIds.length;
-    // The subtitle counts recipes; a blank page is a page, not a recipe.
-    const bookRecipeCount = sections.reduce(
-      (count, section) => count + section.items.filter((item) => !item.pageKind).length,
-      0,
-    );
-    const metaSections = projectMeta.meta.sections;
     return (
       <>
         <MobileSheet
@@ -155,137 +113,6 @@ export function MobileStructureSheet({
               </div>
               {websitePhotosField}
             </div>
-        </MobileSheet>
-
-        <MobileSheet
-          open={structureSheetOpen}
-          onClose={() => setStructureSheetOpen(false)}
-          title="Organize"
-          subtitle={
-            <>
-              {bookRecipeCount} {bookRecipeCount === 1 ? "recipe" : "recipes"} ·{" "}
-              {namedSectionCount(sections)}{" "}
-              {namedSectionCount(sections) === 1 ? "chapter" : "chapters"}
-            </>
-          }
-          ariaLabel="Organize pages"
-          className="recipe-structure-sheet"
-          footer={
-            <>
-              <button
-                type="button"
-                className="btn btn-secondary btn-compact"
-                onClick={addStructureSection}
-              >
-                <PlusIcon size={ICON_SIZE.sm} />
-                Add chapter
-              </button>
-            </>
-          }
-        >
-            {sections.map((section) => {
-              const metaIndex = metaSections.findIndex((candidate) => candidate.id === section.id);
-              const canSectionUp = metaIndex > 0;
-              const canSectionDown = metaIndex !== -1 && metaIndex < metaSections.length - 1;
-              const showSectionChrome = sections.length > 1 || Boolean(section.title);
-              return (
-                <section className="recipe-structure-sheet__section" key={section.id}>
-                  {showSectionChrome && (
-                    <div
-                      className="recipe-structure-sheet__section-head rp-long-press"
-                      {...(onChapterLongPress ? pressChapter(section.id) : {})}
-                    >
-                      <ChapterNameInput
-                        data-chapter-name-input={section.id}
-                        className="recipe-structure-sheet__section-title"
-                        value={section.title ?? ""}
-                        placeholder="Chapter name"
-                        aria-label="Chapter name"
-                        onRename={(value) => renameSectionEverywhere(section.id, value)}
-                      />
-                      <div className="recipe-structure-sheet__move">
-                        <button
-                          type="button"
-                          className="recipe-structure-sheet__move-up"
-                          aria-label="Move chapter up"
-                          disabled={!canSectionUp}
-                          onClick={() => moveSectionInBook(section.id, -1)}
-                        >
-                          <ChevronDownIcon size={ICON_SIZE.sm} />
-                        </button>
-                        <button
-                          type="button"
-                          className="recipe-structure-sheet__move-down"
-                          aria-label="Move chapter down"
-                          disabled={!canSectionDown}
-                          onClick={() => moveSectionInBook(section.id, 1)}
-                        >
-                          <ChevronDownIcon size={ICON_SIZE.sm} />
-                        </button>
-                        <button
-                          type="button"
-                          className="recipe-structure-sheet__delete"
-                          aria-label={`Delete ${section.title || "chapter"}`}
-                          title="Delete chapter"
-                          onClick={() => requestDeleteSection(section.id)}
-                        >
-                          <TrashIcon size={ICON_SIZE.sm} />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  <ul className="recipe-structure-sheet__recipes">
-                    {section.items.map((item) => {
-                      const globalIndex = orderedIds.indexOf(item.id);
-                      const title = item.recipe?.title || item.title;
-                      return (
-                        <li
-                          className="recipe-structure-sheet__recipe rp-long-press"
-                          key={item.id}
-                          {...(onRecipeLongPress ? pressRecipe({ id: item.id, title: title ?? "this recipe" }) : {})}
-                        >
-                          <button
-                            type="button"
-                            className="recipe-structure-sheet__recipe-open"
-                            onClick={() => navigateToRecipe(item.id)}
-                          >
-                            <span className="recipe-structure-sheet__recipe-num">
-                              {globalIndex + 1}
-                            </span>
-                            <span className="recipe-structure-sheet__recipe-title">{title}</span>
-                          </button>
-                          <div className="recipe-structure-sheet__move">
-                            <button
-                              type="button"
-                              className="recipe-structure-sheet__move-up"
-                              aria-label={`Move ${title} up`}
-                              disabled={globalIndex <= 0}
-                              onClick={() => moveRecipeInBook(item.id, -1)}
-                            >
-                              <ChevronDownIcon size={ICON_SIZE.sm} />
-                            </button>
-                            <button
-                              type="button"
-                              className="recipe-structure-sheet__move-down"
-                              aria-label={`Move ${title} down`}
-                              disabled={globalIndex >= recipeCount - 1}
-                              onClick={() => moveRecipeInBook(item.id, 1)}
-                            >
-                              <ChevronDownIcon size={ICON_SIZE.sm} />
-                            </button>
-                          </div>
-                        </li>
-                      );
-                    })}
-                    {section.items.length === 0 && (
-                      <li className="recipe-structure-sheet__empty">
-                        No recipes yet. Use the arrows to move one into this chapter.
-                      </li>
-                    )}
-                  </ul>
-                </section>
-              );
-            })}
         </MobileSheet>
       </>
     );

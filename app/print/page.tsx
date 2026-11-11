@@ -516,6 +516,7 @@ export default function PrintPage() {
   const [customOrderUndo, setCustomOrderUndo] = useState<ProjectMeta["sections"] | null>(null);
   const [pendingDelete, setPendingDelete] = useState<
     | { kind: "recipe"; id: string; title: string }
+    | { kind: "recipes"; ids: string[]; title: string }
     | { kind: "section"; id: string; title: string; recipeIds: string[] }
     | { kind: "cover"; side: "front" | "back" | "dedication"; title: string }
     | null
@@ -1579,32 +1580,6 @@ export default function PrintPage() {
     return sections.find((section) => section.id === sectionId)?.title?.trim() || "chapter";
   }, [sections]);
 
-  // Touch-friendly reordering for the mobile structure sheet. The desktop rail
-  // reorders by dragging; these step a recipe one slot up/down through the
-  // flattened book, crossing section boundaries at the ends (last item in a
-  // section steps to the top of the next; first steps to the end of the prior),
-  // so a single control set covers both within- and cross-section moves.
-  function moveRecipeInBook(itemId: string, direction: -1 | 1) {
-    const loc = sectionAndIndexForItem(itemId);
-    if (!loc) return;
-    const sectionIndex = sections.findIndex((section) => section.id === loc.sectionId);
-    if (sectionIndex === -1) return;
-    const section = sections[sectionIndex];
-    if (direction === -1) {
-      if (loc.index > 0) {
-        projectMeta.moveItem(itemId, section.id, loc.index - 1);
-      } else {
-        const prev = sections[sectionIndex - 1];
-        if (prev) projectMeta.moveItem(itemId, prev.id, prev.items.length);
-      }
-    } else if (loc.index < section.items.length - 1) {
-      projectMeta.moveItem(itemId, section.id, loc.index + 1);
-    } else {
-      const next = sections[sectionIndex + 1];
-      if (next) projectMeta.moveItem(itemId, next.id, 0);
-    }
-  }
-
   // Moves a whole section past its neighbour AS THE COOK SEES THEM, by stored
   // (meta) index. `sections` drops empty/unnamed sections that the stored list
   // still holds, so stepping one stored place could land on an invisible one
@@ -2313,6 +2288,11 @@ export default function PrintPage() {
       const id = pendingDelete.id;
       setJobIds((current) => (current ?? []).filter((jid) => jid !== id));
       queue.remove(id);
+    } else if (pendingDelete.kind === "recipes") {
+      // Several at once, from the phone's Pages view in Organize.
+      const gone = new Set(pendingDelete.ids);
+      setJobIds((current) => (current ?? []).filter((jid) => !gone.has(jid)));
+      pendingDelete.ids.forEach((id) => queue.remove(id));
     } else if (pendingDelete.kind === "section") {
       projectMeta.deleteSection(pendingDelete.id);
     } else if (pendingDelete.side === "back") {
@@ -5808,13 +5788,6 @@ export default function PrintPage() {
     setPendingAddAfterRecipeId(target?.anchorId ?? null);
     setShowAddRecipeDialog(true);
   }
-  function navigateToRecipe(itemId: string) {
-    const index = navItems.findIndex(
-      (nav) => nav.kind === "recipe" && nav.recipeId === itemId,
-    );
-    if (index !== -1) goToSlide(index);
-    setStructureSheetOpen(false);
-  }
   // ── Rail multi-select (cookbook) ─────────────────────────────────────────
   function makeSectionFromSelection(selection: ReadonlySet<string> = effectiveRailSelection) {
     const ids = orderedRailSelection(selection);
@@ -5957,7 +5930,6 @@ export default function PrintPage() {
     track("photo_style_tip_shown", { mode, remaining });
     if (phone) {
       setMobileDrawer(null);
-      setStructureSheetOpen(false);
       setBookSheet("recipes");
     } else {
       setSidePanelsHidden(false);
@@ -6546,12 +6518,6 @@ export default function PrintPage() {
   useEffect(() => {
     activeNavIndexResetRef.current = setActiveNavIndex;
   }, [setActiveNavIndex]);
-  // The page rail (reorder/structure) is hidden on phones because the desktop
-  // one relies on drag-and-drop, which doesn't exist on touch. This is the
-  // mobile stand-in: a bottom sheet with the same structure controls driven by
-  // taps instead, opened from the bottom bar's Organize tile.
-  // Cookbook mode only — plain cards have no sections to arrange.
-  const [structureSheetOpen, setStructureSheetOpen] = useState(false);
   // The bottom bar's Pages and Every recipe tiles: book-wide settings, one
   // sheet each, kept apart from the structure list above.
   const [bookSheet, setBookSheet] = useState<MobileBookSheet>(null);
@@ -6575,7 +6541,13 @@ export default function PrintPage() {
     (point: { x: number; y: number }, id: string) => setPhoneMenu({ kind: "chapter", ...point, id }),
     [],
   );
-  const closePagesPanel = useCallback(() => setPagesPanelOpen(false), []);
+  // Organize, inside the Pages view (Pinterest's board organize), rather
+  // than a sheet of its own. Closing the view ends it.
+  const [pagesOrganizing, setPagesOrganizing] = useState(false);
+  const closePagesPanel = useCallback(() => {
+    setPagesPanelOpen(false);
+    setPagesOrganizing(false);
+  }, []);
   const togglePagesPanel = () => {
     setSizeMenuOpen(false);
     setBookSheet(null);
@@ -7559,14 +7531,30 @@ export default function PrintPage() {
               missingBookPages={missingBookPages}
               onAddBookPage={addBookPage}
               onRecipeLongPress={cookbookMode ? openRecipePhoneMenu : undefined}
-              onOrganize={
-                cookbookMode
-                  ? () => {
-                      setBookSheet(null);
-                      setStructureSheetOpen(true);
-                    }
-                  : undefined
+              onChapterMenu={cookbookMode ? openChapterPhoneMenu : undefined}
+              sections={sections}
+              organizing={pagesOrganizing}
+              setOrganizing={setPagesOrganizing}
+              sectionOfNav={(nav) =>
+                nav.kind === "section-photo"
+                  ? nav.recipeId
+                  : (sectionForNavItem(nav.kind === "image" ? { ...nav, kind: "recipe" } : nav)?.id ?? null)
               }
+              itemIdsForSection={itemIdsForSection}
+              onRenameChapter={renameSectionEverywhere}
+              onMoveRecipes={(ids, sectionId) =>
+                sectionId === NOT_IN_A_CHAPTER ? removeRecipesFromChapter(ids) : moveRecipesToSection(ids, sectionId)
+              }
+              onNewChapterFrom={(ids) => makeSectionFromSelection(new Set(ids))}
+              onDeleteRecipes={(ids) =>
+                setPendingDelete({
+                  kind: "recipes",
+                  ids,
+                  title: ids.length === 1 ? "this recipe" : `${ids.length} recipes`,
+                })
+              }
+              onReorderRecipe={(id, sectionId, index) => projectMeta.moveItem(id, sectionId, index)}
+              onAddChapter={addStructureSection}
             />
           }
           onMoveRecipeToSection={moveRecipeToSection}
@@ -7772,7 +7760,6 @@ export default function PrintPage() {
                 aria-haspopup="dialog"
                 onClick={() => {
                   setSizeMenuOpen(false);
-                  setStructureSheetOpen(false);
                   setBookSheet((open) => (open === "page" ? null : "page"));
                 }}
               >
@@ -7833,7 +7820,6 @@ export default function PrintPage() {
                 aria-haspopup="dialog"
                 onClick={() => {
                   setSizeMenuOpen(false);
-                  setStructureSheetOpen(false);
                   setBookSheet((open) => (open === "recipes" ? null : "recipes"));
                 }}
               >
@@ -7929,18 +7915,8 @@ export default function PrintPage() {
           websitePhotosField={websitePhotosField}
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setBookShowSourceUrl}
-          renameSectionEverywhere={renameSectionEverywhere}
-          moveSectionInBook={moveSectionInBook}
-          requestDeleteSection={requestDeleteSection}
-          navigateToRecipe={navigateToRecipe}
-          moveRecipeInBook={moveRecipeInBook}
-          addStructureSection={addStructureSection}
           bookSheet={bookSheet}
           setBookSheet={setBookSheet}
-          structureSheetOpen={structureSheetOpen}
-          setStructureSheetOpen={setStructureSheetOpen}
-          onRecipeLongPress={openRecipePhoneMenu}
-          onChapterLongPress={openChapterPhoneMenu}
         />
 
         {phoneMenu?.kind === "recipe" && (
@@ -7987,11 +7963,17 @@ export default function PrintPage() {
                     label: "Rename chapter",
                     icon: <PencilIcon size={ICON_SIZE.sm} />,
                     onSelect: () => {
-                      const input = document.querySelector<HTMLInputElement>(
-                        `.recipe-structure-sheet [data-chapter-name-input="${CSS.escape(phoneMenu.id)}"]`,
-                      );
-                      input?.focus();
-                      input?.select();
+                      // The name is typed over in the Pages view's Organize.
+                      setPagesPanelOpen(true);
+                      setPagesOrganizing(true);
+                      const id = phoneMenu.id;
+                      window.setTimeout(() => {
+                        const input = document.querySelector<HTMLInputElement>(
+                          `.recipe-pages-view [data-chapter-name-input="${CSS.escape(id)}"]`,
+                        );
+                        input?.focus();
+                        input?.select();
+                      }, 60);
                     },
                   },
                   {
@@ -8091,9 +8073,11 @@ export default function PrintPage() {
             ? "The chapter page and grouping will be removed from this cookbook."
             : pendingDelete?.kind === "cover"
               ? "You can add it back from the page list at any time."
-              : cookbookMode
-                ? "It'll be removed from this cookbook."
-                : "It'll be removed from your print list."
+              : pendingDelete?.kind === "recipes" && pendingDelete.ids.length > 1
+                ? "They'll be removed from this cookbook."
+                : cookbookMode
+                  ? "It'll be removed from this cookbook."
+                  : "It'll be removed from your print list."
         }
         deletePrimaryLabel={
           pendingDelete?.kind === "section"
@@ -8104,7 +8088,9 @@ export default function PrintPage() {
                 : pendingDelete.side === "back"
                   ? "Remove back cover"
                   : "Remove cover"
-              : "Delete recipe"
+              : pendingDelete?.kind === "recipes" && pendingDelete.ids.length > 1
+                ? "Delete recipes"
+                : "Delete recipe"
         }
         deleteVerb={pendingDelete?.kind === "cover" ? "Remove" : "Delete"}
         sectionRecipeCount={pendingDelete?.kind === "section" ? pendingDelete.recipeIds.length : undefined}
