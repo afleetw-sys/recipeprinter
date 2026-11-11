@@ -20,15 +20,7 @@ export type ProofImage = {
   alt: string;
   /** Where the crop sits when the source shape differs from the slot's. */
   objectPosition?: string;
-  /** A portrait photo of a whole object (a cookbook, a binder, a card beside
-      its page) shown in a 4:5 slot instead of the shared landscape one. A
-      2:3 shot in a 3:2 slot keeps only 44% of its height, which crops a book
-      down to a corner of one page; 4:5 keeps 83%, enough to see the thing. */
-  portrait?: boolean;
 };
-
-/** The slot shape for a `portrait` proof image, in feature rows and heroes. */
-export const PORTRAIT_SLOT_ASPECT = "4 / 5";
 
 export type PrintedCard = {
   src: string;
@@ -207,15 +199,11 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
       "A finished hardcover family cookbook lying open on a counter, a full-page photo facing the typed recipe.",
   },
   "printed-cookbook": {
-    src: "/images/printed-cards/cookbook.jpeg",
-    width: 1333,
-    height: 2000,
+    src: "/images/printed-cards/cookbook-wide.jpg",
+    width: 2400,
+    height: 1600,
     alt:
       "A finished spiral-bound cookbook open to a Greek chicken souvlaki recipe and full-page food photograph.",
-    // A 4:5 portrait slot shows about 83% of the height; a little above
-    // centre keeps the recipe's title and both plates.
-    objectPosition: "50% 40%",
-    portrait: true,
   },
   // The same cover, whole, on a paper-coloured backdrop at 3:2, for the
   // feature slots that crop the portrait original top and bottom.
@@ -229,11 +217,11 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     src: "/images/cookbook-printed-cover.jpg",
     width: 900,
     height: 1161,
-    // A 4:5 portrait slot shows nearly the whole cover, title plate included.
+    // Portrait in a 3:2 slot: the centre band keeps the title plate, which is
+    // the part that shows the cover was made for one family.
     alt:
       "A printed spiral-bound cookbook cover titled Our Family Cookbook, set over a grid of home-cooked dishes.",
     objectPosition: "50% 50%",
-    portrait: true,
   },
   "cookpilot-export": {
     src: "/images/cookpilot-export.png",
@@ -310,51 +298,48 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
       "The same recipe two ways: a 26-page stack printed from the browser, beside one card printed from RecipePrinter.",
   },
   // A RecipePrinter cookbook printed at home on US Letter and filed in a
-  // 3-ring binder, in sheet protectors. Portrait phone shots in the 4:5
-  // portrait slot; each `objectPosition` trims the empty table, not the binder.
+  // 3-ring binder, in sheet protectors. The originals are portrait phone
+  // shots, which a 3:2 slot crops to a band across one page, so these are
+  // 3:2 versions made from them: the cover's table extended sideways (the
+  // binder keeps its own cut at the right edge), and the close-ups, whose
+  // subject runs off both sides, whole on the paper backdrop that
+  // `cookbook-cover-wide` uses.
   "binder-cover": {
-    src: "/images/binder/binder-cover.jpg",
-    width: 1333,
-    height: 2000,
+    src: "/images/binder/binder-cover-wide.jpg",
+    width: 2400,
+    height: 1600,
     alt: "A white 3-ring binder with a printed Our Family Cookbook cover, a collage of home-cooked dishes, slipped into its front sleeve.",
-    objectPosition: "50% 90%",
-    portrait: true,
+    // The binder sits at the right edge, so a 4:3 hero trims from the left.
+    objectPosition: "100% 50%",
   },
   "binder-section-page": {
-    src: "/images/binder/binder-section-page.jpg",
-    width: 1333,
-    height: 2000,
+    src: "/images/binder/binder-section-page-wide.jpg",
+    width: 2400,
+    height: 1600,
     alt: "An open recipe binder at its Appetizers section page, listing Best Ever Guacamole, Italian Bruschetta, and 4 more recipes.",
-    objectPosition: "50% 55%",
-    portrait: true,
   },
   "binder-recipe": {
-    src: "/images/binder/binder-recipe.jpg",
-    width: 1333,
-    height: 2000,
+    src: "/images/binder/binder-recipe-wide.jpg",
+    width: 2400,
+    height: 1600,
     alt: "An open recipe binder with a full-page bruschetta photo facing the printed Italian Bruschetta recipe, each in a sheet protector.",
-    objectPosition: "50% 30%",
-    portrait: true,
   },
   // A handwritten family card beside the page RecipePrinter printed from it,
-  // the same recipe both ways, in the 4:5 portrait slot.
+  // the same recipe both ways. Whole, on the paper backdrop, at 3:2.
   "handwritten-to-printed": {
-    src: "/images/handwritten/oatmeal-card-and-page.jpg",
-    width: 1333,
-    height: 2000,
+    src: "/images/handwritten/oatmeal-card-and-page-wide.jpg",
+    width: 2400,
+    height: 1600,
     alt: "Mom's handwritten Matthew's Oatmeal Cookies card lying on the spiral-bound cookbook page RecipePrinter printed from it.",
-    objectPosition: "50% 62%",
-    portrait: true,
   },
   // A cookbook spread with a photo of the handwritten card printed facing the
-  // typed recipe, and the original card beside the book.
+  // typed recipe, and the original card beside the book. Whole, on the
+  // paper backdrop, at 3:2.
   "handwritten-card-in-book": {
-    src: "/images/handwritten/chocolate-cake-card-spread.jpg",
-    width: 1333,
-    height: 2000,
+    src: "/images/handwritten/chocolate-cake-card-spread-wide.jpg",
+    width: 2400,
+    height: 1600,
     alt: "A spiral-bound cookbook open to Mom's McCoy's Chocolate Cake, with a photo of the handwritten card facing the typed recipe and the original card beside the book.",
-    objectPosition: "50% 50%",
-    portrait: true,
   },
   "spiral-and-binder": {
     src: "/images/binder/spiral-and-binder.jpg",

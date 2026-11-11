@@ -3356,7 +3356,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     layout: "capture-first",
     // Not `bound-cookbook`, which opens /cookbook-maker: the cover, titled for
     // one family, is the gift.
-    heroImage: "cookbook-cover",
+    heroImage: "cookbook-cover-wide",
     heroImageAlt: "A printed homemade cookbook titled Our Family Cookbook, ready to give as a gift.",
     importSubmitLabel: "Start a cookbook",
     title: "Homemade Cookbook Gift | Make a Personalized Recipe Book",
@@ -3687,7 +3687,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "What to put in a Christmas family recipe book",
-        image: "cookbook-cover",
+        image: "cookbook-cover-wide",
         body:
           "Include the recipes people expect at Christmas, but don't limit the book to holiday food. Everyday family favorites, handwritten recipes from relatives, birthday dishes, baking recipes, and meals connected to family memories can make the gift more useful all year.",
         afterBody:

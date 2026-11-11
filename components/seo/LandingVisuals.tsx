@@ -3,7 +3,7 @@ import { LANDING_IMAGE_QUALITY } from "@/lib/seoAssets";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { PriceText } from "@/components/PriceText";
-import { FEATURE_IMAGES, PORTRAIT_SLOT_ASPECT, PRINTED_CARDS, type ProofImage } from "@/lib/seoAssets";
+import { FEATURE_IMAGES, PRINTED_CARDS, type ProofImage } from "@/lib/seoAssets";
 import type { SeoProofKind } from "@/lib/seoLandingPages";
 
 // The image tables live in lib/seoAssets now (a server route reads them);
@@ -78,9 +78,6 @@ export function HeroProductPhoto({
   const objectPosition = named
     ? (named.objectPosition ?? "50% 50%")
     : (card.objectPosition ?? "50% 86%");
-  // A portrait photo of a whole book or binder keeps a taller slot, so the
-  // hero shows the object instead of a band across its middle.
-  const heroAspect = named?.portrait ? PORTRAIT_SLOT_ASPECT : "4 / 3";
   const isDocument = frame === "document";
   const isUncropped = !crop && (frame === "none" || isDocument);
   const image = (
@@ -99,13 +96,9 @@ export function HeroProductPhoto({
             ? "h-auto w-full rounded-xl"
             : crop && frame === "none"
               ? "aspect-[4/3] w-full object-contain"
-              : "w-full rounded-xl object-cover"
+              : "aspect-[4/3] w-full rounded-xl object-cover"
       }
-      style={
-        isUncropped
-          ? undefined
-          : { objectPosition, aspectRatio: crop && frame === "none" ? undefined : heroAspect }
-      }
+      style={isUncropped ? undefined : { objectPosition }}
     />
   );
   return (
@@ -298,10 +291,7 @@ export function FeatureRows({
                   sizes="(max-width: 1023px) 92vw, 520px"
                   quality={LANDING_IMAGE_QUALITY}
                   className="w-full rounded-xl object-cover"
-                  style={{
-                    aspectRatio: image.portrait ? PORTRAIT_SLOT_ASPECT : PROOF_ASPECT,
-                    objectPosition: image.objectPosition,
-                  }}
+                  style={{ aspectRatio: PROOF_ASPECT, objectPosition: image.objectPosition }}
                 />
               </div>
               {feature.caption && (
