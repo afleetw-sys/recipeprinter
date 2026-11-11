@@ -29,6 +29,7 @@ import {
   PagePlusIcon,
   PlusIcon,
   SearchIcon,
+  SwapIcon,
   TrashIcon,
   XIcon,
 } from "@/components/icons";
@@ -203,6 +204,9 @@ interface PageRailProps {
   previewDescriptionOn: boolean;
   organizeMode: boolean;
   enterOrganizeMode: () => void;
+  /** Recipe cards only: set this print aside and start again from one new
+      recipe. The other half of "Add more recipes", and the free one. */
+  onPrintDifferentRecipe: () => void;
   exitOrganizeMode: () => void;
   projectMeta: ReturnType<typeof useProjectMeta>;
   cookbookView: boolean;
@@ -284,6 +288,7 @@ export function PageRail(props: PageRailProps) {
     previewDescriptionOn,
     organizeMode,
     enterOrganizeMode,
+    onPrintDifferentRecipe,
     exitOrganizeMode,
     projectMeta,
     cookbookView,
@@ -811,6 +816,27 @@ export function PageRail(props: PageRailProps) {
                 rail is open or folded -- an arrow inside the panel can only be
                 the one that closes it, so it has to be replaced by a different
                 control somewhere else the moment it works. */}
+            {/* Recipe cards have two ways forward from a finished card: put
+                more recipes beside it, or swap it for a different one. The
+                second is what most people with one card want next, and it is
+                free, so it stands on its own rather than hiding under Add. Not
+                in a cookbook, which is built by adding and never swapped
+                wholesale. */}
+            {!projectMeta.meta.cookbookMode && hasRecipes && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-compact recipe-page-rail__swap"
+                onClick={onPrintDifferentRecipe}
+                /* The full phrase doesn't fit the rail on one line, and wrapped
+                   it read as the heaviest thing in the panel. Under "Add more
+                   recipes" the short form is enough to tell the two apart. */
+                title="Print a different recipe"
+                aria-label="Print a different recipe"
+              >
+                <SwapIcon size={ICON_SIZE.md} />
+                <span>Different recipe</span>
+              </button>
+            )}
             {projectMeta.meta.cookbookMode && (
                 <button
                   type="button"

@@ -7399,6 +7399,14 @@ export default function PrintPage() {
           previewDescriptionOn={showDescription}
           organizeMode={organizeMode}
           enterOrganizeMode={enterOrganizeMode}
+          onPrintDifferentRecipe={() => {
+            track("print_different_recipe_clicked", { recipeCount });
+            // The front door files this print and opens the importer, the way
+            // the logo does. Not cleared in place: the open project's id is
+            // what autosave writes to, so swapping its recipe here would
+            // overwrite the saved print rather than start a new one.
+            handleNavigateHome();
+          }}
           exitOrganizeMode={exitOrganizeMode}
           projectMeta={projectMeta}
           cookbookView={cookbookView}
