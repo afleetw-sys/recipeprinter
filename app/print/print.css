@@ -2366,8 +2366,11 @@
 
 /* The page's kind ("Cover", "Contents"), first in a cookbook page's bar: a
    quiet label, not a control, in the bar's own type. */
-.recipe-page-toolbar__page-name {
-  padding: 0 10px 0 8px;
+/* Doubled class: the bar's `__group:first-child` rule zeroes a first group's
+   left padding (buttons bring their own), which put this word hard against
+   the bar's rounded edge. */
+.recipe-page-toolbar__page-name.recipe-page-toolbar__page-name {
+  padding: 0 14px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
   font-weight: 600;
