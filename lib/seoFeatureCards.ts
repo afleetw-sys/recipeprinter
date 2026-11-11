@@ -88,7 +88,7 @@ export const PRINT_CARDS: FeatureCard[] = [
     heading: "Cookbook builder",
     image: "bound-cookbook",
     body:
-      `Sort your recipes into chapters and choose a cover, and RecipePrinter builds the table of contents and page numbers. Preview up to 10 recipes free; ${COOKBOOK_PRICE_FALLBACK} lets you download or print that cookbook and add more recipes.`,
+      `Sort your recipes into chapters and choose a cover, and RecipePrinter builds the table of contents and page numbers. Print it at home for a 3-ring binder, or send it to a print shop for a spiral-bound or hardcover book. Preview up to 10 recipes free; ${COOKBOOK_PRICE_FALLBACK} lets you download or print that cookbook and add more recipes.`,
   },
 ];
 

@@ -15,7 +15,7 @@ export function RecipeBinderSections() {
       <LandingSection
         id="binder-organization-heading"
         heading="Choose simple recipe binder sections"
-        lede="Start with broad sections that match how you cook. Each one opens on its own page in the binder, so it works like a tab divider, and the table of contents lists every recipe under it. You can split a section later as the binder grows."
+        lede="Start with broad sections that match how you cook. You can split one later as the binder grows."
       >
         <div className="flex flex-wrap gap-cp-2">
           {categories.map((category) => (

@@ -2198,10 +2198,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "A binder",
     pickerGroup: "output",
     intent: "Organization SEO",
-    heroImage: "organize-cookbook",
-    heroImageAlt:
-      "A recipe binder being sorted into sections in RecipePrinter, with a section page beside the list.",
-    heroFrame: "none",
+    heroImage: "binder-cover",
+    heroAnnotation: "Printed at home, filed in a 3-ring binder",
     title: "Make a Recipe Binder with Sections & a Table of Contents | RecipePrinter",
     description:
       "Turn recipes from websites, apps, screenshots, photos, and handwritten cards into a printable recipe binder, with section pages, a table of contents, and page numbers.",
@@ -2239,12 +2237,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "The Add recipes dialog with its four sources: a recipe link, a recipe app, an image, or pasted text.",
       },
       {
+        heading: "Section pages that work like tab dividers",
+        body:
+          "Sort recipes by meal, by season, or by the person they came from. Each section opens on its own page with the recipes it holds, the table of contents lists them all, and every page is numbered, so a recipe is easy to find and easy to put back.",
+        image: "binder-section-page",
+      },
+      {
         heading: "Saved for a 3-ring binder",
         body:
-          "When the binder is ready, choose \"Spiral, comb or 3-ring\" in the print dialog. You get one US Letter PDF for a home printer, with the cover first and the pages in order, so nothing needs sorting when it comes off the printer.",
-        image: "print-cookbook",
-        imageAlt:
-          "The Print your cookbook dialog with \"Spiral, comb or 3-ring\" chosen for how the pages will be bound.",
+          "When the binder is ready, choose \"Spiral, comb or 3-ring\" in the print dialog. You get one US Letter PDF for a home printer, with the cover first and every page in order, so nothing needs sorting when it comes off the printer. Slide the pages into sheet protectors and a photo faces its recipe, the way it would in a cookbook.",
+        image: "binder-recipe",
       },
       {
         heading: "Just want the recipe pages?",
@@ -2834,7 +2836,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Design the whole book",
         image: "multi-themes",
         body:
-          "Choose from more than a dozen themes, from clean and modern to a cream-stock keepsake look, plus a seasonal Christmas theme. The theme carries through the cover, chapter openers, and every recipe page.",
+          "Choose from more than a dozen themes, from clean and modern to a cream-stock keepsake look, plus seasonal themes for fall, Halloween, and Christmas. The theme carries through the cover, chapter openers, and every recipe page.",
         afterBody:
           "Add your own cover photo and title, give each chapter opener its own photo, and switch themes at any point.",
       },
@@ -2842,7 +2844,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Print-ready formats, including hardcover",
         image: "print-cookbook",
         body:
-          "Download US Letter for a home printer, or full-bleed files for a coil-bound or hardcover book at US Letter or 8 × 10. Formats for print services come with a separate cover file sized to your book's spine, ready for services like Lulu.",
+          "Download US Letter for a home printer and a 3-ring binder, or full-bleed files for a coil-bound or hardcover book at US Letter or 8 × 10. Formats for print services come with a separate cover file sized to your book's spine, ready for services like Lulu.",
       },
       {
         heading: "Preview it free, then pay $19.99 to download or add more",
@@ -2968,9 +2970,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "On your own printer",
-        image: "convert-to-pdf",
+        image: "binder-cover",
         body:
-          "Printing at home is the simplest way to print your own cookbook as a binder or loose pages. RecipePrinter exports one US Letter PDF, with the cover as its first page.",
+          "Printing at home is the simplest way to print your own cookbook as a binder or loose pages. Choose \"Spiral, comb or 3-ring\" when you save, and RecipePrinter exports one US Letter PDF, with the cover as its first page.",
         afterBody:
           "Put the pages in a three-ring binder or sheet protectors, or take the stack to a copy shop later if you decide you want it bound.",
       },

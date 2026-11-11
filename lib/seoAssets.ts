@@ -301,6 +301,32 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt:
       "The same recipe two ways: a 26-page stack printed from the browser, beside one card printed from RecipePrinter.",
   },
+  // A RecipePrinter cookbook printed at home on US Letter and filed in a
+  // 3-ring binder, in sheet protectors. Portrait phone shots in landscape
+  // slots, so each `objectPosition` keeps its subject: the cover's title
+  // plate, the section page's title with a ring above it, and the recipe's
+  // title beside the rings with its photo below.
+  "binder-cover": {
+    src: "/images/binder/binder-cover.jpg",
+    width: 1333,
+    height: 2000,
+    alt: "A white 3-ring binder with a printed Our Family Cookbook cover, a collage of home-cooked dishes, slipped into its front sleeve.",
+    objectPosition: "50% 64%",
+  },
+  "binder-section-page": {
+    src: "/images/binder/binder-section-page.jpg",
+    width: 1333,
+    height: 2000,
+    alt: "An open recipe binder at its Appetizers section page, listing Best Ever Guacamole, Italian Bruschetta, and 4 more recipes.",
+    objectPosition: "50% 52%",
+  },
+  "binder-recipe": {
+    src: "/images/binder/binder-recipe.jpg",
+    width: 1333,
+    height: 2000,
+    alt: "An open recipe binder with a full-page bruschetta photo facing the printed Italian Bruschetta recipe, each in a sheet protector.",
+    objectPosition: "50% 22%",
+  },
   "caprese-card-board": {
     src: "/images/printed-cards/caprese-salad.jpeg",
     width: 2000,
