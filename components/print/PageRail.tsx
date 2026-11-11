@@ -1,5 +1,6 @@
 "use client";
 
+import { NOT_IN_A_CHAPTER, NOT_IN_A_CHAPTER_LABEL, recipeMoveDestinations } from "@/lib/recipeMoveDestinations";
 import {
   Fragment,
   useCallback,
@@ -77,10 +78,8 @@ const RAIL_SCALE: Record<PrintCardSize, number> = {
 // is ready before it scrolls into view (no visible pop-in).
 const RAIL_THUMB_OVERSCAN = "600px 0px";
 
-/** The move menu's destination for recipes in no chapter (see
-    `tileMenuSections`), and what the organizer calls them. */
-const NOT_IN_A_CHAPTER = "not-in-a-chapter";
-export const NOT_IN_A_CHAPTER_LABEL = "Not in a chapter";
+// Re-exported for the print page, which has always imported it from here.
+export { NOT_IN_A_CHAPTER_LABEL } from "@/lib/recipeMoveDestinations";
 
 /** How the organizer orders the recipes inside each section: the cook's own
     arrangement, or A–Z by recipe title. Section order is never touched. */
@@ -608,17 +607,7 @@ export function PageRail(props: PageRailProps) {
   // a chapter called "Untitled". There may be no such group yet (every
   // recipe in a chapter), so it is not a section id but its own value.
   const tileMenuSections = tileMenu
-    ? [
-        ...(tileMenu.ids.some((id) => sectionTitleOfItem(id))
-          ? [{ id: NOT_IN_A_CHAPTER, title: NOT_IN_A_CHAPTER_LABEL }]
-          : []),
-        ...sections.filter((section) => {
-          if (!section.title?.trim()) return false;
-          const ids = itemIdsForSection(section.id);
-          // A section every moved recipe is already in has nowhere to move them.
-          return !tileMenu.ids.every((id) => ids.includes(id));
-        }),
-      ]
+    ? recipeMoveDestinations(tileMenu.ids, sections, itemIdsForSection, sectionTitleOfItem)
     : [];
 
   /**

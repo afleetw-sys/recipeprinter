@@ -60,13 +60,25 @@ export function useFloatingBarPlacement({
       }
       // The bottom of what is visible is the top of the keyboard, whichever
       // way the browser makes room for it (lib/keyboard.ts).
+      //
+      // Absolute, in page coordinates, not fixed. With the keyboard up, iOS
+      // Safari shifts the visible area within the page, and then hit-tests a
+      // fixed element as far off as the shift (measured: about 200pt on an
+      // iPhone 16 Pro): the bar drawn above the keys ignored taps on itself
+      // and took taps meant for the recipe above it. An absolute element is
+      // hit-tested where it is drawn. `pageTop` is where the visible area
+      // sits on the page, scroll included.
       const docked = bar.getBoundingClientRect();
-      bar.style.left = `${viewLeft + Math.max(MARGIN, (viewWidth - docked.width) / 2)}px`;
-      bar.style.top = `${viewTop + viewHeight - docked.height - MARGIN}px`;
+      const pageTop = viewport?.pageTop ?? window.scrollY + viewTop;
+      const pageLeft = viewport?.pageLeft ?? window.scrollX + viewLeft;
+      bar.style.position = "absolute";
+      bar.style.left = `${pageLeft + Math.max(MARGIN, (viewWidth - docked.width) / 2)}px`;
+      bar.style.top = `${pageTop + viewHeight - docked.height - MARGIN}px`;
       bar.style.visibility = "visible";
       return;
     }
     bar.removeAttribute("data-docked");
+    bar.style.position = "";
 
     const self = bar.getBoundingClientRect();
 
@@ -107,6 +119,51 @@ export function useFloatingBarPlacement({
 
   // Before paint, so the bar is never seen at the top-left corner it renders at.
   useLayoutEffect(place);
+
+  // A docked bar answers a tap on the touch itself. iOS spends the first tap
+  // on a button on hover and holds its mouse events back, so every control on
+  // the bar above the keyboard took two taps (seen in the simulator: the
+  // first tap only drew the pressed look). A finger lifted on a button
+  // without moving cancels iOS's own delayed mouse events and presses the
+  // button now, as a mouse would (down, up, click), so each tap acts once.
+  // A field on the bar (the size box) and a sideways swipe along it are left
+  // to the browser.
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!active || !dockAboveKeyboard || !bar) return;
+    let start: { x: number; y: number } | null = null;
+    const onStart = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      start = event.touches.length === 1 && touch ? { x: touch.clientX, y: touch.clientY } : null;
+    };
+    const onMove = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      if (start && touch && Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 8) start = null;
+    };
+    const onEnd = (event: TouchEvent) => {
+      const tapped = start;
+      start = null;
+      if (!tapped || !bar.hasAttribute("data-docked")) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target || target.closest("input, textarea")) return;
+      const button = target.closest<HTMLButtonElement>("button");
+      if (!button || !bar.contains(button) || button.disabled) return;
+      event.preventDefault();
+      const at = { bubbles: true, cancelable: true, clientX: tapped.x, clientY: tapped.y, view: window };
+      button.dispatchEvent(new MouseEvent("mousedown", at));
+      button.dispatchEvent(new MouseEvent("mouseup", at));
+      button.dispatchEvent(new MouseEvent("click", at));
+    };
+    bar.addEventListener("touchstart", onStart, { passive: true });
+    bar.addEventListener("touchmove", onMove, { passive: true });
+    bar.addEventListener("touchend", onEnd, { passive: false });
+    return () => {
+      bar.removeEventListener("touchstart", onStart);
+      bar.removeEventListener("touchmove", onMove);
+      bar.removeEventListener("touchend", onEnd);
+    };
+    // `observe` is the field being edited: a new field can come with a new bar.
+  }, [active, dockAboveKeyboard, barRef, observe]);
 
   useEffect(() => {
     if (!active) return;

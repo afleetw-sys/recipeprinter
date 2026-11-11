@@ -65,6 +65,7 @@ import { FailedImportCard } from "@/components/print/FailedImportCard";
 import { importLoadingLabel } from "@/lib/importProgress";
 import { importPreview } from "@/lib/importPreviews";
 import { BACK_COVER_NAV_ID } from "@/lib/railPending";
+import { coverSideOf } from "@/lib/pageDeletion";
 import { hostedPendingPage } from "@/lib/pendingDeckSlot";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
 
@@ -617,6 +618,34 @@ export function PrintDeck(props: PrintDeckProps) {
    * harmless (the wrapper had no background of its own); now it would be a
    * visible empty box floating over an art page.
    */
+  /** What kind of page this is, named at the start of a cookbook page's
+      toolbar: in a book, Cover and Contents look like any other page until
+      you read them. */
+  const pageKindName = (nav: NavItem): string => {
+    switch (nav.kind) {
+      case "cover": {
+        const side = coverSideOf(nav);
+        if (side === "back") return "Back cover";
+        if (side === "dedication") {
+          return projectMeta.meta.frontMatter?.kind === "introduction" ? "Introduction" : "Dedication";
+        }
+        return "Cover";
+      }
+      case "toc":
+        return "Contents";
+      case "divider":
+        return "Chapter";
+      case "recipe":
+        return "Recipe";
+      case "image":
+        return "Photo page";
+      case "section-photo":
+        return "Chapter photo";
+      case "blank":
+        return "Blank page";
+    }
+  };
+
   const renderActiveControls = (
     navItem: NavItem,
     previewW: number,
@@ -921,6 +950,13 @@ export function PrintDeck(props: PrintDeckProps) {
         } as CSSProperties}
       >
         <PageToolbar>
+          {/* Which page this is. A plain group, not a PageToolbarItem, so it
+              never folds into More: the name is what the buttons act on. */}
+          {cookbookView && (
+            <div className="recipe-page-toolbar__group recipe-page-toolbar__page-name">
+              {pageKindName(navItem)}
+            </div>
+          )}
           {/* Words running past their box print cut off, and nothing else
               would say so. Stays while it's true, and the words themselves are outlined on the page. */}
           {overflowing.length > 0 && (
@@ -1622,6 +1658,10 @@ export function PrintDeck(props: PrintDeckProps) {
             onSheetInView={setSheetInView}
             onOpenPages={onOpenPages}
             pagesOpen={pagesOpen}
+            hidden={
+              !cookbookView &&
+              new Set(navItems.filter((nav) => nav.kind === "recipe").map((nav) => nav.recipeId)).size < 2
+            }
           />
           <div
             className={`recipe-page-deck ${cookbookView ? "recipe-page-deck--book" : ""}`}

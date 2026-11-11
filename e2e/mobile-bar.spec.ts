@@ -41,9 +41,8 @@ test("the deck reaches the phone's bottom bar, with no band between them", async
     await page.setViewportSize({ width, height: 800 });
     await expect.poll(() => gapAboveBar(page), { message: `${width}px, idle` }).toBeCloseTo(0, 0);
 
-    // Open a line: the tip above the tools switches to the editing one.
+    // Open a line: the bar holds its height while editing too.
     await page.locator(".recipe-card__inline-rich, .recipe-card__inline-input").filter({ visible: true }).first().click();
-    await expect(page.locator(".recipe-edit-tips")).toBeVisible();
     await expect.poll(() => gapAboveBar(page), { message: `${width}px, editing` }).toBeCloseTo(0, 0);
     await page.keyboard.press("Escape");
   }

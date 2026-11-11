@@ -37,7 +37,9 @@ import { PHOTO_STYLE_OPTIONS } from "@/components/print/photoStyle";
 import { WebsitePhotosOption } from "@/components/print/WebsitePhotosOption";
 import { MobileStructureSheet, PHOTOS_SHEET_NOTE, type MobileBookSheet } from "@/components/print/MobileStructureSheet";
 import { MobilePagesPanel } from "@/components/print/MobilePagesPanel";
-import { EditTips } from "@/components/print/EditTips";
+import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
+import { PointMenu } from "@/components/print/PointMenu";
+import { NOT_IN_A_CHAPTER, recipeMoveDestinations } from "@/lib/recipeMoveDestinations";
 import { CardPhotosTiles } from "@/components/print/PrintSetupControls";
 import { MobileSheet } from "@/components/print/MobileSheet";
 import { PrintConfigPanel } from "@/components/print/PrintConfigPanel";
@@ -177,6 +179,9 @@ import { track } from "@/lib/analytics";
 import { reportCookbookCreated } from "@/lib/adTags";
 import {
   BookIcon,
+  ChevronDownIcon,
+  PencilIcon,
+  TrashIcon,
   PagesIcon,
   SettingsIcon,
   PagePlusIcon,
@@ -6554,6 +6559,22 @@ export default function PrintPage() {
   // cookbook's Add, which asks recipe or chapter before doing either.
   const [pagesPanelOpen, setPagesPanelOpen] = useState(false);
   const [addSheetOpen, setAddSheetOpen] = useState(false);
+  // What a phone's long press opened (lib/useLongPress): a recipe's "Move to"
+  // or a chapter's menu, the two menus right-click opens in the desktop rail.
+  const [phoneMenu, setPhoneMenu] = useState<
+    | { kind: "recipe"; x: number; y: number; id: string; title: string }
+    | { kind: "chapter"; x: number; y: number; id: string }
+    | null
+  >(null);
+  const openRecipePhoneMenu = useCallback(
+    (point: { x: number; y: number }, id: string, title: string) =>
+      setPhoneMenu({ kind: "recipe", ...point, id, title }),
+    [],
+  );
+  const openChapterPhoneMenu = useCallback(
+    (point: { x: number; y: number }, id: string) => setPhoneMenu({ kind: "chapter", ...point, id }),
+    [],
+  );
   const closePagesPanel = useCallback(() => setPagesPanelOpen(false), []);
   const togglePagesPanel = () => {
     setSizeMenuOpen(false);
@@ -7537,6 +7558,7 @@ export default function PrintPage() {
               cookbookMode={cookbookMode}
               missingBookPages={missingBookPages}
               onAddBookPage={addBookPage}
+              onRecipeLongPress={cookbookMode ? openRecipePhoneMenu : undefined}
               onOrganize={
                 cookbookMode
                   ? () => {
@@ -7666,25 +7688,9 @@ export default function PrintPage() {
         />
 
         <div ref={mobileBarRef} className="recipe-mobile-actions no-print">
-          {/* One tip for the whole deck, just above the tools, rather than one
-              hanging under each page. Recipe cards only: a cookbook shows none.
-              Only with a page to act on, since every tip is about one. */}
-          {/* While the empty fields are showing, a cookbook gets the line too:
-              it is where the phone says where to tap, instead of the page
-              toolbar growing a second row to say it. */}
-          {(!cookbookMode || showEmptyFields) && recipeCount > 0 && (
-            <EditTips
-              editing={Boolean(activeInlineEdit?.editingTarget)}
-              revealing={showEmptyFields && !activeInlineEdit?.editingTarget}
-              surface={cookbookMode ? "page" : "card"}
-            />
-          )}
-          {/* No way into a cookbook here on purpose. Building a book — covers,
-              chapters, page layouts, the organizer — is not something the phone
-              layout does well yet, and selling someone a $19.99 document they
-              then can't comfortably edit is worse than not offering it. The
-              desktop header carries the CTA; an existing book still OPENS and
-              edits here, it just isn't created here. */}
+          {/* No tip line above the tools (Amelia, 2026-11-10): the bar is the
+              tools and Print. "Pinch the page to zoom in" and its siblings
+              used to sit here. */}
           <div className="recipe-mobile-toolbar">
             <button
               type="button"
@@ -7933,7 +7939,71 @@ export default function PrintPage() {
           setBookSheet={setBookSheet}
           structureSheetOpen={structureSheetOpen}
           setStructureSheetOpen={setStructureSheetOpen}
+          onRecipeLongPress={openRecipePhoneMenu}
+          onChapterLongPress={openChapterPhoneMenu}
         />
+
+        {phoneMenu?.kind === "recipe" && (
+          <MoveToSectionMenu
+            anchor={phoneMenu}
+            heading={`Move \u201c${phoneMenu.title}\u201d to`}
+            sections={recipeMoveDestinations([phoneMenu.id], sections, itemIdsForSection, (itemId) => {
+              const at = sectionAndIndexForItem(itemId);
+              return at ? sections.find((section) => section.id === at.sectionId)?.title?.trim() : undefined;
+            })}
+            onMove={(sectionId) =>
+              sectionId === NOT_IN_A_CHAPTER
+                ? removeRecipesFromChapter([phoneMenu.id])
+                : moveRecipesToSection([phoneMenu.id], sectionId)
+            }
+            onNewSection={() => makeSectionFromSelection(new Set([phoneMenu.id]))}
+            onClose={() => setPhoneMenu(null)}
+          />
+        )}
+        {phoneMenu?.kind === "chapter" &&
+          (() => {
+            const order = projectMeta.meta.sections ?? [];
+            const at = order.findIndex((section) => section.id === phoneMenu.id);
+            const title = sections.find((section) => section.id === phoneMenu.id)?.title?.trim() || "chapter";
+            return (
+              <PointMenu
+                anchor={phoneMenu}
+                heading={title}
+                onClose={() => setPhoneMenu(null)}
+                items={[
+                  {
+                    label: "Move chapter up",
+                    icon: <ChevronDownIcon size={ICON_SIZE.sm} className="rotate-180" />,
+                    disabled: at <= 0,
+                    onSelect: () => moveSectionInBook(phoneMenu.id, -1),
+                  },
+                  {
+                    label: "Move chapter down",
+                    icon: <ChevronDownIcon size={ICON_SIZE.sm} />,
+                    disabled: at === -1 || at >= order.length - 1,
+                    onSelect: () => moveSectionInBook(phoneMenu.id, 1),
+                  },
+                  {
+                    label: "Rename chapter",
+                    icon: <PencilIcon size={ICON_SIZE.sm} />,
+                    onSelect: () => {
+                      const input = document.querySelector<HTMLInputElement>(
+                        `.recipe-structure-sheet [data-chapter-name-input="${CSS.escape(phoneMenu.id)}"]`,
+                      );
+                      input?.focus();
+                      input?.select();
+                    },
+                  },
+                  {
+                    label: "Delete chapter",
+                    icon: <TrashIcon size={ICON_SIZE.sm} />,
+                    danger: true,
+                    onSelect: () => requestDeleteSection(phoneMenu.id),
+                  },
+                ]}
+              />
+            );
+          })()}
 
         {PAGE_SETTINGS_TAB_ENABLED && cookbookMode && (
           <MobileSheet

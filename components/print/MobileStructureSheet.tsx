@@ -7,6 +7,7 @@ import { MobileSheet } from "@/components/print/MobileSheet";
 import { PHOTO_STYLE_OPTIONS, PhotoStylePreview } from "@/components/print/photoStyle";
 import { PhotoStyleTip, type PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
 import { ChapterNameInput } from "@/components/print/ChapterNameInput";
+import { useLongPress } from "@/lib/useLongPress";
 import { namedSectionCount, useProjectMeta, type PhotoStyle } from "@/lib/project";
 import type { Section } from "@/types/recipe";
 
@@ -33,6 +34,11 @@ interface MobileStructureSheetProps {
   setBookSheet: Dispatch<SetStateAction<MobileBookSheet>>;
   structureSheetOpen: boolean;
   setStructureSheetOpen: Dispatch<SetStateAction<boolean>>;
+  /** A long press on a recipe: what right-clicking one in the desktop rail
+      does (Move to a chapter). */
+  onRecipeLongPress?: (point: { x: number; y: number }, itemId: string, title: string) => void;
+  /** A long press on a chapter's heading: its menu, as right-click opens it. */
+  onChapterLongPress?: (point: { x: number; y: number }, sectionId: string) => void;
 }
 
 /** Which of the book-wide sheets is open, from the bottom bar's tiles. */
@@ -81,7 +87,13 @@ export function MobileStructureSheet({
   setBookSheet,
   structureSheetOpen,
   setStructureSheetOpen,
+  onRecipeLongPress,
+  onChapterLongPress,
 }: MobileStructureSheetProps) {
+    const pressRecipe = useLongPress<{ id: string; title: string }>((point, recipe) =>
+      onRecipeLongPress?.(point, recipe.id, recipe.title),
+    );
+    const pressChapter = useLongPress<string>((point, sectionId) => onChapterLongPress?.(point, sectionId));
     if (!projectMeta.meta.cookbookMode) return null;
     const orderedIds = sections.flatMap((section) => section.items.map((item) => item.id));
     const recipeCount = orderedIds.length;
@@ -179,8 +191,12 @@ export function MobileStructureSheet({
               return (
                 <section className="recipe-structure-sheet__section" key={section.id}>
                   {showSectionChrome && (
-                    <div className="recipe-structure-sheet__section-head">
+                    <div
+                      className="recipe-structure-sheet__section-head rp-long-press"
+                      {...(onChapterLongPress ? pressChapter(section.id) : {})}
+                    >
                       <ChapterNameInput
+                        data-chapter-name-input={section.id}
                         className="recipe-structure-sheet__section-title"
                         value={section.title ?? ""}
                         placeholder="Chapter name"
@@ -223,7 +239,11 @@ export function MobileStructureSheet({
                       const globalIndex = orderedIds.indexOf(item.id);
                       const title = item.recipe?.title || item.title;
                       return (
-                        <li className="recipe-structure-sheet__recipe" key={item.id}>
+                        <li
+                          className="recipe-structure-sheet__recipe rp-long-press"
+                          key={item.id}
+                          {...(onRecipeLongPress ? pressRecipe({ id: item.id, title: title ?? "this recipe" }) : {})}
+                        >
                           <button
                             type="button"
                             className="recipe-structure-sheet__recipe-open"

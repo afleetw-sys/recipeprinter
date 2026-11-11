@@ -9,6 +9,7 @@ import { coverSideOf } from "@/lib/pageDeletion";
 import { PAGE_DIMS } from "@/lib/printGeometry";
 import type { FontScale } from "@/lib/fontScale";
 import type { NavItem, PageSheet } from "@/lib/usePrintSheets";
+import { useLongPress } from "@/lib/useLongPress";
 
 /** A thumbnail's width on screen: big enough to tell pages apart, small enough
     that a phone shows four and a bit, which says the row scrolls. */
@@ -86,6 +87,7 @@ export function MobilePagesPanel({
   missingBookPages,
   onAddBookPage,
   onOrganize,
+  onRecipeLongPress,
 }: {
   open: boolean;
   onClose: () => void;
@@ -105,7 +107,11 @@ export function MobilePagesPanel({
   onAddBookPage: (page: BookPageSlot) => void;
   /** Cookbook only: opens the organizer. */
   onOrganize?: () => void;
+  /** A long press on a recipe's page: its "Move to" menu, as right-clicking
+      it in the desktop rail opens. */
+  onRecipeLongPress?: (point: { x: number; y: number }, recipeId: string, title: string) => void;
 }) {
+  const pressRecipe = useLongPress<NavItem>((point, nav) => onRecipeLongPress?.(point, nav.recipeId, nav.label));
   const [strip, setStrip] = useState<HTMLOListElement | null>(null);
 
   // Open on the page you are looking at, not the start of a long book. Only
@@ -188,7 +194,8 @@ export function MobilePagesPanel({
               <li>
                 <button
                   type="button"
-                  className="recipe-pages-panel__page"
+                  className="recipe-pages-panel__page rp-long-press"
+                  {...(onRecipeLongPress && nav.kind === "recipe" ? pressRecipe(nav) : {})}
                   aria-current={isCurrent ? "page" : undefined}
                   // Stays open: the strip is for moving around the book, and
                   // the page you go to is marked in it as you go.

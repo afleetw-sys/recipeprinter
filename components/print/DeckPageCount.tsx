@@ -51,6 +51,7 @@ export function DeckPageCount({
   onSheetInView,
   onOpenPages,
   pagesOpen = false,
+  hidden = false,
 }: {
   /** The deck to count, as it is now. */
   deck: HTMLElement | null;
@@ -63,6 +64,10 @@ export function DeckPageCount({
       button for it, with a caret saying it opens. */
   onOpenPages?: () => void;
   pagesOpen?: boolean;
+  /** Recipe cards with only one recipe: its own two sides or a second page
+      aren't worth a "1 / 2". The swipe hint and the sheet-in-view report
+      carry on; only the count goes. */
+  hidden?: boolean;
 }) {
   const mobile = useDeckMobile();
   const [count, setCount] = useState<Count>({ page: 1, total: 0, sheet: null });
@@ -118,7 +123,7 @@ export function DeckPageCount({
   if (!mobile || count.total < 2) return null;
   return (
     <div className="recipe-deck-page-count no-print">
-      {countSlot
+      {countSlot && !hidden
         ? createPortal(
             onOpenPages ? (
               <button
