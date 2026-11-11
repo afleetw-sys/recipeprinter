@@ -829,12 +829,13 @@ export function PageRail(props: PageRailProps) {
                 onClick={onPrintDifferentRecipe}
                 /* The full phrase doesn't fit the rail on one line, and wrapped
                    it read as the heaviest thing in the panel. Under "Add more
-                   recipes" the short form is enough to tell the two apart. */
+                   recipes" the short form is enough to tell the two apart,
+                   and it is the phone toolbar's word too. */
                 title="Print a different recipe"
                 aria-label="Print a different recipe"
               >
                 <SwapIcon size={ICON_SIZE.md} />
-                <span>Different recipe</span>
+                <span>Swap recipe</span>
               </button>
             )}
             {projectMeta.meta.cookbookMode && (
