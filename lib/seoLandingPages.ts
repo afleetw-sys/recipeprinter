@@ -2221,8 +2221,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         text: "Pick \"Spiral, comb or 3-ring\" and you get one US Letter PDF to send to your own printer.",
       },
       {
-        name: "Punch the pages and file them",
-        text: "Hole-punch the stack or slide the pages into sheet protectors, and your binder is ready for the kitchen.",
+        name: "Slide the pages into sheet protectors",
+        text: "Sheet protectors keep splatters off the pages and mean you never need a hole punch. Prefer bare pages? Punch the stack instead.",
       },
     ],
     featureSections: [
@@ -2243,9 +2243,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         image: "binder-section-page",
       },
       {
-        heading: "Print it at home, punch it, file it",
+        heading: "Print it at home, no hole punch needed",
         body:
-          "When the binder is ready, choose \"Spiral, comb or 3-ring\" in the print dialog. You get one US Letter PDF for a home printer, with the cover first and every page in order, so nothing needs sorting when it comes off the printer. Slide the pages into sheet protectors and a photo faces its recipe, the way it would in a cookbook.",
+          "When the binder is ready, choose \"Spiral, comb or 3-ring\" in the print dialog. You get one US Letter PDF for a home printer, with the cover first and every page in order, so nothing needs sorting when it comes off the printer. Slide the pages into sheet protectors, back to back, and they're wipe-clean, ready for the binder rings, and a photo faces its recipe the way it would in a cookbook.",
         image: "binder-recipe",
       },
       {
@@ -2299,6 +2299,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Should a recipe binder use cards or full pages?",
         answer:
           "Full pages are usually the simplest choice for a binder, because they fit standard sheet protectors and give longer recipes more room. 4×6 cards suit a recipe box, though binder sleeves made for that size work too. 4×6 recipe cards are available with RecipePrinter Pro.",
+      },
+      {
+        question: "Do I need a hole punch for a recipe binder?",
+        answer:
+          "No. Slide the pages into sheet protectors and the protectors go on the binder rings, so the pages stay whole and splatters wipe off. You can still hole-punch the pages if you'd rather file them bare.",
       },
       {
         question: "What size binder is best for recipes?",
