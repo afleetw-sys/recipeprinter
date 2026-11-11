@@ -374,6 +374,17 @@ export const PagesIcon = (p: IconProps) => (
   </Base>
 );
 
+/** Two arrows passing each other: one thing swapped for another. Print a
+    different recipe in place of the one on the page. */
+export const SwapIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M4 8h14" />
+    <path d="M15 5l3 3-3 3" />
+    <path d="M20 16H6" />
+    <path d="M9 13l-3 3 3 3" />
+  </Base>
+);
+
 /** A page with a plus: pages the book gains (dedication, contents). */
 export const PagePlusIcon = (p: IconProps) => (
   <Base {...p}>

@@ -414,6 +414,9 @@ type EventProps = {
    *  (e.g. "theme_picker", "card_size_picker") so the funnel shows which
    *  surface actually drives upgrade interest. */
   pro_feature_encountered: { feature: ProFeature; source: string };
+  /** The rail's "Print a different recipe": set a recipe-cards print aside
+      and start again from one recipe. `recipeCount` is what was set aside. */
+  print_different_recipe_clicked: { recipeCount: number };
   /** The Pro upgrade dialog was shown. `trigger` matches
    *  `pro_feature_encountered`'s `source` when it opened one, or names the
    *  entry point otherwise (e.g. "account_menu"). */

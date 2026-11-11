@@ -182,6 +182,7 @@ import {
   PagePlusIcon,
   CheckIcon,
   CrownIcon,
+  SwapIcon,
   ICON_SIZE,
   ImageIcon,
   InfoIcon,
@@ -3148,6 +3149,18 @@ export default function PrintPage() {
    */
   function goHome() {
     navigateAfterOverlayHistory(() => router.push("/"));
+  }
+
+  /**
+   * "Swap recipe" (the rail's button and the phone toolbar's tile).
+   * The front door files this print and opens the importer, the way the logo
+   * does. Not cleared in place: the open project's id is what autosave writes
+   * to, so swapping its recipe here would overwrite the saved print rather
+   * than start a new one.
+   */
+  function printDifferentRecipe() {
+    track("print_different_recipe_clicked", { recipeCount });
+    handleNavigateHome();
   }
 
   /**
@@ -7399,6 +7412,7 @@ export default function PrintPage() {
           previewDescriptionOn={showDescription}
           organizeMode={organizeMode}
           enterOrganizeMode={enterOrganizeMode}
+          onPrintDifferentRecipe={printDifferentRecipe}
           exitOrganizeMode={exitOrganizeMode}
           projectMeta={projectMeta}
           cookbookView={cookbookView}
@@ -7705,6 +7719,25 @@ export default function PrintPage() {
                   (an import still parsing counts), so the two never disagree. */}
               {cookbookMode ? "Add" : recipeCount > 0 ? "Add more" : "Add recipe"}
             </button>
+            {/* Recipe cards' other way forward, beside Add more: the desktop
+                rail's "Swap recipe". Its own tile rather than a choice
+                behind Add, since it is the free one and there is room for it
+                in a toolbar that has no Pages tile. */}
+            {!cookbookMode && recipeCount > 0 && (
+              <button
+                type="button"
+                className="recipe-mobile-toolbar__btn"
+                onClick={printDifferentRecipe}
+                aria-label="Print a different recipe"
+              >
+                <span className="recipe-mobile-toolbar__btn-icon">
+                  <SwapIcon size={ICON_SIZE.lg} />
+                </span>
+                {/* "Different recipe" widened this tile past its neighbours
+                    and pushed Themes off a phone's edge. The rail says the same. */}
+                Swap recipe
+              </button>
+            )}
             {/* Pages: the same overview the page count's caret opens, a strip of
                 every page under the top bar (MobilePagesPanel), with Organize
                 in it. One toggle, two ways to reach it. */}
