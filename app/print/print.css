@@ -532,6 +532,13 @@
   padding: 4px 8px;
   border-radius: 6px;
 }
+/* Rules the photo page off from the lines, edge to edge across the menu
+   with the same breathing room above and below. */
+.add-line-menu__rule {
+  height: 1px;
+  margin: 4px -4px;
+  background: var(--cp-line);
+}
 
 .recipe-page-rail__section-title-input {
   min-width: 0;

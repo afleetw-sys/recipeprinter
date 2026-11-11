@@ -67,11 +67,12 @@ export function AddLineMenu({
           {line.name}
         </button>
       ))}
+      {page && lines.length > 0 && <div role="separator" className="add-line-menu__rule" />}
       {page && (
         <button
           type="button"
           role="menuitem"
-          className={`cp-menu__item ${lines.length > 0 ? "cp-menu__item--make" : ""}`}
+          className="cp-menu__item"
           onClick={() => {
             onClose();
             page.add();
