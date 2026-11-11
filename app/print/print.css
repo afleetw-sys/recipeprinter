@@ -5407,7 +5407,24 @@ html[data-pages-view] .recipe-mobile-actions {
   z-index: 69;
   border: 0;
   background: var(--cp-scrim);
-  animation: rp-pages-scrim-in 200ms ease-out both;
+  animation: rp-pages-fade-in 240ms ease-out both;
+}
+/* The bar, its buttons and the count ease into and out of their sheet look
+   in step with the scrim, rather than switching on the first frame (the bar
+   went see-through before the scrim behind it had darkened). */
+.recipe-mobile-topbar {
+  transition:
+    background-color 240ms ease-out,
+    border-color 240ms ease-out;
+}
+.recipe-mobile-topbar__start,
+.recipe-mobile-topbar__actions {
+  transition: opacity 240ms ease-out;
+}
+.recipe-deck-page-count__button {
+  transition:
+    background-color 160ms ease-out,
+    color 160ms ease-out;
 }
 html[data-pages-view] .recipe-mobile-topbar {
   z-index: 71;
@@ -5440,6 +5457,7 @@ html[data-pages-view] .recipe-deck-page-count__button {
 }
 html[data-pages-view] .recipe-deck-page-count__button::before,
 html[data-pages-view] .recipe-deck-page-count__button::after {
+  animation: rp-pages-fade-in 160ms ease-out both;
   position: absolute;
   bottom: 0;
   /* 1px wider, tucked under the tab, so no subpixel seam shows between. */
@@ -5459,30 +5477,86 @@ html[data-pages-view] .recipe-deck-page-count__button::after {
 .recipe-pages-view {
   border-radius: 20px 20px 0 0;
   box-shadow: var(--cp-shadow-sheet);
-  /* From the count's width at the top centre, out to the whole sheet. */
-  /* `backwards`: the clip holds only while it plays, so it never crops the
+  /* Unfolds down and out from under the tab: it starts exactly the count's
+     width (--rp-tab-left/right, measured by MobilePagesPanel) and no height,
+     and opens to the whole sheet on an iOS-sheet curve. No fade on the sheet
+     itself, which only muddied it; its contents fade in a beat behind.
+     `backwards`: the clip holds only while it plays, so it never crops the
      sheet's shadow afterwards. */
-  animation: rp-pages-grow 260ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation: rp-pages-grow 320ms cubic-bezier(0.32, 0.72, 0, 1) backwards;
+}
+.recipe-pages-view > * {
+  animation: rp-pages-content-in 220ms ease-out 80ms backwards;
 }
 @keyframes rp-pages-grow {
   from {
-    clip-path: inset(0 38% 92% 38% round 14px);
-    opacity: 0.6;
+    clip-path: inset(0 var(--rp-tab-right, 40%) 100% var(--rp-tab-left, 40%) round 0 0 14px 14px);
   }
   to {
     clip-path: inset(0 0 0 0 round 20px 20px 0 0);
-    opacity: 1;
   }
 }
-@keyframes rp-pages-scrim-in {
+@keyframes rp-pages-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@keyframes rp-pages-fade-in {
   from {
     opacity: 0;
   }
 }
+/* Closing: the same way back, quicker, into the tab, and the scrim lifts.
+   MobilePagesPanel keeps it mounted until this ends (CLOSE_MS). */
+.recipe-pages-view.is-closing,
+.recipe-pages-view__scrim.is-closing {
+  pointer-events: none;
+}
+.recipe-pages-view.is-closing {
+  animation: rp-pages-shrink 200ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+.recipe-pages-view.is-closing > * {
+  animation: rp-pages-fade-out 120ms ease-in both;
+}
+.recipe-pages-view__scrim.is-closing {
+  animation: rp-pages-fade-out 200ms ease-in both;
+}
+@keyframes rp-pages-shrink {
+  from {
+    clip-path: inset(0 0 0 0 round 20px 20px 0 0);
+  }
+  to {
+    clip-path: inset(0 var(--rp-tab-right, 40%) 100% var(--rp-tab-left, 40%) round 0 0 14px 14px);
+  }
+}
+@keyframes rp-pages-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+/* While it shrinks the bar comes back to full strength; the count stays the
+   sheet's tab until the sheet has gone into it. */
+html[data-pages-view="closing"] .recipe-mobile-topbar {
+  background: var(--cp-card);
+  border-bottom-color: var(--cp-line);
+}
+html[data-pages-view="closing"] .recipe-mobile-topbar__start,
+html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
+  opacity: 1;
+}
 @media (prefers-reduced-motion: reduce) {
   .recipe-pages-view,
-  .recipe-pages-view__scrim {
+  .recipe-pages-view > *,
+  .recipe-pages-view__scrim,
+  .recipe-mobile-topbar,
+  .recipe-mobile-topbar__start,
+  .recipe-mobile-topbar__actions,
+  .recipe-deck-page-count__button,
+  .recipe-deck-page-count__button::before,
+  .recipe-deck-page-count__button::after {
     animation: none;
+    transition: none;
   }
 }
 .recipe-pages-view__title {

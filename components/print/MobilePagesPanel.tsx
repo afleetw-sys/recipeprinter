@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { CheckIcon, ICON_SIZE, MoreHorizontalIcon, PlusIcon, TrashIcon, XIcon } from "@/components/icons";
 import { ChapterNameInput } from "@/components/print/ChapterNameInput";
 import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
@@ -20,6 +20,8 @@ import type { Section } from "@/types/recipe";
 const MIN_TILE = 96;
 const GAP = 12;
 /** How long a finger rests on a recipe, in Organize, before it's a drag. */
+/** How long the sheet takes to shrink back into the tab (print.css). */
+const CLOSE_MS = 200;
 const DRAG_HOLD_MS = 350;
 
 type Group = {
@@ -148,6 +150,13 @@ export function MobilePagesPanel({
   const viewRef = useRef<HTMLElement | null>(null);
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
   const [top, setTop] = useState(0);
+  // Where the page count sits, so the sheet grows out of exactly its width.
+  const [tab, setTab] = useState({ left: 0, right: 0 });
+  // On screen while open, and for the close animation after. Set during
+  // render on opening, so it is never a frame behind `open`.
+  const [shown, setShown] = useState(open);
+  if (open && !shown) setShown(true);
+  const leaving = shown && !open;
   const [cols, setCols] = useState(3);
   const [tileW, setTileW] = useState(MIN_TILE);
   const [selected, setSelected] = useState<string[]>([]);
@@ -162,13 +171,33 @@ export function MobilePagesPanel({
     if (!open) return;
     const bar = document.querySelector<HTMLElement>(".recipe-mobile-topbar");
     if (bar) setTop(bar.getBoundingClientRect().bottom);
+    const count = bar?.querySelector<HTMLElement>(".recipe-deck-page-count__button");
+    if (count) {
+      const box = count.getBoundingClientRect();
+      setTab({ left: Math.max(0, box.left), right: Math.max(0, window.innerWidth - box.right) });
+    }
   }, [open]);
+
+  // Closing plays the opening backwards, back into the tab, before it goes.
+  // The motion is CSS; this only keeps the sheet mounted until it ends.
   useEffect(() => {
-    if (!open) return;
+    if (!leaving) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timer = window.setTimeout(() => setShown(false), reduce ? 0 : CLOSE_MS);
+    return () => window.clearTimeout(timer);
+  }, [leaving]);
+
+  // "" while open; "closing" while it shrinks back, when the top bar comes
+  // back to full strength but the count stays the sheet's tab.
+  useLayoutEffect(() => {
     const root = document.documentElement;
-    root.setAttribute("data-pages-view", "");
-    return () => root.removeAttribute("data-pages-view");
-  }, [open]);
+    if (!shown) {
+      root.removeAttribute("data-pages-view");
+      return;
+    }
+    root.setAttribute("data-pages-view", open ? "" : "closing");
+  }, [open, shown]);
+  useEffect(() => () => document.documentElement.removeAttribute("data-pages-view"), []);
 
   // Columns from the width: three on a phone, more on a tablet.
   useEffect(() => {
@@ -340,7 +369,7 @@ export function MobilePagesPanel({
     };
   }, [open, organizing, scroller]);
 
-  if (!open) return null;
+  if (!shown) return null;
 
   // Group the book: the front matter, then each chapter (or the recipes in no
   // chapter) under its heading, then the back cover.
@@ -411,11 +440,22 @@ export function MobilePagesPanel({
     <>
     {/* Everything outside the sheet dims and closes it when tapped, so the
         sheet is plainly what to look at. */}
-    <button type="button" className="recipe-pages-view__scrim no-print" aria-label="Close pages" onClick={onClose} />
+    <button
+      type="button"
+      className={`recipe-pages-view__scrim no-print ${open ? "" : "is-closing"}`}
+      aria-label="Close pages"
+      onClick={onClose}
+    />
     <section
       ref={viewRef}
-      className="recipe-pages-view no-print"
-      style={{ top }}
+      className={`recipe-pages-view no-print ${open ? "" : "is-closing"}`}
+      style={
+        {
+          top,
+          "--rp-tab-left": `${tab.left}px`,
+          "--rp-tab-right": `${tab.right}px`,
+        } as CSSProperties
+      }
       aria-label="Pages"
     >
       <div className="recipe-pages-view__head">
