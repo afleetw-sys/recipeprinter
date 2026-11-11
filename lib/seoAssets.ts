@@ -327,6 +327,31 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     alt: "An open recipe binder with a full-page bruschetta photo facing the printed Italian Bruschetta recipe, each in a sheet protector.",
     objectPosition: "50% 22%",
   },
+  // A handwritten family card beside the page RecipePrinter printed from it,
+  // the same recipe both ways. Portrait in 3:2 slots: the crop keeps the
+  // printed title and the card together.
+  "handwritten-to-printed": {
+    src: "/images/handwritten/oatmeal-card-and-page.jpg",
+    width: 1333,
+    height: 2000,
+    alt: "Mom's handwritten Matthew's Oatmeal Cookies card lying on the spiral-bound cookbook page RecipePrinter printed from it.",
+    objectPosition: "50% 57%",
+  },
+  // A cookbook spread with a photo of the handwritten card printed facing the
+  // typed recipe, and the original card beside the book.
+  "handwritten-card-in-book": {
+    src: "/images/handwritten/chocolate-cake-card-spread.jpg",
+    width: 1333,
+    height: 2000,
+    alt: "A spiral-bound cookbook open to Mom's McCoy's Chocolate Cake, with a photo of the handwritten card facing the typed recipe and the original card beside the book.",
+    objectPosition: "50% 28%",
+  },
+  "spiral-and-binder": {
+    src: "/images/binder/spiral-and-binder.jpg",
+    width: 2000,
+    height: 1333,
+    alt: "The same family cookbook two ways: spiral-bound from a print shop, and printed at home in a 3-ring binder.",
+  },
   "caprese-card-board": {
     src: "/images/printed-cards/caprese-salad.jpeg",
     width: 2000,

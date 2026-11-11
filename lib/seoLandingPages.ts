@@ -856,11 +856,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Keep the card, cook from a copy",
-        image: "handwritten-card",
-        imageAlt:
-          "A handwritten Peanut Butter Cookies recipe card beside the floral recipe box where it is kept.",
         body:
           "A handwritten recipe card holds more than the recipe: the handwriting, the notes in the margin, the marks from every time it was made. Digitize it from a photo and you get a typed copy to cook from, print again, and share with family, while the original stays safe in the recipe box.",
+        image: "handwritten-to-printed",
       },
       {
         heading: "Make it yours before it prints",
@@ -2362,11 +2360,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Turn handwriting into an editable recipe",
-        image: "inline-editing",
         body:
           "A photo preserves what the original recipe card looks like, but editable text is easier to use. RecipePrinter reads the handwriting and rebuilds the recipe as editable ingredients and instructions so you can correct faded words, fix amounts, and clean up the recipe before printing.",
         afterBody:
           "Instead of giving you one long block of text, RecipePrinter turns the card into a structured recipe that is easier to review, edit, print, and save.",
+        image: "handwritten-to-printed",
       },
       {
         heading: "Digitize both sides of a handwritten recipe card",
@@ -2488,15 +2486,15 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Keep the original, cook from the copy",
-        image: "counter-card",
         body:
           "A printed copy does the kitchen work: the counter, the splashes, the folding into a binder, the stuck-to-the-fridge afternoons. The handwritten card stays wherever you keep it, exactly as it is. You're still cooking their recipe every time you use the copy.",
+        image: "handwritten-to-printed",
       },
       {
         heading: "The handwriting comes along",
-        image: "card-in-box",
         body:
           "Keep the photo of the card on the recipe, beside the typed version. The measurements end up in type you can read from across a kitchen, and the hand they were written in is still on the page, which is usually the part that matters most.",
+        image: "handwritten-card-in-book",
       },
     ],
     faqHeading: "Questions about preserving family recipes",
@@ -2594,9 +2592,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Print one at home, or a bound copy for everyone",
-        image: "cookbook-cover-wide",
         body:
           "Print copies on your own printer, or send the file to a print shop for bound books, one for everyone in the family. A finished family cookbook makes a keepsake gift for a wedding, a milestone birthday, or the holidays.",
+        image: "spiral-and-binder",
       },
     ],
     faqHeading: "Family recipe book questions",
@@ -2714,10 +2712,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Getting your cookbook printed",
-        image: "bound-cookbook",
-        imageAlt: "A finished homemade cookbook open to a full-page photograph and a recipe page.",
         body:
           `Print at home on US Letter paper, or send the PDF to a print shop for spiral binding or a hardcover. Preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. Pay $19.99 once to download the PDF or add more than ${FREE_COOKBOOK_RECIPES} recipes, and download updated copies anytime at no extra cost.`,
+        image: "spiral-and-binder",
       },
     ],
     faqHeading: "Questions about making your own cookbook",
@@ -3102,12 +3099,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Preserve the original recipe card and make a clean copy",
-        image: "inline-editing",
-        imageAlt: "A handwritten recipe converted into editable recipe text in RecipePrinter.",
         body:
           "The original handwritten card is part of the family history, so you don't have to replace it. Keep the original safely stored while RecipePrinter creates an editable version you can correct, print, and cook from.",
         afterBody:
           "This is especially useful for faded measurements, hard-to-read handwriting, or cards that are becoming too fragile for everyday use.",
+        image: "handwritten-to-printed",
       },
       {
         heading: "Combine recipes from different generations",
@@ -3120,10 +3116,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Keep the handwriting without cooking from the fragile original",
-        image: "handwritten-card",
-        imageAlt: "An original handwritten recipe card preserved beside its floral recipe box.",
         body:
           "For recipes with meaningful handwriting, notes, stains, or corrections, keep a photo of the original card with the recipe when appropriate. That way the cookbook can preserve the look and history of the recipe while still giving you readable ingredients and instructions.",
+        image: "handwritten-card-in-book",
       },
       {
         heading: "Keep updating the family cookbook over time",
@@ -3817,12 +3812,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Handwriting becomes a typed recipe",
-        image: "inline-editing",
         body:
           "Every guest writes differently. RecipePrinter can turn handwritten recipes into clean, editable text, so you don't have to retype every ingredient and step yourself.",
         afterBody:
           "Read it through with the original card beside you, and change anything you want right on the page.",
         links: [{ phrase: "handwritten recipes", href: "/handwritten-recipes-to-cookbook" }],
+        image: "handwritten-to-printed",
       },
       {
         heading: "A cookbook made for the two of them",
