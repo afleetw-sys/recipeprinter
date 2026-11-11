@@ -2490,6 +2490,9 @@ export default function PrintPage() {
    * unreadable account counts as seen.
    */
   const feedbackSeenOnAccountRef = useRef<{ uid: string; seen: Promise<boolean> } | null>(null);
+  /** Pro as of the latest render, for the dialog's timer to read (Pro can
+      already print several recipes at once, so it isn't asked). */
+  const hasProRef = useRef(false);
   useEffect(() => {
     const uid = cookPilotUser?.uid;
     if (!uid) {
@@ -2507,17 +2510,18 @@ export default function PrintPage() {
   }, [cookPilotUser?.uid]);
 
   /**
-   * "Leave feedback / Support RecipePrinter", in the invite's place while the
-   * referral program is hidden: once per person, after the first card export
-   * or the second card import, whichever comes first (Amelia, 2026-10-26).
+   * "Ready for another recipe?" (components/PrintDialogs.tsx), in the invite's
+   * place while the referral program is hidden: once per person, after the
+   * first card export or the second card import, whichever comes first.
+   * Not for Pro, who can already put several recipes in one print.
    */
   function offerFeedbackDialog(delayMs: number) {
     window.setTimeout(async () => {
-      if (cookbookModeRef.current || !shouldShowPostPrintDialog()) return;
+      if (cookbookModeRef.current || hasProRef.current || !shouldShowPostPrintDialog()) return;
       const account = feedbackSeenOnAccountRef.current;
       if (account && (await account.seen)) return;
       // Another offer may have shown it while the account was read.
-      if (cookbookModeRef.current || !shouldShowPostPrintDialog()) return;
+      if (cookbookModeRef.current || hasProRef.current || !shouldShowPostPrintDialog()) return;
       void markPostPrintDialogShown(account?.uid ?? null);
       setShowDonateDialog(true);
     }, delayMs);
@@ -3422,6 +3426,7 @@ export default function PrintPage() {
     mirrorSyncedAtMs,
     arrivalPass,
   ]);
+  hasProRef.current = hasProEntitlement(effectiveCustomerInfo.customerInfo);
 
   /**
    * A subscriber's print pass, fetched ahead of the tap for the same
@@ -8030,6 +8035,10 @@ export default function PrintPage() {
         showDonateDialog={showDonateDialog}
         onCloseDonateDialog={() => setShowDonateDialog(false)}
         onOpenFeedbackDialog={() => setShowFeedbackDialog(true)}
+        onStartNewRecipe={() => {
+          setShowDonateDialog(false);
+          handleNavigateHome();
+        }}
         showDeleteRecipeDialog={pendingDelete !== null}
         deleteItemTitle={pendingDelete?.title ?? "this item"}
         deleteItemDescription={

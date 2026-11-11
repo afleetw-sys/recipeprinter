@@ -217,6 +217,12 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["feedbackPromptSeenAt"])
         && !("feedbackPromptSeenAt" in resource.data)
         && request.resource.data.feedbackPromptSeenAt == request.time;
+      // Its successor, "Ready for another recipe?", the same way (a new field
+      // because the old one is write-once and everyone sees the new dialog).
+      allow update: if owns(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["anotherRecipePromptSeenAt"])
+        && !("anotherRecipePromptSeenAt" in resource.data)
+        && request.resource.data.anotherRecipePromptSeenAt == request.time;
       allow delete: if false;
 
       match /printProjects/{projectId} {

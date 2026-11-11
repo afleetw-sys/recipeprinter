@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ICON_SIZE, TrashIcon, XIcon } from "@/components/icons";
+import { CheckCircleIcon, ICON_SIZE, PlusIcon, TrashIcon, XIcon } from "@/components/icons";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Dialog } from "@/components/Dialog";
 
@@ -9,6 +9,7 @@ export function PrintDialogs({
   showDonateDialog,
   onCloseDonateDialog,
   onOpenFeedbackDialog,
+  onStartNewRecipe,
   showDeleteRecipeDialog,
   deleteItemTitle,
   deleteItemDescription,
@@ -22,6 +23,8 @@ export function PrintDialogs({
   showDonateDialog: boolean;
   onCloseDonateDialog: () => void;
   onOpenFeedbackDialog: () => void;
+  /** The dialog's main action: leave for a fresh recipe. */
+  onStartNewRecipe: () => void;
   showDeleteRecipeDialog: boolean;
   deleteItemTitle: string;
   deleteItemDescription: string;
@@ -67,30 +70,33 @@ export function PrintDialogs({
             >
               <XIcon size={ICON_SIZE.md} />
             </button>
-            <div className="print-success-dialog__icon" aria-hidden>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/recipeprinter-logo.png"
-                alt=""
-                className="print-success-dialog__logo"
-                width={58}
-                height={58}
-              />
+            {/* After the first card goes out: an invitation to make the next
+                one, so one recipe becomes a habit (Amelia, 2026-11-10). It
+                replaced "Ready for your counter, binder, or fridge door" with
+                its single Leave feedback button; feedback is still here, as
+                the quiet link at the bottom. */}
+            <div className="another-recipe__heading">
+              <CheckCircleIcon size={22} className="another-recipe__check" />
+              <h2 id="print-success-title">Ready for another recipe?</h2>
             </div>
-            <h2 id="print-success-title">Ready for your counter, binder, or fridge door.</h2>
-            <p>Feedback helps me make RecipePrinter better.</p>
-            {/* One action: feedback. The Buy Me a Coffee link that sat
-                beside it came out (Amelia, 2026-11-05). */}
-            <div className="print-success-dialog__actions">
+            <p>Found another recipe you want to keep? RecipePrinter makes it easy to print that one, too.</p>
+            <div className="another-recipe__actions">
+              <button type="button" className="btn btn-primary w-full" onClick={onStartNewRecipe}>
+                <PlusIcon size={ICON_SIZE.md} />
+                Start a new recipe
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={onCloseDonateDialog}>
+                Maybe later
+              </button>
               <button
                 type="button"
-                className="btn btn-primary"
+                className="another-recipe__feedback"
                 onClick={() => {
                   onCloseDonateDialog();
                   onOpenFeedbackDialog();
                 }}
               >
-                Leave feedback
+                Share feedback
               </button>
             </div>
       </Dialog>
