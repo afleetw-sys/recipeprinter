@@ -8,6 +8,7 @@ import { callerKey, rateLimit } from "@/lib/server/rateLimit";
 import { requestDeadline, type Deadline } from "@/lib/server/requestDeadline";
 import { startRouteTiming, type RouteTiming } from "@/lib/server/serverTiming";
 import { placeholderHostMessage } from "@/lib/friendlyErrors";
+import { reasonedFailure, type ReasonedFailure } from "@/lib/importFailureReason";
 import type { ImportFailureCode } from "@/lib/analytics";
 import type { BotWallVendor, ParseResponse, Recipe } from "@/types/recipe";
 
@@ -373,15 +374,20 @@ type CookPilotServerOutcome =
    * An outcome rather than a throw so it can carry a `failure` and a vendor
    * out to the client — see the hook in `POST`.
    */
-  | { kind: "blocked"; message: string }
+  | { kind: "blocked"; message: string; explained: ReasonedFailure | null }
   /**
    * The parser reached the page, read it, and says there is no recipe to take
    * from it, in its own words: "the recipe is in the comments", "we couldn't
    * find that page", "its caption doesn't list ingredients or steps". Final.
    */
-  | { kind: "no_recipe"; message: string }
-  /** Reached CookPilot, got nothing usable back. Already billed. */
-  | { kind: "inconclusive" }
+  | { kind: "no_recipe"; message: string; explained: ReasonedFailure | null }
+  /**
+   * Reached CookPilot, got nothing usable back. Already billed. `explained` is
+   * set when CookPilot's own fetch failed for a reason it named (site-refused,
+   * site-error, site-unreachable, timed-out): ours may still get through, and
+   * if it does not, that reason is what the cook is told.
+   */
+  | { kind: "inconclusive"; explained?: ReasonedFailure }
   /** Never called: no endpoint or secret on this deployment. Not billed. */
   | { kind: "unconfigured" };
 
@@ -396,6 +402,13 @@ function parserErrorMessage(data: unknown): string | null {
   if (typeof data !== "object" || data === null) return null;
   const message = (data as { error?: unknown }).error;
   return typeof message === "string" && message.trim() ? message.trim() : null;
+}
+
+/** The cause CookPilot named in its error body (`{ error, code, reason }`), if it named one. */
+function parserReason(data: unknown): ReasonedFailure | null {
+  if (typeof data !== "object" || data === null) return null;
+  const { code, reason, error } = data as { code?: unknown; reason?: unknown; error?: unknown };
+  return reasonedFailure(code, reason, error);
 }
 
 /** What the shared parser made of a response we fetched ourselves. */
@@ -551,8 +564,9 @@ async function parseWithCookPilotServer(
   // measured against forty recipe sites and got past none of the walls (see
   // 959c6e6), and the reply does not yet say which 412 this is: a sign-in or a
   // paywall cannot be recovered from any network.
+  const explained = parserReason(data);
   if (response.status === 412) {
-    return { kind: "blocked", message: parserErrorMessage(data) ?? BLOCKED_REMEDY };
+    return { kind: "blocked", message: parserErrorMessage(data) ?? BLOCKED_REMEDY, explained };
   }
   // `not-found` is the parser's own answer, as opposed to a 404 from the
   // endpoint itself (a mistyped URL, a function that is not deployed), which
@@ -566,7 +580,7 @@ async function parseWithCookPilotServer(
   // here to do it.
   const said = parserErrorMessage(data);
   if (response.status === 404 && said && (data as { code?: unknown }).code === "not-found") {
-    return { kind: "no_recipe", message: said };
+    return { kind: "no_recipe", message: said, explained };
   }
   if (response.status === 401 || response.status === 403) {
     throw new ParseHttpError(LINK_UNAVAILABLE, 503);
@@ -588,9 +602,13 @@ async function parseWithCookPilotServer(
   //
   // 401/403/429 above deliberately still stop here: those are the parser
   // refusing us rather than failing, and they are answers.
+  //
+  // A 503 or 504 that names its reason is CookPilot's own fetch of the site
+  // failing. Still inconclusive, because ours leaves from a different network
+  // and often gets through, but the reason travels with it in case ours fails.
   if (response.status >= 500) {
-    console.warn(`parse: cookpilot ${response.status}  host=${hostname}`);
-    return INCONCLUSIVE;
+    console.warn(`parse: cookpilot ${response.status}  host=${hostname} reason=${explained?.reason ?? "none"}`);
+    return explained ? { kind: "inconclusive", explained } : INCONCLUSIVE;
   }
   return INCONCLUSIVE;
 }
@@ -676,6 +694,11 @@ async function handleParse(request: Request, timing: RouteTiming): Promise<Respo
   // rest of this request — whatever our own direct fetch goes on to hit, asking
   // the client to run that same parser again can only reproduce it.
   let parserExhausted = false;
+  // Set once CookPilot's own fetch failed for a reason it named and ours is
+  // the second try. Every failure of ours after that answers with it.
+  let explainedByCookPilot: ReasonedFailure | null = null;
+  const explainedResponse = (explained: ReasonedFailure, status: number) =>
+    errorResponse(explained.message, { status, parserExhausted, failure: explained.failure });
 
   try {
     // Validate BEFORE the parser call, not just inside `fetchPublicHtml`.
@@ -703,31 +726,40 @@ async function handleParse(request: Request, timing: RouteTiming): Promise<Respo
 
     if (cookPilot.kind === "blocked") {
       // The parser reached the page and something is standing in front of it.
-      // It does not say which obstacle, and one of the two it covers is a
-      // login wall, so the vendor stays `generic` rather than claiming a
-      // fingerprint we have not actually taken.
-      console.warn(`parse: bot wall  host=${url.hostname} vendor=generic signal=cookpilot-412 status=412`);
+      // Only a `bot-challenge` (or a reply too old to say) is a bot wall: a
+      // paywall, a login or a PDF is not, and counting them as walls would
+      // inflate the vendor numbers. The vendor stays `generic` rather than
+      // claiming a fingerprint we have not actually taken.
+      const reason = cookPilot.explained?.reason;
+      const isBotWall = !reason || reason === "bot-challenge";
+      if (isBotWall) {
+        console.warn(`parse: bot wall  host=${url.hostname} vendor=generic signal=cookpilot-412 status=412`);
+      }
       return errorResponse(cookPilot.message, {
         status: 422,
         // The client's fallback is CookPilot's own callable, and CookPilot is
         // what just said 412. It would fetch the same page from the same
         // place for the same answer.
         parserExhausted: true,
-        failure: "blocked",
-        botWall: { vendor: "generic" },
+        failure: cookPilot.explained?.failure ?? "blocked",
+        ...(isBotWall ? { botWall: { vendor: "generic" as const } } : {}),
       });
     }
 
     if (cookPilot.kind === "no_recipe") {
-      // `no_recipe` for every one of these, including the page that does not
-      // exist: the parser's reply does not yet say which it was, and guessing
-      // from its wording is the kind of reading this route stopped doing.
+      // The reason says whether the page is missing (`page-not-found`) or holds
+      // no recipe (`recipe-in-comments`). A reply without one stays `no_recipe`:
+      // guessing from its wording is the kind of reading this route stopped doing.
       return errorResponse(cookPilot.message, {
         status: 422,
         parserExhausted: true,
-        failure: "no_recipe",
+        failure: cookPilot.explained?.failure ?? "no_recipe",
       });
     }
+
+    // From here on our own fetch is the second try. If it fails as well,
+    // CookPilot's named reason is the answer, not our generic copy.
+    explainedByCookPilot = cookPilot.kind === "inconclusive" ? cookPilot.explained ?? null : null;
 
     const response = await timing.span("fetch", () => fetchPublicHtml(url, deadline));
 
@@ -742,6 +774,7 @@ async function handleParse(request: Request, timing: RouteTiming): Promise<Respo
       const verdict: PageVerdict =
         classified.kind === "verdict" ? classified.verdict : { kind: "none" };
       logVerdict(url, response.status, verdict);
+      if (explainedByCookPilot) return explainedResponse(explainedByCookPilot, response.status);
 
       // `parserExhausted` is already set above whenever CookPilot ran, walls
       // included. It used to be withheld here on the theory that the client's
@@ -794,6 +827,7 @@ async function handleParse(request: Request, timing: RouteTiming): Promise<Respo
     // against, was quietly counting walls.
     if (shared.kind === "verdict" && shared.verdict.kind === "bot_wall") {
       logVerdict(url, response.status, shared.verdict);
+      if (explainedByCookPilot) return explainedResponse(explainedByCookPilot, 422);
       return errorResponse(BLOCKED_REMEDY, {
         status: 422,
         parserExhausted,
@@ -807,6 +841,7 @@ async function handleParse(request: Request, timing: RouteTiming): Promise<Respo
     // function answered a bare 500 for an hour and this told cooks their
     // links had no recipe.
     if (cookPilot.kind === "inconclusive" && shared.kind === "unavailable") {
+      if (explainedByCookPilot) return explainedResponse(explainedByCookPilot, 503);
       console.warn(`parse: no reader answered  host=${url.hostname}`);
       return errorResponse(LINK_UNAVAILABLE, { status: 503, parserExhausted, failure: "backend_unavailable" });
     }
@@ -816,6 +851,12 @@ async function handleParse(request: Request, timing: RouteTiming): Promise<Respo
       { status: 422, parserExhausted },
     );
   } catch (err) {
+    // Our fetch threw (unreachable, timed out, too many redirects) after
+    // CookPilot's had already failed for a reason it named. Our own 4xx
+    // answers (a page too large, a redirect to a private address) are about
+    // what we found, not a failure to reach it, so they keep their words.
+    const ourOwnAnswer = err instanceof ParseHttpError && err.status < 500;
+    if (explainedByCookPilot && !ourOwnAnswer) return explainedResponse(explainedByCookPilot, 503);
     if (err instanceof ParseHttpError) {
       return errorResponse(err.message, {
         status: err.status,
