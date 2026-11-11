@@ -301,6 +301,14 @@ export const CheckIcon = (p: IconProps) => (
   </Base>
 );
 
+// A tick in a circle: done, and ready for the next one.
+export const CheckCircleIcon = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M8.5 12.2l2.4 2.4 4.6-4.8" />
+  </Base>
+);
+
 export const CloudCheckIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M17.5 19H8a6 6 0 1 1 5.7-7.9h1.8a4 4 0 1 1 2 7.9Z" />

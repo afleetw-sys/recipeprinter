@@ -3,8 +3,8 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { IconButton } from "@/components/Controls";
-import { AccountIcon, CheckIcon, ICON_SIZE, SpinnerIcon } from "@/components/icons";
-import { ImportUsageBadge } from "@/components/ImportUsageBadge";
+import { CheckIcon, ICON_SIZE, SpinnerIcon } from "@/components/icons";
+import { ImportUsageBadge, SignedOutAccountGlyph } from "@/components/ImportUsageBadge";
 import { onCookPilotSignedInChange, readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
 import { readPendingCode } from "@/lib/emailCodePending";
 import { accountMenuLoadAtMount } from "@/lib/accountMenuLoad";
@@ -245,7 +245,7 @@ export function AccountControl({
 
       {/* One box for whichever avatar is on screen, so the usage badge sits on
           its corner through the handover and is only ever mounted once. */}
-      <div className="relative flex items-center">
+      <div className="rp-account-box relative flex items-center">
       {showMenu && (
         <AccountAvatarButton
           compact={compact}
@@ -278,7 +278,7 @@ export function AccountControl({
             setShowMenu(true);
           }}
         >
-          <AccountIcon size={ICON_SIZE.md} />
+          <SignedOutAccountGlyph />
         </IconButton>
       )}
       <ImportUsageBadge />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
+import { AccountIcon, ICON_SIZE } from "@/components/icons";
 import { importsNearlyOut } from "@/lib/freeImports";
 import { rememberedImportUsage, usageNow } from "@/lib/importMeter";
 import { useImportUsage } from "@/lib/useImportUsage";
@@ -20,7 +21,7 @@ export function ImportUsageBadge() {
   if (hidden || !usage || usage.limit <= 0 || usage.used <= 0) return null;
   return (
     <span
-      className="pointer-events-none absolute -right-1.5 -top-1.5 grid h-[18px] w-[18px] place-items-center rounded-full bg-[var(--rp-header-surface,var(--cp-page))]"
+      className="rp-usage-badge pointer-events-none absolute -right-1.5 -top-1.5 grid h-[18px] w-[18px] place-items-center rounded-full bg-[var(--rp-header-surface,var(--cp-page))]"
       aria-hidden
     >
       <UsageRing
@@ -38,6 +39,36 @@ export function ImportUsageBadge() {
  * Decorative: the account menu says the same thing in words, so it is hidden
  * from screen readers.
  */
+/**
+ * What the signed-out account button holds: a person, and once imports have
+ * been used, the usage ring too. On a phone the ring takes the person's place
+ * (Amelia, 2026-11-10): a person with a ring hung on its corner was two
+ * things in a bar of one-glyph buttons, and signed out, how much of the free
+ * allowance is left is the thing worth showing. The corner badge
+ * (ImportUsageBadge) steps aside there; the CSS that swaps them is beside
+ * `.rp-avatar-usage` in globals.css. Desktop keeps the person and the badge.
+ */
+export function SignedOutAccountGlyph() {
+  const { hidden, usage } = useImportUsage();
+  const fill = useNewImportFill(usage?.used ?? null);
+  const showRing = !hidden && usage && usage.limit > 0 && usage.used > 0;
+  return (
+    <>
+      <AccountIcon size={ICON_SIZE.md} className={showRing ? "rp-avatar-person" : undefined} />
+      {showRing && (
+        <span className="rp-avatar-usage" aria-hidden>
+          <UsageRing
+            used={usage.used}
+            limit={usage.limit}
+            size={20}
+            fill={fill ? { key: fill.key, from: Math.min(fill.fromUsed, usage.limit) / usage.limit } : null}
+          />
+        </span>
+      )}
+    </>
+  );
+}
+
 export function UsageRing({
   used,
   limit,

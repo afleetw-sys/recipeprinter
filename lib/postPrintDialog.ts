@@ -2,23 +2,27 @@ import { recipePrinterUserPath } from "@/lib/firebase/recipePrinterPaths";
 import { localStore } from "@/lib/storage";
 
 /**
- * Whether the "Leave feedback" dialog has been shown
+ * Whether the "Ready for another recipe?" dialog has been shown
  * (components/PrintDialogs.tsx). It shows once per person, ever, after their
  * first card print or download or their second card import, whichever comes
  * first: once per browser, and once per account wherever that account signs
- * in (the same shape as lib/proDeclineAsked.ts).
+ * in (the same shape as lib/proDeclineAsked.ts). Pro is never asked.
  *
- * A new key on purpose (Amelia, 2026-10-26): it came back in the place of the
- * referral invite, and everyone sees this version once, including a browser
- * that saw the old feedback dialog (`post-print-dialog:last-shown:v1`) or the
- * invite.
+ * New keys on purpose, twice. 2026-10-26: it came back in the referral
+ * invite's place. 2026-11-10: it became "Ready for another recipe?" (it was
+ * "Leave feedback"), and everyone sees the new one once, including whoever saw
+ * the old one (`feedback-prompt-seen:v2` here, `feedbackPromptSeenAt` on the
+ * account, which is write-once and so can't be cleared).
+ *
+ * The account field needs its own rule in firestore.rules; until that rule is
+ * deployed the write is refused, and it's once per browser instead.
  *
  * A browser that blocks site data can't remember it, so there it's once per
  * page rather than never.
  */
-export const POST_PRINT_DIALOG_STORAGE_KEY = "recipeprinter:feedback-prompt-seen:v2";
+export const POST_PRINT_DIALOG_STORAGE_KEY = "recipeprinter:another-recipe-prompt-seen:v1";
 /** Write-once, server clock. firestore.rules allows exactly this key. */
-const ACCOUNT_FIELD = "feedbackPromptSeenAt";
+const ACCOUNT_FIELD = "anotherRecipePromptSeenAt";
 
 let shownThisPage = false;
 
@@ -55,7 +59,7 @@ export async function markPostPrintDialogShown(uid: string | null = null): Promi
       [ACCOUNT_FIELD]: serverTimestamp(),
     });
   } catch (error) {
-    console.warn("RecipePrinter: could not record the feedback dialog on the account", error);
+    console.warn("RecipePrinter: could not record the another-recipe dialog on the account", error);
   }
 }
 

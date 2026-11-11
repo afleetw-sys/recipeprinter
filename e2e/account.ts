@@ -119,14 +119,15 @@ export async function grantPro(request: APIRequestContext, uid: string) {
   expect(response.ok()).toBe(true);
 }
 
-/** The account has already been shown the one-time feedback dialog
-    (lib/postPrintDialog.ts), so it can't come up in the middle of a test. */
+/** The account has already been shown the one-time "Ready for another
+    recipe?" dialog (lib/postPrintDialog.ts), so it can't come up in the middle
+    of a test. */
 export async function feedbackAlreadySeen(request: APIRequestContext, uid: string) {
   const response = await request.patch(
-    `${FIRESTORE}/${PRODUCT}/${uid}?updateMask.fieldPaths=feedbackPromptSeenAt`,
+    `${FIRESTORE}/${PRODUCT}/${uid}?updateMask.fieldPaths=anotherRecipePromptSeenAt`,
     {
       headers: AS_OWNER,
-      data: { fields: { feedbackPromptSeenAt: { timestampValue: new Date().toISOString() } } },
+      data: { fields: { anotherRecipePromptSeenAt: { timestampValue: new Date().toISOString() } } },
     },
   );
   expect(response.ok()).toBe(true);

@@ -10457,6 +10457,43 @@ textarea.recipe-card__toc-title {
   user-select: none;
 }
 
+/* "Ready for another recipe?" (PrintDialogs): the tick sits on the title's
+   line, the main action spans the panel, and the two quiet ways out stack
+   under it, centred. */
+.another-recipe__heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* Clear of the close button, as the title alone was. */
+  padding-right: 28px;
+}
+.another-recipe__heading h2 {
+  padding: 0;
+}
+.another-recipe__check {
+  flex: none;
+  color: var(--cp-accent);
+}
+.another-recipe__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 20px;
+}
+.another-recipe__feedback {
+  padding: 2px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.another-recipe__feedback:hover {
+  color: var(--cp-ink);
+}
+
 @keyframes print-success-fade {
   from {
     opacity: 0;

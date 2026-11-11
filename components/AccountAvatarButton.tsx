@@ -6,7 +6,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, use
 import { signOutOnPurpose } from "@/lib/sessionEnd";
 import { readPendingCode } from "@/lib/emailCodePending";
 import {
-  AccountIcon,
   AppleIcon,
   BookIcon,
   GaugeIcon,
@@ -28,7 +27,7 @@ import {
 } from "@/components/CookPilotAuth";
 import { importAllowanceLine } from "@/lib/freeImports";
 import { friendlyAuthError } from "@/lib/friendlyErrors";
-import { UsageRing } from "@/components/ImportUsageBadge";
+import { SignedOutAccountGlyph, UsageRing } from "@/components/ImportUsageBadge";
 import { useImportUsage } from "@/lib/useImportUsage";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { loadLocalProjects } from "@/lib/localProjects";
@@ -309,7 +308,7 @@ export default function AccountAvatarButton({
         {user && accountInitials(user) ? (
           <span aria-hidden>{accountInitials(user)}</span>
         ) : (
-          <AccountIcon size={ICON_SIZE.md} />
+          <SignedOutAccountGlyph />
         )}
       </IconButton>
 

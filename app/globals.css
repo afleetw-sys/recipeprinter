@@ -1390,6 +1390,26 @@
     border-radius: 8px;
     font-size: var(--cp-fs-small);
   }
+  /* Signed out with imports used (SignedOutAccountGlyph): on the phone layout
+     the usage ring stands in the account button where the person was, and
+     the ring on its corner goes, so there is one glyph, not two. The same
+     query as /print's phone layout (DECK_MOBILE_QUERY). Elsewhere the
+     person stays and the corner badge carries the count. */
+  .rp-avatar-usage {
+    display: none;
+  }
+  @media (max-width: 820px), (pointer: coarse) and (max-width: 1366px) {
+    .rp-avatar-usage {
+      display: grid;
+      place-items: center;
+    }
+    .rp-avatar-person {
+      display: none;
+    }
+    .rp-account-box:has(.rp-avatar-usage) .rp-usage-badge {
+      display: none;
+    }
+  }
   /* `SiteHeader`'s own size — see `.btn-header` beside it. */
   [data-rp-avatar="header"] {
     width: 32px;
