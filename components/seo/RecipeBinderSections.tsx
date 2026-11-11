@@ -9,18 +9,31 @@ const flexiblePoints = [
 
 const categories = ["Breakfast", "Main dishes", "Sides", "Soups & salads", "Baking", "Desserts"];
 
+const otherWays = ["By season", "Holidays", "Grandma's recipes", "Weeknight dinners", "Weekend projects", "By cuisine"];
+
 export function RecipeBinderSections() {
   return (
     <div className="flex flex-col gap-[56px] lg:gap-[72px]">
       <LandingSection
         id="binder-organization-heading"
-        heading="Choose simple recipe binder sections"
+        heading="Recipe binder categories to start with"
         lede="Start with broad sections that match how you cook. You can split one later as the binder grows."
       >
         <div className="flex flex-wrap gap-cp-2">
           {categories.map((category) => (
             <span key={category} className="rounded-full border border-line bg-card px-cp-4 py-cp-2 text-cp-body font-bold text-ink">
               {category}
+            </span>
+          ))}
+        </div>
+        <h3 className="mt-cp-6 text-cp-body-lg font-extrabold leading-snug tracking-[-0.02em]">More recipe binder ideas</h3>
+        <p className="mt-cp-2 text-cp-body text-ink-soft leading-relaxed">
+          Not everyone cooks by course. Sort by the time of year, the occasion, or the person a recipe came from.
+        </p>
+        <div className="mt-cp-3 flex flex-wrap gap-cp-2">
+          {otherWays.map((idea) => (
+            <span key={idea} className="rounded-full border border-line bg-card px-cp-4 py-cp-2 text-cp-body font-bold text-ink">
+              {idea}
             </span>
           ))}
         </div>

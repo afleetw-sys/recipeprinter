@@ -2173,8 +2173,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "recipe-binder",
-    contentUpdated: "2026-11-10",
-    copyReviewed: "2026-11-10",
+    contentUpdated: "2026-11-11",
+    copyReviewed: "2026-11-11",
     importSubmitLabel: "Start a recipe binder",
     startsCookbook: true,
     layout: "capture-first",
@@ -2198,10 +2198,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     intent: "Organization SEO",
     heroImage: "binder-cover",
     heroAnnotation: "Printed at home, filed in a 3-ring binder",
-    title: "Make a Recipe Binder with Sections & a Table of Contents | RecipePrinter",
+    title: "Printable Recipe Binder with Sections & a Table of Contents | RecipePrinter",
     description:
-      "Turn recipes from websites, apps, screenshots, photos, and handwritten cards into a printable recipe binder, with section pages, a table of contents, and page numbers.",
-    h1: "Make a recipe binder from the recipes you use",
+      "Turn recipes from websites, apps, photos, and handwritten cards into a printable recipe binder with section pages and a table of contents. No retyping.",
+    h1: "Make a printable recipe binder from the recipes you already use",
     breadcrumbLabel: "Recipe binder",
     anchor: "Make a recipe binder",
     lede:
@@ -2227,9 +2227,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "Recipes from anywhere, pages that match",
+        heading: "No template to fill in",
         body:
-          "A link from a food blog, a recipe from an app, a screenshot from a group chat, a photo of a handwritten card: each one comes out in the same layout and the same type, so the binder reads as one collection instead of a stack of printouts.",
+          "Printable binder kits give you blank pages to write on or retype into. Here you bring the recipe in from its link, app, photo, or card, and the page is laid out for you, ingredients and steps already in place.",
+        afterBody:
+          "A food blog, a recipe app, a screenshot from a group chat, a handwritten card: every recipe binder page comes out in the same layout and the same type, so the binder reads as one collection instead of a stack of printouts.",
         image: "addrecipes-cookbook",
         imageAlt:
           "The Add recipes dialog with its four sources: a recipe link, a recipe app, an image, or pasted text.",
@@ -2241,10 +2243,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         image: "binder-section-page",
       },
       {
-        heading: "Saved for a 3-ring binder",
+        heading: "Print it at home, punch it, file it",
         body:
           "When the binder is ready, choose \"Spiral, comb or 3-ring\" in the print dialog. You get one US Letter PDF for a home printer, with the cover first and every page in order, so nothing needs sorting when it comes off the printer. Slide the pages into sheet protectors and a photo faces its recipe, the way it would in a cookbook.",
         image: "binder-recipe",
+      },
+      {
+        heading: "A family recipe binder from handwritten cards",
+        body:
+          "Gather the cards from everyone in the family, snap a photo of each, and the handwriting becomes a typed recipe you can fix up. Give each cook their own section, add a photo of the original card beside the recipe if you like, and print a binder for everyone.",
+        image: "handwritten-to-printed",
       },
       {
         heading: "Just want the recipe pages?",
@@ -2266,6 +2274,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "How much does a recipe binder cost?",
         answer:
           `Previewing is free with up to ${FREE_COOKBOOK_RECIPES} recipes. ${COOKBOOK_PRICE_FALLBACK} for that binder, paid once, lets you download it and add more than ${FREE_COOKBOOK_RECIPES} recipes. After that, add recipes and download updated copies anytime at no extra cost. You don't need RecipePrinter Pro.`,
+      },
+      {
+        question: "Can I make a recipe binder for free?",
+        answer:
+          `Yes. Print each recipe as a full page, free and with no account, and file them yourself. The cover, section pages, table of contents, and page numbers come with a binder made as a cookbook, a one-time ${COOKBOOK_PRICE_FALLBACK}.`,
+      },
+      {
+        question: "Can I make a family recipe binder from handwritten cards?",
+        answer:
+          "Yes. Upload a photo of each card and RecipePrinter types out the recipe for you to check. Sort the recipes into a section for each cook, and keep a photo of the original card beside its recipe if you want the handwriting in the binder too.",
       },
       {
         question: "Do I have to include a cover and table of contents?",
