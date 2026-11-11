@@ -2982,19 +2982,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "At a copy shop such as Staples, upload the PDF through the shop's website or bring the file in, then choose the paper and binding. Copy shops bind documents, so ask about the bindings yours offers; hardcovers come from a book printer.",
       },
       {
-        heading: "With Lulu",
+        heading: "With Lulu or Blurb",
+        image: "print-cookbook",
         body:
-          "Lulu prints books to order, including coil-bound and hardcover cookbooks. Choose Lulu when you export, and RecipePrinter sizes the pages for the Lulu format you pick.",
+          "Lulu and Blurb print books to order and ship them to you. Lulu makes coil-bound and hardcover cookbooks, and Blurb makes an 8 × 10 hardcover. Choose the printer when you export, and RecipePrinter sizes the pages for the format you pick.",
         afterBody: [
-          "Lulu takes the cover as its own file. Upload the pages to Lulu first, copy the cover dimensions and spine width it shows you into RecipePrinter, and download a cover made to those numbers. Then finish the order with Lulu, which prints and ships it.",
+          "Both take the cover as its own file. Upload the pages first, copy the cover dimensions and spine width the printer shows you into RecipePrinter, and download a cover made to those numbers. Then finish the order with the printer, which prints and ships it.",
         ],
-      },
-      {
-        heading: "With Blurb",
-        body:
-          "Blurb is another printer for professionally made books. RecipePrinter can prepare an 8 × 10 hardcover export for Blurb's PDF upload.",
-        afterBody:
-          "The cover is a separate file so it can match the dimensions Blurb gives you for that specific book. Enter them in RecipePrinter, download the cover, and finish the order with Blurb.",
       },
     ],
     faqHeading: "Cookbook printing questions",
