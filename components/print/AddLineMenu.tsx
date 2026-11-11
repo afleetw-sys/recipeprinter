@@ -2,18 +2,23 @@
 
 import { useLayoutEffect, useRef, type RefObject } from "react";
 import { createPortal } from "react-dom";
+import { ICON_SIZE, PlusIcon } from "@/components/icons";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
 /**
  * The page toolbar's "+" menu: the lines this page has taken off, one row
  * each. Picking one puts that line back. Opens under its button and keeps
  * itself on screen, like MoveToSectionMenu, whose shell this is.
+ *
+ * `page` is a whole page the "+" can add next to this one (a chapter's photo
+ * page beside it), ruled off under the lines because it isn't one of them.
  */
 export function AddLineMenu({
   anchor,
   triggerRef,
   heading,
   lines,
+  page = null,
   onClose,
 }: {
   /** Viewport coordinates to open at: the trigger's bottom-left corner. */
@@ -24,6 +29,7 @@ export function AddLineMenu({
   /** "Add to this recipe" on a recipe, "Add to this page" on a book page. */
   heading: string;
   lines: { name: string; restore: () => void }[];
+  page?: { name: string; add: () => void } | null;
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -61,6 +67,20 @@ export function AddLineMenu({
           {line.name}
         </button>
       ))}
+      {page && (
+        <button
+          type="button"
+          role="menuitem"
+          className={`cp-menu__item ${lines.length > 0 ? "cp-menu__item--make" : ""}`}
+          onClick={() => {
+            onClose();
+            page.add();
+          }}
+        >
+          <PlusIcon size={ICON_SIZE.sm} />
+          {page.name}
+        </button>
+      )}
     </div>,
     document.body,
   );

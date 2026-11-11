@@ -52,7 +52,7 @@ import {
   type PhotoStyle,
   type useProjectMeta,
 } from "@/lib/project";
-import type { useDeckScroller } from "@/lib/useDeckScroller";
+import { useDeckMobile, type useDeckScroller } from "@/lib/useDeckScroller";
 import { isPhotoOpenClick, photoDialogKey, type PhotoPress } from "@/lib/photoOpenGesture";
 import { LineSelectionToolbar } from "@/components/print/LineSelectionToolbar";
 import { TextFieldToolbar } from "@/components/print/TextFieldToolbar";
@@ -440,6 +440,8 @@ export function PrintDeck(props: PrintDeckProps) {
   // menu closes itself on an outside press, Escape, a scroll or a resize.
   const [moveMenuAt, setMoveMenuAt] = useState<{ x: number; y: number } | null>(null);
   const [addMenuAt, setAddMenuAt] = useState<{ x: number; y: number } | null>(null);
+  // The phone layout, where a page's toolbar names the page (see below).
+  const deckMobile = useDeckMobile();
   const addMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
   const {
     saveControl,
@@ -805,6 +807,23 @@ export function PrintDeck(props: PrintDeckProps) {
       // entries are generated.
       return [];
     };
+    const dividerSection =
+      navItem.kind === "divider"
+        ? sections.find((candidate) => candidate.id === navItem.recipeId)
+        : undefined;
+    // Mirrors `hasFacing` in lib/usePrintSheets.tsx exactly — this has to
+    // agree with whether a `section-photo` sheet actually exists, or the
+    // button could show while a facing page is ALSO still there. Below
+    // letter size (`!cookbookLayouts`) a facing page can never exist, full
+    // stop — the sheet builder never even asks `artPhotoMode` in that case.
+    const dividerHasFacing = dividerSection && cookbookLayouts
+      ? sectionHasArtPage(dividerSection, sectionRecipeImages(dividerSection), photoStyle)
+      : false;
+    // A chapter's photo page is offered from its "+" menu ("Photo page beside
+    // it"), not as a button of its own on the bar (Amelia, 2026-11-10): beside
+    // the opener's photo button it read as a second way to add the same photo.
+    const addPhotoPage =
+      dividerSection && !dividerHasFacing ? () => addChapterImagePage(dividerSection.id) : null;
     const missingLines = addableLines();
 
     // Whether this KIND of page has an edit/reveal button at all.
@@ -821,7 +840,7 @@ export function PrintDeck(props: PrintDeckProps) {
     // Whether to actually offer it. Separate from `editable` on purpose: the
     // first decides whether the page has text to work on, the second whether
     // there is anything taken off to put back.
-    const showFieldsButton = editable && missingLines.length > 0;
+    const showFieldsButton = editable && (missingLines.length > 0 || Boolean(addPhotoPage));
     const editing = isEditingNavItem(navItem);
     // Always present on the pages that have a photo to place, not only while
     // you happen to be editing them. Hiding it behind Edit meant the toolbar
@@ -881,48 +900,6 @@ export function PrintDeck(props: PrintDeckProps) {
           }
         : null;
 
-    // A chapter opener whose facing page has been removed (or never had one)
-    // gets a plain "Add image page" button, rather than a shared page-count
-    // control floating separately above the pair — that control used to move
-    // between two different toolbar homes depending on whether a facing page
-    // existed, and whichever page's focus it depended on could go stale the
-    // moment the page it was watching disappeared. This button just always
-    // lives here, on the card, and the facing page (once it exists) gets its
-    // own ordinary Delete like every other page — see the Delete group below,
-    // no longer excluded for a divider or its facing page. Deleting it from
-    // there is what brings this button back.
-    const dividerSection =
-      navItem.kind === "divider"
-        ? sections.find((candidate) => candidate.id === navItem.recipeId)
-        : undefined;
-    // Mirrors `hasFacing` in lib/usePrintSheets.tsx exactly — this has to
-    // agree with whether a `section-photo` sheet actually exists, or the
-    // button could show while a facing page is ALSO still there. Below
-    // letter size (`!cookbookLayouts`) a facing page can never exist, full
-    // stop — the sheet builder never even asks `artPhotoMode` in that case.
-    const dividerHasFacing = dividerSection && cookbookLayouts
-      ? sectionHasArtPage(dividerSection, sectionRecipeImages(dividerSection), photoStyle)
-      : false;
-    const addImagePageButton =
-      dividerSection && !dividerHasFacing && !chapterFacesBlank(navItem.sheetIndex) ? (
-        <PageToolbarItem
-          menuLabel="Add image page"
-          menuIcon={<PagePlusIcon size={ICON_SIZE.sm} />}
-          priority={4}
-        >
-          <button
-            type="button"
-            className="recipe-page-toolbar__btn"
-            onClick={(event) => {
-              event.stopPropagation();
-              addChapterImagePage(dividerSection.id);
-            }}
-          >
-            Add image page
-          </button>
-        </PageToolbarItem>
-      ) : null;
-
     // The book's optional pages are removed, not deleted: each comes back
     // from the rail's "Add …" button.
     const removesPage = navItem.kind === "cover" || navItem.kind === "toc";
@@ -937,7 +914,7 @@ export function PrintDeck(props: PrintDeckProps) {
       !navItem.flip &&
       !editable &&
       !photoControl &&
-      !addImagePageButton
+      !addPhotoPage
     ) {
       return null;
     }
@@ -950,9 +927,11 @@ export function PrintDeck(props: PrintDeckProps) {
         } as CSSProperties}
       >
         <PageToolbar>
-          {/* Which page this is. A plain group, not a PageToolbarItem, so it
-              never folds into More: the name is what the buttons act on. */}
-          {cookbookView && (
+          {/* Which page this is, on a phone (Amelia, 2026-11-10): there the
+              page fills the screen and nothing else names it; on desktop the
+              rail beside the deck does. A plain group, not a
+              PageToolbarItem, so it never folds into More. */}
+          {cookbookView && deckMobile && (
             <div className="recipe-page-toolbar__group recipe-page-toolbar__page-name">
               {pageKindName(navItem)}
             </div>
@@ -1033,6 +1012,7 @@ export function PrintDeck(props: PrintDeckProps) {
                   triggerRef={addMenuTriggerRef}
                   heading={navItem.kind === "recipe" ? "Add to this recipe" : "Add to this page"}
                   lines={missingLines}
+                  page={addPhotoPage ? { name: "Photo page beside it", add: addPhotoPage } : null}
                   onClose={() => setAddMenuAt(null)}
                 />
               )}
@@ -1119,7 +1099,7 @@ export function PrintDeck(props: PrintDeckProps) {
               A divider's Delete removes the whole chapter (routes through
               `requestDeleteNavItem`'s "divider" branch, which confirms first).
               A facing page's Delete just clears that page's art/caption and
-              brings back the card's "Add image page" button — no confirm,
+              brings back the "+" menu's "Photo page beside it" — no confirm,
               same as clearing any other optional photo. */}
           <PageToolbarItem
             menuLabel={removesPage ? "Remove" : "Delete"}
@@ -1140,7 +1120,6 @@ export function PrintDeck(props: PrintDeckProps) {
               <TrashIcon size={ICON_SIZE.md} />
             </button>
           </PageToolbarItem>
-          {addImagePageButton}
         </PageToolbar>
       </div>
     );
@@ -1297,16 +1276,6 @@ export function PrintDeck(props: PrintDeckProps) {
     if (!section) return;
     const seedPhoto = sectionRecipeImages(section)[0];
     projectMeta.setArtPhoto(sectionId, "photo", { photoUrl: section.artPhotoUrl ?? seedPhoto });
-  };
-  /** Whether this chapter opener sits on a left page with nothing facing it,
-      where the empty page itself offers Add image page / Add recipe. */
-  const chapterFacesBlank = (sheetIndex: number) => {
-    if (!cookbookView) return false;
-    const spread = spreads.find((candidate) => candidate.left === sheetIndex && !candidate.single);
-    if (!spread) return false;
-    if (spread.right === null) return spreads[spreads.length - 1] === spread;
-    // A filler blank only: a blank page the cook added is theirs, not room.
-    return Boolean(sheets[spread.right]?.slots.some((slot) => slot?.kind === "blank" && !slot.pageId));
   };
   const openPhotoOnClick = (navItem: NavItem, active: boolean) => (event: ReactMouseEvent) => {
     const press = photoPointerStart.current;
@@ -1817,9 +1786,9 @@ export function PrintDeck(props: PrintDeckProps) {
                   const designedBlank = leftSlot?.kind === "toc";
                   // A chapter opener with nothing facing it (an empty page the
                   // book prints, or the open end of the book): that page is
-                  // where the chapter's own image page or its first recipe
-                  // would go, so it offers both. The opener's toolbar drops its
-                  // "Add image page" while this is showing (`chapterFacesBlank`).
+                  // where the chapter's own photo page or its first recipe
+                  // would go, so it offers both. (The opener's "+" menu offers
+                  // the photo page as well, wherever the chapter lands.)
                   const chapterBesideBlank =
                     cookbookView && leftSlot?.kind === "divider" ? leftSlot.id : null;
                   const chapterBlankActions = chapterBesideBlank ? (
@@ -1833,7 +1802,7 @@ export function PrintDeck(props: PrintDeckProps) {
                         }}
                       >
                         <PagePlusIcon size={ICON_SIZE.sm} />
-                        Add image page
+                        Add photo page
                       </button>
                       <button
                         type="button"
@@ -1990,7 +1959,7 @@ export function PrintDeck(props: PrintDeckProps) {
                         false,
                         isBlankLeaf
                           ? besideChapter
-                            ? "Give this chapter an image page, or start it with a recipe."
+                            ? "Give this chapter a photo page, or start it with a recipe."
                             : blankPageReason(sheets, sheetIndex)
                           : undefined,
                         isOpeningPage && onAddDedication ? (
@@ -2109,7 +2078,7 @@ export function PrintDeck(props: PrintDeckProps) {
                                 ? renderBlank(
                                     !designedBlank,
                                     chapterBlankActions
-                                      ? "Give this chapter an image page, or start it with a recipe."
+                                      ? "Give this chapter a photo page, or start it with a recipe."
                                       : undefined,
                                     chapterBlankActions,
                                   )
