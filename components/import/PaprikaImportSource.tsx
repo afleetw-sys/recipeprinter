@@ -25,7 +25,7 @@ import {
 } from "@/lib/paprikaLibrary";
 import type { QueueItem } from "@/types/recipe";
 import { RecipeSourceList, type LibraryCommitRef } from "@/components/import/RecipeSourceList";
-import { BookIcon, ICON_SIZE, PaprikaLogoIcon, UploadIcon } from "@/components/icons";
+import { BookIcon, CheckIcon, ICON_SIZE, PaprikaLogoIcon, UploadIcon } from "@/components/icons";
 
 /**
  * Import from a Paprika export.
@@ -261,6 +261,29 @@ export function PaprikaImportSource({
 
   return (
     <div className="flex flex-col gap-cp-4">
+      {/* Where the cook is, as two numbered steps. Opening the file used to
+          look like the whole import: a buyer took the list that followed for
+          a dead end and paid for a cookbook to get their recipes in. Step one
+          is ticked off with the count it brought in, so the list below reads
+          as the step still to do, not the result. */}
+      <ol className="import-steps" aria-label="Importing from Paprika">
+        <li className="import-steps__step import-steps__step--done">
+          <span className="import-steps__num" aria-hidden>
+            <CheckIcon size={ICON_SIZE.sm} />
+          </span>
+          <span>
+            Import your file
+            <span className="import-steps__detail">
+              {entries.length} {entries.length === 1 ? "recipe" : "recipes"} found
+            </span>
+          </span>
+        </li>
+        <li className="import-steps__step" aria-current="step">
+          <span className="import-steps__num" aria-hidden>2</span>
+          <span>{singleSelect ? "Pick a recipe" : "Pick the recipes you want"}</span>
+        </li>
+      </ol>
+
       {/* Which file this library came from, ABOVE the list rather than under
           it. It is a caption on the source, so it reads better next to the
           heading than as a trailing line — and structurally it has to be here,
