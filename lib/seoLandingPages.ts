@@ -1446,7 +1446,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "print-paprika-recipes",
-    contentUpdated: "2026-11-04",
+    contentUpdated: "2026-11-12",
     copyReviewed: "2026-10-02",
 
     primaryKeyword: "print Paprika recipes",
@@ -1454,7 +1454,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "print recipe from Paprika",
       "Paprika recipe printer",
       "print Paprika recipe cards",
-      "print Paprika cookbook",
       "print entire Paprika library",
       "Paprika recipe export",
       ".paprikarecipes file",
@@ -1513,6 +1512,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         image: "bound-cookbook",
         body:
           "Export a large Paprika collection and decide what to print after you open it in RecipePrinter. Choose just a few recipes, or use RecipePrinter Pro to print multiple recipes together for a recipe box or binder. In the cookbook builder, you can preview up to 10 recipes free; a separate purchase unlocks downloads and additional recipes.",
+        links: [{ phrase: "cookbook builder", href: "/paprika-to-cookbook" }],
       },
     ],
     faqHeading: "Questions about printing recipes from Paprika",
@@ -1552,6 +1552,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/organize-recipes", label: "Organize recipes" },
       { href: "/recipe-card-printer", label: "Make printable recipe cards" },
       { href: "/recipe-binder", label: "Make a recipe binder" },
+      { href: "/paprika-to-cookbook", label: "Make a cookbook from Paprika recipes" },
       { href: "/family-recipe-book", label: "Build a family cookbook" },
     ],
   },
@@ -2638,7 +2639,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "make-your-own-cookbook",
-    contentUpdated: "2026-10-12",
+    contentUpdated: "2026-11-12",
     copyReviewed: "2026-10-06",
     imagesReviewed: "2026-10-06",
     primaryKeyword: "make your own cookbook",
@@ -2733,6 +2734,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Can I make a cookbook from recipes I already have?",
         answer:
           "Yes. Recipes can come from any website, photos and screenshots, handwritten recipe cards, pasted text, or Paprika and CookPilot, and you can edit each one once it's in your cookbook.",
+        links: [{ href: "/paprika-to-cookbook", label: "Make a cookbook from Paprika recipes" }],
       },
       {
         question: "Can I print the cookbook at home?",
@@ -2757,7 +2759,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "cookbook-maker",
-    contentUpdated: "2026-10-12",
+    contentUpdated: "2026-11-12",
     copyReviewed: "2026-10-06",
     imagesReviewed: "2026-10-06",
     primaryKeyword: "cookbook maker",
@@ -2792,6 +2794,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         "make-your-own-cookbook",
         "family-recipe-book",
         "handwritten-recipes-to-cookbook",
+        "paprika-to-cookbook",
         "homemade-cookbook-gift",
         "recipe-book-gift",
         "christmas-recipe-book",
@@ -3184,6 +3187,164 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/bridal-shower-recipe-book", label: "Bridal shower recipe book" },
       { href: "/christmas-recipe-book", label: "Make a family recipe book for Christmas" },
       { href: "/cookbook-maker", label: "Online cookbook maker" },
+    ],
+  },
+  {
+    // The book, not the page. /print-paprika-recipes owns printing one recipe
+    // or a stack of cards from a Paprika export; this page owns the cookbook,
+    // and the two link to each other instead of making the same argument.
+    // Import facts (file type, Settings → Export Recipes, which fields come
+    // over, read in the browser) come from that page and lib/paprikaImport.ts.
+    // Photos: a Paprika photo is the cook's own, so a book shows it without
+    // `websitePhotos` (lib/bookPhotos.ts).
+    slug: "paprika-to-cookbook",
+    contentUpdated: "2026-11-12",
+    primaryKeyword: "make a cookbook from Paprika recipes",
+    secondaryKeywords: [
+      "Paprika cookbook",
+      "Paprika recipes to cookbook",
+      "print Paprika cookbook",
+      "Paprika recipe book",
+      "Paprika cookbook PDF",
+      "turn Paprika recipes into a book",
+      "family cookbook from Paprika",
+    ],
+    shortLabel: "From Paprika",
+    intent: "Organization SEO",
+    startsCookbook: true,
+    // Someone who searched this already has the recipes and wants to start.
+    layout: "capture-first",
+    heroImage: "printed-cookbook",
+    heroImageAlt:
+      "A finished spiral-bound cookbook open to a recipe page beside a full-page photo of the dish.",
+    importSubmitLabel: "Make your cookbook",
+    title: "Make a Cookbook From Your Paprika Recipes | RecipePrinter",
+    description:
+      "Turn your Paprika recipes into a print-ready cookbook. Open your Paprika export, sort recipes into chapters, add a cover, preview free, and download the PDF.",
+    h1: "Make a cookbook from your Paprika recipes",
+    anchor: "Make a cookbook from Paprika recipes",
+    lede:
+      "Your Paprika library already holds the recipes you cook. Open its export in RecipePrinter, sort the recipes into chapters, add a cover, and download a print-ready cookbook for your kitchen, your family, or a gift.",
+    howToHeading: "How to turn Paprika recipes into a cookbook",
+    howTo: [
+      {
+        name: "Export from Paprika",
+        text: "In Paprika, open Settings → Export Recipes, choose the Paprika Recipe Format, and export your whole library or just the recipes you want in the book.",
+      },
+      {
+        name: "Open the export in your cookbook",
+        text: "Start a cookbook, choose Add recipes, then Recipe apps and Paprika, and pick the .paprikarecipes file. It's read in your browser.",
+      },
+      {
+        name: "Choose recipes and build chapters",
+        text: "Tick the recipes you want, then name your chapters, put them in order, and move recipes between them until the book follows the way you cook.",
+      },
+      {
+        name: "Add a cover and download the PDF",
+        text: "Pick a theme, set the cover title and photo, look over every page, then download the cookbook to print at home or send to a print shop.",
+      },
+    ],
+    featureSections: [
+      {
+        heading: "Your Paprika recipes come in ready to edit",
+        image: "paprika-import",
+        imageAlt:
+          "A Paprika recipe export opened in RecipePrinter, with its recipes listed and ready to tick and add to a cookbook.",
+        body:
+          "RecipePrinter reads the title, ingredients, instructions, prep and cook time, servings, source, and notes from your Paprika export, so nothing gets retyped. A recipe with a photo in Paprika brings it along, and the photo appears in your cookbook.",
+        afterBody:
+          "Every recipe stays editable once it's in the book, so you can tidy a title or add a line about who made it before anything is printed.",
+      },
+      {
+        heading: "Sort a big library into chapters",
+        image: "organize-cookbook",
+        body:
+          "A Paprika library can hold hundreds of recipes, and a cookbook reads better with a shape. Make chapters by course, by season, or by the person each recipe came from, and move recipes between them whenever you like.",
+        afterBody:
+          "The table of contents and page numbers follow every change. You don't need the whole library either: pick the recipes worth keeping and leave the rest in Paprika.",
+      },
+      {
+        heading: "A cover, a theme, and pages that match",
+        image: "cookbook-cover-wide",
+        body:
+          "Give the book a title and a cover photo, choose from more than a dozen themes, and add a dedication at the front. The theme carries through the cover, the chapter openers, and every recipe page.",
+        afterBody:
+          "Recipes you saved to Paprika from a dozen different websites end up looking like one book.",
+      },
+      {
+        heading: "For a family cookbook, your own shelf, or a gift",
+        image: "dedication-page",
+        body:
+          "Keep a printed copy of the recipes you've collected in Paprika in the kitchen, gather your family's favorites into one book, or give a cookbook to the person who's always asking for your recipes.",
+        links: [
+          { phrase: "family's favorites", href: "/family-recipe-book" },
+          { phrase: "give a cookbook", href: "/homemade-cookbook-gift" },
+        ],
+      },
+      {
+        heading: `Build and preview free, pay ${COOKBOOK_PRICE_FALLBACK} once to download`,
+        image: "print-cookbook",
+        body:
+          `Building and previewing your cookbook is free with up to ${FREE_COOKBOOK_RECIPES} recipes. Pay ${COOKBOOK_PRICE_FALLBACK} once for that cookbook to download the PDF or add more than ${FREE_COOKBOOK_RECIPES} recipes, and download updated copies anytime at no extra cost.`,
+        afterBody: [
+          "Download US Letter for a home printer, or files for a spiral-bound or hardcover book from a print service, with a cover file sized to your book's spine.",
+          "A free RecipePrinter account is needed to download. RecipePrinter Pro isn't required.",
+        ],
+        links: [{ phrase: "print service", href: "/how-to-print-a-cookbook" }],
+      },
+    ],
+    faqHeading: "Questions about making a cookbook from Paprika",
+    faqs: [
+      {
+        question: "How do I make a cookbook from my Paprika recipes?",
+        answer:
+          "Export your recipes from Paprika, start a cookbook in RecipePrinter, and open the export from Add recipes → Recipe apps → Paprika. Choose the recipes you want, sort them into chapters, add a cover, and download the PDF.",
+      },
+      {
+        question: "What file do I need from Paprika?",
+        answer:
+          "The .paprikarecipes file Paprika saves when you choose Export Recipes with the Paprika Recipe Format. It holds your recipes and their photos.",
+      },
+      {
+        question: "Do my Paprika photos come with the recipes?",
+        answer:
+          "Yes. A recipe that has a photo in Paprika brings it along, and the photo shows in your cookbook. You can change or remove it in the book.",
+      },
+      {
+        question: "Do I have to put my whole Paprika library in the book?",
+        answer:
+          "No. Choose only the recipes you want after you open the export. You can add more later, and the contents page and page numbers update as you go.",
+      },
+      {
+        question: "How much does it cost?",
+        answer:
+          `Building and previewing is free with up to ${FREE_COOKBOOK_RECIPES} recipes. You pay ${COOKBOOK_PRICE_FALLBACK} once per cookbook to download the PDF or add more than ${FREE_COOKBOOK_RECIPES} recipes. Printing and binding are separate.`,
+      },
+      {
+        question: "Do I need RecipePrinter Pro?",
+        answer:
+          "No. A cookbook is its own one-time purchase. Pro covers other RecipePrinter features and doesn't include cookbook downloads.",
+      },
+      {
+        question: "Does RecipePrinter print and ship the book?",
+        answer:
+          "No. RecipePrinter makes the cookbook PDF. Print it at home, or send it to a print service for spiral binding or a hardcover.",
+        links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
+      },
+      {
+        question: "Can I print single Paprika recipes instead of a book?",
+        answer:
+          "Yes. Open the same export to print any recipe as a full page for free, or several as 4×6 recipe cards with Pro.",
+        links: [{ href: "/print-paprika-recipes", label: "Print Paprika recipes" }],
+      },
+    ],
+    links: [
+      { href: "/print-paprika-recipes", label: "Print Paprika recipes" },
+      { href: "/make-your-own-cookbook", label: "How to make your own cookbook" },
+      { href: "/cookbook-maker", label: "Online cookbook maker" },
+      { href: "/family-recipe-book", label: "Create a family recipe book" },
+      { href: "/homemade-cookbook-gift", label: "Make a cookbook gift" },
+      { href: "/how-to-print-a-cookbook", label: "How to print a cookbook" },
     ],
   },
   {
