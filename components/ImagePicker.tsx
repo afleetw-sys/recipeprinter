@@ -37,7 +37,6 @@ export function ImagePicker({
   label = "Choose photo",
   className = "",
   hideTrigger = false,
-  onUpgrade,
 }: {
   current?: string;
   images: string[];
@@ -88,9 +87,6 @@ export function ImagePicker({
   /** No button of its own: the caller draws one in its own style and opens
       the dialog with `openSignal` (the settings panel's plain buttons). */
   hideTrigger?: boolean;
-  /** Photos are Pro here and this account is not: the button, and an
-      `openSignal`, open the upgrade this calls instead of the dialog. */
-  onUpgrade?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const onOpenChangeRef = useRef(onOpenChange);
@@ -102,8 +98,7 @@ export function ImagePicker({
   }, [open]);
   useEffect(() => {
     if (openSignal) {
-      if (onUpgrade) onUpgrade();
-      else setOpen(true);
+      setOpen(true);
       onOpenSignalConsumed?.();
     }
     // Only `openSignal` should retrigger this — `onOpenSignalConsumed` is a
@@ -530,8 +525,7 @@ export function ImagePicker({
         onMouseDown={(event) => event.preventDefault()}
         onClick={(event) => {
           event.stopPropagation();
-          if (onUpgrade) onUpgrade();
-          else setOpen(true);
+          setOpen(true);
         }}
         aria-haspopup="dialog"
       >

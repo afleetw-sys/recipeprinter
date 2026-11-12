@@ -25,7 +25,6 @@ const BENEFIT_BY_REASON: Record<ProLockReason, string> = {
   // Text size was this line until 2026-11; it's one of the Customize
   // settings now, and they're all Pro on a card.
   font_size: "Customize any theme",
-  photo: "Recipe photos on your cards",
 };
 const COOKBOOK_BENEFIT = "20% off your first cookbook";
 // Not "no watermark": the free line is a quiet footer, not a watermark, and
@@ -104,7 +103,6 @@ const TITLE_BY_REASON: Record<ProLockReason, string> = {
   card_size: "Print 4×6 recipe cards",
   theme: "Print with this premium theme",
   font_size: "Customize any theme with Pro",
-  photo: "Add photos to your recipe cards",
 };
 
 export interface ProUpgradeCopy {

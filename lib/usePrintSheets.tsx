@@ -493,9 +493,6 @@ interface UsePrintSheetsOptions {
   cardSize: PrintCardSize;
   doubleSided: boolean;
   photosOn: boolean;
-  /** False draws no recipe photo at all, whatever `photosOn` and a recipe's
-      own placement say: photos on recipe cards are Pro. */
-  photosAllowed?: boolean;
   /** The book-wide "Recipe link" default. A cookbook recipe's own placement
       can override it -- see `linkOnFor`. */
   sourceUrlOn: boolean;
@@ -547,7 +544,6 @@ export function usePrintSheets({
   cardSize,
   doubleSided,
   photosOn,
-  photosAllowed = true,
   sourceUrlOn,
   descriptionOn,
   brandHidden = false,
@@ -598,11 +594,10 @@ export function usePrintSheets({
   // later does not reflow the page.
   const photoOnFor = useCallback(
     (id: string, recipe: Recipe): boolean => {
-      if (!photosAllowed) return false;
       if (!recipe.image && !(ownPhotosOnly && cookbookLayouts)) return false;
       return itemPlacements?.[id]?.showPhoto ?? photosOn;
     },
-    [itemPlacements, photosOn, photosAllowed, ownPhotosOnly, cookbookLayouts],
+    [itemPlacements, photosOn, ownPhotosOnly, cookbookLayouts],
   );
 
   // The same decision for the source link. A link line changes a card's height
