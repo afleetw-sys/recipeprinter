@@ -85,15 +85,17 @@ const courierPrime = localFont({
   preload: false,
 });
 
-// The Document theme's face: Times New Roman itself is Microsoft's and can't be
-// bundled, and the PDF renderer has none, so every device uses this metric
-// clone and the preview, Print and the download match.
-const tinos = localFont({
+// The Document theme's face. Times New Roman itself is Microsoft's and can't be
+// bundled, and the PDF renderer has none, so every device uses TeX Gyre Termes:
+// a free Times, with the same letters and the same widths, so the preview, Print
+// and the download match and look like Times. (Tinos, before 2026-11-12, only
+// had the widths.)
+const termes = localFont({
   src: [
-    { path: "./fonts/tinos/tinos-latin-400-normal.woff2", weight: "400", style: "normal" },
-    { path: "./fonts/tinos/tinos-latin-700-normal.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/tex-gyre-termes/tex-gyre-termes-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/tex-gyre-termes/tex-gyre-termes-latin-700-normal.woff2", weight: "700", style: "normal" },
   ],
-  variable: "--font-tinos",
+  variable: "--font-termes",
   display: "swap",
   preload: false,
 });
@@ -309,7 +311,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${tinos.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${berkshireSwash.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${fraunces.variable} ${figtree.variable} ${creepster.variable} ${lora.variable} ${karla.variable}`}
+      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${termes.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${berkshireSwash.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${fraunces.variable} ${figtree.variable} ${creepster.variable} ${lora.variable} ${karla.variable}`}
     >
       <head>
         {/* The ad tags (Google Ads, Reddit Ads), in the HTML so the platforms

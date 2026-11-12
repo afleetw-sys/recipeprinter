@@ -11609,8 +11609,7 @@ textarea.recipe-card__toc-title {
 
 /* ── Document ──────────────────────────────────────────────────────────────
    The free theme: a recipe typed into a word processor. Black type on white,
-   Tinos, Times New Roman's metric clone, bold sentence-case headings,
-   ordinary bullets and
+   set in a Times, bold sentence-case headings, ordinary bullets and
    "1." step numbers. No colour, no frame, no art: the designed looks are
    Pro (Classic moved there on 2026-10-29). */
 .recipe-template--document {
@@ -11624,12 +11623,13 @@ textarea.recipe-card__toc-title {
   --recipe-footer: #6b6b6b;
   --recipe-bullet: var(--recipe-ink);
   --recipe-radius: 0;
-  /* Tinos first, not Times New Roman: the download is drawn on Linux, which
-     has no Times New Roman and silently swaps in Liberation Serif, so a Mac
-     previewed one face and downloaded another. Tinos is bundled, so the
-     preview, Print and the download all use the same one. */
-  --recipe-title-font: var(--font-tinos), "Times New Roman", Times, serif;
-  font-family: var(--font-tinos), "Times New Roman", Times, serif;
+  /* TeX Gyre Termes first, not Times New Roman: the download is drawn on
+     Linux, which has no Times New Roman and silently swaps in Liberation
+     Serif, so a Mac previewed one face and downloaded another. Termes is a
+     bundled Times with Times New Roman's widths, so the preview, Print and
+     the download all draw the same Times letters and break lines alike. */
+  --recipe-title-font: var(--font-termes), "Times New Roman", Times, serif;
+  font-family: var(--font-termes), "Times New Roman", Times, serif;
 }
 
 .recipe-template--document .recipe-card__header {
