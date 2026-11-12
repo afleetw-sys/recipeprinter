@@ -85,9 +85,9 @@ const courierPrime = localFont({
   preload: false,
 });
 
-// The Document theme's fallback: Times New Roman itself is Microsoft's and can't
-// be bundled, so a device without it (Android, the PDF renderer) gets this
-// metric clone, which breaks every line in the same place.
+// The Document theme's face: Times New Roman itself is Microsoft's and can't be
+// bundled, and the PDF renderer has none, so every device uses this metric
+// clone and the preview, Print and the download match.
 const tinos = localFont({
   src: [
     { path: "./fonts/tinos/tinos-latin-400-normal.woff2", weight: "400", style: "normal" },
