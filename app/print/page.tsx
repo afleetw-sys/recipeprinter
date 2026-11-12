@@ -8,7 +8,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SAVE_FAILURES, SAVE_STATUS_LABEL } from "@/components/AccountControl";
 import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
-import { pauseFirestoreForPrint, resumeFirestoreAfterPrint } from "@/lib/firebase/db";
+import { pauseFirestoreForPrint, resumeFirestoreAfterPrint } from "@/lib/firebase/printPause";
 import { PrintDialogs } from "@/components/PrintDialogs";
 import { AddRecipeDialog } from "@/components/AddRecipeDialog";
 import { sectionOrderChanged, sortSectionsByTitle } from "@/lib/sectionSort";

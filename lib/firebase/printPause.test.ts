@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * `pauseFirestoreForPrint` / `resumeFirestoreAfterPrint` (lib/firebase/db.ts):
+ * `pauseFirestoreForPrint` / `resumeFirestoreAfterPrint` (lib/firebase/printPause.ts):
  * Firestore's connection closed for the moment Safari's `print()` needs the
  * page quiet, and reopened as soon as the print is under way. See
  * e2e/quiet-print.spec.ts for why.
@@ -16,14 +16,15 @@ const firestore = vi.hoisted(() => ({
 vi.mock("firebase/firestore", () => firestore);
 vi.mock("./client", () => ({ getFirebaseApp: () => ({}) }));
 
-type Db = typeof import("./db");
+type Pause = typeof import("./printPause");
 
-/** A fresh module each time: the pause state is module-level. */
-async function load(started = true): Promise<Db> {
+/** Fresh modules each time: the pause state is module-level. Firestore is
+    started the way the app starts it, through `getDb`. */
+async function load(started = true): Promise<Pause> {
   vi.resetModules();
-  const db = await import("./db");
-  if (started) db.getDb();
-  return db;
+  const pause = await import("./printPause");
+  if (started) (await import("./db")).getDb();
+  return pause;
 }
 
 beforeEach(() => {
