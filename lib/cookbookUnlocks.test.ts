@@ -80,7 +80,7 @@ vi.mock("firebase/firestore", () => ({
     return { exists: () => Boolean(next?.exists) };
   },
 }));
-vi.mock("@/lib/firebase/db", () => ({ getDb: () => ({}) }));
+vi.mock("@/lib/firebase/db", () => ({ getDb: () => ({}), restartFirestoreNetwork: () => {} }));
 
 function seedLocalUnlock(projectId: string, unlockedAt: number) {
   memory.setItem(UNLOCKS_KEY, JSON.stringify({ [projectId]: { unlockedAt } }));
