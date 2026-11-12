@@ -835,6 +835,46 @@
     margin-left: 6px;
     white-space: nowrap;
   }
+  /* The count follows the chapter's name, at the left; Add sits alone at the
+     right. The name field is as wide as the name (see ChapterNameInput's
+     `autosize`), and while it's being typed in the count steps aside so the
+     field can grow. */
+  .recipe-print-shell--organizing .recipe-page-rail__section-header {
+    justify-content: flex-start;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail__section-header .recipe-page-rail__section-add {
+    margin-left: auto;
+  }
+  .recipe-print-shell--organizing .recipe-page-rail__section-name {
+    flex: 0 1 auto;
+  }
+  .chapter-name-autosize {
+    display: inline-grid;
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  .chapter-name-autosize > input,
+  .chapter-name-autosize::after {
+    grid-area: 1 / 1;
+    min-width: 0;
+  }
+  .chapter-name-autosize > input {
+    width: 100%;
+  }
+  /* The hidden copy that sizes the box: the field's own text, padding and
+     border, so the two measure the same. */
+  .chapter-name-autosize::after {
+    content: attr(data-value) " ";
+    visibility: hidden;
+    overflow: hidden;
+    padding: 4px 6px;
+    border: 1px solid transparent;
+    font-weight: 800;
+    white-space: pre;
+  }
+  .chapter-name-autosize:focus-within ~ .recipe-page-rail__section-count {
+    display: none;
+  }
   /* The recipes in no chapter: a heading like a chapter's, minus the frame,
      the fold and the grip. Its name takes the room the chapter's name field
      does, so the count and Add recipe sit at the right as they do there. */

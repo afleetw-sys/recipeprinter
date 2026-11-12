@@ -473,6 +473,8 @@ export default function PrintPage() {
   const [cookbookJustPurchased, setCookbookJustPurchased] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
+  /** A chapter's "From this book" opens the dialog on the book's own recipes. */
+  const [addDialogFrom, setAddDialogFrom] = useState<"new" | "book">("new");
   /** The Add dialog is open for Swap recipe (its title, and its library picks one). */
   const [swapDialogOpen, setSwapDialogOpen] = useState(false);
   /**
@@ -1302,8 +1304,23 @@ export default function PrintPage() {
           const bar = foldedBar(entry.id);
           return bar ? contains(bar.getBoundingClientRect()) : false;
         });
+        // An empty chapter's "Drag a recipe here" box IS the target, outlined
+        // where it stands. Opening a gap beside it pushed the box, which the
+        // pointer was on, out from under the hand, and the whole chapter then
+        // collapsed to a new height on the drop.
+        const emptyChapterDrop = (sectionId: string) => {
+          const add = geometry.sectionAdds.find((entry) => entry.id === sectionId);
+          if (!add) return null;
+          const rect = add.rect;
+          return {
+            indicator: { top: rect.top, left: rect.left, width: rect.width, height: rect.height, box: true },
+            commit: () => projectMeta.moveItems(movingIds, sectionId, 0),
+          };
+        };
         if (sectionHead) {
           const sectionId = sectionHead.id;
+          const empty = emptyChapterDrop(sectionId);
+          if (empty) return empty;
           const bar = foldedBar(sectionId);
           if (bar) {
             const rect = bar.getBoundingClientRect();
@@ -1321,20 +1338,7 @@ export default function PrintPage() {
         }
 
         const sectionAdd = geometry.sectionAdds.find((entry) => contains(entry.rect));
-        if (sectionAdd) {
-          const sectionId = sectionAdd.id;
-          const rect = sectionAdd.rect;
-          return {
-            indicator: { top: rect.top, left: rect.left, width: rect.width },
-            slot: { anchor: `[data-rail-section-add="${sectionId}"]`, place: "before" },
-            commit: () =>
-              projectMeta.moveItems(
-                movingIds,
-                sectionId,
-                itemIdsForSection(sectionId).filter((x) => !moving.has(x)).length,
-              ),
-          };
-        }
+        if (sectionAdd) return emptyChapterDrop(sectionAdd.id);
 
         const candidates = rows.filter((row) => row.rect.width > 0 && row.rect.height > 0);
         const distanceTo = (rect: DOMRect) => {
@@ -1381,18 +1385,15 @@ export default function PrintPage() {
             };
           }
           if (chapterRows.length === 0) {
-            // Nothing to drop beside: the gap opens under the heading (or in
-            // the empty chapter's own box), and the recipe is the chapter's.
-            const add = geometry.sectionAdds.find((entry) => entry.id === sectionId);
+            // Nothing to drop beside. An empty chapter outlines its own box;
+            // one with no box (filtered, say) opens the gap under its heading.
+            const empty = emptyChapterDrop(sectionId);
+            if (empty) return empty;
             const head = geometry.sectionHeads.find((entry) => entry.id === sectionId);
-            const rect = add?.rect ?? head?.rect ?? chapter.rect;
+            const rect = head?.rect ?? chapter.rect;
             return {
               indicator: { top: rect.top, left: rect.left, width: rect.width },
-              slot: add
-                ? { anchor: `[data-rail-section-add="${sectionId}"]`, place: "before" }
-                : head
-                  ? { anchor: `[data-rail-section-head="${sectionId}"]`, place: "after" }
-                  : undefined,
+              slot: head ? { anchor: `[data-rail-section-head="${sectionId}"]`, place: "after" } : undefined,
               commit: atEnd,
             };
           }
@@ -3804,6 +3805,9 @@ export default function PrintPage() {
     onImportLimitReached: () => openProUpgradeDialog(IMPORT_LIMIT_TRIGGER),
     bookCap: bookRoom === null ? null : FREE_COOKBOOK_RECIPES,
     onBookCapReached: handleBookCapReached,
+    // Most of a batch lands off screen (the page shows one recipe, and the
+    // rail is hidden on a phone), so the count is news: rule 4 in useToast.
+    onBatchAdded: (count) => showToast(`Imported ${count} recipes`),
     importContext: cookbookMode
       ? { context: "cookbook", ...(cookbookProjectId ? { cookbookId: cookbookProjectId } : {}) }
       : { context: "recipe_cards" },
@@ -7531,6 +7535,7 @@ export default function PrintPage() {
           setPendingAddIndex={setPendingAddIndex}
           setPendingAddAfterRecipeId={setPendingAddAfterRecipeId}
           setShowAddRecipeDialog={setShowAddRecipeDialog}
+          setAddDialogFrom={setAddDialogFrom}
           openAddRecipeBelow={openAddRecipeBelow}
           addSectionDivider={addSectionDivider}
           addBlankPage={() => addBlankPage()}
@@ -8274,6 +8279,7 @@ export default function PrintPage() {
         open={showAddRecipeDialog}
         onClose={() => {
           setShowAddRecipeDialog(false);
+          setAddDialogFrom("new");
           setAddingFirstRecipe(false);
           setSwapDialogOpen(false);
           // Closed without adding anything: the swap never happened.
@@ -8307,6 +8313,26 @@ export default function PrintPage() {
           openProUpgradeDialog("add_more_recipes");
         }}
         chapterTarget={addChapterTarget}
+        from={addDialogFrom}
+        bookRecipes={
+          addChapterTarget
+            ? {
+                // Finished recipes only: one still importing has nothing to
+                // show yet and lands where it was aimed anyway.
+                recipes: sections.flatMap((section) =>
+                  section.items
+                    .filter((item) => item.status === "ready")
+                    .map((item) => ({ item, chapterTitle: section.title?.trim() ?? "", sectionId: section.id })),
+                ),
+                // The same commit a rail drag makes, so it gets the same undo.
+                onMove: (itemIds, sectionId) => {
+                  const destination = projectMeta.meta.sections.find((section) => section.id === sectionId);
+                  if (!destination) return;
+                  projectMeta.moveItems(itemIds, sectionId, destination.itemIds.length);
+                },
+              }
+            : undefined
+        }
       />
       <FeedbackDialog
         open={showFeedbackDialog}

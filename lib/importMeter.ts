@@ -75,10 +75,11 @@ export interface MeterAnswer {
 
 export type Reservation =
   | { status: "skipped" }
-  | { status: "reserved"; meterMs: number; result: MeterAnswer }
+  | { status: "reserved"; meterMs: number; stages?: MeterStageTimes; result: MeterAnswer }
   | {
       status: "unavailable";
       meterMs: number;
+      stages?: MeterStageTimes;
       reason: "timeout" | "error";
       /** This browser counted the same link or text within the 30 days. */
       repeat?: boolean;
@@ -312,6 +313,36 @@ function browserTimeZone(): { tz?: string } {
 export type MeterStage = "load" | "app_check" | "auth" | "call";
 
 /**
+ * How long a reservation spent in each stage, for the import events (audit F1).
+ * A stage the call never reached is absent; on a timeout, the stage it was in
+ * runs to the moment it was given up on.
+ */
+export interface MeterStageTimes {
+  meterLoadMs?: number;
+  meterAppCheckMs?: number;
+  meterAuthMs?: number;
+  meterCallMs?: number;
+}
+
+const STAGE_ORDER: Array<[MeterStage, keyof MeterStageTimes]> = [
+  ["load", "meterLoadMs"],
+  ["app_check", "meterAppCheckMs"],
+  ["auth", "meterAuthMs"],
+  ["call", "meterCallMs"],
+];
+
+function stageTimes(marks: Partial<Record<MeterStage, number>>, endMs: number): MeterStageTimes {
+  const out: MeterStageTimes = {};
+  STAGE_ORDER.forEach(([stage, field], index) => {
+    const from = marks[stage];
+    if (from === undefined) return;
+    const next = STAGE_ORDER.slice(index + 1).find(([later]) => marks[later] !== undefined);
+    out[field] = Math.max(0, (next ? marks[next[0]]! : endMs) - from);
+  });
+  return out;
+}
+
+/**
  * The App Check token the callable is about to ask for, asked for first so the
  * wait has a name. The SDK caches it, so the callable's own request for it
  * answers at once and nothing is fetched twice. Never throws: a token that
@@ -514,6 +545,8 @@ export async function reserveImport(input: {
 }): Promise<Reservation> {
   const startedAt = Date.now();
   const at: { stage: MeterStage } = { stage: "load" };
+  // When each stage began, for `stages` on the answer. Timing only.
+  const marks: Partial<Record<MeterStage, number>> = { load: startedAt };
   const keyed = input.dedupeInput ? dedupeKeyFor(input.dedupeInput) : Promise.resolve(undefined);
   if (unanswered) {
     const repeat = countedBefore(await keyed, Date.now());
@@ -529,7 +562,10 @@ export async function reserveImport(input: {
         method: input.method,
         ...(dedupeKey ? { dedupeKey } : {}),
       },
-      (stage) => (at.stage = stage),
+      (stage) => {
+        at.stage = stage;
+        marks[stage] = Date.now();
+      },
     );
     const parsed = parseAnswer(data);
     if (!parsed) throw new Error("recipePrinterImportMeter returned an unexpected shape");
@@ -540,13 +576,16 @@ export async function reserveImport(input: {
     noteAnswer(result);
     // A refused import never settles.
     if (!result.allowed) pendingDedupeKeys.delete(input.importId);
-    return { status: "reserved", meterMs: Date.now() - startedAt, result };
+    const endMs = Date.now();
+    return { status: "reserved", meterMs: endMs - startedAt, stages: stageTimes(marks, endMs), result };
   } catch (err) {
     const reason = reportUnavailable("reserve", err, at.stage, work, startedAt);
     // Hashing is local and quick, so it has always finished by the time the
     // meter has been given up on.
     const repeat = countedBefore(await keyed, Date.now());
-    return { status: "unavailable", meterMs: Date.now() - startedAt, reason, ...(repeat ? { repeat } : {}) };
+    const endMs = Date.now();
+    const stages = stageTimes(marks, endMs);
+    return { status: "unavailable", meterMs: endMs - startedAt, stages, reason, ...(repeat ? { repeat } : {}) };
   }
 }
 
@@ -664,8 +703,8 @@ export async function refuseImportIfSpent(dedupeInput?: string): Promise<boolean
 }
 
 /** How long the meter held this import up, for the import events. */
-export function meterMsOf(reservation: Reservation): { meterMs?: number } {
-  return reservation.status === "skipped" ? {} : { meterMs: reservation.meterMs };
+export function meterMsOf(reservation: Reservation): { meterMs?: number } & MeterStageTimes {
+  return reservation.status === "skipped" ? {} : { meterMs: reservation.meterMs, ...reservation.stages };
 }
 
 /** How many imports were already used when this one began, for `recipe_imported`. */

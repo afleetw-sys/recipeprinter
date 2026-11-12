@@ -172,7 +172,7 @@ export async function persistCookbookProjectUnlock(ownerUid: string, projectId: 
  * ask, and `isCookbookProjectUnlocked` (the cache) remains the only answer.
  */
 export async function loadCookbookProjectUnlock(ownerUid: string, projectId: string): Promise<boolean> {
-  const [{ doc, getDoc }, { getDb }] = await Promise.all([
+  const [{ doc, getDoc }, { getDb, restartFirestoreNetwork }] = await Promise.all([
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
@@ -180,10 +180,17 @@ export async function loadCookbookProjectUnlock(ownerUid: string, projectId: str
 
   let unlocked: boolean;
   try {
-    unlocked = (await getDoc(doc(db, ...recipePrinterUnlockPath(ownerUid, projectId)))).exists();
+    // With a deadline: /print holds a cookbook behind its loading screen until
+    // this answers (lib/serverReadDeadline).
+    unlocked = (
+      await withServerReadDeadline(
+        getDoc(doc(db, ...recipePrinterUnlockPath(ownerUid, projectId))),
+        restartFirestoreNetwork,
+      )
+    ).exists();
   } catch {
-    // Offline, rules error, transient failure — an unanswered question, not a
-    // negative answer. Leave the cache exactly as it is.
+    // Offline, rules error, transient failure, no answer in time — an
+    // unanswered question, not a negative answer. Leave the cache exactly as it is.
     return isCookbookProjectUnlocked(projectId);
   }
 

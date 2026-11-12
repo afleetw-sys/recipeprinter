@@ -2,6 +2,7 @@
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { act, renderHook } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 
 /**
@@ -31,6 +32,12 @@ const sdk = vi.hoisted(() => ({
 vi.mock("@revenuecat/purchases-js", () => ({
   ErrorCode: { UserCancelledError: 1 },
   Purchases: { configure: sdk.configure },
+}));
+// The purchase hooks below: no events, and no Firestore for a cookbook's unlock.
+vi.mock("@/lib/analytics", () => ({ track: vi.fn(), truncateReason: (e: unknown) => String(e) }));
+vi.mock("@/lib/cookbookUnlocks", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./cookbookUnlocks")>()),
+  loadCookbookProjectUnlock: vi.fn().mockResolvedValue(false),
 }));
 
 const NO_PURCHASES = { entitlements: { all: {}, active: {} } } as unknown as CustomerInfo;
@@ -151,5 +158,81 @@ test.each(Object.keys(checkouts) as (keyof typeof checkouts)[])(
     expect(sdk.getOfferings).toHaveBeenCalledTimes(1);
     expect(brandingFetches).toBe(1);
     expect(sdk.purchase).toHaveBeenCalledTimes(1);
+  },
+);
+
+/**
+ * Checkout pressed straight after signing in, the usual first purchase
+ * (purchases need an account). Sign-in's own link of the account to RevenueCat
+ * may still be out, and the hooks wait for it before buying, so nothing is ever
+ * bought as the guest id. Stripe.js doesn't depend on who is buying, so it
+ * downloads during that wait instead of after it.
+ */
+const afterSignIn = {
+  pro: async (linkCustomer: () => Promise<null>) => {
+    const { useProPurchase } = await import("./useProPurchase");
+    const { result } = renderHook(() =>
+      useProPurchase({
+        linkCustomer,
+        customerInfo: NO_PURCHASES,
+        setCustomerInfo: vi.fn(),
+        markCustomerInfoVerified: vi.fn(),
+        cookPilotUser: { uid: "uid", email: null } as never,
+        showToast: vi.fn(),
+        clearToast: vi.fn(),
+        onFreshPurchase: vi.fn(),
+      }),
+    );
+    return () => result.current.purchaseProAndContinue("annual", vi.fn());
+  },
+  cookbook: async (linkCustomer: () => Promise<null>) => {
+    const { useCookbookPurchase } = await import("./useCookbookPurchase");
+    const { result } = renderHook(() =>
+      useCookbookPurchase({
+        cookPilotUser: { uid: "uid", email: null } as never,
+        cookbookMode: true,
+        projectId: "p1",
+        discountEligible: false,
+        showToast: vi.fn(),
+        clearToast: vi.fn(),
+        onFreshPurchase: vi.fn(),
+        onCookbookGranted: vi.fn(),
+        onSignInRequired: vi.fn(),
+        linkCustomer,
+      }),
+    );
+    return () => result.current.purchaseCookbookAndContinue(vi.fn());
+  },
+};
+
+test.each(Object.keys(afterSignIn) as (keyof typeof afterSignIn)[])(
+  "%s checkout right after sign-in: Stripe.js downloads while the account is still being linked",
+  async (product) => {
+    sdk.getOfferings.mockResolvedValue(offerings());
+    sdk.preload.mockResolvedValue(undefined);
+    sdk.setAttributes.mockResolvedValue(undefined);
+    const linked = held(null);
+    const linkCustomer = vi.fn(() => linked.answered);
+    const press = await afterSignIn[product](linkCustomer);
+
+    let done!: Promise<void>;
+    act(() => {
+      done = press();
+    });
+    await act(flush);
+
+    expect(linkCustomer).toHaveBeenCalledWith("uid");
+    expect(stripeScripts()).toHaveLength(1);
+    // Nothing that depends on who is buying goes out before the link lands.
+    expect(sdk.getOfferings).not.toHaveBeenCalled();
+    expect(sdk.purchase).not.toHaveBeenCalled();
+
+    await act(async () => {
+      linked.release();
+      await done;
+    });
+    expect(sdk.purchase).toHaveBeenCalledTimes(1);
+    // The one Stripe.js, not a second copy at the purchase call.
+    expect(stripeScripts()).toHaveLength(1);
   },
 );

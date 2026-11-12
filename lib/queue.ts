@@ -36,6 +36,7 @@ import {
   type MeteredMethod,
   type Reservation,
 } from "@/lib/importMeter";
+import { nextImportIndex, openImportTiming, takeImportTiming, type ImportTiming } from "@/lib/importTiming";
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
 // It survives navigation to /print (same tab) via sessionStorage.
@@ -581,6 +582,7 @@ export function useQueue() {
   // (see lib/cookbookFreeSize). Counted against the recipes in the queue.
   const bookCapRef = useRef<number | null>(null);
   const onBookCapReachedRef = useRef<((info: BookCapInfo) => void) | undefined>(undefined);
+  const onBatchAddedRef = useRef<((count: number) => void) | undefined>(undefined);
   /** How many more recipes the book can take right now; null for no cap. */
   const bookRoom = (): number | null =>
     bookCapRef.current === null
@@ -623,6 +625,10 @@ export function useQueue() {
       bookCap?: number | null;
       /** Recipes arrived that the book's free size had no room for. */
       onBookCapReached?: (info: BookCapInfo) => void;
+      /** One action brought in more than one recipe (a roundup link, a
+          multi-recipe photo, a library pick) and all of them landed. Not
+          called when `onBookCapReached` already said how many were kept. */
+      onBatchAdded?: (count: number) => void;
       importContext?: ImportContextProps;
     }) => {
       singleRecipeOnlyRef.current = config.singleRecipeOnly;
@@ -633,6 +639,7 @@ export function useQueue() {
       onImportLimitReachedRef.current = config.onImportLimitReached;
       bookCapRef.current = config.bookCap ?? null;
       onBookCapReachedRef.current = config.onBookCapReached;
+      onBatchAddedRef.current = config.onBatchAdded;
       importContextRef.current = config.importContext;
     },
     [],
@@ -910,6 +917,9 @@ export function useQueue() {
       // The context is read once, at the start: the import belongs to the
       // project it began in.
       const context = importContextRef.current ?? {};
+      // Which import of this page load this is (lib/importTiming), counted at
+      // the start so the meter's share of a first import is a first import's.
+      const importIndex = nextImportIndex();
       track("recipe_import_started", { ...outcome, ...context, importId: id, ...(url ? { url } : {}) });
       // The meter reserves BEFORE any parser request starts, and is awaited:
       // a free import is only parsed once the server has it on record. It
@@ -954,8 +964,21 @@ export function useQueue() {
         settled = true;
         settleImport(id, result);
       };
+      // Timing only, for the events below (lib/importTiming, audit F1): how
+      // long the parse took, and the link parser's own breakdown of it.
+      openImportTiming(id);
+      const parseStartedAt = performance.now();
+      let parseTiming: ImportTiming & { parseMs?: number; importIndex: number } = { importIndex };
+      const endParseTiming = () => {
+        parseTiming = {
+          importIndex,
+          parseMs: Math.round(performance.now() - parseStartedAt),
+          ...takeImportTiming(id),
+        };
+      };
       try {
         const result = await work();
+        endParseTiming();
         // A URL import is a website's page, and we keep none of a website's
         // own description (see `withoutWebsiteDescription`). The parser path
         // already drops it; this holds at the point of storage regardless.
@@ -1016,6 +1039,7 @@ export function useQueue() {
           const base = itemsRef.current.find((it) => it.id === id);
           const extras = extraItemsFor(base, origin.hostname ?? "", rest);
           commit([...itemsRef.current, ...extras]);
+          if (rest.length === allRest.length) onBatchAddedRef.current?.(1 + rest.length);
         }
         // After the extras are in, so a cookbook's `bookRecipes` counts them.
         // One event per recipe, with the bloomed ones marked `extra`.
@@ -1024,7 +1048,16 @@ export function useQueue() {
           ...meterMsOf(reservation),
           ...meterImportedFields(reservation),
         };
-        track("recipe_imported", { ...outcome, ...context, importId: id, ...landing, ...languageOf(first) });
+        // The import's timing on its own event only: on every roundup extra
+        // too, one slow import would count once per recipe it held.
+        track("recipe_imported", {
+          ...outcome,
+          ...context,
+          importId: id,
+          ...landing,
+          ...parseTiming,
+          ...languageOf(first),
+        });
         if (!cookbookModeRef.current) noteCardImport();
         rest.forEach((recipe) =>
           track("recipe_imported", {
@@ -1037,6 +1070,8 @@ export function useQueue() {
           }),
         );
       } catch (err) {
+        // Unless the parse succeeded and something after it threw.
+        if (parseTiming.parseMs === undefined) endParseTiming();
         settle("failure");
         // A reserved documentation domain gets its own answer. The generic
         // "check the link and try again" treats a deliberate placeholder as a
@@ -1101,6 +1136,7 @@ export function useQueue() {
           // the response itself.
           ...(err instanceof ImportError && err.meta ? err.meta : {}),
           ...meterMsOf(reservation),
+          ...parseTiming,
         });
       } finally {
         liveParseIds.delete(id);
@@ -1299,12 +1335,14 @@ export function useQueue() {
       }
       // An unbought cookbook's free size, for recipes that arrive ready.
       const fitting = fitBookRoom(nextRecipes, bookRoom());
-      if (fitting.length < nextRecipes.length) {
+      const capped = fitting.length < nextRecipes.length;
+      if (capped) {
         onBookCapReachedRef.current?.({ found: nextRecipes.length, kept: fitting.length });
         nextRecipes = fitting;
       }
       if (nextRecipes.length === 0) return 0;
       commit([...kept, ...nextRecipes]);
+      if (!capped && nextRecipes.length > 1) onBatchAddedRef.current?.(nextRecipes.length);
       // These can arrive from ANOTHER document: a Paprika pick made on the home
       // page is handed to /print through lib/pendingImport, and an object URL
       // dies with the document that minted it. A soft navigation keeps the same

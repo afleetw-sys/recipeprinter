@@ -7,6 +7,7 @@ import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import { track, truncateReason } from "@/lib/analytics";
 import { reportCookbookCheckoutStarted, reportCookbookPurchase } from "@/lib/adTags";
 import {
+  loadStripeEarly,
   purchaseRecipePrinterCookbook,
 } from "@/lib/recipePrinterPurchases";
 import {
@@ -193,6 +194,9 @@ export function useCookbookPurchase({
         return;
       }
 
+      // Stripe.js downloads while the account is linked, not after: it doesn't
+      // depend on who is buying (lib/checkoutLoad.test.ts).
+      loadStripeEarly();
       await linkCustomer(customerId);
       track("purchase_started", {
         product: "cookbook",
