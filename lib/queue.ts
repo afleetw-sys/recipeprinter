@@ -36,7 +36,7 @@ import {
   type MeteredMethod,
   type Reservation,
 } from "@/lib/importMeter";
-import { takeImportTiming, type ImportTiming } from "@/lib/importTiming";
+import { nextImportIndex, openImportTiming, takeImportTiming, type ImportTiming } from "@/lib/importTiming";
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
 // It survives navigation to /print (same tab) via sessionStorage.
@@ -911,6 +911,9 @@ export function useQueue() {
       // The context is read once, at the start: the import belongs to the
       // project it began in.
       const context = importContextRef.current ?? {};
+      // Which import of this page load this is (lib/importTiming), counted at
+      // the start so the meter's share of a first import is a first import's.
+      const importIndex = nextImportIndex();
       track("recipe_import_started", { ...outcome, ...context, importId: id, ...(url ? { url } : {}) });
       // The meter reserves BEFORE any parser request starts, and is awaited:
       // a free import is only parsed once the server has it on record. It
@@ -957,10 +960,15 @@ export function useQueue() {
       };
       // Timing only, for the events below (lib/importTiming, audit F1): how
       // long the parse took, and the link parser's own breakdown of it.
+      openImportTiming(id);
       const parseStartedAt = performance.now();
-      let parseTiming: ImportTiming & { parseMs?: number } = {};
+      let parseTiming: ImportTiming & { parseMs?: number; importIndex: number } = { importIndex };
       const endParseTiming = () => {
-        parseTiming = { parseMs: Math.round(performance.now() - parseStartedAt), ...takeImportTiming(id) };
+        parseTiming = {
+          importIndex,
+          parseMs: Math.round(performance.now() - parseStartedAt),
+          ...takeImportTiming(id),
+        };
       };
       try {
         const result = await work();
@@ -1032,9 +1040,17 @@ export function useQueue() {
           ...landingFields(),
           ...meterMsOf(reservation),
           ...meterImportedFields(reservation),
-          ...parseTiming,
         };
-        track("recipe_imported", { ...outcome, ...context, importId: id, ...landing, ...languageOf(first) });
+        // The import's timing on its own event only: on every roundup extra
+        // too, one slow import would count once per recipe it held.
+        track("recipe_imported", {
+          ...outcome,
+          ...context,
+          importId: id,
+          ...landing,
+          ...parseTiming,
+          ...languageOf(first),
+        });
         if (!cookbookModeRef.current) noteCardImport();
         rest.forEach((recipe) =>
           track("recipe_imported", {

@@ -379,9 +379,9 @@ async function parseUrlLocally(
       body: JSON.stringify({ url }),
       signal,
     });
-    const data = (await response.json()) as ParseResponse;
-    // Timing only, for the import's event (lib/importTiming). It must never be
-    // what decides how an import goes, so nothing here can throw.
+    // Timing only, for the import's event (lib/importTiming): taken as the
+    // headers arrive, so a reply that isn't JSON (a platform 502) still counts.
+    // It must never be what decides how an import goes, so nothing here can throw.
     try {
       noteImportTiming(importId, {
         routeMs: Math.round(performance.now() - sentAt),
@@ -390,6 +390,7 @@ async function parseUrlLocally(
     } catch {
       /* No timing for this import. */
     }
+    const data = (await response.json()) as ParseResponse;
     if (data.success) return { recipes: data.recipes };
     return {
       recipes: null,

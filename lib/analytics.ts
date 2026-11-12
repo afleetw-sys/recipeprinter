@@ -26,9 +26,16 @@ import type { ImportTiming } from "@/lib/importTiming";
 /**
  * Where an import's time went (audit F1, 2026-11-12): the meter's stages, the
  * parse itself (`parseMs`, every source), and for a link the route's breakdown
- * of it. Durations in ms and one warm/cold flag, nothing else.
+ * of it. Durations in whole ms, one warm/cold flag and a count, nothing else.
+ * A field is absent, never 0, when that step didn't run. On the import's own
+ * event only, not on a roundup's `extra` ones.
  */
-type ImportTimingProps = MeterStageTimes & ImportTiming & { parseMs?: number };
+type ImportTimingProps = MeterStageTimes &
+  ImportTiming & {
+    parseMs?: number;
+    /** 1 for the first import this page load began, 2 for the next (lib/importTiming). */
+    importIndex?: number;
+  };
 import type { CookbookExportFailureStage } from "@/lib/cookbookPdfExport";
 
 /** Answers to the upgrade dialog's one-tap "Not upgrading today?" question. */
