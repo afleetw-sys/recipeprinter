@@ -79,11 +79,11 @@ export function PrintDialogs({
               <CheckCircleIcon size={22} className="another-recipe__check" />
               <h2 id="print-success-title">Ready for another recipe?</h2>
             </div>
-            <p>Found another recipe you want to keep? RecipePrinter makes it easy to print that one, too.</p>
+            <p>Found another recipe you want to keep? Print a different recipe in the same theme and size.</p>
             <div className="another-recipe__actions">
               <button type="button" className="btn btn-primary w-full" onClick={onSwapRecipe}>
                 <SwapIcon size={ICON_SIZE.md} />
-                Print a different recipe
+                Print another
               </button>
               <button
                 type="button"
