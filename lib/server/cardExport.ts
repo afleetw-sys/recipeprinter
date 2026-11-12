@@ -7,7 +7,7 @@ import {
 import { RECIPEPRINTER_PRO_ENTITLEMENT_ID } from "@/lib/proProduct";
 import type { ProLockReason } from "@/lib/recipePrinterPurchases";
 import { DEFAULT_FONT_SCALE, normalizeFontScale } from "@/lib/fontScale";
-import { normalizePhotoScale } from "@/lib/photoScale";
+import { DEFAULT_PHOTO_SCALE, normalizePhotoScale } from "@/lib/photoScale";
 import type { ExportOutput, ExportPayload } from "@/types/export";
 import type { PrintCardSize, QueueItem, RecipePrintTemplate, Section } from "@/types/recipe";
 
@@ -17,9 +17,8 @@ import type { PrintCardSize, QueueItem, RecipePrintTemplate, Section } from "@/t
  *
  * A download is the same thing as a print, so it sits behind the same Pro
  * locks (`computeProLocks` in lib/recipePrinterPurchases): a premium theme,
- * the 4×6 size, a text size, and more than one recipe. Photos are Pro too,
- * but a free card simply draws none, so they are dropped here, not refused. The print page already
- * refuses those in the browser; this is the same answer where the browser
+ * the 4×6 size, a text or photo size, and more than one recipe. Photos
+ * themselves are free. The print page already refuses those in the browser; this is the same answer where the browser
  * cannot change it. Cookbooks have their own paid export and are refused here.
  */
 
@@ -49,14 +48,6 @@ function cardSections(value: unknown): Section[] | null {
     sections.push({ id: typeof section.id === "string" ? section.id : "cards", title: "", items });
   }
   return sections;
-}
-
-/** The same recipes with no photo to draw: a free card prints none. */
-function withoutPhotos(sections: Section[]): Section[] {
-  return sections.map((section) => ({
-    ...section,
-    items: section.items.map((item) => (item.recipe ? { ...item, recipe: { ...item.recipe, image: undefined } } : item)),
-  }));
 }
 
 function safeFileName(value: unknown, output: ExportOutput): string {
@@ -93,13 +84,15 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
     RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === settings.template)?.id ?? "document";
 
   const fontScale = normalizeFontScale(settings.fontScale);
+  const photoScale = normalizePhotoScale(settings.photoScale);
 
   const pro = entitlements.includes(RECIPEPRINTER_PRO_ENTITLEMENT_ID);
   const ownsTheme = isPremiumTemplate(template) && entitlements.includes(entitlementForTemplate(template) ?? "");
   const reasons: ProLockReason[] = [];
   if (isPremiumTemplate(template) && !pro && !ownsTheme) reasons.push("theme");
   if (isProOnlyCardSize(cardSize) && !pro) reasons.push("card_size");
-  if (fontScale !== DEFAULT_FONT_SCALE && !pro) reasons.push("font_size");
+  // Text and photo size are both Customize settings, Pro on a card.
+  if ((fontScale !== DEFAULT_FONT_SCALE || photoScale !== DEFAULT_PHOTO_SCALE) && !pro) reasons.push("font_size");
   if (recipeCount > 1 && !pro) reasons.push("multi_recipe");
   if (reasons.length > 0) return { ok: false, kind: "locked", reasons };
 
@@ -117,7 +110,7 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
         kind: "printProject",
         createdAt: 0,
         updatedAt: 0,
-        sections: pro ? sections : withoutPhotos(sections),
+        sections,
         itemPlacements: isRecord(project.itemPlacements)
           ? (project.itemPlacements as ExportPayload["project"]["itemPlacements"])
           : undefined,
@@ -125,17 +118,12 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
           cardSize,
           template,
           doubleSided: settings.doubleSided !== false,
-          // Photos on recipe cards are Pro; a recipe's own "In card" choice
-          // is in `itemPlacements`, so the free answer drops the photos
-          // themselves (`withoutPhotos`), not just this default.
-          showPhoto: pro && settings.showPhoto !== false,
+          showPhoto: settings.showPhoto !== false,
           showSourceUrl: Boolean(settings.showSourceUrl),
           showDescription: settings.showDescription !== false,
           showCutLines: Boolean(settings.showCutLines),
           fontScale,
-          // Free cards print no photo (`withoutPhotos`), so their size needs
-          // no lock of its own.
-          photoScale: normalizePhotoScale(settings.photoScale),
+          photoScale,
           cookbookMode: false,
         },
       },

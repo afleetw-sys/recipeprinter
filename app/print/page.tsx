@@ -158,7 +158,6 @@ import {
 import type { PhotoStyleTipState } from "@/components/print/PhotoStyleTip";
 import {
   activeProLockReasons,
-  PHOTO_UPGRADE_TRIGGER,
   captureImportStartsFresh,
   computeProLocks,
   hasMultiRecipeEntitlement,
@@ -231,7 +230,7 @@ import {
 import type { PhotoScale } from "@/lib/photoScale";
 import { accentRootProps, type AccentColor, type SupperUtensil } from "@/lib/themeAccent";
 import { ThemeArtProvider } from "@/lib/themeArt";
-import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, photoSizeOffered, withLook, type ThemeLooks } from "@/lib/themeLooks";
+import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { asDerived, latestHistoryStep, undoEdit, useEditHistory } from "@/lib/editHistory";
 import { HistoryControls } from "@/components/print/HistoryControls";
 import { PhoneMoreMenu } from "@/components/print/PhoneMoreMenu";
@@ -989,10 +988,6 @@ export default function PrintPage() {
   // free themes too. Known only once the purchase state loads, further down,
   // so it is held here for the sheets above it to measure against.
   const [brandHidden, setBrandHidden] = useState(false);
-  // Photos on recipe cards are Pro: a free card draws none. Also known only
-  // further down; a browser last known as Pro turns them on before the
-  // purchase state lands (the effect beside `setBrandHidden`).
-  const [cardPhotosAllowed, setCardPhotosAllowed] = useState(false);
   const {
     hasRecipeBackSide,
     continueOnBack,
@@ -1020,7 +1015,6 @@ export default function PrintPage() {
     cardSize,
     doubleSided,
     photosOn,
-    photosAllowed: cookbookMode || cardPhotosAllowed,
     sourceUrlOn,
     descriptionOn: showDescription,
     brandHidden,
@@ -3466,9 +3460,6 @@ export default function PrintPage() {
   useEffect(() => {
     setBrandHidden(hasProBrandless);
   }, [hasProBrandless]);
-  useEffect(() => {
-    setCardPhotosAllowed(hasProBrandless || (customerInfoStatus !== "ok" && importsKnownUnlimited()));
-  }, [hasProBrandless, customerInfoStatus]);
   const pickTemplate = useFreeThemeOnOpen({
     template,
     setTemplate,
@@ -6387,11 +6378,6 @@ export default function PrintPage() {
         // Says which job it is doing: there is nothing to change yet when the
         // recipe came in without a photo.
         label={shown ? "Photo" : "Add photo"}
-        onUpgrade={
-          !cookbookMode && !cardPhotosAllowed
-            ? () => openProUpgradeDialog(PHOTO_UPGRADE_TRIGGER)
-            : undefined
-        }
         className="recipe-page-toolbar__photo"
         onOpenChange={notePhotoPickerOpen}
         openSignal={photoDialogSignal(recipeId)}
@@ -7633,13 +7619,9 @@ export default function PrintPage() {
           recipePartSizes={projectMeta.meta.pageLooks?.[RECIPES_ADDRESS]?.elements}
           setRecipePartSize={(part, size) => projectMeta.setElementStyle(RECIPES_ADDRESS, part, { textSize: size })}
           customizeProMarked={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}
-          photosShown={photoSizeOffered({
-            cookbookMode,
-            cardPhotosAllowed,
-            // Photos the book actually shows (a book of the cook's own photos
-            // counts only those), not a place where one could go.
-            hasPhotos: coverPhotoCandidates.length > 0,
-          })}
+          // Offered whenever the book has photos (a book of the cook's own
+          // photos counts only those), whatever its Photos choice is.
+          photosShown={coverPhotoCandidates.length > 0}
           anyRecipeHasImage={anyRecipeHasImage}
           anyRecipeHasSourceUrl={anyRecipeHasSourceUrl}
           bookPhotoStyle={bookPhotoStyle}
