@@ -131,8 +131,13 @@ describe("reading the saved-projects list", () => {
           () => (settled = true),
         );
         // Once the read is out (past the loader's dynamic imports)...
+        // Waited for by the clock, not by a count of turns: a hundred turns of
+        // an idle event loop pass in under a millisecond, and a cold import on
+        // a busy CI runner took longer, which failed this on 2026-11-12.
+        // `Date` is real here; only setTimeout is faked.
         const sent = reads.paths.length;
-        for (let i = 0; i < 100 && reads.paths.length === sent; i += 1) {
+        const deadline = Date.now() + 5_000;
+        while (reads.paths.length === sent && Date.now() < deadline) {
           await new Promise((resolve) => globalThis.setImmediate(resolve));
         }
         expect(reads.paths.length, `${name} read sent`).toBe(sent + readCount);
