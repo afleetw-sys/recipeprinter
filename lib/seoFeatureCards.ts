@@ -71,10 +71,10 @@ export const YOURS_CARDS: FeatureCard[] = [
 
 export const PRINT_CARDS: FeatureCard[] = [
   {
-    heading: "4 by 6 recipe cards or letter pages",
+    heading: "4×6 recipe cards or full pages",
     image: "card-in-box",
     body:
-      "A letter page prints for free straight into a binder. A 4 by 6 recipe card that drops into a recipe box is a RecipePrinter Pro feature — cut lines give you a trim guide on card stock, and a recipe too long for one side prints on the back too.",
+      "A full page prints free and goes straight into a binder. A 4×6 card for a recipe box is RecipePrinter Pro, with cut lines to trim by on card stock. A recipe too long for one side continues on the back when Two-sided is on.",
   },
   {
     // Batch and PDF were two cards saying the same thing from either end: how
@@ -82,7 +82,7 @@ export const PRINT_CARDS: FeatureCard[] = [
     heading: "Print multiple recipes at once",
     image: "pdf-search",
     body:
-      "Add as many recipes as you like to the print queue and send them all in one job, for a recipe binder, a week of dinners, or a family cookbook — a RecipePrinter Pro feature. One recipe at a time prints or saves as a PDF free, no account needed.",
+      "Add as many recipes as you like to the print queue and send them all in one job, for a recipe binder, a week of dinners, or a family cookbook. That's RecipePrinter Pro. One recipe at a time prints or saves as a PDF free, no account needed.",
   },
   {
     heading: "Cookbook builder",
@@ -112,7 +112,7 @@ export const POINTS: FeatureCard[] = [
     heading: "It rebuilds it for the paper",
     image: "card-in-box",
     body:
-      "Ingredients down one side, method down the other, set for the size you pick. A long recipe prints on the back too, with cut lines to trim by.",
+      "Ingredients down one side, method down the other, set for the size you pick. A long recipe continues on the back when Two-sided is on, and a 4×6 card adds cut lines to trim by.",
   },
   {
     heading: "Nothing prints until you say so",

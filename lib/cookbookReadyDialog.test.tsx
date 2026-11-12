@@ -102,7 +102,7 @@ const fillInFor = (id: string) => {
   const name = id ? getPrintDestination(id as PrintDestinationId).name : "None";
   fireEvent.click(screen.getByRole("menuitemradio", { name }));
 };
-const save = () => screen.getByRole("button", { name: /save pdf/i }) as HTMLButtonElement;
+const save = () => screen.getByRole("button", { name: /download pdf/i }) as HTMLButtonElement;
 
 describe("the cookbook print dialog", () => {
   it("shows a dedicated cover-only progress view, once the interior has already downloaded", () => {

@@ -190,7 +190,7 @@ export function CookbookReadyDialog({
                 : lastExport
                   ? "Download started"
                   : justPurchased
-                    ? "Your cookbook is ready 🎉"
+                    ? "Your cookbook is ready"
                     : "Print your cookbook"}
           </h2>
         </span>
@@ -549,8 +549,8 @@ function ChooseBook({
           </>
         ) : (
           <>
-            <PrintIcon size={ICON_SIZE.md} />
-            Save PDF
+            <DownloadIcon size={ICON_SIZE.md} />
+            Download PDF
           </>
         )}
       </button>

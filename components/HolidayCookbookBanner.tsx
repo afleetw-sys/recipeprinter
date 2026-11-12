@@ -57,7 +57,7 @@ export function HolidayCookbookBanner({
               // price reads as a membership perk.
               <>Preview up to 10 recipes free, then {price(COOKBOOK_DISCOUNT_PRICE_FALLBACK)} to download or add more to your first cookbook with Pro.</>
             ) : (
-              <>Preview up to 10 recipes free, then {price(COOKBOOK_PRICE_FALLBACK)} to download or add more.</>
+              <>Preview up to 10 recipes free, then {price(COOKBOOK_PRICE_FALLBACK)} per cookbook, paid once, to download or add more.</>
             )}
           </p>
         </div>

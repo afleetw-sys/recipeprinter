@@ -113,10 +113,10 @@ export function PostPrintInviteDialog({
         </h2>
         <p className="mt-cp-2 text-cp-body text-ink-soft">
           {plan === "paid"
-            ? `Your friend gets premium templates, 4×6 cards, and multi-recipe printing, and your next payment moves ${rewardDays} days later.`
+            ? `Your friend gets every theme, 4×6 cards and printing several recipes at once, and your next payment moves ${rewardDays} days later.`
             : plan === "pro"
-              ? `Your friend gets premium templates, 4×6 cards, and multi-recipe printing, and ${rewardDays} more days are added to your Pro.`
-              : "Unlock premium templates, 4×6 cards, and multi-recipe printing for free when your friend joins."}
+              ? `Your friend gets every theme, 4×6 cards and printing several recipes at once, and ${rewardDays} more days are added to your Pro.`
+              : "Unlock every theme, 4×6 cards and printing several recipes at once, free, when your friend joins."}
         </p>
       </div>
       <div className="mt-cp-2 flex flex-col gap-cp-2">

@@ -27,14 +27,14 @@ export const PRINT_CARD_SIZE_OPTIONS: Array<{
    *  conditional at each call site. */
   proOnly: boolean;
 }> = [
-  { id: "letter", label: "Full Page", detail: "Letter", proOnly: false },
+  { id: "letter", label: "Full page", detail: "Letter", proOnly: false },
   // Not "Recipe Card" — that name already means the non-cookbook project
   // TYPE everywhere else (the print-page tabs, /projects, the account
   // dropdown), regardless of which size it's printed at. Calling this size
   // option the same thing implied a Letter-size recipe-cards project was
   // somehow not real "recipe cards", or that this size was the only way to
   // print one.
-  { id: "card-6x4", label: "Card", detail: "4×6", proOnly: true },
+  { id: "card-6x4", label: "4×6", detail: "Card", proOnly: true },
 ];
 
 export const PRO_ONLY_CARD_SIZES: readonly PrintCardSize[] = PRINT_CARD_SIZE_OPTIONS.filter(

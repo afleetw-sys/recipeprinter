@@ -22,9 +22,9 @@ test.beforeEach(async ({ request }) => {
   test.skip(!(await firestoreRunning(request)), "needs the Firestore emulator, which needs Java");
 });
 
-// "Buy & Print" until the book is paid for, on a desktop and a phone alike.
+// "Buy & download" until the book is paid for, on a desktop and a phone alike.
 const printButton = (page: Page) =>
-  page.getByRole("button", { name: /^(Buy & )?Print$/ }).filter({ visible: true });
+  page.getByRole("button", { name: /^(Buy & download|Download)$/ }).filter({ visible: true });
 const printDialog = (page: Page) => page.getByRole("heading", { name: "Print your cookbook" });
 
 test("a signed-in cook's new cookbook is saved to their account without pressing Save", async ({ page, request }) => {
@@ -36,7 +36,7 @@ test("a signed-in cook's new cookbook is saved to their account without pressing
 test("a cookbook that hasn't been paid for can't be exported for free", async ({ page, request }) => {
   await startCookbook(page, request);
 
-  await expect(printButton(page)).toHaveText("Buy & Print");
+  await expect(printButton(page)).toHaveText("Buy & download");
   await printButton(page).click();
 
   // Pressing it starts checkout, which has no RevenueCat to reach here and
@@ -53,12 +53,12 @@ test("a cookbook the account has paid for exports", async ({ page, request }) =>
 
   await page.reload();
 
-  await expect(printButton(page)).toHaveText("Print");
+  await expect(printButton(page)).toHaveText("Download");
   await printButton(page).click();
   await expect(printDialog(page)).toBeVisible();
 });
 
-/* A brand-new book has no recipes yet, and Buy & Print span forever on it
+/* A brand-new book has no recipes yet, and Buy & download span forever on it
    (2026-11-08): it waited for every recipe to be measured, and with none
    there was nothing to wait for, so it never got as far as sign-in or
    checkout. Buying comes first; recipes can be added after. */
@@ -77,7 +77,7 @@ test("an empty cookbook can be bought before it has any recipes, signed out or i
   await expect(page.locator(".cookbook-welcome")).toHaveCount(0);
 
   // Signed out, pressing it asks for an account before checkout.
-  await expect(printButton(page)).toHaveText("Buy & Print");
+  await expect(printButton(page)).toHaveText("Buy & download");
   await printButton(page).click();
   const signInDialog = page.getByRole("dialog", { name: "Save your cookbook and purchase" });
   await expect(signInDialog).toBeVisible({ timeout: 10_000 });

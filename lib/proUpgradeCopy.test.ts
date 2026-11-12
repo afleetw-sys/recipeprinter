@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { IMAGE_IMPORT_LIMIT_TRIGGER, PRO_BENEFITS, proUpgradeCopy } from "@/lib/proUpgradeCopy";
+import { BASIC_BENEFITS, IMAGE_IMPORT_LIMIT_TRIGGER, PRO_BENEFITS, proUpgradeCopy } from "@/lib/proUpgradeCopy";
 import type { ProLockReason } from "@/lib/recipePrinterPurchases";
 
 // Which pitch the dialog makes, not its words: copy changes freely.
@@ -35,10 +35,12 @@ describe("proUpgradeCopy", () => {
     }
   });
 
-  test("hitting the hourly photo limit gets its own title, and the hourly number is no listed benefit", () => {
+  test("hitting the hourly photo limit gets its own title, and the free plan lists no hourly number", () => {
     const copy = proUpgradeCopy([], IMAGE_IMPORT_LIMIT_TRIGGER);
     expect(copy.title).not.toBe(generic.title);
     expect(copy.benefits).toEqual(PRO_BENEFITS);
-    expect(PRO_BENEFITS.some((benefit) => /an hour/.test(benefit))).toBe(false);
+    // Pro names its photo cap so "unlimited" does not overclaim; Free has no
+    // reason to sell a pace.
+    expect(BASIC_BENEFITS.some((benefit) => /an hour/.test(benefit))).toBe(false);
   });
 });
