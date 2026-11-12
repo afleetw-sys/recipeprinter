@@ -86,6 +86,11 @@ import {
 import { adoptAnonymousProject, readAdoptionManifest } from "@/lib/anonymousProjectAdoption";
 import { forgetSaveIntent, rememberSaveIntent, takeSaveIntent } from "@/lib/saveIntent";
 import {
+  forgetCookbookPurchaseAfterSignIn,
+  rememberCookbookPurchaseAfterSignIn,
+  takeCookbookPurchaseAfterSignIn,
+} from "@/lib/purchaseAfterSignIn";
+import {
   forgetPendingPrintAfterCheckout,
   forgetProUpgradeIntent,
   hasPendingPrintAfterCheckout,
@@ -2994,6 +2999,9 @@ export default function PrintPage() {
   function cancelSaveAfterLogin() {
     saveAfterLoginRef.current = false;
     forgetSaveIntent();
+    // A Buy & download waiting on this sign-in goes with it: closing sign-in
+    // is not agreeing to be sent to checkout the next time they sign in.
+    forgetCookbookPurchaseAfterSignIn();
   }
 
   /** `projectIdOverride` points this save at a specific document — used when
@@ -3596,6 +3604,9 @@ export default function PrintPage() {
       if (usedDiscount) setFirstCookbookGrantedAt(Date.now());
     },
     onSignInRequired: () => {
+      // Written down before sign-in can take the page away (a phone's
+      // redirect), so the purchase carries on once there is an account.
+      rememberCookbookPurchaseAfterSignIn(cookbookProjectId);
       setCookPilotLoginReason("purchase");
       setShowCookPilotLogin(true);
     },
@@ -3618,6 +3629,31 @@ export default function PrintPage() {
       postPrintActionRef.current = "none";
     },
   });
+
+  // Buy & download, pressed signed out, carries on once there is an account:
+  // the same press again, now that checkout can open. On a phone this runs on
+  // the page the sign-in redirect came back to, so it waits for what that page
+  // has to rebuild first: the book itself (the record is for one book, and a
+  // different id here would spend it on nothing) and whether the account
+  // already owns it, so a book bought elsewhere goes straight to its download.
+  useEffect(() => {
+    if (!cookPilotUser || !projectAttachChecked || projectLoading || !items) return;
+    if (!projectMeta.hydrated || !projectMeta.meta.cookbookMode) return;
+    if (cookbookAccessStatus === "loading") return;
+    if (!takeCookbookPurchaseAfterSignIn(cookbookProjectId)) return;
+    void handlePrint({ deferred: true });
+    // The uid, not the User object — see the save-intent effect above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    cookPilotUser?.uid,
+    projectAttachChecked,
+    projectLoading,
+    items,
+    projectMeta.hydrated,
+    projectMeta.meta.cookbookMode,
+    cookbookAccessStatus,
+    cookbookProjectId,
+  ]);
   const [showProUpgradeDialog, setShowProUpgradeDialog] = useState(false);
   const [cardDownloadBusy, setCardDownloadBusy] = useState(false);
   // What the split button's main half does: the last of Print, PDF, PNG and

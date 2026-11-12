@@ -9,6 +9,7 @@ import { HomeKindTabs, useHomeKind, type ImportKind } from "@/components/HomeKin
 import { useQueue } from "@/lib/queue";
 import { useProjectMeta } from "@/lib/project";
 import { fileProjectLocally } from "@/lib/localProjects";
+import { purchaseReturnPath } from "@/lib/purchaseAfterSignIn";
 import { stashPendingImport, type PendingImport } from "@/lib/pendingImport";
 import { imageLabel, validateImageFiles } from "@/lib/imageImport";
 import { track } from "@/lib/analytics";
@@ -81,6 +82,8 @@ export function PrinterWorkspace({
   // Shared with the page around it, which changes with the tab too.
   const { kind: importKind } = useHomeKind();
   const leftCookbookRef = useRef(false);
+  /** This load is the end of a purchase's sign-in, already sent back to it. */
+  const sentBackRef = useRef(false);
   const warmedRef = useRef(false);
 
   /**
@@ -134,7 +137,17 @@ export function PrinterWorkspace({
    * a queue that is only momentarily empty.
    */
   useEffect(() => {
-    if (!hydrated || !metaHydrated || leftCookbookRef.current) return;
+    if (leftCookbookRef.current || sentBackRef.current) return;
+    // Not a visit home: a sign-in redirect, made in the middle of a purchase
+    // somewhere else, came back here. Send them back to finish it, and leave
+    // the book alone, because it is what they are paying for.
+    const purchasePage = purchaseReturnPath();
+    if (purchasePage) {
+      sentBackRef.current = true;
+      router.replace(purchasePage);
+      return;
+    }
+    if (!hydrated || !metaHydrated) return;
     const hasPrintable = items.some((item) => item.status === "ready" && item.recipe);
     // A project with recipes is filed before it is released, and a shelf that
     // can't be written to (private mode, quota) means we keep the working copy
@@ -149,7 +162,7 @@ export function PrinterWorkspace({
     leftCookbookRef.current = true;
     clear();
     startNewProject();
-  }, [hydrated, metaHydrated, meta, items, clear, startNewProject]);
+  }, [hydrated, metaHydrated, meta, items, clear, startNewProject, router]);
 
   /**
    * Start fetching the print page the moment someone touches the importer.
