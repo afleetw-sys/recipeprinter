@@ -487,6 +487,10 @@ export const STRIPE_JS_URL = "https://js.stripe.com/dahlia/stripe.js";
  */
 export function loadStripeEarly(): void {
   if (typeof document === "undefined") return;
+  // No RevenueCat, no checkout to open (`revenueCatApiKey` refuses it), so
+  // nothing to fetch Stripe for. Since this runs before the account link, it
+  // would otherwise reach Stripe on builds that can never take a payment.
+  if (!process.env.NEXT_PUBLIC_REVENUECAT_WEB_API_KEY) return;
   if (document.querySelector('script[src^="https://js.stripe.com/"]')) return;
   const script = document.createElement("script");
   script.src = STRIPE_JS_URL;
