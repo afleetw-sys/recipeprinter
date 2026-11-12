@@ -20,7 +20,22 @@ import type {
   RecipePrintTemplate,
 } from "@/types/recipe";
 import type { FeedbackType } from "@/lib/feedback";
-import type { MeterStage } from "@/lib/importMeter";
+import type { MeterStage, MeterStageTimes } from "@/lib/importMeter";
+import type { ImportTiming } from "@/lib/importTiming";
+
+/**
+ * Where an import's time went (audit F1, 2026-11-12): the meter's stages, the
+ * parse itself (`parseMs`, every source), and for a link the route's breakdown
+ * of it. Durations in whole ms, one warm/cold flag and a count, nothing else.
+ * A field is absent, never 0, when that step didn't run. On the import's own
+ * event only, not on a roundup's `extra` ones.
+ */
+type ImportTimingProps = MeterStageTimes &
+  ImportTiming & {
+    parseMs?: number;
+    /** 1 for the first import this page load began, 2 for the next (lib/importTiming). */
+    importIndex?: number;
+  };
 import type { CookbookExportFailureStage } from "@/lib/cookbookPdfExport";
 
 /** Answers to the upgrade dialog's one-tap "Not upgrading today?" question. */
@@ -260,7 +275,8 @@ type EventProps = {
      * read without the model never report one.
      */
     language?: string;
-  } & Partial<ImportContextProps>;
+  } & Partial<ImportContextProps> &
+    ImportTimingProps;
   /**
    * An import that succeeded but was then substantially rewritten by hand: the
    * parser read it wrong. Counts only, never text; the text goes to
@@ -322,7 +338,7 @@ type EventProps = {
     botVendor?: BotWallVendor;
     /** As on `recipe_imported`. */
     meterMs?: number;
-  };
+  } & ImportTimingProps;
   /**
    * The import meter didn't answer in time or answered with an error, so the
    * import went ahead without it (it always fails open).
