@@ -30,6 +30,28 @@ const firebaseAuthProxy = firebaseProjectId
     ]
   : [];
 
+// Short links for social profile bios (e.g. recipeprinter.com/ig). A bio shows
+// the URL, and a UTM string reads as spam there. Temporary (307), not
+// permanent, so a destination can change without browsers having cached the
+// old one. lib/attribution.ts reads the UTMs on the page they land on.
+const SOCIAL_BIO_SOURCES = [
+  { path: "ig", utmSource: "instagram" },
+  { path: "tt", utmSource: "tiktok" },
+  { path: "fb", utmSource: "facebook" },
+];
+const socialBioRedirects = SOCIAL_BIO_SOURCES.flatMap(({ path, utmSource }) => {
+  const utm = (content) =>
+    `utm_source=${utmSource}&utm_medium=organic_social&utm_campaign=bio&utm_content=${content}`;
+  return [
+    { source: `/${path}`, destination: `/?${utm("recipeprinter")}`, permanent: false },
+    {
+      source: `/cookbook-maker/${path}`,
+      destination: `/cookbook-maker?${utm("cookbook")}`,
+      permanent: false,
+    },
+  ];
+});
+
 const nextConfig = {
   // Allows an isolated build dir (e.g. when a second dev server is running
   // against this checkout) via NEXT_DIST_DIR. Defaults to .next, so prod and
@@ -78,6 +100,7 @@ const nextConfig = {
         destination: "/recipe-card-printer",
         permanent: true,
       },
+      ...socialBioRedirects,
     ];
   },
 
