@@ -264,67 +264,60 @@ export function PaprikaImportSource({
       {/* Where the cook is, as two numbered steps. Opening the file used to
           look like the whole import: a buyer took the list that followed for
           a dead end and paid for a cookbook to get their recipes in. Step one
-          is ticked off with the count it brought in, so the list below reads
-          as the step still to do, not the result. */}
+          is ticked off and holds the file it brought in, with Change beside
+          it, so the list below reads as the step still to do. */}
       <ol className="import-steps" aria-label="Importing from Paprika">
         <li className="import-steps__step import-steps__step--done">
-          <span className="import-steps__num" aria-hidden>
-            <CheckIcon size={ICON_SIZE.sm} />
-          </span>
-          <span>
-            Import your file
-            <span className="import-steps__detail">
-              {entries.length} {entries.length === 1 ? "recipe" : "recipes"} found
+          <div className="import-steps__head">
+            <span className="import-steps__num" aria-hidden>
+              <CheckIcon size={ICON_SIZE.sm} />
             </span>
-          </span>
+            Import your file
+          </div>
+          {/* The open file, as a thing rather than a sentence: the app's own
+              mark, the name without its extension (Paprika's timestamp is the
+              part that tells two exports apart), and one button to swap it. */}
+          <div className="import-steps__body flex items-center gap-cp-3 rounded-xl bg-page p-cp-2">
+            <PaprikaLogoIcon size={26} />
+            <span className="min-w-0 flex-1">
+              <span
+                className="block truncate text-cp-body font-semibold text-ink"
+                // The full name, extension included, for anyone who wants it.
+                title={library.fileName}
+              >
+                {displayFileName(library.fileName)}
+              </span>
+              <span className="block text-cp-caption text-ink-soft">
+                {entries.length} {entries.length === 1 ? "recipe" : "recipes"} found
+              </span>
+            </span>
+            <button
+              type="button"
+              className="btn btn-secondary btn-compact flex-shrink-0"
+              onClick={onChooseAnotherFile}
+            >
+              <UploadIcon size={ICON_SIZE.sm} />
+              Change
+            </button>
+          </div>
+          {/* Under the file whose Change caused it. The library on screen is
+              still the old one, so this says what did not happen rather than
+              replacing the list with an error. */}
+          {replaceError && (
+            <p className="import-steps__body field-error" role="alert">
+              {replaceError}
+            </p>
+          )}
         </li>
+        {/* Last, and the list follows it directly: the list's Add button pins
+            itself to the bottom of the scroller, so nothing can sit under it. */}
         <li className="import-steps__step" aria-current="step">
-          <span className="import-steps__num" aria-hidden>2</span>
-          <span>{singleSelect ? "Pick a recipe" : "Pick the recipes you want"}</span>
+          <div className="import-steps__head">
+            <span className="import-steps__num" aria-hidden>2</span>
+            {singleSelect ? "Pick a recipe" : "Pick the recipes you want"}
+          </div>
         </li>
       </ol>
-
-      {/* Which file this library came from, ABOVE the list rather than under
-          it. It is a caption on the source, so it reads better next to the
-          heading than as a trailing line — and structurally it has to be here,
-          because the list's Add button pins itself to the bottom of the
-          scroller and anything left below the list would stop it reaching
-          there, leaving it floating over a strip of recipes it could not
-          cover. */}
-      {/* The open file, as a thing rather than a sentence. This was the line
-          "From Export 2026-09-01 11.12.03 All Recipes.paprikarecipes", which is
-          a path read aloud: the extension is machine-facing, the timestamp is
-          the only part that distinguishes one export from another, and none of
-          it looks like the rest of the product. A tinted row with the app's own
-          mark, the name without its extension, and one button to swap it.  */}
-      <div className="flex items-center gap-cp-3 rounded-xl bg-page p-cp-2">
-        <PaprikaLogoIcon size={26} />
-        <span
-          className="min-w-0 flex-1 truncate text-cp-body font-semibold text-ink"
-          // The full name, extension included, for anyone who does want it.
-          title={library.fileName}
-        >
-          {displayFileName(library.fileName)}
-        </span>
-        <button
-          type="button"
-          className="btn btn-secondary btn-compact flex-shrink-0"
-          onClick={onChooseAnotherFile}
-        >
-          <UploadIcon size={ICON_SIZE.sm} />
-          Change
-        </button>
-      </div>
-
-      {/* Directly under the banner, which is where the Change button that
-          caused it lives. The library on screen is still the old one, so the
-          message has to say what did not happen rather than replacing the
-          list with an error. */}
-      {replaceError && (
-        <p className="field-error" role="alert">
-          {replaceError}
-        </p>
-      )}
 
       <RecipeSourceList
         heading="Paprika recipes"
