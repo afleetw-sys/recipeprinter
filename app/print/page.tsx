@@ -3768,6 +3768,9 @@ export default function PrintPage() {
     onImportLimitReached: () => openProUpgradeDialog(IMPORT_LIMIT_TRIGGER),
     bookCap: bookRoom === null ? null : FREE_COOKBOOK_RECIPES,
     onBookCapReached: handleBookCapReached,
+    // Most of a batch lands off screen (the page shows one recipe, and the
+    // rail is hidden on a phone), so the count is news: rule 4 in useToast.
+    onBatchAdded: (count) => showToast(`Imported ${count} recipes`),
     importContext: cookbookMode
       ? { context: "cookbook", ...(cookbookProjectId ? { cookbookId: cookbookProjectId } : {}) }
       : { context: "recipe_cards" },

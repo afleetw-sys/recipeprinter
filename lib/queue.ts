@@ -581,6 +581,7 @@ export function useQueue() {
   // (see lib/cookbookFreeSize). Counted against the recipes in the queue.
   const bookCapRef = useRef<number | null>(null);
   const onBookCapReachedRef = useRef<((info: BookCapInfo) => void) | undefined>(undefined);
+  const onBatchAddedRef = useRef<((count: number) => void) | undefined>(undefined);
   /** How many more recipes the book can take right now; null for no cap. */
   const bookRoom = (): number | null =>
     bookCapRef.current === null
@@ -623,6 +624,10 @@ export function useQueue() {
       bookCap?: number | null;
       /** Recipes arrived that the book's free size had no room for. */
       onBookCapReached?: (info: BookCapInfo) => void;
+      /** One action brought in more than one recipe (a roundup link, a
+          multi-recipe photo, a library pick) and all of them landed. Not
+          called when `onBookCapReached` already said how many were kept. */
+      onBatchAdded?: (count: number) => void;
       importContext?: ImportContextProps;
     }) => {
       singleRecipeOnlyRef.current = config.singleRecipeOnly;
@@ -633,6 +638,7 @@ export function useQueue() {
       onImportLimitReachedRef.current = config.onImportLimitReached;
       bookCapRef.current = config.bookCap ?? null;
       onBookCapReachedRef.current = config.onBookCapReached;
+      onBatchAddedRef.current = config.onBatchAdded;
       importContextRef.current = config.importContext;
     },
     [],
@@ -1016,6 +1022,7 @@ export function useQueue() {
           const base = itemsRef.current.find((it) => it.id === id);
           const extras = extraItemsFor(base, origin.hostname ?? "", rest);
           commit([...itemsRef.current, ...extras]);
+          if (rest.length === allRest.length) onBatchAddedRef.current?.(1 + rest.length);
         }
         // After the extras are in, so a cookbook's `bookRecipes` counts them.
         // One event per recipe, with the bloomed ones marked `extra`.
@@ -1299,12 +1306,14 @@ export function useQueue() {
       }
       // An unbought cookbook's free size, for recipes that arrive ready.
       const fitting = fitBookRoom(nextRecipes, bookRoom());
-      if (fitting.length < nextRecipes.length) {
+      const capped = fitting.length < nextRecipes.length;
+      if (capped) {
         onBookCapReachedRef.current?.({ found: nextRecipes.length, kept: fitting.length });
         nextRecipes = fitting;
       }
       if (nextRecipes.length === 0) return 0;
       commit([...kept, ...nextRecipes]);
+      if (!capped && nextRecipes.length > 1) onBatchAddedRef.current?.(nextRecipes.length);
       // These can arrive from ANOTHER document: a Paprika pick made on the home
       // page is handed to /print through lib/pendingImport, and an object URL
       // dies with the document that minted it. A soft navigation keeps the same
