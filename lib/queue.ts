@@ -518,6 +518,9 @@ function extraItemsFor(base: QueueItem | undefined, fallbackSource: string, reci
 
 /** Options every parser-backed `add*` takes. */
 export interface AddImportOptions {
+  /** Swap recipe: this recipe is being replaced by the one added, so it
+      doesn't count toward the one-recipe card limit (see `addReadyRecipes`). */
+  replacesId?: string;
   /**
    * This import lands in a cookbook that is being built in the same tick, so
    * `cookbookMode` isn't true yet: never meter it (see `meterGateFor`), and
@@ -1280,7 +1283,9 @@ export function useQueue() {
       // (see `singleSelect`/`locked` on RecipeSourceList), so this only ever
       // bites if a commit somehow arrives oversized anyway. Never drop
       // silently: whatever this trims, `onMultiRecipeBlocked` says so.
-      const kept = withoutFailedIfSingle(itemsRef.current);
+      // A swap's pick takes the place of `replacesId`, which the page removes
+      // once it lands, so that recipe doesn't count against the one allowed.
+      const kept = withoutFailedIfSingle(itemsRef.current).filter((item) => item.id !== opts?.replacesId);
       // A pick handed over from the homepage's Cookbook tab arrives before the
       // book is switched on, so the gate above still reads "cards". It is a
       // book, and a book holds every recipe it was given (see `meterExempt`).

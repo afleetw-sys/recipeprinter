@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircleIcon, ICON_SIZE, PlusIcon, TrashIcon, XIcon } from "@/components/icons";
+import { CheckCircleIcon, ICON_SIZE, SwapIcon, TrashIcon, XIcon } from "@/components/icons";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Dialog } from "@/components/Dialog";
 
@@ -9,7 +9,7 @@ export function PrintDialogs({
   showDonateDialog,
   onCloseDonateDialog,
   onOpenFeedbackDialog,
-  onStartNewRecipe,
+  onSwapRecipe,
   showDeleteRecipeDialog,
   deleteItemTitle,
   deleteItemDescription,
@@ -24,7 +24,7 @@ export function PrintDialogs({
   onCloseDonateDialog: () => void;
   onOpenFeedbackDialog: () => void;
   /** The dialog's main action: leave for a fresh recipe. */
-  onStartNewRecipe: () => void;
+  onSwapRecipe: () => void;
   showDeleteRecipeDialog: boolean;
   deleteItemTitle: string;
   deleteItemDescription: string;
@@ -79,11 +79,11 @@ export function PrintDialogs({
               <CheckCircleIcon size={22} className="another-recipe__check" />
               <h2 id="print-success-title">Ready for another recipe?</h2>
             </div>
-            <p>Found another recipe you want to keep? RecipePrinter makes it easy to print that one, too.</p>
+            <p>Found another recipe you want to keep? Print a different recipe in the same theme and size.</p>
             <div className="another-recipe__actions">
-              <button type="button" className="btn btn-primary w-full" onClick={onStartNewRecipe}>
-                <PlusIcon size={ICON_SIZE.md} />
-                Start a new recipe
+              <button type="button" className="btn btn-primary w-full" onClick={onSwapRecipe}>
+                <SwapIcon size={ICON_SIZE.md} />
+                Print another
               </button>
               <button
                 type="button"

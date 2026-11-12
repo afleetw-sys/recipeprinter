@@ -203,8 +203,9 @@ interface PageRailProps {
   previewDescriptionOn: boolean;
   organizeMode: boolean;
   enterOrganizeMode: () => void;
-  /** Recipe cards only: set this print aside and start again from one new
-      recipe. The other half of "Add more recipes", and the free one. */
+  /** Recipe cards only: open the Add dialog to replace the recipe on screen,
+      keeping the deck and its settings. The other half of "Add more recipes",
+      and the free one. */
   onPrintDifferentRecipe: () => void;
   exitOrganizeMode: () => void;
   projectMeta: ReturnType<typeof useProjectMeta>;
@@ -816,15 +817,12 @@ export function PageRail(props: PageRailProps) {
                 type="button"
                 className="btn btn-secondary btn-compact recipe-page-rail__swap"
                 onClick={onPrintDifferentRecipe}
-                /* The full phrase doesn't fit the rail on one line, and wrapped
-                   it read as the heaviest thing in the panel. Under "Add more
-                   recipes" the short form is enough to tell the two apart,
-                   and it is the phone toolbar's word too. */
+                /* "Print a different recipe" doesn't fit the rail on one line,
+                   and wrapped it read as the heaviest thing in the panel. */
                 title="Print a different recipe"
-                aria-label="Print a different recipe"
               >
                 <SwapIcon size={ICON_SIZE.md} />
-                <span>Swap recipe</span>
+                <span>Print another</span>
               </button>
             )}
             {projectMeta.meta.cookbookMode && (

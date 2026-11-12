@@ -25,6 +25,17 @@ describe("fonts", () => {
     expect(offenders.filter((file) => !file.endsWith("selfHostedFonts.test.ts"))).toEqual([]);
   });
 
+  // The download is drawn by Linux Chromium, which has none of a Mac's system
+  // faces and answers a request for one with whatever fontconfig calls its
+  // stand-in (Liberation Serif for "Times New Roman"), so a card face that
+  // names a system font first previews in one face and downloads in another.
+  it("on a recipe card start with a bundled face, so a download matches the preview", () => {
+    const css = readFileSync("app/print/print.css", "utf8");
+    const stacks = Array.from(css.matchAll(/(?:^|[;{\s])(font-family|--recipe-[a-z0-9-]*font)\s*:\s*([^;}]+)/g), (match) => `${match[1]}: ${match[2]!.trim()}`);
+    expect(stacks.length).toBeGreaterThan(0);
+    expect(stacks.filter((stack) => !/:\s*(var\(--|inherit\b|initial\b|unset\b)/.test(stack))).toEqual([]);
+  });
+
   it("each come with their licence", () => {
     const families = readdirSync("app/fonts").filter((name) => statSync(join("app/fonts", name)).isDirectory());
     expect(families.length).toBeGreaterThan(0);

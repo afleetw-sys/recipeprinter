@@ -468,6 +468,15 @@ export default function PrintPage() {
   const [cookbookJustPurchased, setCookbookJustPurchased] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showAddRecipeDialog, setShowAddRecipeDialog] = useState(false);
+  /** The Add dialog is open for Swap recipe (its title, and its library picks one). */
+  const [swapDialogOpen, setSwapDialogOpen] = useState(false);
+  /**
+   * The recipe Swap recipe is replacing. `baseline` is null until the cook adds
+   * something in the dialog, then holds the queue ids from before that add, so
+   * the first recipe outside it is the replacement. A ref, not state: the
+   * dialog adds and closes in one click, and the close must see the add.
+   */
+  const swapRef = useRef<{ oldId: string; baseline: ReadonlySet<string> | null } | null>(null);
   /** Opened from the cookbook welcome's "Start adding recipes": titled for the
       first recipe. Set by that button only, not by "the book is empty", so a
       pick from a recipe app (which adds without closing) can't retitle the
@@ -3135,15 +3144,14 @@ export default function PrintPage() {
   }
 
   /**
-   * "Swap recipe" (the rail's button and the phone toolbar's tile).
-   * The front door files this print and opens the importer, the way the logo
-   * does. Not cleared in place: the open project's id is what autosave writes
-   * to, so swapping its recipe here would overwrite the saved print rather
-   * than start a new one.
+   * "Print another" (the rail and the phone toolbar) and "Print a different
+   * recipe" (the "Ready for another recipe?" dialog). Opens the same Add dialog as Add more,
+   * and the recipe the cook brings in takes the current one's place: same
+   * deck, same theme and size. See `swapRecipe`.
    */
   function printDifferentRecipe() {
     track("print_different_recipe_clicked", { recipeCount });
-    handleNavigateHome();
+    swapRecipe();
   }
 
   /**
@@ -5034,6 +5042,16 @@ export default function PrintPage() {
         moveProjectItem(item.id, pendingAddSectionId, insertAt + offset);
       });
     }
+    // Swap recipe: the first recipe the swap brought in has taken the old
+    // one's place (it was moved to that index above), so the old one goes now.
+    const swapping = swapRef.current;
+    const swappedIn = swapping?.baseline ? newlyReady.find((item) => !swapping.baseline!.has(item.id)) : undefined;
+    if (swapping && swappedIn) {
+      swapRef.current = null;
+      setJobIds((current) => (current ?? []).filter((jid) => jid !== swapping.oldId));
+      queue.remove(swapping.oldId);
+      setPendingFocusRecipeId(swappedIn.id);
+    }
     setPendingFocusRecipeId((current) => current ?? newlyReady[0]!.id);
     setSettlingIds(new Set(newlyReady.map((item) => item.id)));
     // A cookbook recipe imported from the cook's own photo arrives with that
@@ -5049,6 +5067,16 @@ export default function PrintPage() {
     // `photoModeFor`/`setItemPhotoMode` are read at arrival time only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queue.items, items, itemIdsForSection, isOursToAwait, moveProjectItem, pendingAddIndex, pendingAddSectionId, sections]);
+
+  // A swap whose dialog added nothing new (a link already in the deck), or
+  // whose import failed, is over: the current recipe stays.
+  useEffect(() => {
+    const swapping = swapRef.current;
+    if (!swapping?.baseline) return;
+    const fresh = queue.items.filter((item) => !swapping.baseline!.has(item.id));
+    const oldGone = !queue.items.some((item) => item.id === swapping.oldId);
+    if (oldGone || fresh.length === 0 || fresh.every((item) => item.status === "error")) swapRef.current = null;
+  }, [queue.items]);
 
   // Held just long enough for the animation to finish. A lingering class would
   // replay it on the next render the element happens to survive.
@@ -5706,9 +5734,14 @@ export default function PrintPage() {
     liveStatus: customerInfoStatus,
     profileSettled: Boolean(cookPilotUser) && profileSettledUid === cookPilotUser?.uid,
   });
-  const whenProKnown = useRunWhenKnown<{ kind: "add"; navItem: NavItem | null } | { kind: "replace"; id: string }>(
-    proKnown,
-    (intent) => (intent.kind === "add" ? openAddRecipeBelow(intent.navItem) : tryAnotherImportWay(intent.id)),
+  const whenProKnown = useRunWhenKnown<
+    { kind: "add"; navItem: NavItem | null } | { kind: "replace"; id: string } | { kind: "swap" }
+  >(proKnown, (intent) =>
+    intent.kind === "add"
+      ? openAddRecipeBelow(intent.navItem)
+      : intent.kind === "replace"
+        ? tryAnotherImportWay(intent.id)
+        : swapRecipe(),
   );
   function openAddRecipeBelow(navItem: NavItem | null = activeNavItem) {
     if (!proKnown) {
@@ -5747,7 +5780,47 @@ export default function PrintPage() {
     if (sectionId) moveProjectItem(id, sectionId, target?.index ?? itemIdsForSection(sectionId).length);
     setPendingFocusRecipeId(id);
   }
+  /**
+   * Swap recipe: the Add dialog, aimed at the recipe on screen rather than the
+   * slot after it. Nothing is removed when it opens. The current recipe goes
+   * only once the new one has landed (the arrival effect above), so cancelling,
+   * a failed import or a link that's already here all leave it untouched.
+   *
+   * Not behind the multi-recipe gate: the deck still holds one recipe after,
+   * which is why this is the free account's way to a different recipe. It is
+   * still an import, so a spent allowance still meets the paywall.
+   */
+  function swapRecipe() {
+    if (!proKnown) {
+      whenProKnown({ kind: "swap" });
+      return;
+    }
+    if (importPaywallIfSpent()) return;
+    const onScreen = activeRecipeId && items?.some((item) => item.id === activeRecipeId) ? activeRecipeId : null;
+    const oldId = onScreen ?? items?.find((item) => item.status === "ready" && item.recipe)?.id ?? null;
+    if (!oldId) {
+      openAddRecipeBelow();
+      return;
+    }
+    const target = replacementTarget(oldId, sections);
+    setPendingAddSectionId(target?.sectionId ?? null);
+    setPendingAddIndex(target?.index ?? 0);
+    // The loading card waits beside the recipe it's replacing.
+    setPendingAddAfterRecipeId(oldId);
+    swapRef.current = { oldId, baseline: null };
+    setSwapDialogOpen(true);
+    setShowAddRecipeDialog(true);
+  }
+  /** Something was committed in a Swap dialog: from here, the next new recipe replaces. */
+  function armSwap() {
+    const swapping = swapRef.current;
+    if (swapping && !swapping.baseline) {
+      swapRef.current = { oldId: swapping.oldId, baseline: new Set(queue.items.map((item) => item.id)) };
+    }
+  }
   function openAddRecipeDialogAt(navItem: NavItem | null) {
+    swapRef.current = null;
+    setSwapDialogOpen(false);
     const target = addRecipeTarget(navItem, sections);
     setPendingAddSectionId(target?.sectionId ?? sections[0]?.id ?? null);
     setPendingAddIndex(target?.index ?? 0);
@@ -5775,6 +5848,8 @@ export default function PrintPage() {
       openProUpgradeDialog("add_more_recipes");
       return;
     }
+    swapRef.current = null;
+    setSwapDialogOpen(false);
     // Read before the remove, while the failed item still has a place.
     const target = replacementTarget(id, sections);
     queue.remove(id);
@@ -7683,7 +7758,7 @@ export default function PrintPage() {
               {cookbookMode ? "Add" : recipeCount > 0 ? "Add more" : "Add recipe"}
             </button>
             {/* Recipe cards' other way forward, beside Add more: the desktop
-                rail's "Swap recipe". Its own tile rather than a choice
+                rail's "Print another". Its own tile rather than a choice
                 behind Add, since it is the free one and there is room for it
                 in a toolbar that has no Pages tile. */}
             {!cookbookMode && recipeCount > 0 && (
@@ -7691,14 +7766,13 @@ export default function PrintPage() {
                 type="button"
                 className="recipe-mobile-toolbar__btn"
                 onClick={printDifferentRecipe}
-                aria-label="Print a different recipe"
               >
                 <span className="recipe-mobile-toolbar__btn-icon">
                   <SwapIcon size={ICON_SIZE.lg} />
                 </span>
                 {/* "Different recipe" widened this tile past its neighbours
-                    and pushed Themes off a phone's edge. The rail says the same. */}
-                Swap recipe
+                    and pushed Themes off a phone's edge. */}
+                Print another
               </button>
             )}
             {/* Pages: the same overview the page count's caret opens, a strip of
@@ -8017,9 +8091,9 @@ export default function PrintPage() {
         showDonateDialog={showDonateDialog}
         onCloseDonateDialog={() => setShowDonateDialog(false)}
         onOpenFeedbackDialog={() => setShowFeedbackDialog(true)}
-        onStartNewRecipe={() => {
+        onSwapRecipe={() => {
           setShowDonateDialog(false);
-          handleNavigateHome();
+          printDifferentRecipe();
         }}
         showDeleteRecipeDialog={pendingDelete !== null}
         deleteItemTitle={pendingDelete?.title ?? "this item"}
@@ -8154,17 +8228,33 @@ export default function PrintPage() {
         onClose={() => {
           setShowAddRecipeDialog(false);
           setAddingFirstRecipe(false);
+          setSwapDialogOpen(false);
+          // Closed without adding anything: the swap never happened.
+          if (swapRef.current && !swapRef.current.baseline) swapRef.current = null;
         }}
-        title={addingFirstRecipe ? "Add your first recipe" : undefined}
+        title={addingFirstRecipe ? "Add your first recipe" : swapDialogOpen ? "Print a different recipe" : undefined}
         items={queue.items}
-        onAddUrl={queue.addUrl}
-        onAddImageFiles={queue.addImageFiles}
-        onAddText={queue.addText}
-        onAddReadyRecipes={queue.addReadyRecipes}
+        onAddUrl={(url) => {
+          armSwap();
+          queue.addUrl(url);
+        }}
+        onAddImageFiles={(files, label) => {
+          armSwap();
+          queue.addImageFiles(files, label);
+        }}
+        onAddText={(text) => {
+          armSwap();
+          queue.addText(text);
+        }}
+        onAddReadyRecipes={(recipes) => {
+          armSwap();
+          const replacesId = swapRef.current?.oldId;
+          return queue.addReadyRecipes(recipes, replacesId ? { replacesId } : undefined);
+        }}
         lastSource={projectMeta.meta.lastImportSource ?? "url"}
         onSourceUsed={projectMeta.setLastImportSource}
-        libraryLocked={multiRecipeAddLocked}
-        librarySingleSelect={singleRecipeOnly && !multiRecipeAddLocked}
+        libraryLocked={multiRecipeAddLocked && !swapDialogOpen}
+        librarySingleSelect={swapDialogOpen || (singleRecipeOnly && !multiRecipeAddLocked)}
         onLibraryLockedTap={() => {
           track("pro_feature_encountered", { feature: "batch_print", source: "add_more_recipes" });
           openProUpgradeDialog("add_more_recipes");
