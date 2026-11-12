@@ -40,7 +40,7 @@ test("a pasted link becomes a printable recipe with every ingredient and step", 
   }
 });
 
-test("importing never opens Ready for another recipe?, however many cards came before", async ({ page }) => {
+test("importing never opens Another recipe?, however many cards came before", async ({ page }) => {
   // This browser has imported a card already, so this is the second: the
   // import that used to open it. The dialog is for after a print or a
   // download only (Amelia, 2026-11-11).
