@@ -3144,8 +3144,8 @@ export default function PrintPage() {
   }
 
   /**
-   * "Swap recipe" (the rail's button, the phone toolbar's tile, and the
-   * "Ready for another recipe?" dialog). Opens the same Add dialog as Add more,
+   * "Print another" (the rail and the phone toolbar) and "Print a different
+   * recipe" (the "Ready for another recipe?" dialog). Opens the same Add dialog as Add more,
    * and the recipe the cook brings in takes the current one's place: same
    * deck, same theme and size. See `swapRecipe`.
    */
@@ -7758,7 +7758,7 @@ export default function PrintPage() {
               {cookbookMode ? "Add" : recipeCount > 0 ? "Add more" : "Add recipe"}
             </button>
             {/* Recipe cards' other way forward, beside Add more: the desktop
-                rail's "Swap recipe". Its own tile rather than a choice
+                rail's "Print another". Its own tile rather than a choice
                 behind Add, since it is the free one and there is room for it
                 in a toolbar that has no Pages tile. */}
             {!cookbookMode && recipeCount > 0 && (
@@ -7771,8 +7771,8 @@ export default function PrintPage() {
                   <SwapIcon size={ICON_SIZE.lg} />
                 </span>
                 {/* "Different recipe" widened this tile past its neighbours
-                    and pushed Themes off a phone's edge. The rail says the same. */}
-                Swap recipe
+                    and pushed Themes off a phone's edge. */}
+                Print another
               </button>
             )}
             {/* Pages: the same overview the page count's caret opens, a strip of
@@ -8232,7 +8232,7 @@ export default function PrintPage() {
           // Closed without adding anything: the swap never happened.
           if (swapRef.current && !swapRef.current.baseline) swapRef.current = null;
         }}
-        title={addingFirstRecipe ? "Add your first recipe" : swapDialogOpen ? "Swap recipe" : undefined}
+        title={addingFirstRecipe ? "Add your first recipe" : swapDialogOpen ? "Print a different recipe" : undefined}
         items={queue.items}
         onAddUrl={(url) => {
           armSwap();

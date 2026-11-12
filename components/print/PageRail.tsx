@@ -817,14 +817,12 @@ export function PageRail(props: PageRailProps) {
                 type="button"
                 className="btn btn-secondary btn-compact recipe-page-rail__swap"
                 onClick={onPrintDifferentRecipe}
-                /* The full phrase doesn't fit the rail on one line, and wrapped
-                   it read as the heaviest thing in the panel. Under "Add more
-                   recipes" the short form is enough to tell the two apart,
-                   and it is the phone toolbar's word too. */
-                title="Replace this recipe with a different one"
+                /* "Print a different recipe" doesn't fit the rail on one line,
+                   and wrapped it read as the heaviest thing in the panel. */
+                title="Print a different recipe"
               >
                 <SwapIcon size={ICON_SIZE.md} />
-                <span>Swap recipe</span>
+                <span>Print another</span>
               </button>
             )}
             {projectMeta.meta.cookbookMode && (

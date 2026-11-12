@@ -83,7 +83,7 @@ export function PrintDialogs({
             <div className="another-recipe__actions">
               <button type="button" className="btn btn-primary w-full" onClick={onSwapRecipe}>
                 <SwapIcon size={ICON_SIZE.md} />
-                Swap recipe
+                Print a different recipe
               </button>
               <button
                 type="button"
