@@ -133,7 +133,7 @@ export type SeoLandingPage = {
       inherited it. */
   captureHeading?: string;
   /** Reassurance below capture. Off by default — set it only where there's
-      something worth clarifying: a recipe-card page's Pro-gated 4x6
+      something worth clarifying: a recipe-card page's Pro-gated 4×6
       printing, a Pro-only capability the page argues for. Most utility
       pages have no pricing wrinkle to explain and just went quiet. */
   captureReassurance?: string;
@@ -334,7 +334,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Choose how it prints",
-        text: "Choose a recipe card or a full page, keep or drop the photo, and make any edits you want before you print.",
+        text: "Choose a full page, or a 4×6 card with Pro, keep or drop the photo, and make any edits you want before you print.",
       },
       {
         name: "Print or save as PDF",
@@ -356,7 +356,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Print it the way your kitchen works",
         proof: "card",
         body:
-          "Pick the format that fits how you cook. A 4 by 6 card drops straight into a recipe box or an index-card binder. A full letter page suits long bakes and doubled batches, with room in the margin for your own notes. Keep the finished-dish photo or leave it off to save ink, and the type stays large enough to read from across the counter.",
+          "Pick the format that fits how you cook. A 4×6 card, with RecipePrinter Pro, drops straight into a recipe box or an index-card binder. A full page suits long bakes and doubled batches, with room in the margin for your own notes. Keep the finished-dish photo or leave it off to save ink, and the type stays large enough to read from across the counter.",
       },
       {
         heading: "For the pages that fight back",
@@ -541,7 +541,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Choose the page format",
-        text: "Use a full letter page for a traditional recipe PDF, or preview the 4 by 6 card format with RecipePrinter Pro.",
+        text: "Use a full page for a traditional recipe PDF, or preview the 4×6 card format with RecipePrinter Pro.",
       },
       {
         name: "Save as PDF",
@@ -626,7 +626,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importSubmitLabel: "Make recipe card",
     title: "Recipe Card Printer | Make & Print 4×6 Recipe Cards",
     description:
-      "Turn recipes from websites, photos, screenshots, and text into printable 4×6 recipe cards. Preview your card online, choose a design, and print it at home.",
+      "Turn recipes from websites, photos, screenshots, and text into printable 4×6 recipe cards. Preview your card free, choose a design, and print it at home with RecipePrinter Pro.",
     h1: "Recipe Card Printer",
     anchor: "Recipe card printer",
     lede:
@@ -659,7 +659,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Sized for the box it's going in",
         image: "card-in-box",
         body:
-          "A 4 by 6 card is the size a standard recipe box takes, so what comes off your printer drops straight into the box or an index-card binder. Cut lines give you a trim guide when you print on card stock, and the type stays large enough to read from across the counter. Card printing comes with RecipePrinter Pro ($4.99 a month or $39.99 a year); importing and full-page printing stay free.",
+          "A 4×6 card is the size a standard recipe box takes, so what comes off your printer drops straight into the box or an index-card binder. Cut lines give you a trim guide when you print on card stock, and the type stays large enough to read from across the counter. Card printing comes with RecipePrinter Pro ($4.99 a month or $39.99 a year); importing and full-page printing stay free.",
       },
       {
         heading: "Change the look, keep the recipe",
@@ -726,7 +726,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Print multiple recipes at once with RecipePrinter. Combine recipes from websites, screenshots, photos, text, and recipe apps into one matching set.",
     h1: "Print multiple recipes at once",
     lede:
-      "Add recipes from websites, screenshots, photos, recipe apps, and text to one collection. Choose a full-page or 4x6 card layout, then print multiple recipes at once.",
+      "Add recipes from websites, screenshots, photos, recipe apps, and text to one collection. Choose a full-page or 4×6 card layout, then print multiple recipes at once with RecipePrinter Pro.",
     howToHeading: "How to print multiple recipes",
     howTo: [
       {
@@ -739,7 +739,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Choose how they print",
-        text: "Choose full letter pages or 4x6 recipe cards, then pick a theme. The same size and style apply to every recipe in the collection.",
+        text: "Choose full pages or 4×6 recipe cards, then pick a theme. The same size and style apply to every recipe in the collection.",
       },
       {
         name: "Print or save the collection",
@@ -766,7 +766,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print multiple recipes at once for free?",
         answer:
-          `You can print recipes one at a time for free, as often as you like, with ${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days. Printing several together as one collection is part of RecipePrinter Pro, which also includes unlimited imports.`,
+          `You can print recipes one at a time for free, as often as you like, with ${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days. Printing several together as one collection is part of RecipePrinter Pro, which also includes unlimited link and text imports.`,
       },
       {
         question: "Can I print recipes from different websites, screenshots, and recipe apps together?",
@@ -774,9 +774,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Yes. Recipes in the same collection can come from different websites, screenshots, photos, pasted text, or supported recipe apps. RecipePrinter reformats them so they print together. Check each one before printing so the ingredients and steps are right.",
       },
       {
-        question: "Will every recipe use the same size and theme, including 4x6 cards?",
+        question: "Will every recipe use the same size and theme, including 4×6 cards?",
         answer:
-          "Yes. Choose full letter pages or 4x6 recipe cards and a theme, and RecipePrinter applies them to every recipe in the collection, so the finished pages or cards match. If you want different sizes or themes, start a separate print project for each set.",
+          "Yes. Choose full pages or 4×6 recipe cards and a theme, and RecipePrinter applies them to every recipe in the collection, so the finished pages or cards match. If you want different sizes or themes, start a separate print project for each set.",
       },
       {
         question: "Can I save the collection as a PDF?",
@@ -830,11 +830,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Once you’ve digitized the family recipes worth keeping, you can bring them together in a cookbook. Organize recipes into chapters, add a cover and table of contents, then print it at home or export the finished cookbook as a PDF.",
     title: "Print a Recipe From a Photo | RecipePrinter",
     description:
-      "Upload a photo, screenshot, handwritten recipe card, or cookbook page. RecipePrinter turns it into editable text you can print as a 4x6 card or full page.",
+      "Upload a photo, screenshot, handwritten recipe card, or cookbook page. RecipePrinter turns it into editable text you can print as a full page, or as a 4×6 card with Pro.",
     h1: "Print a recipe from a photo",
     anchor: "Print a recipe from a photo",
     lede:
-      "Take a photo of a handwritten card, a cookbook page, or a screenshot, and RecipePrinter types the recipe up for you. No retyping, just a clean recipe ready to print as a 4x6 card or a full page.",
+      "Take a photo of a handwritten card, a cookbook page, or a screenshot, and RecipePrinter types the recipe up for you. No retyping, just a clean recipe ready to print as a full page, or as a 4×6 card with Pro.",
     howTo: [
       {
         name: "Photograph the recipe",
@@ -850,7 +850,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print or save it",
-        text: "Print the finished recipe as a 4x6 recipe card or full letter page, or save it as a PDF to keep for later.",
+        text: "Print the finished recipe as a full page, or as a 4×6 recipe card with RecipePrinter Pro, or save it as a PDF to keep for later.",
       },
     ],
     featureSections: [
@@ -866,7 +866,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Make it yours before it prints",
         image: "inline-editing",
         body:
-          "Once your recipe photo is typed up, every word is yours to change. Add the tip that was always said out loud but never written down, note how your family makes it, or double the batch, then print it as a 4x6 card or save it as a PDF.",
+          "Once your recipe photo is typed up, every word is yours to change. Add the tip that was always said out loud but never written down, note how your family makes it, or double the batch, then print it as a full page, a 4×6 card with Pro, or a PDF.",
       },
     ],
     faqHeading: "Recipe photo questions",
@@ -889,7 +889,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I turn a photo into a printable recipe card?",
         answer:
-          "Yes. Upload a photo of the recipe, check the ingredients and instructions, then print it as a 4x6 recipe card or full letter page.",
+          "Yes. Upload a photo of the recipe, check the ingredients and instructions, then print it as a full page, or as a 4×6 recipe card with RecipePrinter Pro.",
       },
       {
         question: "Can I turn a screenshot of a recipe into a printable recipe?",
@@ -932,7 +932,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroImage: "screenshot-to-card",
     title: "Print a Recipe From a Screenshot | RecipePrinter",
     description:
-      "Finally cook from that recipe you screenshotted. Upload it and print it as a clean full page or a 4x6 recipe card, or save it as a PDF.",
+      "Finally cook from that recipe you screenshotted. Upload it and print it as a clean full page, or as a 4×6 recipe card with Pro, or save it as a PDF.",
     h1: "Print a recipe from a screenshot",
     lede:
       "That recipe you screenshotted deserves better than your camera roll. Upload it from a post, message, app, or website and print it as a clean recipe you can cook from.",
@@ -951,7 +951,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print or save it",
-        text: "Print it on a full page, or as a 4x6 recipe card with RecipePrinter Pro. You can also save it as a PDF.",
+        text: "Print it on a full page, or as a 4×6 recipe card with RecipePrinter Pro. You can also save it as a PDF.",
       },
     ],
     featureSections: [
@@ -993,13 +993,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I turn a recipe screenshot into a recipe card?",
         answer:
-          "Yes. Upload the screenshot, review the recipe, then choose a 4x6 recipe card layout with RecipePrinter Pro.",
+          "Yes. Upload the screenshot, review the recipe, then choose a 4×6 recipe card layout with RecipePrinter Pro.",
       },
     ],
     links: [
       { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
       { href: "/print-recipe-from-photo", label: "Print a recipe from a photo" },
-      { href: "/recipe-card-printer", label: "Make a 4x6 recipe card" },
+      { href: "/recipe-card-printer", label: "Make a 4×6 recipe card" },
       { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
       { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
       { href: "/print-facebook-recipes", label: "Print Facebook recipes" },
@@ -1044,7 +1044,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Pick a card or a page",
-        text: "A 4 by 6 card for the recipe box, or a letter page for long bakes. Edit any line, and keep or drop the photo.",
+        text: "A full page for long bakes, or a 4×6 card for the recipe box with Pro. Edit any line, and keep or drop the photo.",
       },
       {
         name: "Print it or save it as a PDF",
@@ -1146,7 +1146,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Choose a card or a page",
-        text: "A 4 by 6 card for the recipe box, or a letter page if the caption runs long. Edit any line before it prints.",
+        text: "A full page if the caption runs long, or a 4×6 card for the recipe box with Pro. Edit any line before it prints.",
       },
       {
         name: "Print it or save it as a PDF",
@@ -1229,10 +1229,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     initialImportMode: "url",
     title: "Print Recipes from Facebook | RecipePrinter",
     description:
-      "Paste a Facebook post or Reel link and turn the recipe into a clean printable page or 4×6 recipe card, even when the recipe is in the post image.",
+      "Paste a Facebook post or Reel link and turn the recipe into a clean printable page, or a 4×6 recipe card with Pro, even when the recipe is in the post image.",
     h1: "Print recipes from Facebook",
     lede:
-      "Paste a Facebook post or Reel link and RecipePrinter turns the recipe into a clean page or 4×6 card. It can read from the post, a linked recipe, or the image itself.",
+      "Paste a Facebook post or Reel link and RecipePrinter turns the recipe into a clean page, or a 4×6 card with Pro. It can read from the post, a linked recipe, or the image itself.",
     howToHeading: "How to print a recipe from Facebook",
     howTo: [
       {
@@ -1249,7 +1249,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print it your way",
-        text: "Print a full letter page for free or save it as a PDF. Pro adds 4×6 recipe cards and batch printing.",
+        text: "Print a full page for free or save it as a PDF. Pro adds 4×6 recipe cards and batch printing.",
       },
     ],
     featureSections: [
@@ -1343,7 +1343,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Paste a TikTok recipe link and turn the caption, available spoken captions, or on-screen recipe text into an editable recipe you can print or save.",
     h1: "Print TikTok recipes",
     lede:
-      "Paste a TikTok recipe link and RecipePrinter looks for the recipe in the caption, available spoken captions, and text shown in the video. Review the ingredients and instructions, then print it as a full page or a 4x6 recipe card, or save it as a PDF.",
+      "Paste a TikTok recipe link and RecipePrinter looks for the recipe in the caption, available spoken captions, and text shown in the video. Review the ingredients and instructions, then print it as a full page, or as a 4×6 recipe card with Pro, or save it as a PDF.",
     howToHeading: "How to print a recipe from TikTok",
     howTo: [
       {
@@ -1360,7 +1360,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print it your way",
-        text: "Print it on a full page, or as a 4x6 recipe card with RecipePrinter Pro. You can also save it as a PDF.",
+        text: "Print it on a full page, or as a 4×6 recipe card with RecipePrinter Pro. You can also save it as a PDF.",
       },
     ],
     featureSections: [
@@ -1429,13 +1429,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "No. RecipePrinter works from the TikTok link you provide. You do not need to connect or sign in to a TikTok account.",
       },
       {
-        question: "Can I turn a TikTok recipe into a 4x6 recipe card?",
+        question: "Can I turn a TikTok recipe into a 4×6 recipe card?",
         answer:
-          "Yes. Paste the TikTok link, review the recipe, then choose a 4x6 recipe card layout with RecipePrinter Pro.",
+          "Yes. Paste the TikTok link, review the recipe, then choose a 4×6 recipe card layout with RecipePrinter Pro.",
       },
     ],
     links: [
-      { href: "/recipe-card-printer", label: "Make a 4x6 recipe card" },
+      { href: "/recipe-card-printer", label: "Make a 4×6 recipe card" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
       { href: "/family-recipe-book", label: "Build a family recipe book" },
       { href: "/print-instagram-recipes", label: "Print Instagram recipes" },
@@ -1470,7 +1470,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     heroFrame: "none",
     title: "Print Recipes From Paprika | RecipePrinter",
     description:
-      "Open your Paprika export in RecipePrinter and print recipes one at a time as free full pages, or several together as 4x6 recipe cards with Pro.",
+      "Open your Paprika export in RecipePrinter and print recipes one at a time as free full pages, or several together as 4×6 recipe cards with Pro.",
     h1: "Print recipes from Paprika",
     anchor: "Print Paprika recipes",
     lede:
@@ -1492,7 +1492,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print recipes as pages or cards",
-        text: "Print recipes as full letter pages, save them as PDFs, or use RecipePrinter Pro to make 4x6 recipe cards and print multiple recipes together.",
+        text: "Print recipes as full pages, save them as PDFs, or use RecipePrinter Pro to make 4×6 recipe cards and print multiple recipes together.",
       },
     ],
     featureSections: [
@@ -1506,7 +1506,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Print the Paprika recipes you want to keep",
         image: "card-in-box",
         body:
-          "You do not have to print your entire Paprika library. Choose the recipes you come back to most and turn them into printable pages, 4x6 recipe cards, or a cookbook you can keep on the shelf.",
+          "You do not have to print your entire Paprika library. Choose the recipes you come back to most and turn them into printable pages, 4×6 recipe cards, or a cookbook you can keep on the shelf.",
       },
       {
         heading: "Print your whole Paprika library or just a few recipes",
@@ -1538,9 +1538,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "RecipePrinter can bring over the title, ingredients, instructions, prep and cook time, servings, source, named categories, and notes from the Paprika export. Ratings and difficulty are not preserved.",
       },
       {
-        question: "Can I print Paprika recipes as 4x6 recipe cards?",
+        question: "Can I print Paprika recipes as 4×6 recipe cards?",
         answer:
-          "Yes. Open your Paprika export, choose the recipe you want, then use RecipePrinter Pro to print it as a 4x6 recipe card.",
+          "Yes. Open your Paprika export, choose the recipe you want, then use RecipePrinter Pro to print it as a 4×6 recipe card.",
       },
       {
         question: "Can I save Paprika recipes as PDFs?",
@@ -1584,7 +1584,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Paste a YouTube recipe link and turn the description, linked recipe, or available video captions into an editable recipe you can print or save.",
     h1: "Print a recipe from YouTube",
     lede:
-      "Paste a YouTube recipe link and RecipePrinter looks for the recipe in the video description, a linked recipe page, or available captions. Review the ingredients and instructions, then print it as a full page or a 4x6 recipe card, or save it as a PDF.",
+      "Paste a YouTube recipe link and RecipePrinter looks for the recipe in the video description, a linked recipe page, or available captions. Review the ingredients and instructions, then print it as a full page, or as a 4×6 recipe card with Pro, or save it as a PDF.",
     howToHeading: "How to print a recipe from YouTube",
     howTo: [
       {
@@ -1601,7 +1601,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print it your way",
-        text: "Print it on a full page, or as a 4x6 recipe card with RecipePrinter Pro. You can also save it as a PDF.",
+        text: "Print it on a full page, or as a 4×6 recipe card with RecipePrinter Pro. You can also save it as a PDF.",
       },
     ],
     featureSections: [
@@ -1664,16 +1664,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "RecipePrinter keeps the original YouTube URL as the recipe source, so you can return to the video later when you want to watch a technique again.",
       },
       {
-        question: "Can I turn a YouTube recipe into a 4x6 recipe card?",
+        question: "Can I turn a YouTube recipe into a 4×6 recipe card?",
         answer:
-          "Yes. Paste the YouTube link, review the recipe, then choose a 4x6 recipe card layout with RecipePrinter Pro.",
+          "Yes. Paste the YouTube link, review the recipe, then choose a 4×6 recipe card layout with RecipePrinter Pro.",
       },
     ],
     links: [
       { href: "/print-tiktok-recipes", label: "Print TikTok recipes" },
       { href: "/print-facebook-recipes", label: "Print Facebook recipes" },
       { href: "/convert-recipe-to-pdf", label: "Convert recipe to PDF" },
-      { href: "/recipe-card-printer", label: "Make a 4x6 recipe card" },
+      { href: "/recipe-card-printer", label: "Make a 4×6 recipe card" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
       { href: "/print-social-media-recipes", label: "Print recipes from social media" },
     ],
@@ -1923,7 +1923,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         question: "Does it cost anything?",
-        answer: `The basics are free with no account: ${FREE_IMPORTS_PER_WINDOW} recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days, editing them, and printing or saving full-page recipes. RecipePrinter Pro (${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}) adds unlimited imports, 4×6 recipe cards, premium themes, and printing several recipes at once.`,
+        answer: `The basics are free with no account: ${FREE_IMPORTS_PER_WINDOW} recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days, editing them, and printing or saving full-page recipes. RecipePrinter Pro (${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}) adds unlimited link and text imports, 4×6 recipe cards, premium themes, and printing several recipes at once.`,
       },
     ],
     links: [
@@ -2093,7 +2093,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Choose a consistent recipe format",
-        text: "Use 4x6 recipe cards with RecipePrinter Pro for a recipe box, or print full letter pages for a binder. Keeping one format makes the collection easier to browse and add to over time.",
+        text: "Use 4×6 recipe cards with RecipePrinter Pro for a recipe box, or print full pages for a binder. Keeping one format makes the collection easier to browse and add to over time.",
       },
       {
         name: "Give every printed recipe a permanent place",
@@ -2111,7 +2111,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Organize printed recipes in a recipe box or binder",
         image: "card-in-box",
         body:
-          "4x6 recipe cards from RecipePrinter Pro work well in a recipe box with dividers, while full letter pages fit naturally into a three-ring binder. Choose the format that matches how you cook, then keep new recipes in the same format so the collection stays easy to browse.",
+          "4×6 recipe cards from RecipePrinter Pro work well in a recipe box with dividers, while full pages fit naturally into a three-ring binder. Choose the format that matches how you cook, then keep new recipes in the same format so the collection stays easy to browse.",
       },
       {
         heading: "Keep digital copies of your printed recipes too",
@@ -2155,7 +2155,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How should I store printed recipes?",
         answer:
-          "Use a recipe box for 4x6 cards or a three-ring binder with sheet protectors for full-page recipes. Keeping each recipe in a permanent place also makes it easier to maintain the collection over time.",
+          "Use a recipe box for 4×6 cards or a three-ring binder with sheet protectors for full-page recipes. Keeping each recipe in a permanent place also makes it easier to maintain the collection over time.",
       },
       {
         question: "Do I need an account to keep a collection together?",
@@ -2248,9 +2248,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         heading: "Just want the recipe pages?",
         body:
-          "If you don't need a cover, a table of contents, or section pages, skip the cookbook. Choose Recipe cards, keep the size on Full Page, and print each recipe free as you find it, no account needed. Printing several recipes in one go comes with RecipePrinter Pro.",
+          "If you don't need a cover, a table of contents, or section pages, skip the cookbook. Choose Recipe cards, keep the size on Full page, and print each recipe free as you find it, no account needed. Printing several recipes in one go comes with RecipePrinter Pro.",
         image: "souvlaki",
-        imageAlt: "One printed letter page holding the whole Chicken Tzatziki Bowls recipe, beside the finished bowl.",
+        imageAlt: "One printed full page holding the whole Chicken Tzatziki Bowls recipe, beside the finished bowl.",
         links: [{ phrase: "Printing several recipes in one go", href: "/print-multiple-recipes" }],
       },
     ],
@@ -2264,12 +2264,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does a recipe binder cost?",
         answer:
-          `Previewing is free with up to ${FREE_COOKBOOK_RECIPES} recipes. A one-time ${COOKBOOK_PRICE_FALLBACK} for that binder lets you download it and add more than ${FREE_COOKBOOK_RECIPES} recipes. After that, add recipes and download updated copies anytime at no extra cost. You don't need RecipePrinter Pro.`,
+          `Previewing is free with up to ${FREE_COOKBOOK_RECIPES} recipes. ${COOKBOOK_PRICE_FALLBACK} for that binder, paid once, lets you download it and add more than ${FREE_COOKBOOK_RECIPES} recipes. After that, add recipes and download updated copies anytime at no extra cost. You don't need RecipePrinter Pro.`,
       },
       {
         question: "Do I have to include a cover and table of contents?",
         answer:
-          "If you only want the recipe pages, use Recipe cards with the Full Page size instead. Each recipe prints on its own page, free and one at a time, and you put the binder together yourself.",
+          "If you only want the recipe pages, use Recipe cards with the Full page size instead. Each recipe prints on its own page, free and one at a time, and you put the binder together yourself.",
       },
       {
         question: "How do I add new recipes to my binder later?",
@@ -2279,7 +2279,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Should a recipe binder use cards or full pages?",
         answer:
-          "Full letter pages are usually the simplest choice for a binder, because they fit standard sheet protectors and give longer recipes more room. 4x6 cards suit a recipe box, though binder sleeves made for that size work too. 4x6 recipe cards are available with RecipePrinter Pro.",
+          "Full pages are usually the simplest choice for a binder, because they fit standard sheet protectors and give longer recipes more room. 4×6 cards suit a recipe box, though binder sleeves made for that size work too. 4×6 recipe cards are available with RecipePrinter Pro.",
       },
       {
         question: "What size binder is best for recipes?",
@@ -2353,7 +2353,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print or save it",
-        text: "Print it on a full page, or as a 4x6 recipe card with RecipePrinter Pro. You can also save it as a PDF.",
+        text: "Print it on a full page, or as a 4×6 recipe card with RecipePrinter Pro. You can also save it as a PDF.",
       },
     ],
     featureSections: [
@@ -2380,7 +2380,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     cookbookPitch: true,
     cookbookPitchHeading: "Turn handwritten family recipes into a cookbook",
     cookbookPitchBody:
-      "Once you have digitized the recipes worth keeping, you can bring them together into a family cookbook. Organize them into chapters, add a cover and table of contents, and preview up to 10 recipes free. A separate one-time purchase lets you download or print the cookbook and add more recipes.",
+      "Once you have digitized the recipes worth keeping, you can bring them together into a family cookbook. Organize them into chapters, add a cover and table of contents, and preview up to 10 recipes free. A separate purchase for that cookbook, paid once, lets you download or print it and add more recipes.",
     faqHeading: "Recipe card digitizing questions",
     faqs: [
       {
@@ -2475,7 +2475,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print the working copy",
-        text: "A 4 by 6 card for the box or a letter page for the binder. The copy goes in the kitchen, and the original stays where it is.",
+        text: "A full page for the binder, or a 4×6 card for the box with Pro. The copy goes in the kitchen, and the original stays where it is.",
       },
       {
         name: "Gather them when you're ready",
@@ -2506,7 +2506,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What if the card is too faded to read?",
         answer:
-          "You can type it in, and nothing changes from there. The recipe gets the same clean page, the same card or letter layout, and the same place in a book later.",
+          "You can type it in, and nothing changes from there. The recipe gets the same clean page, the same full-page or 4×6 layout, and the same place in a book later.",
       },
       {
         question: "Can I keep who it came from?",
@@ -2621,7 +2621,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does a cookbook cost?",
         answer:
-          "You can preview a cookbook with up to 10 recipes free. A one-time $19.99 purchase lets you download or print it, add more than 10 recipes, and keep editing that cookbook. Paper, ink, professional printing, and binding cost extra.",
+          "You can preview a cookbook with up to 10 recipes free. $19.99 per cookbook, paid once, lets you download or print it, add more than 10 recipes, and keep editing that cookbook. Paper, ink, professional printing, and binding cost extra.",
       },
     ],
     links: [
@@ -3125,7 +3125,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         image: "bound-cookbook",
         imageAlt: "A finished family cookbook made from collected recipes.",
         body:
-          "You can preview a cookbook with up to 10 recipes free. A one-time $19.99 purchase lets you download or print it, add more than 10 recipes, and keep editing, correcting, rearranging, and exporting that cookbook later.",
+          "You can preview a cookbook with up to 10 recipes free. $19.99 per cookbook, paid once, lets you download or print it, add more than 10 recipes, and keep editing, correcting, rearranging, and exporting that cookbook later.",
       },
     ],
     faqHeading: "Handwritten recipe cookbook questions",
@@ -3530,7 +3530,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "RecipePrinter creates the finished cookbook PDF instead of manufacturing or shipping a physical book. That means there's no RecipePrinter production queue or shipping cutoff.",
         afterBody: [
           "You can print the PDF at home or send it to a professional printing service. If you plan to use an outside printer, check that company's current holiday production and delivery schedule.",
-          "You can preview a cookbook with up to 10 recipes free. A one-time $19.99 purchase lets you download or print it, add more than 10 recipes, and keep editing and exporting that cookbook later.",
+          "You can preview a cookbook with up to 10 recipes free. $19.99 per cookbook, paid once, lets you download or print it, add more than 10 recipes, and keep editing and exporting that cookbook later.",
         ],
       },
       {
@@ -3710,7 +3710,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         question: "How much does it cost?",
-        answer: `You can preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. A one-time ${COOKBOOK_PRICE_FALLBACK} purchase lets you download or print it or add more than ${FREE_COOKBOOK_RECIPES} recipes, and it doesn't need RecipePrinter Pro. Printing and binding are paid to your printer.`,
+        answer: `You can preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. ${COOKBOOK_PRICE_FALLBACK} per cookbook, paid once, lets you download or print it or add more than ${FREE_COOKBOOK_RECIPES} recipes, and it doesn't need RecipePrinter Pro. Printing and binding are paid to your printer.`,
       },
       {
         question: "Can I give everyone at the shower a copy?",
@@ -3762,7 +3762,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "The same first step, a different second one",
         proof: "before-after",
         body:
-          "Just the Recipe keeps the cleaned-up recipe on a screen, with serving adjustments and printing on its Premium plan. RecipePrinter is built for the paper end of it: a full page for the binder, printed free without an account, or a recipe-box card and a batch of several at once with RecipePrinter Pro.",
+          "Just the Recipe keeps the cleaned-up recipe on a screen, with serving adjustments and printing on its Premium plan. RecipePrinter is built for the paper end of it: a full page for the binder, printed free without an account, or a 4×6 card for the recipe box and a batch of several at once with RecipePrinter Pro.",
       },
       {
         heading: "Recipes that never had a link",
@@ -3771,10 +3771,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Plenty of what you cook never had a URL: a handwritten card, a screenshot from a group chat, a paragraph someone texted you. RecipePrinter reads those the way it reads a link, so they end up on the same printed page as the ones that came off a website.",
       },
       {
-        heading: "Card or page, cut lines, several at once",
+        heading: "Full page or 4×6, cut lines, several at once",
         image: "card-in-box",
         body:
-          "Choose a full letter page or a 4 by 6 card sized for a recipe box, pick a theme, turn on cut lines for card stock, and print several recipes in one job. Full-page printing is free and works without an account; the card format and themes are RecipePrinter Pro, previewable free before you buy, and printing several at once is Pro too.",
+          "Choose a full page or a 4×6 card sized for a recipe box, pick a theme, turn on cut lines for card stock, and print several recipes in one job. Full-page printing is free and works without an account; the 4×6 size and premium themes are RecipePrinter Pro, previewable free before you buy, and printing several at once is Pro too.",
       },
     ],
     comparison: {
@@ -3801,7 +3801,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           title: "Printing",
           rows: [
             { feature: "Printing a full-page recipe", us: "Free, no account", them: "Paid plan" },
-            { feature: "Recipe card sizes and themes", us: "RecipePrinter Pro", them: false },
+            { feature: "4×6 cards and premium themes", us: "RecipePrinter Pro", them: false },
             { feature: "Cut lines for card stock", us: "RecipePrinter Pro", them: false },
             { feature: "Printing several recipes in one job", us: "RecipePrinter Pro", them: false },
           ],
@@ -3831,7 +3831,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does each one cost?",
         answer:
-          "Just the Recipe is free to read recipes and to save up to 20; printing, unlimited saves and serving adjustments are on Premium. RecipePrinter is free to print full-page recipes, with no account and 10 free recipe imports every 30 days. The recipe-card format — every theme, 4x6 cards, the card toolkit — is RecipePrinter Pro, $4.99 a month or $39.99 a year. Cookbooks are separate: preview up to 10 recipes free, then pay $19.99 per book once to download it or add more recipes.",
+          "Just the Recipe is free to read recipes and to save up to 20; printing, unlimited saves and serving adjustments are on Premium. RecipePrinter is free to print full-page recipes, with no account and 10 free recipe imports every 30 days. Two themes are free. 4×6 cards, premium themes, Customize theme and printing several recipes at once are RecipePrinter Pro, $4.99 a month or $39.99 a year. Cookbooks are separate: preview up to 10 recipes free, then pay $19.99 per book once to download it or add more recipes.",
       },
       {
         question: "Can I bring my saved Just the Recipe recipes over?",
@@ -3882,7 +3882,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "A card, a page, or the whole cookbook",
         proof: "card",
         body:
-          "ReciScan ends in a bound book from its own press, starting at $18 for fifty pages. RecipePrinter hands you the file: a 4 by 6 card for the box by the stove, a letter page for a binder, or a bound cookbook with a cover and chapters. Printing one card tonight doesn't rule out the cookbook.",
+          "ReciScan ends in a bound book from its own press, starting at $18 for fifty pages. RecipePrinter hands you the file: a 4×6 card for the box by the stove, a full page for a binder, or a bound cookbook with a cover and chapters. Printing one card tonight doesn't rule out the cookbook.",
       },
       {
         heading: "Nothing to install",
@@ -3908,9 +3908,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "What you can print",
           rows: [
-            { feature: "A 4 by 6 card for a recipe box, with cut lines", us: "RecipePrinter Pro", them: false },
-            { feature: "A full letter page for a binder", us: true, them: false },
-            { feature: "Printing it yourself", us: "Free for full-page; Pro for cards", them: true },
+            { feature: "A 4×6 card for a recipe box, with cut lines", us: "RecipePrinter Pro", them: false },
+            { feature: "A full page for a binder", us: true, them: false },
+            { feature: "Printing it yourself", us: "Free for full page; Pro for 4×6", them: true },
           ],
         },
         {
@@ -3942,7 +3942,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         // ReciScan's $4.99 carries a word joiner so only ours is shown in the
         // visitor's currency (see localizePriceText).
         answer:
-          "ReciScan is free to use, with a $\u20604.99 monthly subscription for covers and extras, and printed books starting at $18. RecipePrinter is free to print full-page recipes, with no account. The recipe-card format — every theme, 4x6 cards, and the card toolkit — is RecipePrinter Pro: $4.99 a month or $39.99 a year. A cookbook is separate: preview up to 10 recipes free, then pay $19.99 once to download it or add more recipes.",
+          "ReciScan is free to use, with a $\u20604.99 monthly subscription for covers and extras, and printed books starting at $18. RecipePrinter is free to print full-page recipes, with no account. Two themes are free. 4×6 cards, premium themes, Customize theme and printing several recipes at once are RecipePrinter Pro: $4.99 a month or $39.99 a year. A cookbook is separate: preview up to 10 recipes free, then pay $19.99 per cookbook, once, to download it or add more recipes.",
       },
       {
         question: "Can RecipePrinter send me a printed cookbook?",

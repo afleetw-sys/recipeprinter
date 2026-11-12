@@ -727,7 +727,7 @@ export function PageRail(props: PageRailProps) {
                   openAddRecipeBelow();
                 }}
               >
-                {/* `md`, the size Save and Buy & Print use for theirs. The type
+                {/* `md`, the size Save and Buy & download use for theirs. The type
                     already matched them; the icon was a step down, which made the
                     whole button read as smaller than the ones in the header. */}
                 <PlusIcon size={ICON_SIZE.md} />

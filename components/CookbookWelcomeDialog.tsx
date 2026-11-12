@@ -107,13 +107,13 @@ export function CookbookWelcomeDialog({
                   {local(fullPrice)}
                 </s>{" "}
                 <span className="sr-only">now </span>
-                {local(price)} one time
+                {local(price)} per cookbook, paid once
               </b>
               <span>20% off your first cookbook with Pro. {PREVIEW_RULE}</span>
             </>
           ) : (
             <>
-              <b>{local(price)} one time</b>
+              <b>{local(price)} per cookbook, paid once</b>
               <span>{PREVIEW_RULE}</span>
             </>
           )}

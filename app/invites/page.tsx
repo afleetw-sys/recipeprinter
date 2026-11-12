@@ -42,7 +42,7 @@ export default function InvitesPage() {
               Invite a friend. You both get {DEFAULT_REWARD_DAYS} days of Pro.
             </h2>
             <p className="mt-cp-2 max-w-sm text-cp-body text-ink-soft leading-relaxed">
-              Unlock premium templates, 4×6 cards, and multi-recipe printing for free when your friend joins.
+              Unlock every theme, 4×6 cards and printing several recipes at once, free, when your friend joins.
             </p>
             <button type="button" className="btn btn-primary mt-cp-5" onClick={() => setShowLogin(true)}>
               Get my referral link

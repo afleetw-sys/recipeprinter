@@ -3907,7 +3907,7 @@ export default function PrintPage() {
     releasePrintPress();
     if (cookbookPurchaseBusy || proBusy) return;
     // With no recipes there is nothing to measure, so the layout never reports
-    // ready and this waited forever: Buy & Print on a brand-new book span and
+    // ready and this waited forever: Buy & download on a brand-new book span and
     // never reached sign-in or checkout (2026-11-08). A book can be bought
     // first and filled after.
     if (!printLayoutReady && recipeCount > 0) {
@@ -4083,8 +4083,8 @@ export default function PrintPage() {
       track("cookbook_export_blocked_empty_photos", { preset: presetId, count: emptyPhotoTitles.length });
       setCookbookExportError(
         emptyPhotoTitles.length === 1
-          ? `"${emptyPhotoTitles[0]}" is waiting for its photo. Add one, or set its photo to None, then export again.`
-          : `${emptyPhotoTitles.length} recipes are waiting for photos: ${emptyPhotoTitles.join(", ")}. Add their photos, or set them to None, then export again.`,
+          ? `"${emptyPhotoTitles[0]}" is waiting for its photo. Add one, or set its photo to None, then download again.`
+          : `${emptyPhotoTitles.length} recipes are waiting for photos: ${emptyPhotoTitles.join(", ")}. Add their photos, or set them to None, then download again.`,
       );
       return;
     }
@@ -4230,7 +4230,7 @@ export default function PrintPage() {
   // that relationship ever changes).
   const nothingToPrint = navItems.length === 0 && spreads.length === 0;
   const printBlocked = proBusy || cookbookPurchaseBusy || nothingToPrint;
-  // A cookbook with no recipes yet has nothing worth buying, so Buy & Print
+  // A cookbook with no recipes yet has nothing worth buying, so Buy & download
   // steps back to a secondary button until the first one lands. A brand-new
   // book should point at Add recipes, not at checkout.
   const printEmphasis = cookbookMode && recipeCount === 0 ? "btn-secondary" : "btn-primary";
@@ -4816,7 +4816,7 @@ export default function PrintPage() {
    * How many recipes a cookbook holds, at the top of the page rail, above Add
    * recipes. There is no separate name for the book here: its title is the one
    * on its cover, edited on the page itself. Whether it's saved is said in the
-   * header, beside Buy & Print, the same as for recipe cards
+   * header, beside Buy & download, the same as for recipe cards
    * (`renderSaveControl`).
    */
   const railBookHeader = cookbookMode ? (
@@ -5198,7 +5198,7 @@ export default function PrintPage() {
    * - saving: a quiet spinner and "Saving…";
    * - kept: a quiet, persistent check and "Saved", for a cookbook too, free
    *   or bought. It used to sit in a cookbook's page rail beside the recipe
-   *   count; it's here, beside Buy & Print, on every project (Amelia,
+   *   count; it's here, beside Buy & download, on every project (Amelia,
    *   2026-11-03), and the rail keeps only the count;
    * - not kept and nothing to report: nothing.
    *
@@ -5332,7 +5332,7 @@ export default function PrintPage() {
         {twoPerSheetOffered && (
           <Checkbox
               label="Print 2 cards per sheet"
-              hint="Uncheck for 4x6 cardstock."
+              hint="Uncheck for 4×6 card stock."
               checked={twoPerSheet}
               onChange={(event) => setTwoPerSheet(event.target.checked)}
           />
@@ -5758,7 +5758,7 @@ export default function PrintPage() {
       return;
     }
     // A full free preview: straight to this book's checkout, the way Print
-    // reads "Buy & Print", and on to the add the cook asked for once it's
+    // reads "Buy & download", and on to the add the cook asked for once it's
     // bought. Cancelling leaves the book exactly as it was.
     if (bookCapReached) {
       track("cookbook_preview_full", { recipeCount, price: cookbookPrice });
@@ -7330,10 +7330,15 @@ export default function PrintPage() {
                 >
                   {printSpinner ? (
                     <SpinnerIcon size={ICON_SIZE.md} />
+                  ) : cookbookMode ? (
+                    <DownloadIcon size={ICON_SIZE.md} />
                   ) : (
                     <PrintIcon size={ICON_SIZE.md} />
                   )}
-                  {/* "Buy & Print" still says money is involved for a cookbook
+                  {/* A cookbook's button says Download, not Print: every
+                      destination in its dialog ends in a PDF the cook prints
+                      themselves; nothing calls print() (Amelia, 2026-11-12).
+                      "Buy & download" still says money is involved for a cookbook
                       that hasn't been paid for — a button that charges has to
                       say so before it is pressed, however clearly the price
                       was stated on the way in: someone reopening a book days
@@ -7354,7 +7359,7 @@ export default function PrintPage() {
                       the wrong currency and the wrong amount to anyone outside
                       the US, and would go stale the moment the product's price
                       changes. Checkout states the authoritative price. */}
-                  {cookbookLocked ? "Buy & Print" : "Print"}
+                  {cookbookLocked ? "Buy & download" : cookbookMode ? "Download" : "Print"}
                 </button>
                 )}
                 {/* The other ways out, whichever one the main half is not.
@@ -7893,8 +7898,14 @@ export default function PrintPage() {
             onClick={handleMobilePrint}
             disabled={printBlocked}
           >
-            {printSpinner ? <SpinnerIcon size={ICON_SIZE.md} /> : <PrintIcon size={ICON_SIZE.md} />}
-            {cookbookLocked ? "Buy & Print" : "Print"}
+            {printSpinner ? (
+              <SpinnerIcon size={ICON_SIZE.md} />
+            ) : cookbookMode ? (
+              <DownloadIcon size={ICON_SIZE.md} />
+            ) : (
+              <PrintIcon size={ICON_SIZE.md} />
+            )}
+            {cookbookLocked ? "Buy & download" : cookbookMode ? "Download" : "Print"}
           </button>
           )}
           {!cookbookMode && (

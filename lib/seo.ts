@@ -10,6 +10,7 @@
 
 import type { Metadata } from "next";
 import { FREE_COOKBOOK_RECIPES, FREE_IMPORTS_PER_WINDOW, FREE_IMPORT_WINDOW_DAYS } from "@/lib/freeImports";
+import { IMAGE_IMPORTS_PER_HOUR_PRO } from "@/lib/imageImportQuota";
 
 /**
  * Canonical production origin. Override with NEXT_PUBLIC_SITE_URL in the
@@ -270,7 +271,7 @@ export const FAQ: FaqItem[] = [
     question: "Can I make printable recipe cards from online recipes?",
     group: "what-you-get",
     answer:
-      "Yes. Paste a recipe link, upload a screenshot or photo, or paste recipe text, then choose a printable recipe card layout before printing.",
+      "Yes. Paste a recipe link, upload a screenshot or photo, or paste recipe text, and it becomes a printable recipe card. A full page prints free. The 4×6 size is RecipePrinter Pro.",
     guides: [
       "recipe-card-printer",
     ],
@@ -293,7 +294,7 @@ export const FAQ: FaqItem[] = [
     question: "Can I save printed recipes in a recipe binder?",
     group: "what-you-get",
     answer:
-      "Yes. RecipePrinter can create letter-size recipe pages, recipe cards, and PDFs that work well for binders, folders, recipe boxes, and family collections.",
+      "Yes. RecipePrinter makes full-page recipes for free, 4×6 recipe cards with Pro, and PDFs that work well for binders, folders, recipe boxes, and family collections.",
     guides: [
       "recipe-binder",
       "organize-recipes",
@@ -348,7 +349,7 @@ export const FAQ: FaqItem[] = [
     question: "What size are the printed recipe cards?",
     group: "what-you-get",
     answer:
-      "A 4 by 6 card, the size a standard recipe box takes, or a letter-size page for a binder. Cut lines give you a trim guide when you print on card stock, and a recipe too long for one side prints on the back too.",
+      "A full page for a binder, free, or a 4×6 card for a recipe box with RecipePrinter Pro. A recipe too long for one side continues on the back when Two-sided is on. On a 4×6 card, cut lines give you a trim guide for card stock.",
     guides: [
       "recipe-card-printer",
     ],
@@ -363,7 +364,7 @@ export const FAQ: FaqItem[] = [
     question: "Can I change how the recipe cards look?",
     group: "what-you-get",
     answer:
-      "Yes. A theme changes a card's type, its border and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows. Two themes are free; every other theme comes with RecipePrinter Pro, along with 4 by 6 card printing itself.",
+      "Yes. A theme changes a card's type, its border and how the photo sits, without touching the recipe underneath. Switch themes and every card in the batch follows. Two themes are free; every other theme comes with RecipePrinter Pro, along with 4×6 card printing itself.",
   },
   {
     question: "Can I print several recipes at once?",
@@ -398,7 +399,7 @@ export const FAQ: FaqItem[] = [
     question: "Is RecipePrinter free?",
     group: "account",
     answer:
-      `Yes. You get ${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days, with no account required, and you can edit, customize and print your recipes as often as you like. RecipePrinter Pro is optional: it adds unlimited imports, 4 by 6 recipe cards, every theme, batch printing, and the full card toolkit for $4.99 a month or $39.99 a year. Making a cookbook? You can preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes; a one-time $19.99 purchase lets you download or print it and add more recipes.`,
+      `Yes. You get ${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days, with no account required, and you can edit and print full-page recipes, one at a time, with two free themes, as often as you like. RecipePrinter Pro is optional: it adds unlimited link and text imports, up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photo imports an hour, 4×6 recipe cards, every theme, Customize theme, and printing several recipes at once for $4.99 a month or $39.99 a year. Making a cookbook? You can preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes; $19.99 per cookbook, paid once, lets you download or print it and add more recipes.`,
   },
   {
     question: "Is RecipePrinter a recipe app?",
@@ -498,7 +499,7 @@ export function webApplicationNode() {
       {
         "@type": "Offer",
         name: "RecipePrinter Pro",
-        description: "Unlimited recipe imports, every theme, 4x6 cards, batch printing",
+        description: `Unlimited link and text imports, up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photo imports an hour, every theme, 4×6 cards, batch printing`,
         priceCurrency: "USD",
         priceSpecification: [
           {
@@ -525,7 +526,7 @@ export function webApplicationNode() {
       "Print a recipe from a photo or screenshot",
       "Paste recipe text and print it",
       "Build printable recipe collections and binders",
-      "RecipePrinter Pro: every theme, 4 by 6 recipe cards, and printing multiple recipes at once",
+      "RecipePrinter Pro: every theme, 4×6 recipe cards, and printing multiple recipes at once",
       "Make a cookbook with a cover, chapters, and an automatic table of contents",
       "Export a print-ready cookbook PDF for home printing or professional binding",
     ],

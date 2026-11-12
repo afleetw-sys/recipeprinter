@@ -7,6 +7,7 @@ import { FaqCards } from "@/components/seo/FaqCards";
 import { PricingProButton } from "@/components/seo/PricingProButton";
 import { COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 import { FREE_COOKBOOK_RECIPES } from "@/lib/freeImports";
+import { IMAGE_IMPORTS_PER_HOUR_PRO } from "@/lib/imageImportQuota";
 import {
   PRO_ANNUAL_PRICE_FALLBACK,
   PRO_MONTHLY_PRICE_FALLBACK,
@@ -29,7 +30,7 @@ import { absoluteUrl, breadcrumbNode, faqJsonLd, pageMetadata } from "@/lib/seo"
 export const metadata: Metadata = pageMetadata({
   title: "Pricing: Free, Pro, and Cookbooks",
   description:
-    "Print full-page recipes free, with no account. RecipePrinter Pro adds 4×6 recipe cards, premium themes, and printing several recipes at once. Cookbooks are a one-time purchase.",
+    "Print full-page recipes free, with no account. RecipePrinter Pro adds 4×6 recipe cards, premium themes, and printing several recipes at once. Each cookbook is its own purchase, paid once.",
   path: "/pricing",
 });
 
@@ -41,7 +42,7 @@ const TRAIL = [
 const COOKBOOK_POINTS = [
   `Preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes before you buy`,
   "Your own cover and chapters, with the table of contents built for you",
-  "Keep editing after you buy, and export again any time",
+  "Keep editing after you buy, and download again any time",
   "Print-ready files for home, a copy shop, Lulu, or Blurb",
 ];
 
@@ -49,11 +50,11 @@ const FAQS = [
   {
     question: "Do I need Pro to print recipes?",
     answer:
-      "No. Printing or saving full-page recipes is free, with no account and 10 free recipe imports every 30 days. Pro adds unlimited imports, 4×6 recipe cards, premium themes, and printing several recipes in one job.",
+      `No. Printing or saving full-page recipes is free, with no account and 10 free recipe imports every 30 days. Pro adds unlimited link and text imports, up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photo imports an hour, 4×6 recipe cards, premium themes, Customize theme, and printing several recipes in one job.`,
   },
   {
     question: "What's the difference between Pro and a cookbook?",
-    answer: `Pro is a subscription for everyday printing: cards, themes, and printing in batches. You can preview a cookbook with up to ${FREE_COOKBOOK_RECIPES} recipes free; a one-time ${COOKBOOK_PRICE_FALLBACK} purchase lets you download or print it and add more recipes. You don't need Pro to buy one, and Pro members get 20% off their first cookbook.`,
+    answer: `Pro is a subscription for everyday printing: 4×6 cards, premium themes, and printing in batches. You can preview a cookbook with up to ${FREE_COOKBOOK_RECIPES} recipes free; ${COOKBOOK_PRICE_FALLBACK} per cookbook, paid once, lets you download or print it and add more recipes. You don't need Pro to buy one, and Pro members get 20% off their first cookbook.`,
   },
   {
     question: "Do I need an account?",
@@ -115,7 +116,7 @@ export default function PricingPage() {
         <LandingHero
           align="centered"
           h1="Pricing"
-          lede="Printing recipes is free. Pro adds recipe cards, themes, and printing in batches. Cookbooks are a separate, one-time purchase."
+          lede="Printing full-page recipes is free. Pro adds 4×6 cards, premium themes, and printing in batches. Each cookbook is a separate purchase, paid once."
           above={<Breadcrumb trail={TRAIL} />}
         />
 
@@ -158,7 +159,7 @@ export default function PricingPage() {
           </h2>
           <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
             Cookbooks are separate from both plans: preview up to {FREE_COOKBOOK_RECIPES} recipes
-            free, then make a one-time purchase to download or add more, on Free or Pro.
+            free, then pay once for that cookbook to download it or add more, on Free or Pro.
           </p>
           <div className="mt-cp-6 flex flex-col rounded-2xl border border-line bg-card p-cp-6 text-left">
             <p className="text-cp-body font-bold text-ink">

@@ -31,9 +31,10 @@ const COOKBOOK_BENEFIT = "20% off your first cookbook";
 // the wording shouldn't talk the free tier down. See `.recipe-print-page--pro`.
 const NO_BRANDING_BENEFIT = "No RecipePrinter branding on your prints";
 // Free accounts get a monthly allowance of imports (lib/freeImports.ts, enforced
-// by CookPilot's import meter); Pro has none. Photo imports stay paced by the
-// hour on every plan, which is why that line is separate.
-const UNLIMITED_IMPORTS_BENEFIT = "Unlimited recipe imports";
+// by CookPilot's import meter); Pro has none for links and text. Photo imports
+// stay paced by the hour on every plan, so the Pro line says so rather than
+// promising unlimited photos (Amelia, 2026-11-12).
+const UNLIMITED_IMPORTS_BENEFIT = `Unlimited link and text imports, and up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photos an hour`;
 
 // What Basic (the free tier) actually includes. Shared by /account and
 // /pricing, so the two cannot describe the free plan differently — and it's a lot, which the
@@ -43,16 +44,15 @@ const UNLIMITED_IMPORTS_BENEFIT = "Unlimited recipe imports";
 // recipe" title) but it's a constraint, not a benefit, so it doesn't belong
 // on a list meant to make the case for staying on Basic being a perfectly
 // good deal. The first line is the import allowance, whose usage /account
-// shows under it. The hourly photo pacing (lib/imageImportQuota.ts) is real on
-// every plan but is not listed on either plan: with an allowance of imports it
-// isn't something to sell (Amelia, 2026-10-10). /account still shows this
-// hour's photo usage, as usage rather than as a benefit.
+// shows under it. The hourly photo pacing (lib/imageImportQuota.ts) is named
+// only on the Pro line, which would otherwise overclaim. /account still shows
+// this hour's photo usage, as usage rather than as a benefit.
 export const FREE_IMPORTS_BENEFIT = `${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days`;
 export const BASIC_BENEFITS = [
   FREE_IMPORTS_BENEFIT,
   "Import from any recipe site, Instagram, TikTok, Pinterest & more",
   "Edit any recipe and add your own photos",
-  "Letter-size printing with two free themes",
+  "Full-page printing with two free themes",
 ];
 
 // Exported so `AccountProStatus` can show the same list to a Free account —

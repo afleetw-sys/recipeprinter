@@ -85,7 +85,7 @@ export default function TermsPage() {
         <p>
           Much of the Service is free and does not require an account. Some
           features are paid: RecipePrinter Pro is a subscription that includes
-          additional print themes, 4 by 6 card printing, and other recipe-card
+          additional print themes, 4×6 card printing, and other recipe-card
           tools, and unlocking a cookbook is a separate one-time purchase.
         </p>
       </LegalSection>
@@ -309,7 +309,7 @@ export default function TermsPage() {
           </li>
           <li>
             <strong>RecipePrinter Pro.</strong> Pro applies to your whole
-            account and includes every print theme, 4 by 6 card printing, prints
+            account and includes every print theme, 4×6 card printing, prints
             without RecipePrinter branding, and the other recipe-card tools for
             as long as the subscription is active.
             Pro does not include cookbook unlocks, which remain a separate

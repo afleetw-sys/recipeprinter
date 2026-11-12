@@ -87,7 +87,7 @@ type PanelTab = "book" | "page";
 /**
  * The right-hand Print-setup / Book-settings panel (a mobile drawer under
  * `is-mobile-open`). Header + the setup controls + the theme grid + the footer
- * actions (Print / Buy & Print / Unlock & Print, Save project, Print
+ * actions (Print / Buy & download / Unlock & Print, Save project, Print
  * settings). Purely presentational — every value and callback is owned by the
  * print page.
  */
