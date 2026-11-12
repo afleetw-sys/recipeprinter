@@ -6,6 +6,7 @@ import { BLOCKED_REMEDY, joinedLinksMessage, searchPageMessage, unwrapRedirectUr
 import { isBlockedAddress } from "@/lib/server/publicAddress";
 import { callerKey, rateLimit } from "@/lib/server/rateLimit";
 import { requestDeadline, type Deadline } from "@/lib/server/requestDeadline";
+import { startRouteTiming, type RouteTiming } from "@/lib/server/serverTiming";
 import { placeholderHostMessage } from "@/lib/friendlyErrors";
 import type { ImportFailureCode } from "@/lib/analytics";
 import type { BotWallVendor, ParseResponse, Recipe } from "@/types/recipe";
@@ -600,7 +601,27 @@ function importIdFrom(request: Request): string | undefined {
   return value && /^[A-Za-z0-9_-]{1,64}$/.test(value) ? value : undefined;
 }
 
+/** Whether this function instance has answered a parse before (see lib/server/serverTiming). */
+let servedBefore = false;
+
+/**
+ * Every answer says where its time went, in a `Server-Timing` header the
+ * browser puts on the import's event (lib/importTiming). Measuring only: what
+ * the route does and answers is `handleParse`, unchanged.
+ */
 export async function POST(request: Request) {
+  const timing = startRouteTiming(!servedBefore);
+  servedBefore = true;
+  const response = await handleParse(request, timing);
+  try {
+    response.headers.set("Server-Timing", timing.header());
+  } catch {
+    /* The answer goes out without its timing, never the other way round. */
+  }
+  return response;
+}
+
+async function handleParse(request: Request, timing: RouteTiming): Promise<Response> {
   // Started before anything else, because the clock this is shadowing — the
   // platform's — starts at invocation too.
   const deadline = requestDeadline(REQUEST_BUDGET_MS);
@@ -663,9 +684,11 @@ export async function POST(request: Request) {
     // check to our own outbound fetch meant `http://169.254.169.254/...` or an
     // internal host was still reachable, just through the other leg. The
     // blocklist has to gate every fetch of this URL, ours and theirs.
-    await validatePublicHttpUrl(url);
+    await timing.span("validate", () => validatePublicHttpUrl(url));
 
-    const cookPilot = await parseWithCookPilotServer(url.toString(), url.hostname, deadline, importId);
+    const cookPilot = await timing.span("cookpilot", () =>
+      parseWithCookPilotServer(url.toString(), url.hostname, deadline, importId),
+    );
     if (cookPilot.kind === "recipes") {
       return NextResponse.json({ success: true, recipes: cookPilot.recipes } satisfies ParseResponse);
     }
@@ -706,18 +729,15 @@ export async function POST(request: Request) {
       });
     }
 
-    const response = await fetchPublicHtml(url, deadline);
+    const response = await timing.span("fetch", () => fetchPublicHtml(url, deadline));
 
     if (!response.ok) {
       // The body used to be discarded here and the status mapped straight to
       // copy, which made a WAF block and a paywall the same event. The shared
       // parser classifies it now; a prefix is all the fingerprints ever read.
-      const classified = await parseSuppliedHtml(
-        url,
-        response.status,
-        response.headers,
-        await readBodyPrefix(response),
-        deadline,
+      const prefix = await timing.span("fetch", () => readBodyPrefix(response));
+      const classified = await timing.span("supplied", () =>
+        parseSuppliedHtml(url, response.status, response.headers, prefix, deadline),
       );
       const verdict: PageVerdict =
         classified.kind === "verdict" ? classified.verdict : { kind: "none" };
@@ -758,8 +778,10 @@ export async function POST(request: Request) {
       return errorResponse("That URL doesn't look like a recipe page.", { status: 400, parserExhausted });
     }
 
-    const html = await readHtmlWithLimit(response);
-    const shared = await parseSuppliedHtml(url, response.status, response.headers, html, deadline);
+    const html = await timing.span("fetch", () => readHtmlWithLimit(response));
+    const shared = await timing.span("supplied", () =>
+      parseSuppliedHtml(url, response.status, response.headers, html, deadline),
+    );
 
     if (shared.kind === "recipes") {
       return NextResponse.json({ success: true, recipes: shared.recipes } satisfies ParseResponse);

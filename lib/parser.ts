@@ -13,6 +13,7 @@ import { errorParts } from "@/lib/friendlyErrors";
 import { anonymousOwnerId } from "@/lib/anonymousOwner";
 import type { ImportFailureCode } from "@/lib/analytics";
 import { imageLimitDetails, imageLimitMessage } from "@/lib/imageImportQuota";
+import { noteImportTiming, routeTimingFrom } from "@/lib/importTiming";
 import type { BotWallVendor, ParseResponse, Recipe } from "@/types/recipe";
 
 interface LocalParseOutcome {
@@ -364,6 +365,7 @@ async function parseUrlLocally(
   importId?: string,
 ): Promise<LocalParseOutcome> {
   try {
+    const sentAt = performance.now();
     const response = await fetch("/api/parse", {
       method: "POST",
       // The import id lets CookPilot count how many `/api/parse` calls come
@@ -378,6 +380,16 @@ async function parseUrlLocally(
       signal,
     });
     const data = (await response.json()) as ParseResponse;
+    // Timing only, for the import's event (lib/importTiming). It must never be
+    // what decides how an import goes, so nothing here can throw.
+    try {
+      noteImportTiming(importId, {
+        routeMs: Math.round(performance.now() - sentAt),
+        ...routeTimingFrom(response.headers?.get("server-timing") ?? null),
+      });
+    } catch {
+      /* No timing for this import. */
+    }
     if (data.success) return { recipes: data.recipes };
     return {
       recipes: null,
@@ -516,6 +528,7 @@ async function parseUrlBeforeDeadline(
   // the case the fallback exists for. Not this time: the import is over.
   if (signal.aborted) throw tookTooLong(local.meta);
   if (shouldTryUrlFallback(local)) {
+    const fallbackAt = performance.now();
     try {
       return await parseUrlWithCookPilot(url, signal, local.error);
     } catch (err) {
@@ -527,6 +540,8 @@ async function parseUrlBeforeDeadline(
         throw new ImportError(err.message, err.code, { ...err.meta, ...local.meta });
       }
       throw err;
+    } finally {
+      noteImportTiming(importId, { fallbackMs: Math.round(performance.now() - fallbackAt) });
     }
   }
   throw new ImportError(
