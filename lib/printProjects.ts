@@ -678,21 +678,28 @@ export async function loadPrintProjectSummaries(ownerUid: string): Promise<Print
  * case and is the only way to say "I don't know" out loud.
  */
 export async function loadPrintProject(ownerUid: string, projectId: string): Promise<PrintProject | null> {
-  const [{ doc, getDoc }, { getDb }] = await Promise.all([
+  const [{ doc, getDoc }, { getDb, restartFirestoreNetwork }] = await Promise.all([
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
   const db = getDb();
   const projectPath = recipePrinterProjectPath(ownerUid, projectId);
-  const [snap, contentSnap] = await Promise.all([
-    getDoc(doc(db, ...projectPath)),
-    // The ONE read still allowed to fail quietly, because `hydrate` decides
-    // what its absence means: an inline document does not need it, and a split
-    // one throws rather than hand back a book with no recipes in it. Either way
-    // the parent has already been read successfully, so "I don't know" is still
-    // said — by the throw, not by a null.
-    getDoc(doc(db, ...projectPath, ...CONTENT_DOC)).catch(() => null),
-  ]);
+  // Never unanswered: /print waits on this behind "Loading your project…", and
+  // a connection that hangs without dropping left it there for good (see
+  // lib/serverReadDeadline). A miss throws, which the page shows as a failed
+  // open, with the connection restarted for the next try.
+  const [snap, contentSnap] = await withServerReadDeadline(
+    Promise.all([
+      getDoc(doc(db, ...projectPath)),
+      // The ONE read still allowed to fail quietly, because `hydrate` decides
+      // what its absence means: an inline document does not need it, and a split
+      // one throws rather than hand back a book with no recipes in it. Either way
+      // the parent has already been read successfully, so "I don't know" is still
+      // said — by the throw, not by a null.
+      getDoc(doc(db, ...projectPath, ...CONTENT_DOC)).catch(() => null),
+    ]),
+    restartFirestoreNetwork,
+  );
   return snap.exists() ? hydrate(snap.data(), contentSnap) : null;
 }
 

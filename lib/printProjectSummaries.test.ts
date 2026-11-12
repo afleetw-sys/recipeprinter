@@ -34,6 +34,12 @@ vi.mock("firebase/firestore", () => ({
     reads.paths.push(path);
     return snapshot(reads.namespaced);
   },
+  // Single-document reads, only ever asked here to hang.
+  doc: (_db: unknown, ...segments: string[]) => segments.join("/"),
+  getDoc: (path: string) => {
+    reads.paths.push(path);
+    return reads.namespaced === "never" ? new Promise<never>(() => {}) : Promise.reject(new Error("unavailable"));
+  },
 }));
 vi.mock("@/lib/firebase/db", () => ({
   getDb: () => ({}),
@@ -53,8 +59,8 @@ class MemoryStorage {
 }
 const memory = new MemoryStorage();
 
-import { loadPrintProjectSummaries } from "@/lib/printProjects";
-import { loadCookbookProjectUnlockIds } from "@/lib/cookbookUnlocks";
+import { loadPrintProject, loadPrintProjectSummaries } from "@/lib/printProjects";
+import { loadCookbookProjectUnlock, loadCookbookProjectUnlockIds } from "@/lib/cookbookUnlocks";
 
 const BOOK = { id: "book-a", data: { id: "book-a", title: "Nana's Kitchen", updatedAt: 2 } };
 
@@ -101,18 +107,23 @@ describe("reading the saved-projects list", () => {
      connection that hangs while still looking open never gets that verdict, so
      the read waited forever and so did the page. Every read the library waits
      on must settle by itself, and the stuck connection is restarted so that
-     Try again can work without a reload. */
+     Try again can work without a reload. Opening one saved book (its project
+     and its cookbook unlock) stops /print behind "Loading your project…" the
+     same way, so those reads are held to the same rule. */
   it("settles every library read when Firestore never answers", async () => {
     // Only the clock: the loaders' dynamic imports resolve on the real
     // setImmediate/nextTick, which a full fake would freeze.
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     try {
       reads.namespaced = "never";
-      const loads: Array<[string, () => Promise<unknown>]> = [
-        ["saved projects", () => loadPrintProjectSummaries("user-1")],
-        ["cookbook unlocks", () => loadCookbookProjectUnlockIds("user-1")],
+      // [name, load, how many reads it sends]
+      const loads: Array<[string, () => Promise<unknown>, number]> = [
+        ["saved projects", () => loadPrintProjectSummaries("user-1"), 1],
+        ["cookbook unlocks", () => loadCookbookProjectUnlockIds("user-1"), 1],
+        ["one saved project", () => loadPrintProject("user-1", "book-a"), 2],
+        ["one cookbook's unlock", () => loadCookbookProjectUnlock("user-1", "book-a"), 1],
       ];
-      for (const [name, load] of loads) {
+      for (const [name, load, readCount] of loads) {
         network.restarts = 0;
         let settled = false;
         void load().then(
@@ -124,7 +135,7 @@ describe("reading the saved-projects list", () => {
         for (let i = 0; i < 100 && reads.paths.length === sent; i += 1) {
           await new Promise((resolve) => globalThis.setImmediate(resolve));
         }
-        expect(reads.paths.length, `${name} read sent`).toBe(sent + 1);
+        expect(reads.paths.length, `${name} read sent`).toBe(sent + readCount);
         // ...the cook waits half a minute, and the read must have settled.
         await vi.advanceTimersByTimeAsync(30_000);
         expect(settled, `${name} settled`).toBe(true);
