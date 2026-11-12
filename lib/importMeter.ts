@@ -210,6 +210,7 @@ export function resetImportUsageForTest(): void {
   resetWokenFunctionsForTest();
   pendingDedupeKeys.clear();
   listeners.clear();
+  unanswered = null;
 }
 
 /**
@@ -302,10 +303,13 @@ function browserTimeZone(): { tz?: string } {
  * - `load`: fetching our own code, the parser and Firebase chunks.
  * - `app_check`: waiting for an App Check token. The SDK puts no time limit
  *   on this; a reCAPTCHA script that never loads waits forever.
- * - `call`: the callable itself, which is the sign-in token, the request, and
- *   the function answering it (a cold start lands here).
+ * - `auth`: waiting for sign-in to finish starting up, on a page that started
+ *   it. The callable waits for that before its request goes out, also with no
+ *   time limit.
+ * - `call`: the request, and the function answering it (a cold start lands
+ *   here).
  */
-export type MeterStage = "load" | "app_check" | "call";
+export type MeterStage = "load" | "app_check" | "auth" | "call";
 
 /**
  * The App Check token the callable is about to ask for, asked for first so the
@@ -328,6 +332,20 @@ async function appCheckTokenReady(): Promise<void> {
   }
 }
 
+/**
+ * Sign-in finished starting up, if this page started it, waited for first so
+ * the wait has a name. The callable asks Auth for a token before sending, and
+ * that waits on the same startup. A page that never started sign-in skips it.
+ */
+async function authReady(): Promise<void> {
+  try {
+    const { currentFirebaseAuth } = await import("@/lib/firebase/client");
+    await currentFirebaseAuth()?.authStateReady();
+  } catch {
+    /* The callable leaves the token off and reports what it finds. */
+  }
+}
+
 async function callMeter(
   data: Record<string, unknown>,
   onStage: (stage: MeterStage) => void = () => {},
@@ -337,15 +355,36 @@ async function callMeter(
   const { callCookPilotParser } = await import("@/lib/parser");
   onStage("app_check");
   await appCheckTokenReady();
+  onStage("auth");
+  await authReady();
   onStage("call");
   return callCookPilotParser(IMPORT_METER_CALLABLE, { ...data, ...browserTimeZone() });
+}
+
+/**
+ * A meter call that was given up on and still hasn't answered. Every call
+ * waits on the same App Check and sign-in startup, so while one is stuck there
+ * the next would only queue behind it: on 2026-11-12 one Safari page waited
+ * the full five seconds on every import, and none of its calls ever came back.
+ * Until this one answers, either way, a reservation fails open at once (the
+ * same answer it would get after the wait) and the hang is reported once.
+ */
+let unanswered: Promise<unknown> | null = null;
+
+function noteUnanswered(work: Promise<unknown>): void {
+  unanswered = work;
+  const answered = () => {
+    if (unanswered === work) unanswered = null;
+  };
+  work.then(answered, answered);
 }
 
 /**
  * Reports a meter call that didn't answer, and, when it was a timeout, how the
  * abandoned call ended. The second event is what tells a slow answer from no
  * answer: a cold start comes back a few seconds late and fine, a hang comes
- * back a minute later as an error or never.
+ * back a minute later as an error or never. A timeout behind a call already
+ * reported stuck isn't reported again: it's the same wait.
  */
 function reportUnavailable(
   op: "reserve" | "settle",
@@ -355,6 +394,10 @@ function reportUnavailable(
   startedAt: number,
 ): "timeout" | "error" {
   const reason = err instanceof MeterTimeout ? "timeout" : "error";
+  if (reason === "timeout") {
+    if (unanswered) return reason;
+    noteUnanswered(work);
+  }
   track("import_meter_unavailable", { op, reason, stage });
   if (reason === "timeout") {
     const late = (ok: boolean) =>
@@ -472,6 +515,10 @@ export async function reserveImport(input: {
   const startedAt = Date.now();
   const at: { stage: MeterStage } = { stage: "load" };
   const keyed = input.dedupeInput ? dedupeKeyFor(input.dedupeInput) : Promise.resolve(undefined);
+  if (unanswered) {
+    const repeat = countedBefore(await keyed, Date.now());
+    return { status: "unavailable", meterMs: Date.now() - startedAt, reason: "timeout", ...(repeat ? { repeat } : {}) };
+  }
   const work = (async () => {
     const dedupeKey = await keyed;
     if (dedupeKey) pendingDedupeKeys.set(input.importId, dedupeKey);

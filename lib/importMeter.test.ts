@@ -15,7 +15,9 @@ import {
   refuseImportIfSpent,
   subscribeImportRefusal,
   rememberedImportUsage,
+  reserveImport,
   resetImportUsageForTest,
+  settleImport,
   usageNow,
 } from "@/lib/importMeter";
 
@@ -218,6 +220,46 @@ describe("a missing or slow meter imports normally", () => {
       "import_meter_unavailable",
       expect.objectContaining({ op: "reserve", reason: "timeout" }),
     );
+  });
+});
+
+describe("a meter call that never answers", () => {
+  // Safari 18, 2026-11-12: every reserve and settle on one page timed out at
+  // stage `call` and none ever came back, not even as the SDK's own 70-second
+  // error. The callable was stuck before its request left, so every later call
+  // on that page queued behind the same wait: each import paid the full five
+  // seconds again, and each reported another reserve and settle "unavailable".
+  test("later imports don't wait on it again, and it's reported once", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    let answerFirst: (value: unknown) => void = () => {};
+    let asks = 0;
+    callCookPilotParser.mockImplementation(() => {
+      asks += 1;
+      return asks === 1 ? new Promise((resolve) => (answerFirst = resolve)) : new Promise(() => {});
+    });
+    const unavailable = () => track.mock.calls.filter(([name]) => name === "import_meter_unavailable");
+
+    const first = reserveImport({ importId: "a", method: "url" });
+    await vi.advanceTimersByTimeAsync(IMPORT_METER_TIMEOUT_MS);
+    expect(await first).toMatchObject({ status: "unavailable", reason: "timeout" });
+    settleImport("a", "success");
+
+    for (const importId of ["b", "c"]) {
+      let done = false;
+      const next = reserveImport({ importId, method: "text" }).finally(() => (done = true));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(done).toBe(true);
+      expect(await next).toMatchObject({ status: "unavailable", reason: "timeout" });
+      settleImport(importId, "failure");
+    }
+    await vi.advanceTimersByTimeAsync(IMPORT_METER_TIMEOUT_MS * 2);
+    expect(unavailable()).toEqual([["import_meter_unavailable", { op: "reserve", reason: "timeout", stage: "call" }]]);
+
+    // Once it does answer (a cold start, just slow), the meter is asked again.
+    answerFirst(RESERVED);
+    callCookPilotParser.mockResolvedValue(RESERVED);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(await reserveImport({ importId: "d", method: "url" })).toMatchObject({ status: "reserved" });
   });
 });
 

@@ -36,6 +36,23 @@ describe("fonts", () => {
     expect(stacks.filter((stack) => !/:\s*(var\(--|inherit\b|initial\b|unset\b)/.test(stack))).toEqual([]);
   });
 
+  // Document is "a recipe typed in Times New Roman". That font is Microsoft's and
+  // can't be bundled, and Tinos, its stand-in until 2026-11-12, only shares its
+  // widths: the letters are a different design, and it read as "not Times". TeX
+  // Gyre Termes is a free Times, with the same shapes and the same widths, so
+  // nothing moves.
+  it("on the Document theme are a Times, bundled", () => {
+    const css = readFileSync("app/print/print.css", "utf8");
+    const rule = css.match(/\.recipe-template--document\s*\{([^}]*)\}/)?.[1] ?? "";
+    for (const property of ["font-family", "--recipe-title-font"]) {
+      expect(rule.match(new RegExp(`(?:^|\\s)${property}\\s*:\\s*([^;]+)`))?.[1], property).toMatch(/^var\(--font-termes\)/);
+    }
+    const layout = readFileSync("app/layout.tsx", "utf8");
+    const termes = layout.match(/localFont\(\{([^]*?)variable:\s*"--font-termes"/)?.[1] ?? "";
+    expect(termes).toMatch(/\.\/fonts\/tex-gyre-termes\/[^"]+-400-normal\.woff2/);
+    expect(termes).toMatch(/\.\/fonts\/tex-gyre-termes\/[^"]+-700-normal\.woff2/);
+  });
+
   it("each come with their licence", () => {
     const families = readdirSync("app/fonts").filter((name) => statSync(join("app/fonts", name)).isDirectory());
     expect(families.length).toBeGreaterThan(0);

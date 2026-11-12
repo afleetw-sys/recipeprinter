@@ -50,6 +50,12 @@ export function getFirebaseApp(): FirebaseApp {
 }
 
 let authInstance: Auth | null = null;
+
+/** Auth if this page has started it, or null. Never starts it (or loads sign-in code). */
+export function currentFirebaseAuth(): Auth | null {
+  return authInstance;
+}
+
 export function getFirebaseAuth(): Auth {
   if (authInstance) return authInstance;
   const app = getFirebaseApp();

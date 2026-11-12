@@ -2,14 +2,14 @@ import { recipePrinterUserPath } from "@/lib/firebase/recipePrinterPaths";
 import { localStore } from "@/lib/storage";
 
 /**
- * Whether the "Ready for another recipe?" dialog has been shown
+ * Whether the "Another recipe?" dialog has been shown
  * (components/PrintDialogs.tsx). It shows once per person, ever, after their
  * first card print or download or their second card import, whichever comes
  * first: once per browser, and once per account wherever that account signs
  * in (the same shape as lib/proDeclineAsked.ts). Pro is never asked.
  *
  * New keys on purpose, twice. 2026-10-26: it came back in the referral
- * invite's place. 2026-11-10: it became "Ready for another recipe?" (it was
+ * invite's place. 2026-11-10: it became "Another recipe?" (it was
  * "Leave feedback"), and everyone sees the new one once, including whoever saw
  * the old one (`feedback-prompt-seen:v2` here, `feedbackPromptSeenAt` on the
  * account, which is write-once and so can't be cleared).

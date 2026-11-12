@@ -2513,7 +2513,7 @@ export default function PrintPage() {
   }, [cookPilotUser?.uid]);
 
   /**
-   * "Ready for another recipe?" (components/PrintDialogs.tsx), in the invite's
+   * "Another recipe?" (components/PrintDialogs.tsx), in the invite's
    * place while the referral program is hidden: once per person, after the
    * first card print or download. Never after an import.
    * Not for Pro, who can already put several recipes in one print.
@@ -2531,7 +2531,7 @@ export default function PrintPage() {
   }
 
   // The second card import offers the referral invite too, after the card
-  // has had a moment on screen. Never "Ready for another recipe?": that is
+  // has had a moment on screen. Never "Another recipe?": that is
   // for after a print or a download only, not for a cook who has just
   // brought a recipe in (Amelia, 2026-11-11; e2e/import.spec.ts).
   useEffect(() => {
@@ -3145,7 +3145,7 @@ export default function PrintPage() {
 
   /**
    * "Print another" (the rail and the phone toolbar) and "Print a different
-   * recipe" (the "Ready for another recipe?" dialog). Opens the same Add dialog as Add more,
+   * recipe" (the "Another recipe?" dialog). Opens the same Add dialog as Add more,
    * and the recipe the cook brings in takes the current one's place: same
    * deck, same theme and size. See `swapRecipe`.
    */
