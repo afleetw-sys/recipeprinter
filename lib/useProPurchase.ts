@@ -5,7 +5,12 @@ import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { track, truncateReason } from "@/lib/analytics";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
-import { currentAccountUser, hasProEntitlement, purchaseRecipePrinterPro } from "@/lib/recipePrinterPurchases";
+import {
+  currentAccountUser,
+  hasProEntitlement,
+  loadStripeEarly,
+  purchaseRecipePrinterPro,
+} from "@/lib/recipePrinterPurchases";
 import { cachedReferralSummary, referralPurchaseProps } from "@/lib/referral";
 import { announceProWelcome } from "@/lib/proWelcome";
 import type { ProBillingCycle } from "@/lib/proProduct";
@@ -112,6 +117,9 @@ export function useProPurchase({
         return;
       }
       customerId = account.uid;
+      // Stripe.js downloads while the account is linked, not after: it doesn't
+      // depend on who is buying (lib/checkoutLoad.test.ts).
+      loadStripeEarly();
       const linkedInfo = linkCustomer ? await linkCustomer(customerId) : null;
       if (!allowWhileActive && hasProEntitlement(linkedInfo)) {
         onSettled("already-active");
