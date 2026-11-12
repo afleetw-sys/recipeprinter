@@ -179,11 +179,8 @@ test("a phone shows text size only under Customize theme, for cards and cookbook
       await expect(page.locator(".cookbook-welcome")).toBeVisible();
       await page.keyboard.press("Escape");
     }
-    // Every tile that opens something on this page. Swap recipe leaves for the
-    // importer, so it opens nothing here to check.
-    const tiles = page
-      .locator('.recipe-mobile-toolbar__btn:not([aria-label="Print a different recipe"])')
-      .filter({ visible: true });
+    // Every tile that opens something on this page.
+    const tiles = page.locator(".recipe-mobile-toolbar__btn").filter({ visible: true });
     await expect(tiles.first()).toBeVisible();
 
     const showing: string[] = [];
