@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ImportTab } from "@/types/recipe";
 import { IMAGE_SUBMIT_LABEL, ImportPanel } from "@/components/ImportPanel";
 import { MenuSelect } from "@/components/MenuSelect";
+import { BookRecipePicker, type BookRecipe } from "@/components/BookRecipePicker";
 import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
 import { track } from "@/lib/analytics";
@@ -30,7 +31,9 @@ export function AddRecipeDialog({
   librarySingleSelect = false,
   onLibraryLockedTap,
   chapterTarget,
-  title = "Add recipes",
+  bookRecipes,
+  from = "new",
+  title,
 }: {
   open: boolean;
   onClose: () => void;
@@ -62,9 +65,33 @@ export function AddRecipeDialog({
     value: string | null;
     onChange: (sectionId: string) => void;
   };
+  /**
+   * The recipes the book already holds, so a chapter can take some of them
+   * instead of only new imports. Offered while `chapterTarget` names a chapter
+   * and some recipe sits outside it. `onMove` puts the ticked ones at the end
+   * of that chapter.
+   */
+  bookRecipes?: {
+    /** Each with the id of the section it is in now. */
+    recipes: (BookRecipe & { sectionId: string })[];
+    onMove: (itemIds: string[], sectionId: string) => void;
+  };
+  /** Opened from a chapter's "Add existing": the book's own recipes instead
+      of the import tabs. Ignored when there is nothing to bring in. */
+  from?: "new" | "book";
   /** "Add your first recipe" when opened from the cookbook welcome. */
   title?: string;
 }) {
+  const [bookSelection, setBookSelection] = useState<Set<string>>(() => new Set());
+  const targetSectionId = chapterTarget?.value ?? null;
+  const movableRecipes = targetSectionId
+    ? (bookRecipes?.recipes ?? []).filter((recipe) => recipe.sectionId !== targetSectionId)
+    : [];
+  const offersBook = Boolean(chapterTarget && targetSectionId && movableRecipes.length > 0);
+  const fromBook = offersBook && from === "book";
+  useEffect(() => {
+    if (!open) setBookSelection(new Set());
+  }, [open]);
   /** Filled in by the import panel; lets Add finish the entry in the form. */
   const commitImportRef = useRef<(() => boolean | Promise<boolean>) | null>(null);
   /** Done is adding the recipes ticked in a library, which takes a moment. */
@@ -137,7 +164,7 @@ export function AddRecipeDialog({
       }`}
     >
       <div className="recipe-add-dialog__header">
-        <h2 id="recipe-add-dialog-title">{title}</h2>
+        <h2 id="recipe-add-dialog-title">{title ?? (fromBook ? "Add existing recipes" : "Add recipes")}</h2>
         <button
           type="button"
           className="recipe-add-dialog__close icon-close-btn"
@@ -161,6 +188,13 @@ export function AddRecipeDialog({
             />
           </div>
         )}
+        {fromBook ? (
+          <BookRecipePicker
+            recipes={movableRecipes}
+            selectedIds={bookSelection}
+            onSelectedIdsChange={setBookSelection}
+          />
+        ) : (
         <ImportPanel
           commitRef={commitImportRef}
           onSubmitted={onClose}
@@ -190,7 +224,7 @@ export function AddRecipeDialog({
           librarySingleSelect={librarySingleSelect}
           onLibraryLockedTap={onLibraryLockedTap}
         />
-
+        )}
       </div>
 
       {/* One action. The panel's own submit is hidden (`hideSubmit`) and this
@@ -213,6 +247,17 @@ export function AddRecipeDialog({
           className="btn btn-primary w-full"
           disabled={finishing}
           onClick={async () => {
+            if (fromBook) {
+              if (bookSelection.size > 0 && targetSectionId) {
+                // In book order, not the order they were ticked in.
+                const ids = movableRecipes
+                  .map((recipe) => recipe.item.id)
+                  .filter((id) => bookSelection.has(id));
+                bookRecipes?.onMove(ids, targetSectionId);
+              }
+              onClose();
+              return;
+            }
             const result = commitImportRef.current?.();
             if (result instanceof Promise) {
               setFinishing(true);
@@ -230,7 +275,11 @@ export function AddRecipeDialog({
           }}
         >
           {finishing && <SpinnerIcon size={ICON_SIZE.md} />}
-          {addsOnPick
+          {fromBook
+            ? bookSelection.size > 0
+              ? "Add to chapter"
+              : "Done"
+            : addsOnPick
             ? "Done"
             : mode === "image"
               ? IMAGE_SUBMIT_LABEL

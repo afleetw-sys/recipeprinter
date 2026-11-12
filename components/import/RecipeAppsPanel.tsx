@@ -483,7 +483,7 @@ export function RecipeAppsPanel({
         />
         <IntegrationCard
           name="Paprika"
-          description="Export your library from Paprika, then open that file here."
+          description="Open your Paprika export here, then pick the recipes you want."
           status={paprikaStatus}
           addedCount={addedCounts.paprika}
           // Inset in the 44px tile like CookPilot's, rather than filling it.
