@@ -2,6 +2,7 @@
 
 import { sessionStore } from "@/lib/storage";
 import type { ProBillingCycle } from "@/lib/proProduct";
+import { currentPagePath } from "@/lib/currentPagePath";
 
 /**
  * "I chose a Pro plan, and then you asked me to sign in."
@@ -40,6 +41,10 @@ export interface ProUpgradeIntent {
 
 interface StoredProUpgradeIntent extends ProUpgradeIntent {
   at: number;
+  /** The page the plan was chosen on (path and query), so a sign-in redirect
+      that comes back somewhere else can be sent back to it
+      (`lib/purchaseAfterSignIn`'s `purchaseReturnPath`). */
+  returnTo?: string | null;
 }
 
 /** Records the plan a signed-out cook chose, waiting on the sign-in that
@@ -49,6 +54,7 @@ export function rememberProUpgradeIntent(trigger: string, cycle: ProBillingCycle
     trigger,
     cycle,
     at: Date.now(),
+    returnTo: currentPagePath(),
   } satisfies StoredProUpgradeIntent);
 }
 
@@ -62,6 +68,14 @@ export function forgetProUpgradeIntent(): void {
 export function hasProUpgradeIntent(now = Date.now()): boolean {
   const intent = sessionStore.getJson<StoredProUpgradeIntent>(PRO_UPGRADE_INTENT_KEY);
   return !!intent && Number.isFinite(intent.at) && now - intent.at <= PRO_UPGRADE_INTENT_TTL_MS;
+}
+
+/** Where the waiting plan was chosen, while it is still live: the page a
+ *  returning sign-in redirect belongs on. Does not spend it. */
+export function proUpgradeIntentReturnPath(now = Date.now()): string | null {
+  const intent = sessionStore.getJson<StoredProUpgradeIntent>(PRO_UPGRADE_INTENT_KEY);
+  if (!intent || !Number.isFinite(intent.at) || now - intent.at > PRO_UPGRADE_INTENT_TTL_MS) return null;
+  return typeof intent.returnTo === "string" ? intent.returnTo : null;
 }
 
 /** The plan to resume checkout with, spending the intent if present.

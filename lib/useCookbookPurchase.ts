@@ -41,7 +41,8 @@ interface UseCookbookPurchaseOptions {
       the same session can't also resolve the discounted product. */
   onCookbookGranted: (usedDiscount: boolean) => void;
   /** Buy was pressed signed out. Checkout doesn't open; the caller asks the
-      cook to sign in, and the next press buys. */
+      cook to sign in and resumes the purchase once they have (see
+      `lib/purchaseAfterSignIn`, which carries it across a phone's redirect). */
   onSignInRequired: () => void;
   /** Links the account to RevenueCat before checkout when sign-in's own link
       hasn't landed (`usePremiumTemplatePurchase`'s `linkAccountCustomer`). */
