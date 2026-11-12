@@ -480,9 +480,17 @@ export const STRIPE_JS_URL = "https://js.stripe.com/dahlia/stripe.js";
  * waits on, rather than after them (it used to be the second-last step of a
  * strictly serial chain). Only on a click to buy: Stripe.js is a third party
  * with its own cookies, so it has no business on a page nobody is paying on.
+ *
+ * Exported for the purchase hooks, which call it at the press, before they
+ * wait for the account to be linked to RevenueCat: Stripe.js doesn't depend
+ * on who is buying. Safe to call more than once; the first tag wins.
  */
-function loadStripeEarly(): void {
+export function loadStripeEarly(): void {
   if (typeof document === "undefined") return;
+  // No RevenueCat, no checkout to open (`revenueCatApiKey` refuses it), so
+  // nothing to fetch Stripe for. Since this runs before the account link, it
+  // would otherwise reach Stripe on builds that can never take a payment.
+  if (!process.env.NEXT_PUBLIC_REVENUECAT_WEB_API_KEY) return;
   if (document.querySelector('script[src^="https://js.stripe.com/"]')) return;
   const script = document.createElement("script");
   script.src = STRIPE_JS_URL;
