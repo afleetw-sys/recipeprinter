@@ -1463,6 +1463,7 @@ export function PageRail(props: PageRailProps) {
                         </button>
                         {organizeMode ? (
                           <ChapterNameInput
+                            autosize
                             className="recipe-page-rail__section-title-input"
                             value={section.title ?? ""}
                             placeholder="Chapter name"
@@ -1731,7 +1732,7 @@ export function PageRail(props: PageRailProps) {
                     >
                       <span>
                         {canPickFromBook(group.sectionId!)
-                          ? "Drag a recipe here, add a new one, or pick from this book."
+                          ? "Drag a recipe here, or add a new or existing one."
                           : "Drag a recipe here, or add a new one."}
                       </span>
                       <ChapterAddSplit

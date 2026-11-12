@@ -76,7 +76,7 @@ export function AddRecipeDialog({
     recipes: (BookRecipe & { sectionId: string })[];
     onMove: (itemIds: string[], sectionId: string) => void;
   };
-  /** Opened from a chapter's "From this book": the book's own recipes instead
+  /** Opened from a chapter's "Add existing": the book's own recipes instead
       of the import tabs. Ignored when there is nothing to bring in. */
   from?: "new" | "book";
   /** "Add your first recipe" when opened from the cookbook welcome. */
@@ -164,7 +164,7 @@ export function AddRecipeDialog({
       }`}
     >
       <div className="recipe-add-dialog__header">
-        <h2 id="recipe-add-dialog-title">{title ?? (fromBook ? "Add from this book" : "Add recipes")}</h2>
+        <h2 id="recipe-add-dialog-title">{title ?? (fromBook ? "Add existing recipes" : "Add recipes")}</h2>
         <button
           type="button"
           className="recipe-add-dialog__close icon-close-btn"

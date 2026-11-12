@@ -8,8 +8,8 @@ import { BookIcon, ChevronDownIcon, ICON_SIZE, PlusIcon } from "@/components/ico
 export type ChapterAddFrom = "new" | "book";
 
 const LABEL: Record<ChapterAddFrom, string> = {
-  new: "Add recipe",
-  book: "From this book",
+  new: "Add new",
+  book: "Add existing",
 };
 
 /* The last one used, for every chapter at once, so it stays put while a cook
@@ -50,10 +50,10 @@ function subscribe(listener: () => void) {
 /**
  * A chapter's Add button, split the way Print and Download are.
  *
- * The main half does whichever of "Add recipe" and "From this book" was used
+ * The main half does whichever of "Add new" and "Add existing" was used
  * last; the arrow offers the other, and choosing it there makes it the main
  * half from then on. With nothing elsewhere in the book to bring in, it is a
- * plain Add recipe button: an arrow onto an empty list is a dead end.
+ * plain Add new button: an arrow onto an empty list is a dead end.
  */
 export function ChapterAddSplit({
   onAdd,
