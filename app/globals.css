@@ -2446,17 +2446,22 @@
   }
 
   /* "1 Import your file, 2 Pick your recipes" above an open library. The done
-     step is ticked and quiet; the current one is the bold line. Stacks on a
-     phone, sits side by side wherever there's room. */
+     step is ticked and quiet and holds the file; the current one is bold, and
+     the list under it is its body. */
   .import-steps {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px 20px;
+    flex-direction: column;
+    gap: 14px;
     margin: 0;
     padding: 0;
     list-style: none;
   }
   .import-steps__step {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .import-steps__head {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -2465,7 +2470,7 @@
     font-weight: 700;
     line-height: 1.25;
   }
-  .import-steps__step--done {
+  .import-steps__step--done .import-steps__head {
     color: var(--cp-ink-soft);
     font-weight: 600;
   }
@@ -2484,11 +2489,6 @@
   }
   .import-steps__step--done .import-steps__num {
     background: var(--cp-accent-soft);
-  }
-  .import-steps__detail {
-    margin-left: 6px;
-    font-size: var(--cp-fs-small);
-    font-weight: 500;
   }
 
   .mode-toggle-overflow {

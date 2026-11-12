@@ -49,6 +49,7 @@ import type { useProjectMeta } from "@/lib/project";
 import type { useRailDrag } from "@/lib/useRailDrag";
 import type { useRailSelection } from "@/lib/useRailSelection";
 import type { QueueItem, Section, RailSortMode } from "@/types/recipe";
+import { ChapterAddSplit, type ChapterAddFrom } from "@/components/print/ChapterAddSplit";
 import { AnchoredMenu } from "@/components/AnchoredMenu";
 import { ChapterNameInput } from "@/components/print/ChapterNameInput";
 import {
@@ -242,6 +243,8 @@ interface PageRailProps {
   setPendingAddIndex: Dispatch<SetStateAction<number | null>>;
   setPendingAddAfterRecipeId: Dispatch<SetStateAction<string | null>>;
   setShowAddRecipeDialog: Dispatch<SetStateAction<boolean>>;
+  /** Which way the Add dialog opens: new imports, or this book's recipes. */
+  setAddDialogFrom: (from: ChapterAddFrom) => void;
   openAddRecipeBelow: (navItem?: NavItem | null) => void;
   addSectionDivider: () => void;
   /** Adds a blank page after the page being looked at (cookbook only). */
@@ -321,6 +324,7 @@ export function PageRail(props: PageRailProps) {
     setPendingAddIndex,
     setPendingAddAfterRecipeId,
     setShowAddRecipeDialog,
+    setAddDialogFrom,
     openAddRecipeBelow,
     addSectionDivider,
     addBlankPage,
@@ -515,8 +519,15 @@ export function PageRail(props: PageRailProps) {
       });
     });
   }
+  /** Some finished recipe sits outside this chapter, so it could be brought in. */
+  const canPickFromBook = (sectionId: string) =>
+    sections.some(
+      (section) =>
+        section.id !== sectionId && section.items.some((item) => !item.pageKind && item.status === "ready"),
+    );
   /** Opens the Add recipe dialog aimed at the end of one chapter. */
-  const openAddToSection = (sectionId: string) => {
+  const openAddToSection = (sectionId: string, from: ChapterAddFrom = "new") => {
+    setAddDialogFrom(from);
     setPendingAddSectionId(sectionId);
     setPendingAddIndex(itemIdsForSection(sectionId).length);
     // Anchor to the LAST recipe already in the chapter, same as everywhere else
@@ -1343,15 +1354,10 @@ export function PageRail(props: PageRailProps) {
                         })()}
                       </span>
                       {!organizeFiltering && (
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-header recipe-page-rail__section-add"
-                          onClick={() => openAddToSection(group.sectionId!)}
-                          onPointerDown={(event) => event.stopPropagation()}
-                        >
-                          <PlusIcon size={ICON_SIZE.sm} />
-                          Add recipe
-                        </button>
+                        <ChapterAddSplit
+                          canPickFromBook={canPickFromBook(group.sectionId!)}
+                          onAdd={(from) => openAddToSection(group.sectionId!, from)}
+                        />
                       )}
                     </div>
                   )}
@@ -1476,18 +1482,10 @@ export function PageRail(props: PageRailProps) {
                           })()}
                         </span>
                         {!organizeFiltering && !sectionFolded(section.id) && (
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-header recipe-page-rail__section-add"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              openAddToSection(section.id);
-                            }}
-                            onPointerDown={(event) => event.stopPropagation()}
-                          >
-                            <PlusIcon size={ICON_SIZE.sm} />
-                            Add recipe
-                          </button>
+                          <ChapterAddSplit
+                            canPickFromBook={canPickFromBook(section.id)}
+                            onAdd={(from) => openAddToSection(section.id, from)}
+                          />
                         )}
                         {/* Move, rename and delete wait in a menu so the
                             chapter name stays the main thing. A folded chapter
@@ -1731,15 +1729,15 @@ export function PageRail(props: PageRailProps) {
                       className="recipe-organize-chapter-empty"
                       data-rail-section-add={group.sectionId}
                     >
-                      <span>Drag a recipe here, or add a new one.</span>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-header"
-                        onClick={() => openAddToSection(group.sectionId!)}
-                      >
-                        <PlusIcon size={ICON_SIZE.sm} />
-                        Add recipe
-                      </button>
+                      <span>
+                        {canPickFromBook(group.sectionId!)
+                          ? "Drag a recipe here, add a new one, or pick from this book."
+                          : "Drag a recipe here, or add a new one."}
+                      </span>
+                      <ChapterAddSplit
+                        canPickFromBook={canPickFromBook(group.sectionId!)}
+                        onAdd={(from) => openAddToSection(group.sectionId!, from)}
+                      />
                     </div>
                   )}
                   </div>
