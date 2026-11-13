@@ -2535,7 +2535,9 @@
     border: 0;
     border-radius: 8px;
     background: transparent;
-    font: inherit;
+    /* The family only: `font: inherit` also took the size and weight from
+       the list around it, a size bigger than step 2's head. */
+    font-family: inherit;
     text-align: left;
     cursor: pointer;
   }
