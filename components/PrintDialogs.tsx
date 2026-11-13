@@ -77,13 +77,13 @@ export function PrintDialogs({
                 the quiet link at the bottom. */}
             <div className="another-recipe__heading">
               <CheckCircleIcon size={22} className="another-recipe__check" />
-              <h2 id="print-success-title">Another recipe?</h2>
+              <h2 id="print-success-title">Ready to print your next one?</h2>
             </div>
             <p>Print a different recipe in the same theme and size.</p>
             <div className="another-recipe__actions">
               <button type="button" className="btn btn-primary w-full" onClick={onSwapRecipe}>
                 <SwapIcon size={ICON_SIZE.md} />
-                Print another
+                Change recipe
               </button>
               <button
                 type="button"

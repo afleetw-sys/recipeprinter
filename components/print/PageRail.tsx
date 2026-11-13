@@ -833,7 +833,7 @@ export function PageRail(props: PageRailProps) {
                 title="Print a different recipe"
               >
                 <SwapIcon size={ICON_SIZE.md} />
-                <span>Print another</span>
+                <span>Change recipe</span>
               </button>
             )}
             {projectMeta.meta.cookbookMode && (

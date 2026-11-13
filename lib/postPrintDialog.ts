@@ -2,7 +2,7 @@ import { recipePrinterUserPath } from "@/lib/firebase/recipePrinterPaths";
 import { localStore } from "@/lib/storage";
 
 /**
- * Whether the "Another recipe?" dialog has been shown
+ * Whether the "Ready to print your next one?" dialog has been shown
  * (components/PrintDialogs.tsx). It shows once per person, ever, after their
  * first card print or download or their second card import, whichever comes
  * first: once per browser, and once per account wherever that account signs
