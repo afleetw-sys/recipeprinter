@@ -5359,6 +5359,18 @@ textarea.recipe-page-fields__input {
   background: var(--cp-surface-soft);
 }
 
+/* On paper the in-page box is nothing. It is the photo's own frame, so every
+   theme dresses it like a photo (Classic's mat, Bistro's tilted frame, Diner's
+   sky-blue mat, Pantry's tape), and with the icon gone that printed an empty
+   frame where the photo goes. Hidden, not removed: it keeps the space the page
+   was measured with, so the paper lays out like the preview, just blank there.
+   e2e/empty-photo-never-prints.spec.ts. */
+@media print {
+  .recipe-card__photo--placeholder {
+    visibility: hidden !important;
+  }
+}
+
 .photo-placeholder__icon {
   display: grid;
   place-items: center;
