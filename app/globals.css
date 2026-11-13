@@ -2511,6 +2511,31 @@
     font-weight: 700;
     line-height: 1.25;
   }
+  /* The done step's head is the button that opens it. */
+  .import-steps__toggle {
+    align-self: flex-start;
+    margin: -4px -8px;
+    padding: 4px 8px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .import-steps__toggle:hover {
+    background: var(--cp-selected-fill);
+  }
+  .import-steps__toggle:focus-visible {
+    outline: var(--cp-focus-ring);
+    outline-offset: 2px;
+  }
+  .import-steps__chevron {
+    transition: transform 150ms ease;
+  }
+  .import-steps__toggle[aria-expanded="true"] .import-steps__chevron {
+    transform: rotate(180deg);
+  }
   .import-steps__step--done .import-steps__head {
     color: var(--cp-ink-soft);
     font-weight: 600;
