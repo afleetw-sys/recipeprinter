@@ -228,7 +228,7 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     width: 1600,
     height: 957,
     alt:
-      "A CookPilot library of 64 recipes open in RecipePrinter, with recipes being added to the print queue alongside.",
+      "A CookPilot library of 64 recipes open in RecipePrinter, with recipes being added to the pages alongside.",
   },
   "inline-editing": {
     src: "/images/inline-editing.png",

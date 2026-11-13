@@ -256,7 +256,7 @@ export async function POST(request: Request) {
     body = await response.json();
   } catch {
     console.warn(`cookbook-pdf: renderer returned unparseable JSON requestId=${requestId}`);
-    return jsonError("The cookbook renderer returned an invalid response. Try again in a moment.", 502);
+    return jsonError("We couldn't finish your cookbook PDF. Try again in a moment.", 502);
   }
   const downloadUrl = body.downloadUrl;
   const pageCount = body.pageCount;
@@ -270,7 +270,7 @@ export async function POST(request: Request) {
     console.warn(
       `cookbook-pdf: renderer returned an invalid success requestId=${requestId} body=${JSON.stringify(body).slice(0, 500)}`,
     );
-    return jsonError("The cookbook renderer returned an invalid response. Try again in a moment.", 502);
+    return jsonError("We couldn't finish your cookbook PDF. Try again in a moment.", 502);
   }
 
   // A successful render used to log nothing at all — every failure was

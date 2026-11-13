@@ -4279,8 +4279,8 @@ export default function PrintPage() {
       track("cookbook_export_failed", { preset: presetId, role: "cover", ...cookbookExportFailure(error) });
       setCookbookExportError(
         error instanceof CookbookPdfError
-          ? `Your pages PDF is safe, but the cover couldn't be prepared. ${error.message}`
-          : "Your pages PDF is safe, but the cover couldn't be prepared. Try again.",
+          ? `Your interior pages PDF downloaded, but the cover couldn't be prepared. ${error.message}`
+          : "Your interior pages PDF downloaded, but the cover couldn't be prepared. Try again.",
       );
     } finally {
       setExportingPreset(null);
@@ -8357,7 +8357,7 @@ export default function PrintPage() {
                 ? "They'll be removed from this cookbook."
                 : cookbookMode
                   ? "It'll be removed from this cookbook."
-                  : "It'll be removed from your print list."
+                  : "It'll be removed from your pages."
         }
         deletePrimaryLabel={
           pendingDelete?.kind === "section"
@@ -8499,6 +8499,7 @@ export default function PrintPage() {
           if (swapRef.current && !swapRef.current.baseline) swapRef.current = null;
         }}
         title={addingFirstRecipe ? "Add your first recipe" : swapDialogOpen ? "Print a different recipe" : undefined}
+        replacing={swapDialogOpen && !addingFirstRecipe}
         items={queue.items}
         onAddUrl={(url) => {
           armSwap();

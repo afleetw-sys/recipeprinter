@@ -370,7 +370,7 @@ export const FAQ: FaqItem[] = [
     question: "Can I print several recipes at once?",
     group: "what-you-get",
     answer:
-      "Yes, with RecipePrinter Pro. Add as many as you like to the print queue and send them all in one job, which is what most people do for a recipe binder, a week of dinners, or a family cookbook. Printing one recipe at a time is free, no account needed.",
+      "Yes, with RecipePrinter Pro. Add as many as you like and print them all at once, which is what most people do for a recipe binder, a week of dinners, or a family cookbook. Printing one recipe at a time is free, no account needed.",
     guides: [
       "print-multiple-recipes",
       "print-meal-plan-recipes",
@@ -393,7 +393,7 @@ export const FAQ: FaqItem[] = [
     question: "Are my recipes stored on your servers?",
     group: "account",
     answer:
-      "Only if you choose to save them. Used without an account, your print queue lives in your browser for the current session only and is never stored on our servers. If you sign in and save recipes or build a cookbook, it is stored in your account so you can reopen it from any device.",
+      "Not unless you sign in and save. Without an account, your recipes, projects and photos stay in this browser, and we can't see them. To read a recipe, we send it to our recipe-reading service, and if an import fails, we keep a copy of what you sent so we can fix it. Your browser also gets a random ID that counts your free imports. If you sign in and save, your projects and cookbooks are stored in your account. The privacy policy has the details.",
   },
   {
     question: "Is RecipePrinter free?",
@@ -499,7 +499,7 @@ export function webApplicationNode() {
       {
         "@type": "Offer",
         name: "RecipePrinter Pro",
-        description: `Unlimited link and text imports, up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photo imports an hour, every theme, 4×6 cards, batch printing`,
+        description: `Unlimited link and text imports, up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photo imports an hour, every theme, 4×6 cards, and a way to print several recipes at once`,
         priceCurrency: "USD",
         priceSpecification: [
           {
@@ -526,7 +526,7 @@ export function webApplicationNode() {
       "Print a recipe from a photo or screenshot",
       "Paste recipe text and print it",
       "Build printable recipe collections and binders",
-      "RecipePrinter Pro: every theme, 4×6 recipe cards, and printing multiple recipes at once",
+      "RecipePrinter Pro: every theme, 4×6 recipe cards, and a way to print several recipes at once",
       "Make a cookbook with a cover, chapters, and an automatic table of contents",
       "Export a print-ready cookbook PDF for home printing or professional binding",
     ],

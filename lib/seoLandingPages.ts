@@ -579,7 +579,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I save several recipes in one PDF?",
         answer:
-          "Yes, with RecipePrinter Pro. Add multiple recipes to the print queue and save them together as one PDF. A single full-page recipe can be saved as a PDF for free.",
+          "Yes, with RecipePrinter Pro. Add several recipes and save them together as one PDF. A single full-page recipe can be saved as a PDF for free.",
       },
       {
         question: "Can I make a PDF from a photo or screenshot?",
@@ -1247,7 +1247,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print it your way",
-        text: "Print a full page for free or save it as a PDF. Pro adds 4×6 recipe cards and batch printing.",
+        text: "Print a full page for free or save it as a PDF. Pro adds 4×6 recipe cards and a way to print several recipes at once.",
       },
     ],
     featureSections: [
@@ -1489,7 +1489,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print recipes as pages or cards",
-        text: "Print recipes as full pages, save them as PDFs, or use RecipePrinter Pro to make 4×6 recipe cards and print multiple recipes together.",
+        text: "Print recipes as full pages, save them as PDFs, or use RecipePrinter Pro to make 4×6 recipe cards and print several recipes at once.",
       },
     ],
     featureSections: [
@@ -1509,7 +1509,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Print your whole Paprika library or just a few recipes",
         image: "bound-cookbook",
         body:
-          "Export a large Paprika collection and decide what to print after you open it in RecipePrinter. Choose just a few recipes, or use RecipePrinter Pro to print multiple recipes together for a recipe box or binder. In the cookbook builder, you can preview up to 10 recipes free; a separate purchase unlocks downloads and additional recipes.",
+          "Export a large Paprika collection and decide what to print after you open it in RecipePrinter. Choose just a few recipes, or use RecipePrinter Pro to print several recipes at once for a recipe box or binder. In the cookbook builder, you can preview up to 10 recipes free; a separate purchase unlocks downloads and additional recipes.",
         links: [{ phrase: "cookbook builder", href: "/paprika-to-cookbook" }],
       },
     ],
@@ -1528,7 +1528,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print my entire Paprika recipe library?",
         answer:
-          "Yes. You can open a Paprika library export and work with all of the recipes it contains. RecipePrinter Pro lets you add multiple recipes to a print queue, or you can choose only the recipes you want.",
+          "Yes. You can open a Paprika library export and work with all of the recipes it contains. RecipePrinter Pro lets you print several recipes at once, or you can choose only the recipes you want.",
       },
       {
         question: "What recipe details come over from Paprika?",
@@ -2019,7 +2019,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print the whole week at once?",
         answer:
-          "Yes. RecipePrinter Pro lets you print multiple recipes at once: add each of the week's recipes, then print them together in one batch, with the same size and theme on all of them.",
+          "Yes. RecipePrinter Pro lets you print several recipes at once: add each of the week's recipes, then print them together in one batch, with the same size and theme on all of them.",
         links: [{ href: "/print-multiple-recipes", label: "Print multiple recipes at once" }],
       },
       {

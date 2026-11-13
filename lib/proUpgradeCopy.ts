@@ -19,7 +19,7 @@ import {
 //
 // Key order is the canonical order the list reads in when nothing triggered it.
 const BENEFIT_BY_REASON: Record<ProLockReason, string> = {
-  multi_recipe: "Print multiple recipes at once",
+  multi_recipe: "Print several recipes at once",
   card_size: "4×6 recipe cards",
   theme: "All premium themes",
   // Text size was this line until 2026-11; it's one of the Customize
@@ -36,13 +36,13 @@ const NO_BRANDING_BENEFIT = "No RecipePrinter branding on your prints";
 // promising unlimited photos (Amelia, 2026-11-12).
 const UNLIMITED_IMPORTS_BENEFIT = `Unlimited link and text imports, and up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photos an hour`;
 
-// What Basic (the free tier) actually includes. Shared by /account and
+// What Free (the free tier) actually includes. Shared by /account and
 // /pricing, so the two cannot describe the free plan differently — and it's a lot, which the
 // old "Classic & Pantry themes / Full Page printing / one recipe at a time"
 // list undersold by leading with a limitation.
 // "One recipe at a time" is real (see PrintSetupControls.tsx's "This
 // recipe" title) but it's a constraint, not a benefit, so it doesn't belong
-// on a list meant to make the case for staying on Basic being a perfectly
+// on a list meant to make the case for staying on Free being a perfectly
 // good deal. The first line is the import allowance, whose usage /account
 // shows under it. The hourly photo pacing (lib/imageImportQuota.ts) is named
 // only on the Pro line, which would otherwise overclaim. /account still shows
@@ -99,7 +99,7 @@ export const MULTI_RECIPE_FOUND_TRIGGER = "multi_recipe_found";
 export const REMOVE_BRANDING_TRIGGER = "remove_branding";
 
 const TITLE_BY_REASON: Record<ProLockReason, string> = {
-  multi_recipe: "Print multiple recipes at once",
+  multi_recipe: "Print several recipes at once",
   card_size: "Print 4×6 recipe cards",
   theme: "Print with this premium theme",
   font_size: "Customize any theme with Pro",
@@ -123,7 +123,7 @@ export const GENERIC_COPY: ProUpgradeCopy = {
   title: "Upgrade to RecipePrinter Pro",
   benefits: PRO_BENEFITS,
   ...splitBenefits([]),
-  ctaLabel: "Unlock Pro",
+  ctaLabel: "Get Pro",
 };
 
 /**
@@ -158,7 +158,7 @@ export function proUpgradeCopy(
         (a, b) => Number(b === BENEFIT_BY_REASON.multi_recipe) - Number(a === BENEFIT_BY_REASON.multi_recipe),
       ),
       ...splitBenefits([BENEFIT_BY_REASON.multi_recipe]),
-      ctaLabel: `Unlock Pro and add all ${found.count}`,
+      ctaLabel: `Get Pro and add all ${found.count}`,
     };
   }
   if (trigger === IMPORT_LIMIT_TRIGGER) {
@@ -173,7 +173,7 @@ export function proUpgradeCopy(
       body: `${back}${hasRecipes ? "You can still edit and print the recipes you've imported. " : ""}Upgrade to Pro for unlimited recipe imports.`,
       benefits: PRO_BENEFITS,
       ...splitBenefits([], UNLIMITED_IMPORTS_BENEFIT),
-      ctaLabel: "Unlock Pro",
+      ctaLabel: "Get Pro",
     };
   }
   if (trigger === IMAGE_IMPORT_LIMIT_TRIGGER) {
@@ -181,7 +181,7 @@ export function proUpgradeCopy(
       title: `Import up to ${IMAGE_IMPORTS_PER_HOUR_PRO} images an hour`,
       benefits: PRO_BENEFITS,
       ...splitBenefits([]),
-      ctaLabel: "Unlock Pro",
+      ctaLabel: "Get Pro",
     };
   }
   // Before the lock reasons: a locked card size can be selected at the same
@@ -191,7 +191,7 @@ export function proUpgradeCopy(
       title: "Print without RecipePrinter branding",
       benefits: [NO_BRANDING_BENEFIT, ...PRO_BENEFITS.filter((b) => b !== NO_BRANDING_BENEFIT)],
       ...splitBenefits([], NO_BRANDING_BENEFIT),
-      ctaLabel: "Unlock Pro and continue",
+      ctaLabel: "Get Pro and continue",
     };
   }
   if (trigger === "topbar_button" || reasons.length === 0) return GENERIC_COPY;
@@ -206,6 +206,6 @@ export function proUpgradeCopy(
     title: single ? TITLE_BY_REASON[single] : "Unlock your Pro print setup",
     benefits,
     ...splitBenefits(benefits.filter((benefit) => triggered.has(benefit)), alreadySaid),
-    ctaLabel: trigger === "print_button" ? "Unlock Pro and print" : "Unlock Pro and continue",
+    ctaLabel: trigger === "print_button" ? "Get Pro and print" : "Get Pro and continue",
   };
 }

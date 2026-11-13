@@ -10,7 +10,7 @@ import { BASIC_BENEFITS, FREE_IMPORTS_BENEFIT, PRO_BENEFITS } from "@/lib/proUpg
 import { useVisitorPrices } from "@/lib/visitorCurrency";
 
 /**
- * Basic beside Pro, for someone on the free plan: Settings' Plan section,
+ * Free beside Pro, for someone on the free plan: Settings' Plan section,
  * signed in (`AccountProStatus`) or not (app/account/page.tsx), so the two
  * can't disagree about what Pro includes or costs. What Upgrade does is the
  * caller's: checkout for an account, sign-in first for a visitor.
@@ -37,8 +37,8 @@ export function FreePlanCards({
             cards to the tallest one, this just decides where the slack
             inside each card goes. */}
         <div className="flex h-full flex-col border-line py-cp-3 sm:rounded-lg sm:border sm:p-cp-3">
-          <h3 className="text-cp-body font-extrabold text-ink">Basic</h3>
-          <p className="mt-1 text-cp-body font-bold text-ink-soft">Free</p>
+          <h3 className="text-cp-body font-extrabold text-ink">Free</h3>
+          <p className="mt-1 text-cp-body font-bold text-ink-soft">$0</p>
           <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
             {BASIC_BENEFITS.map((benefit) => (
               <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
@@ -88,7 +88,7 @@ export function FreePlanCards({
           <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
             <li className="flex items-start gap-cp-2 text-cp-small font-semibold text-ink">
               <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-              Everything in Basic
+              Everything in Free
             </li>
             {PRO_BENEFITS.map((benefit) => (
               <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">

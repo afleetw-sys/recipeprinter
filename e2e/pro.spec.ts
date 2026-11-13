@@ -30,7 +30,7 @@ async function askForAnotherRecipe(page: Page) {
   await page.getByRole("button", { name: /^Add more\b/ }).filter({ visible: true }).first().click();
 }
 
-const proDialog = (page: Page) => page.getByRole("dialog", { name: "Print multiple recipes at once" });
+const proDialog = (page: Page) => page.getByRole("dialog", { name: "Print several recipes at once" });
 const addRecipeDialog = (page: Page) => page.getByRole("dialog").getByPlaceholder("Paste a recipe link");
 
 test("a free account asking for a second recipe is offered Pro", async ({ page, request }) => {

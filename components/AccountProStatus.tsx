@@ -178,7 +178,7 @@ export function AccountProStatus({ user }: { user: User }) {
   return (
     <section id="plan" className="mb-cp-7 scroll-mt-24 rounded-xl border border-line bg-card p-cp-5">
       <div>
-        {/* The Basic/Pro comparison drops its card borders on mobile in favor
+        {/* The Free/Pro comparison drops its card borders on mobile in favor
             of a plain divided list (see the grid below), so the heading needs
             its own line under it there — otherwise "Plan" ran straight into
             the first divided row with nothing marking where the heading
@@ -224,13 +224,13 @@ export function AccountProStatus({ user }: { user: User }) {
                 and price sit right there, and the one button links straight
                 out to actually manage or cancel it — no "Downgrade" button of
                 ours that just opens a page where you press cancel again.
-                Basic goes back to being a plain comparison card with nothing
+                Free goes back to being a plain comparison card with nothing
                 to click, since there's no action to start from that side
                 while you're on Pro. */}
             <div className="grid gap-0 sm:grid-cols-2 sm:gap-cp-3">
               <div className="flex h-full flex-col border-line py-cp-3 sm:rounded-lg sm:border sm:p-cp-3">
-                <h3 className="text-cp-body font-extrabold text-ink">Basic</h3>
-                <p className="mt-1 text-cp-body font-bold text-ink-soft">Free</p>
+                <h3 className="text-cp-body font-extrabold text-ink">Free</h3>
+                <p className="mt-1 text-cp-body font-bold text-ink-soft">$0</p>
                 <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
                   {BASIC_BENEFITS.map((benefit) => (
                     <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
@@ -277,7 +277,7 @@ export function AccountProStatus({ user }: { user: User }) {
                 <ul className="mt-cp-2 flex flex-1 flex-col gap-cp-1">
                   <li className="flex items-start gap-cp-2 text-cp-small font-semibold text-ink">
                     <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                    Everything in Basic
+                    Everything in Free
                   </li>
                   {PRO_BENEFITS.map((benefit) => (
                     <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
@@ -333,7 +333,7 @@ export function AccountProStatus({ user }: { user: User }) {
           // app that should make the case for Pro to someone who hasn't
           // bought it yet was the quietest screen about it. Side by side so
           // the difference is what's on the Pro card, not a claim to take on
-          // faith; the Pro list opens with "Everything in Basic" rather than
+          // faith; the Pro list opens with "Everything in Free" rather than
           // repeating the same three lines, and then the real benefit list
           // `ProUpgradeDialog` itself leads with, so this and the dialog it
           // opens never disagree about what Pro includes.

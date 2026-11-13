@@ -79,7 +79,7 @@ export function PrintDialogs({
               <CheckCircleIcon size={22} className="another-recipe__check" />
               <h2 id="print-success-title">Ready to print your next one?</h2>
             </div>
-            <p>Print a different recipe in the same theme and size.</p>
+            <p>That one's ready for the fridge door. Print the next in the same theme and size.</p>
             <div className="another-recipe__actions">
               <button type="button" className="btn btn-primary w-full" onClick={onSwapRecipe}>
                 <SwapIcon size={ICON_SIZE.md} />
@@ -93,7 +93,7 @@ export function PrintDialogs({
                   onOpenFeedbackDialog();
                 }}
               >
-                Share feedback
+                Give feedback
               </button>
             </div>
       </Dialog>

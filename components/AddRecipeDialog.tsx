@@ -34,6 +34,7 @@ export function AddRecipeDialog({
   bookRecipes,
   from = "new",
   title,
+  replacing = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -81,6 +82,9 @@ export function AddRecipeDialog({
   from?: "new" | "book";
   /** "Add your first recipe" when opened from the cookbook welcome. */
   title?: string;
+  /** Opened from "Change recipe": what comes in takes the current recipe's
+      place, so the dialog says so and its button reads Replace. */
+  replacing?: boolean;
 }) {
   const [bookSelection, setBookSelection] = useState<Set<string>>(() => new Set());
   const targetSectionId = chapterTarget?.value ?? null;
@@ -175,6 +179,9 @@ export function AddRecipeDialog({
         </button>
       </div>
       <div className="recipe-add-dialog__body">
+        {replacing && (
+          <p className="text-cp-body text-ink-soft">It takes this recipe's place, in the same theme and size.</p>
+        )}
         {chapterTarget && (
           <div className="recipe-add-dialog__target">
             <MenuSelect
@@ -283,7 +290,9 @@ export function AddRecipeDialog({
             ? "Done"
             : mode === "image"
               ? IMAGE_SUBMIT_LABEL
-              : "Add"}
+              : replacing
+                ? "Replace"
+                : "Add"}
         </button>
       </div>
     </Dialog>

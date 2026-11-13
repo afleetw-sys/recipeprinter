@@ -213,7 +213,7 @@ async function renderPdf(request: RenderRequest): Promise<RenderedPdf> {
     !Number.isSafeInteger(pageCount) ||
     pageCount < 1
   ) {
-    throw new CookbookPdfError("The cookbook renderer returned an invalid response. Try again in a moment.", {
+    throw new CookbookPdfError("We couldn't finish your cookbook PDF. Try again in a moment.", {
       stage: "invalid_response",
       status: response.status,
     });

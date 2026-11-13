@@ -667,7 +667,7 @@ async function handleParse(request: Request, timing: RouteTiming): Promise<Respo
     if (joined) return errorResponse(joined, { status: 400, failure: "joined_links" });
     url = new URL(unwrapRedirectUrl(normalizeImportURL(body.url)));
   } catch {
-    return errorResponse("That doesn't look like a valid URL.");
+    return errorResponse("That doesn't look like a link. Copy it again and paste it here.");
   }
 
   // The client answers this one before it ever calls us (see `parseUrlAll`), so
