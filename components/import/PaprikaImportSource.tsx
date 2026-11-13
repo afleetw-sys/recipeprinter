@@ -25,7 +25,7 @@ import {
 } from "@/lib/paprikaLibrary";
 import type { QueueItem } from "@/types/recipe";
 import { RecipeSourceList, type LibraryCommitRef } from "@/components/import/RecipeSourceList";
-import { BookIcon, CheckIcon, ICON_SIZE, PaprikaLogoIcon, UploadIcon } from "@/components/icons";
+import { BookIcon, CheckIcon, ChevronDownIcon, ICON_SIZE, PaprikaLogoIcon, UploadIcon } from "@/components/icons";
 
 /**
  * Import from a Paprika export.
@@ -163,6 +163,12 @@ export function PaprikaImportSource({
     return new Set([only.queueId]);
   });
   const [committing, setCommitting] = useState(false);
+  // Step one, "Import your file", is folded shut once the file is read.
+  const [fileStepOpen, setFileStepOpen] = useState(false);
+  // A Change that failed says so inside that step, so it opens to show it.
+  useEffect(() => {
+    if (replaceError) setFileStepOpen(true);
+  }, [replaceError]);
   const [error, setError] = useState<string | null>(null);
 
   const addedIds = useMemo(() => new Set(items.map((item) => item.id)), [items]);
@@ -264,49 +270,63 @@ export function PaprikaImportSource({
       {/* Where the cook is, as two numbered steps. Opening the file used to
           look like the whole import: a buyer took the list that followed for
           a dead end and paid for a cookbook to get their recipes in. Step one
-          is ticked off and holds the file it brought in, with Change beside
-          it, so the list below reads as the step still to do. */}
+          is ticked off and folded shut, so the list below reads as the step
+          still to do; opening it shows the file it brought in, with Change
+          (Amelia, 2026-11-13). A failed Change opens it, since that's where
+          the error is said. */}
       <ol className="import-steps" aria-label="Importing from Paprika">
         <li className="import-steps__step import-steps__step--done">
-          <div className="import-steps__head">
+          <button
+            type="button"
+            className="import-steps__head import-steps__toggle"
+            aria-expanded={fileStepOpen}
+            aria-controls="paprika-file-step"
+            onClick={() => setFileStepOpen((open) => !open)}
+          >
             <span className="import-steps__num" aria-hidden>
               <CheckIcon size={ICON_SIZE.sm} />
             </span>
             Import your file
-          </div>
-          {/* The open file, as a thing rather than a sentence: the app's own
-              mark, the name without its extension (Paprika's timestamp is the
-              part that tells two exports apart), and one button to swap it. */}
-          <div className="import-steps__body flex items-center gap-cp-3 rounded-xl bg-page p-cp-2">
-            <PaprikaLogoIcon size={26} />
-            <span className="min-w-0 flex-1">
-              <span
-                className="block truncate text-cp-body font-semibold text-ink"
-                // The full name, extension included, for anyone who wants it.
-                title={library.fileName}
-              >
-                {displayFileName(library.fileName)}
-              </span>
-              <span className="block text-cp-caption text-ink-soft">
-                {entries.length} {entries.length === 1 ? "recipe" : "recipes"} found
-              </span>
-            </span>
-            <button
-              type="button"
-              className="btn btn-secondary btn-compact flex-shrink-0"
-              onClick={onChooseAnotherFile}
-            >
-              <UploadIcon size={ICON_SIZE.sm} />
-              Change
-            </button>
-          </div>
-          {/* Under the file whose Change caused it. The library on screen is
-              still the old one, so this says what did not happen rather than
-              replacing the list with an error. */}
-          {replaceError && (
-            <p className="import-steps__body field-error" role="alert">
-              {replaceError}
-            </p>
+            <ChevronDownIcon size={ICON_SIZE.sm} className="import-steps__chevron" aria-hidden />
+          </button>
+          {fileStepOpen && (
+            <div id="paprika-file-step" className="import-steps__body flex flex-col gap-cp-2">
+              {/* The open file, as a thing rather than a sentence: the app's
+                  own mark, the name without its extension (Paprika's
+                  timestamp is the part that tells two exports apart), and one
+                  button to swap it. */}
+              <div className="flex items-center gap-cp-3 rounded-xl bg-page p-cp-2">
+                <PaprikaLogoIcon size={26} />
+                <span className="min-w-0 flex-1">
+                  <span
+                    className="block truncate text-cp-body font-semibold text-ink"
+                    // The full name, extension included, for anyone who wants it.
+                    title={library.fileName}
+                  >
+                    {displayFileName(library.fileName)}
+                  </span>
+                  <span className="block text-cp-caption text-ink-soft">
+                    {entries.length} {entries.length === 1 ? "recipe" : "recipes"} found
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-compact flex-shrink-0"
+                  onClick={onChooseAnotherFile}
+                >
+                  <UploadIcon size={ICON_SIZE.sm} />
+                  Change
+                </button>
+              </div>
+              {/* Under the file whose Change caused it. The library on screen
+                  is still the old one, so this says what did not happen
+                  rather than replacing the list with an error. */}
+              {replaceError && (
+                <p className="field-error" role="alert">
+                  {replaceError}
+                </p>
+              )}
+            </div>
           )}
         </li>
         {/* Last, and the list follows it directly: the list's Add button pins
@@ -314,7 +334,7 @@ export function PaprikaImportSource({
         <li className="import-steps__step" aria-current="step">
           <div className="import-steps__head">
             <span className="import-steps__num" aria-hidden>2</span>
-            {singleSelect ? "Pick a recipe" : "Pick the recipes you want"}
+            {singleSelect ? "Choose a recipe to import" : "Choose recipes to import"}
           </div>
         </li>
       </ol>
@@ -342,6 +362,9 @@ export function PaprikaImportSource({
         singleSelect={singleSelect}
         queryText={queryText}
         onQueryChange={setQueryText}
+        // A short file is read at a glance; the box only earns its room
+        // from ten recipes up.
+        searchable={entries.length >= 10}
         searchId="paprika-search"
         searchLabel="Search your Paprika recipes"
         error={error}
