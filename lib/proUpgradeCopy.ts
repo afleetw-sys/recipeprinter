@@ -143,21 +143,22 @@ export function proUpgradeCopy(
   importUsage?: { limit: number; nextFreeAt: number | null } | null,
   hasRecipes: boolean = false,
   /** For `MULTI_RECIPE_FOUND_TRIGGER`: how many recipes the import found, and in what. */
-  found?: { count: number; source: "url" | "image" } | null,
+  found?: { count: number; source: "url" | "image" | "text" } | null,
 ): ProUpgradeCopy {
   if (trigger === MULTI_RECIPE_FOUND_TRIGGER && found && found.count > 1) {
-    const others = found.count - 1;
+    const where = found.source === "image" ? "in that photo" : found.source === "text" ? "in that text" : "on that link";
     return {
-      title: `We found ${found.count} recipes ${found.source === "image" ? "in that photo" : "on that link"}`,
-      // What happened first, so one recipe out of several doesn't read as a
-      // failed import, then what Pro does about it. The others are held for
-      // this session, so upgrading adds them without importing again.
-      body: `The free plan adds one recipe at a time, so we added the first one. Upgrade to Pro and we'll add the other ${others === 1 ? "one" : others}.`,
+      title: `We found ${found.count} recipes ${where}`,
+      // Opened from the picker's "Get all with Pro" (components/
+      // FoundRecipesDialog). The recipes are held for this session, so
+      // upgrading adds them without importing again; closing this goes back
+      // to the picker.
+      body: `Pro adds as many recipes at once as you like. Upgrade and we'll add all ${found.count}.`,
       benefits: [...PRO_BENEFITS].sort(
         (a, b) => Number(b === BENEFIT_BY_REASON.multi_recipe) - Number(a === BENEFIT_BY_REASON.multi_recipe),
       ),
       ...splitBenefits([BENEFIT_BY_REASON.multi_recipe]),
-      ctaLabel: "Unlock Pro and add the rest",
+      ctaLabel: `Unlock Pro and add all ${found.count}`,
     };
   }
   if (trigger === IMPORT_LIMIT_TRIGGER) {
