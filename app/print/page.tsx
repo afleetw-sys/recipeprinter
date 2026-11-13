@@ -8249,6 +8249,7 @@ export default function PrintPage() {
             cookbook={cookbookMode}
             bookPrice={cookbookPrice}
             busy={cookbookMode && cookbookPurchaseBusy}
+            phone={deckMobile}
             onAdd={(chosen) => {
               addChosen(recipeChoice, chosen);
               holdRecipeChoice(null);

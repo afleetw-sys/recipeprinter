@@ -1,13 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Recipe } from "@/types/recipe";
 import type { RecipeChoice } from "@/lib/recipeChoice";
 import { filterImportSummaries, importSearchText, type ImportSummary } from "@/lib/importSummary";
 import { Dialog } from "@/components/Dialog";
 import { IconButton } from "@/components/Controls";
 import { RecipeSourceList } from "@/components/import/RecipeSourceList";
+import { MobileSheet } from "@/components/print/MobileSheet";
 import { BookIcon, CrownIcon, ICON_SIZE, PlusIcon, SpinnerIcon, XIcon } from "@/components/icons";
+
+/** Past this many, the list gets a search box. Fewer read at a glance. */
+const SEARCH_FROM = 9;
 
 const WHERE: Record<RecipeChoice["source"], string> = {
   url: "on that page",
@@ -60,6 +64,7 @@ export function FoundRecipesDialog({
   cookbook,
   bookPrice,
   busy = false,
+  phone = false,
   onAdd,
   onCancel,
   onGetAll,
@@ -73,6 +78,8 @@ export function FoundRecipesDialog({
   bookPrice?: string;
   /** Buying the cookbook is under way. */
   busy?: boolean;
+  /** A phone: a bottom sheet with one Add, instead of a dialog. */
+  phone?: boolean;
   onAdd: (recipes: Recipe[]) => void;
   onCancel: () => void;
   /** Pro on the free plan, buying the book in a cookbook. */
@@ -85,6 +92,13 @@ export function FoundRecipesDialog({
     () => new Set(summaries.slice(0, fits).map((summary) => summary.queueId)),
   );
   const [queryText, setQueryText] = useState("");
+  // Mounted closed, then opened, so the sheet slides up like the phone's
+  // other sheets instead of appearing in place.
+  const [sheetOpen, setSheetOpen] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setSheetOpen(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
   const singleSelect = limit === 1;
   // Said only once the cook tries to tick past the room: the ones ticked at
   // the start already fill it, and saying so before anything is tried reads
@@ -123,6 +137,101 @@ export function FoundRecipesDialog({
   }
 
   const chosen = selectedIds.size;
+  const thumbnails = choice.recipes.some((recipe) => Boolean(recipe.image));
+  const titleText = `We found ${count} recipes ${WHERE[choice.source]}`;
+  const addLabel = chosen <= 1 ? "Add recipe" : `Add ${chosen} recipes`;
+  const getAllLabel = cookbook
+    ? `Get the full cookbook${bookPrice ? ` · ${bookPrice}` : ""}`
+    : `Get all ${count} with Pro`;
+
+  // What the limit is and what to do about it. The way to all of them isn't
+  // in the sentence: it's its own control right under or beside Add.
+  const explanation = (
+    <div className="flex flex-col gap-cp-1 text-cp-body leading-relaxed text-ink-soft">
+      <p>
+        {cookbook
+          ? `Your free preview has room for ${singleSelect ? "one more recipe" : `${limit} more recipes`}. Pick ${
+              singleSelect ? "the one" : "the ones"
+            } you want.`
+          : "The free plan adds one recipe at a time. Pick the one you want."}
+      </p>
+      {choice.metered && <p className="text-cp-caption">It only counts toward your free imports once you add it.</p>}
+      {full && (
+        <p className="text-cp-caption font-bold text-ink" role="status">
+          {"That's all the room your free preview has."}
+        </p>
+      )}
+    </div>
+  );
+
+  const list = (footer?: ReactNode) => (
+    <RecipeSourceList
+      heading="Recipes"
+      countLabel={`(${count})`}
+      summaries={filterImportSummaries(summaries, queryText)}
+      addedIds={new Set()}
+      selectedIds={selectedIds}
+      allSelectableSelected={allSelected}
+      onToggle={toggle}
+      onToggleAll={toggleAll}
+      onCommit={add}
+      commitLabel=""
+      hideCommit
+      queryText={queryText}
+      onQueryChange={setQueryText}
+      searchable={count >= SEARCH_FROM}
+      searchLabel="Search the recipes we found"
+      searchId="found-recipes-search"
+      fallbackIcon={BookIcon}
+      thumbnails={thumbnails}
+      showMeta={!phone}
+      singleSelect={singleSelect}
+      footer={footer}
+    />
+  );
+
+  if (phone) {
+    // A sheet, like the phone's own Add menu: a quick question about what was
+    // just added, not a screen of its own. One full-width Add, and the way to
+    // all of them as a line of text under it, so the two never compete.
+    return (
+      <MobileSheet
+        open={sheetOpen}
+        onClose={() => {
+          if (!busy) onCancel();
+        }}
+        title={titleText}
+        className="found-recipes-sheet"
+        portal
+        footer={
+          <div className="flex w-full flex-col items-stretch gap-cp-2">
+            <button type="button" className="btn btn-primary" disabled={chosen === 0 || busy} onClick={add}>
+              <PlusIcon size={ICON_SIZE.md} />
+              {addLabel}
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center justify-center gap-cp-1 self-center py-cp-1 text-cp-caption font-bold text-brand-ink underline underline-offset-2 disabled:opacity-50"
+              disabled={busy}
+              onClick={onGetAll}
+            >
+              {busy ? (
+                <SpinnerIcon size={ICON_SIZE.sm} />
+              ) : (
+                <CrownIcon size={ICON_SIZE.sm} className="text-[var(--cp-premium-bright)]" />
+              )}
+              {`Want all ${count}? ${cookbook ? getAllLabel : "Get Pro and we'll add every one"}`}
+            </button>
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-cp-3 px-cp-1 pb-cp-2">
+          {explanation}
+          {list()}
+        </div>
+      </MobileSheet>
+    );
+  }
 
   return (
     <Dialog
@@ -140,64 +249,27 @@ export function FoundRecipesDialog({
         <XIcon size={ICON_SIZE.md} />
       </IconButton>
       <h2 id="found-recipes-title" className="pr-10 text-cp-dialog-title font-bold tracking-tight">
-        We found {count} recipes {WHERE[choice.source]}
+        {titleText}
       </h2>
-      <div className="mb-cp-4 mt-cp-2 flex flex-col gap-cp-1 text-cp-body leading-relaxed text-ink-soft">
-        <p>
-          {cookbook
-            ? `Your free preview has room for ${singleSelect ? "one more recipe" : `${limit} more recipes`}. Pick ${
-                singleSelect ? "the one" : "the ones"
-              } you want, or get the full cookbook to add all ${count}.`
-            : `The free plan adds one recipe at a time. Pick the one you want, or get all ${count} with Pro.`}
-        </p>
-        {choice.metered && (
-          <p className="text-cp-caption">It only counts toward your free imports once you add it.</p>
-        )}
-        {full && (
-          <p className="text-cp-caption font-bold text-ink" role="status">
-            {"That's all the room your free preview has."}
-          </p>
-        )}
-      </div>
-      <RecipeSourceList
-        heading="Recipes"
-        countLabel={`(${count})`}
-        summaries={filterImportSummaries(summaries, queryText)}
-        addedIds={new Set()}
-        selectedIds={selectedIds}
-        allSelectableSelected={allSelected}
-        onToggle={toggle}
-        onToggleAll={toggleAll}
-        onCommit={add}
-        commitLabel=""
-        hideCommit
-        queryText={queryText}
-        onQueryChange={setQueryText}
-        searchLabel="Search the recipes we found"
-        searchId="found-recipes-search"
-        fallbackIcon={BookIcon}
-        singleSelect={singleSelect}
-        footer={
-          // The way to all of them sits beside Add, not in the sentence above:
-          // it's the other answer to this dialog, so it's a button like the first.
-          <div className="import-source-commit flex flex-col-reverse gap-cp-2 sm:flex-row sm:justify-end">
-            <button type="button" className="btn btn-secondary" disabled={busy} onClick={onGetAll}>
-              {busy ? (
-                <SpinnerIcon size={ICON_SIZE.md} />
-              ) : (
-                <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-              )}
-              {cookbook
-                ? `Get the full cookbook${bookPrice ? ` · ${bookPrice}` : ""}`
-                : `Get all ${count} with Pro`}
-            </button>
-            <button type="button" className="btn btn-primary" disabled={chosen === 0 || busy} onClick={add}>
-              <PlusIcon size={ICON_SIZE.md} />
-              {chosen <= 1 ? "Add recipe" : `Add ${chosen} recipes`}
-            </button>
-          </div>
-        }
-      />
+      <div className="mb-cp-4 mt-cp-2">{explanation}</div>
+      {list(
+        // The way to all of them sits beside Add: it's the other answer to
+        // this dialog, so it's a button like the first.
+        <div className="import-source-commit flex justify-end gap-cp-2">
+          <button type="button" className="btn btn-secondary" disabled={busy} onClick={onGetAll}>
+            {busy ? (
+              <SpinnerIcon size={ICON_SIZE.md} />
+            ) : (
+              <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
+            )}
+            {getAllLabel}
+          </button>
+          <button type="button" className="btn btn-primary" disabled={chosen === 0 || busy} onClick={add}>
+            <PlusIcon size={ICON_SIZE.md} />
+            {addLabel}
+          </button>
+        </div>,
+      )}
     </Dialog>
   );
 }

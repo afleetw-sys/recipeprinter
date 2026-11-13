@@ -2113,6 +2113,15 @@
     min-height: calc(2 * 1.375 * var(--cp-fs-body));
   }
 
+  /* A row with no picture: one line of title, so a short list of names reads
+     as a list rather than a grid of cards. */
+  .import-recipe-row__text--compact {
+    min-height: calc(1.375 * var(--cp-fs-body));
+  }
+  .import-recipe-row__text--compact .import-recipe-row__title {
+    -webkit-line-clamp: 1;
+  }
+
   .import-recipe-row__title {
     font-size: var(--cp-fs-body);
     font-weight: 700;

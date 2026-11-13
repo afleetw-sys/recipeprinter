@@ -53,12 +53,17 @@ function RecipeRow({
   added,
   selected,
   showMeta,
+  thumbnail,
   locked,
   singleSelect,
   fallbackIcon: FallbackIcon,
   onToggle,
 }: {
   summary: ImportSummary;
+  /** The picture square at the start of the row. Off for a list where no
+      recipe has a picture, which would otherwise be a column of the same
+      placeholder icon. Without it the row is one line of title. */
+  thumbnail: boolean;
   added: boolean;
   selected: boolean;
   /** Whether the cooking time and serving count go under the title. */
@@ -97,7 +102,9 @@ function RecipeRow({
               ? `Don't add ${summary.title}`
               : `Add ${summary.title}`
       }
-      className={`import-recipe-row group flex w-full items-center gap-cp-3 rounded-xl border p-cp-2 text-left transition-colors ${
+      className={`import-recipe-row group flex w-full items-center gap-cp-3 rounded-xl border text-left transition-colors ${
+        thumbnail ? "p-cp-2" : "px-cp-3 py-cp-2"
+      } ${
         selected
           ? "border-[var(--cp-selected-border)] bg-[var(--cp-selected-fill)] text-[var(--cp-selected-text)]"
           : added
@@ -105,6 +112,7 @@ function RecipeRow({
             : "border-line bg-card hover:border-line-strong"
       }`}
     >
+      {thumbnail && (
       <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-page grid place-items-center text-brand/50">
         {summary.imageURL ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -120,6 +128,7 @@ function RecipeRow({
           <FallbackIcon size={22} />
         )}
       </div>
+      )}
 
       {/* Every row is the same height, and it is the height of a row with a
           two-line title and one line of meta under it — see the sizing rules in
@@ -131,7 +140,7 @@ function RecipeRow({
           cards pay for one long title. */}
       <div
         className={`import-recipe-row__text${
-          showMeta ? "" : " import-recipe-row__text--no-meta"
+          !thumbnail ? " import-recipe-row__text--compact" : showMeta ? "" : " import-recipe-row__text--no-meta"
         }`}
       >
         <p className="import-recipe-row__title">{summary.title}</p>
@@ -140,7 +149,7 @@ function RecipeRow({
             weighs the title down: a recipe with no time and no serving count
             centred its title-plus-an-invisible-line, which put the title a third
             of the way down its card while every card beside it looked centred. */}
-        {showMeta && (time || servings) && (
+        {showMeta && thumbnail && (time || servings) && (
           <p className="import-recipe-row__meta">
             {time && (
               <span>
@@ -220,6 +229,8 @@ export function RecipeSourceList({
   footer,
   locked = false,
   singleSelect = false,
+  searchable = true,
+  thumbnails = true,
 }: {
   heading: string;
   /** e.g. "(120+)" — the source knows whether it has seen its whole library. */
@@ -286,6 +297,11 @@ export function RecipeSourceList({
       never commit in full, so it doesn't offer to, and each row drops its
       empty tickbox (see `RecipeRow`'s own doc) since it isn't one. */
   singleSelect?: boolean;
+  /** The search box. Off for a list short enough to read at a glance. */
+  searchable?: boolean;
+  /** Each row's picture square; off, a row is one line of title (see
+      `RecipeRow`'s `thumbnail`). */
+  thumbnails?: boolean;
 }) {
   const isSearching = queryText.trim().length > 0;
   const selectedCount = selectedIds.size;
@@ -364,6 +380,7 @@ export function RecipeSourceList({
         </p>
       )}
 
+      {searchable && (
       <div className="relative">
         <SearchIcon
           size={ICON_SIZE.lg}
@@ -378,6 +395,7 @@ export function RecipeSourceList({
           onChange={(event) => onQueryChange(event.target.value)}
         />
       </div>
+      )}
 
       {loading && (
         <div className="h-40 grid place-items-center text-ink-soft rounded-2xl border border-dashed border-line-strong">
@@ -411,6 +429,7 @@ export function RecipeSourceList({
             <li key={summary.queueId}>
               <RecipeRow
                 showMeta={showMeta}
+                thumbnail={thumbnails}
                 summary={summary}
                 added={addedIds.has(summary.queueId)}
                 selected={selectedIds.has(summary.queueId)}
