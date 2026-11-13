@@ -1013,6 +1013,7 @@ export default function PrintPage() {
     spreads,
     previewConfig,
     awaitingFirstLayout,
+    layoutCurrent,
     measurers,
   } = usePrintSheets({
     sections,
@@ -7116,6 +7117,12 @@ export default function PrintPage() {
   useEffect(() => {
     const pendingId = pendingFocusNavId ?? pendingFocusRecipeId;
     if (!pendingId) return;
+    // Not against the frame still on screen. Choosing None for a Full page
+    // recipe takes its photo page out, and the held layout still has it, so
+    // the recipe's old page number landed on the NEXT recipe once the new
+    // layout swapped in. An open Photo dialog went with it and showed (and
+    // set) that recipe instead, which read as None needing two presses.
+    if (!layoutCurrent) return;
     const landing = landingForRecipe({ cookbookView, recipeId: pendingId, navItems, spreads });
     if (!landing) return;
     const targetIndex = landing.slide;
@@ -7136,7 +7143,7 @@ export default function PrintPage() {
     if (pendingFocusNavId) setPendingFocusNavId(null);
     if (pendingFocusRecipeId === pendingId) setPendingFocusRecipeId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingFocusNavId, pendingFocusRecipeId, navItems, cookbookView, spreads]);
+  }, [pendingFocusNavId, pendingFocusRecipeId, navItems, cookbookView, spreads, layoutCurrent]);
   /**
    * Close the rail's Add overflow on an outside click. Escape also clears any
    * organizer selection; normal recipe clicks manage selection themselves.
