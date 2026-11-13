@@ -2522,14 +2522,16 @@
     width: 1.6em;
     height: 1.6em;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--cp-accent-warm) 16%, var(--cp-card));
-    color: var(--cp-ink);
+    /* Neutral, not the warm accent: the step you're on is the ink one. */
+    background: var(--cp-ink);
+    color: var(--cp-card);
     font-size: var(--cp-fs-small);
     font-weight: 800;
     line-height: 1;
   }
   .import-steps__step--done .import-steps__num {
     background: var(--cp-accent-soft);
+    color: var(--cp-ink);
   }
 
   .mode-toggle-overflow {

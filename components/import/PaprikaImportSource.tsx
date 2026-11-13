@@ -25,7 +25,7 @@ import {
 } from "@/lib/paprikaLibrary";
 import type { QueueItem } from "@/types/recipe";
 import { RecipeSourceList, type LibraryCommitRef } from "@/components/import/RecipeSourceList";
-import { BookIcon, CheckIcon, ICON_SIZE, PaprikaLogoIcon, UploadIcon } from "@/components/icons";
+import { BookIcon, CheckIcon, ICON_SIZE, UploadIcon } from "@/components/icons";
 
 /**
  * Import from a Paprika export.
@@ -264,31 +264,27 @@ export function PaprikaImportSource({
       {/* Where the cook is, as two numbered steps. Opening the file used to
           look like the whole import: a buyer took the list that followed for
           a dead end and paid for a cookbook to get their recipes in. Step one
-          is ticked off and holds the file it brought in, with Change beside
-          it, so the list below reads as the step still to do. */}
+          is ticked off and folded to one line, the file it brought in with
+          Change beside it, so the list below reads as the step still to do
+          (Amelia, 2026-11-13: the open file used to fill a card of its own). */}
       <ol className="import-steps" aria-label="Importing from Paprika">
         <li className="import-steps__step import-steps__step--done">
           <div className="import-steps__head">
             <span className="import-steps__num" aria-hidden>
               <CheckIcon size={ICON_SIZE.sm} />
             </span>
-            Import your file
-          </div>
-          {/* The open file, as a thing rather than a sentence: the app's own
-              mark, the name without its extension (Paprika's timestamp is the
-              part that tells two exports apart), and one button to swap it. */}
-          <div className="import-steps__body flex items-center gap-cp-3 rounded-xl bg-page p-cp-2">
-            <PaprikaLogoIcon size={26} />
-            <span className="min-w-0 flex-1">
-              <span
-                className="block truncate text-cp-body font-semibold text-ink"
-                // The full name, extension included, for anyone who wants it.
-                title={library.fileName}
-              >
-                {displayFileName(library.fileName)}
-              </span>
-              <span className="block text-cp-caption text-ink-soft">
-                {entries.length} {entries.length === 1 ? "recipe" : "recipes"} found
+            <span className="sr-only">Import your file:</span>
+            {/* The open file, by name without its extension (Paprika's
+                timestamp is the part that tells two exports apart). */}
+            <span
+              className="min-w-0 flex-1 truncate"
+              // The full name, extension included, for anyone who wants it.
+              title={library.fileName}
+            >
+              {displayFileName(library.fileName)}
+              <span className="font-normal">
+                {" · "}
+                {entries.length} {entries.length === 1 ? "recipe" : "recipes"}
               </span>
             </span>
             <button
@@ -314,7 +310,7 @@ export function PaprikaImportSource({
         <li className="import-steps__step" aria-current="step">
           <div className="import-steps__head">
             <span className="import-steps__num" aria-hidden>2</span>
-            {singleSelect ? "Pick a recipe" : "Pick the recipes you want"}
+            {singleSelect ? "Choose a recipe to import" : "Choose recipes to import"}
           </div>
         </li>
       </ol>
@@ -342,6 +338,9 @@ export function PaprikaImportSource({
         singleSelect={singleSelect}
         queryText={queryText}
         onQueryChange={setQueryText}
+        // A short file is read at a glance; the box only earns its room
+        // from ten recipes up.
+        searchable={entries.length >= 10}
         searchId="paprika-search"
         searchLabel="Search your Paprika recipes"
         error={error}
