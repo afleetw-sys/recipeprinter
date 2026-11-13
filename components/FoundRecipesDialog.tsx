@@ -209,9 +209,9 @@ export function FoundRecipesDialog({
               <PlusIcon size={ICON_SIZE.md} />
               {addLabel}
             </button>
-            {/* A quiet button, not a link: the same control as the rest of
-                the app, one step down from Add so the two never compete. */}
-            <button type="button" className="btn btn-ghost" disabled={busy} onClick={onGetAll}>
+            {/* Secondary, stacked under Add: below it, the two read as first
+                and second choice rather than competing side by side. */}
+            <button type="button" className="btn btn-secondary" disabled={busy} onClick={onGetAll}>
               {busy ? (
                 <SpinnerIcon size={ICON_SIZE.md} />
               ) : (
