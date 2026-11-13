@@ -19,6 +19,7 @@ import { QUEUE_RECOVERY_OWNER_KEY, stampRecoveryOwner } from "@/lib/recoveryMirr
 import { localStore, sessionStore } from "@/lib/storage";
 import { releaseImportPreview, setImportPreview } from "@/lib/importPreviews";
 import { fitBookRoom } from "@/lib/cookbookFreeSize";
+import { choiceLimit, needsChoice, readRecipeChoice, type RecipeChoice } from "@/lib/recipeChoice";
 import { historyIsRecording, noteHistoryCommit, resetHistory, withoutHistory } from "@/lib/editHistory";
 import { storeImportedPhoto, withImportedPhoto } from "@/lib/importedPhoto";
 import { noteCardImport } from "@/lib/referral";
@@ -379,7 +380,19 @@ function hostnameOf(url: string): string {
  * orphan.
  */
 const liveParseIds = new Set<string>();
-const parseIsLive = (id: string): boolean => liveParseIds.has(id);
+/** Live too: an import whose recipes are waiting for the cook to choose
+    (lib/recipeChoice). That choice outlives a reload (the sign-in redirect on
+    the way to Pro), and its placeholder has to outlive it with it, not turn
+    into an interrupted import. */
+const parseIsLive = (id: string): boolean => liveParseIds.has(id) || readRecipeChoice()?.itemId === id;
+
+/**
+ * The import's own event fields (its parse timing, meter answer and source),
+ * held from the moment it found several recipes until the cook chooses, so
+ * the `recipe_imported` events `addChosenRecipes` sends match an import that
+ * landed by itself. This document only: after a reload they are sent without.
+ */
+const choiceEventFields = new Map<string, Record<string, unknown>>();
 
 /**
  * How long a failed import waits on its `debugInbox` row before reporting the
@@ -488,18 +501,13 @@ export function queueForNewImport(current: QueueItem[], singleRecipeOnly: boolea
 }
 
 /** Where an extra recipe got refused because the account can only ever carry
-    one outside Pro/cookbook mode — see `singleRecipeOnly` below. */
+    one outside Pro/cookbook mode — see `singleRecipeOnly` below. A link,
+    photo or paste that finds several asks instead (lib/recipeChoice), so this
+    is only ever a library commit that arrived oversized. */
 export interface MultiRecipeBlockedInfo {
-  source: "url" | "image" | "library";
-  /** How many recipes the parse/selection actually found — always > 1. */
+  source: "library";
+  /** How many recipes the selection held — always > 1. */
   foundCount: number;
-  /**
-   * For a link or photo: the recipes that were found and not added, and the
-   * item the first one landed on. They are already parsed, so the page can
-   * hand them back to `addWithheldRecipes` once the cook has Pro, with no
-   * second import.
-   */
-  withheld?: { itemId: string; recipes: Recipe[] };
 }
 
 /** The other recipes one import found, as items of their own beside `base`,
@@ -587,6 +595,7 @@ export function useQueue() {
   const bookCapRef = useRef<number | null>(null);
   const onBookCapReachedRef = useRef<((info: BookCapInfo) => void) | undefined>(undefined);
   const onBatchAddedRef = useRef<((count: number) => void) | undefined>(undefined);
+  const onRecipesFoundRef = useRef<((choice: RecipeChoice) => void) | undefined>(undefined);
   /** How many more recipes the book can take right now; null for no cap. */
   const bookRoom = (): number | null =>
     bookCapRef.current === null
@@ -600,11 +609,10 @@ export function useQueue() {
    * preview here." So this isn't recipe-count-dependent the way
    * `multiRecipeAddLocked` is: a free/non-cookbook account can never end up
    * with more than one recipe, full stop, whether it already has one or is
-   * completely empty. `onMultiRecipeBlocked` fires when that limit actually
-   * costs the cook something — a roundup URL or a multi-recipe photo bloomed
-   * into more than one recipe and the extras were dropped, or (defense in
-   * depth; the pickers shouldn't let this happen) a library commit arrived
-   * with more than the one recipe a locked account can add.
+   * completely empty. An import that finds more recipes than that (or an
+   * unbought cookbook's free size) leaves room for goes to `onRecipesFound`,
+   * and the cook chooses. `onMultiRecipeBlocked` is defense in depth: the
+   * library pickers shouldn't let a locked account commit more than one.
    *
    * `cookbookMode` and `clientPro` are the import meter's exemptions (see
    * `meterGateFor` in lib/importMeter): neither a cookbook import nor one by a
@@ -623,6 +631,9 @@ export function useQueue() {
       bookBought?: boolean;
       clientPro?: boolean;
       onMultiRecipeBlocked?: (info: MultiRecipeBlockedInfo) => void;
+      /** An import found more recipes than can be added: the page asks which
+          (or offers the way to all of them), then calls `addChosenRecipes`. */
+      onRecipesFound?: (choice: RecipeChoice) => void;
       /** A free import was refused because the allowance is used up. */
       onImportLimitReached?: (info: ImportLimitInfo) => void;
       /** An unbought cookbook's free size; null or absent for no cap. */
@@ -640,6 +651,7 @@ export function useQueue() {
       bookBoughtRef.current = Boolean(config.bookBought);
       clientProRef.current = Boolean(config.clientPro);
       onMultiRecipeBlockedRef.current = config.onMultiRecipeBlocked;
+      onRecipesFoundRef.current = config.onRecipesFound;
       onImportLimitReachedRef.current = config.onImportLimitReached;
       bookCapRef.current = config.bookCap ?? null;
       onBookCapReachedRef.current = config.onBookCapReached;
@@ -963,6 +975,9 @@ export function useQueue() {
         return;
       }
       let settled = false;
+      // Handed to the cook to choose from: still this document's import, so
+      // it stays live until `addChosenRecipes` lands it.
+      let awaitingChoice = false;
       const settle = (result: "success" | "failure") => {
         if (!metered || settled) return;
         settled = true;
@@ -997,7 +1012,50 @@ export function useQueue() {
             "no_recipe",
           );
         }
-        const [first, ...allRest] = recipes;
+        if (recipes.length > 1) {
+          track("multi_recipe_found", {
+            source: origin.source,
+            hostname: origin.hostname,
+            count: recipes.length,
+          });
+        }
+        // More recipes than can be added: a free account outside a cookbook
+        // adds one (see `singleRecipeOnly` on this hook's options), and an
+        // unbought cookbook has its free size. The cook chooses which, or takes
+        // the way to all of them, whatever kind of import found them. Until
+        // then the item stays a placeholder and the meter entry stays open, so
+        // closing the picker counts nothing (lib/recipeChoice,
+        // `addChosenRecipes`). Pro, a bought book, or a book with room for them
+        // all take everything, unasked.
+        const limit = choiceLimit({ singleRecipeOnly: singleRecipeOnlyRef.current, bookRoom: bookRoom() });
+        const ask = onRecipesFoundRef.current;
+        if (needsChoice(recipes.length, limit) && ask) {
+          if (singleRecipeOnlyRef.current) {
+            track("pro_feature_encountered", {
+              feature: "batch_print",
+              source: origin.source === "image" ? "photo_multi_recipe" : "url_multi_recipe",
+            });
+          }
+          awaitingChoice = true;
+          choiceEventFields.set(id, {
+            ...outcome,
+            ...context,
+            ...meterMsOf(reservation),
+            ...meterImportedFields(reservation),
+            ...parseTiming,
+          });
+          ask({
+            itemId: id,
+            source: origin.source === "image" || origin.source === "text" ? origin.source : "url",
+            recipes,
+            metered,
+          });
+          return;
+        }
+        // Nobody to ask (a page that never wired the picker): the first ones
+        // that fit, rather than more than the account can hold.
+        const kept = limit === null ? recipes : recipes.slice(0, limit);
+        const [first, ...rest] = kept;
         patch(id, { status: "ready", recipe: first, title: first.title || "Untitled recipe" });
         // Once per import, however many recipes a roundup brings.
         settle("success");
@@ -1005,37 +1063,8 @@ export function useQueue() {
         // recipe wrong (lib/importCorrections). Against the printable form,
         // the same one their edits arrive in.
         if (opts?.failedText) noteImported(id, origin.source, opts.failedText, printableRecipe(first));
-        if (allRest.length > 0) {
-          track("multi_recipe_found", {
-            source: origin.source,
-            hostname: origin.hostname,
-            count: recipes.length,
-          });
-        }
-        // A free, non-cookbook account can never hold more than one recipe
-        // (see `singleRecipeOnly` on this hook's options) — `first` above is
-        // that one recipe, so a roundup page or a multi-recipe photo never
-        // blooms into the rest for it. This is not "add the second one only
-        // if there's room": there is never room, the same way `+ Add recipe`
-        // refuses outright rather than adding and blocking at Print.
-        // An unbought cookbook keeps only what fits its free size. The first
-        // recipe has already landed (an import under way when the book fills
-        // still lands); the extras take whatever room is left, and the page
-        // says how many were kept.
-        const rest = singleRecipeOnlyRef.current ? [] : fitBookRoom(allRest, bookRoom());
-        if (!singleRecipeOnlyRef.current && rest.length < allRest.length) {
-          onBookCapReachedRef.current?.({ found: recipes.length, kept: 1 + rest.length });
-        }
-        if (singleRecipeOnlyRef.current && allRest.length > 0) {
-          onMultiRecipeBlockedRef.current?.({
-            source: origin.source === "image" ? "image" : "url",
-            foundCount: recipes.length,
-            withheld: { itemId: id, recipes: allRest },
-          });
-          track("pro_feature_encountered", {
-            feature: "batch_print",
-            source: origin.source === "image" ? "photo_multi_recipe" : "url_multi_recipe",
-          });
+        if (!singleRecipeOnlyRef.current && kept.length < recipes.length) {
+          onBookCapReachedRef.current?.({ found: recipes.length, kept: kept.length });
         }
         if (rest.length > 0) {
           // A roundup URL: keep the first recipe on this item and add the rest as
@@ -1043,7 +1072,7 @@ export function useQueue() {
           const base = itemsRef.current.find((it) => it.id === id);
           const extras = extraItemsFor(base, origin.hostname ?? "", rest);
           commit([...itemsRef.current, ...extras]);
-          if (rest.length === allRest.length) onBatchAddedRef.current?.(1 + rest.length);
+          if (kept.length === recipes.length) onBatchAddedRef.current?.(kept.length);
         }
         // After the extras are in, so a cookbook's `bookRecipes` counts them.
         // One event per recipe, with the bloomed ones marked `extra`.
@@ -1143,7 +1172,7 @@ export function useQueue() {
           ...parseTiming,
         });
       } finally {
-        liveParseIds.delete(id);
+        if (!awaitingChoice) liveParseIds.delete(id);
       }
     },
     [patch, commit],
@@ -1376,32 +1405,54 @@ export function useQueue() {
   );
 
   /**
-   * Adds the recipes a link or photo import found but couldn't add on the free
-   * plan (`MultiRecipeBlockedInfo.withheld`), now that the cook has Pro. They
-   * were parsed with the first one, so nothing is imported again and the meter
-   * isn't asked: the import that found them was already counted, once.
-   * Answers how many were added: none when the first recipe is gone, or the
-   * account still holds only one.
+   * Lands what the cook chose from an import that found several recipes (see
+   * lib/recipeChoice) where the import's placeholder was, each mirroring its
+   * link so retry and dedupe still key off the same source. They were parsed
+   * with the import, so nothing is parsed again.
+   *
+   * This is where the import settles with the meter, once, however many were
+   * chosen. Choosing none is closing the picker: the placeholder goes and the
+   * import settles as a failure, so it never counts toward the free imports.
+   *
+   * The limits are applied again rather than trusted from the picker, because
+   * the account can change while it is open (Pro bought from it, or the book
+   * bought, takes them all). Answers how many landed.
    */
-  const addWithheldRecipes = useCallback(
-    (itemId: string, recipes: Recipe[]) => {
-      const base = itemsRef.current.find((it) => it.id === itemId);
-      if (!base || singleRecipeOnlyRef.current || recipes.length === 0) return 0;
-      const extras = extraItemsFor(base, base.source, recipes);
-      commit([...itemsRef.current, ...extras]);
-      const landing = landingFields();
-      extras.forEach((extra) =>
-        track("recipe_imported", {
-          ...languageOf(extra.recipe),
-          source: base.method,
-          ...(base.method === "url" && base.source ? { hostname: base.source } : {}),
-          ...importContextRef.current,
-          importId: itemId,
-          extra: true,
-          ...landing,
-        }),
-      );
-      return extras.length;
+  const addChosenRecipes = useCallback(
+    (choice: RecipeChoice, chosen: Recipe[]) => {
+      liveParseIds.delete(choice.itemId);
+      const eventFields = choiceEventFields.get(choice.itemId) ?? {};
+      choiceEventFields.delete(choice.itemId);
+      const base = itemsRef.current.find((it) => it.id === choice.itemId);
+      const limit = choiceLimit({ singleRecipeOnly: singleRecipeOnlyRef.current, bookRoom: bookRoom() });
+      const landing = !base ? [] : limit === null ? chosen : chosen.slice(0, limit);
+      if (!base || landing.length === 0) {
+        if (base) commit(itemsRef.current.filter((it) => it.id !== choice.itemId));
+        if (choice.metered) settleImport(choice.itemId, "failure");
+        return 0;
+      }
+      // Every chosen recipe is a new item, in the placeholder's place. Not the
+      // placeholder itself: after a reload (the sign-in redirect on the way to
+      // Pro) the print page reads it as something queued before it arrived,
+      // and never pulls it into the job.
+      const chosenItems = extraItemsFor(base, base.source, landing);
+      commit(itemsRef.current.flatMap((it) => (it.id === choice.itemId ? chosenItems : [it])));
+      if (choice.metered) settleImport(choice.itemId, "success");
+      if (!cookbookModeRef.current) noteCardImport();
+      // After the recipes are in, so a cookbook's `bookRecipes` counts them.
+      const fields = {
+        source: base.method,
+        ...(base.method === "url" && base.source ? { hostname: base.source } : {}),
+        ...importContextRef.current,
+        ...eventFields,
+        importId: choice.itemId,
+        chosen: true,
+        ...landingFields(),
+      };
+      const [first, ...rest] = landing;
+      track("recipe_imported", { ...fields, ...languageOf(first) });
+      rest.forEach((recipe) => track("recipe_imported", { ...fields, extra: true, ...languageOf(recipe) }));
+      return landing.length;
     },
     [commit],
   );
@@ -1473,7 +1524,7 @@ export function useQueue() {
     addReadyRecipes,
     addBlankPage,
     updateBookPage,
-    addWithheldRecipes,
+    addChosenRecipes,
     adoptUploadedPhotos,
     remove,
     clear,

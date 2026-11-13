@@ -134,7 +134,8 @@ import {
   REMOVE_BRANDING_TRIGGER,
   proUpgradeCopy,
 } from "@/lib/proUpgradeCopy";
-import { readWithheldRecipes, storeWithheldRecipes, type WithheldRecipes } from "@/lib/withheldRecipes";
+import { choiceLimit, needsChoice, readRecipeChoice, storeRecipeChoice, type RecipeChoice } from "@/lib/recipeChoice";
+import { FoundRecipesDialog } from "@/components/FoundRecipesDialog";
 import {
   clearImportsUnlimited,
   importsKnownUnlimited,
@@ -215,7 +216,6 @@ import {
   readCurrentPrintJobIds,
   useQueue,
   type BookCapInfo,
-  type MultiRecipeBlockedInfo,
 } from "@/lib/queue";
 import {
   initialPrintCardSize,
@@ -523,17 +523,18 @@ export default function PrintPage() {
       this account can only add one (see `queue.configureImportGates`) carries
       an Upgrade action — held until that toast goes, same as `lineDeleteUndo`. */
   const [multiRecipeUpsellPending, setMultiRecipeUpsellPending] = useState(false);
-  /** The recipes a link or photo found beyond the one the free plan adds. The
-      upgrade dialog reports them, and they are added once the cook has Pro
-      (lib/withheldRecipes). Read after mount: session storage isn't there
-      during the server render. */
-  const [withheldRecipes, setWithheldRecipes] = useState<WithheldRecipes | null>(null);
+  /** The recipes one import found, waiting for the cook to choose which to
+      add, or to take Pro or the cookbook for all of them (lib/recipeChoice).
+      Kept in session storage so it survives the sign-in redirect and the
+      checkout reload on the way. Read after mount: session storage isn't
+      there during the server render. */
+  const [recipeChoice, setRecipeChoice] = useState<RecipeChoice | null>(null);
   useEffect(() => {
-    setWithheldRecipes(readWithheldRecipes());
+    setRecipeChoice(readRecipeChoice());
   }, []);
-  function holdWithheldRecipes(next: WithheldRecipes | null) {
-    storeWithheldRecipes(next);
-    setWithheldRecipes(next);
+  function holdRecipeChoice(next: RecipeChoice | null) {
+    storeRecipeChoice(next);
+    setRecipeChoice(next);
   }
   // The organizer's "Sort by". `custom` is whatever order the cook has built by
   // hand; `title` is A–Z within every section. `customOrderUndo` holds the
@@ -3796,48 +3797,62 @@ export default function PrintPage() {
     // The queue's add methods are stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addAfterBookBought, bookRoom]);
-  function handleMultiRecipeBlocked(info: MultiRecipeBlockedInfo) {
-    if (info.source === "library") {
-      // The pickers already refuse to let a locked account select more than
-      // fits (see `libraryLocked`/`librarySingleSelect` below), so this only
-      // fires as a safety net — still worth saying something rather than the
-      // recipes just quietly not being there.
-      showToast("Adding more than one recipe at a time is part of Pro.");
-      setMultiRecipeUpsellPending(true);
-      return;
-    }
-    // A link or photo with several recipes: say so in the upgrade dialog, not
-    // a toast that is gone in a few seconds. One recipe arriving where the
-    // page plainly had five otherwise reads as a broken import (Amelia,
-    // 2026-10-11). The rest are held so upgrading adds them.
-    if (info.withheld) holdWithheldRecipes({ source: info.source, ...info.withheld });
-    openProUpgradeDialog(MULTI_RECIPE_FOUND_TRIGGER);
+  function handleMultiRecipeBlocked() {
+    // The pickers already refuse to let a locked account select more than
+    // fits (see `libraryLocked`/`librarySingleSelect` below), so this only
+    // fires as a safety net — still worth saying something rather than the
+    // recipes just quietly not being there. A link, photo or paste that finds
+    // several asks instead (`recipeChoice`).
+    showToast("Adding more than one recipe at a time is part of Pro.");
+    setMultiRecipeUpsellPending(true);
   }
-  // The held recipes go in the moment the account can hold them: right after
-  // checkout, or on the reload a phone's sign-in or a bank redirect causes.
-  // They are dropped, unadded, once their first recipe has left the queue
-  // (deleted, or a different project opened): they belonged beside it.
-  const canAddWithheld = !cookbookMode && hasMultiRecipeEntitlement(effectiveCustomerInfo.customerInfo);
-  const withheldAnchorPresent =
-    withheldRecipes !== null && queue.items.some((item) => item.id === withheldRecipes.itemId);
+  // How many recipes one import can add right now, or null for all of them
+  // (lib/recipeChoice). Counted the way the queue counts, over finished
+  // recipes only: the import being chosen from is still a placeholder.
+  const recipeChoiceLimit = choiceLimit({
+    singleRecipeOnly,
+    bookRoom:
+      bookRoom === null
+        ? null
+        : Math.max(0, FREE_COOKBOOK_RECIPES - queue.items.filter((item) => item.status === "ready").length),
+  });
+  /**
+   * Lands a choice. A Change recipe import whose swap this page no longer
+   * remembers (it reloaded on the way to Pro) still replaces its recipe: the
+   * swap's own arrival effect does that when it is still armed.
+   */
+  function addChosen(choice: RecipeChoice, chosen: Recipe[]): number {
+    const added = queue.addChosenRecipes(choice, chosen);
+    const oldId = choice.replacesId;
+    if (added > 0 && oldId && !swapRef.current && queue.items.some((item) => item.id === oldId)) {
+      setJobIds((current) => (current ?? []).filter((jid) => jid !== oldId));
+      queue.remove(oldId);
+    }
+    return added;
+  }
+  const recipeChoiceAnchorPresent =
+    recipeChoice !== null && queue.items.some((item) => item.id === recipeChoice.itemId);
+  // A choice outlives its import only while the import's placeholder is still
+  // in the queue: a deleted placeholder or another project opened drops it,
+  // unadded and uncounted. And once nothing leaves any of them out (Pro or
+  // the book bought from the picker, after checkout or the reload a phone's
+  // sign-in causes), they all go in without asking again.
   useEffect(() => {
-    if (!withheldRecipes || !queue.hydrated) return;
-    if (!withheldAnchorPresent) {
-      holdWithheldRecipes(null);
+    if (!recipeChoice || !queue.hydrated) return;
+    if (!recipeChoiceAnchorPresent) {
+      queue.addChosenRecipes(recipeChoice, []);
+      holdRecipeChoice(null);
       return;
     }
-    if (!canAddWithheld) return;
-    const added = queue.addWithheldRecipes(withheldRecipes.itemId, withheldRecipes.recipes);
-    holdWithheldRecipes(null);
-    if (added > 0) {
-      const from = withheldRecipes.source === "image" ? "photo" : "link";
-      showToast(
-        added === 1 ? `We added the other recipe from that ${from}.` : `We added the other ${added} recipes from that ${from}.`,
-      );
-    }
+    if (needsChoice(recipeChoice.recipes.length, recipeChoiceLimit)) return;
+    const added = addChosen(recipeChoice, recipeChoice.recipes);
+    holdRecipeChoice(null);
+    // Added by itself, after a purchase and maybe a reload: news (rule 4 in
+    // useToast), where a pick the cook made is not.
+    if (added > 1) showToast(`We added all ${added} recipes.`);
     // The queue's add methods are stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [withheldRecipes, withheldAnchorPresent, canAddWithheld, queue.hydrated]);
+  }, [recipeChoice, recipeChoiceAnchorPresent, recipeChoiceLimit, queue.hydrated]);
   // Called every render (not from an effect — see `configureImportGates`'s
   // own doc comment): cheap, and keeps the gate correct within the very
   // render that first resolves entitlement rather than one render behind.
@@ -3853,6 +3868,9 @@ export default function PrintPage() {
       hasProEntitlement(effectiveCustomerInfo.customerInfo) ||
       (customerInfoStatus !== "ok" && importsKnownUnlimited()),
     onMultiRecipeBlocked: handleMultiRecipeBlocked,
+    // Change recipe's import keeps which recipe it replaces with it.
+    onRecipesFound: (choice) =>
+      holdRecipeChoice(swapRef.current ? { ...choice, replacesId: swapRef.current.oldId } : choice),
     // Out of free imports: the existing Pro dialog, with the allowance's own
     // wording. Nothing the cook already has is touched.
     onImportLimitReached: () => openProUpgradeDialog(IMPORT_LIMIT_TRIGGER),
@@ -3890,7 +3908,7 @@ export default function PrintPage() {
     // recorded the server's count.
     proUpgradeTrigger === IMPORT_LIMIT_TRIGGER ? rememberedImportUsage() : null,
     (items?.length ?? 0) > 0,
-    withheldRecipes ? { count: 1 + withheldRecipes.recipes.length, source: withheldRecipes.source } : null,
+    recipeChoice ? { count: recipeChoice.recipes.length, source: recipeChoice.source } : null,
   );
 
   /**
@@ -8214,6 +8232,42 @@ export default function PrintPage() {
         })}
         onClose={() => setShowReferralInvite(false)}
       />
+      {/* An import found more recipes than this account or book can take:
+          which ones, or the way to all of them. Behind the upgrade dialog it
+          opens, never under it: closing that comes straight back here, and
+          buying adds them all (the `recipeChoice` effect). */}
+      {recipeChoice &&
+        queue.hydrated &&
+        recipeChoiceAnchorPresent &&
+        recipeChoiceLimit !== null &&
+        needsChoice(recipeChoice.recipes.length, recipeChoiceLimit) &&
+        !showProUpgradeDialog && (
+          <FoundRecipesDialog
+            key={recipeChoice.itemId}
+            choice={recipeChoice}
+            limit={recipeChoiceLimit}
+            cookbook={cookbookMode}
+            bookPrice={cookbookPrice}
+            busy={cookbookMode && cookbookPurchaseBusy}
+            phone={deckMobile}
+            onAdd={(chosen) => {
+              addChosen(recipeChoice, chosen);
+              holdRecipeChoice(null);
+            }}
+            onCancel={() => {
+              queue.addChosenRecipes(recipeChoice, []);
+              holdRecipeChoice(null);
+            }}
+            onGetAll={() => {
+              if (cookbookMode) {
+                // Bought, the book has no cap and the effect adds them all.
+                void purchaseCookbookAndContinue(() => {});
+              } else {
+                openProUpgradeDialog(MULTI_RECIPE_FOUND_TRIGGER);
+              }
+            }}
+          />
+        )}
       {bookCapDialog && (
         <BookCapDialog
           found={bookCapDialog.found}
