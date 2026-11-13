@@ -193,7 +193,7 @@ export function FoundRecipesDialog({
   if (phone) {
     // A sheet, like the phone's own Add menu: a quick question about what was
     // just added, not a screen of its own. One full-width Add, and the way to
-    // all of them as a line of text under it, so the two never compete.
+    // all of them as a quiet button under it, so the two never compete.
     return (
       <MobileSheet
         open={sheetOpen}
@@ -209,18 +209,15 @@ export function FoundRecipesDialog({
               <PlusIcon size={ICON_SIZE.md} />
               {addLabel}
             </button>
-            <button
-              type="button"
-              className="inline-flex items-center justify-center gap-cp-1 self-center py-cp-1 text-cp-caption font-bold text-brand-ink underline underline-offset-2 disabled:opacity-50"
-              disabled={busy}
-              onClick={onGetAll}
-            >
+            {/* A quiet button, not a link: the same control as the rest of
+                the app, one step down from Add so the two never compete. */}
+            <button type="button" className="btn btn-ghost" disabled={busy} onClick={onGetAll}>
               {busy ? (
-                <SpinnerIcon size={ICON_SIZE.sm} />
+                <SpinnerIcon size={ICON_SIZE.md} />
               ) : (
-                <CrownIcon size={ICON_SIZE.sm} className="text-[var(--cp-premium-bright)]" />
+                <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
               )}
-              {`Want all ${count}? ${cookbook ? getAllLabel : "Get Pro and we'll add every one"}`}
+              {getAllLabel}
             </button>
           </div>
         }
