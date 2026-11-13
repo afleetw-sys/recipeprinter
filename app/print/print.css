@@ -207,12 +207,6 @@
   gap: 4px;
 }
 
-/* Full width under Add, the way Organize sits under a cookbook's Add. */
-.recipe-page-rail__swap {
-  width: 100%;
-  min-width: 0;
-}
-
 /* The organizer is a whole page, so its controls are the page header's size:
    Buy & Print's 32px with its 9px corner (`.btn-header`), the icon buttons
    included (Amelia, 2026-11-04: everything one size, and that one). Scoped to

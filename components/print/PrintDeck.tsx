@@ -23,6 +23,7 @@ import {
   MoveToSectionIcon,
   PagePlusIcon,
   PlusIcon,
+  SwapIcon,
   TrashIcon,
 } from "@/components/icons";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
@@ -333,6 +334,12 @@ interface PrintDeckProps {
   /** Imports still parsing, in queue order. Items rather than a count so each
       placeholder page is keyed by the import it stands in for. */
   parsingImports: QueueItem[];
+  /** Change recipe's import while it runs: the recipe it replaces shows the
+      loading state on its own page, rather than a loading card beside it. */
+  replacingRecipe: { recipeId: string; item: QueueItem } | null;
+  /** Change recipe, on a recipe card's toolbar. Undefined in a cookbook,
+      which is built by adding and never swapped wholesale. */
+  onChangeRecipe?: () => void;
   /** Imports that failed, which hold their slot rather than vanishing into a
       toast. Rendered by the same anchor rule as the parsing ones. */
   failedImports: QueueItem[];
@@ -523,6 +530,8 @@ export function PrintDeck(props: PrintDeckProps) {
     renderImagePagePhotoControl,
     openAddRecipeBelow,
     parsingImports,
+    replacingRecipe,
+    onChangeRecipe,
     failedImports,
     activeImportId,
     onSelectImport,
@@ -927,6 +936,29 @@ export function PrintDeck(props: PrintDeckProps) {
         } as CSSProperties}
       >
         <PageToolbar>
+          {/* Change recipe: this card, swapped for a different recipe in the
+              same theme and size. A worded button at the front of the bar,
+              since it acts on the whole recipe and the icons after it act on
+              parts of it. Folds into More last. */}
+          {onChangeRecipe && navItem.kind === "recipe" && (
+            <PageToolbarItem
+              menuLabel="Change recipe"
+              menuIcon={<SwapIcon size={ICON_SIZE.sm} />}
+              priority={4}
+            >
+              <button
+                type="button"
+                className="recipe-page-toolbar__btn"
+                title="Print a different recipe"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onChangeRecipe();
+                }}
+              >
+                Change recipe
+              </button>
+            </PageToolbarItem>
+          )}
           {/* Which page this is, on a phone (Amelia, 2026-11-10): there the
               page fills the screen and nothing else names it; on desktop the
               rail beside the deck does. A plain group, not a
@@ -2192,8 +2224,13 @@ export function PrintDeck(props: PrintDeckProps) {
                       exclusion for a section's art page). */}
                   {isActive &&
                     activeNavItem &&
+                    replacingRecipe?.recipeId !== navItem.recipeId &&
                     renderActiveControls(activeNavItem, previewDims.w * deckScale)}
-                  {!(renderAllPages || Math.abs(index - activeNavIndex) <= DECK_WINDOW) ? (
+                  {replacingRecipe && navItem.recipeId === replacingRecipe.recipeId ? (
+                    // Being changed: the recipe's own page loads its
+                    // replacement, which then lands in this same slot.
+                    pendingSheet(replacingRecipe.item)
+                  ) : !(renderAllPages || Math.abs(index - activeNavIndex) <= DECK_WINDOW) ? (
                     <PagePlaceholder
                       // The SAME box the real page occupies. A cookbook page is
                       // the preset's sheet (see `presetCardDims`), not the
