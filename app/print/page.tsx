@@ -191,7 +191,6 @@ import {
   PagePlusIcon,
   CheckIcon,
   CrownIcon,
-  SwapIcon,
   ICON_SIZE,
   ImageIcon,
   InfoIcon,
@@ -485,6 +484,18 @@ export default function PrintPage() {
    * dialog adds and closes in one click, and the close must see the add.
    */
   const swapRef = useRef<{ oldId: string; baseline: ReadonlySet<string> | null } | null>(null);
+  /**
+   * The recipe Change recipe is replacing, while its replacement imports: that
+   * recipe's own page shows the loading state, and no loading card of its own
+   * is added beside it. `landedId` is set once the new recipe has taken the old
+   * one's place, and this clears when that recipe has a page. State, unlike
+   * `swapRef`, because the deck draws from it.
+   */
+  const [replacing, setReplacing] = useState<{
+    oldId: string;
+    baseline: ReadonlySet<string>;
+    landedId?: string;
+  } | null>(null);
   /** Opened from the cookbook welcome's "Start adding recipes": titled for the
       first recipe. Set by that button only, not by "the book is empty", so a
       pick from a recipe app (which adds without closing) can't retitle the
@@ -1529,10 +1540,38 @@ export default function PrintPage() {
     railGeometryDirtyRef.current = true;
   }, [railDrag.draggingId, organizeMode, organizeAnimating, navItems]);
 
+  /**
+   * Change recipe's import, while it runs and until its recipe has a page:
+   * the recipe it replaces stands in for it (`replacingRecipe`), so it gets
+   * no loading card or rail row of its own. A failure is never hidden: the
+   * swap is over, and the failed import shows the usual way.
+   */
+  const replacingImportIds = useMemo(() => {
+    if (!replacing) return null;
+    const ids = queue.items
+      .filter((item) => !replacing.baseline.has(item.id) && item.status !== "error")
+      .map((item) => item.id);
+    return ids.length > 0 ? new Set(ids) : null;
+  }, [replacing, queue.items]);
+  /**
+   * Whether the old recipe still has a page to stand in on. After the new one
+   * lands, the old page lasts until the sheets are rebuilt; from then until the
+   * new page is drawn, the usual loading card holds the slot instead.
+   */
+  const oldPageShown = Boolean(replacing && navItems.some((navItem) => navItem.recipeId === replacing.oldId));
+  const standingIn = Boolean(replacing && (!replacing.landedId || oldPageShown));
+  const hiddenImportIds = standingIn ? replacingImportIds : null;
+  const replacingRecipe = useMemo(() => {
+    if (!replacing || !standingIn || !replacingImportIds) return null;
+    const item = queue.items.find((candidate) => replacingImportIds.has(candidate.id));
+    return item ? { recipeId: replacing.oldId, item } : null;
+  }, [replacing, standingIn, replacingImportIds, queue.items]);
+
   // Imports started from this page stay in the rail until they either become a
   // real page or the cook removes them. In particular, an error must not vanish
   // merely because it is no longer in the parsing state.
   const pendingImportItems = queue.items.filter((item) =>
+    !hiddenImportIds?.has(item.id) && (
     // A failure is TERMINAL, so it is always ours to show — including one that
     // arrived before this page did, or survived a reload. The `isOursToAwait`
     // caution exists because a parse can still be running inside another hook
@@ -1542,7 +1581,7 @@ export default function PrintPage() {
     // which is the dead-import-nobody-can-see bug the old toast was chasing.
     item.status === "error"
       ? true
-      : item.status === "parsing" && isOursToAwait(item.id),
+      : item.status === "parsing" && isOursToAwait(item.id)),
   );
   // Carried as items rather than a count so each placeholder is keyed by the
   // import it belongs to — which is what lets a page become that recipe in
@@ -1568,11 +1607,12 @@ export default function PrintPage() {
         item.status === "ready" &&
         item.recipe &&
         isOursToAwait(item.id) &&
-        !paged.has(item.id),
+        !paged.has(item.id) &&
+        !hiddenImportIds?.has(item.id),
     );
     if (waitingForAPage.length === 0) return parsingImports;
     return [...parsingImports, ...waitingForAPage];
-  }, [parsingImports, navItems, queue.items, isOursToAwait]);
+  }, [parsingImports, navItems, queue.items, isOursToAwait, hiddenImportIds]);
 
   const parsingImportCount = parsingImports.length;
   /**
@@ -3155,7 +3195,7 @@ export default function PrintPage() {
   }
 
   /**
-   * "Change recipe" (the rail, the phone toolbar, and the "Ready to print your
+   * "Change recipe" (a recipe card's toolbar, and the "Ready to print your
    * next one?" dialog). Opens the same Add dialog as Add more,
    * and the recipe the cook brings in takes the current one's place: same
    * deck, same theme and size. See `swapRecipe`.
@@ -5101,6 +5141,11 @@ export default function PrintPage() {
     const swappedIn = swapping?.baseline ? newlyReady.find((item) => !swapping.baseline!.has(item.id)) : undefined;
     if (swapping && swappedIn) {
       swapRef.current = null;
+      setReplacing((current) => (current ? { ...current, landedId: swappedIn.id } : current));
+      // Until the new recipe's page is drawn, its loading card stands where
+      // the old one was: after the page before it.
+      const oldIndex = navItems.findIndex((navItem) => navItem.recipeId === swapping.oldId);
+      setPendingAddAfterRecipeId(oldIndex > 0 ? (navItems[oldIndex - 1]?.recipeId ?? null) : null);
       setJobIds((current) => (current ?? []).filter((jid) => jid !== swapping.oldId));
       queue.remove(swapping.oldId);
       setPendingFocusRecipeId(swappedIn.id);
@@ -5130,6 +5175,27 @@ export default function PrintPage() {
     const oldGone = !queue.items.some((item) => item.id === swapping.oldId);
     if (oldGone || fresh.length === 0 || fresh.every((item) => item.status === "error")) swapRef.current = null;
   }, [queue.items]);
+
+  // The old recipe stops standing in once the new one has its page, or once
+  // the swap is off: the import failed, added nothing new, or was removed,
+  // the old recipe went, or another Add took over (each clears `swapRef`).
+  useEffect(() => {
+    if (!replacing) return;
+    if (replacing.landedId) {
+      const landedId = replacing.landedId;
+      if (navItems.some((navItem) => navItem.recipeId === landedId) || !queue.items.some((item) => item.id === landedId)) {
+        setReplacing(null);
+      }
+      return;
+    }
+    // Not "no import yet": a link is added to the queue a beat after the
+    // swap is armed. The swap-over effect above decides that, on a queue change.
+    // Functional, because the arrival effect clears `swapRef` and marks the
+    // landing in the same pass: a plain null here would undo that mark.
+    if (!swapRef.current || !queue.items.some((item) => item.id === replacing.oldId)) {
+      setReplacing((current) => (current?.landedId ? current : null));
+    }
+  }, [replacing, navItems, queue.items]);
 
   // Held just long enough for the animation to finish. A lingering class would
   // replay it on the next render the element happens to survive.
@@ -5873,7 +5939,9 @@ export default function PrintPage() {
   function armSwap() {
     const swapping = swapRef.current;
     if (swapping && !swapping.baseline) {
-      swapRef.current = { oldId: swapping.oldId, baseline: new Set(queue.items.map((item) => item.id)) };
+      const baseline = new Set(queue.items.map((item) => item.id));
+      swapRef.current = { oldId: swapping.oldId, baseline };
+      setReplacing({ oldId: swapping.oldId, baseline });
     }
   }
   function openAddRecipeDialogAt(navItem: NavItem | null) {
@@ -7525,7 +7593,6 @@ export default function PrintPage() {
           previewDescriptionOn={showDescription}
           organizeMode={organizeMode}
           enterOrganizeMode={enterOrganizeMode}
-          onPrintDifferentRecipe={printDifferentRecipe}
           exitOrganizeMode={exitOrganizeMode}
           projectMeta={projectMeta}
           cookbookView={cookbookView}
@@ -7711,6 +7778,8 @@ export default function PrintPage() {
           renderCoverPhotoControl={renderCoverPhotoControl}
           renderImagePagePhotoControl={renderImagePagePhotoControl}
           parsingImports={deckPendingImports}
+          replacingRecipe={replacingRecipe}
+          onChangeRecipe={projectMeta.meta.cookbookMode ? undefined : printDifferentRecipe}
           activeImportId={activeImportId}
           onSelectImport={selectImport}
           settlingIds={settlingIds}
@@ -7827,24 +7896,6 @@ export default function PrintPage() {
                   (an import still parsing counts), so the two never disagree. */}
               {cookbookMode ? "Add" : recipeCount > 0 ? "Add more" : "Add recipe"}
             </button>
-            {/* Recipe cards' other way forward, beside Add more: the desktop
-                rail's "Change recipe". Its own tile rather than a choice
-                behind Add, since it is the free one and there is room for it
-                in a toolbar that has no Pages tile. */}
-            {!cookbookMode && recipeCount > 0 && (
-              <button
-                type="button"
-                className="recipe-mobile-toolbar__btn"
-                onClick={printDifferentRecipe}
-              >
-                <span className="recipe-mobile-toolbar__btn-icon">
-                  <SwapIcon size={ICON_SIZE.lg} />
-                </span>
-                {/* "Different recipe" widened this tile past its neighbours
-                    and pushed Themes off a phone's edge. */}
-                Change recipe
-              </button>
-            )}
             {/* Pages: the same overview the page count's caret opens, a strip of
                 every page under the top bar (MobilePagesPanel), with Organize
                 in it. One toggle, two ways to reach it. */}

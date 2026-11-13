@@ -153,11 +153,39 @@ export function PageToolbar({ children }: { children: ReactNode }) {
   // The observers below outlive a render; they call the latest one.
   const measureRef = useRef<() => void>(() => {});
 
+  /**
+   * Keeps the bar inside the part of the deck on screen while a page zoomed
+   * wider than the deck pans sideways. The stylesheet's `left`/`right` sticky
+   * was meant to, but never took hold (the bar panned with the page), and a
+   * bar wider than about 230px then ran off the deck's edge at the start or
+   * end of the pan (e2e/page-toolbar.spec.ts). Moved with `translate`, which
+   * leaves the shell's vertical sticky alone; a bar already in view isn't
+   * moved at all.
+   */
+  const shiftRef = useRef(0);
+  const place = () => {
+    const bar = ref.current;
+    const deck = bar?.closest<HTMLElement>(".recipe-page-deck");
+    if (!bar || !deck) return;
+    const deckRect = deck.getBoundingClientRect();
+    const barRect = bar.getBoundingClientRect();
+    const natural = barRect.left - shiftRef.current;
+    const min = deckRect.left + deck.clientLeft + 8;
+    const max = deckRect.left + deck.clientLeft + deck.clientWidth - 8 - barRect.width;
+    // Wider than the room: centred on it, overhanging both edges equally.
+    const target = max < min ? (min + max) / 2 : Math.min(Math.max(natural, min), max);
+    const shift = Math.round((target - natural) * 2) / 2;
+    if (shift === shiftRef.current) return;
+    shiftRef.current = shift;
+    bar.style.translate = shift ? `${shift}px 0` : "";
+  };
+
   // Every render, because what is in the bar can change with any of them. It
   // settles at once: the second pass measures the same widths.
   useLayoutEffect(() => {
     measureRef.current = measure;
     measure();
+    place();
   });
 
   useLayoutEffect(() => {
@@ -167,15 +195,21 @@ export function PageToolbar({ children }: { children: ReactNode }) {
     // The shell's width (or the deck's, zoomed in) is the room there is: the
     // screen, zoom and the deck's own sizing all arrive as a resize of one. The mutation watch covers a
     // label changing at the same width ("Add time" becoming "Done").
-    const resize = new ResizeObserver(() => measureRef.current());
+    const resize = new ResizeObserver(() => {
+      measureRef.current();
+      place();
+    });
     resize.observe(shell);
+    resize.observe(bar);
     const deck = shell.closest(".recipe-page-deck");
     if (deck) resize.observe(deck);
     const mutation = new MutationObserver(() => measureRef.current());
     mutation.observe(bar, { childList: true, subtree: true, characterData: true });
+    deck?.addEventListener("scroll", place, { passive: true });
     return () => {
       resize.disconnect();
       mutation.disconnect();
+      deck?.removeEventListener("scroll", place);
     };
   }, []);
 
