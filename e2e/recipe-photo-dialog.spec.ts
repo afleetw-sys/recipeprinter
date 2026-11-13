@@ -52,6 +52,11 @@ async function storedMode(page: Page, id: string): Promise<Mode> {
 
 async function openBook(page: Page, middle: Mode) {
   const items = [recipe("r1", "Pancakes"), recipe("r2", "Waffles"), recipe("r3", "Toast")];
+  // Off /print first: the open print page saves its own project as it
+  // unloads, and when that landed after the seed below the book opened as
+  // recipe cards, with no "2 Waffles" row to find (flaky in CI, every time
+  // locally). robots.txt is same-origin, so it shares the session storage.
+  await page.goto("/robots.txt");
   await page.evaluate(
     ({ items, placements }) => {
       sessionStorage.clear();
