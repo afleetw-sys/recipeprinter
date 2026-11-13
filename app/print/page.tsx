@@ -3762,10 +3762,10 @@ export default function PrintPage() {
   // above, this is NOT recipe-count-dependent: it's what lets an empty
   // project's library picker still offer exactly one pick rather than none.
   const singleRecipeOnly = !cookbookMode && !hasMultiRecipeEntitlement(effectiveCustomerInfo.customerInfo);
-  // Two 4x6 cards to a sheet: offered once there are two recipes to pair,
-  // which only Pro can add. A setting stored while Pro is ignored once it
-  // lapses, and while the job is down to one recipe.
-  const twoPerSheetOffered = cardSize === "card-6x4" && !cookbookMode && !singleRecipeOnly && recipeCount >= 2;
+  // Two 4x6 cards to a sheet, on every plan, from the first recipe: a job of
+  // one card prints it in both halves (lib/twoUpPages.ts), so five copies of
+  // one card is three sheets, not five half-blank ones (Amelia, 2026-11-13).
+  const twoPerSheetOffered = cardSize === "card-6x4" && !cookbookMode && recipeCount >= 1;
   /** Recipe cards' phone Photos sheet (None / In card): offered once there can
       be more than one card and some card has a photo. One card's own photo
       picker is that card's setting. */
