@@ -1494,12 +1494,28 @@
     color: var(--cp-premium-bright);
     background: var(--cp-premium-soft);
   }
+  /* On a phone it is the bare gold crown, the way /print's mobile bar draws
+     its own (`.recipe-mobile-topbar .icon-button`): no border, no fill, a
+     38px target with a 20px glyph, a soft gold fill on hover (Amelia,
+     2026-11-13: match /print on every page). */
   @media (max-width: 820px) {
     .rp-upgrade-collapsible {
-      width: 32px;
+      width: 38px;
+      height: 38px;
+      min-height: 38px;
       padding: 0;
-      border-color: var(--cp-premium-edge);
-      background: var(--cp-card);
+      border-color: transparent;
+      border-radius: 10px;
+      background: transparent;
+      box-shadow: none;
+    }
+    .rp-upgrade-collapsible:hover:not(:disabled) {
+      border-color: transparent;
+      background: var(--cp-premium-soft);
+    }
+    .rp-upgrade-collapsible svg {
+      width: 20px;
+      height: 20px;
     }
     .rp-upgrade-collapsible__label {
       display: none;
