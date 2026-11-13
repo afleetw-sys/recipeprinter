@@ -24,6 +24,7 @@ import { DEFAULT_FONT_SCALE, FONT_SCALES, fontScaleVars, normalizeFontScale, typ
 import { legacyPhotoScale, photoScaleVars } from "@/lib/photoScale";
 import { FontSpecimens } from "./FontSpecimens";
 import { RevealSpecimens } from "./RevealSpecimens";
+import { PhotoSlotSpecimens } from "./PhotoSlotSpecimens";
 import { getCookbookPreset, presetCardVars } from "@/lib/cookbookPresets";
 import type { Recipe } from "@/types/recipe";
 
@@ -490,14 +491,15 @@ interface FlatCombo {
   label: string;
 }
 
-/** `?specimen=1` shows `FontSpecimens` and `?reveal=1` `RevealSpecimens`
-    instead of running the sweep. Decided after mount, so the server's page and
+/** `?specimen=1` shows `FontSpecimens`, `?reveal=1` `RevealSpecimens` and
+    `?photoslot=1` `PhotoSlotSpecimens` instead of running the sweep. Decided after mount, so the server's page and
     the first client render agree. */
 export function LayoutHarness() {
   const [mode, setMode] = useState<
     | { kind: "sweep" }
     | { kind: "specimen"; fontScale: FontScale; book: boolean }
     | { kind: "reveal"; book: boolean }
+    | { kind: "photoslot" }
     | null
   >(null);
   useEffect(() => {
@@ -507,12 +509,15 @@ export function LayoutHarness() {
         ? { kind: "specimen", fontScale: normalizeFontScale(Number(params.get("font"))), book: params.get("book") === "1" }
         : params.get("reveal") === "1"
           ? { kind: "reveal", book: params.get("book") === "1" }
-          : { kind: "sweep" },
+          : params.get("photoslot") === "1"
+            ? { kind: "photoslot" }
+            : { kind: "sweep" },
     );
   }, []);
   if (mode === null) return null;
   if (mode.kind === "specimen") return <FontSpecimens fontScale={mode.fontScale} book={mode.book} />;
   if (mode.kind === "reveal") return <RevealSpecimens book={mode.book} />;
+  if (mode.kind === "photoslot") return <PhotoSlotSpecimens />;
   return <LayoutSweep />;
 }
 

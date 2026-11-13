@@ -89,8 +89,8 @@ vi.mock("@/lib/photoStorage", async (importOriginal) => {
 
 /** Every pause, resume and print(), in the order they happened. */
 const printNet = vi.hoisted(() => ({ calls: [] as string[] }));
-vi.mock("@/lib/firebase/db", async (importOriginal) => {
-  const original = await importOriginal<typeof import("@/lib/firebase/db")>();
+vi.mock("@/lib/firebase/printPause", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/firebase/printPause")>();
   return {
     ...original,
     pauseFirestoreForPrint: () => printNet.calls.push("pause"),

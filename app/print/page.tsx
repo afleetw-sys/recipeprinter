@@ -8,7 +8,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SAVE_FAILURES, SAVE_STATUS_LABEL } from "@/components/AccountControl";
 import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
-import { pauseFirestoreForPrint, resumeFirestoreAfterPrint } from "@/lib/firebase/db";
+import { pauseFirestoreForPrint, resumeFirestoreAfterPrint } from "@/lib/firebase/printPause";
 import { PrintDialogs } from "@/components/PrintDialogs";
 import { AddRecipeDialog } from "@/components/AddRecipeDialog";
 import { sectionOrderChanged, sortSectionsByTitle } from "@/lib/sectionSort";
@@ -153,6 +153,7 @@ import {
 } from "@/lib/printPrimaryAction";
 import { bookRoomLeft } from "@/lib/cookbookFreeSize";
 import { FREE_COOKBOOK_RECIPES } from "@/lib/freeImports";
+import { BookCapDialog } from "@/components/print/BookCapDialog";
 import {
   markPhotoStyleTipSeen,
   photoStyleTipSeen,
@@ -1013,6 +1014,7 @@ export default function PrintPage() {
     spreads,
     previewConfig,
     awaitingFirstLayout,
+    layoutCurrent,
     measurers,
   } = usePrintSheets({
     sections,
@@ -3736,13 +3738,24 @@ export default function PrintPage() {
     recipeCount,
   });
   const bookCapReached = bookRoom === 0;
+  // More recipes arrived than the free preview holds: a dialog that stays
+  // until it's answered (components/print/BookCapDialog), not a toast gone in
+  // seconds. The ones that didn't fit wait in `bookCapWithheldRef` and are
+  // added once the book is bought.
+  const [bookCapDialog, setBookCapDialog] = useState<BookCapInfo | null>(null);
+  const [addAfterBookBought, setAddAfterBookBought] = useState<QueueItem[] | null>(null);
   function handleBookCapReached(info: BookCapInfo) {
-    showToast(
-      info.kept > 0
-        ? `We added ${info.kept} of ${info.found} recipes. A free preview holds up to ${FREE_COOKBOOK_RECIPES}; buy this cookbook to add the rest.`
-        : `A free preview holds up to ${FREE_COOKBOOK_RECIPES} recipes. Buy this cookbook to keep adding.`,
-    );
+    track("cookbook_preview_full", { recipeCount, price: cookbookPrice });
+    setBookCapDialog(info);
   }
+  useEffect(() => {
+    if (!addAfterBookBought || bookRoom !== null) return;
+    const added = queue.addReadyRecipes(addAfterBookBought);
+    setAddAfterBookBought(null);
+    if (added > 0) showToast(added === 1 ? "We added your other recipe." : `We added your other ${added} recipes.`);
+    // The queue's add methods are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addAfterBookBought, bookRoom]);
   function handleMultiRecipeBlocked(info: MultiRecipeBlockedInfo) {
     if (info.source === "library") {
       // The pickers already refuse to let a locked account select more than
@@ -5374,7 +5387,12 @@ export default function PrintPage() {
               label="Print 2 cards per sheet"
               hint="Uncheck for 4×6 card stock."
               checked={twoPerSheet}
-              onChange={(event) => setTwoPerSheet(event.target.checked)}
+              onChange={(event) => {
+                setTwoPerSheet(event.target.checked);
+                // A sheet of two gets cut, so it starts with lines to cut
+                // along (and the bleed that comes with them, TwoUpPrintPages).
+                if (event.target.checked) setShowCutLines(true);
+              }}
           />
         )}
         {cardSize === "card-6x4" && (
@@ -7116,6 +7134,12 @@ export default function PrintPage() {
   useEffect(() => {
     const pendingId = pendingFocusNavId ?? pendingFocusRecipeId;
     if (!pendingId) return;
+    // Not against the frame still on screen. Choosing None for a Full page
+    // recipe takes its photo page out, and the held layout still has it, so
+    // the recipe's old page number landed on the NEXT recipe once the new
+    // layout swapped in. An open Photo dialog went with it and showed (and
+    // set) that recipe instead, which read as None needing two presses.
+    if (!layoutCurrent) return;
     const landing = landingForRecipe({ cookbookView, recipeId: pendingId, navItems, spreads });
     if (!landing) return;
     const targetIndex = landing.slide;
@@ -7136,7 +7160,7 @@ export default function PrintPage() {
     if (pendingFocusNavId) setPendingFocusNavId(null);
     if (pendingFocusRecipeId === pendingId) setPendingFocusRecipeId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingFocusNavId, pendingFocusRecipeId, navItems, cookbookView, spreads]);
+  }, [pendingFocusNavId, pendingFocusRecipeId, navItems, cookbookView, spreads, layoutCurrent]);
   /**
    * Close the rail's Add overflow on an outside click. Escape also clears any
    * organizer selection; normal recipe clicks manage selection themselves.
@@ -8139,6 +8163,24 @@ export default function PrintPage() {
         })}
         onClose={() => setShowReferralInvite(false)}
       />
+      {bookCapDialog && (
+        <BookCapDialog
+          found={bookCapDialog.found}
+          kept={bookCapDialog.kept}
+          freeRecipes={FREE_COOKBOOK_RECIPES}
+          price={cookbookPrice}
+          willAddRest={Boolean(bookCapDialog.withheld?.length)}
+          busy={cookbookPurchaseBusy}
+          onClose={() => setBookCapDialog(null)}
+          onBuy={() => {
+            const withheld = bookCapDialog.withheld ?? null;
+            void purchaseCookbookAndContinue(() => {
+              setBookCapDialog(null);
+              if (withheld?.length) setAddAfterBookBought(withheld);
+            });
+          }}
+        />
+      )}
       <PrintDialogs
         showDonateDialog={showDonateDialog}
         onCloseDonateDialog={() => setShowDonateDialog(false)}

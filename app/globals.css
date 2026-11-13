@@ -68,6 +68,11 @@
      whether that icon sits on plain paper or on the badge's own dark
      backing plate. Same meaning, same family, just legible at icon size. */
   --cp-premium-bright: #f0b429;
+  /* The phone's crown-only upgrade button (`.rp-upgrade-icon`): the premium
+     gold's edge, softened toward the card so the outline sits a step lighter
+     than the full-strength ink edge on "Upgrade to Pro" (Amelia, 2026-11-08).
+     The crown inside carries the offer; the box only has to be there. */
+  --cp-premium-edge: color-mix(in srgb, var(--cp-premium) 55%, var(--cp-card));
 
   /* The text that sits ON a filled accent: white either way — 5.1:1 on
      cornflower (where --cp-ink is 2.7:1) and 3.7:1 on clay. Named so the
@@ -1474,6 +1479,33 @@
     color: var(--cp-ink);
     border-color: var(--cp-line-strong);
   }
+
+  /* The upgrade on a phone is a crown alone, on every page: /print's own bar
+     (`renderProUpgradeButton`) and every other page's header
+     (`FrontDoorUpgradeButton`) at 820px and under, where /print swaps to its
+     phone bar. Premium gold so it still reads as the offer, on the lighter
+     premium edge, at the size of the buttons beside it. */
+  .rp-upgrade-icon {
+    border-color: var(--cp-premium-edge);
+    color: var(--cp-premium-bright);
+  }
+  .rp-upgrade-icon:hover:not(:disabled) {
+    border-color: var(--cp-premium-edge);
+    color: var(--cp-premium-bright);
+    background: var(--cp-premium-soft);
+  }
+  @media (max-width: 820px) {
+    .rp-upgrade-collapsible {
+      width: 32px;
+      padding: 0;
+      border-color: var(--cp-premium-edge);
+      background: var(--cp-card);
+    }
+    .rp-upgrade-collapsible__label {
+      display: none;
+    }
+  }
+
   /* A dialog's close X is the bare glyph, at every width (Amelia,
      2026-10-13): a box drawn around it reads as a second shape beside the
      title. Only the close X: other icon buttons sit in rows with labelled

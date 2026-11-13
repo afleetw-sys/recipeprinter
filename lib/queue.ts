@@ -545,6 +545,10 @@ export interface BookCapInfo {
   /** How many arrived, and how many of them were kept. */
   found: number;
   kept: number;
+  /** The ready recipes that didn't fit (a library pick), held so buying the
+      book can add them without importing them again. Absent for a parse
+      that found several, which keeps only what fit. */
+  withheld?: QueueItem[];
 }
 
 /** An import that didn't start because the free allowance is used up. */
@@ -1337,7 +1341,11 @@ export function useQueue() {
       const fitting = fitBookRoom(nextRecipes, bookRoom());
       const capped = fitting.length < nextRecipes.length;
       if (capped) {
-        onBookCapReachedRef.current?.({ found: nextRecipes.length, kept: fitting.length });
+        onBookCapReachedRef.current?.({
+          found: nextRecipes.length,
+          kept: fitting.length,
+          withheld: nextRecipes.slice(fitting.length),
+        });
         nextRecipes = fitting;
       }
       if (nextRecipes.length === 0) return 0;

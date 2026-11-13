@@ -415,7 +415,7 @@ describe("an unbought cookbook's free size", () => {
       added = result.current.addReadyRecipes([ready("a"), ready("b"), ready("c")]);
     });
     expect(added).toBe(2);
-    expect(onBookCapReached).toHaveBeenCalledWith({ found: 3, kept: 2 });
+    expect(onBookCapReached).toHaveBeenCalledWith(expect.objectContaining({ found: 3, kept: 2 }));
     act(() => {
       added = result.current.addReadyRecipes([ready("d")]);
     });

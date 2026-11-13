@@ -1545,6 +1545,12 @@ export function usePrintSheets({
     spreads: displayedLayout?.spreads ?? [],
     /** The size/template/photo/link the displayed sheets were measured for. */
     previewConfig: displayedLayout,
+    /** Whether the layout on screen is the one for the current settings, not a
+        frame held while the next one measures or swaps in. Anything that turns
+        a recipe into a page index (landing on a recipe that just changed) must
+        wait for this: against the held frame, a page that is about to move
+        names whichever page takes its place. */
+    layoutCurrent: displayedLayout === committedLayout,
     /** True only before the first layout has ever landed — nothing to show yet. */
     awaitingFirstLayout: displayedLayout === null && measuredRecipeItems.length > 0,
     /** The layout each recipe resolves to (full / image-spread). Keyed by item id. */

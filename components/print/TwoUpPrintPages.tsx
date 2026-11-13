@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo, useMemo, type ReactNode } from "react";
 import { RecipeCardFace, type RecipePrintTemplate } from "@/components/RecipeCardPrint";
 import type { PageSheet } from "@/lib/usePrintSheets";
 import { pairCardsOnLetter, type TwoUpCard } from "@/lib/twoUpPages";
@@ -34,6 +34,8 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
   sheets: PageSheet[];
   template: RecipePrintTemplate;
   showDescription: boolean;
+  /** Cut lines, and the bleed past them (see `Slot`): the two come together,
+      since with no line to cut along the colour's own edge is the guide. */
   showCutLines: boolean;
   /** Same flag the deck carries: some themes draw a back's art the other
       way round when it prints behind its front. */
@@ -71,7 +73,7 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
               }`}
             >
               {page.cards.map((card, half) => (
-                <div key={half} className={`rp-twoup__slot ${card ? "rp-twoup__slot--filled" : ""}`}>
+                <Slot key={half} filled={Boolean(card)} bleed={showCutLines}>
                   {card && (
                     <ElementPageProvider page={pageAddressForSlot(card.slot)} looks={pageLooks}>
                     <RecipeCardFace
@@ -95,7 +97,7 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
                     />
                     </ElementPageProvider>
                   )}
-                </div>
+                </Slot>
               ))}
             </div>,
             page.hasBack ? (
@@ -104,16 +106,13 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
                 className={`rp-twoup__page rp-twoup__page--back ${isLast ? "rp-twoup__page--last" : ""}`}
               >
                 {page.cards.map((card, half) => (
-                  <div
-                    key={half}
-                    className={`rp-twoup__slot ${card?.slot.back ? "rp-twoup__slot--filled" : ""}`}
-                  >
+                  <Slot key={half} filled={Boolean(card?.slot.back)} bleed={showCutLines}>
                     {card && (
                       <ElementPageProvider page={pageAddressForSlot(card.slot)} looks={pageLooks}>
                         <BackFace card={card} template={template} />
                       </ElementPageProvider>
                     )}
-                  </div>
+                  </Slot>
                 ))}
               </div>
             ) : null,
@@ -123,6 +122,43 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
     </div>
   );
 });
+
+/**
+ * One half of the sheet, with a 1/8in bleed round a filled one.
+ *
+ * A duplex printer puts the back a millimetre or so off the front, so a cut
+ * along the front's line lands a little off the back's edge. With the colour
+ * stopping at the line, that showed as a white sliver down the back. Past each
+ * edge the face is drawn again, mirrored about that edge and clipped to 1/8in:
+ * what lies just outside the cut is what lies just inside it, so a stripe, a
+ * band or a frame carries straight on, and a cut a little off still lands in
+ * the face's own edge. Text never reaches the strip: every theme pads its
+ * card well over 1/8in. The corners, too small to matter, take a copy scaled
+ * up behind the card.
+ *
+ * Only with cut lines on. Without them the colour's own edge is what gets cut
+ * along, so it has to stop at the card's edge as it always did.
+ */
+const BLEED_SIDES = ["top", "right", "bottom", "left"] as const;
+
+function Slot({ filled, bleed, children }: { filled: boolean; bleed: boolean; children: ReactNode }) {
+  return (
+    <div className={`rp-twoup__slot ${filled ? "rp-twoup__slot--filled" : ""}`}>
+      {filled && bleed && (
+        <>
+          <div className="rp-twoup__bleed rp-twoup__bleed--corners">{children}</div>
+          {BLEED_SIDES.map((side) => (
+            <div key={side} className={`rp-twoup__bleed rp-twoup__bleed--${side}`}>
+              <div className="rp-twoup__mirror">{children}</div>
+            </div>
+          ))}
+          <div className="rp-twoup__mat" />
+        </>
+      )}
+      {children}
+    </div>
+  );
+}
 
 /** A card's back, or nothing: an empty half prints as plain paper, which is
     what the single-card print's white duplex spacer is too. */
