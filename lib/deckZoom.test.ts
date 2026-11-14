@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TOUCH_ZOOM_RANGE, textBarScale, zoomFromPinch, zoomFromWheel } from "./deckZoom";
+import { TEXT_BAR_MAX_SCALE, TOUCH_ZOOM_RANGE, textBarScale, zoomFromPinch, zoomFromWheel } from "./deckZoom";
 
 const RANGE = { min: 0.25, max: 4 };
 
@@ -61,9 +61,9 @@ describe("textBarScale", () => {
     expect(textBarScale(2)).toBeLessThan(1.5);
   });
 
-  it("stays under the page toolbar above the card, which is 36px to this bar's 28", () => {
-    expect(28 * textBarScale(2)).toBeLessThan(36);
-    expect(28 * textBarScale(10)).toBeLessThan(36);
+  it("stops growing at its cap, however far the deck zooms", () => {
+    expect(textBarScale(10)).toBe(TEXT_BAR_MAX_SCALE);
+    expect(textBarScale(100)).toBe(TEXT_BAR_MAX_SCALE);
   });
 
   it("never shrinks below the size it is at fit", () => {

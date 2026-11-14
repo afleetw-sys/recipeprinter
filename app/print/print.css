@@ -107,7 +107,7 @@
    here would be overridden by their un-media-gated base rules later in the
    file regardless of this media query matching, since plain cascade order
    (not media-query nesting) decides ties of equal specificity. */
-@media screen and (min-width: 821px) and (pointer: fine), screen and (min-width: 821px) and (pointer: none), screen and (min-width: 1367px) {
+@media screen and (min-width: 821px) and (pointer: fine), screen and (min-width: 821px) and (pointer: none), screen and (pointer: coarse) and (min-width: 820px) and (min-device-width: 1000px) and (min-device-height: 1000px) {
   .recipe-print-page {
     height: 100dvh;
     overflow: hidden;
@@ -557,7 +557,7 @@
   outline-offset: var(--cp-focus-ring-offset);
 }
 
-@media screen and (min-width: 821px) and (pointer: fine), screen and (min-width: 821px) and (pointer: none), screen and (min-width: 1367px) {
+@media screen and (min-width: 821px) and (pointer: fine), screen and (min-width: 821px) and (pointer: none), screen and (pointer: coarse) and (min-width: 820px) and (min-device-width: 1000px) and (min-device-height: 1000px) {
   .recipe-print-page .recipe-print-shell {
     width: 100%;
   }
@@ -942,7 +942,7 @@
   }
 }
 
-@media screen and (max-width: 820px), screen and (pointer: coarse) and (max-width: 1366px) {
+@media screen and (max-width: 820px) and (pointer: fine), screen and (max-width: 820px) and (pointer: none), screen and (pointer: coarse) and (max-width: 819.98px), screen and (pointer: coarse) and (max-device-width: 999px), screen and (pointer: coarse) and (max-device-height: 999px) {
   /* The side-panels button is a DESKTOP control: everything that makes it
      one lives in the min-width:821px block, and there are no side panels here
      to hide. Without this it would render unstyled, in normal flow at the very
@@ -1598,7 +1598,7 @@
    Desktop-scoped on purpose: the mobile deck keeps its own `54px 40px 18px`
    (control clearance + side peek); an unscoped override here outranks that rule
    and would collapse the mobile padding too, hiding the controls there as well. */
-@media screen and (min-width: 821px) and (pointer: fine), screen and (min-width: 821px) and (pointer: none), screen and (min-width: 1367px) {
+@media screen and (min-width: 821px) and (pointer: fine), screen and (min-width: 821px) and (pointer: none), screen and (pointer: coarse) and (min-width: 820px) and (min-device-width: 1000px) and (min-device-height: 1000px) {
   .recipe-page-canvas[data-single-recipe="true"] .recipe-page-deck {
     padding: 72px 0 24px;
   }
@@ -1649,7 +1649,7 @@
   scroll-snap-align: start;
 }
 
-@media screen and (min-width: 821px) and (pointer: fine), screen and (min-width: 821px) and (pointer: none), screen and (min-width: 1367px) {
+@media screen and (min-width: 821px) and (pointer: fine), screen and (min-width: 821px) and (pointer: none), screen and (pointer: coarse) and (min-width: 820px) and (min-device-width: 1000px) and (min-device-height: 1000px) {
   .recipe-page-canvas:not([data-single-recipe="true"]) .recipe-page-deck > .recipe-page-slide > .recipe-page-scaler {
     scroll-snap-align: center;
   }
@@ -1790,7 +1790,7 @@
 
 /* Snap the whole spread to center (the base rule snaps a lone `.recipe-page-
    scaler`, which a spread slide doesn't have as a direct child). */
-@media screen and (min-width: 821px) and (pointer: fine), screen and (min-width: 821px) and (pointer: none), screen and (min-width: 1367px) {
+@media screen and (min-width: 821px) and (pointer: fine), screen and (min-width: 821px) and (pointer: none), screen and (pointer: coarse) and (min-width: 820px) and (min-device-width: 1000px) and (min-device-height: 1000px) {
   .recipe-page-canvas:not([data-single-recipe="true"]) .recipe-page-deck--book > .recipe-page-slide--spread {
     scroll-snap-align: center;
   }
@@ -1802,7 +1802,7 @@
 .recipe-deck-page-count {
   display: none;
 }
-@media screen and (max-width: 820px), screen and (pointer: coarse) and (max-width: 1366px) {
+@media screen and (max-width: 820px) and (pointer: fine), screen and (max-width: 820px) and (pointer: none), screen and (pointer: coarse) and (max-width: 819.98px), screen and (pointer: coarse) and (max-device-width: 999px), screen and (pointer: coarse) and (max-device-height: 999px) {
   .recipe-deck-page-count {
     position: relative;
     z-index: 4;
@@ -1861,7 +1861,7 @@
 .recipe-deck-swipe-hint {
   display: none;
 }
-@media screen and (max-width: 820px), screen and (pointer: coarse) and (max-width: 1366px) {
+@media screen and (max-width: 820px) and (pointer: fine), screen and (max-width: 820px) and (pointer: none), screen and (pointer: coarse) and (max-width: 819.98px), screen and (pointer: coarse) and (max-device-width: 999px), screen and (pointer: coarse) and (max-device-height: 999px) {
   .recipe-deck-swipe-hint {
     position: absolute;
     top: calc(var(--deck-h, 70vh) - 72px);
@@ -1912,7 +1912,7 @@
    screen each was mostly empty, so the next card shows below it.
    The page counter says which page is selected, so there is no ring and no
    dimming to say it. */
-@media screen and (max-width: 820px), screen and (pointer: coarse) and (max-width: 1366px) {
+@media screen and (max-width: 820px) and (pointer: fine), screen and (max-width: 820px) and (pointer: none), screen and (pointer: coarse) and (max-width: 819.98px), screen and (pointer: coarse) and (max-device-width: 999px), screen and (pointer: coarse) and (max-device-height: 999px) {
   .recipe-page-deck > .recipe-page-slide:not(.recipe-page-slide--spread),
   .recipe-spread__cell {
     display: grid;
@@ -2114,10 +2114,11 @@
    drawn at print scale and chrome mounted inside it would be scaled down with
    the artwork. The page toolbar is parked above the card and holds still.
 
-   Size: a notch smaller than the page's, on the same reasoning as
-   `.cp-zoom--compact` — this one sits ON the text it acts on, at the size of a
-   printed line, where the page bar's 36px slab reads as a lid over the card.
-   The proportions are that control's: 22px buttons in 3px of padding.
+   Size: only just smaller than the page's: 26px buttons in 4px of padding,
+   34 tall to its 36. It was 22px in 3px (28 tall), on the reasoning that it
+   sits on the text it acts on, but next to the page bar that read as a toy
+   version of it (Amelia, 2026-11-13). Two bars over one card should look like
+   two of the same thing.
 
    Hidden until placed: it renders at the document origin and is moved in a
    layout effect, so this is what stops a bar appearing in the top-left corner
@@ -2143,8 +2144,8 @@
      TextFieldToolbar. */
   z-index: 7;
   visibility: hidden;
-  padding: 3px;
-  border-radius: 11px;
+  padding: 4px;
+  border-radius: 13px;
   /* It follows a caret, so it must never be the thing that scrolls, and never
      wraps the way a bar sized to a page does. */
   max-width: calc(100vw - 16px);
@@ -2152,8 +2153,8 @@
 }
 
 .recipe-text-toolbar .recipe-page-toolbar__group {
-  gap: 1px;
-  padding: 0 3px;
+  gap: 2px;
+  padding: 0 4px;
 }
 
 /* Docked just above a phone's keyboard (useFloatingBarPlacement's
@@ -2183,12 +2184,9 @@
 .recipe-text-toolbar[data-docked] .recipe-page-toolbar__btn--icon {
   width: 40px;
 }
-/* "Add below" is the keyboard bar's: on desktop the card's own "+ Add below"
-   sits right under the row. */
+/* "Add below" lives in this bar everywhere, desktop included: the card's own
+   hover "+ Add below" pills are gone (see `.recipe-card__add-line`). */
 .recipe-text-toolbar__add-below {
-  display: none;
-}
-.recipe-text-toolbar[data-docked] .recipe-text-toolbar__add-below {
   display: inline-flex;
 }
 .recipe-text-toolbar__add-below .recipe-page-toolbar__btn {
@@ -2198,12 +2196,12 @@
 }
 
 .recipe-text-toolbar .recipe-page-toolbar__btn {
-  min-height: 22px;
-  border-radius: 6px;
+  min-height: 26px;
+  border-radius: 7px;
 }
 
 .recipe-text-toolbar .recipe-page-toolbar__btn--icon {
-  width: 22px;
+  width: 26px;
 }
 
 /* The line-type dropdown (LineKindSelect): what the line is now and a
@@ -2226,7 +2224,7 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  height: 22px;
+  height: 26px;
   padding: 0 4px 0 7px;
   border: 0;
   border-radius: 6px;
@@ -2387,11 +2385,11 @@
 }
 
 /* A worded button in this bar ("Delete 3 lines"): the page toolbar's 10px
-   sides and caption type made it twice the size of the 22px glyphs it sits
-   with, so it takes the bar's own tighter padding and the label size. */
+   sides made it twice the width of the glyphs it sits with, so it takes a
+   slightly tighter padding and the label size. */
 .recipe-text-toolbar .recipe-page-toolbar__btn:not(.recipe-page-toolbar__btn--icon) {
-  gap: 4px;
-  padding: 0 6px;
+  gap: 5px;
+  padding: 0 8px;
   font-size: var(--cp-fs-label);
 }
 
@@ -2633,7 +2631,7 @@
 /* On a phone the page toolbar rarely fits one row, so Front/Back is just its
    two arrows: the one you can't press says which side you are on. The word
    stays for screen readers. */
-@media screen and (max-width: 820px), screen and (pointer: coarse) and (max-width: 1366px) {
+@media screen and (max-width: 820px) and (pointer: fine), screen and (max-width: 820px) and (pointer: none), screen and (pointer: coarse) and (max-width: 819.98px), screen and (pointer: coarse) and (max-device-width: 999px), screen and (pointer: coarse) and (max-device-height: 999px) {
   .recipe-page-toolbar__group--view .recipe-page-toolbar__label {
     position: absolute;
     width: 1px;
@@ -3001,7 +2999,7 @@
    `.recipe-config-panel`) so cascade order lets this win, rather than being
    silently shadowed by them the way an earlier attempt near the top of the
    file (before those base rules) was. */
-@media screen and (min-width: 821px) and (pointer: fine), screen and (min-width: 821px) and (pointer: none), screen and (min-width: 1367px) {
+@media screen and (min-width: 821px) and (pointer: fine), screen and (min-width: 821px) and (pointer: none), screen and (pointer: coarse) and (min-width: 820px) and (min-device-width: 1000px) and (min-device-height: 1000px) {
   .recipe-page-rail,
   .recipe-page-canvas,
   .recipe-config-panel {
@@ -3162,7 +3160,7 @@
    shows only at the very top and the very bottom. The footer is empty here
    (see PrintConfigPanel), so its own spacing goes too. After the base rules
    above so it wins the cascade; the phone sheet keeps its own padding. */
-@media screen and (min-width: 821px) and (pointer: fine), screen and (min-width: 821px) and (pointer: none), screen and (min-width: 1367px) {
+@media screen and (min-width: 821px) and (pointer: fine), screen and (min-width: 821px) and (pointer: none), screen and (pointer: coarse) and (min-width: 820px) and (min-device-width: 1000px) and (min-device-height: 1000px) {
   .recipe-config-panel {
     padding-block: 0;
   }
@@ -4276,7 +4274,7 @@ textarea.recipe-page-fields__input {
   display: none;
 }
 
-@media screen and (max-width: 820px), screen and (pointer: coarse) and (max-width: 1366px) {
+@media screen and (max-width: 820px) and (pointer: fine), screen and (max-width: 820px) and (pointer: none), screen and (pointer: coarse) and (max-width: 819.98px), screen and (pointer: coarse) and (max-device-width: 999px), screen and (pointer: coarse) and (max-device-height: 999px) {
   /* Clear of the action bar rather than behind it. 132px is the same reserve
      the deck already keeps for that bar (see `.recipe-print-shell`'s padding),
      so the two cannot disagree about how tall it is.
@@ -5968,7 +5966,7 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
    judge a crop, and the control sat over the picture it was meant to show.
    A zoom already set elsewhere still renders and prints; only the control
    goes. Same breakpoint as the phone deck (DECK_MOBILE_QUERY). */
-@media screen and (max-width: 820px), screen and (pointer: coarse) and (max-width: 1366px) {
+@media screen and (max-width: 820px) and (pointer: fine), screen and (max-width: 820px) and (pointer: none), screen and (pointer: coarse) and (max-width: 819.98px), screen and (pointer: coarse) and (max-device-width: 999px), screen and (pointer: coarse) and (max-device-height: 999px) {
   .recipe-image-spread__zoom {
     display: none;
   }
@@ -9316,15 +9314,6 @@ textarea.recipe-card__toc-title {
   display: inline-block;
 }
 
-/* Same hover-reveal as a row's own "+ Add below" (see `.recipe-card__editable-
-   line:hover` above) — this one lets a section title go in first, before any
-   existing ingredient/step, instead of only ever landing after one. */
-@media (hover: hover) {
-  .recipe-card__label-inline:hover > .recipe-card__add-line {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
 
 /* "Ingredients" / "Steps" can be renamed or removed per recipe (see
    lib/recipeHeadings.ts): the same hairline-on-hover as a section title, and
@@ -9975,28 +9964,23 @@ textarea.recipe-card__toc-title {
   cursor: pointer;
 }
 
-/* Hover, or the button's own keyboard focus — deliberately NOT
+/* The button's own keyboard focus, deliberately NOT
    `:focus-within`. In edit mode every line is a real field, so focus-within
    meant "someone is typing in this row", and Add below appeared under the
    caret in the one moment it is certainly not what they are reaching for.
 
-   The hover half is fenced to devices that can actually hover, and that is
-   load-bearing rather than tidy. iOS Safari answers a first tap on anything
-   whose :hover reveals content by treating the tap AS the hover and holding
-   back the click — so every line took two taps to open, the first one only
-   surfacing this pill. On a touch screen Enter in the field is how a line gets
-   added. */
+   Never reveal it on :hover again without fencing it to (hover: hover): iOS
+   Safari treats a first tap on anything whose :hover reveals content AS the
+   hover and holds back the click, so every line took two taps to open. */
 .recipe-card__add-line:focus-visible {
   opacity: 1;
   pointer-events: auto;
 }
-@media (hover: hover) {
-  .recipe-card__editable-line:hover > .recipe-card__add-line,
-  .recipe-card__section-title--editable:hover > .recipe-card__add-line {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
+/* No hover reveal any more, on any device (Amelia, 2026-11-13): the text
+   toolbar's "Add below" does this job for the line being typed in, so a pill
+   under every row the pointer crossed was a second copy of it. Still reachable
+   by keyboard (focus-visible above); an empty list keeps its permanent
+   `--empty` prompt below. */
 
 /* ── Body / heading glyphs ───────────────────────────────────────────────────
    The switch itself now lives in the page toolbar; only the letters are still
@@ -10032,18 +10016,17 @@ textarea.recipe-card__toc-title {
   font-size: 13px;
 }
 
-/* The letterforms ARE the icons, so in the text toolbar they come down with
-   its 22px buttons — left at 11/13 they filled that box edge to edge. Here
-   rather than with the rest of that bar so both sizes of a glyph are read
-   together. */
+/* The letterforms ARE the icons. With 26px buttons they take the page
+   bar's own 11/13. Here rather than with the rest of that bar so both sizes
+   of a glyph are read together. */
 .recipe-text-toolbar .recipe-card__line-kind-glyph {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .recipe-text-toolbar .recipe-card__line-kind-glyph--heading,
 .recipe-text-toolbar .recipe-card__line-kind-glyph--bold,
 .recipe-text-toolbar .recipe-card__line-kind-glyph--italic {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .recipe-card__section-title-edit {
@@ -10775,7 +10758,7 @@ textarea.recipe-card__toc-title {
   bottom: 16px;
 }
 
-@media screen and (max-width: 820px), screen and (pointer: coarse) and (max-width: 1366px) {
+@media screen and (max-width: 820px) and (pointer: fine), screen and (max-width: 820px) and (pointer: none), screen and (pointer: coarse) and (max-width: 819.98px), screen and (pointer: coarse) and (max-device-width: 999px), screen and (pointer: coarse) and (max-device-height: 999px) {
   /* The phone layout has its own toolbars over the deck; a floating cluster
      there would land on top of them. Same query as the phone layout itself:
      this used to stop at 900px, so 821-900px had the desktop layout with no
@@ -13199,15 +13182,99 @@ textarea.recipe-card__toc-title {
   border-radius: 8px;
 }
 
-/* The phone top bar's "⋯" menu (PhoneMoreMenu): a row's state reads at its
-   far end, quieter than the action it belongs to. */
-.rp-phone-more-menu {
-  min-width: 240px;
+/* The header's "⋯" menu (SaveMoreMenu), desktop and phone. */
+.rp-save-menu {
+  /* As wide as its longest line, so "Changes will save automatically." sits
+     on one line instead of breaking after "save" (Amelia, 2026-11-13). Only a
+     screen too narrow for it wraps it: .anchored-menu caps the width. */
+  width: max-content;
+  min-width: min(240px, calc(100vw - 30px));
 }
-.rp-phone-more-menu__state {
-  margin-left: auto;
-  padding-left: 16px;
-  color: var(--cp-ink-soft);
-  font-weight: 600;
-  white-space: nowrap;
+.rp-save-menu__label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.rp-save-menu__row {
+  cursor: default;
+}
+/* Between the folded undo/redo and the save row: the add-line menu's hairline. */
+.rp-save-menu__rule {
+  height: 1px;
+  margin: 4px -4px;
+  background: var(--cp-line);
+}
+
+/* Undo and redo, folded into the "⋯" when the phone bar has no room for them
+   (useHistoryFold measures; the menu then carries them). */
+.recipe-mobile-topbar[data-history-folded] .rp-history-controls {
+  display: none;
+}
+/* A count that would run into either side when centred sits in the row
+   instead, between the two groups (useHistoryFold). Higher specificity than
+   the phone block's absolute centring, so it wins wherever that applies. */
+.recipe-mobile-topbar[data-count-in-flow] .recipe-mobile-topbar__count {
+  position: static;
+  transform: none;
+}
+
+/* ── The desktop layout on a touch screen (an iPad) ──────────────────────────
+   The 13-inch iPads get the desktop layout (DECK_MOBILE_QUERY, Amelia,
+   2026-11-13). That layout's controls are sized for a pointer, so on
+   a touch screen they grow to sizes a finger can hit, without changing what
+   or where they are. The same query as the desktop blocks' touch half: a
+   mouse or trackpad desktop never matches, and nor does the phone layout.
+
+   The text toolbar docks above an on-screen keyboard here as it does on a
+   phone (useFloatingBarPlacement), where it already has 40px buttons; these
+   are for when it floats (a hardware keyboard). */
+@media screen and (pointer: coarse) and (min-width: 820px) and (min-device-width: 1000px) and (min-device-height: 1000px) {
+  /* The header's icon buttons (undo, redo, the "⋯"). */
+  .rp-history-button--header {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+
+  /* The page toolbar over the card: 36px buttons, 44 tall with its padding. */
+  .recipe-page-toolbar__btn {
+    min-height: 36px;
+  }
+  .recipe-page-toolbar__btn--icon {
+    width: 36px;
+  }
+
+  /* The floating text toolbar: a touch above the page toolbar's 26. */
+  .recipe-text-toolbar:not([data-docked]) .recipe-page-toolbar__btn {
+    min-height: 34px;
+  }
+  .recipe-text-toolbar:not([data-docked]) .recipe-page-toolbar__btn--icon {
+    width: 34px;
+  }
+  .recipe-text-toolbar:not([data-docked]) .recipe-text-toolbar__size {
+    height: 34px;
+  }
+
+  /* The zoom control under the deck. */
+  .cp-zoom__btn,
+  .cp-zoom__value {
+    min-height: 36px;
+  }
+  .cp-zoom__btn {
+    min-width: 36px;
+  }
+
+  /* A recipe row is picked up by pressing and holding it (useRailDrag), so
+     iOS mustn't open its own copy/look-up callout over that hold. */
+  .recipe-page-rail__item--draggable {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* The section grip is a 16px glyph; give the finger a 36px target round it
+     without moving the glyph. */
+  .recipe-page-rail__grip {
+    padding: 10px;
+    margin: -8px -8px -8px -10px;
+  }
 }

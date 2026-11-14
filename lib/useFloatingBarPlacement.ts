@@ -39,7 +39,12 @@ export function useFloatingBarPlacement({
   /** On the phone layout, sit just above the on-screen keyboard instead of
       over the line, and only while the keyboard is up. A bar hanging off a
       line on a phone landed under the cook's thumb or behind the keys, and
-      with the keyboard down there is nothing being typed to format. */
+      with the keyboard down there is nothing being typed to format.
+
+      On the desktop layout on a touch screen (an iPad), the same while an
+      on-screen keyboard is up, and the ordinary floating bar when it isn't
+      (a hardware keyboard, or none yet). Never with a mouse or trackpad: a
+      pinch-zoomed Mac shrinks the visual viewport like a keyboard does. */
   dockAboveKeyboard?: boolean;
 }) {
   const place = useCallback(() => {
@@ -52,9 +57,12 @@ export function useFloatingBarPlacement({
     const viewHeight = viewport?.height ?? window.innerHeight;
     const viewWidth = viewport?.width ?? window.innerWidth;
 
-    if (dockAboveKeyboard && isDeckMobile()) {
+    const phone = isDeckMobile();
+    const touchKeyboard =
+      !phone && window.matchMedia("(pointer: coarse)").matches && readKeyboard().open;
+    if (dockAboveKeyboard && (phone || touchKeyboard)) {
       bar.setAttribute("data-docked", "");
-      if (!readKeyboard().open) {
+      if (!touchKeyboard && !readKeyboard().open) {
         bar.style.visibility = "hidden";
         return;
       }

@@ -88,14 +88,16 @@ export function zoomFromPinch(
  * for one put a 56px slab over the recipe at the top of the range, which is a
  * bar that has stopped being chrome and become furniture. A fifth of the
  * zoom's growth is enough for the bar to read as coming with you: over the
- * deck's whole range it goes from 28px to 34, gaining a little at every step
- * rather than jumping and then stopping.
+ * deck's whole range it goes from 34px to about 41, gaining a little at every
+ * step rather than jumping and then stopping.
  *
- * 34 is also under the 36px page toolbar parked above the card. The bar that
- * acts on one line stays the smaller of the two, whatever the zoom.
+ * At fit it is 34 to the page toolbar's 36: only just the smaller of the two
+ * (Amelia, 2026-11-13, when the old 28px bar read as a toy beside the page
+ * bar). Zoomed in it may pass the page bar; someone zooming in wants the
+ * controls on the text they're editing bigger, and the cap keeps it chrome.
  *
  * Downward it does nothing. Zooming out to see the whole page is not a request
- * for a smaller button, and 22px is already as small as these should get.
+ * for a smaller button, and 26px is already as small as these should get.
  */
 export const TEXT_BAR_MAX_SCALE = 1.2;
 /** How much of the zoom's growth the bar takes on. */

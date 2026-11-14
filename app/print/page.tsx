@@ -240,7 +240,7 @@ import { ThemeArtProvider } from "@/lib/themeArt";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { asDerived, latestHistoryStep, undoEdit, useEditHistory } from "@/lib/editHistory";
 import { HistoryControls } from "@/components/print/HistoryControls";
-import { PhoneMoreMenu } from "@/components/print/PhoneMoreMenu";
+import { SaveMoreMenu } from "@/components/print/SaveMoreMenu";
 import { openingPageFor } from "@/lib/frontMatterPage";
 import type {
   CookbookFrontMatter,
@@ -5405,17 +5405,51 @@ export default function PrintPage() {
   }
 
   /**
-   * The same save state on a phone, folded into the top bar's "⋯" menu, which
-   * has no room for it beside undo, redo and the account. A failure stays in
-   * the bar as `renderSaveControl` draws it: it is the one state that must be
-   * seen without opening anything.
+   * The header's "⋯" (`SaveMoreMenu`), on every job, desktop and phone, so a
+   * single recipe card can be saved too (Amelia, 2026-11-13). It doesn't
+   * change what is kept automatically; it is only a way to ask sooner. The
+   * first press is an ordinary explicit save (sign-in first when signed out),
+   * and `savedToProfile` then hands the job to the autosave like any other.
    */
-  function renderPhoneSaveControl() {
-    if (saveStatus && SAVE_FAILURES.has(saveStatus)) return renderSaveControl();
-    if (saveStatus === "saving") return <PhoneMoreMenu saveState={SAVE_STATUS_LABEL.saving} />;
-    if (savedToProfile) return <PhoneMoreMenu saveState="All changes saved" />;
-    if (cookPilotUser || !keptAutomatically) return null;
-    return <PhoneMoreMenu saveState="Not saved yet" onSave={() => void handleSaveProject()} />;
+  function renderSaveMenu(size: "header" | "compact", historyFolded = false) {
+    const state = saveStatus === "saving" ? "saving" : savedToProfile ? "saved" : "unsaved";
+    return (
+      <SaveMoreMenu
+        state={state}
+        // Signed out, an empty book still gets its door to sign-in (see the
+        // header's note on why); signed in, there is nothing to write yet.
+        disabled={Boolean(cookPilotUser) && !items?.length}
+        onSave={() => void handleSaveProject()}
+        size={size}
+        history={
+          historyFolded
+            ? {
+                canUndo: editHistory.canUndo,
+                canRedo: editHistory.canRedo,
+                onUndo: editHistory.undo,
+                onRedo: editHistory.redo,
+              }
+            : undefined
+        }
+      />
+    );
+  }
+
+  /**
+   * The phone bar has no room for the save state beside undo, redo and the
+   * account, so it lives in the "⋯" menu. A failure stays in the bar as
+   * `renderSaveControl` draws it, beside the menu: it is the one state that
+   * must be seen without opening anything. Undo and redo join the menu when
+   * the bar is too narrow for them (`useHistoryFold`, in PrintDeck).
+   */
+  function renderPhoneSaveControl(historyFolded: boolean) {
+    const failed = saveStatus && SAVE_FAILURES.has(saveStatus) ? renderSaveControl() : null;
+    return (
+      <>
+        {failed}
+        {renderSaveMenu("compact", historyFolded)}
+      </>
+    );
   }
 
   /**
@@ -7458,6 +7492,7 @@ export default function PrintPage() {
                 {cookbookMode && renderSaveControl("header")}
                 {historyControls("header")}
                 {!cookbookMode && renderSaveControl("header")}
+                {renderSaveMenu("header")}
 
                 {/* Print is always here, as it is on a phone's bottom bar:
                     the page is for printing, and a button that appears only
@@ -7669,7 +7704,7 @@ export default function PrintPage() {
 
         {/* Center: large preview of the selected page */}
         <PrintDeck
-          saveControl={renderPhoneSaveControl()}
+          saveControl={({ historyFolded }) => renderPhoneSaveControl(historyFolded)}
           historyControls={historyControls("compact")}
           proUpgradeButton={renderProUpgradeButton()}
           textSizeProMarked={!cookbookMode && !hasProEntitlement(effectiveCustomerInfo.customerInfo)}

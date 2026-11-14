@@ -834,6 +834,14 @@
 .anchored-menu {
   position: fixed;
   z-index: calc(var(--z-dialog) + 1);
+  /* Never wider or taller than the window less the 8px margin AnchoredMenu
+     clamps it inside, so the clamp always has room to work. Rows wrap rather
+     than push it wider; a very long list scrolls inside itself. */
+  /* Content-box like every cp-menu, so the cap leaves out .cp-menu's 6px
+     padding and 1px border on each side (14px) as well. */
+  max-width: calc(100vw - 30px);
+  max-height: calc(100vh - 30px);
+  overflow-y: auto;
 }
 .menu-select__menu {
   min-width: 11rem;
@@ -1317,6 +1325,13 @@
     border-radius: 9px;
     @apply text-cp-small;
   }
+  /* A finger's size on /print's desktop layout on a touch screen (a 13-inch
+     iPad, DECK_MOBILE_QUERY's opposite), beside its 40px icon buttons. */
+  @media screen and (pointer: coarse) and (min-width: 820px) and (min-device-width: 1000px) and (min-device-height: 1000px) {
+    .btn-header {
+      min-height: 40px;
+    }
+  }
 
   /* Destructive actions. Two tiers off the shared --cp-error token so an
      irreversible action never reads with the same weight as a safe primary:
@@ -1403,7 +1418,7 @@
   .rp-avatar-usage {
     display: none;
   }
-  @media (max-width: 820px), (pointer: coarse) and (max-width: 1366px) {
+  @media (max-width: 820px) and (pointer: fine), (max-width: 820px) and (pointer: none), (pointer: coarse) and (max-width: 819.98px), (pointer: coarse) and (max-device-width: 999px), (pointer: coarse) and (max-device-height: 999px) {
     .rp-avatar-usage {
       display: grid;
       place-items: center;
@@ -2461,6 +2476,14 @@
     font-size: var(--cp-fs-small);
   }
 
+  /* Menu rows at that same touch height on /print's desktop layout on a touch
+     screen (a 13-inch iPad, DECK_MOBILE_QUERY's opposite). */
+  @media screen and (pointer: coarse) and (min-width: 820px) and (min-device-width: 1000px) and (min-device-height: 1000px) {
+    .cp-menu__item {
+      min-height: 44px;
+    }
+  }
+
   /* The caret on a button that expands something in place. Keyed off the
      button's own `aria-expanded`, so the arrow and the semantics cannot say
      different things: there is no separate state class to forget. */
@@ -3209,7 +3232,7 @@ textarea.field.struggle-prompt__field {
   color: var(--cp-ink-soft);
 }
 /* Clear of /print's phone action bar, the same reserve its toast keeps. */
-@media screen and (max-width: 820px), screen and (pointer: coarse) and (max-width: 1366px) {
+@media screen and (max-width: 820px) and (pointer: fine), screen and (max-width: 820px) and (pointer: none), screen and (pointer: coarse) and (max-width: 819.98px), screen and (pointer: coarse) and (max-device-width: 999px), screen and (pointer: coarse) and (max-device-height: 999px) {
   .struggle-prompt {
     right: 16px;
     left: 16px;
