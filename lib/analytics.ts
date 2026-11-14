@@ -19,7 +19,8 @@ import type {
   PrintCardSize,
   RecipePrintTemplate,
 } from "@/types/recipe";
-import type { FeedbackType } from "@/lib/feedback";
+import type { FeedbackSource, FeedbackType } from "@/lib/feedback";
+import type { StruggleKind } from "@/lib/strugglePrompt";
 import type { MeterStage, MeterStageTimes } from "@/lib/importMeter";
 import type { ImportTiming } from "@/lib/importTiming";
 
@@ -684,7 +685,11 @@ type EventProps = {
       cook; watched to know how often a close outruns a save. */
   unsaved_edits_recovered: { source: "working_copy" | "shelf" };
 
-  feedback_submitted: { type: FeedbackType };
+  feedback_submitted: { type: FeedbackType; source: FeedbackSource };
+  /** The corner card asking what went wrong after repeated prints or imports
+      (components/StrugglePrompt). Submitting it is a `feedback_submitted`. */
+  feedback_prompt_shown: { trigger: StruggleKind };
+  feedback_prompt_dismissed: { trigger: StruggleKind };
 
   /* The referral program (lib/referral.ts). Qualification, rewards and expiry
      are sent by CookPilot itself (`referral_signup`, `referral_activated`,

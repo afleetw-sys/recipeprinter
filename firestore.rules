@@ -285,12 +285,14 @@ service cloud.firestore {
           "type", "message", "email", "pageUrl", "pagePath", "userAgent",
           "language", "viewport", "referrer", "status", "source", "createdAt"
         ])
-        && request.resource.data.type in ["idea", "bug", "print_issue", "other"]
+        && request.resource.data.type in ["idea", "bug", "print_issue", "import_issue", "other"]
         && request.resource.data.message is string
         && request.resource.data.message.size() > 0
         && request.resource.data.message.size() <= 5000
         && request.resource.data.status == "new"
-        && request.resource.data.source == "recipeprinter-footer";
+        // The footer's dialog, or the corner card that asks after repeated
+        // prints or imports (components/StrugglePrompt.tsx).
+        && request.resource.data.source in ["recipeprinter-footer", "repeat-print-prompt", "repeat-import-prompt"];
       allow read, update, delete: if false;
     }
 
