@@ -62,7 +62,15 @@ export function AnchoredMenu({
   useMenuDismiss([anchorRef, menuRef], close);
 
   // Measured after render because the menu's own size decides where it fits.
-  const place = useCallback(() => {
+  //
+  // Never off the screen, at any size or zoom (Amelia, 2026-11-13). Three
+  // things make that hold together: `.anchored-menu` caps the menu at the
+  // window less its margins, so no menu is wider than the space it is clamped
+  // into; the clamp uses the width you can SEE (`clientWidth` leaves out a
+  // vertical scrollbar, `innerWidth` does not); and it is placed again whenever
+  // the window, the browser zoom or the menu's own size changes while it is
+  // open, rather than trusting the one measurement it opened with (see below).
+  const reposition = useCallback(() => {
     const anchor = anchorRef.current;
     const menu = menuRef.current;
     if (!anchor || !menu) return false;
@@ -70,21 +78,28 @@ export function AnchoredMenu({
     const size = menu.getBoundingClientRect();
     const gap = 4;
     const margin = 8;
+    const viewWidth = Math.min(window.innerWidth, document.documentElement.clientWidth || window.innerWidth);
+    const viewHeight = Math.min(window.innerHeight, document.documentElement.clientHeight || window.innerHeight);
     const wanted = align === "end" ? at.right - size.width : at.left;
-    const left = Math.max(margin, Math.min(wanted, window.innerWidth - size.width - margin));
+    const left = Math.max(margin, Math.min(wanted, viewWidth - size.width - margin));
     const below = at.bottom + gap;
     const top =
-      below + size.height > window.innerHeight - margin
+      below + size.height > viewHeight - margin
         ? Math.max(margin, at.top - gap - size.height)
         : below;
     menu.style.left = `${left}px`;
     menu.style.top = `${top}px`;
+    return true;
+  }, [anchorRef, align]);
+  const place = useCallback(() => {
+    if (!reposition()) return false;
+    const menu = menuRef.current!;
     // Shown before focusing: a hidden row cannot take focus.
     menu.style.visibility = "";
     (menu.querySelector<HTMLElement>('[role^="menuitem"][aria-checked="true"]') ??
       menu.querySelector<HTMLElement>('[role^="menuitem"]'))?.focus();
     return true;
-  }, [anchorRef, align]);
+  }, [reposition]);
   // An anchor that is only attached while the menu is open (one ref shared by
   // a list of triggers) is attached AFTER this layout effect in the same
   // commit, so it is missing here. Then the menu is placed in the passive
@@ -97,6 +112,22 @@ export function AnchoredMenu({
   useEffect(() => {
     if (!placedRef.current) placedRef.current = place();
   }, [place]);
+  // Kept inside the window while it is open. A window resize (and a browser
+  // zoom, which is one in CSS pixels) closes the menu outright — see
+  // `useMenuDismiss` — but a phone's pinch or keyboard resizes only the visual
+  // viewport, and a row whose text changes resizes the menu itself.
+  useEffect(() => {
+    const again = () => {
+      if (placedRef.current) reposition();
+    };
+    window.visualViewport?.addEventListener("resize", again);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(again);
+    if (menuRef.current) observer?.observe(menuRef.current);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", again);
+      observer?.disconnect();
+    };
+  }, [reposition]);
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const rows = Array.from(

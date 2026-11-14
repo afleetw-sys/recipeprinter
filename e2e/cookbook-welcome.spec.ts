@@ -24,7 +24,8 @@ test("the new-cookbook welcome's Start adding recipes opens Add recipes", async 
  * phone's top bar offered it from the start, but the desktop header held it
  * back until the first recipe, so an empty book on a computer had no Save at
  * all. Every width offers it on a book that hasn't had a recipe yet: the
- * desktop header as a button, a phone as the Save row of its top bar's "⋯".
+ * desktop header as a button, the phone layout as the Save row of its top
+ * bar's "⋯".
  */
 test("a new signed-out cookbook offers Save at every width", async ({ page }) => {
   const missing: string[] = [];
@@ -46,8 +47,12 @@ test("a new signed-out cookbook offers Save at every width", async ({ page }) =>
     await page.keyboard.press("Escape");
     await expect(page.locator(".cookbook-welcome")).toHaveCount(0);
 
+    // Which layout is drawn, not which width was asked for: a touch screen
+    // picks its layout by the device (DECK_MOBILE_QUERY), so the iPhone
+    // project stretched to 1440px is still the phone layout.
+    const phoneLayout = await page.locator(".recipe-mobile-topbar").isVisible();
     const save =
-      name === "phone"
+      phoneLayout
         ? await page
             .getByRole("button", { name: "More" })
             .filter({ visible: true })

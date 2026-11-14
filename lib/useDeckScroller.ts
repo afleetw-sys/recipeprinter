@@ -36,13 +36,31 @@ const FREE_SCROLL_EXIT_SLACK = 16;
  * settings panel). Exported because the print page has to ask the same
  * question, and a second copy is a second thing to remember to change.
  *
- * A narrow window, or a touch screen up to the largest iPad's landscape width
- * (1366px). A tablet gets the phone layout both ways up (Amelia, 2026-11-10):
- * it used to switch at 820px alone, so most iPads were the phone layout held
- * upright and the desktop one turned sideways. print.css spells the same
- * query out in its phone blocks; its desktop blocks are the opposite.
+ * Mouse and trackpad: a window 820px wide or narrower, as always.
+ *
+ * Touch: chosen by the DEVICE, so it never changes when the tablet is turned
+ * over (Amelia, 2026-11-10: a tablet keeps one layout both ways up). A screen
+ * whose short side is 1000px or more (the 13-inch iPads, 1024 x 1366) gets
+ * the desktop layout, as Safari already treats an iPad as a Mac and most
+ * sites and editors give it theirs (Amelia, 2026-11-13). Every smaller screen
+ * (phones, the iPad mini, the 11-inch iPads) keeps the phone layout: an
+ * 11-inch iPad held upright is 820-834px wide, and there the desktop layout's
+ * rail and settings panel left the card about 270px of a screen the phone
+ * layout gives it all of, measured in the iPad simulator. `device-width` and
+ * `device-height` are the screen's, not the window's, so checking both is the
+ * same either way round. A window under 820px is the phone layout on any
+ * device: an iPad in Split View is a narrow window.
+ *
+ * It was "any touch screen up to 1366px" before, which put the desktop layout
+ * out of reach of every iPad, the 13-inch included.
+ *
+ * print.css and globals.css spell the same query out in their phone blocks;
+ * the desktop blocks are its opposite. Change them together.
  */
-export const DECK_MOBILE_QUERY = "(max-width: 820px), (pointer: coarse) and (max-width: 1366px)";
+export const DECK_MOBILE_QUERY =
+  "(max-width: 820px) and (pointer: fine), (max-width: 820px) and (pointer: none), " +
+  "(pointer: coarse) and (max-width: 819.98px), " +
+  "(pointer: coarse) and (max-device-width: 999px), (pointer: coarse) and (max-device-height: 999px)";
 
 /** Server-safe: false before hydration, where there is no viewport to measure. */
 export function isDeckMobile(): boolean {

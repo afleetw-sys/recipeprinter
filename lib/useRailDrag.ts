@@ -30,6 +30,12 @@ export interface RailDragController {
 
 // Movement (px) before a press becomes a drag rather than a click.
 const DRAG_THRESHOLD = 6;
+// A finger has to hold still this long (ms) before the card lifts. Touch only:
+// the rail scrolls by touch (`touch-action: pan-y`), so a finger that moves
+// straight away is scrolling, and the browser cancels the pointer the moment
+// it starts to. Holding first is the iPad's own way to pick something up, and
+// after that this hook stops the rail scrolling so the card can move.
+const TOUCH_HOLD_MS = 300;
 // How far (px) the pointer has to move before the drop target is worked out
 // again. Opening the slot moves the cards under a pointer that has not moved,
 // and asking afresh then could name the place the slot just left, so the slot
@@ -52,6 +58,9 @@ interface Gesture {
   active: boolean;
   x: number;
   y: number;
+  /** A finger, which has to hold before it drags (TOUCH_HOLD_MS). */
+  touch: boolean;
+  holdTimer: number | null;
 }
 
 /**
@@ -103,6 +112,8 @@ export function useRailDrag(
   const lastResolvedAt = useRef<{ x: number; y: number; scrollTop: number } | null>(null);
   const rafId = useRef<number | null>(null);
   const didDragRef = useRef(false);
+  // `begin` lives inside the effect below; a touch hold starts it from `start`.
+  const beginRef = useRef<((g: Gesture) => void) | null>(null);
 
   useEffect(() => {
     const applyPreview = (g: Gesture) => {
@@ -269,6 +280,8 @@ export function useRailDrag(
     };
 
     const begin = (g: Gesture) => {
+      if (g.holdTimer != null) window.clearTimeout(g.holdTimer);
+      g.holdTimer = null;
       g.active = true;
       didDragRef.current = true;
       onBeginRef.current?.(g.kind, g.id);
@@ -353,6 +366,7 @@ export function useRailDrag(
         });
       document.body.style.userSelect = "";
       document.body.style.cursor = "";
+      if (gesture.current?.holdTimer != null) window.clearTimeout(gesture.current.holdTimer);
       gesture.current = null;
       lastResolved.current = null;
       lastResolvedAt.current = null;
@@ -365,6 +379,13 @@ export function useRailDrag(
       g.y = event.clientY;
       if (!g.active) {
         if (Math.hypot(event.clientX - g.startX, event.clientY - g.startY) < DRAG_THRESHOLD) return;
+        // A finger that moved before the hold was up is scrolling the rail:
+        // let it.
+        if (g.touch) {
+          if (g.holdTimer != null) window.clearTimeout(g.holdTimer);
+          gesture.current = null;
+          return;
+        }
         begin(g);
       }
       // The carried card follows the pointer from the event itself, not the
@@ -402,13 +423,38 @@ export function useRailDrag(
     };
     const onCancel = () => finish(false);
 
+    // Once a finger has lifted a card, the rail must not scroll under it: a
+    // scroll would cancel the pointer and drop the card. Only a cancelable
+    // touchmove can stop that, so this is a touch listener, not a pointer one.
+    const onTouchMove = (event: TouchEvent) => {
+      if (gesture.current?.touch && gesture.current.active && event.cancelable) event.preventDefault();
+    };
+
+    // Android opens the context menu on a long-press, about 200ms after the
+    // hold above has lifted the card, which would put the tile menu on top of
+    // the drag. Swallowed on the way down, before the rail's own handler.
+    const onContextMenu = (event: MouseEvent) => {
+      if (!gesture.current?.touch) return;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    beginRef.current = (g: Gesture) => {
+      begin(g);
+      applyPreview(g);
+    };
     window.addEventListener("pointermove", onMove, { passive: false });
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onCancel);
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("contextmenu", onContextMenu, true);
     return () => {
+      beginRef.current = null;
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onCancel);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("contextmenu", onContextMenu, true);
       teardown();
     };
   }, [scrollRef]);
@@ -422,7 +468,12 @@ export function useRailDrag(
     const node = (event.currentTarget as HTMLElement).closest<HTMLElement>(selector);
     if (!node) return;
     const rect = node.getBoundingClientRect();
-    gesture.current = {
+    // Only a handle that lets the rail scroll needs the hold. The section grip
+    // takes no panning (`touch-action: none`), so it drags straight away.
+    const touch =
+      event.pointerType === "touch" &&
+      getComputedStyle(event.currentTarget as HTMLElement).touchAction !== "none";
+    const g: Gesture = {
       pointerId: event.pointerId,
       kind,
       id,
@@ -434,7 +485,16 @@ export function useRailDrag(
       active: false,
       x: event.clientX,
       y: event.clientY,
+      touch,
+      holdTimer: null,
     };
+    gesture.current = g;
+    if (touch) {
+      g.holdTimer = window.setTimeout(() => {
+        g.holdTimer = null;
+        if (gesture.current === g && !g.active) beginRef.current?.(g);
+      }, TOUCH_HOLD_MS);
+    }
   };
 
   return {

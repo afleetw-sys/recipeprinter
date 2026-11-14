@@ -29,6 +29,7 @@ import {
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
 import { AddLineMenu } from "@/components/print/AddLineMenu";
+import { useHistoryFold } from "@/components/print/useHistoryFold";
 import { PhotoHoverHint } from "@/components/print/PhotoHoverHint";
 import { ZoomControl } from "@/components/print/ZoomControl";
 import { DeckPageCount } from "@/components/print/DeckPageCount";
@@ -190,10 +191,11 @@ export function pendingSlotIndexIn(
 }
 
 interface PrintDeckProps {
-  /** The save state for the phone's top bar, pre-rendered by the page
-      (`renderPhoneSaveControl`): the "⋯" menu that holds it, or a failed
-      save's Retry. */
-  saveControl: ReactNode;
+  /** The save state for the phone's top bar, rendered by the page
+      (`renderPhoneSaveControl`): the "⋯" menu that holds it, and a failed
+      save's Retry. Told whether undo and redo have folded into that menu
+      (`useHistoryFold`), so the menu can carry them. */
+  saveControl: (options: { historyFolded: boolean }) => ReactNode;
   /** Undo and redo, pre-rendered by the page (lib/editHistory). Up here
       rather than in the bottom bar, which has no room to spare. */
   historyControls: ReactNode;
@@ -450,6 +452,8 @@ export function PrintDeck(props: PrintDeckProps) {
   // The phone layout, where a page's toolbar names the page (see below).
   const deckMobile = useDeckMobile();
   const addMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
+  // Undo and redo fold into the phone bar's "⋯" when the bar has no room.
+  const [{ folded: historyFolded, countInFlow }, topbarRef] = useHistoryFold();
   const {
     saveControl,
     historyControls,
@@ -1599,7 +1603,12 @@ export function PrintDeck(props: PrintDeckProps) {
             onSet={onZoomSet}
           />
 
-          <div className="recipe-mobile-topbar no-print">
+          <div
+            ref={topbarRef}
+            className="recipe-mobile-topbar no-print"
+            data-history-folded={historyFolded ? "" : undefined}
+            data-count-in-flow={countInFlow ? "" : undefined}
+          >
             {/* Mark only, matching the desktop header's own `wordmark={false}`
                 (SiteHeader, called from app/print/page.tsx) — the name next
                 to the mark repeats what the mark already is, and this bar is
@@ -1623,7 +1632,7 @@ export function PrintDeck(props: PrintDeckProps) {
                   thumb is and where the tools it finishes already live. */}
               {/* The save state, in its "⋯" menu (`renderPhoneSaveControl`
                   in app/print/page.tsx), beside the account control. */}
-              {saveControl}
+              {saveControl({ historyFolded })}
               {/* Same order as the desktop header: Save, then the Pro
                   upsell, a crown alone here — see `renderProUpgradeButton`
                   in app/print/page.tsx for why this is reachable on its own

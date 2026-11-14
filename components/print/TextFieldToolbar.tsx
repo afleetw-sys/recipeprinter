@@ -320,18 +320,33 @@ export function TextFieldToolbar({
    */
   const styleGroup = richText ? <TextStyleControl /> : null;
 
-  // A new row under this ingredient or step, as the card's own "+ Add below"
-  // does. That one is hidden on the row being typed in, and on a phone it's a
-  // small target on a scaled page, so the bar above the keyboard carries it
-  // (CSS shows it only there). On press, like the card's: the row being typed
-  // is committed by the insert itself, not by a blur first.
-  const addBelow =
-    inlineEdit && target && (target.kind === "ingredient" || target.kind === "step")
-      ? () =>
-          target.kind === "ingredient"
-            ? inlineEdit.onInsertIngredient(target.index + 1)
-            : inlineEdit.onInsertStep(target.index + 1)
-      : null;
+  // A new row under whatever line is being typed in: an ingredient or step,
+  // a section title (its first row), or the Ingredients / Steps heading (the
+  // list's first row). This is the only Add below for a list that has rows:
+  // the card's own hover "+ Add below" pills are gone (Amelia, 2026-11-13),
+  // and only an EMPTY list keeps its "+ Add ingredient" prompt on the card. On
+  // press, like the card's was: the insert commits the line being typed
+  // itself, a section title's new name included, so it's passed as that row's
+  // section rather than read back from the recipe.
+  const addBelow = (() => {
+    if (!inlineEdit || !target) return null;
+    switch (target.kind) {
+      case "ingredient":
+        return () => inlineEdit.onInsertIngredient(target.index + 1);
+      case "step":
+        return () => inlineEdit.onInsertStep(target.index + 1);
+      case "ingredientSection":
+        return () => inlineEdit.onInsertIngredient(target.index, inlineEdit.value.trim() || undefined);
+      case "instructionSection":
+        return () => inlineEdit.onInsertStep(target.index, inlineEdit.value.trim() || undefined);
+      case "ingredientsHeading":
+        return () => inlineEdit.onInsertIngredient(0);
+      case "stepsHeading":
+        return () => inlineEdit.onInsertStep(0);
+      default:
+        return null;
+    }
+  })();
 
   return createPortal(
     <div
