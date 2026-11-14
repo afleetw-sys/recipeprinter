@@ -6,13 +6,15 @@
  * corner (components/StrugglePrompt.tsx). Two signals so far:
  *
  *  - print: the same recipes printed `PRINT_REPEATS` times within
- *    `PRINT_WINDOW_MS`, each press at least `MIN_GAP_MS` after the last, so a
- *    double tap is one press. Printing a different recipe after the post-print
- *    "Change recipe" is a new set of recipes, not a repeat.
+ *    `PRINT_WINDOW_MS`, however close together. Counted when each press's
+ *    spinner comes down, so a press the spinner swallowed isn't counted.
+ *    Printing a different recipe after the post-print "Change recipe" is a
+ *    new set of recipes, not a repeat.
  *  - import: the same link or pasted text imported again within
- *    `IMPORT_WINDOW_MS`. A link already on the page is focused, not
- *    re-imported (lib/queue `findDuplicateImport`), so this only sees a real
- *    second import: after a failure, a removal, or on another visit.
+ *    `IMPORT_WINDOW_MS`, but not within `IMPORT_MIN_GAP_MS` (one hand-off
+ *    seen twice, not a cook trying again). A link already on the page is
+ *    focused, not re-imported (lib/queue `findDuplicateImport`), so this only
+ *    sees a real second import: after a failure or a removal.
  *
  * Each kind is asked about at most once per `ASK_COOLDOWN_MS` per browser, and
  * everything lives in localStorage: losing it only means asking a little
@@ -23,8 +25,8 @@ export type StruggleKind = "print" | "import";
 
 const PRINT_REPEATS = 3;
 const PRINT_WINDOW_MS = 30 * 60_000;
-const IMPORT_WINDOW_MS = 7 * 24 * 60 * 60_000;
-const MIN_GAP_MS = 8_000;
+const IMPORT_WINDOW_MS = 60 * 60_000;
+const IMPORT_MIN_GAP_MS = 5_000;
 const ASK_COOLDOWN_MS = 30 * 24 * 60 * 60_000;
 
 const PRINTS_KEY = "rp-struggle:prints:v1";
@@ -72,10 +74,7 @@ function request(kind: StruggleKind, now: number): void {
 export function notePrintPress(deckKey: string, now: number = Date.now()): void {
   if (typeof window === "undefined" || !deckKey) return;
   const prev = read<{ deck: string; at: number[] }>(PRINTS_KEY, { deck: "", at: [] });
-  let at = prev.deck === deckKey ? prev.at.filter((t) => now - t < PRINT_WINDOW_MS) : [];
-  const last = at[at.length - 1];
-  if (last !== undefined && now - last < MIN_GAP_MS) return;
-  at = [...at, now];
+  const at = [...(prev.deck === deckKey ? prev.at.filter((t) => now - t < PRINT_WINDOW_MS) : []), now];
   write(PRINTS_KEY, { deck: deckKey, at });
   if (at.length >= PRINT_REPEATS) request("print", now);
 }
@@ -91,7 +90,7 @@ export function noteImportStarted(dedupeKey: string | undefined, now: number = D
   const before = fresh[key];
   fresh[key] = now;
   write(IMPORTS_KEY, fresh);
-  if (before !== undefined && now - before >= MIN_GAP_MS) request("import", now);
+  if (before !== undefined && now - before >= IMPORT_MIN_GAP_MS) request("import", now);
 }
 
 function shortHash(input: string): string {

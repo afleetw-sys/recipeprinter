@@ -3135,8 +3135,7 @@
 
 /* The corner card that asks what went wrong after repeated prints or imports
    (components/StrugglePrompt.tsx). Floating, so it gets the toast's shadow,
-   and an accent edge plus a short rise so it gets noticed without blocking
-   anything. One step above the print page's toast (82), below its dialogs. */
+   and a short rise so it gets noticed without blocking anything. One step above the print page's toast (82), below its dialogs. */
 .struggle-prompt {
   position: fixed;
   right: 18px;
@@ -3148,7 +3147,6 @@
   width: min(340px, calc(100vw - 36px));
   padding: 14px 14px 14px 16px;
   border: 1px solid var(--cp-line-strong);
-  border-top: 4px solid var(--cp-accent);
   border-radius: 12px;
   background: var(--cp-card);
   color: var(--cp-ink);

@@ -27,22 +27,13 @@ export async function submitPrinterFeedback({ source = "recipeprinter-footer", .
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
   ]);
-  const feedback = collection(getDb(), ...RECIPE_PRINTER_FEEDBACK_PATH);
-  const doc = { ...input, email: input.email || null, status: "new", source, createdAt: serverTimestamp() };
-  try {
-    await addDoc(feedback, doc);
-  } catch (error) {
-    // Until firestore.rules with `import_issue` and the prompt sources is
-    // deployed, the old rules refuse them. Send the note in the old shape
-    // rather than lose it. Delete this once the rules are live.
-    if ((error as { code?: string })?.code !== "permission-denied" || source === "recipeprinter-footer") throw error;
-    await addDoc(feedback, {
-      ...doc,
-      type: input.type === "import_issue" ? "bug" : input.type,
-      message: `[${source}] ${input.message}`.slice(0, 5000),
-      source: "recipeprinter-footer",
-    });
-  }
+  await addDoc(collection(getDb(), ...RECIPE_PRINTER_FEEDBACK_PATH), {
+    ...input,
+    email: input.email || null,
+    status: "new",
+    source,
+    createdAt: serverTimestamp(),
+  });
   // Only the category — the message itself stays in Firestore, not analytics.
   track("feedback_submitted", { type: input.type, source });
 }

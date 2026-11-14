@@ -17,7 +17,7 @@ const COPY: Record<StruggleKind, { title: string; placeholder: string }> = {
     placeholder: "Tell us what went wrong and we'll look into it.",
   },
   import: {
-    title: "Having trouble importing this recipe?",
+    title: "Was there a problem importing this recipe?",
     placeholder: "Tell us what came in wrong or didn't come in at all.",
   },
 };
