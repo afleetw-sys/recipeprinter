@@ -72,6 +72,12 @@ export default defineConfig({
   // and the flake is still named in the output to be fixed. Never locally,
   // where a retry would hide a failure you are looking at.
   retries: ci ? 1 : 0,
+  // A CI run ends itself before the job's 20-minute limit (.github/workflows/
+  // ci.yml) does. Cancelled by the job, it wrote no report and the "upload on
+  // failure" step never ran, so a shard that hung left nothing but a list of
+  // timeouts to read. Ended here, it fails, writes its report with every
+  // trace, and the upload runs. A shard normally takes under 4 minutes.
+  globalTimeout: ci ? 15 * 60_000 : 0,
   reporter: ci ? [["list"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
