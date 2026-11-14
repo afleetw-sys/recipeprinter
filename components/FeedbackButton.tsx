@@ -10,6 +10,7 @@ const FEEDBACK_OPTIONS: { value: FeedbackType; label: string }[] = [
   { value: "idea", label: "Idea" },
   { value: "bug", label: "Bug" },
   { value: "print_issue", label: "Print issue" },
+  { value: "import_issue", label: "Import issue" },
   { value: "other", label: "Other" },
 ];
 
@@ -17,6 +18,7 @@ const MESSAGE_PROMPTS: Record<FeedbackType, string> = {
   idea: "What should we do next?",
   bug: "What went wrong? A few details about what you expected and what happened helps a lot.",
   print_issue: "What looked off when you printed? Layout, missing text, page breaks, or anything else you noticed.",
+  import_issue: "Which recipe, and what came in wrong or didn't come in at all?",
   other: "What's on your mind?",
 };
 
@@ -25,10 +27,11 @@ const EMAIL_HELP_TEXT: Record<FeedbackType, string> = {
   bug: "We'll only use this if we need more detail or want to let you know the bug was fixed.",
   print_issue:
     "We'll only use this if we need a little more detail about the print problem or have a fix to share.",
+  import_issue: "We'll only use this if we need the recipe link or have a fix to share.",
   other: "We'll only use this if your note needs a reply.",
 };
 
-function pageContext() {
+export function pageContext() {
   const width = window.innerWidth;
   const height = window.innerHeight;
 

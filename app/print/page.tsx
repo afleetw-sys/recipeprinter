@@ -8,6 +8,8 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SAVE_FAILURES, SAVE_STATUS_LABEL } from "@/components/AccountControl";
 import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
+import { StrugglePrompt } from "@/components/StrugglePrompt";
+import { notePrintPress } from "@/lib/strugglePrompt";
 import { pauseFirestoreForPrint, resumeFirestoreAfterPrint } from "@/lib/firebase/printPause";
 import { PrintDialogs } from "@/components/PrintDialogs";
 import { AddRecipeDialog } from "@/components/AddRecipeDialog";
@@ -2645,6 +2647,11 @@ export default function PrintPage() {
       browserApp: currentBrowserApp(),
       printIsNative: printIsNative(),
     };
+    const printedRecipeIds = (items ?? [])
+      .filter((item) => item.recipe)
+      .map((item) => item.id)
+      .sort()
+      .join(",");
     let done = false;
     const attempt = runPrintAttempt({
       print: () => window.print(),
@@ -2676,6 +2683,8 @@ export default function PrintPage() {
           handedToSafari = true;
         }
         track("print_attempt", { ...report, ...summary, handedToSafari });
+        // The same recipes printed again and again: ask what went wrong.
+        notePrintPress(printedRecipeIds);
       },
     });
     if (!done) printAttemptRef.current = attempt;
@@ -8481,6 +8490,7 @@ export default function PrintPage() {
             : undefined
         }
       />
+      <StrugglePrompt />
       <FeedbackDialog
         open={showFeedbackDialog}
         onClose={() => setShowFeedbackDialog(false)}

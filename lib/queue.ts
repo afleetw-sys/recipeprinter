@@ -23,6 +23,7 @@ import { choiceLimit, needsChoice, readRecipeChoice, type RecipeChoice } from "@
 import { historyIsRecording, noteHistoryCommit, resetHistory, withoutHistory } from "@/lib/editHistory";
 import { storeImportedPhoto, withImportedPhoto } from "@/lib/importedPhoto";
 import { noteCardImport } from "@/lib/referral";
+import { noteImportStarted } from "@/lib/strugglePrompt";
 import {
   SKIPPED,
   importRefused,
@@ -937,6 +938,8 @@ export function useQueue() {
       // the start so the meter's share of a first import is a first import's.
       const importIndex = nextImportIndex();
       track("recipe_import_started", { ...outcome, ...context, importId: id, ...(url ? { url } : {}) });
+      // The same link or paste imported again: ask what went wrong.
+      noteImportStarted(opts?.dedupeInput);
       // The meter reserves BEFORE any parser request starts, and is awaited:
       // a free import is only parsed once the server has it on record. It
       // can't hold the import up for more than 5 seconds, and never stops it
