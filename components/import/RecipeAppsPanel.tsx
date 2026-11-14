@@ -79,7 +79,11 @@ function IntegrationCard({
   status?: string;
   /** A passing state that is not worth a chip, like a check in flight. */
   note?: string;
-  addedCount: number;
+  /** How many of this app's recipes are in the list. CookPilot only: a
+      Paprika count read beside "N recipes loaded" as if it described the open
+      file, when it counted every Paprika recipe added from any file
+      (Amelia, 2026-11-12). */
+  addedCount?: number;
   /** The product's own mark, at whatever size suits it. CookPilot's is a
       transparent glyph that wants room around it; Paprika's is a square app
       icon. Passing a node rather than a component is what lets each one arrive
@@ -124,7 +128,7 @@ function IntegrationCard({
               {status}
             </span>
           )}
-          {addedCount > 0 && (
+          {addedCount !== undefined && addedCount > 0 && (
             <span className="inline-flex items-center rounded-lg bg-[var(--cp-accent-soft)] px-2 py-0.5 text-cp-caption font-bold text-ink">
               {addedCount} added
             </span>
@@ -296,15 +300,10 @@ export function RecipeAppsPanel({
     setSource(next);
   }
 
-  const addedCounts = useMemo(() => {
-    let cookpilot = 0;
-    let paprika = 0;
-    for (const item of items) {
-      if (item.method === "cookpilot") cookpilot += 1;
-      else if (item.method === "paprika") paprika += 1;
-    }
-    return { cookpilot, paprika };
-  }, [items]);
+  const cookPilotAdded = useMemo(
+    () => items.filter((item) => item.method === "cookpilot").length,
+    [items],
+  );
 
   // ── How many recipes CookPilot holds ──────────────────────────────────
   // The LIBRARY total, from the server-side aggregation, not a tally of what
@@ -469,7 +468,7 @@ export function RecipeAppsPanel({
           description={cookPilotDescription}
           status={cookPilotStatus}
           note={cookPilotNote}
-          addedCount={addedCounts.cookpilot}
+          addedCount={cookPilotAdded}
           icon={<CookPilotLogoIcon size={22} />}
           // Pressing this while signed out lands on a sign-in screen, not a
           // recipe list (see CookPilotImportSource's `!user` branch) — the
@@ -485,7 +484,6 @@ export function RecipeAppsPanel({
           name="Paprika"
           description="Open your Paprika export here, then pick the recipes you want."
           status={paprikaStatus}
-          addedCount={addedCounts.paprika}
           // Inset in the 44px tile like CookPilot's, rather than filling it.
           // Smaller than CookPilot's 22 rather than equal to it: that mark is
           // an open glyph on nothing, this is a solid app icon, so matching

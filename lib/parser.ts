@@ -8,6 +8,7 @@ import {
   sourceNotesFromResponse,
   sourceUrlFromResponse,
 } from "@/lib/cookpilot";
+import { reasonedFailure, type ReasonedFailure } from "@/lib/importFailureReason";
 import { BLOCKED_REMEDY, joinedLinksMessage, searchPageMessage, unwrapRedirectUrl } from "@/lib/importUrl";
 import { errorParts } from "@/lib/friendlyErrors";
 import { anonymousOwnerId } from "@/lib/anonymousOwner";
@@ -445,6 +446,16 @@ async function parseUrlWithCookPilot(
     }
     return recipes;
   } catch (err) {
+    // CookPilot named the cause and wrote the sentence: that is the message,
+    // whatever the code. Read before the code, which would flatten a paywall,
+    // a private pin and a PDF into "blocked".
+    const explained = callableReason(err);
+    if (explained) {
+      const { code } = errorParts(err);
+      throw new ImportError(explained.message, explained.failure, {
+        errorDetail: `${code || "no-code"} ${explained.reason}`.slice(0, 160),
+      });
+    }
     throw friendlyError(
       err,
       localError ||
@@ -455,6 +466,14 @@ async function parseUrlWithCookPilot(
       "We couldn't import this link right now. Paste the recipe text or upload screenshots instead.",
     );
   }
+}
+
+/** The reasoned failure on a callable's HttpsError (`details.reason`), if any. */
+function callableReason(err: unknown): ReasonedFailure | null {
+  if (err instanceof ImportError) return null;
+  const details = (err as { details?: unknown } | null)?.details as { reason?: unknown } | undefined;
+  const { code, message } = errorParts(err);
+  return reasonedFailure(code, details?.reason, message);
 }
 
 /**

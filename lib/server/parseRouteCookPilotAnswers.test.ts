@@ -90,6 +90,98 @@ describe("/api/parse when CookPilot read the page and found no recipe", () => {
   });
 });
 
+// What production sends since 2026-11-10: the cause in `reason`, the sentence
+// for the cook in `error`.
+const SITE_UNREACHABLE = {
+  error: "We couldn't reach that website. Try again in a few minutes, or paste the recipe text instead.",
+  code: "unavailable",
+  reason: "site-unreachable",
+};
+
+describe("/api/parse when CookPilot explained the failure", () => {
+  // A paywall, a Facebook login or a PDF used to reach the cook as "this site
+  // blocks anything automated", and "page not found" as generic no-recipe copy.
+  it("hands on CookPilot's message for a final answer", async () => {
+    const final: Array<[status: number, code: string, reason: string, error: string, failure: string]> = [
+      [412, "failed-precondition", "paywall", "That page is behind a paywall or sign-in.", "blocked"],
+      [412, "failed-precondition", "pdf-not-supported", "This link opens a PDF, and we can't read PDFs yet.", "blocked"],
+      [404, "not-found", "page-not-found", "We couldn't find that page, the link may be cut off.", "not_found"],
+      [404, "not-found", "recipe-in-comments", "We read this post, but the recipe is in the comments.", "no_recipe"],
+    ];
+    for (const [status, code, reason, error, failure] of final) {
+      network((url) =>
+        url === PARSER
+          ? json(status, { error, code, reason })
+          : new Response("<html></html>", { status: 200, headers: { "content-type": "text/html" } }),
+      );
+
+      const { body } = await importLink("https://www.example-blog.org/stew");
+
+      expect(body.error, reason).toBe(error);
+      expect(body.failure, reason).toBe(failure);
+      expect(body.parserExhausted, reason).toBe(true);
+      expect(requested.map((request) => request.url), reason).toEqual([PARSER]);
+    }
+  });
+
+  // A 503 or 504 is CookPilot's network failing, not the page: ours often gets
+  // through, so we still try. When ours fails too, CookPilot's reason stands.
+  it("hands on CookPilot's message when our own fetch fails too", async () => {
+    const refused = {
+      error: "That website wouldn't let us read this page. Paste the recipe text, or import a screenshot of it.",
+      code: "unavailable",
+      reason: "site-refused",
+    };
+    const timedOut = { error: "That page took too long to load.", code: "deadline-exceeded", reason: "timed-out" };
+    const ourFetchFails: Array<[string, (url: string) => Response]> = [
+      ["site answers 403", () => new Response("<html>Forbidden</html>", { status: 403 })],
+      ["site answers 500", () => new Response("oops", { status: 500 })],
+      ["site unreachable", () => { throw new TypeError("fetch failed"); }],
+      ["200 challenge page", () => new Response("<html>Just a moment</html>", { status: 200, headers: { "content-type": "text/html" } })],
+    ];
+    for (const [parserStatus, said] of [[503, refused], [503, SITE_UNREACHABLE], [504, timedOut]] as const) {
+      for (const [how, site] of ourFetchFails) {
+        network((url) => {
+          if (url === PARSER) return json(parserStatus, said);
+          if (url === SUPPLIED) {
+            return how === "200 challenge page"
+              ? json(422, { verdict: { kind: "bot_wall", vendor: "cloudflare" } })
+              : json(422, { verdict: { kind: how === "site answers 500" ? "server_error" : "none" } });
+          }
+          return site(url);
+        });
+
+        const { body } = await importLink("https://www.example-blog.org/stew");
+
+        expect(body.error, `${said.reason}, ${how}`).toBe(said.error);
+        expect(requested.map((request) => request.url), `${said.reason}, ${how}`).toContain(
+          "https://www.example-blog.org/stew",
+        );
+      }
+    }
+  });
+
+  it("still imports the recipe when our own fetch gets through", async () => {
+    network((url) => {
+      if (url === PARSER) return json(503, SITE_UNREACHABLE);
+      if (url === SUPPLIED) {
+        return json(200, {
+          recipe: {
+            title: "Stew",
+            ingredientSections: [{ ingredients: [{ name: "beef" }] }],
+            instructionSections: [{ instructions: [{ text: "Simmer." }] }],
+          },
+        });
+      }
+      return new Response("<html>stew</html>", { status: 200, headers: { "content-type": "text/html" } });
+    });
+
+    const { body } = await importLink("https://www.example-blog.org/stew");
+
+    expect(body.success).toBe(true);
+  });
+});
+
 describe("/api/parse reading a page that is not UTF-8", () => {
   // Our fetch decoded every page as UTF-8, so a windows-1252 page reached the
   // parser as "Cr�me br�l�e". CookPilot's own fetch reads such a
@@ -104,7 +196,7 @@ describe("/api/parse reading a page that is not UTF-8", () => {
     ];
     for (const [charset, bytes] of pages) {
       network((url) => {
-        if (url === PARSER) return json(503, { error: "Failed to fetch the URL (unreachable)", code: "unavailable" });
+        if (url === PARSER) return json(503, SITE_UNREACHABLE);
         if (url === SUPPLIED) return json(422, { error: "No recipe found on that page", verdict: { kind: "none" } });
         return new Response(new Blob([bytes as BlobPart]), { status: 200, headers: { "content-type": `text/html; charset=${charset}` } });
       });

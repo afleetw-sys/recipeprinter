@@ -451,6 +451,39 @@ describe("parseUrlAll — the route's own verdict", () => {
   });
 });
 
+// CookPilot names the cause of every failure it understands in
+// `details.reason` and writes the sentence for the cook in `message`. The code
+// alone used to decide the copy here, so a paywall, a Facebook login, a private
+// pin and a PDF all became "this site blocks anything automated", and "the
+// recipe is in the comments" became generic no-recipe advice.
+describe("parseUrlAll — a callable failure CookPilot explained", () => {
+  it("shows CookPilot's message, whatever the code", async () => {
+    const explained: Array<[code: string, reason: string, message: string, bucket: string]> = [
+      ["failed-precondition", "paywall", "That page is behind a paywall or sign-in.", "blocked"],
+      ["failed-precondition", "pdf-not-supported", "This link opens a PDF, and we can't read PDFs yet.", "blocked"],
+      ["failed-precondition", "pin-unavailable", "Pinterest won't show us this pin.", "blocked"],
+      ["not-found", "recipe-in-comments", "We read this post, but it says the recipe is in the comments.", "no_recipe"],
+      ["not-found", "page-not-found", "We couldn't find that page, the link may be cut off.", "not_found"],
+      ["unavailable", "site-refused", "That website wouldn't let us read this page.", "blocked"],
+      ["deadline-exceeded", "timed-out", "That page took too long to load.", "timeout"],
+    ];
+    for (const [code, reason, message, bucket] of explained) {
+      // The route never answered, so the callable is the one that speaks.
+      vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch"); }));
+      callable.mockReset();
+      callable.mockRejectedValue(
+        Object.assign(new Error(message), { code: `functions/${code}`, details: { reason } }),
+      );
+
+      const err = await parseUrlAll("example-blog.org/stew").catch((e) => e);
+
+      expect(err, reason).toBeInstanceOf(ImportError);
+      expect(err.message, reason).toBe(message);
+      expect(err.code, reason).toBe(bucket);
+    }
+  });
+});
+
 describe("normalizeFractions", () => {
   // The exact paste that lost three of its nine ingredients in production.
   it("rewrites the glyphs that were being discarded", () => {

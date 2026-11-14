@@ -26,7 +26,7 @@ export interface TwoUpCard {
 
 export interface TwoUpPage {
   /** Top half, then bottom half. `null` is an empty half: the last page of an
-      odd number of cards. */
+      odd number of cards (never a lone card, which fills both halves). */
   cards: [TwoUpCard | null, TwoUpCard | null];
   /** Print a back side for this sheet of paper. */
   hasBack: boolean;
@@ -39,6 +39,11 @@ export function pairCardsOnLetter(sheets: PageSheet[]): TwoUpPage[] {
     if (!slot || slot.kind !== "recipe") continue;
     cards.push({ slot, needsBack: sheet.backGroupNeeded });
   }
+  // A job of one card fills the sheet with it rather than leaving the bottom
+  // half blank: printing copies of one recipe (the print dialog's Copies)
+  // then gives two cards a sheet. A recipe long enough for two cards or more
+  // pairs its own cards as usual.
+  if (cards.length === 1) cards.push(cards[0]);
 
   const pages: TwoUpPage[] = [];
   for (let index = 0; index < cards.length; index += 2) {

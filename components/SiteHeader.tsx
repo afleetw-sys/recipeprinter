@@ -116,16 +116,23 @@ export function SiteHeader({
           rather than shoving the buttons off the end.
 
           At 820px and under (where /print swaps to its own mobile bar) the
-          group stretches and `lead` goes to its far end, so "Upgrade to Pro"
-          sits on the right with the account on every page, as it does in
-          that mobile bar, instead of changing sides between / and /print. */}
+          default upgrade moves to the right group instead, between the page's
+          own button ("Go to printer", "Start a cookbook") and the account, as
+          the crown sits beside the avatar in /print's mobile bar (Amelia,
+          2026-11-13). A page's own `lead` stays here. */}
       <div className="flex items-center gap-cp-3 min-w-0 max-[820px]:flex-1 max-[820px]:justify-between">
         <HomeLink href={backHref ?? "/"} onNavigateHome={onNavigateHome}>
           {logo}
         </HomeLink>
         {/* "Upgrade to Pro" on every page unless the page brings its own (the
             workspace) or asks for none (`lead={null}`, the error pages). */}
-        {lead === undefined ? <FrontDoorUpgradeButton /> : lead}
+        {lead === undefined ? (
+          <div className="contents max-[820px]:hidden">
+            <FrontDoorUpgradeButton />
+          </div>
+        ) : (
+          lead
+        )}
       </div>
       {/* Centred on the PAGE, not between its neighbours — absolutely
           positioned so the title holds still as the buttons beside it change
@@ -143,6 +150,13 @@ export function SiteHeader({
       )}
       <div className="relative z-[1] flex items-center gap-cp-2 sm:gap-cp-3 flex-nowrap justify-end shrink-0">
         {actions && !centerActions ? actions : null}
+        {/* The phone's place for the default upgrade: after the page's own
+            button, beside the account (see the left group's note). */}
+        {lead === undefined && (
+          <div className="hidden max-[820px]:contents">
+            <FrontDoorUpgradeButton />
+          </div>
+        )}
         {/* "header" is this bar's own control size — see `AccountControl`,
             which sits between the workspace's 30px chrome and the 34px full
             size neither of which this shared bar uses anymore. */}
