@@ -1,4 +1,7 @@
+import path from "node:path";
 import { expect, test as base } from "@playwright/test";
+
+const PUBLIC_DIR = path.resolve("public");
 
 /**
  * `test`, with two guarantees checked after every test:
@@ -37,6 +40,23 @@ export const test = base.extend<{ guard: void }>({
         if (protocol.startsWith("http") && hostname !== "127.0.0.1" && hostname !== "localhost") {
           external.add(hostname);
         }
+      });
+      // next/image's resized copies, answered with the original file from
+      // public/ instead of `next start`'s optimizer. The page's markup (srcset,
+      // sizes, layout) is still exactly what ships; only the server's resize is
+      // skipped, and production never runs that resize anyway: Vercel's own
+      // image service does. Next merges every request for one size into the
+      // first, so a single resize that never finished on a busy CI runner held
+      // every later page that wanted that size, and page.goto waits for the
+      // page's images. The phone sizes (w=750 at 3x) were wanted by nothing
+      // else, so every iPhone test that opened the homepage at a phone width
+      // timed out in a row until the job was cancelled (2026-11-13, run
+      // 43536928717). Remote images never come through here (next.config.mjs).
+      await page.route(/\/_next\/image\?/, (route) => {
+        const source = new URL(route.request().url()).searchParams.get("url") ?? "";
+        const file = path.resolve(PUBLIC_DIR, `.${source}`);
+        if (!source.startsWith("/") || !file.startsWith(PUBLIC_DIR + path.sep)) return route.continue();
+        return route.fulfill({ path: file });
       });
       // /api/parse allows 30 imports per caller per 10 minutes, and every
       // test's browser is the same caller. Each test gets its own address, so
