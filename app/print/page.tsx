@@ -7496,7 +7496,11 @@ export default function PrintPage() {
                 {cookbookMode && renderSaveControl("header")}
                 {historyControls("header")}
                 {!cookbookMode && renderSaveControl("header")}
-                {renderSaveMenu("header")}
+                {/* Only while there is something to save: once it's saving or
+                    saved, the state beside it already says so, and the menu
+                    would hold nothing else. Phones keep theirs (no room for
+                    the state in the bar). */}
+                {saveStatus !== "saving" && !savedToProfile && renderSaveMenu("header")}
 
                 {/* Print is always here, as it is on a phone's bottom bar:
                     the page is for printing, and a button that appears only
