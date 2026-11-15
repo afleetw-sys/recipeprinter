@@ -12978,6 +12978,15 @@ textarea.recipe-card__toc-title {
   border-bottom-left-radius: 0;
   padding-inline: 7px;
 }
+/* Outlined halves (a chapter's Add new) already draw their own border, so the
+   header hairline above would show as a gap between two borders. They share
+   one border instead. */
+.recipe-print-split > .btn-secondary + .btn-secondary {
+  margin-left: -1px;
+}
+.recipe-print-split:has(> .btn-secondary + .btn-secondary) {
+  gap: 0;
+}
 
 /* ── Two 4x6 cards on a Letter sheet ───────────────────────────────────────
    components/print/TwoUpPrintPages.tsx draws the cards a second time, two to
@@ -13276,5 +13285,78 @@ textarea.recipe-card__toc-title {
   .recipe-page-rail__grip {
     padding: 10px;
     margin: -8px -8px -8px -10px;
+  }
+}
+
+/* The pointer at the avatar for a signed-out cook with a growing cookbook
+   (components/print/SignInToSaveHint.tsx). A floating element, so it takes the
+   menu's shadow; sized in rem so it grows with zoom. */
+.rp-signin-hint {
+  position: fixed;
+  z-index: var(--z-menu);
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  width: max-content;
+  max-width: min(17rem, calc(100vw - 24px));
+  padding: 10px 6px 10px 12px;
+  border: 1px solid var(--cp-line);
+  border-radius: 10px;
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-md);
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-small);
+  line-height: 1.4;
+  animation: rp-signin-hint-in 180ms ease-out;
+}
+.rp-signin-hint__arrow {
+  position: absolute;
+  top: -7px;
+  width: 12px;
+  height: 12px;
+  border-top: 1px solid var(--cp-line);
+  border-left: 1px solid var(--cp-line);
+  background: var(--cp-card);
+  transform: rotate(45deg);
+}
+.rp-signin-hint__text {
+  margin: 0;
+}
+.rp-signin-hint__text strong {
+  font-weight: 700;
+}
+.rp-signin-hint__close {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: -4px 0;
+  border-radius: 6px;
+  color: var(--cp-ink-soft);
+}
+.rp-signin-hint__close:hover {
+  background: var(--cp-overlay-hover);
+  color: var(--cp-ink);
+}
+.rp-signin-hint__close:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: var(--cp-focus-ring-offset);
+}
+@keyframes rp-signin-hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rp-signin-hint {
+    animation: none;
+  }
+}
+@media print {
+  .rp-signin-hint {
+    display: none;
   }
 }
