@@ -16,6 +16,7 @@ import {
 } from "@/lib/proDeclineAsked";
 import { GENERIC_COPY } from "@/lib/proUpgradeCopy";
 import {
+  DEFAULT_PRO_CYCLE,
   PRO_PRICE_FALLBACKS,
   type ProBillingCycle,
 } from "@/lib/proProduct";
@@ -108,7 +109,7 @@ export function ProUpgradeDialog({
   // "Other" on the decline question: opens a box for the cook's own reason.
   const [otherOpen, setOtherOpen] = useState(false);
   const [otherText, setOtherText] = useState("");
-  const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>("monthly");
+  const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>(DEFAULT_PRO_CYCLE);
   const [pendingCycle, setPendingCycle] = useState<ProBillingCycle | null>(null);
   const [formBusy, setFormBusy] = useState(false);
   const uid = cookPilotUser?.uid ?? null;
@@ -189,7 +190,12 @@ export function ProUpgradeDialog({
   }
 
   const closeDisabled = busy || formBusy;
-  const { label: price, annualSavingsPercent: savingsPercent } = useVisitorPrices();
+  const { label: price, annualSavingsPercent: savingsPercent, annualPerMonth, annualTotal } = useVisitorPrices();
+  // Annual reads as a monthly figure, so the two plans compare like for like,
+  // and always says what it charges once a year right beside it.
+  const cyclePrice = (cycle: ProBillingCycle) =>
+    cycle === "annual" ? `${annualPerMonth}/mo` : price(PRO_PRICE_FALLBACKS.monthly);
+  const billedYearly = `Billed yearly at ${annualTotal}`;
 
   return (
     <Dialog
@@ -396,11 +402,14 @@ export function ProUpgradeDialog({
                     <span className="pro-plan-card__name">{PRO_CYCLE_LABEL[cycle]}</span>
                   </div>
                   <p className="pro-plan-card__price">
-                    {price(PRO_PRICE_FALLBACKS[cycle])}
+                    {cyclePrice(cycle)}
                     {cycle === "annual" && (
                       <span className="pro-plan-card__note"> · Save {savingsPercent}%</span>
                     )}
                   </p>
+                  {cycle === "annual" && (
+                    <p className="text-cp-label font-normal text-ink-soft">{billedYearly}</p>
+                  )}
                 </SelectTile>
               );
             })}
@@ -426,7 +435,8 @@ export function ProUpgradeDialog({
             </p>
             {pendingCycle && (
               <p className="mt-2 text-cp-label text-ink-soft font-semibold">
-                {PRO_CYCLE_LABEL[pendingCycle]} · {price(PRO_PRICE_FALLBACKS[pendingCycle])}
+                {PRO_CYCLE_LABEL[pendingCycle]} · {cyclePrice(pendingCycle)}
+                {pendingCycle === "annual" && `, ${billedYearly.toLowerCase()}`}
               </p>
             )}
           </div>
