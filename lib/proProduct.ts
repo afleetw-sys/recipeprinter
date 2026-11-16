@@ -43,6 +43,11 @@ export function proProductId(cycle: ProBillingCycle): string {
 export const PRO_MONTHLY_PRICE_FALLBACK = "$4.99/mo";
 export const PRO_ANNUAL_PRICE_FALLBACK = "$39.99/yr";
 
+/** The plan a Pro picker opens on. Annual for a few weeks from 2026-11-16
+ *  (Amelia): nobody had ever chosen it while Monthly was the default. Set it
+ *  back to "monthly" to undo; every picker reads it. */
+export const DEFAULT_PRO_CYCLE: ProBillingCycle = "annual";
+
 export const PRO_PRICE_FALLBACKS = {
   monthly: PRO_MONTHLY_PRICE_FALLBACK,
   annual: PRO_ANNUAL_PRICE_FALLBACK,

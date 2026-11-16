@@ -5,7 +5,7 @@ import { AccountImportAllowanceUsage } from "@/components/AccountImportAllowance
 import { SegmentedControl } from "@/components/Controls";
 import { CheckIcon, CrownIcon, ICON_SIZE } from "@/components/icons";
 import { track } from "@/lib/analytics";
-import { PRO_ANNUAL_PRICE_FALLBACK, PRO_MONTHLY_PRICE_FALLBACK, type ProBillingCycle } from "@/lib/proProduct";
+import { DEFAULT_PRO_CYCLE, PRO_MONTHLY_PRICE_FALLBACK, type ProBillingCycle } from "@/lib/proProduct";
 import { BASIC_BENEFITS, FREE_IMPORTS_BENEFIT, PRO_BENEFITS } from "@/lib/proUpgradeCopy";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
 
@@ -25,8 +25,8 @@ export function FreePlanCards({
   /** Only changes which price the Pro card quotes before you've bought
       anything — `ProUpgradeDialog` still has its own cycle picker once
       you're actually choosing. */
-  const [billingCycle, setBillingCycle] = useState<ProBillingCycle>("monthly");
-  const { label: price, annualSavingsPercent } = useVisitorPrices();
+  const [billingCycle, setBillingCycle] = useState<ProBillingCycle>(DEFAULT_PRO_CYCLE);
+  const { label: price, annualSavingsPercent, annualPerMonth, annualTotal } = useVisitorPrices();
 
   return (
     <div className="mt-cp-3">
@@ -71,16 +71,24 @@ export function FreePlanCards({
                 setBillingCycle(cycle);
                 track("pro_plan_selected", { cycle });
               }}
-              options={[
-                { id: "monthly", label: "Monthly" },
-                { id: "annual", label: "Annual" },
-              ]}
+              // The default plan first (Amelia, 2026-11-16).
+              options={
+                DEFAULT_PRO_CYCLE === "annual"
+                  ? [
+                      { id: "annual", label: "Annual" },
+                      { id: "monthly", label: "Monthly" },
+                    ]
+                  : [
+                      { id: "monthly", label: "Monthly" },
+                      { id: "annual", label: "Annual" },
+                    ]
+              }
             />
           </div>
           {billingCycle === "annual" ? (
             <p className="mt-1 text-cp-body font-bold text-ink-soft">
-              {price(PRO_ANNUAL_PRICE_FALLBACK)}{" "}
-              <span className="pro-plan-card__note">· Save {annualSavingsPercent}%</span>
+              {annualPerMonth}/mo <span className="pro-plan-card__note">· Save {annualSavingsPercent}%</span>
+              <span className="block text-cp-label font-normal">Billed yearly at {annualTotal}</span>
             </p>
           ) : (
             <p className="mt-1 text-cp-body font-bold text-ink-soft">{price(PRO_MONTHLY_PRICE_FALLBACK)}</p>

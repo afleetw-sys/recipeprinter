@@ -56,6 +56,11 @@ export interface VisitorPrices {
   format: (amount: number, currency: string) => string;
   /** What annual saves over twelve monthly payments, in this currency. */
   annualSavingsPercent: number;
+  /** The annual plan as a monthly figure ("$3.33"), always shown beside
+      `annualTotal` so it never reads as a monthly charge. */
+  annualPerMonth: string;
+  /** What the annual plan charges once a year ("$39.99"). */
+  annualTotal: string;
 }
 
 /**
@@ -73,5 +78,7 @@ export function useVisitorPrices(): VisitorPrices {
     label: (text) => localizePriceText(text, sheet, country),
     format: (amount, currency) => formatPrice(amount, currency, country),
     annualSavingsPercent: proAnnualSavingsPercent(sheet.amounts.pro_monthly, sheet.amounts.pro_annual),
+    annualPerMonth: formatPrice(Math.round(sheet.amounts.pro_annual / 12), sheet.currency, country),
+    annualTotal: formatPrice(sheet.amounts.pro_annual, sheet.currency, country),
   };
 }
