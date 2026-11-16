@@ -44,7 +44,7 @@ export const IMPORT_CARDS: FeatureCard[] = [
     heading: "Paprika and CookPilot import",
     image: "cookpilot-export",
     body:
-      "Sign in to CookPilot, or open a Paprika export file, and add what you want to the print queue. A Paprika file is read in your browser, so nothing is uploaded.",
+      "Sign in to CookPilot, or open a Paprika export file, and add the recipes you want to print. A Paprika file is read in your browser, so nothing is uploaded.",
   },
 ];
 
@@ -79,16 +79,16 @@ export const PRINT_CARDS: FeatureCard[] = [
   {
     // Batch and PDF were two cards saying the same thing from either end: how
     // the finished job leaves. One card, both destinations.
-    heading: "Print multiple recipes at once",
+    heading: "Print several recipes at once",
     image: "pdf-search",
     body:
-      "Add as many recipes as you like to the print queue and send them all in one job, for a recipe binder, a week of dinners, or a family cookbook. That's RecipePrinter Pro. One recipe at a time prints or saves as a PDF free, no account needed.",
+      "Add as many recipes as you like and print them all at once, for a recipe binder, a week of dinners, or a family cookbook. That's RecipePrinter Pro. One recipe at a time prints or saves as a PDF free, no account needed.",
   },
   {
     heading: "Cookbook builder",
     image: "bound-cookbook",
     body:
-      `Sort your recipes into chapters and choose a cover, and RecipePrinter builds the table of contents and page numbers. Preview up to 10 recipes free; ${COOKBOOK_PRICE_FALLBACK} lets you download or print that cookbook and add more recipes.`,
+      `Sort your recipes into chapters and choose a cover, and RecipePrinter builds the table of contents and page numbers. Print it at home for a 3-ring binder, or send it to a print shop for a spiral-bound or hardcover book. Preview up to 10 recipes free; ${COOKBOOK_PRICE_FALLBACK} per cookbook, paid once, lets you download or print it and add more recipes.`,
   },
 ];
 

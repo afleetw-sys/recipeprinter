@@ -367,7 +367,7 @@ export default function SeoLandingPage({ params }: PageProps) {
                 body:
                   "Start with a single favorite or work through an inherited recipe box a few cards at a time. Once the recipes are digitized, you can give them a consistent format even when the originals use different card sizes, handwriting styles, or layouts.",
                 afterBody:
-                  "You can print individual recipes as you go, or use RecipePrinter Pro when you want to work with and print multiple recipes together.",
+                  "You can print individual recipes as you go, or use RecipePrinter Pro when you want to print several recipes at once.",
               },
             ]}
           />

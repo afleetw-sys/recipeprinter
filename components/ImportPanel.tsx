@@ -362,7 +362,7 @@ export function ImportPanel({
       // squeeze it into one "hostname" and send it to the URL parser; it is
       // text, so it goes where text goes. See `isPastedRecipeText`.
       if (isPastedRecipeText(trimmed)) {
-        if (trimmed.length < 20) return fail("That doesn't look like a valid URL.");
+        if (trimmed.length < 20) return fail("That doesn't look like a link. Copy it again and paste it here.");
         onAddText(trimmed);
         setUrl("");
         return true;
@@ -373,7 +373,7 @@ export function ImportPanel({
         // was stricter here — case-sensitive scheme check, no whitespace strip).
         new URL(normalizeImportURL(trimmed));
       } catch {
-        return fail("That doesn't look like a valid URL.");
+        return fail("That doesn't look like a link. Copy it again and paste it here.");
       }
       onAddUrl(trimmed);
       setUrl("");

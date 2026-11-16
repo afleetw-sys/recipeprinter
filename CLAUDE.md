@@ -1,5 +1,7 @@
 # RecipePrinter
 
+All user-facing copy follows [docs/voice.md](docs/voice.md).
+
 ## The parser lives in CookPilot
 
 There is one recipe parser and it is not in this repo. `app/api/parse/route.ts` asks CookPilot for

@@ -149,7 +149,7 @@ export default function PrivacyPage() {
         </p>
         <LegalList>
           <li>
-            Your print queue, projects, print settings, and the photos you add
+            Your recipes, projects, print settings, and the photos you add
             are stored in your browser&apos;s local storage and IndexedDB. They
             are not stored in an account, and we cannot access them.
           </li>
@@ -479,7 +479,7 @@ export default function PrivacyPage() {
         </p>
         <LegalList>
           <li>
-            <strong>Strictly necessary.</strong> Your print queue, projects,
+            <strong>Strictly necessary.</strong> Your recipes, projects,
             print settings, photos you add while signed out, the random visitor
             identifier, and your sign-in session if you are signed in, stored in
             your browser&apos;s local storage, session storage, and IndexedDB.

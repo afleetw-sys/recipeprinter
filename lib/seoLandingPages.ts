@@ -579,7 +579,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I save several recipes in one PDF?",
         answer:
-          "Yes, with RecipePrinter Pro. Add multiple recipes to the print queue and save them together as one PDF. A single full-page recipe can be saved as a PDF for free.",
+          "Yes, with RecipePrinter Pro. Add several recipes and save them together as one PDF. A single full-page recipe can be saved as a PDF for free.",
       },
       {
         question: "Can I make a PDF from a photo or screenshot?",
@@ -856,11 +856,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Keep the card, cook from a copy",
-        image: "handwritten-card",
-        imageAlt:
-          "A handwritten Peanut Butter Cookies recipe card beside the floral recipe box where it is kept.",
         body:
           "A handwritten recipe card holds more than the recipe: the handwriting, the notes in the margin, the marks from every time it was made. Digitize it from a photo and you get a typed copy to cook from, print again, and share with family, while the original stays safe in the recipe box.",
+        image: "handwritten-to-printed",
       },
       {
         heading: "Make it yours before it prints",
@@ -1249,7 +1247,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print it your way",
-        text: "Print a full page for free or save it as a PDF. Pro adds 4×6 recipe cards and batch printing.",
+        text: "Print a full page for free or save it as a PDF. Pro adds 4×6 recipe cards and a way to print several recipes at once.",
       },
     ],
     featureSections: [
@@ -1491,7 +1489,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print recipes as pages or cards",
-        text: "Print recipes as full pages, save them as PDFs, or use RecipePrinter Pro to make 4×6 recipe cards and print multiple recipes together.",
+        text: "Print recipes as full pages, save them as PDFs, or use RecipePrinter Pro to make 4×6 recipe cards and print several recipes at once.",
       },
     ],
     featureSections: [
@@ -1511,7 +1509,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Print your whole Paprika library or just a few recipes",
         image: "bound-cookbook",
         body:
-          "Export a large Paprika collection and decide what to print after you open it in RecipePrinter. Choose just a few recipes, or use RecipePrinter Pro to print multiple recipes together for a recipe box or binder. In the cookbook builder, you can preview up to 10 recipes free; a separate purchase unlocks downloads and additional recipes.",
+          "Export a large Paprika collection and decide what to print after you open it in RecipePrinter. Choose just a few recipes, or use RecipePrinter Pro to print several recipes at once for a recipe box or binder. In the cookbook builder, you can preview up to 10 recipes free; a separate purchase unlocks downloads and additional recipes.",
         links: [{ phrase: "cookbook builder", href: "/paprika-to-cookbook" }],
       },
     ],
@@ -1530,7 +1528,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print my entire Paprika recipe library?",
         answer:
-          "Yes. You can open a Paprika library export and work with all of the recipes it contains. RecipePrinter Pro lets you add multiple recipes to a print queue, or you can choose only the recipes you want.",
+          "Yes. You can open a Paprika library export and work with all of the recipes it contains. RecipePrinter Pro lets you print several recipes at once, or you can choose only the recipes you want.",
       },
       {
         question: "What recipe details come over from Paprika?",
@@ -2021,7 +2019,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print the whole week at once?",
         answer:
-          "Yes. RecipePrinter Pro lets you print multiple recipes at once: add each of the week's recipes, then print them together in one batch, with the same size and theme on all of them.",
+          "Yes. RecipePrinter Pro lets you print several recipes at once: add each of the week's recipes, then print them together in one batch, with the same size and theme on all of them.",
         links: [{ href: "/print-multiple-recipes", label: "Print multiple recipes at once" }],
       },
       {
@@ -2175,8 +2173,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "recipe-binder",
-    contentUpdated: "2026-11-10",
-    copyReviewed: "2026-11-10",
+    contentUpdated: "2026-11-11",
+    copyReviewed: "2026-11-11",
     importSubmitLabel: "Start a recipe binder",
     startsCookbook: true,
     layout: "capture-first",
@@ -2198,14 +2196,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     shortLabel: "A binder",
     pickerGroup: "output",
     intent: "Organization SEO",
-    heroImage: "organize-cookbook",
-    heroImageAlt:
-      "A recipe binder being sorted into sections in RecipePrinter, with a section page beside the list.",
-    heroFrame: "none",
-    title: "Make a Recipe Binder with Sections & a Table of Contents | RecipePrinter",
+    heroImage: "binder-cover",
+    heroAnnotation: "Printed at home, filed in a 3-ring binder",
+    title: "Make a Printable Recipe Binder | RecipePrinter",
     description:
-      "Turn recipes from websites, apps, screenshots, photos, and handwritten cards into a printable recipe binder, with section pages, a table of contents, and page numbers.",
-    h1: "Make a recipe binder from the recipes you use",
+      "Turn recipes from websites, apps, photos, and handwritten cards into a printable recipe binder with section pages and a table of contents. No retyping.",
+    h1: "Make a printable recipe binder",
     breadcrumbLabel: "Recipe binder",
     anchor: "Make a recipe binder",
     lede:
@@ -2225,26 +2221,38 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         text: "Pick \"Spiral, comb or 3-ring\" and you get one US Letter PDF to send to your own printer.",
       },
       {
-        name: "Punch the pages and file them",
-        text: "Hole-punch the stack or slide the pages into sheet protectors, and your binder is ready for the kitchen.",
+        name: "Slide the pages into sheet protectors",
+        text: "Sheet protectors keep splatters off the pages and mean you never need a hole punch. Prefer bare pages? Punch the stack instead.",
       },
     ],
     featureSections: [
       {
-        heading: "Recipes from anywhere, pages that match",
+        heading: "No template to fill in",
         body:
-          "A link from a food blog, a recipe from an app, a screenshot from a group chat, a photo of a handwritten card: each one comes out in the same layout and the same type, so the binder reads as one collection instead of a stack of printouts.",
+          "Printable binder kits give you blank pages to write on or retype into. Here you bring the recipe in from its link, app, photo, or card, and the page is laid out for you, ingredients and steps already in place.",
+        afterBody:
+          "A food blog, a recipe app, a screenshot from a group chat, a handwritten card: every recipe binder page comes out in the same layout and the same type, so the binder reads as one collection instead of a stack of printouts.",
         image: "addrecipes-cookbook",
         imageAlt:
           "The Add recipes dialog with its four sources: a recipe link, a recipe app, an image, or pasted text.",
       },
       {
-        heading: "Saved for a 3-ring binder",
+        heading: "Section pages that work like tab dividers",
         body:
-          "When the binder is ready, choose \"Spiral, comb or 3-ring\" in the print dialog. You get one US Letter PDF for a home printer, with the cover first and the pages in order, so nothing needs sorting when it comes off the printer.",
-        image: "print-cookbook",
-        imageAlt:
-          "The Print your cookbook dialog with \"Spiral, comb or 3-ring\" chosen for how the pages will be bound.",
+          "Sort recipes by meal, by season, or by the person they came from. Each section opens on its own page with the recipes it holds, the table of contents lists them all, and every page is numbered, so a recipe is easy to find and easy to put back.",
+        image: "binder-section-page",
+      },
+      {
+        heading: "Print it at home, no hole punch needed",
+        body:
+          "When the binder is ready, choose \"Spiral, comb or 3-ring\" in the print dialog. You get one US Letter PDF for a home printer, with the cover first and every page in order, so nothing needs sorting when it comes off the printer. Slide the pages into sheet protectors, back to back, and they're wipe-clean, ready for the binder rings, and a photo faces its recipe the way it would in a cookbook.",
+        image: "binder-recipe",
+      },
+      {
+        heading: "A family recipe binder from handwritten cards",
+        body:
+          "Gather the cards from everyone in the family, snap a photo of each, and the handwriting becomes a typed recipe you can fix up. Give each cook their own section, add a photo of the original card beside the recipe if you like, and print a binder for everyone.",
+        image: "handwritten-to-printed",
       },
       {
         heading: "Just want the recipe pages?",
@@ -2268,6 +2276,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           `Previewing is free with up to ${FREE_COOKBOOK_RECIPES} recipes. ${COOKBOOK_PRICE_FALLBACK} for that binder, paid once, lets you download it and add more than ${FREE_COOKBOOK_RECIPES} recipes. After that, add recipes and download updated copies anytime at no extra cost. You don't need RecipePrinter Pro.`,
       },
       {
+        question: "Can I make a recipe binder for free?",
+        answer:
+          `Yes. Print each recipe as a full page, free and with no account, and file them yourself. The cover, section pages, table of contents, and page numbers come with a binder made as a cookbook, a one-time ${COOKBOOK_PRICE_FALLBACK}.`,
+      },
+      {
+        question: "Can I make a family recipe binder from handwritten cards?",
+        answer:
+          "Yes. Upload a photo of each card and RecipePrinter types out the recipe for you to check. Sort the recipes into a section for each cook, and keep a photo of the original card beside its recipe if you want the handwriting in the binder too.",
+      },
+      {
         question: "Do I have to include a cover and table of contents?",
         answer:
           "If you only want the recipe pages, use Recipe cards with the Full page size instead. Each recipe prints on its own page, free and one at a time, and you put the binder together yourself.",
@@ -2281,6 +2299,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Should a recipe binder use cards or full pages?",
         answer:
           "Full pages are usually the simplest choice for a binder, because they fit standard sheet protectors and give longer recipes more room. 4×6 cards suit a recipe box, though binder sleeves made for that size work too. 4×6 recipe cards are available with RecipePrinter Pro.",
+      },
+      {
+        question: "Do I need a hole punch for a recipe binder?",
+        answer:
+          "No. Slide the pages into sheet protectors and the protectors go on the binder rings, so the pages stay whole and splatters wipe off. You can still hole-punch the pages if you'd rather file them bare.",
       },
       {
         question: "What size binder is best for recipes?",
@@ -2360,11 +2383,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Turn handwriting into an editable recipe",
-        image: "inline-editing",
         body:
           "A photo preserves what the original recipe card looks like, but editable text is easier to use. RecipePrinter reads the handwriting and rebuilds the recipe as editable ingredients and instructions so you can correct faded words, fix amounts, and clean up the recipe before printing.",
         afterBody:
           "Instead of giving you one long block of text, RecipePrinter turns the card into a structured recipe that is easier to review, edit, print, and save.",
+        image: "handwritten-to-printed",
       },
       {
         heading: "Digitize both sides of a handwritten recipe card",
@@ -2486,15 +2509,15 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Keep the original, cook from the copy",
-        image: "counter-card",
         body:
           "A printed copy does the kitchen work: the counter, the splashes, the folding into a binder, the stuck-to-the-fridge afternoons. The handwritten card stays wherever you keep it, exactly as it is. You're still cooking their recipe every time you use the copy.",
+        image: "handwritten-to-printed",
       },
       {
         heading: "The handwriting comes along",
-        image: "card-in-box",
         body:
           "Keep the photo of the card on the recipe, beside the typed version. The measurements end up in type you can read from across a kitchen, and the hand they were written in is still on the page, which is usually the part that matters most.",
+        image: "handwritten-card-in-book",
       },
     ],
     faqHeading: "Questions about preserving family recipes",
@@ -2592,9 +2615,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Print one at home, or a bound copy for everyone",
-        image: "cookbook-cover-wide",
         body:
           "Print copies on your own printer, or send the file to a print shop for bound books, one for everyone in the family. A finished family cookbook makes a keepsake gift for a wedding, a milestone birthday, or the holidays.",
+        image: "spiral-and-binder",
       },
     ],
     faqHeading: "Family recipe book questions",
@@ -2712,10 +2735,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Getting your cookbook printed",
-        image: "bound-cookbook",
-        imageAlt: "A finished homemade cookbook open to a full-page photograph and a recipe page.",
         body:
           `Print at home on US Letter paper, or send the PDF to a print shop for spiral binding or a hardcover. Preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. Pay $19.99 once to download the PDF or add more than ${FREE_COOKBOOK_RECIPES} recipes, and download updated copies anytime at no extra cost.`,
+        image: "spiral-and-binder",
       },
     ],
     faqHeading: "Questions about making your own cookbook",
@@ -2834,7 +2856,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Design the whole book",
         image: "multi-themes",
         body:
-          "Choose from more than a dozen themes, from clean and modern to a cream-stock keepsake look, plus a seasonal Christmas theme. The theme carries through the cover, chapter openers, and every recipe page.",
+          "Choose from more than a dozen themes, from clean and modern to a cream-stock keepsake look, plus seasonal themes for fall, Halloween, and Christmas. The theme carries through the cover, chapter openers, and every recipe page.",
         afterBody:
           "Add your own cover photo and title, give each chapter opener its own photo, and switch themes at any point.",
       },
@@ -2842,7 +2864,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Print-ready formats, including hardcover",
         image: "print-cookbook",
         body:
-          "Download US Letter for a home printer, or full-bleed files for a coil-bound or hardcover book at US Letter or 8 × 10. Formats for print services come with a separate cover file sized to your book's spine, ready for services like Lulu.",
+          "Download US Letter for a home printer and a 3-ring binder, or full-bleed files for a coil-bound or hardcover book at US Letter or 8 × 10. Formats for print services come with a separate cover file sized to your book's spine, ready for services like Lulu.",
       },
       {
         heading: "Preview it free, then pay $19.99 to download or add more",
@@ -2968,9 +2990,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "On your own printer",
-        image: "convert-to-pdf",
+        image: "binder-cover",
         body:
-          "Printing at home is the simplest way to print your own cookbook as a binder or loose pages. RecipePrinter exports one US Letter PDF, with the cover as its first page.",
+          "Printing at home is the simplest way to print your own cookbook as a binder or loose pages. Choose \"Spiral, comb or 3-ring\" when you save, and RecipePrinter exports one US Letter PDF, with the cover as its first page.",
         afterBody:
           "Put the pages in a three-ring binder or sheet protectors, or take the stack to a copy shop later if you decide you want it bound.",
       },
@@ -2983,19 +3005,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "At a copy shop such as Staples, upload the PDF through the shop's website or bring the file in, then choose the paper and binding. Copy shops bind documents, so ask about the bindings yours offers; hardcovers come from a book printer.",
       },
       {
-        heading: "With Lulu",
+        heading: "With Lulu or Blurb",
+        image: "print-cookbook",
         body:
-          "Lulu prints books to order, including coil-bound and hardcover cookbooks. Choose Lulu when you export, and RecipePrinter sizes the pages for the Lulu format you pick.",
+          "Lulu and Blurb print books to order and ship them to you. Lulu makes coil-bound and hardcover cookbooks, and Blurb makes an 8 × 10 hardcover. Choose the printer when you export, and RecipePrinter sizes the pages for the format you pick.",
         afterBody: [
-          "Lulu takes the cover as its own file. Upload the pages to Lulu first, copy the cover dimensions and spine width it shows you into RecipePrinter, and download a cover made to those numbers. Then finish the order with Lulu, which prints and ships it.",
+          "Both take the cover as its own file. Upload the pages first, copy the cover dimensions and spine width the printer shows you into RecipePrinter, and download a cover made to those numbers. Then finish the order with the printer, which prints and ships it.",
         ],
-      },
-      {
-        heading: "With Blurb",
-        body:
-          "Blurb is another printer for professionally made books. RecipePrinter can prepare an 8 × 10 hardcover export for Blurb's PDF upload.",
-        afterBody:
-          "The cover is a separate file so it can match the dimensions Blurb gives you for that specific book. Enter them in RecipePrinter, download the cover, and finish the order with Blurb.",
       },
     ],
     faqHeading: "Cookbook printing questions",
@@ -3100,12 +3116,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Preserve the original recipe card and make a clean copy",
-        image: "inline-editing",
-        imageAlt: "A handwritten recipe converted into editable recipe text in RecipePrinter.",
         body:
           "The original handwritten card is part of the family history, so you don't have to replace it. Keep the original safely stored while RecipePrinter creates an editable version you can correct, print, and cook from.",
         afterBody:
           "This is especially useful for faded measurements, hard-to-read handwriting, or cards that are becoming too fragile for everyday use.",
+        image: "handwritten-to-printed",
       },
       {
         heading: "Combine recipes from different generations",
@@ -3118,10 +3133,9 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Keep the handwriting without cooking from the fragile original",
-        image: "handwritten-card",
-        imageAlt: "An original handwritten recipe card preserved beside its floral recipe box.",
         body:
           "For recipes with meaningful handwriting, notes, stains, or corrections, keep a photo of the original card with the recipe when appropriate. That way the cookbook can preserve the look and history of the recipe while still giving you readable ingredients and instructions.",
+        image: "handwritten-card-in-book",
       },
       {
         heading: "Keep updating the family cookbook over time",
@@ -3365,7 +3379,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     layout: "capture-first",
     // Not `bound-cookbook`, which opens /cookbook-maker: the cover, titled for
     // one family, is the gift.
-    heroImage: "cookbook-cover",
+    heroImage: "cookbook-cover-wide",
     heroImageAlt: "A printed homemade cookbook titled Our Family Cookbook, ready to give as a gift.",
     importSubmitLabel: "Start a cookbook",
     title: "Homemade Cookbook Gift | Make a Personalized Recipe Book",
@@ -3696,7 +3710,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "What to put in a Christmas family recipe book",
-        image: "cookbook-cover",
+        image: "cookbook-cover-wide",
         body:
           "Include the recipes people expect at Christmas, but don't limit the book to holiday food. Everyday family favorites, handwritten recipes from relatives, birthday dishes, baking recipes, and meals connected to family memories can make the gift more useful all year.",
         afterBody:
@@ -3815,12 +3829,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     featureSections: [
       {
         heading: "Handwriting becomes a typed recipe",
-        image: "inline-editing",
         body:
           "Every guest writes differently. RecipePrinter can turn handwritten recipes into clean, editable text, so you don't have to retype every ingredient and step yourself.",
         afterBody:
           "Read it through with the original card beside you, and change anything you want right on the page.",
         links: [{ phrase: "handwritten recipes", href: "/handwritten-recipes-to-cookbook" }],
+        image: "handwritten-to-printed",
       },
       {
         heading: "A cookbook made for the two of them",

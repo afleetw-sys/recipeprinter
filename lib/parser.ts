@@ -280,7 +280,7 @@ function classifyError(
     const imageLimit = imageLimitDetails(err);
     if (imageLimit) return new ImportError(imageLimitMessage(imageLimit), "rate_limited");
     return new ImportError(
-      "You've hit the import limit for now. Wait a little while and try again.",
+      "That's a lot of imports in one hour. Try again in a few minutes.",
       "rate_limited",
     );
   }
@@ -619,7 +619,7 @@ export async function parseImages(images: string[]): Promise<Recipe[]> {
   } catch (err) {
     throw friendlyError(
       err,
-      "We couldn't read a complete recipe from those photos. Make sure the title, ingredients, and directions are visible.",
+      "We couldn't read a complete recipe from those photos. Make sure the title, ingredients, and steps are visible.",
     );
   }
 }

@@ -300,7 +300,7 @@ describe("parseText — CookPilot reads the paste", () => {
       }),
     );
 
-    await expect(parseText(PASTE)).rejects.toThrow(/import limit/i);
+    await expect(parseText(PASTE)).rejects.toMatchObject({ code: "rate_limited" });
   });
 
   it("sends the text with fractions normalized", async () => {

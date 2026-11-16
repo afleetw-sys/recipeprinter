@@ -199,15 +199,11 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
       "A finished hardcover family cookbook lying open on a counter, a full-page photo facing the typed recipe.",
   },
   "printed-cookbook": {
-    src: "/images/printed-cards/cookbook.jpeg",
-    width: 1333,
-    height: 2000,
+    src: "/images/printed-cards/cookbook-wide.jpg",
+    width: 2400,
+    height: 1600,
     alt:
       "A finished spiral-bound cookbook open to a Greek chicken souvlaki recipe and full-page food photograph.",
-    // Portrait in a 3:2 slot: about 44% of the height shows. Higher than centre
-    // so the recipe's title stays in, with the first plate beside it; lower
-    // cut the title off and sat on the plates.
-    objectPosition: "50% 38%",
   },
   // The same cover, whole, on a paper-coloured backdrop at 3:2, for the
   // feature slots that crop the portrait original top and bottom.
@@ -232,7 +228,7 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     width: 1600,
     height: 957,
     alt:
-      "A CookPilot library of 64 recipes open in RecipePrinter, with recipes being added to the print queue alongside.",
+      "A CookPilot library of 64 recipes open in RecipePrinter, with recipes being added to the pages alongside.",
   },
   "inline-editing": {
     src: "/images/inline-editing.png",
@@ -300,6 +296,56 @@ export const FEATURE_IMAGES: Record<string, ProofImage> = {
     height: 1520,
     alt:
       "The same recipe two ways: a 26-page stack printed from the browser, beside one card printed from RecipePrinter.",
+  },
+  // A RecipePrinter cookbook printed at home on US Letter and filed in a
+  // 3-ring binder, in sheet protectors. The originals are portrait phone
+  // shots, which a 3:2 slot crops to a band across one page, so these are
+  // 3:2 versions made from them: the cover's table extended sideways (the
+  // binder keeps its own cut at the right edge), and the close-ups, whose
+  // subject runs off both sides, whole on the paper backdrop that
+  // `cookbook-cover-wide` uses.
+  "binder-cover": {
+    src: "/images/binder/binder-cover-wide.jpg",
+    width: 2400,
+    height: 1600,
+    alt: "A white 3-ring binder with a printed Our Family Cookbook cover, a collage of home-cooked dishes, slipped into its front sleeve.",
+    // The binder sits at the right edge, so a 4:3 hero trims from the left.
+    objectPosition: "100% 50%",
+  },
+  "binder-section-page": {
+    src: "/images/binder/binder-section-page-wide.jpg",
+    width: 2400,
+    height: 1600,
+    alt: "An open recipe binder at its Appetizers section page, listing Best Ever Guacamole, Italian Bruschetta, and 4 more recipes.",
+  },
+  "binder-recipe": {
+    src: "/images/binder/binder-recipe-wide.jpg",
+    width: 2400,
+    height: 1600,
+    alt: "An open recipe binder with a full-page bruschetta photo facing the printed Italian Bruschetta recipe, each in a sheet protector.",
+  },
+  // A handwritten family card beside the page RecipePrinter printed from it,
+  // the same recipe both ways. Whole, on the paper backdrop, at 3:2.
+  "handwritten-to-printed": {
+    src: "/images/handwritten/oatmeal-card-and-page-wide.jpg",
+    width: 2400,
+    height: 1600,
+    alt: "Mom's handwritten Matthew's Oatmeal Cookies card lying on the spiral-bound cookbook page RecipePrinter printed from it.",
+  },
+  // A cookbook spread with a photo of the handwritten card printed facing the
+  // typed recipe, and the original card beside the book. Whole, on the
+  // paper backdrop, at 3:2.
+  "handwritten-card-in-book": {
+    src: "/images/handwritten/chocolate-cake-card-spread-wide.jpg",
+    width: 2400,
+    height: 1600,
+    alt: "A spiral-bound cookbook open to Mom's McCoy's Chocolate Cake, with a photo of the handwritten card facing the typed recipe and the original card beside the book.",
+  },
+  "spiral-and-binder": {
+    src: "/images/binder/spiral-and-binder.jpg",
+    width: 2000,
+    height: 1333,
+    alt: "The same family cookbook two ways: spiral-bound from a print shop, and printed at home in a 3-ring binder.",
   },
   "caprese-card-board": {
     src: "/images/printed-cards/caprese-salad.jpeg",

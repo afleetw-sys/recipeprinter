@@ -54,7 +54,7 @@ const FAQS = [
   },
   {
     question: "What's the difference between Pro and a cookbook?",
-    answer: `Pro is a subscription for everyday printing: 4×6 cards, premium themes, and printing in batches. You can preview a cookbook with up to ${FREE_COOKBOOK_RECIPES} recipes free; ${COOKBOOK_PRICE_FALLBACK} per cookbook, paid once, lets you download or print it and add more recipes. You don't need Pro to buy one, and Pro members get 20% off their first cookbook.`,
+    answer: `Pro is a subscription for everyday printing: 4×6 cards, premium themes, and a way to print several recipes at once. You can preview a cookbook with up to ${FREE_COOKBOOK_RECIPES} recipes free; ${COOKBOOK_PRICE_FALLBACK} per cookbook, paid once, lets you download or print it and add more recipes. You don't need Pro to buy one, and Pro members get 20% off their first cookbook.`,
   },
   {
     question: "Do I need an account?",
@@ -116,7 +116,7 @@ export default function PricingPage() {
         <LandingHero
           align="centered"
           h1="Pricing"
-          lede="Printing full-page recipes is free. Pro adds 4×6 cards, premium themes, and printing in batches. Each cookbook is a separate purchase, paid once."
+          lede="Printing full-page recipes is free. Pro adds 4×6 cards, premium themes, and a way to print several recipes at once. Each cookbook is a separate purchase, paid once."
           above={<Breadcrumb trail={TRAIL} />}
         />
 
@@ -142,7 +142,7 @@ export default function PricingPage() {
               {PRO_MONTHLY_PRICE_FALLBACK} or {PRO_ANNUAL_PRICE_FALLBACK}
             </p>
             <p className="text-cp-small text-ink-soft">
-              Annual saves {proAnnualSavingsPercent()}%. Cancel any time.
+              Annual saves {proAnnualSavingsPercent()}%. Cancel any time from Settings.
             </p>
             <PlanList items={PRO_BENEFITS} />
             <div className="mt-cp-6">

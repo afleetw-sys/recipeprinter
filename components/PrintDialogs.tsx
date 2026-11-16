@@ -93,7 +93,7 @@ export function PrintDialogs({
                   onOpenFeedbackDialog();
                 }}
               >
-                Share feedback
+                Give feedback
               </button>
             </div>
       </Dialog>

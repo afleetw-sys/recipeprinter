@@ -73,7 +73,7 @@ export function ProUpgradeDialog({
   body,
   highlights = GENERIC_COPY.highlights,
   more = GENERIC_COPY.more,
-  ctaLabel = "Unlock Pro and continue",
+  ctaLabel = "Get Pro and continue",
   referralChoice,
 }: {
   onClose: () => void;
@@ -277,7 +277,7 @@ export function ProUpgradeDialog({
             <h2 id="pro-upgrade-title" className="text-cp-dialog-title font-extrabold tracking-tight">
               Not upgrading today?
             </h2>
-            <p className="mt-1 text-cp-body text-ink-soft">Tell us why in one tap. It helps us make RecipePrinter better.</p>
+            <p className="mt-1 text-cp-body text-ink-soft">Tell me why in one tap. It helps me make RecipePrinter better.</p>
           </div>
           <div className="flex flex-col gap-cp-2">
             {DECLINE_REASONS.map(({ reason, label }) => (
@@ -413,7 +413,7 @@ export function ProUpgradeDialog({
           >
             {ctaLabel}
           </button>
-          <p className="text-cp-label text-ink-soft text-center">Cancel anytime from your account settings page.</p>
+          <p className="text-cp-label text-ink-soft text-center">Cancel any time from Settings.</p>
         </>
       ) : (
         <>
