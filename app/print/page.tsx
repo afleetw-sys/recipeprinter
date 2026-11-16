@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SAVE_FAILURES, SAVE_STATUS_LABEL } from "@/components/AccountControl";
+import { SignInToSaveHint } from "@/components/print/SignInToSaveHint";
 import type { AccountSaveStatus } from "@/components/AccountControl";
 import { FeedbackDialog } from "@/components/FeedbackButton";
 import { StrugglePrompt } from "@/components/StrugglePrompt";
@@ -373,6 +374,9 @@ function removeLabelFor(page: NavItem): string {
           : "Remove cover";
   }
 }
+
+/** A signed-out cookbook with more recipes than this gets the sign-in pointer. */
+const SIGN_IN_HINT_AFTER_RECIPES = 3;
 
 export default function PrintPage() {
   useEffect(() => {
@@ -7492,7 +7496,11 @@ export default function PrintPage() {
                 {cookbookMode && renderSaveControl("header")}
                 {historyControls("header")}
                 {!cookbookMode && renderSaveControl("header")}
-                {renderSaveMenu("header")}
+                {/* Only while there is something to save: once it's saving or
+                    saved, the state beside it already says so, and the menu
+                    would hold nothing else. Phones keep theirs (no room for
+                    the state in the bar). */}
+                {saveStatus !== "saving" && !savedToProfile && renderSaveMenu("header")}
 
                 {/* Print is always here, as it is on a phone's bottom bar:
                     the page is for printing, and a button that appears only
@@ -8465,6 +8473,20 @@ export default function PrintPage() {
           track("cookbook_printer_clicked", { printer, preset: activePreset.id });
           window.open(url, "_blank", "noopener,noreferrer");
         }}
+      />
+      {/* More than three recipes in a book nobody has signed in to keep: point
+          at the avatar once, dismissable. Not over a dialog or the build. */}
+      <SignInToSaveHint
+        show={
+          cookbookMode &&
+          cookPilotAuthReady &&
+          !cookPilotUser &&
+          (items?.filter((item) => isRecipeEntry(item) && Boolean(item.recipe)).length ?? 0) > SIGN_IN_HINT_AFTER_RECIPES &&
+          !cookbookBuilding &&
+          !showCookbookOfferDialog &&
+          !showAddRecipeDialog &&
+          !showCookPilotLogin
+        }
       />
       <AddRecipeDialog
         open={showAddRecipeDialog}
