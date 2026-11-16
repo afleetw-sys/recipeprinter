@@ -1732,12 +1732,12 @@
      plan's price under it, rather than two tiles that read as two buttons.
      One CTA below commits whichever plan is selected. */
   .pro-plan-save-tag {
-    padding: 2px 7px;
+    padding: 1px 6px;
     border-radius: 999px;
     background: var(--cp-accent-soft);
     color: var(--cp-ink);
     font-size: var(--cp-fs-caption);
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1.3;
   }
   .pro-plan-price {
@@ -1838,27 +1838,28 @@
   }
 
   /* Base look for the shared Pro indicator (components/ProBadge.tsx) — one
-  /* Full-width tab bar: a recessed track with a raised card thumb, the
-     same shape as the print panel's Design/Edit tabs. */
+  /* Quiet tab pair for the Pro dialog's plans: a small, faint track sized
+     to its labels and centered, so the price under it is what reads first
+     (Amelia, 2026-11-16: the full-width bar was too loud). */
   .segmented-control--tabs {
-    display: flex;
-    width: 100%;
-    padding: 3px;
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--cp-ink) 5%, var(--cp-card));
+    display: inline-flex;
+    align-self: center;
+    padding: 2px;
+    border-radius: 999px;
+    background: var(--cp-surface-muted);
   }
   .segmented-control--tabs .segmented-control__thumb {
-    top: 3px;
-    bottom: 3px;
+    top: 2px;
+    bottom: 2px;
     border: 1px solid var(--cp-line);
-    border-radius: 9px;
+    border-radius: 999px;
     background: var(--cp-card);
   }
   .segmented-control--tabs .segmented-control__option {
-    flex: 1 1 0;
-    justify-content: center;
-    padding: 8px 12px;
-    border-radius: 9px;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: var(--cp-fs-label);
+    font-weight: 600;
   }
   .segmented-control--tabs .segmented-control__option:not(.is-active) {
     color: var(--cp-ink-soft);
