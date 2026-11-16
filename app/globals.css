@@ -1727,69 +1727,30 @@
     outline-offset: var(--cp-focus-ring-offset);
   }
 
-  /* The two plan tiles in components/ProUpgradeDialog.tsx — a `SelectTile`
-     radiogroup like every other single-select control in the app (Selected
-     and focus state convention: shared --cp-selected-... and --cp-focus-ring
-     tokens, applied via `.select-tile.is-active` once a tile is selected),
-     not a pair of independent "Continue with X" actions. One CTA below the
-     pair commits whichever plan is currently selected. Monthly is the full
-     card and the default; Annual is the same card shape at roughly half the size
-     (name over "price · saving") so it stays a plan without competing.
-     Whichever plan is selected wears the full card (and `.is-active`'s blue),
-     the other collapses to `--compact`, so choosing Annual swaps the two. */
-  .pro-plan-card {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 10px 14px;
-    border: 1px solid var(--cp-line);
-    border-radius: 12px;
-    line-height: 1.4;
-    /* The size swap between selected and `--compact` animates: height isn't
-       transitioned itself, it follows the padding/gap/type that are, so the
-       two tiles trade sizes in step and the dialog never changes height. */
-    transition:
-      border-color 150ms ease,
-      background-color 150ms ease,
-      box-shadow 150ms ease,
-      padding 200ms ease,
-      gap 200ms ease,
-      line-height 200ms ease;
+  /* Pro dialog's plan picker (components/ProUpgradeDialog.tsx): an
+     Annual/Monthly toggle (`.segmented-control--tabs`) with the chosen
+     plan's price under it, rather than two tiles that read as two buttons.
+     One CTA below commits whichever plan is selected. */
+  .pro-plan-save-tag {
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--cp-accent-soft);
+    color: var(--cp-ink);
+    font-size: var(--cp-fs-caption);
+    font-weight: 700;
+    line-height: 1.3;
   }
-  .pro-plan-card__name,
-  .pro-plan-card__price {
-    transition:
-      font-size 200ms ease,
-      font-weight 200ms ease;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .pro-plan-card,
-    .pro-plan-card__name,
-    .pro-plan-card__price {
-      transition: none;
-    }
-  }
-  .pro-plan-card__row {
+  .pro-plan-price {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 2px;
+    text-align: center;
   }
-  .pro-plan-card__name {
-    font-weight: 700;
-  }
-  .pro-plan-card__price {
-    font-size: var(--cp-fs-body);
+  .pro-plan-price__amount {
+    font-size: var(--cp-fs-dialog-title);
     font-weight: 800;
-  }
-  .pro-plan-card--compact {
-    gap: 0;
-    padding: 6px 14px;
-    line-height: 1.25;
-  }
-  .pro-plan-card--compact .pro-plan-card__name,
-  .pro-plan-card--compact .pro-plan-card__price {
-    font-size: var(--cp-fs-label);
-    font-weight: 600;
+    line-height: 1.2;
+    color: var(--cp-ink);
   }
   .pro-plan-card__note {
     color: var(--cp-ink-soft);
@@ -1877,6 +1838,35 @@
   }
 
   /* Base look for the shared Pro indicator (components/ProBadge.tsx) — one
+  /* Full-width tab bar: a recessed track with a raised card thumb, the
+     same shape as the print panel's Design/Edit tabs. */
+  .segmented-control--tabs {
+    display: flex;
+    width: 100%;
+    padding: 3px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--cp-ink) 5%, var(--cp-card));
+  }
+  .segmented-control--tabs .segmented-control__thumb {
+    top: 3px;
+    bottom: 3px;
+    border: 1px solid var(--cp-line);
+    border-radius: 9px;
+    background: var(--cp-card);
+  }
+  .segmented-control--tabs .segmented-control__option {
+    flex: 1 1 0;
+    justify-content: center;
+    padding: 8px 12px;
+    border-radius: 9px;
+  }
+  .segmented-control--tabs .segmented-control__option:not(.is-active) {
+    color: var(--cp-ink-soft);
+  }
+  .segmented-control--tabs .segmented-control__option:not(.is-active):hover {
+    color: var(--cp-ink);
+  }
+
      consistent "requires Pro" treatment (themes, card sizes, Add more
      recipes, the /account Plan section, any future gated control), so no
      surface invents its own crown styling. Used to live only in

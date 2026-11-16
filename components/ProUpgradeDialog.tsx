@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { Dialog } from "@/components/Dialog";
-import { SelectTile } from "@/components/Controls";
+import { SegmentedControl } from "@/components/Controls";
 import { CookPilotLoginForm } from "@/components/CookPilotAuth";
 import { CheckIcon, CrownIcon, ICON_SIZE, PlusIcon, XIcon } from "@/components/icons";
 import { track, type ProDeclineReason } from "@/lib/analytics";
@@ -384,37 +384,34 @@ export function ProUpgradeDialog({
             )}
           </ul>
 
-          <div className="flex flex-col gap-cp-2" role="radiogroup" aria-label="Billing plan">
-            {PRO_PLAN_CYCLES.map((cycle) => {
-              const selected = selectedCycle === cycle;
-              return (
-                <SelectTile
-                  key={cycle}
-                  selected={selected}
-                  className={selected ? "pro-plan-card" : "pro-plan-card pro-plan-card--compact"}
-                >
-                  <input
-                    type="radio"
-                    name="pro-cycle"
-                    className="sr-only"
-                    checked={selected}
-                    onChange={() => selectCycle(cycle)}
-                  />
-                  <div className="pro-plan-card__row">
-                    <span className="pro-plan-card__name">{PRO_CYCLE_LABEL[cycle]}</span>
-                  </div>
-                  <p className="pro-plan-card__price">
-                    {cyclePrice(cycle)}
-                    {cycle === "annual" && (
-                      <span className="pro-plan-card__note"> · Save {savingsPercent}%</span>
-                    )}
-                  </p>
-                  {cycle === "annual" && (
-                    <p className="text-cp-label font-normal text-ink-soft">{billedYearly}</p>
-                  )}
-                </SelectTile>
-              );
-            })}
+          {/* One toggle and one price (Amelia, 2026-11-16): the two plans
+              were two big tiles that read as two buttons. The default plan
+              is the first tab. */}
+          <div className="flex flex-col gap-cp-2">
+            <SegmentedControl
+              label="Billing plan"
+              className="segmented-control--tabs"
+              value={selectedCycle}
+              onChange={selectCycle}
+              options={PRO_PLAN_CYCLES.map((cycle) => ({
+                id: cycle,
+                label:
+                  cycle === "annual" ? (
+                    <>
+                      {PRO_CYCLE_LABEL[cycle]}
+                      <span className="pro-plan-save-tag">Save {savingsPercent}%</span>
+                    </>
+                  ) : (
+                    PRO_CYCLE_LABEL[cycle]
+                  ),
+              }))}
+            />
+            <div className="pro-plan-price" aria-live="polite">
+              <p className="pro-plan-price__amount">{cyclePrice(selectedCycle)}</p>
+              <p className="text-cp-label text-ink-soft">
+                {selectedCycle === "annual" ? billedYearly : "Billed monthly"}
+              </p>
+            </div>
           </div>
           <button
             type="button"
