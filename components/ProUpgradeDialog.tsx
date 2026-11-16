@@ -192,7 +192,7 @@ export function ProUpgradeDialog({
   }
 
   const closeDisabled = busy || formBusy;
-  const { label: price, annualSavingsPercent: savingsPercent, annualPerMonth, annualTotal } = useVisitorPrices();
+  const { label: price, annualPerMonth, annualTotal } = useVisitorPrices();
   // Annual reads as a monthly figure, so the two plans compare like for like,
   // and always says what it charges once a year right beside it.
   const cyclePrice = (cycle: ProBillingCycle) =>
@@ -399,7 +399,7 @@ export function ProUpgradeDialog({
                   cycle === "annual" ? (
                     <>
                       {PRO_CYCLE_LABEL[cycle]}
-                      <span className="pro-plan-save-tag">Save {savingsPercent}%</span>
+                      <span className="pro-plan-save-tag">Save more</span>
                     </>
                   ) : (
                     PRO_CYCLE_LABEL[cycle]
