@@ -387,7 +387,7 @@ export function ProUpgradeDialog({
           {/* One toggle and one price (Amelia, 2026-11-16): the two plans
               were two big tiles that read as two buttons. The default plan
               is the first tab. */}
-          <div className="flex flex-col gap-cp-2">
+          <div className="flex flex-col gap-cp-4">
             <SegmentedControl
               label="Billing plan"
               className="segmented-control--tabs"
