@@ -71,10 +71,18 @@ export function FreePlanCards({
                 setBillingCycle(cycle);
                 track("pro_plan_selected", { cycle });
               }}
-              options={[
-                { id: "monthly", label: "Monthly" },
-                { id: "annual", label: "Annual" },
-              ]}
+              // The default plan first (Amelia, 2026-11-16).
+              options={
+                DEFAULT_PRO_CYCLE === "annual"
+                  ? [
+                      { id: "annual", label: "Annual" },
+                      { id: "monthly", label: "Monthly" },
+                    ]
+                  : [
+                      { id: "monthly", label: "Monthly" },
+                      { id: "annual", label: "Annual" },
+                    ]
+              }
             />
           </div>
           {billingCycle === "annual" ? (

@@ -29,8 +29,10 @@ const PRO_CYCLE_LABEL: Record<ProBillingCycle, string> = {
   monthly: "Monthly",
 };
 
-// Display order of the plan tiles — Monthly always first, whichever is selected.
-const PRO_PLAN_CYCLES: ProBillingCycle[] = ["monthly", "annual"];
+// Display order of the plan tiles: the default plan first, the other under it
+// (Amelia, 2026-11-16). The order stays put when the cook picks the other one.
+const PRO_PLAN_CYCLES: ProBillingCycle[] =
+  DEFAULT_PRO_CYCLE === "annual" ? ["annual", "monthly"] : ["monthly", "annual"];
 
 /** The one-tap answers to "Not upgrading today?", in display order. */
 const DECLINE_REASONS: { reason: ProDeclineReason; label: string }[] = [
