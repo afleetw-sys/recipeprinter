@@ -10,7 +10,6 @@
 
 import type { Metadata } from "next";
 import { FREE_COOKBOOK_RECIPES, FREE_IMPORTS_PER_WINDOW, FREE_IMPORT_WINDOW_DAYS } from "@/lib/freeImports";
-import { IMAGE_IMPORTS_PER_HOUR_PRO } from "@/lib/imageImportQuota";
 
 /**
  * Canonical production origin. Override with NEXT_PUBLIC_SITE_URL in the
@@ -399,7 +398,7 @@ export const FAQ: FaqItem[] = [
     question: "Is RecipePrinter free?",
     group: "account",
     answer:
-      `Yes. You get ${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days, with no account required, and you can edit and print full-page recipes, one at a time, with two free themes, as often as you like. RecipePrinter Pro is optional: it adds unlimited link and text imports, up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photo imports an hour, 4×6 recipe cards, every theme, Customize theme, and printing several recipes at once for $4.99 a month or $39.99 a year. Making a cookbook? You can preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes; $19.99 per cookbook lets you download or print it and add more recipes.`,
+      `Yes. You get ${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days, with no account required, and you can edit and print full-page recipes, one at a time, with two free themes, as often as you like. RecipePrinter Pro is optional: it adds unlimited imports, 4×6 recipe cards, every theme, Customize theme, and printing several recipes at once for $4.99 a month or $39.99 a year. Making a cookbook? You can preview it free with up to ${FREE_COOKBOOK_RECIPES} recipes; $19.99 per cookbook lets you download or print it and add more recipes.`,
   },
   {
     question: "Is RecipePrinter a recipe app?",
@@ -499,7 +498,7 @@ export function webApplicationNode() {
       {
         "@type": "Offer",
         name: "RecipePrinter Pro",
-        description: `Unlimited link and text imports, up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photo imports an hour, every theme, 4×6 cards, and a way to print several recipes at once`,
+        description: `Unlimited imports, every theme, 4×6 cards, and a way to print several recipes at once`,
         priceCurrency: "USD",
         priceSpecification: [
           {

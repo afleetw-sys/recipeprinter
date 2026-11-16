@@ -7,7 +7,6 @@ import { FaqCards } from "@/components/seo/FaqCards";
 import { PricingProButton } from "@/components/seo/PricingProButton";
 import { COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 import { FREE_COOKBOOK_RECIPES } from "@/lib/freeImports";
-import { IMAGE_IMPORTS_PER_HOUR_PRO } from "@/lib/imageImportQuota";
 import {
   PRO_ANNUAL_PRICE_FALLBACK,
   PRO_MONTHLY_PRICE_FALLBACK,
@@ -50,7 +49,7 @@ const FAQS = [
   {
     question: "Do I need Pro to print recipes?",
     answer:
-      `No. Printing or saving full-page recipes is free, with no account and 10 free recipe imports every 30 days. Pro adds unlimited link and text imports, up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photo imports an hour, 4×6 recipe cards, premium themes, Customize theme, and printing several recipes in one job.`,
+      `No. Printing or saving full-page recipes is free, with no account and 10 free recipe imports every 30 days. Pro adds unlimited imports, 4×6 recipe cards, premium themes, Customize theme, and printing several recipes in one job.`,
   },
   {
     question: "What's the difference between Pro and a cookbook?",

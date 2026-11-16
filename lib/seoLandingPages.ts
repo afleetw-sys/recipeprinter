@@ -766,7 +766,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print multiple recipes at once for free?",
         answer:
-          `You can print recipes one at a time for free, as often as you like, with ${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days. Printing several together as one collection is part of RecipePrinter Pro, which also includes unlimited link and text imports.`,
+          `You can print recipes one at a time for free, as often as you like, with ${FREE_IMPORTS_PER_WINDOW} free recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days. Printing several together as one collection is part of RecipePrinter Pro, which also includes unlimited imports.`,
       },
       {
         question: "Can I print recipes from different websites, screenshots, and recipe apps together?",
@@ -1922,7 +1922,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         question: "Does it cost anything?",
-        answer: `The basics are free with no account: ${FREE_IMPORTS_PER_WINDOW} recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days, editing them, and printing or saving full-page recipes. RecipePrinter Pro (${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}) adds unlimited link and text imports, 4×6 recipe cards, premium themes, and printing several recipes at once.`,
+        answer: `The basics are free with no account: ${FREE_IMPORTS_PER_WINDOW} recipe imports every ${FREE_IMPORT_WINDOW_DAYS} days, editing them, and printing or saving full-page recipes. RecipePrinter Pro (${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}) adds unlimited imports, 4×6 recipe cards, premium themes, and printing several recipes at once.`,
       },
     ],
     links: [
