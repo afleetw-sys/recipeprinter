@@ -62,7 +62,7 @@ export function CookbookIntro({ busy, onStart }: { busy: boolean; onStart: () =>
         <p className="rp-cookbook-page__price text-cp-small text-ink-soft">
           <b className="font-semibold text-ink">
             {local(discounted ? COOKBOOK_DISCOUNT_PRICE_FALLBACK : COOKBOOK_PRICE_FALLBACK)} per cookbook
-            {discounted && " with Pro"}, paid once.
+            {discounted && " with Pro"}.
           </b>{" "}
           <span>{PREVIEW_RULE}</span>
         </p>

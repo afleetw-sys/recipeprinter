@@ -2273,7 +2273,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How much does a recipe binder cost?",
         answer:
-          `Previewing is free with up to ${FREE_COOKBOOK_RECIPES} recipes. ${COOKBOOK_PRICE_FALLBACK} for that binder, paid once, lets you download it and add more than ${FREE_COOKBOOK_RECIPES} recipes. After that, add recipes and download updated copies anytime at no extra cost. You don't need RecipePrinter Pro.`,
+          `Previewing is free with up to ${FREE_COOKBOOK_RECIPES} recipes. ${COOKBOOK_PRICE_FALLBACK} for that binder lets you download it and add more than ${FREE_COOKBOOK_RECIPES} recipes. After that, add recipes and download updated copies anytime at no extra cost. You don't need RecipePrinter Pro.`,
       },
       {
         question: "Can I make a recipe binder for free?",
@@ -2404,7 +2404,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     cookbookPitch: true,
     cookbookPitchHeading: "Turn handwritten family recipes into a cookbook",
     cookbookPitchBody:
-      "Once you have digitized the recipes worth keeping, you can bring them together into a family cookbook. Organize them into chapters, add a cover and table of contents, and preview up to 10 recipes free. A separate purchase for that cookbook, paid once, lets you download or print it and add more recipes.",
+      "Once you have digitized the recipes worth keeping, you can bring them together into a family cookbook. Organize them into chapters, add a cover and table of contents, and preview up to 10 recipes free. A separate purchase for that cookbook lets you download or print it and add more recipes.",
     faqHeading: "Recipe card digitizing questions",
     faqs: [
       {
@@ -2625,7 +2625,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I get copies for everyone in the family?",
         answer:
-          "Download the PDF once and print as many copies as you need, at home or through a print shop. You pay once per cookbook, not per copy.",
+          "Download the PDF once and print as many copies as you need, at home or through a print shop. The price is per cookbook, not per copy.",
       },
       {
         question: "Can other people in the family add theirs?",
@@ -2645,7 +2645,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "What does a cookbook cost?",
         answer:
-          "You can preview a cookbook with up to 10 recipes free. $19.99 per cookbook, paid once, lets you download or print it, add more than 10 recipes, and keep editing that cookbook. Paper, ink, professional printing, and binding cost extra.",
+          "You can preview a cookbook with up to 10 recipes free. $19.99 per cookbook lets you download or print it, add more than 10 recipes, and keep editing that cookbook. Paper, ink, professional printing, and binding cost extra.",
       },
     ],
     links: [
@@ -3043,7 +3043,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         question: "How much does it cost?",
-        answer: `There are two costs. Exporting the cookbook from RecipePrinter is ${COOKBOOK_PRICE_FALLBACK}, paid once per cookbook. Printing is separate and depends on where you print, the binding, page count, paper, and number of copies.`,
+        answer: `There are two costs. Exporting the cookbook from RecipePrinter is ${COOKBOOK_PRICE_FALLBACK} per cookbook. Printing is separate and depends on where you print, the binding, page count, paper, and number of copies.`,
       },
       {
         question: "Can I print more copies later, or fix something first?",
@@ -3142,7 +3142,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         image: "bound-cookbook",
         imageAlt: "A finished family cookbook made from collected recipes.",
         body:
-          "You can preview a cookbook with up to 10 recipes free. $19.99 per cookbook, paid once, lets you download or print it, add more than 10 recipes, and keep editing, correcting, rearranging, and exporting that cookbook later.",
+          "You can preview a cookbook with up to 10 recipes free. $19.99 per cookbook lets you download or print it, add more than 10 recipes, and keep editing, correcting, rearranging, and exporting that cookbook later.",
       },
     ],
     faqHeading: "Handwritten recipe cookbook questions",
@@ -3705,7 +3705,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "RecipePrinter creates the finished cookbook PDF instead of manufacturing or shipping a physical book. That means there's no RecipePrinter production queue or shipping cutoff.",
         afterBody: [
           "You can print the PDF at home or send it to a professional printing service. If you plan to use an outside printer, check that company's current holiday production and delivery schedule.",
-          "You can preview a cookbook with up to 10 recipes free. $19.99 per cookbook, paid once, lets you download or print it, add more than 10 recipes, and keep editing and exporting that cookbook later.",
+          "You can preview a cookbook with up to 10 recipes free. $19.99 per cookbook lets you download or print it, add more than 10 recipes, and keep editing and exporting that cookbook later.",
         ],
       },
       {
@@ -3885,7 +3885,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         question: "How much does it cost?",
-        answer: `You can preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. ${COOKBOOK_PRICE_FALLBACK} per cookbook, paid once, lets you download or print it or add more than ${FREE_COOKBOOK_RECIPES} recipes, and it doesn't need RecipePrinter Pro. Printing and binding are paid to your printer.`,
+        answer: `You can preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. ${COOKBOOK_PRICE_FALLBACK} per cookbook lets you download or print it or add more than ${FREE_COOKBOOK_RECIPES} recipes, and it doesn't need RecipePrinter Pro. Printing and binding are paid to your printer.`,
       },
       {
         question: "Can I give everyone at the shower a copy?",
@@ -4241,7 +4241,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         question: "What does each one cost?",
-        answer: `Canva has a free plan and paid Canva Pro plans; current pricing is on Canva's site. RecipePrinter prints full-page recipes free, with no account. 4×6 cards, premium themes, and printing several recipes at once are RecipePrinter Pro, ${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}. A cookbook is ${COOKBOOK_PRICE_FALLBACK}, paid once per cookbook.`,
+        answer: `Canva has a free plan and paid Canva Pro plans; current pricing is on Canva's site. RecipePrinter prints full-page recipes free, with no account. 4×6 cards, premium themes, and printing several recipes at once are RecipePrinter Pro, ${PRO_MONTHLY_PRICE_FALLBACK} or ${PRO_ANNUAL_PRICE_FALLBACK}. A cookbook is ${COOKBOOK_PRICE_FALLBACK} per cookbook.`,
       },
       {
         question: "Can I make a whole cookbook instead of single cards?",
