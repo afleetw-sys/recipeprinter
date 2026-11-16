@@ -32,9 +32,9 @@ const COOKBOOK_BENEFIT = "20% off your first cookbook";
 const NO_BRANDING_BENEFIT = "No RecipePrinter branding on your prints";
 // Free accounts get a monthly allowance of imports (lib/freeImports.ts, enforced
 // by CookPilot's import meter); Pro has none for links and text. Photo imports
-// stay paced by the hour on every plan, so the Pro line says so rather than
-// promising unlimited photos (Amelia, 2026-11-12).
-const UNLIMITED_IMPORTS_BENEFIT = `Unlimited link and text imports, and up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photos an hour`;
+// stay paced by the hour on every plan. The benefit line is the short
+// "Unlimited imports" all the same (Amelia, 2026-11-16).
+const UNLIMITED_IMPORTS_BENEFIT = "Unlimited imports";
 
 // What Free (the free tier) actually includes. Shared by /account and
 // /pricing, so the two cannot describe the free plan differently — and it's a lot, which the
