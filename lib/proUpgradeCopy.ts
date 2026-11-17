@@ -75,25 +75,18 @@ export const PRO_BENEFITS = [
   COOKBOOK_BENEFIT,
 ];
 
-// The upgrade dialog lists only a few of these up front, so the plans stay in
-// view, and keeps the rest behind "And more" (Amelia, 2026-11-02). These lead
-// whenever the trigger leaves room; /pricing and /account show every one.
-const HEADLINE_BENEFITS = PRO_BENEFITS.slice(0, 3);
-const SHORT_LIST_LENGTH = 3;
-
 /**
- * Splits the dialog's list: what opened it first, topped up with the headline
- * benefits, then the rest for "And more". A benefit the title or body already
- * says is left out of both, rather than said twice.
+ * The dialog's list: what opened it first, then every other benefit in
+ * PRO_BENEFITS order. The whole list shows, with no "And more" (Amelia,
+ * 2026-11-17). A benefit the title or body already says is left out, rather
+ * than said twice.
  */
-function splitBenefits(lead: string[], alreadySaid?: string): Pick<ProUpgradeCopy, "highlights" | "more"> {
+function splitBenefits(lead: string[], alreadySaid?: string): Pick<ProUpgradeCopy, "highlights"> {
   const highlights = lead.filter((benefit) => benefit !== alreadySaid);
-  for (const benefit of [...HEADLINE_BENEFITS, ...PRO_BENEFITS]) {
-    if (highlights.length >= SHORT_LIST_LENGTH) break;
+  for (const benefit of PRO_BENEFITS) {
     if (benefit !== alreadySaid && !highlights.includes(benefit)) highlights.push(benefit);
   }
-  const more = PRO_BENEFITS.filter((benefit) => benefit !== alreadySaid && !highlights.includes(benefit));
-  return { highlights, more };
+  return { highlights };
 }
 
 /** Opened from a photo import that hit the free hourly limit. */
@@ -202,14 +195,12 @@ export interface ProUpgradeCopy {
   body?: string;
   /** Every benefit, with whichever triggered the dialog first. */
   benefits: string[];
-  /** The few the dialog lists up front. */
+  /** What the dialog lists: every benefit the title doesn't already say. */
   highlights: string[];
-  /** The rest, behind "And more". */
-  more: string[];
   ctaLabel: string;
   /** Over the benefit list: "You'll also get" when the title names one feature. */
   listHeading: string;
-  /** The picture beside the pitch; more than one take turns. */
+  /** The picture beside the pitch; with several, the cook steps through them. */
   images: ProDialogImage[];
 }
 

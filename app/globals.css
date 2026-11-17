@@ -1801,6 +1801,34 @@
     outline: var(--cp-focus-ring);
     outline-offset: var(--cp-focus-ring-offset);
   }
+  /* Back and forward between the pictures: small discs at the middle of
+     each side, the same frosted card colour as the dots' pill. */
+  .pro-dialog-art__arrow {
+    position: absolute;
+    top: 50%;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--cp-card) 85%, transparent);
+    color: var(--cp-ink);
+    transform: translateY(-50%);
+    transition: background-color 120ms ease;
+  }
+  .pro-dialog-art__arrow:hover {
+    background: var(--cp-card);
+  }
+  .pro-dialog-art__arrow:focus-visible {
+    outline: var(--cp-focus-ring);
+    outline-offset: var(--cp-focus-ring-offset);
+  }
+  .pro-dialog-art__arrow--prev {
+    left: 10px;
+  }
+  .pro-dialog-art__arrow--next {
+    right: 10px;
+  }
   /* On the phone sheet the X sits over the picture band, where a bare glyph
      disappears: give it a disc there. Beside the picture on a computer it
      stays bare. */

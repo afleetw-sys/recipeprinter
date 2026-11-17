@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { Dialog } from "@/components/Dialog";
 import { CookPilotLoginForm } from "@/components/CookPilotAuth";
-import { CheckIcon, ICON_SIZE, PlusIcon, XIcon } from "@/components/icons";
+import { CheckIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import { track, type ProDeclineReason } from "@/lib/analytics";
 import {
   loadProDeclineAskedOnAccount,
@@ -75,7 +75,6 @@ export function ProUpgradeDialog({
   title = "Upgrade to RecipePrinter Pro",
   body,
   highlights = GENERIC_COPY.highlights,
-  more = GENERIC_COPY.more,
   ctaLabel = "Get Pro and continue",
   images = GENERIC_COPY.images,
   listHeading = GENERIC_COPY.listHeading,
@@ -96,12 +95,10 @@ export function ProUpgradeDialog({
   title?: string;
   /** Shown under the title when the trigger has something to explain. */
   body?: string;
-  /** The benefits listed up front, led by what opened this (`proUpgradeCopy`). */
+  /** Every benefit to list, led by what opened this (`proUpgradeCopy`). */
   highlights?: string[];
-  /** The rest of Pro, behind "And more". */
-  more?: string[];
   ctaLabel?: string;
-  /** The product picture beside the pitch (`proUpgradeCopy`); several take turns. */
+  /** The product picture beside the pitch (`proUpgradeCopy`); with several, arrows step through them. */
   images?: ProDialogImage[];
   /** Over the benefit list (`proUpgradeCopy`). */
   listHeading?: string;
@@ -113,7 +110,6 @@ export function ProUpgradeDialog({
   const [step, setStep] = useState<"choice" | "plan" | "signin" | "decline">(referralChoice ? "choice" : "plan");
   const [invited, setInvited] = useState<"copy" | "native_share" | null>(null);
   const [showLink, setShowLink] = useState(false);
-  const [showMore, setShowMore] = useState(false);
   // "Other" on the decline question: opens a box for the cook's own reason.
   const [otherOpen, setOtherOpen] = useState(false);
   const [otherText, setOtherText] = useState("");
@@ -369,26 +365,12 @@ export function ProUpgradeDialog({
           <div className="flex flex-col gap-cp-2">
             <p className="text-cp-small font-bold text-ink">{listHeading}</p>
             <ul className="flex flex-col gap-cp-1">
-              {(showMore ? [...highlights, ...more] : highlights).map((benefit) => (
+              {highlights.map((benefit) => (
                 <li key={benefit} className="flex items-start gap-cp-2 text-cp-body">
                   <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
                   {benefit}
                 </li>
               ))}
-              {!showMore && more.length > 0 && (
-                <li>
-                  {/* Opens the rest here: this is mid-checkout, and the
-                      pricing page would take the cook away from their work. */}
-                  <button
-                    type="button"
-                    className="flex items-start gap-cp-2 text-cp-body text-ink-soft hover:text-ink"
-                    onClick={() => setShowMore(true)}
-                  >
-                    <PlusIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                    And more
-                  </button>
-                </li>
-              )}
             </ul>
           </div>
 
