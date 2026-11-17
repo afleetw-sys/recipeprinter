@@ -98,12 +98,80 @@ export const MULTI_RECIPE_FOUND_TRIGGER = "multi_recipe_found";
 /** Opened by clicking the "Printed with RecipePrinter" line on a card. */
 export const REMOVE_BRANDING_TRIGGER = "remove_branding";
 
+// Each an invitation to the thing the cook just tried (Amelia, 2026-11-16).
 const TITLE_BY_REASON: Record<ProLockReason, string> = {
-  multi_recipe: "Print several recipes at once",
-  card_size: "Print 4×6 recipe cards",
-  theme: "Print with this premium theme",
-  font_size: "Customize any theme with Pro",
+  multi_recipe: "Ready to print several recipes at once?",
+  card_size: "Ready to print 4×6 recipe cards?",
+  theme: "Ready to use every theme?",
+  font_size: "Ready to customize your theme?",
 };
+
+/** A product picture beside the dialog's pitch: what the cook gets on paper,
+    not a copy of the screen behind the dialog. */
+export interface ProDialogImage {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  /** A mockup on a flat colour is shown whole on that colour, since cropping
+      it to the panel cuts off half of what it shows; a photo fills. */
+  backdrop?: string;
+}
+
+/** The flat blue behind the product mockups. */
+const MOCKUP_BLUE = "#3c71af";
+
+export const PRO_DIALOG_IMAGES = {
+  cards: {
+    src: "/images/recipe-card-in-box.jpg",
+    alt: "A printed basil pesto recipe card standing in a floral recipe tin",
+    width: 1448,
+    height: 1086,
+  },
+  themes: {
+    src: "/images/multi-themes.png",
+    alt: "One recipe printed in several different themes",
+    width: 2400,
+    height: 1520,
+    backdrop: MOCKUP_BLUE,
+  },
+  several: {
+    src: "/images/multi-recipes.png",
+    alt: "Several recipes printed together, one to a page",
+    width: 2400,
+    height: 1641,
+    backdrop: MOCKUP_BLUE,
+  },
+  collection: {
+    src: "/images/cards-on-counter.jpeg",
+    alt: "Printed recipe cards spread out beside a recipe box",
+    width: 1600,
+    height: 1200,
+  },
+  photo: {
+    src: "/images/screenshot-to-card.png",
+    alt: "A phone screenshot of a recipe turned into a printed recipe card",
+    width: 2400,
+    height: 1627,
+    backdrop: MOCKUP_BLUE,
+  },
+} satisfies Record<string, ProDialogImage>;
+
+const IMAGE_BY_REASON: Record<ProLockReason, ProDialogImage> = {
+  multi_recipe: PRO_DIALOG_IMAGES.several,
+  card_size: PRO_DIALOG_IMAGES.cards,
+  theme: PRO_DIALOG_IMAGES.themes,
+  font_size: PRO_DIALOG_IMAGES.themes,
+};
+
+/** Every picture, for an opening with no one feature to show: they take turns. */
+const ALL_DIALOG_IMAGES: ProDialogImage[] = [
+  PRO_DIALOG_IMAGES.cards,
+  PRO_DIALOG_IMAGES.themes,
+  PRO_DIALOG_IMAGES.several,
+  PRO_DIALOG_IMAGES.collection,
+  PRO_DIALOG_IMAGES.photo,
+];
 
 export interface ProUpgradeCopy {
   title: string;
@@ -117,6 +185,8 @@ export interface ProUpgradeCopy {
   /** The rest, behind "And more". */
   more: string[];
   ctaLabel: string;
+  /** The picture beside the pitch; more than one take turns. */
+  images: ProDialogImage[];
 }
 
 export const GENERIC_COPY: ProUpgradeCopy = {
@@ -124,6 +194,7 @@ export const GENERIC_COPY: ProUpgradeCopy = {
   benefits: PRO_BENEFITS,
   ...splitBenefits([]),
   ctaLabel: "Get Pro",
+  images: ALL_DIALOG_IMAGES,
 };
 
 /**
@@ -159,6 +230,7 @@ export function proUpgradeCopy(
       ),
       ...splitBenefits([BENEFIT_BY_REASON.multi_recipe]),
       ctaLabel: `Get Pro and add all ${found.count}`,
+      images: [PRO_DIALOG_IMAGES.several],
     };
   }
   if (trigger === IMPORT_LIMIT_TRIGGER) {
@@ -166,32 +238,39 @@ export function proUpgradeCopy(
       ? `Your free imports reset ${formatImportReturnDate(importUsage.nextFreeAt)}. `
       : "";
     return {
-      title: `You've used your ${importUsage?.limit ?? FREE_IMPORTS_PER_WINDOW} free imports`,
+      // An invitation, not "that's a lot": nobody should feel told off for
+      // using the app (Amelia, 2026-11-16).
+      title: "Ready for unlimited imports?",
       // Says what they still have before what they could buy: nothing they
       // made is locked, and waiting is a real option. Only when it's true: an
       // import sent from the homepage arrives on a fresh, empty project.
-      body: `${back}${hasRecipes ? "You can still edit and print the recipes you've imported. " : ""}Upgrade to Pro for unlimited recipe imports.`,
+      body: `You've used your ${importUsage?.limit ?? FREE_IMPORTS_PER_WINDOW} free imports. ${back}${hasRecipes ? "You can still edit and print the recipes you've imported. " : ""}Pro lets you keep importing now.`,
       benefits: PRO_BENEFITS,
       ...splitBenefits([], UNLIMITED_IMPORTS_BENEFIT),
       ctaLabel: "Get Pro",
+      images: [PRO_DIALOG_IMAGES.collection],
     };
   }
   if (trigger === IMAGE_IMPORT_LIMIT_TRIGGER) {
     return {
-      title: `Import up to ${IMAGE_IMPORTS_PER_HOUR_PRO} images an hour`,
+      title: "Ready to import more photos?",
+      body: `Pro imports up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photos an hour.`,
       benefits: PRO_BENEFITS,
       ...splitBenefits([]),
       ctaLabel: "Get Pro",
+      images: [PRO_DIALOG_IMAGES.photo],
     };
   }
   // Before the lock reasons: a locked card size can be selected at the same
   // moment, and it isn't what was clicked.
   if (trigger === REMOVE_BRANDING_TRIGGER) {
     return {
-      title: "Print without RecipePrinter branding",
+      title: "Ready to print without branding?",
       benefits: [NO_BRANDING_BENEFIT, ...PRO_BENEFITS.filter((b) => b !== NO_BRANDING_BENEFIT)],
       ...splitBenefits([], NO_BRANDING_BENEFIT),
       ctaLabel: "Get Pro and continue",
+      // No picture of an unbranded print yet: every picture takes a turn.
+      images: ALL_DIALOG_IMAGES,
     };
   }
   if (trigger === "topbar_button" || reasons.length === 0) return GENERIC_COPY;
@@ -203,9 +282,10 @@ export function proUpgradeCopy(
   const single = reasons.length === 1 ? reasons[0] : null;
   const alreadySaid = single && single !== "theme" ? BENEFIT_BY_REASON[single] : undefined;
   return {
-    title: single ? TITLE_BY_REASON[single] : "Unlock your Pro print setup",
+    title: single ? TITLE_BY_REASON[single] : "Ready to print with Pro?",
     benefits,
     ...splitBenefits(benefits.filter((benefit) => triggered.has(benefit)), alreadySaid),
     ctaLabel: trigger === "print_button" ? "Get Pro and print" : "Get Pro and continue",
+    images: reasons.map((reason) => IMAGE_BY_REASON[reason]).filter((image, i, all) => all.indexOf(image) === i),
   };
 }

@@ -14,7 +14,8 @@ import {
   proDeclineAskedOnDevice,
   proPaywallSeenBefore,
 } from "@/lib/proDeclineAsked";
-import { GENERIC_COPY } from "@/lib/proUpgradeCopy";
+import { GENERIC_COPY, type ProDialogImage } from "@/lib/proUpgradeCopy";
+import { ProDialogArt } from "@/components/ProDialogArt";
 import {
   DEFAULT_PRO_CYCLE,
   PRO_PRICE_FALLBACKS,
@@ -77,6 +78,7 @@ export function ProUpgradeDialog({
   highlights = GENERIC_COPY.highlights,
   more = GENERIC_COPY.more,
   ctaLabel = "Get Pro and continue",
+  images = GENERIC_COPY.images,
   referralChoice,
 }: {
   onClose: () => void;
@@ -99,6 +101,8 @@ export function ProUpgradeDialog({
   /** The rest of Pro, behind "And more". */
   more?: string[];
   ctaLabel?: string;
+  /** The product picture beside the pitch (`proUpgradeCopy`); several take turns. */
+  images?: ProDialogImage[];
   /** When referral Pro has just run out: open on a choice between subscribing
       and inviting a friend, side by side and equally weighted, before plans.
       Every other opening of this dialog is unchanged. */
@@ -205,12 +209,18 @@ export function ProUpgradeDialog({
       closeDisabled={closeDisabled}
       labelledBy="pro-upgrade-title"
       className="fixed inset-0 z-[var(--z-dialog)] flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
-      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[440px] max-h-[88dvh] sm:max-h-none sm:h-auto rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:pb-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
+      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[820px] max-h-[88dvh] sm:max-h-[calc(100dvh-48px)] sm:h-auto rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-0 flex flex-col sm:flex-row relative overflow-y-auto sm:overflow-hidden"
       portal
     >
+      {/* The picture (Amelia, 2026-11-16): the left half on a computer, for
+          every step so the dialog never changes size; a band over the phone
+          sheet's plan step only, so sign-in keeps its room. */}
+      <ProDialogArt images={images} className="hidden sm:block sm:w-[44%] sm:shrink-0" />
+      {step === "plan" && <ProDialogArt images={images} className="h-[150px] shrink-0 sm:hidden" />}
+      <div className="flex min-w-0 flex-1 flex-col gap-cp-4 p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:overflow-y-auto sm:p-cp-6 sm:justify-center">
       <button
         type="button"
-        className="icon-close-btn absolute right-3 top-3"
+        className={`icon-close-btn absolute right-3 top-3 z-10${step === "plan" ? " pro-dialog-close--on-art" : ""}`}
         aria-label="Close"
         disabled={closeDisabled}
         onClick={handleClose}
@@ -456,6 +466,7 @@ export function ProUpgradeDialog({
           </button>
         </>
       )}
+      </div>
     </Dialog>
   );
 }

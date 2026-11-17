@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { useCookPilotAuth } from "@/components/CookPilotAuth";
 import { ProUpgradeDialog } from "@/components/ProUpgradeDialog";
+import type { ProDialogImage } from "@/lib/proUpgradeCopy";
 import { track } from "@/lib/analytics";
 import {
   forgetProUpgradeIntent,
@@ -39,6 +40,7 @@ export function useStandaloneProUpgrade(
     body?: string;
     benefits?: string[];
     ctaLabel?: string;
+    images?: ProDialogImage[];
     referralChoice?: { inviteUrl: string; rewardDays: number };
   },
 ): {

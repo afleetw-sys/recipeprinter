@@ -1746,6 +1746,71 @@
     align-items: flex-start;
     gap: 2px;
   }
+  /* The Pro dialog's product picture (components/ProDialogArt.tsx). Several
+     pictures stack and cross-fade; dots sit over the bottom. */
+  .pro-dialog-art {
+    position: relative;
+    overflow: hidden;
+    background: var(--cp-surface-muted);
+  }
+  .pro-dialog-art__slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 600ms ease;
+  }
+  .pro-dialog-art__slide.is-active {
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pro-dialog-art__slide {
+      transition: none;
+    }
+  }
+  .pro-dialog-art__image {
+    object-fit: cover;
+  }
+  /* A mockup sits whole on its own backdrop colour, with room around it. */
+  .pro-dialog-art__image.is-whole {
+    object-fit: contain;
+    padding: 8px;
+  }
+  .pro-dialog-art__dots {
+    position: absolute;
+    left: 50%;
+    bottom: 12px;
+    display: flex;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--cp-card) 85%, transparent);
+    transform: translateX(-50%);
+  }
+  .pro-dialog-art__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--cp-ink-soft);
+    opacity: 0.4;
+  }
+  .pro-dialog-art__dot.is-active {
+    background: var(--cp-ink);
+    opacity: 1;
+  }
+  .pro-dialog-art__dot:focus-visible {
+    outline: var(--cp-focus-ring);
+    outline-offset: var(--cp-focus-ring-offset);
+  }
+  /* On the phone sheet the X sits over the picture band, where a bare glyph
+     disappears: give it a disc there. Beside the picture on a computer it
+     stays bare. */
+  @media (max-width: 639.98px) {
+    .icon-close-btn.pro-dialog-close--on-art {
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--cp-card) 90%, transparent);
+      color: var(--cp-ink);
+    }
+  }
   .pro-plan-price__amount {
     font-size: var(--cp-fs-dialog-title);
     font-weight: 800;
