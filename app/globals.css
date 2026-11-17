@@ -459,9 +459,9 @@
   outline: var(--cp-focus-ring);
   outline-offset: 2px;
 }
-/* One Skip per layout: by the close button on a computer, under Next on a
-   phone. */
-.cookbook-tour__skip--below {
+/* The X over the picture is the phone's; a computer's sits by the
+   progress bar. */
+.cookbook-tour__close--over {
   display: none;
 }
 
@@ -589,14 +589,25 @@
     flex: 1 1 0;
     min-width: 0;
   }
-  .cookbook-tour__skip--top {
+  .cookbook-tour__skip,
+  .cookbook-tour__close--top {
     display: none;
   }
-  .cookbook-tour__skip--below {
-    display: block;
-    flex: 1 0 100%;
-    padding: 10px;
-    text-align: center;
+  /* On a disc, so it reads over any photo (the Pro dialog's X on its
+     picture band does the same). */
+  .cookbook-tour__stage {
+    position: relative;
+  }
+  .icon-close-btn.cookbook-tour__close--over {
+    position: absolute;
+    z-index: 2;
+    top: max(12px, env(safe-area-inset-top));
+    right: 12px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--cp-card) 90%, transparent);
+    color: var(--cp-ink);
   }
   /* The last step carries the price and two buttons, so its picture gives
      up some height to keep both buttons on a short phone screen. */

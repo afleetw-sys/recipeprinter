@@ -191,6 +191,17 @@ export function CookbookWelcomeDialog({
           swipeFrom.current = null;
         }}
       >
+        {/* On a phone the X sits over the top of the picture, and there is no
+            Skip (Amelia, 2026-11-17); the one beside the progress bar is the
+            computer's. */}
+        <button
+          type="button"
+          className="cookbook-tour__close cookbook-tour__close--over icon-close-btn"
+          aria-label="Close"
+          onClick={onClose}
+        >
+          <XIcon size={ICON_SIZE.md} />
+        </button>
         <div className="cookbook-tour__pictures" aria-hidden>
           {TOUR_STEPS.map((item, index) => (
             <div
@@ -233,11 +244,11 @@ export function CookbookWelcomeDialog({
             </div>
             <div className="cookbook-tour__top-actions">
               {!atEnd && (
-                <button type="button" className="cookbook-tour__skip cookbook-tour__skip--top" onClick={() => go(LAST, "skip")}>
+                <button type="button" className="cookbook-tour__skip" onClick={() => go(LAST, "skip")}>
                   Skip
                 </button>
               )}
-              <button type="button" className="cookbook-tour__close icon-close-btn" aria-label="Close" onClick={onClose}>
+              <button type="button" className="cookbook-tour__close cookbook-tour__close--top icon-close-btn" aria-label="Close" onClick={onClose}>
                 <XIcon size={ICON_SIZE.md} />
               </button>
             </div>
@@ -304,15 +315,6 @@ export function CookbookWelcomeDialog({
                 <button type="button" className="btn btn-primary cookbook-tour__next" onClick={() => go(step + 1, "next")}>
                   Next
                   <ChevronRightIcon size={ICON_SIZE.md} />
-                </button>
-                {/* On a phone Skip sits under Next, at the thumb, instead of
-                    up by the close button (Amelia, 2026-11-17). */}
-                <button
-                  type="button"
-                  className="cookbook-tour__skip cookbook-tour__skip--below"
-                  onClick={() => go(LAST, "skip")}
-                >
-                  Skip
                 </button>
               </>
             )}
