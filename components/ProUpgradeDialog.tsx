@@ -5,7 +5,7 @@ import type { User } from "firebase/auth";
 import { Dialog } from "@/components/Dialog";
 import { SegmentedControl } from "@/components/Controls";
 import { CookPilotLoginForm } from "@/components/CookPilotAuth";
-import { CheckIcon, CrownIcon, ICON_SIZE, PlusIcon, XIcon } from "@/components/icons";
+import { CheckIcon, ICON_SIZE, PlusIcon, XIcon } from "@/components/icons";
 import { track, type ProDeclineReason } from "@/lib/analytics";
 import {
   loadProDeclineAskedOnAccount,
@@ -358,20 +358,11 @@ export function ProUpgradeDialog({
         </>
       ) : step === "plan" ? (
         <>
-          <div className="flex items-center gap-2 pr-8">
-            {/* Trailing on the mobile sheet (below `sm`, the same breakpoint
-                that switches this panel from centered dialog to bottom
-                sheet above), leading again on desktop — `order` rather than
-                two copies, so the DOM/reading order stays "the icon marks
-                Pro" either way and only the visual position moves. */}
-            <CrownIcon size={ICON_SIZE.md} className="order-2 sm:order-none text-[var(--cp-premium-bright)]" />
-            <h2
-              id="pro-upgrade-title"
-              className="order-1 sm:order-none text-cp-dialog-title font-extrabold tracking-tight"
-            >
-              {title}
-            </h2>
-          </div>
+          {/* No crown beside the title (Amelia, 2026-11-16): the picture
+              and the title carry it. */}
+          <h2 id="pro-upgrade-title" className="pr-8 text-cp-dialog-title font-extrabold tracking-tight">
+            {title}
+          </h2>
           {body && <p className="text-cp-body text-ink-soft">{body}</p>}
 
           <div className="flex flex-col gap-cp-2">
