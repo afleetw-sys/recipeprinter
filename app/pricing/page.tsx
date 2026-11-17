@@ -120,7 +120,7 @@ export default function PricingPage() {
         />
 
         {/* Two plans, side by side. The cookbook is NOT a third column: it is
-            a one-time purchase for one book, not a tier above Pro, and as the
+            a separate purchase for one book, not a tier above Pro, and as the
             right-hand card of three it read as the most expensive plan. */}
         <section aria-label="Plans" className="mx-auto grid w-full max-w-[56rem] gap-cp-5 md:grid-cols-2">
           <div className="flex flex-col rounded-2xl border border-line bg-card p-cp-6">
