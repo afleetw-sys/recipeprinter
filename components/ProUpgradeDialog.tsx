@@ -398,9 +398,9 @@ export function ProUpgradeDialog({
                     {cycle === "annual" ? annualPerMonth : monthlyAmount}
                     <span className="pro-plan-option__per"> / month</span>
                   </span>
-                  <span className="pro-plan-option__note">
-                    {cycle === "annual" ? billedYearly : "Billed monthly"}
-                  </span>
+                  {/* Annual says what it charges once a year; Monthly's
+                      "/ month" already says it all (Amelia, 2026-11-17). */}
+                  {cycle === "annual" && <span className="pro-plan-option__note">{billedYearly}</span>}
                 </button>
               );
             })}
