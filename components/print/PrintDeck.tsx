@@ -943,13 +943,12 @@ export function PrintDeck(props: PrintDeckProps) {
           {/* Change recipe: this card, swapped for a different recipe in the
               same theme and size. A worded button at the front of the bar,
               since it acts on the whole recipe and the icons after it act on
-              parts of it. Folds into More last. */}
-          {onChangeRecipe && navItem.kind === "recipe" && (
-            <PageToolbarItem
-              menuLabel="Change recipe"
-              menuIcon={<SwapIcon size={ICON_SIZE.sm} />}
-              priority={4}
-            >
+              parts of it. On a computer it is always here, in the same spot
+              (Amelia, 2026-11-17): a plain group, which never folds into More;
+              the columns make room for it (see `.recipe-print-shell` in
+              print.css). On a phone it may fold, last of all. */}
+          {onChangeRecipe && navItem.kind === "recipe" && (() => {
+            const changeRecipe = (
               <button
                 type="button"
                 className="recipe-page-toolbar__btn"
@@ -961,8 +960,19 @@ export function PrintDeck(props: PrintDeckProps) {
               >
                 Change recipe
               </button>
-            </PageToolbarItem>
-          )}
+            );
+            return deckMobile ? (
+              <PageToolbarItem
+                menuLabel="Change recipe"
+                menuIcon={<SwapIcon size={ICON_SIZE.sm} />}
+                priority={4}
+              >
+                {changeRecipe}
+              </PageToolbarItem>
+            ) : (
+              <div className="recipe-page-toolbar__group">{changeRecipe}</div>
+            );
+          })()}
           {/* Which page this is, on a phone (Amelia, 2026-11-10): there the
               page fills the screen and nothing else names it; on desktop the
               rail beside the deck does. A plain group, not a
