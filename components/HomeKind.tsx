@@ -1,8 +1,9 @@
 "use client";
 
-import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { CommunityGallery } from "@/components/CommunityGallery";
 import { COMMUNITY_PHOTOS, COOKBOOK_PHOTOS } from "@/lib/communityGallery";
+import { preloadCookbookHero } from "@/lib/cookbookHero";
 
 /** Which kind of project the front door is about to start. Recipe cards is
     the default and asks for nothing; Cookbook is the one-project, $19.99,
@@ -107,6 +108,29 @@ export function HomeKindTabs() {
     };
   }, [kind]);
 
+  // The Cookbook tab's photo, fetched while the page sits idle so the tab
+  // opens with it already there. One photo of about 50KB, and skipped for
+  // anyone who has asked their browser to save data. Hovering, focusing or
+  // pressing the tab starts it sooner if idle hasn't come yet.
+  useEffect(() => {
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    if (connection?.saveData) return;
+    let idle: number | undefined;
+    let timer: number | undefined;
+    const schedule = () => {
+      // Safari has no requestIdleCallback.
+      if (typeof window.requestIdleCallback === "function") idle = window.requestIdleCallback(preloadCookbookHero, { timeout: 3000 });
+      else timer = window.setTimeout(preloadCookbookHero, 1000);
+    };
+    if (document.readyState === "complete") schedule();
+    else window.addEventListener("load", schedule, { once: true });
+    return () => {
+      window.removeEventListener("load", schedule);
+      if (idle !== undefined) window.cancelIdleCallback(idle);
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, []);
+
   const tabClass = (selected: boolean) =>
     `relative z-10 flex items-center gap-1 px-cp-2 pb-cp-2 pt-cp-1 text-cp-body-lg font-bold text-ink transition-opacity duration-200 ease-out ${
       selected ? "opacity-100" : "opacity-45 hover:opacity-70"
@@ -129,7 +153,7 @@ export function HomeKindTabs() {
       <button type="button" role="tab" aria-selected={kind === "cards"} onClick={() => setKind("cards")} className={tabClass(kind === "cards")}>
         Recipe cards
       </button>
-      <button type="button" role="tab" aria-selected={kind === "cookbook"} onClick={() => setKind("cookbook")} className={tabClass(kind === "cookbook")}>
+      <button type="button" role="tab" aria-selected={kind === "cookbook"} onClick={() => setKind("cookbook")} onPointerEnter={preloadCookbookHero} onPointerDown={preloadCookbookHero} onFocus={preloadCookbookHero} className={tabClass(kind === "cookbook")}>
         Cookbook
         <span className="rp-new-badge">New</span>
       </button>
