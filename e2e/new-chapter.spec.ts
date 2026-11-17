@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./guarded";
-import { deckSettled } from "./workspace";
+import { closeCookbookWalkthrough, deckSettled } from "./workspace";
 
 /**
  * A chapter made from anywhere opens on its own page with its name ready to
@@ -39,9 +39,7 @@ async function openBook(page: Page) {
     );
   }, JSON.stringify([recipe("r1", "Lemon Chicken"), recipe("r2", "Banana Bread")]));
   await page.goto("/print");
-  await expect(page.locator(".cookbook-welcome")).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(page.locator(".cookbook-welcome")).toHaveCount(0);
+  await closeCookbookWalkthrough(page);
 }
 
 const WAYS: Array<{ name: string; add: (page: Page) => Promise<void> }> = [

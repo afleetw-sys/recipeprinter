@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./guarded";
-import { deckSettled } from "./workspace";
+import { closeCookbookWalkthrough, deckSettled } from "./workspace";
 
 /**
  * Heirloom and Keepsake open a chapter with a centered ornament over the
@@ -47,9 +47,7 @@ async function openChapterPage(page: Page, theme: string) {
     );
   }, JSON.stringify([recipe("r1", "Lemon Chicken"), recipe("r2", "Banana Bread")]));
   await page.goto("/print");
-  await expect(page.locator(".cookbook-welcome")).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(page.locator(".cookbook-welcome")).toHaveCount(0);
+  await closeCookbookWalkthrough(page);
 
   await page.locator(".recipe-template-option").filter({ has: page.locator(`.recipe-template--${theme}`) }).click();
   await page.locator(".recipe-page-rail__item-main").filter({ hasText: "Dinners" }).first().click();

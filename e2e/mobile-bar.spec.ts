@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./guarded";
+import { closeCookbookWalkthrough } from "./workspace";
 
 /**
  * On a phone the deck runs right down to the bottom bar. The room kept for the
@@ -119,8 +120,7 @@ test("a phone offers a page's own settings only when the desktop panel does", as
 
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/print");
-  await expect(page.locator(".cookbook-welcome")).toBeVisible();
-  await page.keyboard.press("Escape");
+  await closeCookbookWalkthrough(page);
   await expect(page.locator(".recipe-config-panel").filter({ visible: true })).toBeVisible();
   const desktopHasPageTab = (await page.locator(".recipe-config-panel__tabs").filter({ visible: true }).count()) > 0;
 
@@ -176,8 +176,7 @@ test("a phone shows text size only under Customize theme, for cards and cookbook
     await page.setViewportSize({ width: 390, height: 800 });
     await page.goto("/print");
     if (cookbook) {
-      await expect(page.locator(".cookbook-welcome")).toBeVisible();
-      await page.keyboard.press("Escape");
+      await closeCookbookWalkthrough(page);
     }
     // Every tile that opens something on this page.
     const tiles = page.locator(".recipe-mobile-toolbar__btn").filter({ visible: true });

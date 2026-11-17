@@ -11,6 +11,36 @@ import { returningUser, savedProjectIds, signIn } from "./account";
 export const LINK = "https://www.wikipedia.org/recipes/lemon-herb-chicken";
 export const RECIPE_TITLE = reply.recipe.title;
 
+/**
+ * A new cookbook opens under its walkthrough the first time a browser starts
+ * one; this closes it as a cook would (Escape, or the X).
+ */
+export async function closeCookbookWalkthrough(page: Page): Promise<void> {
+  const tour = page.locator(".cookbook-tour");
+  await expect(tour).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(tour).toHaveCount(0);
+}
+
+/**
+ * Into Add recipes from a new, empty cookbook. A first cookbook goes through
+ * the walkthrough to its last step's Start adding recipes (a phone has no
+ * Skip, so it is Next until then); a later one in the same browser skips the
+ * walkthrough and opens Add on its own.
+ */
+export async function startAddingRecipes(page: Page): Promise<void> {
+  const tour = page.locator(".cookbook-tour");
+  const field = page.getByPlaceholder("Paste a recipe link").filter({ visible: true }).first();
+  await expect(tour.or(field).first()).toBeVisible();
+  if ((await tour.count()) === 0) return;
+  const start = page.getByRole("button", { name: "Start adding recipes" });
+  for (let i = 0; i < 4 && !(await start.isVisible()); i++) {
+    await page.locator(".cookbook-tour__next").click();
+  }
+  await start.click();
+  await expect(tour).toHaveCount(0);
+}
+
 /** Signs in, starts a cookbook from one link, and returns the project's id once it is on the account. */
 export async function startCookbook(
   page: Page,
@@ -32,10 +62,10 @@ export async function startCookbook(
   // the recipe goes in from inside it, as a cook's first one does.
   await page.getByRole("button", { name: /Start a cookbook/ }).first().click();
   await expect(page).toHaveURL(/\/print$/);
-  // Every new book opens with its welcome, the Cookbook tab's included, and
-  // its Start adding recipes is the way into Add at every width (a phone's
-  // cookbook Add asks recipe or chapter first).
-  await page.getByRole("button", { name: "Start adding recipes" }).click();
+  // A first book's walkthrough ends on Start adding recipes, the way into Add
+  // at every width (a phone's cookbook Add asks recipe or chapter first); a
+  // later book opens Add itself.
+  await startAddingRecipes(page);
   const field = page.getByPlaceholder("Paste a recipe link").filter({ visible: true }).first();
   await field.fill(LINK);
   await field.press("Enter");

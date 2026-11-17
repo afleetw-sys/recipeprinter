@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./guarded";
+import { closeCookbookWalkthrough } from "./workspace";
 
 /**
  * The cookbook organizer, on a book opened straight from session storage (no
@@ -53,9 +54,7 @@ async function openOrganizer(page: Page, sections?: Array<{ id: string; title: s
   }, [JSON.stringify(BOOK), sections ? JSON.stringify(sections) : ""] as const);
   await page.goto("/print");
   // A new cookbook opens under its welcome; close it as a cook would.
-  await expect(page.locator(".cookbook-welcome")).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(page.locator(".cookbook-welcome")).toHaveCount(0);
+  await closeCookbookWalkthrough(page);
   await page.locator(".recipe-page-rail__organize").click();
   await expect(page.locator(".recipe-organize-bar")).toBeVisible();
   // Opening animates the panel's width; a menu opened mid-way is closed by it.

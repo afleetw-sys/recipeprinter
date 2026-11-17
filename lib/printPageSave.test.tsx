@@ -889,7 +889,7 @@ describe("adding recipes", () => {
     );
   }
 
-  it("welcomes every new cookbook, however it was started", async () => {
+  it("welcomes every first cookbook, however it was started", async () => {
     // The homepage's Cookbook tab used to stamp `cookbookIntroduced` and skip
     // the welcome, so a book begun there opened without it. Every entry point
     // gets it now; the stamp is still read here because older stored meta can
@@ -902,6 +902,8 @@ describe("adding recipes", () => {
     for (const [via, extra, pending] of starts) {
       cleanup();
       sessionStorage.clear();
+      // Each start here is somebody's first cookbook.
+      localStorage.clear();
       dialogs.welcome = {};
       if (pending) sessionStorage.setItem("recipeprinter:pending-import:v1", JSON.stringify(pending));
       seedMeta({ cookbookIntent: true, cookbookBornFresh: true, ...extra });

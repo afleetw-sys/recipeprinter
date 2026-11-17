@@ -9,7 +9,7 @@ import {
   savedProjectIds,
   signedIn,
 } from "./account";
-import { startCookbook } from "./workspace";
+import { closeCookbookWalkthrough, startCookbook } from "./workspace";
 
 /**
  * The paid cookbook, for a signed-in cook: it is kept without asking, it can't
@@ -72,9 +72,7 @@ test("an empty cookbook can be bought before it has any recipes, signed out or i
   await page.getByRole("button", { name: /Start a cookbook/ }).first().click();
   await expect(page).toHaveURL(/\/print$/);
   // Every new book opens with its welcome, the Cookbook tab's included.
-  await expect(page.locator(".cookbook-welcome")).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(page.locator(".cookbook-welcome")).toHaveCount(0);
+  await closeCookbookWalkthrough(page);
 
   // Signed out, pressing it asks for an account before checkout.
   await expect(printButton(page)).toHaveText("Buy & download");

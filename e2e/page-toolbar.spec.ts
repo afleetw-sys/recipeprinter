@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./guarded";
+import { startAddingRecipes } from "./workspace";
 
 /**
  * The bar over a deck page is one row at every width. Where its controls do
@@ -229,7 +230,7 @@ test("a cookbook page's bar stays on a phone's screen, whichever side of the spr
   // Every new book opens with its welcome, the Cookbook tab's included, and
   // its Start adding recipes is the way into Add at every width (a phone's
   // cookbook Add asks recipe or chapter first).
-  await page.getByRole("button", { name: "Start adding recipes" }).click();
+  await startAddingRecipes(page);
   const field = page.getByPlaceholder("Paste a recipe link").filter({ visible: true }).first();
   await field.fill(LINK);
   await field.press("Enter");
@@ -268,7 +269,7 @@ test("a phone's page name stands clear of the bar's edge, on every kind of page"
   }).toPass();
   await page.getByRole("button", { name: /Start a cookbook/ }).first().click();
   await expect(page).toHaveURL(/\/print$/);
-  await page.getByRole("button", { name: "Start adding recipes" }).click();
+  await startAddingRecipes(page);
   const field = page.getByPlaceholder("Paste a recipe link").filter({ visible: true }).first();
   await field.fill(LINK);
   await field.press("Enter");
