@@ -209,13 +209,13 @@ export function ProUpgradeDialog({
       closeDisabled={closeDisabled}
       labelledBy="pro-upgrade-title"
       className="fixed inset-0 z-[var(--z-dialog)] flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
-      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[820px] max-h-[88dvh] sm:max-h-[calc(100dvh-48px)] sm:h-auto rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-0 flex flex-col sm:flex-row relative overflow-y-auto sm:overflow-hidden"
+      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[820px] max-h-[92dvh] sm:max-h-[calc(100dvh-48px)] sm:h-auto rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-0 flex flex-col sm:flex-row relative overflow-y-auto sm:overflow-hidden"
       portal
     >
       <div className="flex min-w-0 flex-1 flex-col gap-cp-4 p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:overflow-y-auto sm:p-cp-6 sm:justify-center">
       <button
         type="button"
-        className={`icon-close-btn absolute right-3 top-3 z-10${step === "plan" ? " pro-dialog-close--on-art" : ""}`}
+        className="icon-close-btn absolute right-3 top-3 z-10"
         aria-label="Close"
         disabled={closeDisabled}
         onClick={handleClose}
@@ -450,12 +450,12 @@ export function ProUpgradeDialog({
       )}
       </div>
       {/* The picture (Amelia, 2026-11-16): the left half on a computer, for
-          every step so the dialog never changes size; a band over the phone
-          sheet's plan step only, so sign-in keeps its room. After the text in
-          the page so the dialog's first focus lands there, not on an arrow;
-          `order-first` still draws it first. */}
+          every step so the dialog never changes size. None on a phone
+          (2026-11-17): at a phone's width it was a strip too small to show
+          anything, and it made the sheet scroll. After the text in the page so
+          the dialog's first focus lands there, not on an arrow; `order-first`
+          still draws it first. */}
       <ProDialogArt images={images} className="hidden sm:order-first sm:block sm:w-[44%] sm:shrink-0" />
-      {step === "plan" && <ProDialogArt images={images} className="order-first h-[150px] shrink-0 sm:hidden" />}
     </Dialog>
   );
 }
