@@ -11755,6 +11755,19 @@ textarea.recipe-card__toc-title {
   right: calc(var(--recipe-card-padding-x) + var(--recipe-card-keepout-w, 0in));
 }
 
+/* Outside a cookbook the link sits lower than the padding line, just above
+   the hills, so it reads as the card's foot rather than a line under the
+   recipe (Amelia, 2026-11-17). Only the link moves: the recipe keeps the
+   room it had. A cookbook page keeps it on the padding line, clear of the
+   chapter name that sits above the hills there. */
+.recipe-print-preview--card-6x4 .recipe-template--garden .recipe-card:not([data-in-book]) .recipe-card__footer {
+  bottom: 0.5in;
+}
+
+.recipe-print-preview--letter .recipe-template--garden .recipe-card:not([data-in-book]) .recipe-card__footer {
+  bottom: 0.9in;
+}
+
 /* Hidden unless the card is Garden, like every template decoration (see
    `.recipe-card__counter-band`). */
 .recipe-card__garden-band,

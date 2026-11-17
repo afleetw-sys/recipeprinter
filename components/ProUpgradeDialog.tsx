@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { Dialog } from "@/components/Dialog";
-import { SelectTile } from "@/components/Controls";
 import { CookPilotLoginForm } from "@/components/CookPilotAuth";
-import { CheckIcon, CrownIcon, ICON_SIZE, PlusIcon, XIcon } from "@/components/icons";
+import { CheckIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import { track, type ProDeclineReason } from "@/lib/analytics";
 import {
   loadProDeclineAskedOnAccount,
@@ -14,7 +13,8 @@ import {
   proDeclineAskedOnDevice,
   proPaywallSeenBefore,
 } from "@/lib/proDeclineAsked";
-import { GENERIC_COPY } from "@/lib/proUpgradeCopy";
+import { GENERIC_COPY, type ProDialogImage } from "@/lib/proUpgradeCopy";
+import { ProDialogArt } from "@/components/ProDialogArt";
 import {
   DEFAULT_PRO_CYCLE,
   PRO_PRICE_FALLBACKS,
@@ -75,8 +75,9 @@ export function ProUpgradeDialog({
   title = "Upgrade to RecipePrinter Pro",
   body,
   highlights = GENERIC_COPY.highlights,
-  more = GENERIC_COPY.more,
   ctaLabel = "Get Pro and continue",
+  images = GENERIC_COPY.images,
+  listHeading = GENERIC_COPY.listHeading,
   referralChoice,
 }: {
   onClose: () => void;
@@ -94,11 +95,13 @@ export function ProUpgradeDialog({
   title?: string;
   /** Shown under the title when the trigger has something to explain. */
   body?: string;
-  /** The benefits listed up front, led by what opened this (`proUpgradeCopy`). */
+  /** Every benefit to list, led by what opened this (`proUpgradeCopy`). */
   highlights?: string[];
-  /** The rest of Pro, behind "And more". */
-  more?: string[];
   ctaLabel?: string;
+  /** The product picture beside the pitch (`proUpgradeCopy`); with several, arrows step through them. */
+  images?: ProDialogImage[];
+  /** Over the benefit list (`proUpgradeCopy`). */
+  listHeading?: string;
   /** When referral Pro has just run out: open on a choice between subscribing
       and inviting a friend, side by side and equally weighted, before plans.
       Every other opening of this dialog is unchanged. */
@@ -107,7 +110,6 @@ export function ProUpgradeDialog({
   const [step, setStep] = useState<"choice" | "plan" | "signin" | "decline">(referralChoice ? "choice" : "plan");
   const [invited, setInvited] = useState<"copy" | "native_share" | null>(null);
   const [showLink, setShowLink] = useState(false);
-  const [showMore, setShowMore] = useState(false);
   // "Other" on the decline question: opens a box for the cook's own reason.
   const [otherOpen, setOtherOpen] = useState(false);
   const [otherText, setOtherText] = useState("");
@@ -192,12 +194,14 @@ export function ProUpgradeDialog({
   }
 
   const closeDisabled = busy || formBusy;
-  const { label: price, annualSavingsPercent: savingsPercent, annualPerMonth, annualTotal } = useVisitorPrices();
+  const { label: price, annualPerMonth, annualTotal } = useVisitorPrices();
   // Annual reads as a monthly figure, so the two plans compare like for like,
   // and always says what it charges once a year right beside it.
   const cyclePrice = (cycle: ProBillingCycle) =>
     cycle === "annual" ? `${annualPerMonth}/mo` : price(PRO_PRICE_FALLBACKS.monthly);
   const billedYearly = `Billed yearly at ${annualTotal}`;
+  // The plan cards add their own " / month", so the monthly price drops its "/mo".
+  const monthlyAmount = price(PRO_PRICE_FALLBACKS.monthly).replace(/\s*\/\s*mo\.?$/i, "");
 
   return (
     <Dialog
@@ -205,12 +209,13 @@ export function ProUpgradeDialog({
       closeDisabled={closeDisabled}
       labelledBy="pro-upgrade-title"
       className="fixed inset-0 z-[var(--z-dialog)] flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
-      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[440px] max-h-[88dvh] sm:max-h-none sm:h-auto rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:pb-cp-5 flex flex-col gap-cp-4 relative overflow-y-auto"
+      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[820px] max-h-[88dvh] sm:max-h-[calc(100dvh-48px)] sm:h-auto rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-0 flex flex-col sm:flex-row relative overflow-y-auto sm:overflow-hidden"
       portal
     >
+      <div className="flex min-w-0 flex-1 flex-col gap-cp-4 p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:overflow-y-auto sm:p-cp-6 sm:justify-center">
       <button
         type="button"
-        className="icon-close-btn absolute right-3 top-3"
+        className={`icon-close-btn absolute right-3 top-3 z-10${step === "plan" ? " pro-dialog-close--on-art" : ""}`}
         aria-label="Close"
         disabled={closeDisabled}
         onClick={handleClose}
@@ -345,74 +350,58 @@ export function ProUpgradeDialog({
         </>
       ) : step === "plan" ? (
         <>
-          <div className="flex items-center gap-2 pr-8">
-            {/* Trailing on the mobile sheet (below `sm`, the same breakpoint
-                that switches this panel from centered dialog to bottom
-                sheet above), leading again on desktop — `order` rather than
-                two copies, so the DOM/reading order stays "the icon marks
-                Pro" either way and only the visual position moves. */}
-            <CrownIcon size={ICON_SIZE.md} className="order-2 sm:order-none text-[var(--cp-premium-bright)]" />
-            <h2
-              id="pro-upgrade-title"
-              className="order-1 sm:order-none text-cp-dialog-title font-extrabold tracking-tight"
-            >
-              {title}
-            </h2>
-          </div>
+          {/* No crown beside the title (Amelia, 2026-11-16): the picture
+              and the title carry it. */}
+          <h2 id="pro-upgrade-title" className="pr-8 text-cp-dialog-title font-extrabold tracking-tight">
+            {title}
+          </h2>
           {body && <p className="text-cp-body text-ink-soft">{body}</p>}
 
-          <ul className="flex flex-col gap-cp-1">
-            {(showMore ? [...highlights, ...more] : highlights).map((benefit) => (
-              <li key={benefit} className="flex items-start gap-cp-2 text-cp-body">
-                <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                {benefit}
-              </li>
-            ))}
-            {!showMore && more.length > 0 && (
-              <li>
-                {/* Opens the rest here: this is mid-checkout, and the
-                    pricing page would take the cook away from their work. */}
-                <button
-                  type="button"
-                  className="flex items-start gap-cp-2 text-cp-body text-ink-soft hover:text-ink"
-                  onClick={() => setShowMore(true)}
-                >
-                  <PlusIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                  And more
-                </button>
-              </li>
-            )}
-          </ul>
+          {/* A long list kept quiet (Amelia, 2026-11-17): a soft lead-in
+              rather than a bold heading, small type on an even pitch, and
+              accent checks, so it reads as a column of reasons rather than
+              a wall of headlines. */}
+          <div className="flex flex-col gap-cp-2">
+            <p className="text-cp-small text-ink-soft">{listHeading}</p>
+            <ul className="flex flex-col gap-[6px]">
+              {highlights.map((benefit) => (
+                <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink">
+                  <CheckIcon size={ICON_SIZE.sm} className="mt-[2px] shrink-0 text-brand" />
+                  {benefit}
+                </li>
+              ))}
+            </ul>
+          </div>
 
-          <div className="flex flex-col gap-cp-2" role="radiogroup" aria-label="Billing plan">
+          {/* Two plan cards side by side, Annual first and chosen
+              (Amelia, 2026-11-17), each with its price as a monthly figure so
+              they compare like for like. The button below commits the one
+              selected. */}
+          <div role="radiogroup" aria-label="Billing plan" className="pro-plan-options mt-cp-3">
             {PRO_PLAN_CYCLES.map((cycle) => {
-              const selected = selectedCycle === cycle;
+              const selected = cycle === selectedCycle;
               return (
-                <SelectTile
+                <button
                   key={cycle}
-                  selected={selected}
-                  className={selected ? "pro-plan-card" : "pro-plan-card pro-plan-card--compact"}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  className="pro-plan-option"
+                  onClick={() => selectCycle(cycle)}
                 >
-                  <input
-                    type="radio"
-                    name="pro-cycle"
-                    className="sr-only"
-                    checked={selected}
-                    onChange={() => selectCycle(cycle)}
-                  />
-                  <div className="pro-plan-card__row">
-                    <span className="pro-plan-card__name">{PRO_CYCLE_LABEL[cycle]}</span>
-                  </div>
-                  <p className="pro-plan-card__price">
-                    {cyclePrice(cycle)}
-                    {cycle === "annual" && (
-                      <span className="pro-plan-card__note"> · Save {savingsPercent}%</span>
-                    )}
-                  </p>
-                  {cycle === "annual" && (
-                    <p className="text-cp-label font-normal text-ink-soft">{billedYearly}</p>
-                  )}
-                </SelectTile>
+                  <span className="pro-plan-option__radio" aria-hidden="true" />
+                  <span className="pro-plan-option__name">
+                    {PRO_CYCLE_LABEL[cycle]}
+                    {cycle === "annual" && <span className="pro-plan-save-tag">Save more</span>}
+                  </span>
+                  <span className="pro-plan-option__price">
+                    {cycle === "annual" ? annualPerMonth : monthlyAmount}
+                    <span className="pro-plan-option__per"> / month</span>
+                  </span>
+                  <span className="pro-plan-option__note">
+                    {cycle === "annual" ? billedYearly : "Billed monthly"}
+                  </span>
+                </button>
               );
             })}
           </div>
@@ -424,7 +413,7 @@ export function ProUpgradeDialog({
           >
             {ctaLabel}
           </button>
-          <p className="text-cp-label text-ink-soft text-center">Cancel any time from Settings.</p>
+          <p className="text-center text-cp-label text-ink-soft">Cancel any time from Settings.</p>
         </>
       ) : (
         <>
@@ -459,6 +448,14 @@ export function ProUpgradeDialog({
           </button>
         </>
       )}
+      </div>
+      {/* The picture (Amelia, 2026-11-16): the left half on a computer, for
+          every step so the dialog never changes size; a band over the phone
+          sheet's plan step only, so sign-in keeps its room. After the text in
+          the page so the dialog's first focus lands there, not on an arrow;
+          `order-first` still draws it first. */}
+      <ProDialogArt images={images} className="hidden sm:order-first sm:block sm:w-[44%] sm:shrink-0" />
+      {step === "plan" && <ProDialogArt images={images} className="order-first h-[150px] shrink-0 sm:hidden" />}
     </Dialog>
   );
 }
