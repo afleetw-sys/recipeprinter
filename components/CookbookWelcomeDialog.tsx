@@ -233,7 +233,7 @@ export function CookbookWelcomeDialog({
             </div>
             <div className="cookbook-tour__top-actions">
               {!atEnd && (
-                <button type="button" className="cookbook-tour__skip" onClick={() => go(LAST, "skip")}>
+                <button type="button" className="cookbook-tour__skip cookbook-tour__skip--top" onClick={() => go(LAST, "skip")}>
                   Skip
                 </button>
               )}
@@ -304,6 +304,15 @@ export function CookbookWelcomeDialog({
                 <button type="button" className="btn btn-primary cookbook-tour__next" onClick={() => go(step + 1, "next")}>
                   Next
                   <ChevronRightIcon size={ICON_SIZE.md} />
+                </button>
+                {/* On a phone Skip sits under Next, at the thumb, instead of
+                    up by the close button (Amelia, 2026-11-17). */}
+                <button
+                  type="button"
+                  className="cookbook-tour__skip cookbook-tour__skip--below"
+                  onClick={() => go(LAST, "skip")}
+                >
+                  Skip
                 </button>
               </>
             )}
