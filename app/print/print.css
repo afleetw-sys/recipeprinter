@@ -127,11 +127,17 @@
     --rail-w: clamp(
       180px,
       var(--rail-user-w, 220px),
-      calc(100% - var(--panel-w) - 320px)
+      calc(100% - var(--panel-w) - 380px)
     );
     /* Its own clamp may not mention `--rail-w`: the rail's clamp already reads
-       this one, and two variables reading each other are both thrown away. */
-    --panel-w: clamp(260px, var(--panel-user-w, 330px), 40%);
+       this one, and two variables reading each other are both thrown away.
+       So it counts the rail at its narrowest (180px) instead.
+
+       The preview keeps at least 380px whenever the window allows it, the
+       room the page's toolbar needs with Change recipe always in it
+       (Amelia, 2026-11-17). On a small computer the side columns give it up,
+       the setup panel first (down to 260px), then the rail (down to 180px). */
+    --panel-w: clamp(260px, var(--panel-user-w, 330px), min(40%, calc(100% - 560px)));
     grid-template-columns:
       var(--rail-w)
       calc(100% - var(--rail-w) - var(--panel-w))
