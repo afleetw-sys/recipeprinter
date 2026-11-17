@@ -24,8 +24,8 @@ export async function closeCookbookWalkthrough(page: Page): Promise<void> {
 
 /**
  * Into Add recipes from a new, empty cookbook. A first cookbook goes through
- * the walkthrough to its last step's Start adding recipes (a phone has no
- * Skip, so it is Next until then); a later one in the same browser skips the
+ * the walkthrough to its last step's Start adding recipes (Next until then;
+ * there is no Skip); a later one in the same browser skips the
  * walkthrough and opens Add on its own.
  */
 export async function startAddingRecipes(page: Page): Promise<void> {
