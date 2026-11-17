@@ -744,7 +744,13 @@ export function PageRail(props: PageRailProps) {
                   : projectMeta.meta.cookbookMode
                     ? "Add recipes"
                     : hasRecipes
-                      ? "Add more recipes"
+                      ? (
+                        // One span: the button is a flex row, and loose text
+                        // nodes would each become their own spaced-out item.
+                        <span>
+                          Add<span className="recipe-page-rail__add-more"> more</span> recipes
+                        </span>
+                      )
                       : "Add recipe"}
                 {multiRecipeAddLocked && (
                   <ProBadge variant="inline" label={false} tooltip="Adding more recipes is Pro" />

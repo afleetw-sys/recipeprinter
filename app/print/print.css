@@ -975,7 +975,10 @@
 
 .recipe-page-rail__item {
   display: grid;
-  grid-template-columns: 1fr;
+  /* minmax(0, …), not 1fr: a 1fr track never goes narrower than its content,
+     so on a small desktop the fixed-size thumbnail pushed the card wider than
+     the rail and was cut off at the rail's edge instead of fading out. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   row-gap: 6px;
   padding: 8px;
@@ -1039,7 +1042,7 @@
 
 .recipe-page-rail__item-main {
   display: grid;
-  grid-template-columns: 16px 1fr;
+  grid-template-columns: 16px minmax(0, 1fr);
   align-items: center;
   column-gap: 8px;
   row-gap: 8px;
@@ -1437,6 +1440,19 @@
   position: relative;
   display: flex;
   gap: 0;
+  /* Sized by the rail, so "Add more recipes" can tell when it no longer
+     fits (Amelia, 2026-11-17): on a small desktop the rail is about 160px
+     inside and the full label is 182px. Its menus are portalled, so this
+     containment holds nothing that has to escape it. */
+  container-type: inline-size;
+}
+
+/* Too narrow for "Add more recipes": it says "Add recipes" instead of
+   running past the rail's edge. */
+@container (max-width: 184px) {
+  .recipe-page-rail__add-more {
+    display: none;
+  }
 }
 
 /* The organizer's own toolbar — Sort, Add chapter, the collapse
@@ -2840,7 +2856,10 @@
    far wider than the visible rail, so `100%` blew the thumb up and the panel
    clipped it to a sliver. The extra card runs off to the right under the fade. */
 .recipe-page-rail__thumb:not(.recipe-page-rail__thumb--spread) .recipe-page-scaler {
-  width: 141px;
+  /* Never wider than its own cell, now that the cell is bounded by the card:
+     on a narrow rail the crop box narrows and the card still runs off under
+     the fade rather than past the card's edge. */
+  width: min(141px, 100%);
 }
 
 /* A pending recipe is status, not a fake page preview. Keep the shared loading
