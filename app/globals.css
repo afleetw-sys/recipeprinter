@@ -1727,25 +1727,6 @@
     outline-offset: var(--cp-focus-ring-offset);
   }
 
-  /* Pro dialog's plan picker (components/ProUpgradeDialog.tsx): an
-     Annual/Monthly toggle (`.segmented-control--tabs`) with the chosen
-     plan's price under it, rather than two tiles that read as two buttons.
-     One CTA below commits whichever plan is selected. */
-  .pro-plan-save-tag {
-    padding: 1px 6px;
-    border-radius: 999px;
-    background: var(--cp-accent-soft);
-    color: var(--cp-ink);
-    font-size: var(--cp-fs-caption);
-    font-weight: 600;
-    line-height: 1.3;
-  }
-  .pro-plan-price {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-  }
   /* The Pro dialog's product picture (components/ProDialogArt.tsx). Several
      pictures stack and cross-fade; dots sit over the bottom. */
   .pro-dialog-art {
@@ -1775,34 +1756,31 @@
     object-fit: contain;
     padding: 8px;
   }
+  /* Plain white dots and arrows over the picture: no pill, disc or shadow
+     (Amelia, 2026-11-17). */
   .pro-dialog-art__dots {
     position: absolute;
     left: 50%;
     bottom: 12px;
     display: flex;
     gap: 6px;
-    padding: 5px 8px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--cp-card) 85%, transparent);
     transform: translateX(-50%);
   }
   .pro-dialog-art__dot {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 999px;
-    background: var(--cp-ink-soft);
-    opacity: 0.4;
+    background: #fff;
+    opacity: 0.5;
   }
   .pro-dialog-art__dot.is-active {
-    background: var(--cp-ink);
     opacity: 1;
   }
   .pro-dialog-art__dot:focus-visible {
     outline: var(--cp-focus-ring);
     outline-offset: var(--cp-focus-ring-offset);
   }
-  /* Back and forward between the pictures: small discs at the middle of
-     each side, the same frosted card colour as the dots' pill. */
+  /* Back and forward between the pictures, at the middle of each side. */
   .pro-dialog-art__arrow {
     position: absolute;
     top: 50%;
@@ -1811,23 +1789,23 @@
     width: 32px;
     height: 32px;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--cp-card) 85%, transparent);
-    color: var(--cp-ink);
+    color: #fff;
+    opacity: 0.85;
     transform: translateY(-50%);
-    transition: background-color 120ms ease;
+    transition: opacity 120ms ease;
   }
   .pro-dialog-art__arrow:hover {
-    background: var(--cp-card);
+    opacity: 1;
   }
   .pro-dialog-art__arrow:focus-visible {
     outline: var(--cp-focus-ring);
     outline-offset: var(--cp-focus-ring-offset);
   }
   .pro-dialog-art__arrow--prev {
-    left: 10px;
+    left: 4px;
   }
   .pro-dialog-art__arrow--next {
-    right: 10px;
+    right: 4px;
   }
   /* On the phone sheet the X sits over the picture band, where a bare glyph
      disappears: give it a disc there. Beside the picture on a computer it
@@ -1839,11 +1817,96 @@
       color: var(--cp-ink);
     }
   }
-  .pro-plan-price__amount {
+  /* Smaller than the plan name it rides beside (Amelia, 2026-11-17). */
+  .pro-plan-save-tag {
+    padding: 1px 5px;
+    border-radius: 999px;
+    background: var(--cp-accent-soft);
+    color: var(--cp-ink);
+    font-size: var(--cp-fs-micro);
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  /* Pro dialog's plan picker (components/ProUpgradeDialog.tsx): two radio
+     cards side by side, Annual first, each with its price as a monthly figure.
+     One CTA below commits whichever plan is selected. */
+  .pro-plan-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 10px;
+  }
+  /* Name, price and note sit on rows shared by both cards (subgrid), so a
+     name that wraps on a phone, Annual's beside its tag, keeps the two
+     prices level. */
+  .pro-plan-option {
+    position: relative;
+    display: grid;
+    grid-row: span 3;
+    grid-template-rows: subgrid;
+    justify-items: start;
+    align-content: start;
+    row-gap: 2px;
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid var(--cp-line-strong);
+    border-radius: 12px;
+    background: var(--cp-card);
+    color: var(--cp-ink);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 120ms ease, background-color 120ms ease;
+  }
+  .pro-plan-option:hover {
+    border-color: color-mix(in srgb, var(--cp-accent) 45%, var(--cp-line-strong));
+  }
+  .pro-plan-option[aria-checked="true"] {
+    border-color: var(--cp-selected-border);
+    background: var(--cp-selected-fill);
+  }
+  .pro-plan-option:focus-visible {
+    outline: var(--cp-focus-ring);
+    outline-offset: 2px;
+  }
+  .pro-plan-option__radio {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--cp-line-strong);
+    border-radius: 50%;
+    background: var(--cp-card);
+  }
+  .pro-plan-option[aria-checked="true"] .pro-plan-option__radio {
+    border: 5px solid var(--cp-accent);
+  }
+  .pro-plan-option__name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    align-self: start;
+    gap: 6px;
+    padding-right: 24px;
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-small);
+    font-weight: 600;
+  }
+  .pro-plan-option__price {
+    margin-top: 2px;
     font-size: var(--cp-fs-dialog-title);
     font-weight: 800;
     line-height: 1.2;
-    color: var(--cp-ink);
+    white-space: nowrap;
+  }
+  .pro-plan-option__per {
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-label);
+    font-weight: 600;
+  }
+  .pro-plan-option__note {
+    color: var(--cp-ink-soft);
+    font-size: var(--cp-fs-label);
+    line-height: 1.35;
   }
   .pro-plan-card__note {
     color: var(--cp-ink-soft);
@@ -1913,36 +1976,6 @@
     .segmented-control__thumb {
       transition: none;
     }
-  }
-
-  /* Quiet tab pair for the Pro dialog's plans: a small, faint track sized
-     to its labels and left-aligned with the rest, so the price under it is what reads first
-     (Amelia, 2026-11-16: the full-width bar was too loud). */
-  .segmented-control--tabs {
-    display: inline-flex;
-    align-self: flex-start;
-    padding: 2px;
-    border-radius: 999px;
-    background: var(--cp-surface-muted);
-  }
-  .segmented-control--tabs .segmented-control__thumb {
-    top: 2px;
-    bottom: 2px;
-    border: 1px solid var(--cp-line);
-    border-radius: 999px;
-    background: var(--cp-card);
-  }
-  .segmented-control--tabs .segmented-control__option {
-    padding: 5px 14px;
-    border-radius: 999px;
-    font-size: var(--cp-fs-label);
-    font-weight: 600;
-  }
-  .segmented-control--tabs .segmented-control__option:not(.is-active) {
-    color: var(--cp-ink-soft);
-  }
-  .segmented-control--tabs .segmented-control__option:not(.is-active):hover {
-    color: var(--cp-ink);
   }
 
   /* Smaller instance of the same pill — for a spot like the Pro card's
