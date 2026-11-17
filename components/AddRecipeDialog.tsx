@@ -179,9 +179,6 @@ export function AddRecipeDialog({
         </button>
       </div>
       <div className="recipe-add-dialog__body">
-        {replacing && (
-          <p className="text-cp-body text-ink-soft">It takes this recipe&apos;s place, in the same theme and size.</p>
-        )}
         {chapterTarget && (
           <div className="recipe-add-dialog__target">
             <MenuSelect
