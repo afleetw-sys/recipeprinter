@@ -17,6 +17,7 @@ import { AddRecipeDialog } from "@/components/AddRecipeDialog";
 import { sectionOrderChanged, sortSectionsByTitle } from "@/lib/sectionSort";
 import { recipeLinkOn } from "@/lib/recipeLink";
 import { CookbookWelcomeDialog } from "@/components/CookbookWelcomeDialog";
+import { cookbookTourSeen, markCookbookTourSeen } from "@/lib/cookbookTour";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
 import {
   type CookbookPdfProgress,
@@ -1935,10 +1936,11 @@ export default function PrintPage() {
       });
       // A restored book (undefined from the scaffold) was created before.
       if (bookTemplate !== undefined) reportCookbookCreated();
-      // Every new book gets the welcome, the homepage's Cookbook tab
+      // Every first book gets the welcome, the homepage's Cookbook tab
       // included. That tab used to count as the welcome and skip this, so a
-      // book started there opened with no onboarding at all.
-      if (!offerAfter) {
+      // book started there opened with no onboarding at all. A cook who has
+      // already been through it, starting another book, goes straight in.
+      if (!offerAfter || cookbookTourSeen()) {
         setBookHiddenUntilBuilt(false);
         return;
       }
@@ -1950,6 +1952,7 @@ export default function PrintPage() {
       window.setTimeout(() => {
         void untilBookSettled().then(() => {
           track("cookbook_welcome_shown", { price: cookbookPrice, recipeCount: items?.filter(isRecipeEntry).length ?? 0 });
+          markCookbookTourSeen();
           setBookHiddenUntilBuilt(false);
           setShowCookbookOfferDialog(true);
         });
