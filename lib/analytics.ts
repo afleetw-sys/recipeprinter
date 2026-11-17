@@ -659,6 +659,12 @@ type EventProps = {
   /** The offer dialog was dismissed without building — the price-reveal back-out
       at the offer stage, before any cookbook is built. */
   cookbook_onboarding_dismissed: { price?: string; via?: "close" | "look_around" };
+  /** The cookbook walkthrough moved to `step` (1-based). `via` says how:
+      the buttons, a swipe, the arrow keys, a progress bar, or Skip (which
+      jumps to the last step, where the price is). */
+  cookbook_tour_step: { step: number; via: "next" | "back" | "skip" | "swipe" | "key" | "dot" };
+  /** "Start adding recipes" (or "Take a look") on the walkthrough's last step. */
+  cookbook_onboarding_started: { price?: string; hasRecipes: boolean };
   /** Switched back from a cookbook to plain recipe cards — how sticky the mode
       is (build one, then bail?). `recipeCount` for consistent segmentation. */
   cookbook_cover_layout_selected: { layout: "photo" | "collage" | "typographic" };

@@ -332,7 +332,6 @@
   visibility: hidden;
 }
 
-.cookbook-welcome,
 .cookbook-ready {
   position: fixed;
   inset: 0;
@@ -341,12 +340,266 @@
   place-items: center;
   padding: 24px;
 }
-.cookbook-welcome__backdrop,
 .cookbook-ready__backdrop {
   position: absolute;
   inset: 0;
   background: var(--cp-scrim);
   backdrop-filter: var(--cp-scrim-blur);
+}
+
+/* The cookbook walkthrough (components/CookbookWelcomeDialog.tsx): a whole
+   screen, not a dialog over the empty book (Amelia, 2026-11-17). On a
+   computer the picture fills the left and the words sit on the right; on a
+   phone the picture is the top of the screen and the words sit under it. */
+.cookbook-tour {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  background: var(--cp-page);
+  color: var(--cp-ink);
+}
+.cookbook-tour__panel,
+.cookbook-tour__stage {
+  height: 100%;
+}
+.cookbook-tour__stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(360px, 1fr);
+  /* Vertical scrolling stays the browser's; sideways is a swipe. */
+  touch-action: pan-y;
+}
+
+/* Every step's picture is drawn, stacked; the current one fades in. */
+.cookbook-tour__pictures {
+  position: relative;
+  margin: 24px 0 24px 24px;
+  overflow: hidden;
+  border-radius: var(--cp-radius-xl);
+  background: var(--cp-surface-muted);
+}
+.cookbook-tour__picture {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 450ms ease;
+}
+.cookbook-tour__picture.is-active {
+  opacity: 1;
+}
+.cookbook-tour__picture img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(var(--tour-zoom, 1));
+}
+
+.cookbook-tour__copy {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 0;
+  padding: 32px clamp(28px, 4vw, 64px) 40px;
+}
+.cookbook-tour__top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.cookbook-tour__progress {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 6px;
+}
+/* Each bar is a button (it jumps to its step) with a tall, invisible hit
+   area around a 4px line. */
+.cookbook-tour__bar {
+  position: relative;
+  flex: 1 1 0;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.cookbook-tour__bar::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 8px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--cp-line-strong);
+  transition: background-color 200ms ease;
+}
+.cookbook-tour__bar.is-done::before {
+  background: var(--cp-ink);
+}
+.cookbook-tour__bar:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.cookbook-tour__top-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+}
+.cookbook-tour__skip {
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+  font-weight: 700;
+}
+.cookbook-tour__skip:hover {
+  color: var(--cp-ink);
+}
+.cookbook-tour__skip:focus-visible {
+  outline: var(--cp-focus-ring);
+  outline-offset: 2px;
+}
+
+.cookbook-tour__words {
+  align-self: center;
+  max-width: 30rem;
+  animation: cookbook-tour-in 320ms ease both;
+}
+@keyframes cookbook-tour-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.cookbook-tour__count {
+  margin: 0 0 12px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+  font-weight: 700;
+}
+.cookbook-tour__words h2 {
+  margin: 0;
+  font-size: var(--cp-fs-hero-sm);
+  font-weight: 850;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.cookbook-tour__body {
+  margin: 16px 0 0;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-body-lg);
+  line-height: 1.55;
+}
+.cookbook-tour__price {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--cp-line);
+}
+.cookbook-tour__price p {
+  margin: 4px 0 0;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-small);
+}
+.cookbook-tour__price .cookbook-tour__amount {
+  margin: 0;
+  color: var(--cp-ink);
+  font-size: var(--cp-fs-price);
+  font-weight: 850;
+  line-height: 1.2;
+}
+.cookbook-tour__per {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-body);
+  font-weight: 600;
+}
+.cookbook-tour__was {
+  color: var(--cp-ink-soft);
+  font-weight: 600;
+}
+
+.cookbook-tour__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.cookbook-tour__actions .btn {
+  min-width: 120px;
+}
+.cookbook-tour__next,
+.cookbook-tour__back {
+  gap: 6px;
+}
+/* The way in sits on the right, where Next was, and the way out to its left
+   (the app's cancel-left, commit-right order). */
+.cookbook-tour__start {
+  order: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cookbook-tour__picture {
+    transition: none;
+  }
+  .cookbook-tour__words {
+    animation: none;
+  }
+}
+
+/* Phones: the picture on top, the words under it, the buttons at the
+   thumb. */
+@media (max-width: 760px) {
+  .cookbook-tour__stage {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 44dvh) minmax(0, 1fr);
+  }
+  .cookbook-tour__pictures {
+    margin: 0;
+    border-radius: 0;
+  }
+  .cookbook-tour__picture img {
+    transform: scale(var(--tour-zoom-phone, 1));
+  }
+  .cookbook-tour__copy {
+    padding: 16px 20px max(20px, env(safe-area-inset-bottom));
+  }
+  .cookbook-tour__words {
+    align-self: start;
+    padding-top: 20px;
+  }
+  .cookbook-tour__count {
+    margin-bottom: 8px;
+  }
+  .cookbook-tour__body {
+    margin-top: 10px;
+    font-size: var(--cp-fs-body);
+  }
+  .cookbook-tour__price {
+    margin-top: 18px;
+    padding-top: 14px;
+  }
+  .cookbook-tour__actions .btn {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  /* The last step carries the price and two buttons, so its picture gives
+     up some height to keep both buttons on a short phone screen. */
+  .cookbook-tour__stage:has(.cookbook-tour__start) {
+    grid-template-rows: minmax(0, 30dvh) minmax(0, 1fr);
+  }
+  .cookbook-tour__stage:has(.cookbook-tour__start) .cookbook-tour__words {
+    padding-top: 12px;
+  }
+  .cookbook-tour__actions:has(.cookbook-tour__start) {
+    gap: 4px;
+  }
+  /* On the last step the two buttons stack full width, the way in on top. */
+  .cookbook-tour__actions:has(.cookbook-tour__start) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cookbook-tour__actions:has(.cookbook-tour__start) .cookbook-tour__start {
+    order: 0;
+  }
 }
 
 /* A confirm's heading and message name things (a recipe, a project, a link a
@@ -409,9 +662,6 @@
   backdrop-filter: var(--cp-scrim-blur);
 }
 
-@media (max-width: 760px) {
-}
-.cookbook-welcome__panel,
 .cookbook-ready__panel {
   position: relative;
   z-index: 1;
@@ -425,68 +675,11 @@
   box-shadow: var(--cp-shadow-xl);
   animation: print-success-pop 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
-.cookbook-welcome__panel {
-  width: min(820px, calc(100vw - 48px));
-  display: grid;
-  /* The copy sets the dialog's height; the photo is a narrower column that
-     fills whatever height that is, so the dialog is never taller than its
-     words need. The copy gets the width, so the title and each step sit on
-     one line instead of wrapping the dialog taller. */
-  grid-template-columns: minmax(220px, 0.5fr) minmax(400px, 1fr);
-  align-items: stretch;
-  gap: 0;
-  padding: 0;
-  border: none;
-  overflow: hidden;
-}
-.cookbook-welcome__close,
 .cookbook-ready__close {
   position: absolute;
   z-index: 3;
   top: 1rem;
   right: 1rem;
-}
-.cookbook-welcome__copy {
-  display: grid;
-  align-content: center;
-  gap: 1.35rem;
-  padding: clamp(1.75rem, 2.6vw, 2.25rem);
-}
-.cookbook-welcome__lede {
-  display: grid;
-  gap: .55rem;
-}
-.cookbook-welcome__visual {
-  position: relative;
-  overflow: hidden;
-  /* Warm ground behind the photo, mixed from the palette rather than picked:
-     it shows only while the image loads. */
-  background: color-mix(in srgb, var(--cp-accent-warm) 28%, var(--cp-page));
-}
-.cookbook-welcome__visual img {
-  /* Out of flow, so a tall photo can't stretch the row; it fills the cell
-     the copy sized. */
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  /* A portrait photo in a near-square panel: anchored high so the recipe
-     title and the coil stay in frame and the blurred photo page is cropped. */
-  object-position: center 22%;
-}
-.cookbook-welcome__copy h2 {
-  color: var(--cp-ink);
-  font-family: inherit;
-  font-weight: 850;
-  line-height: 1.08;
-  letter-spacing: -.03em;
-  font-size: clamp(1.8rem, 2.6vw, 2rem);
-}
-.cookbook-welcome__copy > p {
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-body-lg);
-  line-height: 1.55;
 }
 /* Match the standard centered dialog (.print-success-dialog): a fixed 1.24rem
    heading and a --cp-fs-body paragraph, not the welcome dialog's viewport-
@@ -503,59 +696,6 @@
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-body);
   line-height: 1.5;
-}
-/* Numbered, because it is an order of work: recipes, then chapters, then the
-   finish. Ink numbers on a clay tint: clay is a fill here, never the text. */
-.cookbook-welcome__steps {
-  display: grid;
-  gap: .6rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.cookbook-welcome__steps li {
-  display: flex;
-  align-items: center;
-  gap: .7rem;
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-body);
-  font-weight: 600;
-  line-height: 1.25;
-}
-.cookbook-welcome__step-num {
-  display: grid;
-  place-items: center;
-  width: 1.6em;
-  height: 1.6em;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--cp-accent-warm) 16%, var(--cp-card));
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-small);
-  font-weight: 800;
-  line-height: 1;
-}
-.cookbook-welcome__price {
-  display: grid;
-  gap: .3rem;
-  padding-left: 1rem;
-  border-left: 3px solid var(--cp-accent-warm);
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-small);
-  line-height: 1.4;
-}
-.cookbook-welcome__price strong {
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-body-lg);
-}
-.cookbook-welcome__price b {
-  margin-top: .25rem;
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-h2);
-  line-height: 1.15;
-}
-.cookbook-welcome__was {
-  color: var(--cp-ink-soft);
-  font-weight: 600;
 }
 /* Export failure — a server render can fail in ways a print dialog never
    could (renderer down, timeout), so the dialog has somewhere to say it. */
@@ -579,19 +719,6 @@
 .cookbook-ready__error p {
   margin: 0;
   min-width: 0;
-}
-
-.cookbook-welcome__actions {
-  display: flex;
-  /* Right, like every other dialog's actions. The way out sits left of the
-     way forward (see the buttons' order in CookbookWelcomeDialog). */
-  justify-content: flex-end;
-  align-items: center;
-  gap: .5rem;
-  margin-top: .1rem;
-}
-.cookbook-welcome__actions .btn {
-  flex: 0 0 auto;
 }
 
 /* Compact, single-column layout: a short header, the two format choices, then
@@ -1061,60 +1188,6 @@
   font-size: .78em;
   letter-spacing: .1em;
   text-transform: uppercase;
-}
-
-/* Phones get the offer, not the brochure. The photo is dropped outright: at
-   phone width it was a cropped strip of a book the cook is already looking at
-   behind the scrim, and it pushed the button off a short screen. The lede
-   stays: it is the one line saying what we do for them. The panel's width
-   subtracts the root's padding on BOTH sides; `100vw - 24px` inside a 24px-
-   padded grid ran it 24px off the right edge, which is what read as broken. */
-@media (max-width: 720px) {
-  .cookbook-welcome {
-    padding: 16px;
-  }
-  .cookbook-welcome__panel {
-    grid-template-columns: 1fr;
-    width: min(440px, 100%);
-    max-height: calc(100dvh - 32px);
-    overflow-y: auto;
-    gap: 0;
-    border-radius: var(--cp-radius-card);
-  }
-  .cookbook-welcome__visual {
-    display: none;
-  }
-  .cookbook-welcome__copy {
-    gap: 1rem;
-    padding: 1.5rem 1.25rem 1.25rem;
-  }
-  .cookbook-welcome__copy h2 {
-    /* Clear of the close button, which now sits on the copy, not the photo. */
-    padding-right: 2rem;
-    font-size: var(--cp-fs-h2-lg);
-    line-height: 1.15;
-    letter-spacing: -.02em;
-  }
-  .cookbook-welcome__steps {
-    gap: .5rem;
-  }
-  .cookbook-welcome__price {
-    gap: .15rem;
-    padding-left: .75rem;
-  }
-  .cookbook-welcome__price b {
-    margin-top: 0;
-    font-size: var(--cp-fs-body-lg);
-  }
-  /* Two buttons don't fit side by side at phone width, so they stack full
-     width, the way forward on top where the thumb lands first. */
-  .cookbook-welcome__actions {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-  .cookbook-welcome__actions .btn {
-    flex: 1 1 auto;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2994,9 +3067,6 @@
     display: flex;
     align-items: flex-start;
     gap: .75rem;
-  }
-  .rp-cookbook-page__steps .cookbook-welcome__step-num {
-    flex-shrink: 0;
   }
   @media (min-width: 768px) {
     .rp-cookbook-page__steps {
