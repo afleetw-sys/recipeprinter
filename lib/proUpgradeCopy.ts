@@ -107,14 +107,6 @@ const TITLE_BY_REASON: Record<ProLockReason, string> = {
   font_size: "Ready to customize your theme?",
 };
 
-// What the title's feature does for the cook, in a sentence under it.
-const BODY_BY_REASON: Record<ProLockReason, string> = {
-  multi_recipe: "Put several recipes in one print instead of printing them one at a time.",
-  card_size: "Print your recipes as 4×6 cards that fit a standard recipe box.",
-  theme: "Print any recipe in any theme, and switch whenever you like.",
-  font_size: "Change any theme's colours and text size to suit your recipes.",
-};
-
 /** Over the benefit list when the title already names the feature that
     opened the dialog, so the list is the rest of Pro. */
 const ALSO_GET = "You'll also get";
@@ -286,7 +278,6 @@ export function proUpgradeCopy(
   if (trigger === REMOVE_BRANDING_TRIGGER) {
     return {
       title: "Ready to print without branding?",
-      body: "Your prints show just your recipes, with no RecipePrinter line at the bottom.",
       benefits: [NO_BRANDING_BENEFIT, ...PRO_BENEFITS.filter((b) => b !== NO_BRANDING_BENEFIT)],
       ...splitBenefits([], NO_BRANDING_BENEFIT),
       ctaLabel: "Get Pro and continue",
@@ -305,7 +296,9 @@ export function proUpgradeCopy(
   const alreadySaid = single ? BENEFIT_BY_REASON[single] : undefined;
   return {
     title: single ? TITLE_BY_REASON[single] : "Ready to print with Pro?",
-    body: single ? BODY_BY_REASON[single] : "This print uses Pro features. Upgrade and it prints just as you set it up.",
+    // A body only where it says something the title doesn't (Amelia,
+    // 2026-11-17): a single feature's title already names it.
+    body: single ? undefined : "This print uses Pro features. Upgrade and it prints just as you set it up.",
     benefits,
     ...splitBenefits(benefits.filter((benefit) => triggered.has(benefit)), alreadySaid),
     ctaLabel: trigger === "print_button" ? "Get Pro and print" : "Get Pro and continue",

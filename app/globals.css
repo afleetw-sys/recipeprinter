@@ -1865,16 +1865,6 @@
   .pro-dialog-art__arrow--next {
     right: 4px;
   }
-  /* On the phone sheet the X sits over the picture band, where a bare glyph
-     disappears: give it a disc there. Beside the picture on a computer it
-     stays bare. */
-  @media (max-width: 639.98px) {
-    .icon-close-btn.pro-dialog-close--on-art {
-      border-radius: 999px;
-      background: color-mix(in srgb, var(--cp-card) 90%, transparent);
-      color: var(--cp-ink);
-    }
-  }
   /* Smaller than the plan name it rides beside (Amelia, 2026-11-17). */
   .pro-plan-save-tag {
     padding: 1px 5px;
