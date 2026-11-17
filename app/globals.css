@@ -371,7 +371,9 @@
   position: relative;
   z-index: 1;
   width: min(820px, calc(100vw - 48px));
-  height: min(540px, calc(100dvh - 48px));
+  /* Its tallest step (the price) needs about 320px; 400 gives it room
+     without the empty band 540 left (Amelia, 2026-11-17). */
+  height: min(400px, calc(100dvh - 48px));
   overflow: hidden;
   border-radius: var(--cp-radius-dialog);
   background: var(--cp-card);
