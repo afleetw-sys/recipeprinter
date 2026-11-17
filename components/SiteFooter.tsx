@@ -30,6 +30,16 @@ export function SiteFooter({ isHome = false }: { isHome?: boolean }) {
               {label}
             </Link>
           ))}
+          {/* The cookbook hub, linked from every page so search engines see it
+              as a main page of the site. It's a landing page, not a NAV_LINKS
+              entry: those also feed the sitemap and llms.txt, which already
+              list it through SEO_LANDING_PAGES. */}
+          <Link
+            href="/cookbook-maker"
+            className="text-cp-small font-semibold text-ink-soft hover:text-ink transition-colors"
+          >
+            Cookbook maker
+          </Link>
           <FeedbackButton />
           {/* Feedback goes in a form we read in aggregate; this is the way to
               reach a person about one specific thing. Both belong here, next to
