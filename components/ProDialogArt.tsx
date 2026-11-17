@@ -45,7 +45,7 @@ export function ProDialogArt({ images, className }: { images: ProDialogImage[]; 
             aria-label="Previous picture"
             onClick={() => step(-1)}
           >
-            <ChevronLeftIcon size={ICON_SIZE.md} />
+            <ChevronLeftIcon size={ICON_SIZE.lg} />
           </button>
           <button
             type="button"
@@ -53,7 +53,7 @@ export function ProDialogArt({ images, className }: { images: ProDialogImage[]; 
             aria-label="Next picture"
             onClick={() => step(1)}
           >
-            <ChevronRightIcon size={ICON_SIZE.md} />
+            <ChevronRightIcon size={ICON_SIZE.lg} />
           </button>
           <div className="pro-dialog-art__dots">
             {images.map((image, i) => (

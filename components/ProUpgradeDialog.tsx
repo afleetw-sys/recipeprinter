@@ -362,12 +362,16 @@ export function ProUpgradeDialog({
           </h2>
           {body && <p className="text-cp-body text-ink-soft">{body}</p>}
 
+          {/* A long list kept quiet (Amelia, 2026-11-17): a soft lead-in
+              rather than a bold heading, small type on an even pitch, and
+              accent checks, so it reads as a column of reasons rather than
+              a wall of headlines. */}
           <div className="flex flex-col gap-cp-2">
-            <p className="text-cp-small font-bold text-ink">{listHeading}</p>
-            <ul className="flex flex-col gap-cp-1">
+            <p className="text-cp-small text-ink-soft">{listHeading}</p>
+            <ul className="flex flex-col gap-[6px]">
               {highlights.map((benefit) => (
-                <li key={benefit} className="flex items-start gap-cp-2 text-cp-body">
-                  <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
+                <li key={benefit} className="flex items-start gap-cp-2 text-cp-small text-ink">
+                  <CheckIcon size={ICON_SIZE.sm} className="mt-[2px] shrink-0 text-brand" />
                   {benefit}
                 </li>
               ))}
@@ -378,7 +382,7 @@ export function ProUpgradeDialog({
               (Amelia, 2026-11-17), each with its price as a monthly figure so
               they compare like for like. The button below commits the one
               selected. */}
-          <div role="radiogroup" aria-label="Billing plan" className="pro-plan-options">
+          <div role="radiogroup" aria-label="Billing plan" className="pro-plan-options mt-cp-3">
             {PRO_PLAN_CYCLES.map((cycle) => {
               const selected = cycle === selectedCycle;
               return (
