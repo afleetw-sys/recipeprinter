@@ -102,7 +102,7 @@ const LAST = TOUR_STEPS.length - 1;
 // turn the page, so a tap or a scroll never does.
 const SWIPE_PX = 48;
 
-type StepVia = "next" | "back" | "swipe" | "key" | "dot";
+type StepVia = "next" | "back" | "swipe" | "key";
 
 /**
  * The cookbook walkthrough, in a dialog the size of every other one. On a
@@ -241,18 +241,6 @@ export function CookbookWelcomeDialog({
 
         <div className="cookbook-tour__copy">
           <div className="cookbook-tour__top">
-            <div className="cookbook-tour__progress" role="group" aria-label="Steps">
-              {TOUR_STEPS.map((item, index) => (
-                <button
-                  key={item.title}
-                  type="button"
-                  className={index <= step ? "cookbook-tour__bar is-done" : "cookbook-tour__bar"}
-                  aria-label={`Step ${index + 1} of ${TOUR_STEPS.length}`}
-                  aria-current={index === step ? "step" : undefined}
-                  onClick={() => go(index, "dot")}
-                />
-              ))}
-            </div>
             <div className="cookbook-tour__top-actions">
               <button type="button" className="cookbook-tour__close cookbook-tour__close--top icon-close-btn" aria-label="Close" onClick={onClose}>
                 <XIcon size={ICON_SIZE.md} />
@@ -263,7 +251,7 @@ export function CookbookWelcomeDialog({
           {/* Keyed by step so each one's words fade in fresh. */}
           <div key={step} className="cookbook-tour__words" aria-live="polite">
             <p className="cookbook-tour__count">
-              {step + 1} of {TOUR_STEPS.length}
+              Step {step + 1} of {TOUR_STEPS.length}
             </p>
             <h2 id="cookbook-tour-title">{current.title}</h2>
             <p className="cookbook-tour__body">{current.body}</p>

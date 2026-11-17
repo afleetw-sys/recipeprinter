@@ -426,42 +426,8 @@
 .cookbook-tour__top {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
-}
-.cookbook-tour__progress {
-  display: flex;
-  flex: 1 1 auto;
-  gap: 6px;
-}
-/* Each bar is a button (it jumps to its step) with a tall, invisible hit
-   area around a 4px line. */
-.cookbook-tour__bar {
-  position: relative;
-  flex: 1 1 0;
-  height: 20px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-.cookbook-tour__bar::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 8px;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--cp-line-strong);
-  transition: background-color 200ms ease;
-}
-.cookbook-tour__bar.is-done::before {
-  background: var(--cp-ink);
-}
-.cookbook-tour__bar:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: 2px;
-  border-radius: 4px;
 }
 .cookbook-tour__top-actions {
   display: flex;
@@ -504,10 +470,13 @@
   font-size: var(--cp-fs-body);
   line-height: 1.5;
 }
+/* The price on a soft grey card rather than under a rule (Amelia,
+   2026-11-17). */
 .cookbook-tour__price {
   margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--cp-line);
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--cp-surface-muted);
 }
 .cookbook-tour__price p {
   margin: 4px 0 0;
