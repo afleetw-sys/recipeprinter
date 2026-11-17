@@ -29,6 +29,11 @@ interface TourStep {
         phone's picture is narrower, so it may need a closer crop. */
     zoom?: number;
     zoomPhone?: number;
+    /** Where the zoom centres, so the part that matters stays in view. */
+    origin?: string;
+    originPhone?: string;
+    /** Shown whole on a plain ground rather than cropped to fill. */
+    whole?: boolean;
   };
 }
 
@@ -60,19 +65,23 @@ const TOUR_STEPS: readonly TourStep[] = [
       width: 2400,
       height: 1600,
       position: "50% 50%",
-      zoom: 1.55,
-      zoomPhone: 2.05,
+      zoom: 1.22,
+      zoomPhone: 2.3,
+      origin: "15% 33%",
+      originPhone: "50% 75%",
     },
   },
   {
     title: "A cover that's all yours",
     body: "Pick a theme and a cover, then make any page your own with notes and photos.",
+    // The whole cover, uncropped (Amelia, 2026-11-17): the printed photo
+    // cut its edges off at every size.
     image: {
-      src: "/images/cookbook-printed-cover.jpg",
-      alt: "A printed spiral-bound family cookbook with a photo collage cover",
-      width: 900,
-      height: 1161,
-      position: "50% 35%",
+      src: "/images/cookbook-hardcover.webp",
+      alt: "A family cookbook cover with a collage of food photos and the title Our Family Cookbook",
+      width: 800,
+      height: 1067,
+      whole: true,
     },
   },
   {
@@ -93,14 +102,14 @@ const LAST = TOUR_STEPS.length - 1;
 // turn the page, so a tap or a scroll never does.
 const SWIPE_PX = 48;
 
-type StepVia = "next" | "back" | "skip" | "swipe" | "key" | "dot";
+type StepVia = "next" | "back" | "swipe" | "key";
 
 /**
- * The cookbook walkthrough: full screen on every device. On a computer, the
- * picture fills the left and the words sit on the right; on a phone, the
- * picture is the top half and the cook swipes or taps Next. Escape and the X
- * close it; Skip goes straight to the last step, so the price and the way in
- * are never skipped.
+ * The cookbook walkthrough, in a dialog the size of every other one. On a
+ * computer the picture fills the left and the words sit on the right; on a
+ * phone it is a bottom sheet with the picture across its top, and the cook
+ * swipes or taps Next. Escape and the X close it; there is no Skip (Amelia,
+ * 2026-11-17).
  */
 export function CookbookWelcomeDialog({
   open,
@@ -180,7 +189,8 @@ export function CookbookWelcomeDialog({
       onClose={onClose}
       labelledBy="cookbook-tour-title"
       className="cookbook-tour no-print"
-      panelClassName="cookbook-tour__panel"
+      backdropClassName="cookbook-tour__backdrop"
+      panelClassName="cookbook-tour__panel mobile-sheet-panel"
       portal
     >
       <div
@@ -191,9 +201,8 @@ export function CookbookWelcomeDialog({
           swipeFrom.current = null;
         }}
       >
-        {/* On a phone the X sits over the top of the picture, and there is no
-            Skip (Amelia, 2026-11-17); the one beside the progress bar is the
-            computer's. */}
+        {/* On a phone the X sits over the top of the picture; the one beside
+            the progress bar is the computer's. */}
         <button
           type="button"
           className="cookbook-tour__close cookbook-tour__close--over icon-close-btn"
@@ -206,14 +215,14 @@ export function CookbookWelcomeDialog({
           {TOUR_STEPS.map((item, index) => (
             <div
               key={item.image.src}
-              className={index === step ? "cookbook-tour__picture is-active" : "cookbook-tour__picture"}
+              className={`cookbook-tour__picture${index === step ? " is-active" : ""}${item.image.whole ? " is-whole" : ""}`}
             >
               <Image
                 src={item.image.src}
                 alt=""
                 width={item.image.width}
                 height={item.image.height}
-                sizes="(max-width: 760px) 100vw, 58vw"
+                sizes="(max-width: 640px) 100vw, 360px"
                 priority={index === 0}
                 loading={index === 0 ? undefined : "eager"}
                 style={
@@ -221,6 +230,8 @@ export function CookbookWelcomeDialog({
                     objectPosition: item.image.position,
                     "--tour-zoom": item.image.zoom ?? 1,
                     "--tour-zoom-phone": item.image.zoomPhone ?? item.image.zoom ?? 1,
+                    "--tour-origin": item.image.origin ?? "50% 50%",
+                    "--tour-origin-phone": item.image.originPhone ?? item.image.origin ?? "50% 50%",
                   } as CSSProperties
                 }
               />
@@ -230,24 +241,7 @@ export function CookbookWelcomeDialog({
 
         <div className="cookbook-tour__copy">
           <div className="cookbook-tour__top">
-            <div className="cookbook-tour__progress" role="group" aria-label="Steps">
-              {TOUR_STEPS.map((item, index) => (
-                <button
-                  key={item.title}
-                  type="button"
-                  className={index <= step ? "cookbook-tour__bar is-done" : "cookbook-tour__bar"}
-                  aria-label={`Step ${index + 1} of ${TOUR_STEPS.length}`}
-                  aria-current={index === step ? "step" : undefined}
-                  onClick={() => go(index, "dot")}
-                />
-              ))}
-            </div>
             <div className="cookbook-tour__top-actions">
-              {!atEnd && (
-                <button type="button" className="cookbook-tour__skip" onClick={() => go(LAST, "skip")}>
-                  Skip
-                </button>
-              )}
               <button type="button" className="cookbook-tour__close cookbook-tour__close--top icon-close-btn" aria-label="Close" onClick={onClose}>
                 <XIcon size={ICON_SIZE.md} />
               </button>
@@ -257,7 +251,7 @@ export function CookbookWelcomeDialog({
           {/* Keyed by step so each one's words fade in fresh. */}
           <div key={step} className="cookbook-tour__words" aria-live="polite">
             <p className="cookbook-tour__count">
-              {step + 1} of {TOUR_STEPS.length}
+              Step {step + 1} of {TOUR_STEPS.length}
             </p>
             <h2 id="cookbook-tour-title">{current.title}</h2>
             <p className="cookbook-tour__body">{current.body}</p>

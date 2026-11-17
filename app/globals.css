@@ -347,24 +347,41 @@
   backdrop-filter: var(--cp-scrim-blur);
 }
 
-/* The cookbook walkthrough (components/CookbookWelcomeDialog.tsx): a whole
-   screen, not a dialog over the empty book (Amelia, 2026-11-17). On a
-   computer the picture fills the left and the words sit on the right; on a
-   phone the picture is the top of the screen and the words sit under it. */
+/* The cookbook walkthrough (components/CookbookWelcomeDialog.tsx): a dialog
+   the size of every other one, not a whole screen (Amelia, 2026-11-17). On a
+   computer the picture fills the left of the panel and the words sit on the
+   right, as in the Pro dialog; on a phone it is a bottom sheet with the
+   picture as a band across its top. */
 .cookbook-tour {
   position: fixed;
   inset: 0;
   z-index: var(--z-dialog);
-  background: var(--cp-page);
+  display: grid;
+  place-items: center;
+  padding: 24px;
   color: var(--cp-ink);
 }
-.cookbook-tour__panel,
-.cookbook-tour__stage {
-  height: 100%;
+.cookbook-tour__backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--cp-scrim);
+  backdrop-filter: var(--cp-scrim-blur);
+}
+.cookbook-tour__panel {
+  position: relative;
+  z-index: 1;
+  width: min(820px, calc(100vw - 48px));
+  height: min(540px, calc(100dvh - 48px));
+  overflow: hidden;
+  border-radius: var(--cp-radius-dialog);
+  background: var(--cp-card);
+  box-shadow: var(--cp-shadow-xl);
 }
 .cookbook-tour__stage {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(360px, 1fr);
+  grid-template-columns: 44% minmax(0, 1fr);
+  height: 100%;
   /* Vertical scrolling stays the browser's; sideways is a swipe. */
   touch-action: pan-y;
 }
@@ -372,9 +389,7 @@
 /* Every step's picture is drawn, stacked; the current one fades in. */
 .cookbook-tour__pictures {
   position: relative;
-  margin: 24px 0 24px 24px;
   overflow: hidden;
-  border-radius: var(--cp-radius-xl);
   background: var(--cp-surface-muted);
 }
 .cookbook-tour__picture {
@@ -386,78 +401,39 @@
 .cookbook-tour__picture.is-active {
   opacity: 1;
 }
+/* A picture shown whole (the cover) sits on the panel's soft ground. */
+.cookbook-tour__picture.is-whole {
+  background: var(--cp-surface-muted);
+}
+.cookbook-tour__picture.is-whole img {
+  object-fit: contain;
+  padding: 24px;
+}
 .cookbook-tour__picture img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transform: scale(var(--tour-zoom, 1));
+  transform-origin: var(--tour-origin, 50% 50%);
 }
 
 .cookbook-tour__copy {
   display: grid;
   grid-template-rows: auto 1fr auto;
   min-height: 0;
-  padding: 32px clamp(28px, 4vw, 64px) 40px;
+  padding: 20px 24px 24px 28px;
 }
 .cookbook-tour__top {
   display: flex;
   align-items: center;
-  gap: 16px;
-}
-.cookbook-tour__progress {
-  display: flex;
-  flex: 1 1 auto;
-  gap: 6px;
-}
-/* Each bar is a button (it jumps to its step) with a tall, invisible hit
-   area around a 4px line. */
-.cookbook-tour__bar {
-  position: relative;
-  flex: 1 1 0;
-  height: 20px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-.cookbook-tour__bar::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 8px;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--cp-line-strong);
-  transition: background-color 200ms ease;
-}
-.cookbook-tour__bar.is-done::before {
-  background: var(--cp-ink);
-}
-.cookbook-tour__bar:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: 2px;
-  border-radius: 4px;
+  justify-content: flex-end;
+  gap: 12px;
 }
 .cookbook-tour__top-actions {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 4px;
-}
-.cookbook-tour__skip {
-  padding: 6px 10px;
-  border-radius: 8px;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-small);
-  font-weight: 700;
-}
-.cookbook-tour__skip:hover {
-  color: var(--cp-ink);
-}
-.cookbook-tour__skip:focus-visible {
-  outline: var(--cp-focus-ring);
-  outline-offset: 2px;
+  gap: 2px;
 }
 /* The X over the picture is the phone's; a computer's sits by the
    progress bar. */
@@ -467,7 +443,6 @@
 
 .cookbook-tour__words {
   align-self: center;
-  max-width: 30rem;
   animation: cookbook-tour-in 320ms ease both;
 }
 @keyframes cookbook-tour-in {
@@ -477,28 +452,31 @@
   }
 }
 .cookbook-tour__count {
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-small);
   font-weight: 700;
 }
 .cookbook-tour__words h2 {
   margin: 0;
-  font-size: var(--cp-fs-hero-sm);
+  font-size: var(--cp-fs-dialog-title);
   font-weight: 850;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 .cookbook-tour__body {
-  margin: 16px 0 0;
+  margin: 8px 0 0;
   color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-body-lg);
-  line-height: 1.55;
+  font-size: var(--cp-fs-body);
+  line-height: 1.5;
 }
+/* The price on a soft grey card rather than under a rule (Amelia,
+   2026-11-17). */
 .cookbook-tour__price {
-  margin-top: 28px;
-  padding-top: 20px;
-  border-top: 1px solid var(--cp-line);
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--cp-surface-muted);
 }
 .cookbook-tour__price p {
   margin: 4px 0 0;
@@ -508,7 +486,7 @@
 .cookbook-tour__price .cookbook-tour__amount {
   margin: 0;
   color: var(--cp-ink);
-  font-size: var(--cp-fs-price);
+  font-size: var(--cp-fs-dialog-title);
   font-weight: 850;
   line-height: 1.2;
 }
@@ -526,10 +504,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
-}
-.cookbook-tour__actions .btn {
-  min-width: 120px;
+  gap: 8px;
 }
 .cookbook-tour__next,
 .cookbook-tour__back {
@@ -550,58 +525,44 @@
   }
 }
 
-/* Phones: the picture on top, the words under it, the buttons at the
-   thumb. */
-@media (max-width: 760px) {
+/* Phones: a bottom sheet like every other dialog there, the picture a band
+   across its top, the buttons at the thumb. */
+@media (max-width: 639.98px) {
+  .cookbook-tour {
+    place-items: end stretch;
+    padding: 0;
+  }
+  .cookbook-tour__panel {
+    width: 100%;
+    height: auto;
+    max-height: 92dvh;
+    border-radius: var(--cp-radius-2xl) var(--cp-radius-2xl) 0 0;
+  }
   .cookbook-tour__stage {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 44dvh) minmax(0, 1fr);
-  }
-  .cookbook-tour__pictures {
-    margin: 0;
-    border-radius: 0;
+    grid-template-rows: 180px auto;
   }
   .cookbook-tour__picture img {
     transform: scale(var(--tour-zoom-phone, 1));
+    transform-origin: var(--tour-origin-phone, 50% 50%);
+  }
+  .cookbook-tour__picture.is-whole img {
+    padding: 12px;
   }
   .cookbook-tour__copy {
-    padding: 16px 20px max(20px, env(safe-area-inset-bottom));
+    padding: 14px 20px max(20px, env(safe-area-inset-bottom));
   }
   .cookbook-tour__words {
-    align-self: start;
-    padding-top: 20px;
+    padding: 14px 0 20px;
   }
-  .cookbook-tour__count {
-    margin-bottom: 8px;
-  }
-  .cookbook-tour__body {
-    margin-top: 10px;
-    font-size: var(--cp-fs-body);
-  }
-  .cookbook-tour__price {
-    margin-top: 18px;
-    padding-top: 14px;
-  }
-  .cookbook-tour__actions {
-    flex-wrap: wrap;
-  }
-  .cookbook-tour__actions .btn {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-  .cookbook-tour__skip,
   .cookbook-tour__close--top {
     display: none;
   }
-  /* On a disc, so it reads over any photo (the Pro dialog's X on its
-     picture band does the same). */
-  .cookbook-tour__stage {
-    position: relative;
-  }
+  /* On a disc, so it reads over any photo. */
   .icon-close-btn.cookbook-tour__close--over {
     position: absolute;
     z-index: 2;
-    top: max(12px, env(safe-area-inset-top));
+    top: 12px;
     right: 12px;
     display: grid;
     place-items: center;
@@ -609,21 +570,15 @@
     background: color-mix(in srgb, var(--cp-card) 90%, transparent);
     color: var(--cp-ink);
   }
-  /* The last step carries the price and two buttons, so its picture gives
-     up some height to keep both buttons on a short phone screen. */
-  .cookbook-tour__stage:has(.cookbook-tour__start) {
-    grid-template-rows: minmax(0, 30dvh) minmax(0, 1fr);
-  }
-  .cookbook-tour__stage:has(.cookbook-tour__start) .cookbook-tour__words {
-    padding-top: 12px;
-  }
-  .cookbook-tour__actions:has(.cookbook-tour__start) {
-    gap: 4px;
+  .cookbook-tour__actions .btn {
+    flex: 1 1 0;
+    min-width: 0;
   }
   /* On the last step the two buttons stack full width, the way in on top. */
   .cookbook-tour__actions:has(.cookbook-tour__start) {
     flex-direction: column;
     align-items: stretch;
+    gap: 4px;
   }
   .cookbook-tour__actions:has(.cookbook-tour__start) .cookbook-tour__start {
     order: 0;
