@@ -212,11 +212,6 @@ export function ProUpgradeDialog({
       panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[820px] max-h-[88dvh] sm:max-h-[calc(100dvh-48px)] sm:h-auto rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-0 flex flex-col sm:flex-row relative overflow-y-auto sm:overflow-hidden"
       portal
     >
-      {/* The picture (Amelia, 2026-11-16): the left half on a computer, for
-          every step so the dialog never changes size; a band over the phone
-          sheet's plan step only, so sign-in keeps its room. */}
-      <ProDialogArt images={images} className="hidden sm:block sm:w-[44%] sm:shrink-0" />
-      {step === "plan" && <ProDialogArt images={images} className="h-[150px] shrink-0 sm:hidden" />}
       <div className="flex min-w-0 flex-1 flex-col gap-cp-4 p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:overflow-y-auto sm:p-cp-6 sm:justify-center">
       <button
         type="button"
@@ -454,6 +449,13 @@ export function ProUpgradeDialog({
         </>
       )}
       </div>
+      {/* The picture (Amelia, 2026-11-16): the left half on a computer, for
+          every step so the dialog never changes size; a band over the phone
+          sheet's plan step only, so sign-in keeps its room. After the text in
+          the page so the dialog's first focus lands there, not on an arrow;
+          `order-first` still draws it first. */}
+      <ProDialogArt images={images} className="hidden sm:order-first sm:block sm:w-[44%] sm:shrink-0" />
+      {step === "plan" && <ProDialogArt images={images} className="order-first h-[150px] shrink-0 sm:hidden" />}
     </Dialog>
   );
 }
