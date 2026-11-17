@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { Dialog } from "@/components/Dialog";
-import { SegmentedControl } from "@/components/Controls";
 import { CookPilotLoginForm } from "@/components/CookPilotAuth";
 import { CheckIcon, ICON_SIZE, PlusIcon, XIcon } from "@/components/icons";
 import { track, type ProDeclineReason } from "@/lib/analytics";
@@ -205,6 +204,8 @@ export function ProUpgradeDialog({
   const cyclePrice = (cycle: ProBillingCycle) =>
     cycle === "annual" ? `${annualPerMonth}/mo` : price(PRO_PRICE_FALLBACKS.monthly);
   const billedYearly = `Billed yearly at ${annualTotal}`;
+  // The plan cards add their own " / month", so the monthly price drops its "/mo".
+  const monthlyAmount = price(PRO_PRICE_FALLBACKS.monthly).replace(/\s*\/\s*mo\.?$/i, "");
 
   return (
     <Dialog
@@ -391,34 +392,37 @@ export function ProUpgradeDialog({
             </ul>
           </div>
 
-          {/* One toggle and one price (Amelia, 2026-11-16): the two plans
-              were two big tiles that read as two buttons. The default plan
-              is the first tab. */}
-          <div className="flex flex-col gap-cp-4">
-            <SegmentedControl
-              label="Billing plan"
-              className="segmented-control--tabs"
-              value={selectedCycle}
-              onChange={selectCycle}
-              options={PRO_PLAN_CYCLES.map((cycle) => ({
-                id: cycle,
-                label:
-                  cycle === "annual" ? (
-                    <>
-                      {PRO_CYCLE_LABEL[cycle]}
-                      <span className="pro-plan-save-tag">Save more</span>
-                    </>
-                  ) : (
-                    PRO_CYCLE_LABEL[cycle]
-                  ),
-              }))}
-            />
-            <div className="pro-plan-price" aria-live="polite">
-              <p className="pro-plan-price__amount">{cyclePrice(selectedCycle)}</p>
-              <p className="text-cp-label text-ink-soft">
-                {selectedCycle === "annual" ? billedYearly : "Billed monthly"}
-              </p>
-            </div>
+          {/* Two plan cards side by side, Annual first and chosen
+              (Amelia, 2026-11-17), each with its price as a monthly figure so
+              they compare like for like. The button below commits the one
+              selected. */}
+          <div role="radiogroup" aria-label="Billing plan" className="pro-plan-options">
+            {PRO_PLAN_CYCLES.map((cycle) => {
+              const selected = cycle === selectedCycle;
+              return (
+                <button
+                  key={cycle}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  className="pro-plan-option"
+                  onClick={() => selectCycle(cycle)}
+                >
+                  <span className="pro-plan-option__radio" aria-hidden="true" />
+                  <span className="pro-plan-option__name">
+                    {PRO_CYCLE_LABEL[cycle]}
+                    {cycle === "annual" && <span className="pro-plan-save-tag">Save more</span>}
+                  </span>
+                  <span className="pro-plan-option__price">
+                    {cycle === "annual" ? annualPerMonth : monthlyAmount}
+                    <span className="pro-plan-option__per"> / month</span>
+                  </span>
+                  <span className="pro-plan-option__note">
+                    {cycle === "annual" ? billedYearly : "Billed monthly"}
+                  </span>
+                </button>
+              );
+            })}
           </div>
           <button
             type="button"
@@ -428,7 +432,7 @@ export function ProUpgradeDialog({
           >
             {ctaLabel}
           </button>
-          <p className="text-cp-label text-ink-soft">Cancel any time from Settings.</p>
+          <p className="text-center text-cp-label text-ink-soft">Cancel any time from Settings.</p>
         </>
       ) : (
         <>
