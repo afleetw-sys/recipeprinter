@@ -450,6 +450,10 @@ export default function PrintPage() {
   const [showDonateDialog, setShowDonateDialog] = useState(false);
   const [showReferralInvite, setShowReferralInvite] = useState(false);
   const [showCookbookOfferDialog, setShowCookbookOfferDialog] = useState(false);
+  // A returning cook's new, empty book skips the walkthrough and opens Add
+  // your first recipe, where the walkthrough's last button would have taken
+  // them. Opened by the effect below once the book is on screen.
+  const [openFirstAddAfterBuild, setOpenFirstAddAfterBuild] = useState(false);
   // A cookbook started from the homepage is built HERE, behind the welcome
   // dialog: the page first renders as recipe cards, then swaps theme and
   // grows a cover, contents and dedication, then its fonts and photos land.
@@ -1940,8 +1944,13 @@ export default function PrintPage() {
       // included. That tab used to count as the welcome and skip this, so a
       // book started there opened with no onboarding at all. A cook who has
       // already been through it, starting another book, goes straight in.
-      if (!offerAfter || cookbookTourSeen()) {
+      if (!offerAfter) {
         setBookHiddenUntilBuilt(false);
+        return;
+      }
+      if (cookbookTourSeen()) {
+        setBookHiddenUntilBuilt(false);
+        if (!followImport) setOpenFirstAddAfterBuild(true);
         return;
       }
       // The offer lands on top of the finished book, not in front of an idea of
@@ -5935,6 +5944,18 @@ export default function PrintPage() {
         ? tryAnotherImportWay(intent.id)
         : swapRecipe(),
   );
+  // See `openFirstAddAfterBuild`. Waits for the book to be a cookbook and to
+  // hold no recipe yet (one still importing counts), as "Start adding
+  // recipes" does.
+  useEffect(() => {
+    if (!openFirstAddAfterBuild || !cookbookMode) return;
+    setOpenFirstAddAfterBuild(false);
+    if (recipeCount > 0) return;
+    setAddingFirstRecipe(true);
+    openAddRecipeBelow(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openFirstAddAfterBuild, cookbookMode]);
+
   function openAddRecipeBelow(navItem: NavItem | null = activeNavItem) {
     if (!proKnown) {
       whenProKnown({ kind: "add", navItem });

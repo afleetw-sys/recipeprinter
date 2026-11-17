@@ -1,4 +1,5 @@
 import { expect, test } from "./guarded";
+import { closeCookbookWalkthrough, startAddingRecipes } from "./workspace";
 
 /**
  * The welcome a new cookbook opens with ends on "Start adding recipes". It used
@@ -12,7 +13,7 @@ test("the new-cookbook welcome's Start adding recipes opens Add recipes", async 
   await page.getByRole("button", { name: /Start a cookbook/ }).first().click();
   await expect(page).toHaveURL(/\/print$/);
 
-  await page.getByRole("button", { name: "Start adding recipes" }).click();
+  await startAddingRecipes(page);
 
   // The Add dialog by its heading, not its words: from here it's titled for
   // the first recipe.
@@ -35,6 +36,9 @@ test("a new signed-out cookbook offers Save at every width", async ({ page }) =>
   ]) {
     await page.setViewportSize({ width, height });
     await page.goto("/");
+    // Each width is someone's first cookbook: the walkthrough shows once per
+    // browser, and this one already started a book at the width before.
+    await page.evaluate(() => localStorage.removeItem("recipeprinter:cookbook-tour-seen:v1"));
     const tab = page.getByRole("tab", { name: /Cookbook/ });
     await expect(async () => {
       await tab.click();
@@ -43,9 +47,7 @@ test("a new signed-out cookbook offers Save at every width", async ({ page }) =>
     await page.getByRole("button", { name: /Start a cookbook/ }).first().click();
     await expect(page).toHaveURL(/\/print$/);
     // Every new book opens with its welcome, the Cookbook tab's included.
-    await expect(page.locator(".cookbook-welcome")).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(page.locator(".cookbook-welcome")).toHaveCount(0);
+    await closeCookbookWalkthrough(page);
 
     // Which layout is drawn, not which width was asked for: a touch screen
     // picks its layout by the device (DECK_MOBILE_QUERY), so the iPhone
