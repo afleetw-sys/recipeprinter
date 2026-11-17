@@ -12,8 +12,8 @@ export const LINK = "https://www.wikipedia.org/recipes/lemon-herb-chicken";
 export const RECIPE_TITLE = reply.recipe.title;
 
 /**
- * A new cookbook opens under its walkthrough the first time a browser starts
- * one; this closes it as a cook would (Escape, or the X).
+ * Every new cookbook opens under its walkthrough; this closes it as a cook
+ * would (Escape, or the X).
  */
 export async function closeCookbookWalkthrough(page: Page): Promise<void> {
   const tour = page.locator(".cookbook-tour");
@@ -23,16 +23,13 @@ export async function closeCookbookWalkthrough(page: Page): Promise<void> {
 }
 
 /**
- * Into Add recipes from a new, empty cookbook. A first cookbook goes through
- * the walkthrough to its last step's Start adding recipes (Next until then;
- * there is no Skip); a later one in the same browser skips the
- * walkthrough and opens Add on its own.
+ * Into Add recipes from a new, empty cookbook: every new book opens under the
+ * walkthrough, which ends on Start adding recipes (Next until then; there is
+ * no Skip).
  */
 export async function startAddingRecipes(page: Page): Promise<void> {
   const tour = page.locator(".cookbook-tour");
-  const field = page.getByPlaceholder("Paste a recipe link").filter({ visible: true }).first();
-  await expect(tour.or(field).first()).toBeVisible();
-  if ((await tour.count()) === 0) return;
+  await expect(tour).toBeVisible();
   const start = page.getByRole("button", { name: "Start adding recipes" });
   for (let i = 0; i < 4 && !(await start.isVisible()); i++) {
     await page.locator(".cookbook-tour__next").click();

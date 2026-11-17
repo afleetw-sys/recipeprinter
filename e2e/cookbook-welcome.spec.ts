@@ -36,9 +36,6 @@ test("a new signed-out cookbook offers Save at every width", async ({ page }) =>
   ]) {
     await page.setViewportSize({ width, height });
     await page.goto("/");
-    // Each width is someone's first cookbook: the walkthrough shows once per
-    // browser, and this one already started a book at the width before.
-    await page.evaluate(() => localStorage.removeItem("recipeprinter:cookbook-tour-seen:v1"));
     const tab = page.getByRole("tab", { name: /Cookbook/ });
     await expect(async () => {
       await tab.click();
