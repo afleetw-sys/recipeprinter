@@ -106,6 +106,20 @@ const TITLE_BY_REASON: Record<ProLockReason, string> = {
   font_size: "Ready to customize your theme?",
 };
 
+// What the title's feature does for the cook, in a sentence under it.
+const BODY_BY_REASON: Record<ProLockReason, string> = {
+  multi_recipe: "Put several recipes in one print instead of printing them one at a time.",
+  card_size: "Print your recipes as 4×6 cards that fit a standard recipe box.",
+  theme: "Print any recipe in any theme, and switch whenever you like.",
+  font_size: "Change any theme's colours and text size to suit your recipes.",
+};
+
+/** Over the benefit list when the title already names the feature that
+    opened the dialog, so the list is the rest of Pro. */
+const ALSO_GET = "You'll also get";
+/** Over the list when nothing narrower opened the dialog. */
+const PRO_INCLUDES = "Pro includes";
+
 /** A product picture beside the dialog's pitch: what the cook gets on paper,
     not a copy of the screen behind the dialog. */
 export interface ProDialogImage {
@@ -185,15 +199,19 @@ export interface ProUpgradeCopy {
   /** The rest, behind "And more". */
   more: string[];
   ctaLabel: string;
+  /** Over the benefit list: "You'll also get" when the title names one feature. */
+  listHeading: string;
   /** The picture beside the pitch; more than one take turns. */
   images: ProDialogImage[];
 }
 
 export const GENERIC_COPY: ProUpgradeCopy = {
   title: "Upgrade to RecipePrinter Pro",
+  body: "Import, theme and print your whole recipe collection.",
   benefits: PRO_BENEFITS,
   ...splitBenefits([]),
   ctaLabel: "Get Pro",
+  listHeading: PRO_INCLUDES,
   images: ALL_DIALOG_IMAGES,
 };
 
@@ -214,22 +232,22 @@ export function proUpgradeCopy(
   importUsage?: { limit: number; nextFreeAt: number | null } | null,
   hasRecipes: boolean = false,
   /** For `MULTI_RECIPE_FOUND_TRIGGER`: how many recipes the import found, and in what. */
-  found?: { count: number; source: "url" | "image" | "text" } | null,
+  found?: { count: number; source: "url" | "image" } | null,
 ): ProUpgradeCopy {
   if (trigger === MULTI_RECIPE_FOUND_TRIGGER && found && found.count > 1) {
-    const where = found.source === "image" ? "in that photo" : found.source === "text" ? "in that text" : "on that link";
+    const others = found.count - 1;
     return {
-      title: `We found ${found.count} recipes ${where}`,
-      // Opened from the picker's "Get all with Pro" (components/
-      // FoundRecipesDialog). The recipes are held for this session, so
-      // upgrading adds them without importing again; closing this goes back
-      // to the picker.
-      body: `Pro adds as many recipes at once as you like. Upgrade and we'll add all ${found.count}.`,
+      title: `We found ${found.count} recipes ${found.source === "image" ? "in that photo" : "on that link"}`,
+      // What happened first, so one recipe out of several doesn't read as a
+      // failed import, then what Pro does about it. The others are held for
+      // this session, so upgrading adds them without importing again.
+      body: `The free plan adds one recipe at a time, so we added the first one. Upgrade to Pro and we'll add the other ${others === 1 ? "one" : others}.`,
       benefits: [...PRO_BENEFITS].sort(
         (a, b) => Number(b === BENEFIT_BY_REASON.multi_recipe) - Number(a === BENEFIT_BY_REASON.multi_recipe),
       ),
-      ...splitBenefits([BENEFIT_BY_REASON.multi_recipe]),
-      ctaLabel: `Get Pro and add all ${found.count}`,
+      ...splitBenefits([], BENEFIT_BY_REASON.multi_recipe),
+      ctaLabel: "Get Pro and add the rest",
+      listHeading: ALSO_GET,
       images: [PRO_DIALOG_IMAGES.several],
     };
   }
@@ -248,6 +266,7 @@ export function proUpgradeCopy(
       benefits: PRO_BENEFITS,
       ...splitBenefits([], UNLIMITED_IMPORTS_BENEFIT),
       ctaLabel: "Get Pro",
+      listHeading: ALSO_GET,
       images: [PRO_DIALOG_IMAGES.collection],
     };
   }
@@ -258,6 +277,7 @@ export function proUpgradeCopy(
       benefits: PRO_BENEFITS,
       ...splitBenefits([]),
       ctaLabel: "Get Pro",
+      listHeading: ALSO_GET,
       images: [PRO_DIALOG_IMAGES.photo],
     };
   }
@@ -266,9 +286,11 @@ export function proUpgradeCopy(
   if (trigger === REMOVE_BRANDING_TRIGGER) {
     return {
       title: "Ready to print without branding?",
+      body: "Your prints show just your recipes, with no RecipePrinter line at the bottom.",
       benefits: [NO_BRANDING_BENEFIT, ...PRO_BENEFITS.filter((b) => b !== NO_BRANDING_BENEFIT)],
       ...splitBenefits([], NO_BRANDING_BENEFIT),
       ctaLabel: "Get Pro and continue",
+      listHeading: ALSO_GET,
       // No picture of an unbranded print yet: every picture takes a turn.
       images: ALL_DIALOG_IMAGES,
     };
@@ -277,15 +299,17 @@ export function proUpgradeCopy(
   const triggered = new Set(reasons.map((reason) => BENEFIT_BY_REASON[reason]));
   // Stable sort: triggered benefits first, everything else keeps its place.
   const benefits = [...PRO_BENEFITS].sort((a, b) => Number(triggered.has(b)) - Number(triggered.has(a)));
-  // A single lock's title names its benefit. Not the theme's: "this premium
-  // theme" is one, and the line says all of them.
+  // A single lock's title names its benefit, so the list leaves it out and
+  // reads as the rest of Pro.
   const single = reasons.length === 1 ? reasons[0] : null;
-  const alreadySaid = single && single !== "theme" ? BENEFIT_BY_REASON[single] : undefined;
+  const alreadySaid = single ? BENEFIT_BY_REASON[single] : undefined;
   return {
     title: single ? TITLE_BY_REASON[single] : "Ready to print with Pro?",
+    body: single ? BODY_BY_REASON[single] : "This print uses Pro features. Upgrade and it prints just as you set it up.",
     benefits,
     ...splitBenefits(benefits.filter((benefit) => triggered.has(benefit)), alreadySaid),
     ctaLabel: trigger === "print_button" ? "Get Pro and print" : "Get Pro and continue",
+    listHeading: single ? ALSO_GET : PRO_INCLUDES,
     images: reasons.map((reason) => IMAGE_BY_REASON[reason]).filter((image, i, all) => all.indexOf(image) === i),
   };
 }

@@ -41,6 +41,7 @@ export function useStandaloneProUpgrade(
     benefits?: string[];
     ctaLabel?: string;
     images?: ProDialogImage[];
+    listHeading?: string;
     referralChoice?: { inviteUrl: string; rewardDays: number };
   },
 ): {

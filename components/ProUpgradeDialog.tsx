@@ -79,6 +79,7 @@ export function ProUpgradeDialog({
   more = GENERIC_COPY.more,
   ctaLabel = "Get Pro and continue",
   images = GENERIC_COPY.images,
+  listHeading = GENERIC_COPY.listHeading,
   referralChoice,
 }: {
   onClose: () => void;
@@ -103,6 +104,8 @@ export function ProUpgradeDialog({
   ctaLabel?: string;
   /** The product picture beside the pitch (`proUpgradeCopy`); several take turns. */
   images?: ProDialogImage[];
+  /** Over the benefit list (`proUpgradeCopy`). */
+  listHeading?: string;
   /** When referral Pro has just run out: open on a choice between subscribing
       and inviting a friend, side by side and equally weighted, before plans.
       Every other opening of this dialog is unchanged. */
@@ -371,28 +374,31 @@ export function ProUpgradeDialog({
           </div>
           {body && <p className="text-cp-body text-ink-soft">{body}</p>}
 
-          <ul className="flex flex-col gap-cp-1">
-            {(showMore ? [...highlights, ...more] : highlights).map((benefit) => (
-              <li key={benefit} className="flex items-start gap-cp-2 text-cp-body">
-                <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                {benefit}
-              </li>
-            ))}
-            {!showMore && more.length > 0 && (
-              <li>
-                {/* Opens the rest here: this is mid-checkout, and the
-                    pricing page would take the cook away from their work. */}
-                <button
-                  type="button"
-                  className="flex items-start gap-cp-2 text-cp-body text-ink-soft hover:text-ink"
-                  onClick={() => setShowMore(true)}
-                >
-                  <PlusIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
-                  And more
-                </button>
-              </li>
-            )}
-          </ul>
+          <div className="flex flex-col gap-cp-2">
+            <p className="text-cp-small font-bold text-ink">{listHeading}</p>
+            <ul className="flex flex-col gap-cp-1">
+              {(showMore ? [...highlights, ...more] : highlights).map((benefit) => (
+                <li key={benefit} className="flex items-start gap-cp-2 text-cp-body">
+                  <CheckIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
+                  {benefit}
+                </li>
+              ))}
+              {!showMore && more.length > 0 && (
+                <li>
+                  {/* Opens the rest here: this is mid-checkout, and the
+                      pricing page would take the cook away from their work. */}
+                  <button
+                    type="button"
+                    className="flex items-start gap-cp-2 text-cp-body text-ink-soft hover:text-ink"
+                    onClick={() => setShowMore(true)}
+                  >
+                    <PlusIcon size={ICON_SIZE.sm} className="mt-[3px] shrink-0" />
+                    And more
+                  </button>
+                </li>
+              )}
+            </ul>
+          </div>
 
           {/* One toggle and one price (Amelia, 2026-11-16): the two plans
               were two big tiles that read as two buttons. The default plan
