@@ -6,6 +6,7 @@ import { PREVIEW_RULE } from "@/components/CookbookWelcomeDialog";
 import { useFirstCookbookDiscount } from "@/components/HolidayCookbookBanner";
 import { COOKBOOK_DISCOUNT_PRICE_FALLBACK, COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
+import { COOKBOOK_HERO as HERO } from "@/lib/cookbookHero";
 
 const STEPS = [
   { title: "Add recipes", body: "Links, photos of handwritten cards, or a recipe app." },
@@ -37,15 +38,7 @@ export function CookbookIntro({ busy, onStart }: { busy: boolean; onStart: () =>
       <div className="rp-cookbook-page__go">
         {/* A real printed book, so the button says what it makes. */}
         <div className="rp-cookbook-hero">
-          <Image
-            src="/images/printed-cards/cookbook.jpeg"
-            alt="A printed, spiral-bound cookbook open to a recipe for Greek chicken souvlaki"
-            width={1333}
-            height={2000}
-            sizes="(max-width: 640px) 100vw, 400px"
-            priority
-            className="rp-cookbook-hero__photo"
-          />
+          <Image {...HERO} priority className="rp-cookbook-hero__photo" />
         </div>
         <button
           type="button"
