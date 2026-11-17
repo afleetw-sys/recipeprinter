@@ -421,7 +421,7 @@ export function ProUpgradeDialog({
           >
             {ctaLabel}
           </button>
-          <p className="text-cp-label text-ink-soft text-center">Cancel any time from Settings.</p>
+          <p className="text-cp-label text-ink-soft">Cancel any time from Settings.</p>
         </>
       ) : (
         <>
