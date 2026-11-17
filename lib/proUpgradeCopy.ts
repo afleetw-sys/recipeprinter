@@ -17,7 +17,6 @@ import {
 // package). Don't add a benefit back here without wiring the real thing
 // behind it first.
 //
-// Key order is the canonical order the list reads in when nothing triggered it.
 const BENEFIT_BY_REASON: Record<ProLockReason, string> = {
   multi_recipe: "Print several recipes at once",
   card_size: "4×6 recipe cards",
@@ -60,17 +59,26 @@ export const BASIC_BENEFITS = [
 // disagreeing about what Pro actually includes. The photo-import allowance is
 // enforced by CookPilot per plan (see lib/imageImportQuota.ts), not by a lock
 // here, so it has no `ProLockReason`.
+//
+// Ordered by how many people hit each one at the paywall (PostHog,
+// paywall_viewed + pro_feature_encountered, distinct people, 30 days to
+// 2026-11-17): several recipes 34, imports 21, 4×6 cards 18, themes 8,
+// branding 5, Customize 3. The cookbook discount opens no paywall, so it ends
+// the list.
 export const PRO_BENEFITS = [
+  BENEFIT_BY_REASON.multi_recipe,
   UNLIMITED_IMPORTS_BENEFIT,
-  ...Object.values(BENEFIT_BY_REASON),
+  BENEFIT_BY_REASON.card_size,
+  BENEFIT_BY_REASON.theme,
   NO_BRANDING_BENEFIT,
+  BENEFIT_BY_REASON.font_size,
   COOKBOOK_BENEFIT,
 ];
 
 // The upgrade dialog lists only a few of these up front, so the plans stay in
 // view, and keeps the rest behind "And more" (Amelia, 2026-11-02). These lead
 // whenever the trigger leaves room; /pricing and /account show every one.
-const HEADLINE_BENEFITS = [UNLIMITED_IMPORTS_BENEFIT, BENEFIT_BY_REASON.multi_recipe, BENEFIT_BY_REASON.theme];
+const HEADLINE_BENEFITS = PRO_BENEFITS.slice(0, 3);
 const SHORT_LIST_LENGTH = 3;
 
 /**
