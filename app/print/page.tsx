@@ -5199,14 +5199,32 @@ export default function PrintPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queue.items, items, itemIdsForSection, isOursToAwait, moveProjectItem, pendingAddIndex, pendingAddSectionId, sections]);
 
-  // A swap whose dialog added nothing new (a link already in the deck), or
-  // whose import failed, is over: the current recipe stays.
+  // A swap whose dialog added nothing new (a link already in the deck) is over:
+  // the current recipe stays. One whose import failed still replaces it: the
+  // cook asked for the old recipe to go, so the failure takes its place, the
+  // way "Try another way" puts its import where the failed card stood. It used
+  // to leave the old recipe and add the failure below it.
   useEffect(() => {
     const swapping = swapRef.current;
     if (!swapping?.baseline) return;
     const fresh = queue.items.filter((item) => !swapping.baseline!.has(item.id));
     const oldGone = !queue.items.some((item) => item.id === swapping.oldId);
-    if (oldGone || fresh.length === 0 || fresh.every((item) => item.status === "error")) swapRef.current = null;
+    if (oldGone || fresh.length === 0) {
+      swapRef.current = null;
+      return;
+    }
+    if (fresh.every((item) => item.status === "error")) {
+      swapRef.current = null;
+      // Read before the remove, while the old recipe still has a place.
+      const target = replacementTarget(swapping.oldId, sections);
+      setPendingAddSectionId(target?.sectionId ?? null);
+      setPendingAddIndex(target?.index ?? 0);
+      setPendingAddAfterRecipeId(target?.anchorId ?? null);
+      setJobIds((current) => (current ?? []).filter((jid) => jid !== swapping.oldId));
+      queue.remove(swapping.oldId);
+    }
+    // `sections` is read only when a swap fails, at that moment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queue.items]);
 
   // The old recipe stops standing in once the new one has its page, or once
@@ -5974,8 +5992,9 @@ export default function PrintPage() {
   /**
    * Swap recipe: the Add dialog, aimed at the recipe on screen rather than the
    * slot after it. Nothing is removed when it opens. The current recipe goes
-   * only once the new one has landed (the arrival effect above), so cancelling,
-   * a failed import or a link that's already here all leave it untouched.
+   * only once the new one has landed (the arrival effect above), so cancelling
+   * or a link that's already here leaves it untouched. A failed import takes
+   * its place, as a successful one would.
    *
    * Not behind the multi-recipe gate: the deck still holds one recipe after,
    * which is why this is the free account's way to a different recipe. It is
