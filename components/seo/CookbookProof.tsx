@@ -55,22 +55,40 @@ export function CookbookProof({
 
   return (
     <section aria-labelledby="cookbook-proof-heading">
+      {/* The heading names what follows it: the reasons. The photos come
+          after, under their own line, as the proof of them. A heading of
+          "Cookbooks made with RecipePrinter" over a row of reasons read as a
+          mismatch. */}
       <div id="cookbook-proof-heading">
-        <SectionHeading>Cookbooks made with RecipePrinter</SectionHeading>
+        <SectionHeading>Why make your cookbook here</SectionHeading>
       </div>
+
+      <ul className="mt-cp-6 grid gap-cp-5 sm:grid-cols-3">
+        {REASONS.map((reason) => (
+          <li key={reason.title} className="border-t border-line pt-cp-4">
+            <p className="text-cp-body-lg font-extrabold text-ink">
+              <PriceText>{reason.title}</PriceText>
+            </p>
+            <p className="mt-cp-2 text-cp-body text-ink-soft leading-relaxed">{reason.text}</p>
+          </li>
+        ))}
+      </ul>
+
       {/* A link in the copy of every cookbook page to the one meant to rank
-          for "cookbook maker", in those words. Not on that page itself. */}
-      {slug !== "cookbook-maker" && (
-        <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
-          Each one started in the{" "}
-          <Link href="/cookbook-maker" className="font-bold text-ink hover:underline">
+          for "cookbook maker", in those words. On that page itself the line
+          stays, without the link. */}
+      <p className="mt-cp-7 text-cp-body-lg font-extrabold text-ink">
+        Real cookbooks, made in the{" "}
+        {slug === "cookbook-maker" ? (
+          "online cookbook maker"
+        ) : (
+          <Link href="/cookbook-maker" className="text-ink underline underline-offset-2 hover:text-ink-soft">
             online cookbook maker
           </Link>
-          , from recipes people already had.
-        </p>
-      )}
+        )}
+      </p>
 
-      <div className="mt-cp-6 grid gap-cp-5 sm:grid-cols-3">
+      <div className="mt-cp-4 grid gap-cp-5 sm:grid-cols-3">
         {photos.map((photo) => {
           const image = FEATURE_IMAGES[photo.key];
           return (
@@ -92,17 +110,6 @@ export function CookbookProof({
           );
         })}
       </div>
-
-      <ul className="mt-cp-7 grid gap-cp-5 sm:grid-cols-3">
-        {REASONS.map((reason) => (
-          <li key={reason.title} className="border-t border-line pt-cp-4">
-            <p className="text-cp-body-lg font-extrabold text-ink">
-              <PriceText>{reason.title}</PriceText>
-            </p>
-            <p className="mt-cp-2 text-cp-body text-ink-soft leading-relaxed">{reason.text}</p>
-          </li>
-        ))}
-      </ul>
 
       <div className="mt-[56px]">
         <CustomerQuote />
