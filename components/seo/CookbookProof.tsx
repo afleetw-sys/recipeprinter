@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { PriceText } from "@/components/PriceText";
 import { SectionHeading } from "@/components/seo/LandingFrame";
 import { CustomerQuote } from "@/components/seo/CustomerQuote";
@@ -37,16 +38,37 @@ const REASONS: { title: string; text: string }[] = [
   },
 ];
 
-export function CookbookProof({ usedImages }: { usedImages: (string | undefined)[] }) {
-  const photos = BOOK_PHOTOS.filter(
-    (photo) => FEATURE_IMAGES[photo.key] && !usedImages.includes(photo.key),
-  ).slice(0, 3);
+export function CookbookProof({
+  usedImages,
+  slug,
+}: {
+  usedImages: (string | undefined)[];
+  slug: string;
+}) {
+  // Photos the page doesn't show yet first; a page that already uses most of
+  // them repeats one rather than leaving a gap in the row of three.
+  const available = BOOK_PHOTOS.filter((photo) => FEATURE_IMAGES[photo.key]);
+  const photos = [
+    ...available.filter((photo) => !usedImages.includes(photo.key)),
+    ...available.filter((photo) => usedImages.includes(photo.key)),
+  ].slice(0, 3);
 
   return (
     <section aria-labelledby="cookbook-proof-heading">
       <div id="cookbook-proof-heading">
         <SectionHeading>Cookbooks made with RecipePrinter</SectionHeading>
       </div>
+      {/* A link in the copy of every cookbook page to the one meant to rank
+          for "cookbook maker", in those words. Not on that page itself. */}
+      {slug !== "cookbook-maker" && (
+        <p className="mt-cp-2 text-ink-soft text-cp-body leading-relaxed">
+          Each one started in the{" "}
+          <Link href="/cookbook-maker" className="font-bold text-ink hover:underline">
+            online cookbook maker
+          </Link>
+          , from recipes people already had.
+        </p>
+      )}
 
       <div className="mt-cp-6 grid gap-cp-5 sm:grid-cols-3">
         {photos.map((photo) => {

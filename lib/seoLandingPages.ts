@@ -1762,7 +1762,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     cookbookPitch: true,
     cookbookPitchBody:
       "Once you've saved enough recipes, you can turn them into a cookbook. Organize recipes into chapters, rearrange them, add section pages, and build the whole book in RecipePrinter. Then print it at home or export the finished PDF to have it printed anywhere.",
-    cookbookPitchLink: { phrase: "turn them into a cookbook", href: "/make-your-own-cookbook" },
+    cookbookPitchLink: { phrase: "turn them into a cookbook", href: "/cookbook-maker" },
     faqHeading: "Social media recipe questions",
     faqs: [
       {
@@ -2666,14 +2666,18 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     copyReviewed: "2026-10-06",
     imagesReviewed: "2026-10-06",
     primaryKeyword: "make your own cookbook",
+    // The how-to guide. Tool searches ("create your own cookbook", "make a
+    // cookbook online") belong to /cookbook-maker, which this page links to
+    // in its copy. Google was showing this page for "cookbook maker" at
+    // position 53 while /cookbook-maker sat at 17 (Search Console,
+    // 2026-11-18), so the two pages split those searches.
     secondaryKeywords: [
       "how to make a cookbook",
       "how to make your own cookbook",
-      "create your own cookbook",
-      "make a cookbook from your recipes",
-      "custom cookbook from recipes",
+      "how to make a family cookbook",
       "how to organize a cookbook",
       "how many recipes in a cookbook",
+      "what to put in a cookbook",
     ],
     shortLabel: "Your own cookbook",
     intent: "Organization SEO",
@@ -2715,7 +2719,8 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         body:
           "There's no right number. A small gift book can feel complete with 20 or 30 recipes, and a full family collection can run past 100. Start with the recipes you'd be sorry to lose, then add the ones people always ask you for.",
         afterBody:
-          "You can keep adding recipes after you start, so the first version doesn't have to be the final one.",
+          "In RecipePrinter's online cookbook maker you can keep adding recipes after you start, so the first version doesn't have to be the final one.",
+        links: [{ phrase: "online cookbook maker", href: "/cookbook-maker" }],
       },
       {
         heading: "Ways to organize your cookbook",
@@ -2786,8 +2791,15 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     copyReviewed: "2026-10-06",
     imagesReviewed: "2026-10-06",
     primaryKeyword: "cookbook maker",
+    // The tool page: every "make/create a cookbook" search that wants to start
+    // one. /make-your-own-cookbook keeps the how-to searches.
     secondaryKeywords: [
       "online cookbook maker",
+      "online cookbook creator",
+      "create a cookbook online",
+      "make a cookbook online",
+      "create your own cookbook",
+      "cookbook making website",
       "recipe book creator",
       "recipe book maker",
       "create a cookbook online",
@@ -2804,7 +2816,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     importSubmitLabel: "Start a cookbook",
     title: "Online Cookbook Maker | Turn Any Recipes Into a Book | RecipePrinter",
     description:
-      "Make a cookbook from recipes you find anywhere: links, screenshots, apps, or handwritten cards. Organize chapters, add a cover, and export a print-ready PDF.",
+      "Create a cookbook online from recipes you find anywhere: links, screenshots, apps, or handwritten cards. Organize chapters, add a cover, and export a print-ready PDF.",
     h1: "Online cookbook maker",
     lede:
       "Bring recipes in from websites, screenshots, apps, or handwritten cards without retyping them, organize them into chapters, design the cover, and export a print-ready PDF of your cookbook.",
@@ -2879,6 +2891,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     faqHeading: "Cookbook maker questions",
     faqs: [
+      {
+        question: "Can I create a cookbook online for free?",
+        answer: `Yes. Build and preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes, right in your browser. Pay ${COOKBOOK_PRICE_FALLBACK} once when you want to download it or add more.`,
+      },
       {
         question: "What can I import into the cookbook maker?",
         answer:
@@ -3055,7 +3071,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     links: [
       { href: "/make-your-own-cookbook", label: "Make your own cookbook" },
-      { href: "/cookbook-maker", label: "Cookbook maker" },
+      { href: "/cookbook-maker", label: "Online cookbook maker" },
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/homemade-cookbook-gift", label: "Make a homemade cookbook gift" },
       { href: "/christmas-recipe-book", label: "Make a family recipe book for Christmas" },
@@ -4261,7 +4277,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/recipe-card-printer", label: "Make printable recipe cards" },
       { href: "/print-multiple-recipes", label: "Print multiple recipes at once" },
       { href: "/canva-cookbook-alternative", label: "Canva cookbook alternative" },
-      { href: "/cookbook-maker", label: "Cookbook maker" },
+      { href: "/cookbook-maker", label: "Online cookbook maker" },
       { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
       { href: "/just-the-recipe-alternative", label: "Just the Recipe alternative" },
     ],
@@ -4389,7 +4405,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
     ],
     links: [
-      { href: "/cookbook-maker", label: "Cookbook maker" },
+      { href: "/cookbook-maker", label: "Online cookbook maker" },
       { href: "/canva-recipe-card-alternative", label: "Canva alternative for recipe cards" },
       { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
       { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
@@ -4514,7 +4530,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
     ],
     links: [
-      { href: "/cookbook-maker", label: "Cookbook maker" },
+      { href: "/cookbook-maker", label: "Online cookbook maker" },
       { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/canva-cookbook-alternative", label: "Canva cookbook alternative" },

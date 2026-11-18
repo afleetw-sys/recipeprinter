@@ -304,6 +304,7 @@ export default function SeoLandingPage({ params }: PageProps) {
           a comparison page, which is what that visitor came for. */}
       {page.startsCookbook && (
         <CookbookProof
+          slug={page.slug}
           usedImages={[page.heroImage, ...(page.featureSections ?? []).map((f) => f.image ?? f.proof)]}
         />
       )}

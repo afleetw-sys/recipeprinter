@@ -31,8 +31,8 @@ export function cookbookPitchFeature({
 }: {
   heading?: string;
   body?: string;
-  /** Links a phrase inside `body` instead of appending the shared "Family
-      recipe book ideas" sentence. */
+  /** Links a phrase inside `body` instead of appending the shared "online
+      cookbook maker" sentence. */
   link?: { phrase: string; href: string };
 }): FeatureRow {
   const resolvedHeading = heading ?? "When the stack becomes a book";
@@ -59,10 +59,15 @@ export function cookbookPitchFeature({
       <>
         {body ??
           "Once enough recipes have earned a place, add them to a cookbook. Sort them into chapters and choose a cover, and RecipePrinter builds the table of contents and page numbers as you go. Preview up to 10 recipes free; buying that cookbook lets you download or print it and add more recipes."}{" "}
-        <Link href="/family-recipe-book" className="font-bold text-ink hover:underline">
-          Family recipe book ideas
-        </Link>{" "}
-        walks through what goes in one and how people put them together.
+        {/* To the tool page, in the words people search. This row is on nine
+            utility pages, and it pointed at /family-recipe-book, which made
+            that guide the site's most-linked cookbook page while the page
+            meant to rank for "cookbook maker" got the fewest links. */}
+        Start one with the{" "}
+        <Link href="/cookbook-maker" className="font-bold text-ink hover:underline">
+          online cookbook maker
+        </Link>
+        .
       </>
     ),
   };
