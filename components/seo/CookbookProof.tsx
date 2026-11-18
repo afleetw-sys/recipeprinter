@@ -14,14 +14,17 @@ import { FEATURE_IMAGES, LANDING_IMAGE_QUALITY } from "@/lib/seoAssets";
  */
 
 /** Photos of finished books, in the order the band prefers them. The first
-    one the page doesn't already show is used; a page that shows them all
-    gets the first. */
+    one the page doesn't already show is used. The list is long enough that
+    every cookbook page has one left over; add to it if a page ever runs out. */
 const BOOK_PHOTOS = [
   "bound-cookbook",
   "printed-cookbook",
   "handwritten-card-in-book",
   "spiral-and-binder",
+  "handwritten-to-printed",
+  "cookbook-cover-wide",
   "dedication-page",
+  "binder-cover",
 ];
 
 const linkClass = "font-bold text-ink hover:underline";
@@ -72,14 +75,16 @@ export function CookbookProof({
           <h2 id="cookbook-proof-heading" className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">
             Why make your cookbook here
           </h2>
-          {reasons.map((reason) => (
-            <p key={reason.title} className="mt-cp-3 text-ink-soft text-cp-body-lg leading-relaxed">
-              <span className="font-bold text-ink">
-                <PriceText>{reason.title}</PriceText>
-              </span>{" "}
-              {reason.text}
-            </p>
-          ))}
+          <ul className="mt-cp-4 flex flex-col gap-cp-3 list-disc pl-[1.25em] marker:text-ink-soft">
+            {reasons.map((reason) => (
+              <li key={reason.title} className="text-ink-soft text-cp-body-lg leading-relaxed">
+                <span className="font-bold text-ink">
+                  <PriceText>{reason.title}</PriceText>
+                </span>{" "}
+                {reason.text}
+              </li>
+            ))}
+          </ul>
         </div>
         <figure className="w-full max-w-[520px] mx-auto lg:max-w-none">
           <div className="overflow-hidden rounded-2xl border border-line bg-card p-1.5">
