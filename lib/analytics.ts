@@ -945,6 +945,10 @@ function bootPostHog(
     session_recording: {
       maskAllInputs: true,
     },
+
+    // A Safari tab opened by the Google app's print hand-off carries on the
+    // cook's own person and session instead of starting a new one per press.
+    bootstrap: carriedAnalyticsBootstrap(),
   });
 
   // The app showing the page, on every event. PostHog's `$browser` calls every
@@ -1169,6 +1173,59 @@ function resetPerson(client: PostHog): void {
     ...(internal ? { internal: true } : {}),
   });
   if (resolvedAttribution) registerFirstTouch(client, resolvedAttribution);
+}
+
+/** Who this visitor is to PostHog, carried to a tab that cannot share storage. */
+export interface CarriedAnalyticsIdentity {
+  distinctId: string;
+  sessionId: string;
+}
+
+/** Where an arriving tab keeps a carried identity until PostHog boots. */
+const CARRIED_IDENTITY_KEY = "recipeprinter:analytics-carried:v1";
+
+/**
+ * The identity to send with a print hand-off to Safari (lib/printHandoff), or
+ * null when there is none to send (not loaded, or opted out).
+ *
+ * Always the anonymous device id, never the signed-in uid: Safari's tab is
+ * signed out, and an identified id arriving signed out is reset at once
+ * (`syncAnalyticsIdentity(null)`). identify() already linked the device id to
+ * the account, so its events still land on the same person.
+ */
+export function analyticsIdentityToCarry(): CarriedAnalyticsIdentity | null {
+  if (!posthog || posthog.has_opted_out_capturing()) return null;
+  const distinctId = posthog.get_property("$device_id") ?? posthog.get_distinct_id();
+  const sessionId = posthog.get_session_id();
+  if (typeof distinctId !== "string" || !distinctId || !sessionId) return null;
+  return { distinctId, sessionId };
+}
+
+/**
+ * Keeps an arriving tab on the sender's person and session. The tab is the
+ * same visit carried on, so it also skips the Landing Page event, which would
+ * otherwise count every Print press as a new direct arrival.
+ */
+export function continueCarriedAnalyticsIdentity(carried: CarriedAnalyticsIdentity): void {
+  sessionStore.set(CARRIED_IDENTITY_KEY, JSON.stringify(carried));
+  sessionStore.set(LANDING_SESSION_FLAG, "1");
+}
+
+/**
+ * PostHog's `bootstrap` for a tab that arrived with a carried identity. Taken
+ * once, so a later reload (signed in by then, perhaps) is not forced back to it.
+ */
+export function carriedAnalyticsBootstrap(): { distinctID: string; sessionID: string } | undefined {
+  const raw = sessionStore.get(CARRIED_IDENTITY_KEY);
+  if (!raw) return undefined;
+  sessionStore.remove(CARRIED_IDENTITY_KEY);
+  try {
+    const carried = JSON.parse(raw) as Partial<CarriedAnalyticsIdentity>;
+    if (typeof carried.distinctId !== "string" || typeof carried.sessionId !== "string") return undefined;
+    return { distinctID: carried.distinctId, sessionID: carried.sessionId };
+  } catch {
+    return undefined;
+  }
 }
 
 /** Test seam: run the queue against a stand-in client. */

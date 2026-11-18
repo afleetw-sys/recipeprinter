@@ -3,6 +3,11 @@ import { CURRENT_PRINT_JOB_STORAGE_KEY, QUEUE_STORAGE_KEY } from "@/lib/queue";
 import { PROJECT_META_STORAGE_KEY, type ProjectMeta } from "@/lib/project";
 import { PRINT_SETTINGS_STORAGE_KEY } from "@/lib/printSettings";
 import { localStore, sessionStore } from "@/lib/storage";
+import {
+  analyticsIdentityToCarry,
+  continueCarriedAnalyticsIdentity,
+  type CarriedAnalyticsIdentity,
+} from "@/lib/analytics";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import type { QueueItem } from "@/types/recipe";
 
@@ -42,6 +47,9 @@ export interface PrintHandoff {
   /** A subscriber's signed print pass (lib/server/printPass), so Safari prints
       their deck as theirs rather than as a free one. */
   pass?: string;
+  /** The cook's PostHog visitor and session, so Safari's tab is the same visit
+      in analytics rather than a new person per Print press. */
+  analytics?: CarriedAnalyticsIdentity;
 }
 
 function toBase64Url(bytes: Uint8Array): string {
@@ -80,12 +88,14 @@ export function packPrintHandoff(
       swap,
     ),
   ) as QueueItem[];
+  const analytics = analyticsIdentityToCarry();
   return {
     v: 1,
     items: portable,
     meta: JSON.parse(JSON.stringify(meta, swap)) as ProjectMeta,
     settings: localStore.get(PRINT_SETTINGS_STORAGE_KEY),
     ...(pass ? { pass } : {}),
+    ...(analytics ? { analytics } : {}),
   };
 }
 
@@ -134,6 +144,7 @@ export function seedPrintHandoff(): boolean {
   sessionStore.set(PROJECT_META_STORAGE_KEY, JSON.stringify(handoff.meta));
   if (handoff.settings) localStore.set(PRINT_SETTINGS_STORAGE_KEY, handoff.settings);
   if (handoff.pass) sessionStore.set(PRINT_PASS_STORAGE_KEY, handoff.pass);
+  if (handoff.analytics) continueCarriedAnalyticsIdentity(handoff.analytics);
   // The recipes have no business in the address bar, history or a shared link.
   window.history.replaceState(window.history.state, "", `${window.location.pathname}${window.location.search}`);
   return true;
