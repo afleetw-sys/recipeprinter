@@ -12617,9 +12617,18 @@ textarea.recipe-card__toc-title {
   font-family: var(--font-figtree), system-ui, sans-serif;
 }
 
+/* Only the leaves' top 77 units reach past the side padding; below that they
+   stay inside it, so the text starts under that line rather than under the
+   whole image. Letter's wider padding leaves more room beside them. */
 .recipe-template--fall .recipe-card {
   background-color: #f4edd8;
-  --recipe-card-padding-top: calc(132 * var(--fall-u) + 0.08in);
+  --recipe-card-padding-top: calc(80 * var(--fall-u) + 0.06in);
+  --recipe-card-padding-x: 0.42in;
+}
+
+.recipe-print-preview--letter .recipe-template--fall .recipe-card {
+  --recipe-card-padding-top: 0.5in;
+  --recipe-card-padding-x: 0.7in;
 }
 
 .recipe-print-preview--card-6x4 .recipe-template--fall .recipe-card {
@@ -12682,6 +12691,110 @@ textarea.recipe-card__toc-title {
   right: 0;
   bottom: 0;
   width: calc(334 * var(--fall-u));
+}
+
+/* The steps wrap around the pumpkins instead of a step moving on to the next
+   face. The steps' last column (or their single column) is stretched down to
+   the foot of the card, and two floats at its start put a pumpkin-sized box
+   in its bottom corner: a zero-width one as tall as the column less the box,
+   then the box, cleared under it. A step beside the box narrows (each step is
+   its own flex box, so it narrows whole) and the rest keep the full width.
+
+   The box is the keep-out corner less the card's padding, so a narrowed step
+   ends exactly at the corner's edge and lib/faceMeasure no longer reads it as
+   overrun; anything that does reach in (ingredients, which do not wrap) is
+   still pushed on, as before. Floats need plain blocks, so the stretched
+   column and its lists take margins for the gaps they had (as Halloween's
+   hand does). Set on the card, where the keep-out is, so a cookbook's taller
+   corner and a continued page's none carry through. */
+.recipe-template--fall .recipe-card {
+  --fall-wrap-w: calc(var(--recipe-card-keepout-w, 0in) - var(--recipe-card-padding-x));
+  --fall-wrap-h: calc(var(--recipe-card-keepout-h, 0in) - var(--recipe-card-padding-bottom));
+}
+
+.recipe-template--fall .recipe-card__cols:is(.recipe-card__cols--stacked, .recipe-card__cols--single, .recipe-card__cols--method-only) {
+  display: flex;
+  flex-direction: column;
+}
+
+.recipe-template--fall .recipe-card__cols:is(.recipe-card__cols--stacked, .recipe-card__cols--method-only) {
+  gap: 0;
+}
+
+.recipe-template--fall .recipe-card__cols > * {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.recipe-template--fall .recipe-card__cols > .recipe-card__method:last-child {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* In a block the label's top margin folded into the section's; in a flex
+   column it would add to it. */
+.recipe-template--fall .recipe-card__cols--stacked .recipe-card__method > .recipe-card__label:first-child {
+  margin-top: 0;
+}
+
+.recipe-template--fall .recipe-card__method > .recipe-card__section-groups:not(.recipe-card__section-groups--probe) {
+  flex: 1 0 auto;
+}
+
+.recipe-template--fall .recipe-card__method .recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe),
+.recipe-template--fall .recipe-card__method .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child {
+  display: block;
+}
+
+.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) > * + * {
+  margin-top: calc(var(--recipe-card-step-gap) * 0.3);
+}
+
+.recipe-print-preview--letter .recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) > * + * {
+  margin-top: calc(var(--recipe-card-step-gap) * 1.5);
+}
+
+.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) ol {
+  display: block;
+}
+
+.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li + li {
+  margin-top: var(--recipe-card-step-gap);
+}
+
+/* A step there is a plain block, its number in the left gutter where the
+   flex row put it, so only the lines level with the pumpkins wrap short. */
+.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li {
+  display: block;
+  padding-left: calc(11pt + 5pt);
+}
+
+.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li > .recipe-card__step-number {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child)::before {
+  content: "";
+  float: right;
+  width: 0;
+  height: max(0px, calc(100% - var(--fall-wrap-h)));
+}
+
+.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) > :first-child::before {
+  content: "";
+  float: right;
+  clear: right;
+  width: max(0px, var(--fall-wrap-w));
+  height: max(0px, var(--fall-wrap-h));
+}
+
+/* A two-sided back with ingredients beside the steps swaps the columns, so
+   the steps are on the left, away from the pumpkins. */
+.recipe-print-preview[data-double-sided="true"] .recipe-template--fall .recipe-card--back:has(.recipe-card__cols:not(.recipe-card__cols--single):not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only):not(.recipe-card__cols--method-only)) {
+  --fall-wrap-w: 0in;
 }
 
 /* The leaves are the cover's top edge; the shared accent band would lie over
@@ -12888,6 +13001,25 @@ textarea.recipe-card__toc-title {
 .recipe-template--fall .recipe-card[dir="rtl"],
 .recipe-template--garden .recipe-card[dir="rtl"] {
   --recipe-card-keepout-side: left;
+}
+
+.recipe-template--fall .recipe-card[dir="rtl"] .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child)::before {
+  float: left;
+}
+
+.recipe-template--fall .recipe-card[dir="rtl"] .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) > :first-child::before {
+  float: left;
+  clear: left;
+}
+
+.recipe-template--fall .recipe-card[dir="rtl"] .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li {
+  padding-left: 0;
+  padding-right: calc(11pt + 5pt);
+}
+
+.recipe-template--fall .recipe-card[dir="rtl"] .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li > .recipe-card__step-number {
+  left: auto;
+  right: 0;
 }
 
 .recipe-template--fall .recipe-card[dir="rtl"] .recipe-card__fall-leaves {

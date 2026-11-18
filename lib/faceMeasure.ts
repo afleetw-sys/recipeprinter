@@ -107,6 +107,15 @@ function keepOutCorner(cardEl: HTMLElement): { left: number; right: number; top:
     : { left: rect.right - w * scale, right: rect.right, top };
 }
 
+/** The boxes of a leaf's rendered lines (and inline pieces), in screen px.
+    Falls back to the leaf's own box where ranges give nothing (jsdom). */
+function lineRects(leaf: HTMLElement): DOMRect[] {
+  const range = leaf.ownerDocument.createRange();
+  range.selectNodeContents(leaf);
+  const rects = typeof range.getClientRects === "function" ? Array.from(range.getClientRects()) : [];
+  return rects.length > 0 ? rects.filter((r) => r.width > 0 && r.height > 0) : [leaf.getBoundingClientRect()];
+}
+
 /**
  * Screen px per CSS px for this card. Every rect here is in screen px, which a
  * transformed ancestor (the preview's `.recipe-page-scaler`) scales, while
@@ -131,7 +140,14 @@ export function colsOverflowPx(cardEl: HTMLElement): number {
   for (const leaf of realContentElements(cols, CONTENT_LEAF_SELECTOR)) {
     const rect = leaf.getBoundingClientRect();
     contentBottom = Math.max(contentBottom, rect.bottom);
-    if (corner && rect.right > corner.left && rect.left < corner.right) cornerOverrun = Math.max(cornerOverrun, rect.bottom - corner.top);
+    if (corner && rect.right > corner.left && rect.left < corner.right && rect.bottom > corner.top) {
+      // Read the lines, not the box: a step that wraps around the art (Fall's
+      // pumpkins) keeps its full-width box while its lines beside the art
+      // stop short of it.
+      for (const line of lineRects(leaf)) {
+        if (line.right > corner.left && line.left < corner.right) cornerOverrun = Math.max(cornerOverrun, line.bottom - corner.top);
+      }
+    }
   }
   // Several templates (and every 6x4 card, regardless of template) hide the
   // footer entirely via `display: none` when it has no source link to show
