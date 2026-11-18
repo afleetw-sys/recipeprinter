@@ -3495,7 +3495,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Preview it free, pay to download or add more",
         image: "printed-cookbook",
         body:
-          `Preview the cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. Pay $19.99 to download the PDF or add more than ${FREE_COOKBOOK_RECIPES} recipes. After that every change is free: add recipes, fix mistakes, and rearrange chapters whenever you like, and download updated copies at no extra cost.`,
+          `Preview the cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. Pay $19.99 to download the PDF or add more than ${FREE_COOKBOOK_RECIPES} recipes. After that every change to that cookbook is free: add recipes, fix mistakes, and rearrange chapters whenever you like, and download updated copies at no extra cost.`,
       },
     ],
     faqHeading: "Homemade cookbook gift questions",

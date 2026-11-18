@@ -63,8 +63,17 @@ export function CookbookProof({
       text: <>Print as many as you like, at home or at a print shop. We don&rsquo;t charge for extra copies.</>,
     },
     {
-      title: "Free updates.",
-      text: <>Add next year&rsquo;s recipes and download the new copy at no extra cost.</>,
+      // Updates to the SAME book, in so many words: one purchase is one
+      // cookbook, edited as long as you like, and a new cookbook is its own
+      // purchase (Amelia, 2026-11-18). "Download the new copy" read like a
+      // second book for free.
+      title: "Yours to keep editing.",
+      text: (
+        <>
+          Add next year&rsquo;s recipes to the same cookbook and download it again at no extra cost. Each new
+          cookbook is its own purchase.
+        </>
+      ),
     },
   ];
 
