@@ -1362,7 +1362,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     <article
       className={`recipe-card recipe-card--${side} ${
         continued ? "recipe-card--continued" : ""
-      }`}
+      } ${showPhoto ? "recipe-card--with-photo" : ""}`}
       data-has-back={hasBackFace ? "true" : undefined}
       data-preview-hidden={previewHidden ? "true" : undefined}
       data-poster-color={template === "poster" ? (themeArt.posterColor ?? posterColor(recipeIndex)) : undefined}

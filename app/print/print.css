@@ -12711,9 +12711,11 @@ textarea.recipe-card__toc-title {
    they take margins for the gap they had. Its own right margin reaches past
    the card's padding to the card's edge, where the artist drew it.
 
-   It holds up the photo, so it belongs to whichever section starts under it:
-   the steps when they are the right-hand column, the ingredients when they
-   run full width above the steps (stacked) or have the face to themselves. */
+   It holds up the photo, so it shows only when the photo is on
+   (`.recipe-card--with-photo`), and only on the front: the back of a card is
+   plain paper. It belongs to whichever section starts under it: the steps
+   when they are the right-hand column, the ingredients when they run full
+   width above the steps (stacked) or have the face to themselves. */
 .recipe-template--halloween {
   --recipe-bg: #e4dac5;
   --recipe-ink: #1f1b16;
@@ -12807,8 +12809,8 @@ textarea.recipe-card__toc-title {
   display: block;
 }
 
-.recipe-template--halloween .recipe-card__cols:not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only) .recipe-card__method::before,
-.recipe-template--halloween :is(.recipe-card__cols--stacked, .recipe-card__cols--ingredients-only) .recipe-card__ingredients::before {
+.recipe-template--halloween .recipe-card--with-photo:not(.recipe-card--back) .recipe-card__cols:not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only) .recipe-card__method::before,
+.recipe-template--halloween .recipe-card--with-photo:not(.recipe-card--back) :is(.recipe-card__cols--stacked, .recipe-card__cols--ingredients-only) .recipe-card__ingredients::before {
   content: "";
   float: right;
   width: calc(376 * var(--halloween-u));
@@ -12819,25 +12821,11 @@ textarea.recipe-card__toc-title {
   print-color-adjust: exact;
 }
 
-/* On the back of a two-sided card the columns swap sides, so the steps may be
-   the LEFT column; the hand then stays inside them instead of reaching over
-   the ingredients. */
-.recipe-print-preview[data-double-sided="true"] .recipe-template--halloween .recipe-card--back .recipe-card__cols:not(.recipe-card__cols--single):not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only):not(.recipe-card__cols--method-only) .recipe-card__method::before {
-  margin-right: 0;
-}
-
 /* A right-to-left card mirrors that: the steps are its LEFT column, so the
-   hand moves to the card's left edge (as drawn, never flipped). A two-sided
-   back swaps the columns again, steps on the right, and the hand is the
-   left-to-right front's. */
+   hand moves to the card's left edge (as drawn, never flipped). */
 .recipe-template--halloween .recipe-card[dir="rtl"] .recipe-card__cols:not(.recipe-card__cols--single):not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only):not(.recipe-card__cols--method-only) .recipe-card__method::before {
   float: left;
   margin: 0 0.08in 0.06in calc(-1 * var(--recipe-card-padding-x));
-}
-
-.recipe-print-preview[data-double-sided="true"] .recipe-template--halloween .recipe-card--back[dir="rtl"] .recipe-card__cols:not(.recipe-card__cols--single):not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only):not(.recipe-card__cols--method-only) .recipe-card__method::before {
-  float: right;
-  margin: 0 calc(-1 * var(--recipe-card-padding-x)) 0.06in 0.08in;
 }
 
 .recipe-template--halloween .recipe-card__method .recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe),
