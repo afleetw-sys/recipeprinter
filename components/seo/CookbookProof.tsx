@@ -32,8 +32,8 @@ const REASONS: { title: string; text: string }[] = [
     text: "Print one for everyone in the family. You only pay for the printing.",
   },
   {
-    title: "Never finished",
-    text: "Add next year's recipes and download the new copy free.",
+    title: "Free updates",
+    text: "Add next year's recipes and download the new copy at no extra cost.",
   },
 ];
 
