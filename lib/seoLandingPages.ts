@@ -2801,16 +2801,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     layout: "capture-first",
     heroImage: "bound-cookbook",
     importSubmitLabel: "Start a cookbook",
-    title: "Online Cookbook Maker That Reads Your Recipes | RecipePrinter",
+    title: "Online Cookbook Maker | Turn Your Recipes Into a Book | RecipePrinter",
     description:
-      "Make a cookbook without retyping a single recipe. Add links, screenshots, or handwritten cards, then pay once for the book and print as many copies as you like.",
-    // The h1 leads with what no other cookbook maker does. Links from other
-    // pages keep the searched phrase through `anchor`.
-    h1: "The cookbook maker that does the typing",
-    anchor: "Online cookbook maker",
-    breadcrumbLabel: "Cookbook maker",
+      "Make a printed cookbook from recipe links, screenshots, apps, or handwritten cards. Add chapters and a cover, then print as many copies as you like.",
+    h1: "Online cookbook maker",
     lede:
-      "Most cookbook makers leave the typing to you. Add links, screenshots, handwritten cards, or your Paprika library, and each one comes in as a finished page.",
+      "Turn the recipes you already have into a printed cookbook. Links, screenshots, handwritten cards, and your Paprika library come in as finished pages, so there's nothing to retype.",
     // The cookbook hub. /features links here once instead of showing every
     // cookbook page as an equal chip, and this row hands the visitor on to
     // the page for the book they're making.
@@ -2832,7 +2828,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howTo: [
       {
         name: "Add recipes from anywhere",
-        text: "Add recipe links, screenshots, handwritten cards, pasted text, or recipes from apps, and each one becomes an editable recipe, no retyping needed.",
+        text: "Add recipe links, screenshots, handwritten cards, pasted text, or recipes from apps, and each one becomes a recipe you can edit.",
       },
       {
         name: "Build chapters",
@@ -2849,11 +2845,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "Skip the typing",
+        heading: "Recipes from anywhere, in one book",
         image: "addrecipes-cookbook",
         body:
-          "Add the link, the screenshot, or a photo of Grandma's card. RecipePrinter reads the title, ingredients, and steps, so 40 recipes take an afternoon, not a weekend at the keyboard.",
-        afterBody: "Every recipe stays editable, so you can fix anything before it prints.",
+          "Add a link, a screenshot, or a photo of Grandma's card, and it comes in as a recipe you can edit. Recipes from a dozen different places end up looking like one book.",
       },
       {
         heading: "Design the whole book",
