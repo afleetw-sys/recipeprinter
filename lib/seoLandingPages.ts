@@ -2775,6 +2775,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/family-recipe-book", label: "Create a family recipe book" },
       { href: "/homemade-cookbook-gift", label: "Make a cookbook gift" },
       { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
+      { href: "/canva-cookbook-alternative", label: "Canva cookbook alternative" },
       { href: "/how-to-print-a-cookbook", label: "How to print a cookbook" },
       { href: "/christmas-recipe-book", label: "Make a Christmas recipe book" },
     ],
@@ -2935,6 +2936,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/organize-recipes", label: "Organize recipes" },
       { href: "/recipe-binder", label: "Build a recipe binder" },
       { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
+      { href: "/canva-cookbook-alternative", label: "Canva cookbook alternative" },
       { href: "/how-to-print-a-cookbook", label: "How to print a cookbook" },
       { href: "/christmas-recipe-book", label: "Make a Christmas recipe book" },
     ],
@@ -4151,7 +4153,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Canva alternative for recipe cards",
       "recipe card template alternative",
       "Canva recipe template alternative",
-      "Canva cookbook alternative",
       "make recipe cards without Canva",
     ],
     shortLabel: "Canva",
@@ -4247,7 +4248,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Can I make a whole cookbook instead of single cards?",
         answer:
           "Yes. RecipePrinter turns your recipes into a cookbook with a cover, chapters, section pages, and a table of contents. Export the finished cookbook as a PDF to print at home or with a printing service.",
-        links: [{ href: "/cookbook-maker", label: "Cookbook maker" }],
+        links: [{ href: "/canva-cookbook-alternative", label: "Canva alternative for cookbooks" }],
       },
       {
         question: "Can I print several recipe cards at once?",
@@ -4259,9 +4260,140 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     links: [
       { href: "/recipe-card-printer", label: "Make printable recipe cards" },
       { href: "/print-multiple-recipes", label: "Print multiple recipes at once" },
+      { href: "/canva-cookbook-alternative", label: "Canva cookbook alternative" },
       { href: "/cookbook-maker", label: "Cookbook maker" },
       { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
       { href: "/just-the-recipe-alternative", label: "Just the Recipe alternative" },
+    ],
+  },
+  {
+    slug: "canva-cookbook-alternative",
+    contentUpdated: "2026-11-18",
+    primaryKeyword: "Canva cookbook alternative",
+    // Its own page, not a tab on /canva-recipe-card-alternative: a cookbook
+    // visitor wants "Start a cookbook" and the per-book price, a card visitor
+    // wants to paste a link and print. The two pages link to each other.
+    secondaryKeywords: [
+      "Canva alternative for cookbooks",
+      "Canva recipe book alternative",
+      "make a cookbook without Canva",
+      "Canva cookbook template alternative",
+      "recipe book maker",
+    ],
+    shortLabel: "Canva cookbooks",
+    pickerGroup: "comparison",
+    intent: "Preservation and Gift SEO",
+    startsCookbook: true,
+    layout: "capture-first",
+    heroImage: "cookbook-cover-wide",
+    importSubmitLabel: "Start a cookbook",
+    title: "Canva Cookbook Alternative | Make a Recipe Book Faster | RecipePrinter",
+    description:
+      "In Canva, every cookbook page is filled in by hand. RecipePrinter turns recipe links, screenshots, and handwritten cards into a finished, print-ready cookbook.",
+    h1: "A Canva alternative for making a cookbook",
+    anchor: "Canva cookbook alternative",
+    lede:
+      "In Canva, a cookbook is a template you fill in page by page. RecipePrinter starts with your recipes: add links, screenshots, or handwritten cards, and each one becomes a finished page in a book with chapters, a cover, and a table of contents.",
+    featureSections: [
+      {
+        heading: "Your recipes fill the pages, not you",
+        image: "addrecipes-cookbook",
+        body:
+          "A Canva cookbook template gives you lovely pages, but every recipe goes in by hand: the title in one box, the ingredients in another, the steps in a third, then again for the next recipe. In RecipePrinter, you add a link, a screenshot, or a photo of the card, and the recipe lands on its own page, laid out to match the rest of the book.",
+        afterBody:
+          "One customer had spent 10 months on a cookbook in Canva and finished it in RecipePrinter in less than a week.",
+      },
+      {
+        heading: "Move a recipe and the book keeps up",
+        image: "organize-cookbook",
+        body:
+          "Move a recipe to another chapter or add a new one, and the page numbers and table of contents update on their own. Every page shares one theme, so recipes from a dozen different places still look like one book.",
+      },
+      {
+        heading: "Pay once for the book, not per copy",
+        image: "print-cookbook",
+        body: `Canva's printed photo books are priced per copy and hold 20 to 98 inside pages. RecipePrinter is ${COOKBOOK_PRICE_FALLBACK} once per cookbook for the print-ready files, so every extra copy costs only the printing.`,
+        afterBody:
+          "Print at home, at a copy shop, or with Lulu or Blurb, which bind the book and ship it to you.",
+        links: [{ phrase: "Lulu or Blurb", href: "/how-to-print-a-cookbook" }],
+      },
+      {
+        heading: "Where Canva is the better choice",
+        image: "multi-themes",
+        body:
+          "If you want to design every page from scratch, with your own layouts, illustrations, and stickers, Canva gives you far more freedom. It can also print and ship a photo book for you, so there's no separate printer to choose.",
+        afterBody:
+          "RecipePrinter is built only for recipes. You give up some design freedom for a book that takes far less time to put together.",
+      },
+    ],
+    comparison: {
+      competitor: "Canva",
+      checked: "November 2026",
+      sources: [
+        { href: "https://www.canva.com/templates/?query=cookbook", label: "its cookbook templates" },
+        { href: "https://www.canva.com/photo-books/", label: "its photo books page" },
+        { href: "https://www.canva.com/pricing/", label: "its pricing page" },
+      ],
+      groups: [
+        {
+          title: "Getting recipes in",
+          rows: [
+            { feature: "From a recipe link", us: "Reads the recipe for you", them: "You add the recipe yourself" },
+            { feature: "From a photo of a handwritten card", us: "Reads it into editable text", them: "Place the photo, or type the recipe out" },
+            { feature: "Laying out each recipe page", us: "Done for you, in your theme", them: "Fill in a template page by page" },
+          ],
+        },
+        {
+          title: "The book",
+          rows: [
+            { feature: "Ready-made cookbook designs", us: "Recipe themes, including seasonal ones", them: "Free cookbook templates" },
+            { feature: "Free-form design with your own elements", us: false, them: "Full layout and design control" },
+            { feature: "Table of contents and page numbers", us: "Update as recipes move", them: "Arranged in your design" },
+          ],
+        },
+        {
+          title: "Printing and price",
+          rows: [
+            { feature: "Printed and shipped to you", us: false, them: "Photo books, 20 to 98 inside pages" },
+            { feature: "Print-ready PDF", us: "Included with the cookbook", them: true },
+            { feature: "What you pay", us: `${COOKBOOK_PRICE_FALLBACK} per cookbook, plus your printer`, them: "Free or Pro (US$144 a year); photo books from US$19.50 a copy" },
+          ],
+        },
+      ],
+    },
+    faqHeading: "Questions about RecipePrinter and Canva cookbooks",
+    faqs: [
+      {
+        question: "Can I make a cookbook in Canva?",
+        answer:
+          "Yes. Canva has free cookbook templates, and you fill in each recipe page yourself. RecipePrinter is the faster choice when you already have the recipes as links, screenshots, or handwritten cards.",
+      },
+      {
+        question: "How do I choose between them?",
+        answer:
+          "Choose Canva if you want to design every page yourself, or want the printed book ordered from the same place. Choose RecipePrinter if you have a pile of recipes to get into a book and don't want to lay each one out by hand.",
+      },
+      {
+        question: "What does each one cost?",
+        answer: `Building and previewing a RecipePrinter cookbook is free with up to ${FREE_COOKBOOK_RECIPES} recipes, and ${COOKBOOK_PRICE_FALLBACK} once per cookbook lets you download it and add more. Canva has a free plan and Canva Pro at US$144 a year, and its printed photo books start at US$19.50 a copy. Check Canva's site for current prices.`,
+      },
+      {
+        question: "Does RecipePrinter print and ship the book?",
+        answer:
+          "You choose who prints it: at home, at a copy shop, or with Lulu or Blurb, which bind the book and ship it to you. Extra copies cost only the printing.",
+        links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
+      },
+      {
+        question: "Do I need RecipePrinter Pro?",
+        answer: "No. A cookbook is its own one-time purchase. Pro covers other RecipePrinter features.",
+      },
+    ],
+    links: [
+      { href: "/cookbook-maker", label: "Cookbook maker" },
+      { href: "/canva-recipe-card-alternative", label: "Canva alternative for recipe cards" },
+      { href: "/createmycookbook-alternative", label: "CreateMyCookbook alternative" },
+      { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
+      { href: "/family-recipe-book", label: "Create a family recipe book" },
     ],
   },
   {
@@ -4385,6 +4517,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       { href: "/cookbook-maker", label: "Cookbook maker" },
       { href: "/handwritten-recipes-to-cookbook", label: "Turn handwritten recipes into a cookbook" },
       { href: "/family-recipe-book", label: "Create a family recipe book" },
+      { href: "/canva-cookbook-alternative", label: "Canva cookbook alternative" },
       { href: "/reciscan-alternative", label: "ReciScan alternative" },
     ],
   },
