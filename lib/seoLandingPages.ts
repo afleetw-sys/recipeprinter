@@ -2806,7 +2806,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       "Make a cookbook from recipes you find anywhere: links, screenshots, apps, or handwritten cards. Organize chapters, add a cover, and export a print-ready PDF.",
     h1: "Online cookbook maker",
     lede:
-      "Bring recipes in from websites, screenshots, apps, or handwritten cards, organize them into chapters, design the cover, and export a print-ready PDF of your cookbook.",
+      "Bring recipes in from websites, screenshots, apps, or handwritten cards without retyping them, organize them into chapters, design the cover, and export a print-ready PDF of your cookbook.",
     // The cookbook hub. /features links here once instead of showing every
     // cookbook page as an equal chip, and this row hands the visitor on to
     // the page for the book they're making.
@@ -2845,10 +2845,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "Turn links, photos, and screenshots into recipes",
+        heading: "Links, photos, and screenshots become recipes, without retyping",
         image: "addrecipes-cookbook",
         body:
-          "Start with the recipes you have today and add the rest as you find them. Each link, photo, handwritten card, screenshot, or pasted recipe becomes a recipe you can edit as the book comes together.",
+          "Start with the recipes you have today and add the rest as you find them. Each link, photo, handwritten card, screenshot, or pasted recipe comes in with its ingredients and steps already filled in, ready to edit as the book comes together.",
         afterBody:
           "That makes it easy to bring recipes from completely different places together in one consistent book.",
       },
