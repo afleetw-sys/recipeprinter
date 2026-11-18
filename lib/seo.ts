@@ -135,6 +135,10 @@ export const NAV_LINKS: NavLink[] = [
     href: "/about",
     label: "About",
     blurb: "Why we built a tool for moving recipes from the internet to the kitchen.",
+    // Off the homepage's footer (Amelia, 2026-11-18): it does little search
+    // work there, and the homepage row is better spent on pages that sell.
+    // Still in every other footer, so it keeps links in.
+    inFooter: "off-home",
   },
 ];
 

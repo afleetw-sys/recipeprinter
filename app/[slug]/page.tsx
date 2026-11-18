@@ -10,7 +10,7 @@ import {
 } from "@/components/seo/LandingFrame";
 import { SeoCapture } from "@/components/seo/SeoCapture";
 import { CookbookStartButton } from "@/components/seo/CookbookStartButton";
-import { CustomerQuote } from "@/components/seo/CustomerQuote";
+import { CookbookProof } from "@/components/seo/CookbookProof";
 import { Breadcrumb, type Crumb } from "@/components/seo/Breadcrumb";
 import { cookbookPitchFeature } from "@/components/seo/CookbookPitch";
 import { RecipeBinderSections } from "@/components/seo/RecipeBinderSections";
@@ -299,6 +299,15 @@ export default function SeoLandingPage({ params }: PageProps) {
         </section>
       )}
 
+      {/* The sell, before any explaining: finished books, why this and not
+          another cookbook maker, and a customer's words. After the table on
+          a comparison page, which is what that visitor came for. */}
+      {page.startsCookbook && (
+        <CookbookProof
+          usedImages={[page.heroImage, ...(page.featureSections ?? []).map((f) => f.image ?? f.proof)]}
+        />
+      )}
+
       {page.howTo && page.howTo.length > 0 && (
         <section aria-labelledby="howto-heading">
           <div id="howto-heading">
@@ -316,12 +325,6 @@ export default function SeoLandingPage({ params }: PageProps) {
       {features.length > 0 && (
         <section aria-label="Features">
           <FeatureRows features={features} />
-        </section>
-      )}
-
-      {page.startsCookbook && (
-        <section aria-label="What a customer said">
-          <CustomerQuote />
         </section>
       )}
 
