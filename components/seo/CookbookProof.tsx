@@ -73,7 +73,7 @@ export function CookbookProof({
       <div className="grid items-center gap-cp-5 lg:grid-cols-2 lg:gap-cp-7">
         <div>
           <h2 id="cookbook-proof-heading" className="text-cp-h2-lg font-extrabold tracking-[-0.03em]">
-            Why make your cookbook here
+            Why RecipePrinter
           </h2>
           <ul className="mt-cp-4 flex flex-col gap-cp-3 list-disc pl-[1.25em] marker:text-ink-soft">
             {reasons.map((reason) => (
