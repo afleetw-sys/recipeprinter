@@ -10,7 +10,7 @@ import {
 } from "@/components/seo/LandingFrame";
 import { SeoCapture } from "@/components/seo/SeoCapture";
 import { CookbookStartButton } from "@/components/seo/CookbookStartButton";
-import { CustomerQuote } from "@/components/seo/CustomerQuote";
+import { CookbookProof } from "@/components/seo/CookbookProof";
 import { Breadcrumb, type Crumb } from "@/components/seo/Breadcrumb";
 import { cookbookPitchFeature } from "@/components/seo/CookbookPitch";
 import { RecipeBinderSections } from "@/components/seo/RecipeBinderSections";
@@ -188,6 +188,13 @@ export default function SeoLandingPage({ params }: PageProps) {
       : []),
   ];
 
+  const hubRow = page.hub && (
+    <PickerRow
+      label={page.hub.label}
+      pages={page.hub.slugs.flatMap((slug) => SEO_LANDING_PAGE_MAP.get(slug) ?? [])}
+    />
+  );
+
   return (
     <LandingFrame
       headerActions={
@@ -251,12 +258,7 @@ export default function SeoLandingPage({ params }: PageProps) {
         }
       />
 
-      {page.hub && (
-        <PickerRow
-          label={page.hub.label}
-          pages={page.hub.slugs.flatMap((slug) => SEO_LANDING_PAGE_MAP.get(slug) ?? [])}
-        />
-      )}
+      {page.hub && page.hubPlacement !== "bottom" && hubRow}
 
       {/* Straight after the hero on a comparison page. Someone who searched
           for a competitor's name came to see the two side by side, so the
@@ -299,6 +301,16 @@ export default function SeoLandingPage({ params }: PageProps) {
         </section>
       )}
 
+      {/* The sell, before any explaining: finished books, why this and not
+          another cookbook maker, and a customer's words. After the table on
+          a comparison page, which is what that visitor came for. */}
+      {page.startsCookbook && (
+        <CookbookProof
+          slug={page.slug}
+          usedImages={[page.heroImage, ...(page.featureSections ?? []).map((f) => f.image ?? f.proof)]}
+        />
+      )}
+
       {page.howTo && page.howTo.length > 0 && (
         <section aria-labelledby="howto-heading">
           <div id="howto-heading">
@@ -316,12 +328,6 @@ export default function SeoLandingPage({ params }: PageProps) {
       {features.length > 0 && (
         <section aria-label="Features">
           <FeatureRows features={features} />
-        </section>
-      )}
-
-      {page.startsCookbook && (
-        <section aria-label="What a customer said">
-          <CustomerQuote />
         </section>
       )}
 
@@ -373,6 +379,8 @@ export default function SeoLandingPage({ params }: PageProps) {
           />
         </section>
       )}
+
+      {page.hubPlacement === "bottom" && hubRow}
 
       {/* ── FAQ ───────────────────────────────────────────────────────── */}
       <section aria-labelledby="faq-heading">
