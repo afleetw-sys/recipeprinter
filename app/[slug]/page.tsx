@@ -188,6 +188,13 @@ export default function SeoLandingPage({ params }: PageProps) {
       : []),
   ];
 
+  const hubRow = page.hub && (
+    <PickerRow
+      label={page.hub.label}
+      pages={page.hub.slugs.flatMap((slug) => SEO_LANDING_PAGE_MAP.get(slug) ?? [])}
+    />
+  );
+
   return (
     <LandingFrame
       headerActions={
@@ -251,12 +258,7 @@ export default function SeoLandingPage({ params }: PageProps) {
         }
       />
 
-      {page.hub && (
-        <PickerRow
-          label={page.hub.label}
-          pages={page.hub.slugs.flatMap((slug) => SEO_LANDING_PAGE_MAP.get(slug) ?? [])}
-        />
-      )}
+      {page.hub && page.hubPlacement !== "bottom" && hubRow}
 
       {/* Straight after the hero on a comparison page. Someone who searched
           for a competitor's name came to see the two side by side, so the
@@ -377,6 +379,8 @@ export default function SeoLandingPage({ params }: PageProps) {
           />
         </section>
       )}
+
+      {page.hubPlacement === "bottom" && hubRow}
 
       {/* ── FAQ ───────────────────────────────────────────────────────── */}
       <section aria-labelledby="faq-heading">

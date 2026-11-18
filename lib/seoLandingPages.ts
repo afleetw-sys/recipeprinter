@@ -178,6 +178,12 @@ export type SeoLandingPage = {
    * already knows which app the recipe is in and wants that page's specifics.
    */
   hub?: { label: string; slugs: string[] };
+  /** Where the hub row sits. `top` (default) is straight after the hero, for
+      a visitor who already knows which narrower page they want. `bottom` is
+      just before the FAQ, for a page whose own pitch should come first: on
+      /cookbook-maker a box of nine guide chips under the hero read as heavy
+      on a phone and pushed the reasons to make a cookbook out of sight. */
+  hubPlacement?: "top" | "bottom";
   lede: string;
   /** Words of `lede`, exactly as written there, that start a new cookbook
       when clicked (CookbookStartButton as a link): for a page whose recipes
@@ -2823,6 +2829,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     // The cookbook hub. /features links here once instead of showing every
     // cookbook page as an equal chip, and this row hands the visitor on to
     // the page for the book they're making.
+    hubPlacement: "bottom",
     hub: {
       label: "Guides by the cookbook you're making",
       slugs: [
