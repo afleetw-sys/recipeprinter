@@ -100,11 +100,14 @@ export const MULTI_RECIPE_FOUND_TRIGGER = "multi_recipe_found";
 export const REMOVE_BRANDING_TRIGGER = "remove_branding";
 
 // Each an invitation to the thing the cook just tried (Amelia, 2026-11-16).
+// No two titles share an opening: a cook who meets several of these in one
+// session read the same "Ready to …?" over and over as mockery (Amelia,
+// 2026-11-18).
 const TITLE_BY_REASON: Record<ProLockReason, string> = {
-  multi_recipe: "Ready to print several recipes at once?",
-  card_size: "Ready to print 4×6 recipe cards?",
-  theme: "Ready to use every theme?",
-  font_size: "Ready to customize your theme?",
+  multi_recipe: "Print several recipes at once",
+  card_size: "Print on 4×6 recipe cards",
+  theme: "Unlock every theme",
+  font_size: "Make any theme your own",
 };
 
 /** Over the benefit list when the title already names the feature that
@@ -218,10 +221,8 @@ export const GENERIC_COPY: ProUpgradeCopy = {
 export function proUpgradeCopy(
   reasons: ProLockReason[],
   trigger: string,
-  /** For `IMPORT_LIMIT_TRIGGER`: the allowance and when it resets, and whether
-      there are recipes on the page to point to. */
+  /** For `IMPORT_LIMIT_TRIGGER`: the allowance and when it resets. */
   importUsage?: { limit: number; nextFreeAt: number | null } | null,
-  hasRecipes: boolean = false,
   /** For `MULTI_RECIPE_FOUND_TRIGGER`: how many recipes the import found, and in what. */
   found?: { count: number; source: "url" | "image" | "text" } | null,
 ): ProUpgradeCopy {
@@ -245,16 +246,16 @@ export function proUpgradeCopy(
   }
   if (trigger === IMPORT_LIMIT_TRIGGER) {
     const back = importUsage?.nextFreeAt
-      ? `Your free imports reset ${formatImportReturnDate(importUsage.nextFreeAt)}. `
+      ? ` They reset ${formatImportReturnDate(importUsage.nextFreeAt)}.`
       : "";
     return {
       // An invitation, not "that's a lot": nobody should feel told off for
       // using the app (Amelia, 2026-11-16).
-      title: "Ready for unlimited imports?",
-      // Says what they still have before what they could buy: nothing they
-      // made is locked, and waiting is a real option. Only when it's true: an
-      // import sent from the homepage arrives on a fresh, empty project.
-      body: `You've used your ${importUsage?.limit ?? FREE_IMPORTS_PER_WINDOW} free imports. ${back}${hasRecipes ? "You can still edit and print the recipes you've imported. " : ""}Pro lets you keep importing now.`,
+      title: "Unlimited imports with Pro",
+      // What happened and when it comes back, nothing more: "you can still
+      // edit…" and "Pro lets you keep importing" read as filler beside a
+      // title and a list that already say it (Amelia, 2026-11-18).
+      body: `You've used your ${importUsage?.limit ?? FREE_IMPORTS_PER_WINDOW} free imports.${back}`,
       benefits: PRO_BENEFITS,
       ...splitBenefits([], UNLIMITED_IMPORTS_BENEFIT),
       ctaLabel: "Get Pro",
@@ -264,7 +265,7 @@ export function proUpgradeCopy(
   }
   if (trigger === IMAGE_IMPORT_LIMIT_TRIGGER) {
     return {
-      title: "Ready to import more photos?",
+      title: "Import more photos with Pro",
       body: `Pro imports up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photos an hour.`,
       benefits: PRO_BENEFITS,
       ...splitBenefits([]),
@@ -277,7 +278,7 @@ export function proUpgradeCopy(
   // moment, and it isn't what was clicked.
   if (trigger === REMOVE_BRANDING_TRIGGER) {
     return {
-      title: "Ready to print without branding?",
+      title: "Print without the RecipePrinter line",
       benefits: [NO_BRANDING_BENEFIT, ...PRO_BENEFITS.filter((b) => b !== NO_BRANDING_BENEFIT)],
       ...splitBenefits([], NO_BRANDING_BENEFIT),
       ctaLabel: "Get Pro and continue",
@@ -295,10 +296,10 @@ export function proUpgradeCopy(
   const single = reasons.length === 1 ? reasons[0] : null;
   const alreadySaid = single ? BENEFIT_BY_REASON[single] : undefined;
   return {
-    title: single ? TITLE_BY_REASON[single] : "Ready to print with Pro?",
+    title: single ? TITLE_BY_REASON[single] : "This print uses Pro features",
     // A body only where it says something the title doesn't (Amelia,
     // 2026-11-17): a single feature's title already names it.
-    body: single ? undefined : "This print uses Pro features. Upgrade and it prints just as you set it up.",
+    body: single ? undefined : "Upgrade and it prints just as you set it up.",
     benefits,
     ...splitBenefits(benefits.filter((benefit) => triggered.has(benefit)), alreadySaid),
     ctaLabel: trigger === "print_button" ? "Get Pro and print" : "Get Pro and continue",
