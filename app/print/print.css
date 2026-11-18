@@ -12775,6 +12775,13 @@ textarea.recipe-card__toc-title {
   padding-left: calc(11pt + 5pt);
 }
 
+/* The step being edited wraps the same way. Its field clips its overflow,
+   which makes it a box of its own, and a box that cannot fit beside the
+   pumpkins drops below them, off the card. A div needs no clipping. */
+.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li > .recipe-card__inline-rich {
+  overflow: visible;
+}
+
 .recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li > .recipe-card__step-number {
   position: absolute;
   top: 0;
