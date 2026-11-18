@@ -2874,7 +2874,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Design the whole book",
-        image: "multi-themes",
+        image: "cookbook-cover-wide",
         body:
           "Choose from more than a dozen themes, from clean and modern to a cream-stock keepsake look, plus seasonal themes for fall, Halloween, and Christmas. The theme carries through the cover, chapter openers, and every recipe page.",
         afterBody:
@@ -4342,7 +4342,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         heading: "Where Canva is the better choice",
-        image: "multi-themes",
+        image: "spiral-and-binder",
         body:
           "If you want to design every page from scratch, with your own layouts, illustrations, and stickers, Canva gives you far more freedom. It can also print and ship a photo book for you, so there's no separate printer to choose.",
         afterBody:
