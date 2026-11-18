@@ -2801,12 +2801,16 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     layout: "capture-first",
     heroImage: "bound-cookbook",
     importSubmitLabel: "Start a cookbook",
-    title: "Online Cookbook Maker | Turn Any Recipes Into a Book | RecipePrinter",
+    title: "Online Cookbook Maker That Reads Your Recipes | RecipePrinter",
     description:
-      "Make a cookbook from recipes you find anywhere: links, screenshots, apps, or handwritten cards. Organize chapters, add a cover, and export a print-ready PDF.",
-    h1: "Online cookbook maker",
+      "Make a cookbook without retyping a single recipe. Add links, screenshots, or handwritten cards, then pay once for the book and print as many copies as you like.",
+    // The h1 leads with what no other cookbook maker does. Links from other
+    // pages keep the searched phrase through `anchor`.
+    h1: "The cookbook maker that does the typing",
+    anchor: "Online cookbook maker",
+    breadcrumbLabel: "Cookbook maker",
     lede:
-      "Bring recipes in from websites, screenshots, apps, or handwritten cards, organize them into chapters, design the cover, and export a print-ready PDF of your cookbook.",
+      "Most cookbook makers leave the typing to you. Here you add a recipe link, a screenshot, a photo of a handwritten card, or your Paprika library, and each one comes in as a finished page. Then sort chapters, design the cover, and download a print-ready PDF.",
     // The cookbook hub. /features links here once instead of showing every
     // cookbook page as an equal chip, and this row hands the visitor on to
     // the page for the book they're making.
@@ -2845,12 +2849,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "Turn links, photos, and screenshots into recipes",
+        heading: "Skip the typing",
         image: "addrecipes-cookbook",
         body:
-          "Start with the recipes you have today and add the rest as you find them. Each link, photo, handwritten card, screenshot, or pasted recipe becomes a recipe you can edit as the book comes together.",
-        afterBody:
-          "That makes it easy to bring recipes from completely different places together in one consistent book.",
+          "Typing is where most family cookbooks stall. Forty recipes is a weekend at the keyboard, copying ingredients off websites and squinting at Grandma's handwriting. Here you add the link, the screenshot, or a photo of the card, and RecipePrinter reads the title, ingredients, and steps for you.",
+        afterBody: [
+          "Every recipe stays editable, so you can check it against the card and fix anything before it's printed.",
+          "Recipes from a dozen different websites, apps, and recipe boxes end up looking like one book.",
+        ],
       },
       {
         heading: "Design the whole book",
@@ -2861,10 +2867,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           "Add your own cover photo and title, give each chapter opener its own photo, and switch themes at any point.",
       },
       {
-        heading: "Print-ready formats, including hardcover",
+        heading: "Pay for the book once, print as many copies as you want",
         image: "print-cookbook",
         body:
-          "Download US Letter for a home printer and a 3-ring binder, or full-bleed files for a coil-bound or hardcover book at US Letter or 8 × 10. Formats for print services come with a separate cover file sized to your book's spine, ready for services like Lulu.",
+          "You get the finished cookbook files, not one printed copy. Print at home for a 3-ring binder, take them to a local copy shop, or upload them to an online printer like Lulu, which binds the book and ships it to your door.",
+        afterBody: [
+          "Because the book is paid for once and not per copy, a copy for every sibling costs only the printing. Add a recipe next year and download an updated copy at no extra cost.",
+          "Download US Letter for a home printer, or full-bleed files for a coil-bound or hardcover book at US Letter or 8 × 10, with a separate cover file sized to your book's spine.",
+        ],
       },
       {
         heading: "Preview it free, then pay $19.99 to download or add more",
@@ -2873,7 +2883,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         body:
           `Preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. Pay $19.99 to download the PDF or add more than ${FREE_COOKBOOK_RECIPES} recipes, and download updated copies anytime at no extra cost.`,
         afterBody:
-          "RecipePrinter creates the PDF; you can print it at home or send the finished file to a printing service of your choice. A free RecipePrinter account is required to download the cookbook.",
+          "A free RecipePrinter account is needed to download the cookbook.",
       },
     ],
     faqHeading: "Cookbook maker questions",
@@ -2911,7 +2921,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter print and ship the book?",
         answer:
-          "No. RecipePrinter creates the cookbook PDF. You can print it at home or upload the finished file to a professional printing service of your choice.",
+          "You choose who prints it. RecipePrinter makes the finished files, and you print them at home, at a local copy shop, or with an online printer like Lulu or Blurb, which binds the book and ships it to you. You pay for the cookbook once, so extra copies cost only the printing.",
       },
       {
         question: "Do I need RecipePrinter Pro?",
@@ -3039,7 +3049,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter print and ship the book?",
         answer:
-          "No. RecipePrinter builds the cookbook and gives you the files to print it. Print at home, or send the files to a copy shop or an online book printer, which handles the printing and delivery.",
+          "You choose who prints it. RecipePrinter builds the cookbook and gives you the files, and you print them at home or send them to a copy shop or an online book printer, which handles the printing and delivery. The cookbook is paid for once, so extra copies cost only the printing.",
       },
       {
         question: "How much does it cost?",
@@ -3190,7 +3200,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter print and ship the cookbook?",
         answer:
-          "No. RecipePrinter creates the finished cookbook PDF. You can print it at home or send the file to a professional printing service.",
+          "You choose who prints it. RecipePrinter makes the finished cookbook PDF, and you print it at home or send it to a print service that binds the book and ships it to you. You pay for the cookbook once, so a copy for everyone in the family costs only the printing.",
       },
     ],
     links: [
@@ -3342,7 +3352,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter print and ship the book?",
         answer:
-          "No. RecipePrinter makes the cookbook PDF. Print it at home, or send it to a print service for spiral binding or a hardcover.",
+          "You choose who prints it. RecipePrinter makes the cookbook PDF, and you print it at home or send it to a print service that binds it as a spiral or hardcover book and ships it to you. You pay for the cookbook once, so extra copies cost only the printing.",
         links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
@@ -3468,7 +3478,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print the cookbook gift myself?",
         answer:
-          "Yes. Download the finished PDF and print it at home, or send the file to a professional printing service for binding. RecipePrinter doesn't physically print or ship the book.",
+          "Yes. Download the finished PDF and print it at home, or send it to a print service that binds the book and ships it to you. You pay for the cookbook once, so a copy for each person on your list costs only the printing.",
       },
       {
         question: "When should I start making a cookbook gift?",
@@ -3615,7 +3625,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter print and ship the recipe book?",
         answer:
-          "No. RecipePrinter creates the finished cookbook PDF. You can print it at home or send the file to a professional printing service.",
+          "You choose who prints it. RecipePrinter makes the finished cookbook PDF, and you print it at home or send it to a print service that binds the book and ships it to you. You pay for the cookbook once, so extra copies cost only the printing.",
         links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
@@ -3677,7 +3687,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       },
       {
         name: "Print or export the finished Christmas gift",
-        text: "Download the finished PDF and print it at home or send it to a professional printer. RecipePrinter creates the file but doesn't physically print or ship the book.",
+        text: "Download the finished PDF and print it at home, or send it to a print service that binds the book and ships it to you. You pay for the cookbook once, so a copy for every family on your list costs only the printing.",
       },
     ],
     featureSections: [
@@ -3740,7 +3750,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter ship the finished cookbook?",
         answer:
-          "No. RecipePrinter creates the finished cookbook PDF. You can print it at home or send the file to a professional printing service for binding or hardcover printing.",
+          "You choose who prints it. RecipePrinter makes the finished cookbook PDF, and you print it at home or send it to a print service that binds it, as a hardcover if you like, and ships it to you. You pay for the cookbook once, so extra copies cost only the printing.",
         links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
@@ -3880,7 +3890,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter print and ship the book?",
         answer:
-          "No. RecipePrinter helps you build the cookbook and export the finished PDF. You can print it at home or send the PDF to the printing service of your choice.",
+          "You choose who prints it. RecipePrinter makes the finished PDF, and you print it at home or send it to a print service that binds the book and ships it to you. You pay for the cookbook once, so a copy for the couple and one for each family costs only the printing.",
         links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
@@ -4377,7 +4387,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can RecipePrinter print and ship my cookbook?",
         answer:
-          "No. RecipePrinter builds the cookbook and exports the finished print-ready file, and you choose where to print it. When you export, it suggests options for each format, such as Lulu for a spiral-bound book or Blurb for a hardcover, as well as your own printer or a local copy shop.",
+          "You choose who prints it. RecipePrinter builds the cookbook and gives you the finished print-ready file, and you pay for it once, so extra copies cost only the printing. When you download, it suggests options for each format, such as Lulu for a spiral-bound book or Blurb for a hardcover, as well as your own printer or a local copy shop.",
         links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
     ],
