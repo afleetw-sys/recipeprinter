@@ -2801,12 +2801,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     layout: "capture-first",
     heroImage: "bound-cookbook",
     importSubmitLabel: "Start a cookbook",
-    title: "Online Cookbook Maker | Turn Your Recipes Into a Book | RecipePrinter",
+    title: "Online Cookbook Maker | Turn Any Recipes Into a Book | RecipePrinter",
     description:
-      "Make a printed cookbook from recipe links, screenshots, apps, or handwritten cards. Add chapters and a cover, then print as many copies as you like.",
+      "Make a cookbook from recipes you find anywhere: links, screenshots, apps, or handwritten cards. Organize chapters, add a cover, and export a print-ready PDF.",
     h1: "Online cookbook maker",
     lede:
-      "Turn the recipes you already have into a printed cookbook. Links, screenshots, handwritten cards, and your Paprika library come in as finished pages, so there's nothing to retype.",
+      "Bring recipes in from websites, screenshots, apps, or handwritten cards, organize them into chapters, design the cover, and export a print-ready PDF of your cookbook.",
     // The cookbook hub. /features links here once instead of showing every
     // cookbook page as an equal chip, and this row hands the visitor on to
     // the page for the book they're making.
@@ -2828,7 +2828,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howTo: [
       {
         name: "Add recipes from anywhere",
-        text: "Add recipe links, screenshots, handwritten cards, pasted text, or recipes from apps, and each one becomes a recipe you can edit.",
+        text: "Add recipe links, screenshots, handwritten cards, pasted text, or recipes from apps, and each one becomes an editable recipe, no retyping needed.",
       },
       {
         name: "Build chapters",
@@ -2845,25 +2845,26 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     ],
     featureSections: [
       {
-        heading: "Recipes from anywhere, in one book",
+        heading: "Turn links, photos, and screenshots into recipes",
         image: "addrecipes-cookbook",
         body:
-          "Add a link, a screenshot, or a photo of Grandma's card, and it comes in as a recipe you can edit. Recipes from a dozen different places end up looking like one book.",
+          "Start with the recipes you have today and add the rest as you find them. Each link, photo, handwritten card, screenshot, or pasted recipe becomes a recipe you can edit as the book comes together.",
+        afterBody:
+          "That makes it easy to bring recipes from completely different places together in one consistent book.",
       },
       {
         heading: "Design the whole book",
         image: "multi-themes",
         body:
-          "More than a dozen themes, including fall, Halloween, and Christmas. One theme carries through the cover, the chapter openers, and every recipe.",
-        afterBody: "Add your own cover photo and title, and switch themes anytime.",
+          "Choose from more than a dozen themes, from clean and modern to a cream-stock keepsake look, plus seasonal themes for fall, Halloween, and Christmas. The theme carries through the cover, chapter openers, and every recipe page.",
+        afterBody:
+          "Add your own cover photo and title, give each chapter opener its own photo, and switch themes at any point.",
       },
       {
         heading: "Pay for the book once, print as many copies as you want",
         image: "print-cookbook",
         body:
-          "You get the finished files, not one printed copy. Print at home, at a copy shop, or with Lulu, which binds the book and ships it to you. A copy for every sibling costs only the printing.",
-        afterBody:
-          "US Letter for a binder, or US Letter and 8 × 10 for spiral and hardcover, with a cover file sized to the spine.",
+          "You get the finished cookbook files, not one printed copy, so a copy for everyone in the family costs only the printing. Download US Letter for a home printer and a 3-ring binder, or full-bleed files for a coil-bound or hardcover book at US Letter or 8 × 10, with a separate cover file sized to your book's spine, ready for services like Lulu.",
       },
       {
         heading: "Preview it free, then pay $19.99 to download or add more",
