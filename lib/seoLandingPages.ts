@@ -2641,7 +2641,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I get it printed and bound?",
         answer:
-          "You can print it yourself on regular letter paper and keep it in a binder, or send the file to a print shop to have it bound. For a hardcover, pick one of the hardcover formats when you download, and the shop will have everything it needs.",
+          "You can print it yourself on regular letter paper and keep it in a binder, or send the file to a print shop to have it bound. For a hardcover, pick one of the hardcover formats when you download, and the shop will have everything it needs. RecipePrinter makes the files; it doesn't print or ship books itself.",
         links: Object.values(PRINTERS).map((printer) => ({
           href: printer.url,
           label: printer.name,
@@ -2652,6 +2652,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "What does a cookbook cost?",
         answer:
           "You can preview a cookbook with up to 10 recipes free. $19.99 per cookbook lets you download or print it, add more than 10 recipes, and keep editing that cookbook. Paper, ink, professional printing, and binding cost extra.",
+      },
+      {
+        question: "Can I use my own cover or chapter page designs?",
+        answer:
+          "Yes. If you've designed your own cover or chapter pages, save each one as an image, upload it as that page's photo, and delete the words on the page. Your design fills the whole page, with nothing printed over it.",
       },
     ],
     links: [
@@ -2779,6 +2784,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         answer:
           `Previewing is free with up to ${FREE_COOKBOOK_RECIPES} recipes. You pay $19.99 per cookbook to download the PDF or add more than ${FREE_COOKBOOK_RECIPES} recipes. Printing and binding at a print shop are separate.`,
       },
+      {
+        question: "Can I use my own cover or chapter page designs?",
+        answer:
+          "Yes. If you've designed your own cover or chapter pages, save each one as an image, upload it as that page's photo, and delete the words on the page. Your design fills the whole page, with nothing printed over it.",
+      },
     ],
     links: [
       { href: "/cookbook-maker", label: "Use the online cookbook maker" },
@@ -2893,14 +2903,14 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         body:
           `Preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. Pay $19.99 to download the PDF or add more than ${FREE_COOKBOOK_RECIPES} recipes, and download updated copies anytime at no extra cost.`,
         afterBody:
-          "A free RecipePrinter account is needed to download the cookbook.",
+          "RecipePrinter creates the PDF; you can print it at home or send the finished file to a printing service of your choice.",
       },
     ],
     faqHeading: "Cookbook maker questions",
     faqs: [
       {
         question: "Can I create a cookbook online for free?",
-        answer: `Yes. Build and preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes, right in your browser. Pay ${COOKBOOK_PRICE_FALLBACK} once when you want to download it or add more.`,
+        answer: `Building and previewing a cookbook is free, right in your browser, with up to ${FREE_COOKBOOK_RECIPES} recipes. When you're ready to download it, print it, or add more recipes, it's ${COOKBOOK_PRICE_FALLBACK} for that cookbook.`,
       },
       {
         question: "What can I import into the cookbook maker?",
@@ -2935,7 +2945,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter print and ship the book?",
         answer:
-          "You choose who prints it: at home, at a copy shop, or with Lulu or Blurb, which bind the book and ship it to you. Extra copies cost only the printing.",
+          "RecipePrinter doesn't print or ship books. It makes the print-ready files, and you choose who prints them: at home, at a copy shop, or with Lulu or Blurb, which print, bind and ship the book to you. Extra copies cost only the printing.",
       },
       {
         question: "Do I need RecipePrinter Pro?",
@@ -2951,6 +2961,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Can I edit my cookbook after I buy it?",
         answer:
           "Yes. After purchasing a cookbook, you can continue editing that cookbook and export updated versions later.",
+      },
+      {
+        question: "Can I use my own cover or chapter page designs?",
+        answer:
+          "Yes. If you've designed your own cover or chapter pages, save each one as an image, upload it as that page's photo, and delete the words on the page. Your design fills the whole page, with nothing printed over it.",
       },
     ],
     links: [
@@ -3064,7 +3079,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter print and ship the book?",
         answer:
-          "You choose who prints it: at home, at a copy shop, or with an online book printer that binds it and ships it to you. Extra copies cost only the printing.",
+          "RecipePrinter doesn't print or ship books. It makes the print-ready files, and you choose who prints them: at home, at a copy shop, or with an online book printer that binds the book and ships it to you. Extra copies cost only the printing.",
       },
       {
         question: "How much does it cost?",
@@ -3074,6 +3089,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Can I print more copies later, or fix something first?",
         answer:
           "Yes. You can go back to the cookbook, make changes, and export it again, so you can fix a typo or add a recipe before ordering another copy. Keep the files to print more copies whenever you like.",
+      },
+      {
+        question: "Can I use my own cover or chapter page designs?",
+        answer:
+          "Yes. If you've designed your own cover or chapter pages, save each one as an image, upload it as that page's photo, and delete the words on the page. Your design fills the whole page, with nothing printed over it.",
       },
     ],
     links: [
@@ -3215,7 +3235,12 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter print and ship the cookbook?",
         answer:
-          "You choose who prints it: at home, or with a print service that binds the book and ships it to you. A copy for everyone in the family costs only the printing.",
+          "RecipePrinter doesn't print or ship books. It makes the print-ready files, and you choose who prints them: at home, or with a print service that binds the book and ships it to you. A copy for everyone in the family costs only the printing.",
+      },
+      {
+        question: "Can I use my own cover or chapter page designs?",
+        answer:
+          "Yes. If you've designed your own cover or chapter pages, save each one as an image, upload it as that page's photo, and delete the words on the page. Your design fills the whole page, with nothing printed over it.",
       },
     ],
     links: [
@@ -3327,7 +3352,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           `Building and previewing your cookbook is free with up to ${FREE_COOKBOOK_RECIPES} recipes. Pay ${COOKBOOK_PRICE_FALLBACK} for that cookbook to download the PDF or add more than ${FREE_COOKBOOK_RECIPES} recipes, and download updated copies anytime at no extra cost.`,
         afterBody: [
           "Download US Letter for a home printer, or files for a spiral-bound or hardcover book from a print service, with a cover file sized to your book's spine.",
-          "A free RecipePrinter account is needed to download. RecipePrinter Pro isn't required.",
+          "RecipePrinter Pro isn't required.",
         ],
         links: [{ phrase: "print service", href: "/how-to-print-a-cookbook" }],
       },
@@ -3367,7 +3392,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter print and ship the book?",
         answer:
-          "You choose who prints it: at home, or with a print service that binds it as a spiral or hardcover book and ships it to you. Extra copies cost only the printing.",
+          "RecipePrinter doesn't print or ship books. It makes the print-ready files, and you choose who prints them: at home, or with a print service that binds it as a spiral or hardcover book and ships it to you. Extra copies cost only the printing.",
         links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
@@ -3375,6 +3400,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         answer:
           "Yes. Open the same export to print any recipe as a full page for free, or several as 4×6 recipe cards with Pro.",
         links: [{ href: "/print-paprika-recipes", label: "Print Paprika recipes" }],
+      },
+      {
+        question: "Can I use my own cover or chapter page designs?",
+        answer:
+          "Yes. If you've designed your own cover or chapter pages, save each one as an image, upload it as that page's photo, and delete the words on the page. Your design fills the whole page, with nothing printed over it.",
       },
     ],
     links: [
@@ -3493,7 +3523,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can I print the cookbook gift myself?",
         answer:
-          "Yes. Print it at home, or send it to a print service that binds it and ships it to you. A copy for each person on your list costs only the printing.",
+          "Yes. Print it at home, or send it to a print service that binds it and ships it to you. RecipePrinter makes the files; it doesn't print or ship books itself. A copy for each person on your list costs only the printing.",
       },
       {
         question: "When should I start making a cookbook gift?",
@@ -3526,6 +3556,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         answer:
           "Yes. Family recipes, handwritten cards, and favorite dishes can all be combined into a cookbook built around one person or one side of the family.",
         links: [{ href: "/family-recipe-book", label: "Create a family recipe book" }],
+      },
+      {
+        question: "Can I use my own cover or chapter page designs?",
+        answer:
+          "Yes. If you've designed your own cover or chapter pages, save each one as an image, upload it as that page's photo, and delete the words on the page. Your design fills the whole page, with nothing printed over it.",
       },
     ],
     links: [
@@ -3640,7 +3675,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter print and ship the recipe book?",
         answer:
-          "You choose who prints it: at home, or with a print service that binds the book and ships it to you. Extra copies cost only the printing.",
+          "RecipePrinter doesn't print or ship books. It makes the print-ready files, and you choose who prints them: at home, or with a print service that binds the book and ships it to you. Extra copies cost only the printing.",
         links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
@@ -3652,6 +3687,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Can I give it as a PDF instead of printing it?",
         answer:
           "Yes. Send the PDF by email or message for a gift that arrives right away, and print a copy later if they want one on the shelf.",
+      },
+      {
+        question: "Can I use my own cover or chapter page designs?",
+        answer:
+          "Yes. If you've designed your own cover or chapter pages, save each one as an image, upload it as that page's photo, and delete the words on the page. Your design fills the whole page, with nothing printed over it.",
       },
     ],
     links: [
@@ -3765,7 +3805,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter ship the finished cookbook?",
         answer:
-          "You choose who prints it: at home, or with a print service that binds it, even as a hardcover, and ships it to you. Extra copies cost only the printing.",
+          "RecipePrinter doesn't print or ship books. It makes the print-ready files, and you choose who prints them: at home, or with a print service that binds it, even as a hardcover, and ships it to you. Extra copies cost only the printing.",
         links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
@@ -3788,6 +3828,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         answer:
           "Yes. After purchasing that cookbook, you can continue editing it and export updated versions later without buying the same cookbook again.",
         links: [{ href: "/homemade-cookbook-gift", label: "Cookbook gift ideas for any time of year" }],
+      },
+      {
+        question: "Can I use my own cover or chapter page designs?",
+        answer:
+          "Yes. If you've designed your own cover or chapter pages, save each one as an image, upload it as that page's photo, and delete the words on the page. Your design fills the whole page, with nothing printed over it.",
       },
     ],
     links: [
@@ -3905,7 +3950,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter print and ship the book?",
         answer:
-          "You choose who prints it: at home, or with a print service that binds the book and ships it to you. A copy for the couple and one for each family costs only the printing.",
+          "RecipePrinter doesn't print or ship books. It makes the print-ready files, and you choose who prints them: at home, or with a print service that binds the book and ships it to you. A copy for the couple and one for each family costs only the printing.",
         links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
@@ -3916,6 +3961,11 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         question: "Can I give everyone at the shower a copy?",
         answer:
           "Yes. Once you've exported the cookbook PDF, you can print as many copies as you like to give to family and friends.",
+      },
+      {
+        question: "Can I use my own cover or chapter page designs?",
+        answer:
+          "Yes. If you've designed your own cover or chapter pages, save each one as an image, upload it as that page's photo, and delete the words on the page. Your design fills the whole page, with nothing printed over it.",
       },
     ],
     links: [
@@ -4147,7 +4197,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can RecipePrinter send me a printed cookbook?",
         answer:
-          "Not directly. It builds the finished cookbook as a print-ready file: run it on a home printer, keep the PDF, or take it to a print shop to have bound. A copy shop works from the same file if you would rather not print it yourself.",
+          "RecipePrinter doesn't print or mail cookbooks. It builds the finished cookbook as a print-ready file: run it on a home printer, keep the PDF, or take it to a print shop to have bound. A copy shop works from the same file if you would rather not print it yourself.",
         links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
@@ -4403,12 +4453,17 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Does RecipePrinter print and ship the book?",
         answer:
-          "You choose who prints it: at home, at a copy shop, or with Lulu or Blurb, which bind the book and ship it to you. Extra copies cost only the printing.",
+          "RecipePrinter doesn't print or ship books. It makes the print-ready files, and you choose who prints them: at home, at a copy shop, or with Lulu or Blurb, which print, bind and ship the book to you. Extra copies cost only the printing.",
         links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
         question: "Do I need RecipePrinter Pro?",
         answer: "No. A cookbook is its own one-time purchase. Pro covers other RecipePrinter features.",
+      },
+      {
+        question: "Can I use a cover or chapter pages I made in Canva?",
+        answer:
+          "Yes. Download each design as an image, upload it as that page's photo in RecipePrinter, and delete the words on the page. Your design fills the whole page, with nothing printed over it, and RecipePrinter still builds the recipe pages, contents and page numbers around it.",
       },
     ],
     links: [
@@ -4532,8 +4587,13 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "Can RecipePrinter print and ship my cookbook?",
         answer:
-          "You choose who prints it, and extra copies cost only the printing. When you download, it suggests options for each format, such as Lulu for a spiral-bound book or Blurb for a hardcover, as well as your own printer or a local copy shop.",
+          "RecipePrinter doesn't print or ship books. You choose who prints it, and extra copies cost only the printing. When you download, it suggests options for each format, such as Lulu for a spiral-bound book or Blurb for a hardcover, as well as your own printer or a local copy shop.",
         links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
+      },
+      {
+        question: "Can I use my own cover or chapter page designs?",
+        answer:
+          "Yes. If you've designed your own cover or chapter pages, save each one as an image, upload it as that page's photo, and delete the words on the page. Your design fills the whole page, with nothing printed over it.",
       },
     ],
     links: [

@@ -58,7 +58,7 @@ const FAQS = [
   {
     question: "Do I need an account?",
     answer:
-      "Not to print. Pro needs a free account, so you can manage your subscription from any device.",
+      "Not to print. Signing in keeps your projects and cookbooks so you can come back to them on any device.",
   },
   {
     question: "Can I cancel Pro?",
