@@ -422,7 +422,7 @@ export const FAQ: FaqItem[] = [
     question: "Can I save printed recipes in a recipe binder?",
     group: "printing",
     answer:
-      "Yes. Print recipes one at a time as full pages and file them yourself, or make the whole binder as a cookbook: RecipePrinter adds a cover, section pages, a table of contents, and page numbers, and saves one US Letter PDF ready for a 3-ring binder.",
+      "Yes. Print recipes one at a time as full letter pages and file them yourself, or make the whole binder as a cookbook: RecipePrinter adds a cover, section pages, a table of contents, and page numbers, and saves one US Letter PDF ready for a 3-ring binder.",
     guides: [
       "recipe-binder",
       "organize-recipes",

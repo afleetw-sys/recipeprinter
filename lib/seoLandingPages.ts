@@ -2902,8 +2902,6 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         imageAlt: "A finished spiral-bound cookbook open to a formatted recipe and food photograph.",
         body:
           `Preview your cookbook free with up to ${FREE_COOKBOOK_RECIPES} recipes. Pay $19.99 to download the PDF or add more than ${FREE_COOKBOOK_RECIPES} recipes, and download updated copies anytime at no extra cost.`,
-        afterBody:
-          "RecipePrinter creates the PDF; you can print it at home or send the finished file to a printing service of your choice.",
       },
     ],
     faqHeading: "Cookbook maker questions",
