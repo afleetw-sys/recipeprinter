@@ -39,6 +39,7 @@ import { recipeLinkOn } from "@/lib/recipeLink";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { recipeNamesIntro } from "@/lib/chapterIntro";
 import { emptyRecipeFields } from "@/lib/recipeMissingFields";
+import { RECIPE_FIELDS, fieldShown, usesHeadnote, type FieldSwitches, type RecipeFieldId } from "@/lib/recipeFields";
 import { removedHeadingsName } from "@/lib/recipeHeadings";
 import type { AddableRecipeLine } from "@/types/recipe";
 import {
@@ -229,6 +230,10 @@ interface PrintDeckProps {
   showSourceUrl: boolean;
   setShowSourceUrl: Dispatch<SetStateAction<boolean>>;
   showDescription: boolean;
+  /** The current theme's field switches (lib/recipeFields.tsx), and the
+      setter "+" uses to show a field it adds. */
+  fieldSwitches: FieldSwitches | undefined;
+  setFieldShown: (field: RecipeFieldId, shown: boolean) => void;
   /** No multi-recipe entitlement and not a cookbook — the one recipe a Free
       cook can hold. Only then is the page toolbar's link toggle unambiguous:
       it reads as "this recipe's link" and IS this recipe's link, because
@@ -406,7 +411,10 @@ const RECIPE_LINE_NAMES: Record<AddableRecipeLine, string> = {
   link: "Link",
   time: "Cook time",
   servings: "Servings",
-  note: "Note",
+  description: RECIPE_FIELDS.description.name,
+  contributor: RECIPE_FIELDS.contributor.name,
+  category: RECIPE_FIELDS.category.name,
+  note: RECIPE_FIELDS.note.name,
   ingredients: "Ingredients",
   steps: "Steps",
 };
@@ -476,6 +484,8 @@ export function PrintDeck(props: PrintDeckProps) {
     showSourceUrl,
     setShowSourceUrl,
     showDescription,
+    fieldSwitches,
+    setFieldShown,
     sheets,
     navItems,
     spreads,
@@ -697,11 +707,21 @@ export function PrintDeck(props: PrintDeckProps) {
         const lines = emptyRecipeFields(recipe, {
           cookbook,
           showSourceUrl: true,
-          showDescription,
+          fieldSwitches,
         }).map((field) => ({
             name: RECIPE_LINE_NAMES[field],
             restore: () => {
               if (field === "link" && !cookbook && !showSourceUrl) setShowSourceUrl(true);
+              // Adding a field shows it in this theme. On a cookbook page
+              // still printing description and note as one paragraph, adding
+              // either one makes them two, so the note lands at the foot.
+              if (
+                (field === "description" || field === "contributor" || field === "category" || field === "note") &&
+                (!fieldShown(fieldSwitches, field, cookbook) ||
+                  ((field === "description" || field === "note") && usesHeadnote(fieldSwitches, cookbook)))
+              ) {
+                setFieldShown(field, true);
+              }
               addField(recipeId, field);
             },
           }));

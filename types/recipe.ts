@@ -104,7 +104,16 @@ export interface RecipeNutrition {
 }
 
 /** A recipe line the page toolbar's "+" menu adds when it is empty. */
-export type AddableRecipeLine = "link" | "time" | "servings" | "note" | "ingredients" | "steps";
+export type AddableRecipeLine =
+  | "link"
+  | "time"
+  | "servings"
+  | "note"
+  | "description"
+  | "contributor"
+  | "category"
+  | "ingredients"
+  | "steps";
 
 export interface Recipe {
   title: string;

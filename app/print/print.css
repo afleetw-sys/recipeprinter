@@ -518,11 +518,17 @@
   overflow-y: auto;
 }
 
-/* The page toolbar's "+" menu (AddLineMenu): a few one-word rows, so it is
-   as narrow and tight as they allow rather than a chapter list's width. */
+/* The page toolbar's "+" (AddLineMenu): a small panel of one-word tiles in two
+   columns, as narrow as they allow rather than a chapter list's width. */
 .add-line-menu.add-line-menu {
   min-width: 0;
+  max-width: none;
   padding: 4px;
+}
+.add-line-menu__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(104px, 1fr));
+  gap: 2px;
 }
 .add-line-menu .cp-menu__heading {
   padding: 3px 8px 2px;

@@ -6,9 +6,11 @@ import { ICON_SIZE, PlusIcon } from "@/components/icons";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
 /**
- * The page toolbar's "+" menu: the lines this page has taken off, one row
- * each. Picking one puts that line back. Opens under its button and keeps
- * itself on screen, like MoveToSectionMenu, whose shell this is.
+ * The page toolbar's "+": a small panel of what this page can take, one tile
+ * each, in two columns: on a recipe its empty lines and the fields the theme
+ * is hiding (lib/recipeMissingFields.ts). Picking one opens it on the page,
+ * ready to type. Opens under its button and keeps itself on screen, like
+ * MoveToSectionMenu, whose shell this is.
  *
  * `page` is a whole page the "+" can add next to this one (a chapter's photo
  * page beside it), ruled off under the lines because it isn't one of them.
@@ -53,20 +55,22 @@ export function AddLineMenu({
       style={{ top: anchor.y, left: anchor.x }}
     >
       <p className="cp-menu__heading">{heading}</p>
-      {lines.map((line) => (
-        <button
-          key={line.name}
-          type="button"
-          role="menuitem"
-          className="cp-menu__item"
-          onClick={() => {
-            onClose();
-            line.restore();
-          }}
-        >
-          {line.name}
-        </button>
-      ))}
+      <div className="add-line-menu__grid">
+        {lines.map((line) => (
+          <button
+            key={line.name}
+            type="button"
+            role="menuitem"
+            className="cp-menu__item"
+            onClick={() => {
+              onClose();
+              line.restore();
+            }}
+          >
+            {line.name}
+          </button>
+        ))}
+      </div>
       {page && lines.length > 0 && <div role="separator" className="add-line-menu__rule" />}
       {page && (
         <button

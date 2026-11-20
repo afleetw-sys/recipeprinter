@@ -238,7 +238,14 @@ import {
 import { DEFAULT_PHOTO_SCALE, type PhotoScale } from "@/lib/photoScale";
 import { accentRootProps, type AccentColor, type SupperUtensil } from "@/lib/themeAccent";
 import { ThemeArtProvider } from "@/lib/themeArt";
-import { RecipeFieldsProvider } from "@/lib/recipeFields";
+import {
+  RECIPE_FIELDS,
+  RecipeFieldsProvider,
+  fieldShown,
+  fieldValue,
+  usesHeadnote,
+  type RecipeFieldId,
+} from "@/lib/recipeFields";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { asDerived, latestHistoryStep, undoEdit, useEditHistory } from "@/lib/editHistory";
 import { HistoryControls } from "@/components/print/HistoryControls";
@@ -447,8 +454,23 @@ export default function PrintPage() {
     (value: boolean) => setThemeLooks((looks) => withLook(looks, template, { stacked: value })),
     [template],
   );
+  /** Shows or hides one recipe field in this theme (lib/recipeFields.tsx).
+      Never touches what any recipe holds. */
+  const setFieldShown = useCallback(
+    (field: RecipeFieldId, shown: boolean) =>
+      setThemeLooks((looks) =>
+        withLook(looks, template, { fields: { ...lookFor(looks, template).fields, [field]: shown } }),
+      ),
+    [template],
+  );
+  // Back to the theme as it ships, except which fields it shows: those aren't
+  // a customization (lib/themeLooks.ts `isCustomized`), so a reset that hid
+  // the cook's contributor would be a surprise.
   const resetThemeLook = useCallback(
-    () => setThemeLooks((looks) => withLook(looks, template, DEFAULT_THEME_LOOK)),
+    () =>
+      setThemeLooks((looks) =>
+        withLook(looks, template, { ...DEFAULT_THEME_LOOK, fields: lookFor(looks, template).fields }),
+      ),
     [template],
   );
   const [showDonateDialog, setShowDonateDialog] = useState(false);
@@ -6553,7 +6575,20 @@ export default function PrintPage() {
           { id: "title", label: "Title", value: recipe.title, onCommit: edit({ kind: "title" }) },
           { id: "time", label: "Time", value: formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) ?? "", onCommit: edit({ kind: "cookTime" }) },
           { id: "servings", label: "Servings", value: String(recipe.servings ?? recipe.yield ?? ""), onCommit: edit({ kind: "servings" }) },
-          { id: "note", label: "Note", value: composeNote(recipe.description, recipe.note, showDescription), multiline: true, onCommit: edit({ kind: "description" }) },
+          // Description and notes as one field while the theme prints them as
+          // one paragraph; otherwise each its own, with Contributor and
+          // Category where the theme shows them (lib/recipeFields.tsx).
+          ...(usesHeadnote(fieldSwitches, cookbookMode)
+            ? [{ id: "note", label: "Note", value: composeNote(recipe.description, recipe.note, showDescription), multiline: true, onCommit: edit({ kind: "description" }) }]
+            : (["description", "contributor", "category", "note"] as const)
+                .filter((field) => fieldShown(fieldSwitches, field, cookbookMode))
+                .map((field) => ({
+                  id: field,
+                  label: RECIPE_FIELDS[field].name,
+                  value: fieldValue(recipe, field),
+                  multiline: field === "description" || field === "note",
+                  onCommit: edit({ kind: "field", field }),
+                }))),
           { id: "link", label: "Link", value: recipe.sourceUrl ?? "", onCommit: edit({ kind: "sourceUrl" }) },
         ]}
         toggles={[
@@ -7798,6 +7833,8 @@ export default function PrintPage() {
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setBookShowSourceUrl}
           showDescription={showDescription}
+          fieldSwitches={fieldSwitches}
+          setFieldShown={setFieldShown}
           singleRecipeOnly={singleRecipeOnly}
           sheets={sheets}
           navItems={navItems}
@@ -7960,6 +7997,8 @@ export default function PrintPage() {
           setUtensil={setUtensil}
           stacked={stacked}
           setStacked={setStacked}
+          fieldSwitches={fieldSwitches}
+          setFieldShown={setFieldShown}
           themeCustomized={
             isCustomized(themeLook) || Boolean(projectMeta.meta.pageLooks?.[RECIPES_ADDRESS])
           }

@@ -5,6 +5,7 @@ import { printableRecipe } from "@/lib/queue";
 import { storedRecipeHeading } from "@/lib/recipeHeadings";
 import { ingredientText } from "@/lib/recipeCardLayout";
 import { splitNote } from "@/lib/recipeNote";
+import { fieldValue } from "@/lib/recipeFields";
 import type {
   RecipeCardEditTarget,
   RecipeCardInlineEdit,
@@ -18,11 +19,10 @@ interface RecipeEditSelection {
 }
 
 /** The field each line the "+" menu can add is typed into. */
-const FIELD_TARGETS: Record<"link" | "time" | "servings" | "note", RecipeCardEditTarget> = {
+const FIELD_TARGETS: Record<"link" | "time" | "servings", RecipeCardEditTarget> = {
   link: { kind: "sourceUrl" },
   time: { kind: "cookTime" },
   servings: { kind: "servings" },
-  note: { kind: "description" },
 };
 
 function stripStepPrefix(value: string): string {
@@ -503,6 +503,12 @@ export function useRecipeInlineEditor({
           printableRecipe({ ...recipe, instructions: [{ step: 1, text: "" }, ...recipe.instructions] }),
         );
         setEditingEdit({ recipeId, target: { kind: "step", index: 0 } });
+      } else if (field === "description" || field === "contributor" || field === "category" || field === "note") {
+        // A field of its own (lib/recipeFields.tsx). It may already hold
+        // words the theme was hiding, so it opens with them.
+        setEditingEdit({ recipeId, target: { kind: "field", field } });
+        setEditValue(fieldValue(recipe, field));
+        return;
       } else {
         setEditingEdit({ recipeId, target: FIELD_TARGETS[field] });
       }
