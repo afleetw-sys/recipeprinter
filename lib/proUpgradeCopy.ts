@@ -1,5 +1,5 @@
 import type { ProLockReason } from "@/lib/recipePrinterPurchases";
-import { IMAGE_IMPORTS_PER_HOUR_PRO } from "@/lib/imageImportQuota";
+import { IMAGE_IMPORTS_PER_HOUR_FREE, IMAGE_IMPORTS_PER_HOUR_PRO } from "@/lib/imageImportQuota";
 import {
   FREE_IMPORTS_PER_WINDOW,
   FREE_IMPORT_WINDOW_DAYS,
@@ -99,16 +99,109 @@ export const MULTI_RECIPE_FOUND_TRIGGER = "multi_recipe_found";
 /** Opened by clicking the "Printed with RecipePrinter" line on a card. */
 export const REMOVE_BRANDING_TRIGGER = "remove_branding";
 
-// Each an invitation to the thing the cook just tried (Amelia, 2026-11-16).
-// No two titles share an opening: a cook who meets several of these in one
-// session read the same "Ready to …?" over and over as mockery (Amelia,
-// 2026-11-18).
-const TITLE_BY_REASON: Record<ProLockReason, string> = {
-  multi_recipe: "Print several recipes at once",
-  card_size: "Print on 4×6 recipe cards",
-  theme: "Unlock every theme",
-  font_size: "Make any theme your own",
+/**
+ * What a lock was about, so the dialog can name it rather than pitch Pro in
+ * general. Read by the page from the same settings `computeProLocks` reads.
+ */
+export interface ProLockDetail {
+  /** What Customize theme has changed, by name and in the panel's order
+      ("accent color", "text size"). */
+  customized?: string[];
+}
+
+/** "a", "a and b", "a, b and c". */
+function listOf(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
+/** Customize theme settings named in the plural ("Section dividers are …"). */
+const PLURAL_SETTINGS = new Set(["section dividers"]);
+
+const capitalized = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+/**
+ * A lock's dialog says it's a lock. The title keeps the invitation's warmth,
+ * each opening its own way (no two alike: a cook who meets several in one
+ * session read a repeated "Ready to …?" as mockery, Amelia 2026-11-18), and
+ * the line under it says what in this job is Pro and the free way on. An
+ * invitation alone ("Make any theme your own") read as an ad that had popped
+ * up, not the reason Print stopped, and never said which change it was about
+ * (Amelia, 2026-11-19). No theme names: the theme picker shows none.
+ */
+function lockTitle(reason: ProLockReason, trigger: string, detail: ProLockDetail): string {
+  switch (reason) {
+    case "theme":
+      return "This one's a Pro theme";
+    case "card_size":
+      return "Ready to print 4×6 recipe cards?";
+    case "multi_recipe":
+      return trigger === "add_more_recipes" ? "Room for more recipes with Pro" : "Print the whole stack at once";
+    case "font_size": {
+      const changed = detail.customized ?? [];
+      return changed.length && changed.length <= 2 ? `Love the new ${listOf(changed)}?` : "Love your custom look?";
+    }
+  }
+}
+
+/** What the cook was doing when the lock stopped it, as a verb. */
+function lockVerb(trigger: string): string {
+  return trigger === "download_button" ? "download" : "print";
+}
+
+function lockBody(reason: ProLockReason, trigger: string, detail: ProLockDetail): string {
+  const verb = lockVerb(trigger);
+  switch (reason) {
+    case "theme":
+      return `Get Pro to ${verb} with it, or pick a theme without a crown to ${verb} free.`;
+    case "card_size":
+      return `4×6 cards come with Pro. Get Pro to ${verb} them, or switch to Full page to ${verb} free.`;
+    case "multi_recipe":
+      return trigger === "add_more_recipes"
+        ? "The free plan holds one recipe at a time. Get Pro to add more, or use Change recipe to print a different one."
+        : `The free plan prints one recipe at a time. Get Pro to ${verb} them all together.`;
+    case "font_size": {
+      // Not "in Customize theme" or "reset the theme": a size can come from
+      // the text bar, which Reset to theme defaults leaves alone.
+      const changed = detail.customized ?? [];
+      if (!changed.length) return `Customize theme is part of Pro. Get Pro to ${verb} it as you set it up, or reset Customize theme to ${verb} free.`;
+      const them = changed.length > 1 || PLURAL_SETTINGS.has(changed[0]) ? "them" : "it";
+      const what =
+        changed.length <= 2
+          ? `${capitalized(listOf(changed))} ${them === "them" ? "are" : "is"} part of Pro.`
+          : `Customize theme is part of Pro, and you changed the ${listOf(changed)}.`;
+      return `${what} Get Pro to ${verb} it that way, or change ${them} back to ${verb} free.`;
+    }
+  }
+}
+
+/** Each Customize theme change as a part of a print ("a custom text size"). */
+const CUSTOMIZED_PART: Record<string, string> = {
+  "accent color": "a custom accent color",
+  "band color": "one band color",
+  utensil: "one utensil",
+  layout: "the stacked layout",
+  "section dividers": "section dividers",
+  "text size": "a custom text size",
+  "photo size": "a custom photo size",
 };
+
+/** One lock's parts of a print that uses several, as phrases: one each, so
+    the list reads "a, b and c" rather than nesting an "and" inside it. */
+function lockParts(reason: ProLockReason, detail: ProLockDetail): string[] {
+  switch (reason) {
+    case "theme":
+      return ["a Pro theme"];
+    case "card_size":
+      return ["4×6 cards"];
+    case "multi_recipe":
+      return ["more than one recipe"];
+    case "font_size":
+      return detail.customized?.length
+        ? detail.customized.map((setting) => CUSTOMIZED_PART[setting] ?? setting)
+        : ["Customize theme"];
+  }
+}
 
 /** Over the benefit list when the title already names the feature that
     opened the dialog, so the list is the rest of Pro. */
@@ -225,6 +318,8 @@ export function proUpgradeCopy(
   importUsage?: { limit: number; nextFreeAt: number | null } | null,
   /** For `MULTI_RECIPE_FOUND_TRIGGER`: how many recipes the import found, and in what. */
   found?: { count: number; source: "url" | "image" | "text" } | null,
+  /** For a lock: which theme, and what Customize theme changed. */
+  detail: ProLockDetail = {},
 ): ProUpgradeCopy {
   if (trigger === MULTI_RECIPE_FOUND_TRIGGER && found && found.count > 1) {
     const where = found.source === "image" ? "in that photo" : found.source === "text" ? "in that text" : "on that link";
@@ -265,8 +360,9 @@ export function proUpgradeCopy(
   }
   if (trigger === IMAGE_IMPORT_LIMIT_TRIGGER) {
     return {
-      title: "Import more photos with Pro",
-      body: `Pro imports up to ${IMAGE_IMPORTS_PER_HOUR_PRO} photos an hour.`,
+      // Says it's a limit that was reached, not only what Pro offers.
+      title: "More photo imports with Pro",
+      body: `The free plan imports ${IMAGE_IMPORTS_PER_HOUR_FREE} photos an hour, and this hour's are used. Pro imports up to ${IMAGE_IMPORTS_PER_HOUR_PRO} an hour.`,
       benefits: PRO_BENEFITS,
       ...splitBenefits([]),
       ctaLabel: "Get Pro",
@@ -295,11 +391,12 @@ export function proUpgradeCopy(
   // reads as the rest of Pro.
   const single = reasons.length === 1 ? reasons[0] : null;
   const alreadySaid = single ? BENEFIT_BY_REASON[single] : undefined;
+  const verb = lockVerb(trigger);
   return {
-    title: single ? TITLE_BY_REASON[single] : "This print uses Pro features",
-    // A body only where it says something the title doesn't (Amelia,
-    // 2026-11-17): a single feature's title already names it.
-    body: single ? undefined : "Upgrade and it prints just as you set it up.",
+    title: single ? lockTitle(single, trigger, detail) : "A few Pro touches in this print",
+    body: single
+      ? lockBody(single, trigger, detail)
+      : `It uses ${listOf(reasons.flatMap((reason) => lockParts(reason, detail)))}. Get Pro to ${verb} it just as you set it up, or change those back to ${verb} free.`,
     benefits,
     ...splitBenefits(benefits.filter((benefit) => triggered.has(benefit)), alreadySaid),
     ctaLabel: trigger === "print_button" ? "Get Pro and print" : "Get Pro and continue",

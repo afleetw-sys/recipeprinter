@@ -2394,6 +2394,11 @@
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-caption);
 }
+/* On a free recipe card: a crown on each size that's Pro, where Default sits
+   on its own row (the two never share one). */
+.text-size-menu__crown {
+  justify-self: end;
+}
 
 /* Each row previews itself: Heading in a heading's weight. */
 .line-kind-menu .line-kind-menu__item--body {

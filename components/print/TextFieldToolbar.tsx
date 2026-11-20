@@ -707,6 +707,7 @@ export function SizeDropdown({
           sizes={sizes}
           current={shownPoints}
           defaultPoints={defaultPoints}
+          freePoints={proMarked ? [defaultPoints, roundHalf(normalPoints)] : null}
           onPick={(points) => {
             setOpenAt(null);
             setDraft(null);
@@ -727,6 +728,7 @@ function SizeMenu({
   sizes,
   current,
   defaultPoints,
+  freePoints,
   onPick,
   onClose,
 }: {
@@ -737,6 +739,11 @@ function SizeMenu({
   sizes: number[];
   current: number;
   defaultPoints: number;
+  /** On a free recipe card: the sizes that cost nothing (Default, and the
+      theme's Normal). Every other size is crowned, so the list says so
+      before one is picked, not only the closed control after (Amelia,
+      2026-11-19). Null where sizes aren't Pro. */
+  freePoints: number[] | null;
   onPick: (points: number) => void;
   onClose: () => void;
 }) {
@@ -786,6 +793,9 @@ function SizeMenu({
             </span>
             <span className="text-size-menu__points">{points}</span>
             {points === defaultPoints && <span className="text-size-menu__default">Default</span>}
+            {freePoints && !freePoints.includes(points) && (
+              <ProBadge variant="inline" label={false} tooltip="This text size is Pro" className="text-size-menu__crown" />
+            )}
           </button>
         );
       })}
