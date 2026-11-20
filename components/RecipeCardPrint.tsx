@@ -61,10 +61,10 @@ import {
   bylineFields,
   fieldValue,
   headerParts,
-  useFieldSwitches,
   type HeaderPart,
   type RecipeFieldId,
 } from "@/lib/recipeFields";
+import { useFieldSwitches } from "@/lib/recipeFieldsContext";
 
 // Layout-budget engine (the character-cost heuristics that decide what fits on
 // a front/back face) lives in lib/recipeCardLayout.ts — this file re-exports
@@ -1473,7 +1473,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
 
   const shownTail = tailItems();
 
-  /** One part of the header, as the theme places it (lib/recipeFields.tsx). */
+  /** One part of the header, as the theme places it (lib/recipeFields.ts). */
   function renderHeaderPart(part: HeaderPart) {
     switch (part) {
       case "title":

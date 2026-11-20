@@ -9254,7 +9254,7 @@ textarea.recipe-card__toc-title {
   white-space: nowrap;
 }
 
-/* Contributor and Category (lib/recipeFields.tsx): the cookbook's facts on
+/* Contributor and Category (lib/recipeFields.ts): the cookbook's facts on
    any page, under the time and servings. They may wrap: a name runs longer
    than a cook time. */
 .recipe-card__byline .recipe-card__fact {
@@ -9342,7 +9342,7 @@ textarea.recipe-card__toc-title {
   margin-top: 21px;
 }
 
-/* What prints after the steps (`RecipeFace.tail`, lib/recipeFields.tsx): the
+/* What prints after the steps (`RecipeFace.tail`, lib/recipeFields.ts): the
    cook's own notes, across the whole width under both columns, headed the way
    the theme heads Ingredients and Steps. Rows sit at the top: a grid card's
    rows otherwise stretch to the card's height and float the notes down to its

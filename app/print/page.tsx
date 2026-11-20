@@ -240,12 +240,12 @@ import { accentRootProps, type AccentColor, type SupperUtensil } from "@/lib/the
 import { ThemeArtProvider } from "@/lib/themeArt";
 import {
   RECIPE_FIELDS,
-  RecipeFieldsProvider,
   fieldShown,
   fieldValue,
   usesHeadnote,
   type RecipeFieldId,
 } from "@/lib/recipeFields";
+import { RecipeFieldsProvider } from "@/lib/recipeFieldsContext";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { asDerived, latestHistoryStep, undoEdit, useEditHistory } from "@/lib/editHistory";
 import { HistoryControls } from "@/components/print/HistoryControls";
@@ -454,7 +454,7 @@ export default function PrintPage() {
     (value: boolean) => setThemeLooks((looks) => withLook(looks, template, { stacked: value })),
     [template],
   );
-  /** Shows or hides one recipe field in this theme (lib/recipeFields.tsx).
+  /** Shows or hides one recipe field in this theme (lib/recipeFields.ts).
       Never touches what any recipe holds. */
   const setFieldShown = useCallback(
     (field: RecipeFieldId, shown: boolean) =>
@@ -6577,7 +6577,7 @@ export default function PrintPage() {
           { id: "servings", label: "Servings", value: String(recipe.servings ?? recipe.yield ?? ""), onCommit: edit({ kind: "servings" }) },
           // Description and notes as one field while the theme prints them as
           // one paragraph; otherwise each its own, with Contributor and
-          // Category where the theme shows them (lib/recipeFields.tsx).
+          // Category where the theme shows them (lib/recipeFields.ts).
           ...(usesHeadnote(fieldSwitches, cookbookMode)
             ? [{ id: "note", label: "Note", value: composeNote(recipe.description, recipe.note, showDescription), multiline: true, onCommit: edit({ kind: "description" }) }]
             : (["description", "contributor", "category", "note"] as const)

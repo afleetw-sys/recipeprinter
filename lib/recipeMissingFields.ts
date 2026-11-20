@@ -4,7 +4,7 @@ import type { Recipe, AddableRecipeLine } from "@/types/recipe";
 
 /**
  * What the page toolbar's "+" can add to this recipe, in the order it appears
- * on the card: the lines it has nothing in, and the fields (lib/recipeFields.tsx)
+ * on the card: the lines it has nothing in, and the fields (lib/recipeFields.ts)
  * the current theme isn't showing, written or not. A recipe page draws no
  * empty line, not even as a prompt: the card on screen is laid out as it
  * prints, and a prompt taking room pushed a full card's last lines under its

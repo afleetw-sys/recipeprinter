@@ -138,7 +138,7 @@ interface SplitOptions {
   // at Normal; bigger type fits fewer characters per line AND fewer lines, so
   // a budget shrinks by the square (see `budgetScale`).
   fontScale?: number;
-  // What prints after the steps (lib/recipeFields.tsx `tailFields`). The
+  // What prints after the steps (lib/recipeFields.ts `tailFields`). The
   // budget doesn't count it: it starts on the last face and the measurer moves
   // it on when it doesn't fit, as it does any line the guess got wrong.
   tail?: RecipeFieldId[];
@@ -729,7 +729,7 @@ export interface RecipeFace {
   instructions: Recipe["instructions"];
   layout: CardSectionLayout;
   /**
-   * What prints after the steps on this face (lib/recipeFields.tsx
+   * What prints after the steps on this face (lib/recipeFields.ts
    * `tailFields`): whole blocks, never split. Absent or empty on every face
    * of a recipe whose theme shows nothing there, which is the split exactly
    * as it was before.
@@ -776,7 +776,7 @@ export type RecipeCardEditTarget =
   /** The website's description and the cook's note as one paragraph
       (a cookbook page's headnote, lib/recipeNote.ts). */
   | { kind: "description" }
-  /** One field on its own (lib/recipeFields.tsx). */
+  /** One field on its own (lib/recipeFields.ts). */
   | { kind: "field"; field: RecipeFieldId }
   | { kind: "cookTime" }
   | { kind: "servings" }

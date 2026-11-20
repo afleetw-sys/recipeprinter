@@ -303,7 +303,7 @@ export function RecipeFaceMeasurer({
   photoScale?: PhotoScale;
   /** Customize theme's Stacked layout: never start side by side. */
   forceStacked?: boolean;
-  /** What prints after the steps (lib/recipeFields.tsx `tailFields`). */
+  /** What prints after the steps (lib/recipeFields.ts `tailFields`). */
   tail?: RecipeFieldId[];
   onSettled: (pages: RecipeFace[]) => void;
 }) {

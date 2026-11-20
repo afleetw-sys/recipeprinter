@@ -230,7 +230,7 @@ interface PrintDeckProps {
   showSourceUrl: boolean;
   setShowSourceUrl: Dispatch<SetStateAction<boolean>>;
   showDescription: boolean;
-  /** The current theme's field switches (lib/recipeFields.tsx), and the
+  /** The current theme's field switches (lib/recipeFields.ts), and the
       setter "+" uses to show a field it adds. */
   fieldSwitches: FieldSwitches | undefined;
   setFieldShown: (field: RecipeFieldId, shown: boolean) => void;

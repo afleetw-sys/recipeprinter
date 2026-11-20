@@ -120,7 +120,7 @@ function faceKey(
   // This recipe's own element styles (lib/pageLooks.tsx): Biggest steps
   // are a taller recipe too.
   stylesKey: string,
-  // The theme's field switches (lib/recipeFields.tsx): a description, a
+  // The theme's field switches (lib/recipeFields.ts): a description, a
   // byline or notes at the foot make a different page.
   fieldsKey: string,
 ): string {
@@ -513,7 +513,7 @@ interface UsePrintSheetsOptions {
   /** Customize theme's Stacked layout (lib/themeLooks.ts): ingredients above
       the steps on every recipe, never side by side. */
   stacked?: boolean;
-  /** The theme's field switches (lib/recipeFields.tsx). */
+  /** The theme's field switches (lib/recipeFields.ts). */
   fieldSwitches?: FieldSwitches;
   /** The book's print format. In cookbook mode the page — and so the card every
       recipe is measured against — IS this preset's sheet (see `presetCardDims`).
@@ -652,10 +652,14 @@ export function usePrintSheets({
   );
 
   const switchesKey = fieldsKey(fieldSwitches);
+  // By value: the export page reads the switches out of its settings afresh
+  // every render, and a new object each time re-ran every layout below.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const switches = useMemo(() => fieldSwitches, [switchesKey]);
   /** What prints after this recipe's steps in the current theme. */
   const tailFor = useCallback(
-    (recipe: Recipe) => tailFields(recipe, fieldSwitches, cookbookLayouts),
-    [fieldSwitches, cookbookLayouts],
+    (recipe: Recipe) => tailFields(recipe, switches, cookbookLayouts),
+    [switches, cookbookLayouts],
   );
 
   const measuredFacesFor = useCallback(

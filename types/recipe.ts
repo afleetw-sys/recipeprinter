@@ -160,7 +160,7 @@ export interface Recipe {
 
   /** Who in the family this recipe came from ("Aunt Carroll"). The cook's own:
       an import never fills it. Printed where the theme shows Contributor
-      (lib/recipeFields.tsx). */
+      (lib/recipeFields.ts). */
   contributor?: string;
   /** The cook's own grouping ("Side Dishes"). Never filled from an imported
       `course`, which would start printing on cards that never showed one. */

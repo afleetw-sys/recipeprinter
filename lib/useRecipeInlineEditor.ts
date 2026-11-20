@@ -214,7 +214,7 @@ export function applyRecipeTargetEdit(
     });
   }
   if (target.kind === "field") {
-    // One field on its own (lib/recipeFields.tsx). The description and the
+    // One field on its own (lib/recipeFields.ts). The description and the
     // note keep their lines and formatting; a contributor or category is one
     // line. Emptied, the field is gone from the recipe and so from the card.
     const multiline = target.field === "description" || target.field === "note";
@@ -504,7 +504,7 @@ export function useRecipeInlineEditor({
         );
         setEditingEdit({ recipeId, target: { kind: "step", index: 0 } });
       } else if (field === "description" || field === "contributor" || field === "category" || field === "note") {
-        // A field of its own (lib/recipeFields.tsx). It may already hold
+        // A field of its own (lib/recipeFields.ts). It may already hold
         // words the theme was hiding, so it opens with them.
         setEditingEdit({ recipeId, target: { kind: "field", field } });
         setEditValue(fieldValue(recipe, field));

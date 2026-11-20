@@ -43,7 +43,7 @@ interface PrintConfigPanelProps {
   setUtensil: (value: SupperUtensil | null) => void;
   stacked: boolean;
   setStacked: (value: boolean) => void;
-  /** Which recipe fields the theme shows (lib/recipeFields.tsx). */
+  /** Which recipe fields the theme shows (lib/recipeFields.ts). */
   fieldSwitches: FieldSwitches | undefined;
   setFieldShown: (field: RecipeFieldId, shown: boolean) => void;
   themeCustomized: boolean;

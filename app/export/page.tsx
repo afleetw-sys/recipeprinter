@@ -16,7 +16,7 @@ import { normalizePhotoScale } from "@/lib/photoScale";
 import { accentRootProps } from "@/lib/themeAccent";
 import { lookFor, normalizeThemeLooks } from "@/lib/themeLooks";
 import { ThemeArtProvider } from "@/lib/themeArt";
-import { RecipeFieldsProvider } from "@/lib/recipeFields";
+import { RecipeFieldsProvider } from "@/lib/recipeFieldsContext";
 import {
   coverWrapGeometry,
   coverWrapGeometryFromSheet,

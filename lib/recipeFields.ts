@@ -1,6 +1,3 @@
-"use client";
-
-import { createContext, useContext, type ReactNode } from "react";
 import type { Recipe } from "@/types/recipe";
 
 /**
@@ -117,16 +114,4 @@ export function tailFields(recipe: Recipe, switches: FieldSwitches | undefined, 
     foot is a different page from one measured without. */
 export function fieldsKey(switches: FieldSwitches | undefined): string {
   return RECIPE_FIELD_IDS.map((id) => (switches?.[id] === undefined ? "-" : switches[id] ? "1" : "0")).join("");
-}
-
-const RecipeFieldsContext = createContext<FieldSwitches | undefined>(undefined);
-
-/** Around a whole page (the print page, the export), the way ThemeArtProvider
-    is, so every face and measurer reads the current theme's switches. */
-export function RecipeFieldsProvider({ value, children }: { value: FieldSwitches | undefined; children: ReactNode }) {
-  return <RecipeFieldsContext.Provider value={value}>{children}</RecipeFieldsContext.Provider>;
-}
-
-export function useFieldSwitches(): FieldSwitches | undefined {
-  return useContext(RecipeFieldsContext);
 }

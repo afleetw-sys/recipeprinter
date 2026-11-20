@@ -36,7 +36,7 @@ export interface ThemeLook {
       whenever the whole recipe fits on the front, stacked otherwise. */
   stacked?: true;
   /** Which recipe fields this theme shows, as the cook switched them
-      (lib/recipeFields.tsx). Absent: the theme as it ships. */
+      (lib/recipeFields.ts). Absent: the theme as it ships. */
   fields?: FieldSwitches;
 }
 

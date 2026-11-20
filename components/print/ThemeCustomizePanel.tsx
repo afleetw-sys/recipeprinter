@@ -83,7 +83,7 @@ export function ThemeCustomizePanel({
       whenever a recipe fits on one page (lib/themeLooks.ts). */
   stacked: boolean;
   setStacked: (value: boolean) => void;
-  /** Which recipe fields this theme shows (lib/recipeFields.tsx). Content
+  /** Which recipe fields this theme shows (lib/recipeFields.ts). Content
       stays on each recipe; these only decide whether it prints. */
   fieldSwitches?: FieldSwitches;
   setFieldShown?: (field: RecipeFieldId, shown: boolean) => void;
