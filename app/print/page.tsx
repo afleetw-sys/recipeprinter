@@ -238,7 +238,7 @@ import {
 import { DEFAULT_PHOTO_SCALE, type PhotoScale } from "@/lib/photoScale";
 import { accentRootProps, type AccentColor, type SupperUtensil } from "@/lib/themeAccent";
 import { ThemeArtProvider } from "@/lib/themeArt";
-import { DEFAULT_THEME_LOOK, dividerVars, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
+import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { asDerived, latestHistoryStep, undoEdit, useEditHistory } from "@/lib/editHistory";
 import { HistoryControls } from "@/components/print/HistoryControls";
 import { SaveMoreMenu } from "@/components/print/SaveMoreMenu";
@@ -419,7 +419,7 @@ export default function PrintPage() {
       the current theme's. Pro on recipe cards; included in a cookbook. */
   const [themeLooks, setThemeLooks] = useState<ThemeLooks>({});
   const themeLook = lookFor(themeLooks, template);
-  const { fontScale, photoScale, accent, posterColor, utensil, stacked, divider } = themeLook;
+  const { fontScale, photoScale, accent, posterColor, utensil, stacked } = themeLook;
   const accentRoot = accentRootProps(accent, template);
   const themeArt = useMemo(() => ({ posterColor, utensil }), [posterColor, utensil]);
   const setFontScale = useCallback(
@@ -444,10 +444,6 @@ export default function PrintPage() {
   );
   const setStacked = useCallback(
     (value: boolean) => setThemeLooks((looks) => withLook(looks, template, { stacked: value })),
-    [template],
-  );
-  const setDivider = useCallback(
-    (value: boolean) => setThemeLooks((looks) => withLook(looks, template, { divider: value })),
     [template],
   );
   const resetThemeLook = useCallback(
@@ -1066,7 +1062,6 @@ export default function PrintPage() {
     fontScale,
     photoScale,
     stacked,
-    divider,
     pageLooks: projectMeta.meta.pageLooks,
     // The preview page IS the book's real sheet, and so is the card every
     // recipe is measured against (see `presetCardDims`).
@@ -1114,8 +1109,6 @@ export default function PrintPage() {
   const previewTemplate = previewConfig?.template ?? template;
   const previewFontScale = previewConfig?.fontScale ?? fontScale;
   const previewPhotoScale = previewConfig?.photoScale ?? photoScale;
-  // Dividers take room, so they show with the pages measured for them.
-  const previewDivider = previewConfig?.divider ?? divider;
   // Per-recipe photo now travels baked into each slot's `showPhoto` (resolved
   // in usePrintSheets against the committed frame), so there's no global
   // preview-photo flag to thread to the faces anymore.
@@ -3782,7 +3775,7 @@ export default function PrintPage() {
       photoScale,
       accent,
       artChanged: posterColor !== null || utensil !== null,
-      layoutChanged: stacked || divider,
+      layoutChanged: stacked,
       elementTextSized,
     });
   // A free, non-cookbook account can never hold more than one recipe — see
@@ -3945,7 +3938,6 @@ export default function PrintPage() {
         posterColor !== null && "band color",
         utensil !== null && "utensil",
         stacked && "layout",
-        divider && "section dividers",
         (fontScale !== DEFAULT_FONT_SCALE || elementTextSized) && "text size",
         photoScale !== DEFAULT_PHOTO_SCALE && "photo size",
       ].filter((label): label is string => Boolean(label)),
@@ -7505,7 +7497,7 @@ export default function PrintPage() {
       } ${accentRoot.className}`}
       // The theme's accent, if the cook changed it: every page here (deck,
       // rail, what prints) takes it from the root (lib/themeAccent.ts).
-      style={{ ...accentRoot.style, ...dividerVars(previewDivider) }}
+      style={accentRoot.style}
     >
       {measurers}
       {/* The header sits in its own wrapper so `.recipe-print-page` stays a
@@ -7942,8 +7934,6 @@ export default function PrintPage() {
           setUtensil={setUtensil}
           stacked={stacked}
           setStacked={setStacked}
-          divider={divider}
-          setDivider={setDivider}
           themeCustomized={
             isCustomized(themeLook) || Boolean(projectMeta.meta.pageLooks?.[RECIPES_ADDRESS])
           }

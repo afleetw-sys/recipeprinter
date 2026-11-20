@@ -42,8 +42,6 @@ interface PrintConfigPanelProps {
   setUtensil: (value: SupperUtensil | null) => void;
   stacked: boolean;
   setStacked: (value: boolean) => void;
-  divider: boolean;
-  setDivider: (value: boolean) => void;
   themeCustomized: boolean;
   resetThemeLook: () => void;
   /** Customize theme's Each part: the size every recipe's part has, and its
@@ -114,8 +112,6 @@ export function PrintConfigPanel({
   setUtensil,
   stacked,
   setStacked,
-  divider,
-  setDivider,
   themeCustomized,
   resetThemeLook,
   recipePartSizes,
@@ -245,8 +241,6 @@ export function PrintConfigPanel({
             setUtensil={setUtensil}
             stacked={stacked}
             setStacked={setStacked}
-            divider={divider}
-            setDivider={setDivider}
             template={template}
             customized={themeCustomized}
             onReset={resetThemeLook}

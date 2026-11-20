@@ -115,9 +115,6 @@ function listOf(items: string[]): string {
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
 
-/** Customize theme settings named in the plural ("Section dividers are …"). */
-const PLURAL_SETTINGS = new Set(["section dividers"]);
-
 const capitalized = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /**
@@ -165,7 +162,7 @@ function lockBody(reason: ProLockReason, trigger: string, detail: ProLockDetail)
       // the text bar, which Reset to theme defaults leaves alone.
       const changed = detail.customized ?? [];
       if (!changed.length) return `Customize theme is part of Pro. Get Pro to ${verb} it as you set it up, or reset Customize theme to ${verb} free.`;
-      const them = changed.length > 1 || PLURAL_SETTINGS.has(changed[0]) ? "them" : "it";
+      const them = changed.length > 1 ? "them" : "it";
       const what =
         changed.length <= 2
           ? `${capitalized(listOf(changed))} ${them === "them" ? "are" : "is"} part of Pro.`
@@ -181,7 +178,6 @@ const CUSTOMIZED_PART: Record<string, string> = {
   "band color": "one band color",
   utensil: "one utensil",
   layout: "the stacked layout",
-  "section dividers": "section dividers",
   "text size": "a custom text size",
   "photo size": "a custom photo size",
 };

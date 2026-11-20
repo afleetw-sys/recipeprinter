@@ -509,9 +509,6 @@ interface UsePrintSheetsOptions {
   /** Customize theme's Stacked layout (lib/themeLooks.ts): ingredients above
       the steps on every recipe, never side by side. */
   stacked?: boolean;
-  /** Customize theme's dividers: a line between a recipe's groups, which
-      takes room on the page like any other part. */
-  divider?: boolean;
   /** The book's print format. In cookbook mode the page — and so the card every
       recipe is measured against — IS this preset's sheet (see `presetCardDims`).
       Absent outside cookbook mode and on books saved before presets existed,
@@ -558,7 +555,6 @@ export function usePrintSheets({
   pageLooks,
   photoScale = DEFAULT_PHOTO_SCALE,
   stacked = false,
-  divider = false,
   preset,
 }: UsePrintSheetsOptions) {
   // Everything below reads `recipe.image` as "the photo this book shows", so
@@ -636,12 +632,12 @@ export function usePrintSheets({
 
   // A recipe's own element styles: part of its measurement key, and the size
   // its first page-split guess is made at (see lib/pageLooks.tsx).
-  // The theme's layout and dividers ride along: a stacked recipe, or one with
-  // lines between its groups, is a different arrangement on the same card.
+  // The theme's layout rides along: a stacked recipe is a different
+  // arrangement on the same card.
   const stylesKeyFor = useCallback(
     (id: string) =>
-      `${pageStylesKey(pageElements(pageLooks, recipePageAddress(id)))}::${stacked ? "s" : "a"}${divider ? "d" : ""}`,
-    [pageLooks, stacked, divider],
+      `${pageStylesKey(pageElements(pageLooks, recipePageAddress(id)))}::${stacked ? "s" : "a"}`,
+    [pageLooks, stacked],
   );
   const budgetScaleFor = useCallback(
     (id: string) => recipeBudgetScale(fontScale, recipeTextSizes(pageLooks, id)),
@@ -1481,7 +1477,6 @@ export function usePrintSheets({
             fontScale={fontScale}
             budgetScale={budgetScaleFor(id)}
             forceStacked={stacked}
-            divider={divider}
             floorScale={recipeFloorScale(fontScale, recipeTextSizes(pageLooks, id))}
             photoScale={photoScale}
             onSettled={(pages) =>
@@ -1519,8 +1514,8 @@ export function usePrintSheets({
   // wear 6x4 chrome while still holding letter pagination — which is exactly
   // the clipping this all exists to prevent.
   const committedLayout = useMemo(
-    () => ({ sheets, navItems, spreads, cardSize, template, photosOn, doubleSided, fontScale, photoScale, divider }),
-    [sheets, navItems, spreads, cardSize, template, photosOn, doubleSided, fontScale, photoScale, divider],
+    () => ({ sheets, navItems, spreads, cardSize, template, photosOn, doubleSided, fontScale, photoScale }),
+    [sheets, navItems, spreads, cardSize, template, photosOn, doubleSided, fontScale, photoScale],
   );
   type CommittedLayout = typeof committedLayout;
   // `null` until the very first measurement lands. On a cold load there is no

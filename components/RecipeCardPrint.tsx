@@ -34,6 +34,7 @@ import {
   getRecipeFaces,
   ingredientText,
   metaBits,
+  MIN_INGREDIENTS_FOR_COLUMNS,
   recipeNeedsBackSide,
   sectionGroups,
   sourceLabel,
@@ -658,7 +659,12 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     () => buildColumnChunks(instructionGroups, (item) => recipe.instructions.indexOf(item)),
     [instructionGroups, recipe.instructions],
   );
-  const ingredientColumns = useWideColumns(ingredientsWide, ingredientChunks.length, ingredients);
+  // A short list stays one column down the left (MIN_INGREDIENTS_FOR_COLUMNS).
+  const ingredientColumns = useWideColumns(
+    ingredientsWide && ingredients.length >= MIN_INGREDIENTS_FOR_COLUMNS,
+    ingredientChunks.length,
+    ingredients,
+  );
   const methodColumns = useWideColumns(methodWide, instructionChunks.length, instructions);
   // The photo only rides along on the front face (where the header lives). If
   // the source image 404s or is hotlink-blocked we drop it rather than print a

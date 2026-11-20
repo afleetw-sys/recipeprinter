@@ -375,11 +375,19 @@ function totalTextCost<T>(items: T[], label: (item: T) => string): number {
   return items.reduce((total, item) => total + textCost(label(item)), 0);
 }
 
+/**
+ * A full-width ingredient list splits into two columns only from this many
+ * lines. A handful split in two reads as two scraps with a gap between, so
+ * fewer stay in one column down the left.
+ */
+export const MIN_INGREDIENTS_FOR_COLUMNS = 6;
+
 function ingredientLayoutCost(
   ingredients: Recipe["ingredients"],
   layout: CardSectionLayout,
 ): number {
-  const columnDivisor = layout === "stacked" ? 2 : 1;
+  const columnDivisor =
+    layout === "stacked" && ingredients.length >= MIN_INGREDIENTS_FOR_COLUMNS ? 2 : 1;
   return (
     totalTextCost(ingredients, ingredientText) / columnDivisor +
     sectionGroups(ingredients).length * 36
