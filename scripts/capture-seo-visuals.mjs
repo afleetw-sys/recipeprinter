@@ -113,7 +113,10 @@ async function openPrintPreview(page, recipe = DEMO_RECIPE) {
       addedAt: Date.now(),
     };
     sessionStorage.setItem("recipeprinter:queue:v1", JSON.stringify([item]));
-    localStorage.setItem("recipeprinter:queue:recovery:v1", JSON.stringify([item]));
+    localStorage.setItem(
+      "recipeprinter:working-draft:v2",
+      JSON.stringify({ v: 2, savedAt: Date.now(), queue: [item], meta: null, base: null }),
+    );
   }, recipe);
   await page.goto(`${BASE}/print?size=card-6x4`, { waitUntil: "networkidle0" });
   await new Promise((r) => setTimeout(r, 1800));
