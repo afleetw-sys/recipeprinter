@@ -60,7 +60,7 @@ export function CookbookProof({
     },
     {
       title: `${COOKBOOK_PRICE_FALLBACK} per book, not per copy.`,
-      text: <>Print one for everyone in the family. You only pay for the printing.</>,
+      text: <>Print as many as you like, at home or at a print shop. We don&rsquo;t charge for extra copies.</>,
     },
     {
       title: "Free updates.",

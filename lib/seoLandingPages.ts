@@ -2894,7 +2894,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         heading: "Pay for the book once, print as many copies as you want",
         image: "print-cookbook",
         body:
-          "You get the finished cookbook files, not one printed copy, so a copy for everyone in the family costs only the printing. Download US Letter for a home printer and a 3-ring binder, or full-bleed files for a coil-bound or hardcover book at US Letter or 8 × 10, with a separate cover file sized to your book's spine, ready for services like Lulu.",
+          "You get the finished cookbook files, not one printed copy. Print one for everyone in the family, at home or at a print shop, and we don't charge for extra copies. Download US Letter for a home printer and a 3-ring binder, or full-bleed files for a coil-bound or hardcover book at US Letter or 8 × 10, with a separate cover file sized to your book's spine, ready for services like Lulu.",
       },
       {
         heading: "Preview it free, then pay $19.99 to download or add more",
@@ -4383,7 +4383,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         heading: "Pay once for the book, not per copy",
         image: "print-cookbook",
-        body: `Canva's printed photo books are priced per copy and hold 20 to 98 inside pages. RecipePrinter is ${COOKBOOK_PRICE_FALLBACK} once per cookbook for the print-ready files, so every extra copy costs only the printing.`,
+        body: `Canva's printed photo books are priced per copy and hold 20 to 98 inside pages. RecipePrinter is ${COOKBOOK_PRICE_FALLBACK} once per cookbook for the print-ready files, and you can print as many copies as you like. We don't charge for extra copies.`,
         afterBody:
           "Print at home, at a copy shop, or with Lulu or Blurb, which bind the book and ship it to you.",
         links: [{ phrase: "Lulu or Blurb", href: "/how-to-print-a-cookbook" }],
