@@ -30,7 +30,9 @@ async function askForAnotherRecipe(page: Page) {
   await page.getByRole("button", { name: /^Add more\b/ }).filter({ visible: true }).first().click();
 }
 
-const proDialog = (page: Page) => page.getByRole("dialog", { name: "Print several recipes at once" });
+// The upgrade dialog by what it is (its title's id), not its words: the
+// title is copy, and changes with it.
+const proDialog = (page: Page) => page.getByRole("dialog").filter({ has: page.locator("#pro-upgrade-title") });
 const addRecipeDialog = (page: Page) => page.getByRole("dialog").getByPlaceholder("Paste a recipe link");
 
 test("a free account asking for a second recipe is offered Pro", async ({ page, request }) => {
