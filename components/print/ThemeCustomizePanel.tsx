@@ -51,8 +51,6 @@ export function ThemeCustomizePanel({
   setUtensil,
   stacked,
   setStacked,
-  divider,
-  setDivider,
   template,
   customized,
   onReset,
@@ -82,9 +80,6 @@ export function ThemeCustomizePanel({
       whenever a recipe fits on one page (lib/themeLooks.ts). */
   stacked: boolean;
   setStacked: (value: boolean) => void;
-  /** A line between a recipe's groups ("For the sauce", "For the dough"). */
-  divider: boolean;
-  setDivider: (value: boolean) => void;
   /** Which theme, for its own colors and art choices. */
   template: RecipePrintTemplate;
   /** Whether this theme differs from how it ships. */
@@ -170,21 +165,6 @@ export function ThemeCustomizePanel({
         proMarked={proMarked && stacked}
         proTooltip="The stacked layout is Pro"
       />
-      {/* Only for a recipe in groups ("For the sauce"), which is all it
-          draws on. Kept while on, so it can always be turned back off. */}
-      {(divider || recipeGroupsDrawn()) && (
-        <ChoiceControl
-          label="Section dividers"
-          options={[
-            { id: "none", label: "None" },
-            { id: "line", label: "Line" },
-          ]}
-          value={divider ? "line" : "none"}
-          onChange={(value) => setDivider(value === "line")}
-          proMarked={proMarked && divider}
-          proTooltip="Section dividers are Pro"
-        />
-      )}
 
       <TextSizeControl fontScale={fontScale} setFontScale={setFontScale} proMarked={proMarked} />
 
@@ -226,15 +206,6 @@ export function ThemeCustomizePanel({
         )}
       </div>
     </div>
-  );
-}
-
-/** Whether some recipe page draws a group heading ("For the sauce"), read off
-    the page the way Fine-tune sizes reads which parts it has. */
-function recipeGroupsDrawn(): boolean {
-  if (typeof document === "undefined") return false;
-  return Boolean(
-    document.querySelector(".recipe-page-canvas .recipe-card__section-title"),
   );
 }
 

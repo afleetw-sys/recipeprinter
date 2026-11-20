@@ -14,7 +14,7 @@ import { normalizeFontScale } from "@/lib/fontScale";
 import { normalizePageLooks } from "@/lib/pageLooks";
 import { normalizePhotoScale } from "@/lib/photoScale";
 import { accentRootProps } from "@/lib/themeAccent";
-import { dividerVars, lookFor, normalizeThemeLooks } from "@/lib/themeLooks";
+import { lookFor, normalizeThemeLooks } from "@/lib/themeLooks";
 import { ThemeArtProvider } from "@/lib/themeArt";
 import {
   coverWrapGeometry,
@@ -479,7 +479,6 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     fontScale,
     photoScale,
     stacked: look.stacked,
-    divider: look.divider,
     pageLooks,
     // The book's real page — what every recipe is measured against, and what
     // the preview draws too, so the two cannot disagree.
@@ -524,7 +523,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
       className={`recipe-page-deck rp-exporting ${preset.pageClass}${preset.coilBound ? " rp-coil" : ""} ${
         cookbookMode ? "recipe-page-deck--book" : ""
       }${payload.brandHidden ? " recipe-print-page--pro" : ""} ${accentRoot.className}`}
-      style={{ ...exportStyle, ...accentRoot.style, ...dividerVars(look.divider) }}
+      style={{ ...exportStyle, ...accentRoot.style }}
       data-export-root="true"
       data-photo-finish={payload.photoFinish ?? "standard"}
     >
