@@ -238,6 +238,7 @@ import {
 import { DEFAULT_PHOTO_SCALE, type PhotoScale } from "@/lib/photoScale";
 import { accentRootProps, type AccentColor, type SupperUtensil } from "@/lib/themeAccent";
 import { ThemeArtProvider } from "@/lib/themeArt";
+import { RecipeFieldsProvider } from "@/lib/recipeFields";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { asDerived, latestHistoryStep, undoEdit, useEditHistory } from "@/lib/editHistory";
 import { HistoryControls } from "@/components/print/HistoryControls";
@@ -419,7 +420,7 @@ export default function PrintPage() {
       the current theme's. Pro on recipe cards; included in a cookbook. */
   const [themeLooks, setThemeLooks] = useState<ThemeLooks>({});
   const themeLook = lookFor(themeLooks, template);
-  const { fontScale, photoScale, accent, posterColor, utensil, stacked } = themeLook;
+  const { fontScale, photoScale, accent, posterColor, utensil, stacked, fields: fieldSwitches } = themeLook;
   const accentRoot = accentRootProps(accent, template);
   const themeArt = useMemo(() => ({ posterColor, utensil }), [posterColor, utensil]);
   const setFontScale = useCallback(
@@ -7504,6 +7505,7 @@ export default function PrintPage() {
    */
   return (
     <ThemeArtProvider value={themeArt}>
+    <RecipeFieldsProvider value={fieldSwitches}>
     <div
       className={`h-dvh recipe-print-page ${printWatermarked ? "rp-print-locked" : ""} ${
         // A Pro benefit: no "Printed with RecipePrinter" line, on any theme.
@@ -8680,6 +8682,7 @@ export default function PrintPage() {
         </div>
       )}
     </div>
+    </RecipeFieldsProvider>
     </ThemeArtProvider>
   );
 }

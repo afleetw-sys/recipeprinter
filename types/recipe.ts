@@ -144,8 +144,18 @@ export interface Recipe {
   course?: string;
   nutrition?: RecipeNutrition;
 
+  /** The website's byline, as imported. Never printed: it is not the family
+      member a recipe came from, which is `contributor`. */
   author?: string;
   datePublished?: string;
+
+  /** Who in the family this recipe came from ("Aunt Carroll"). The cook's own:
+      an import never fills it. Printed where the theme shows Contributor
+      (lib/recipeFields.tsx). */
+  contributor?: string;
+  /** The cook's own grouping ("Side Dishes"). Never filled from an imported
+      `course`, which would start printing on cards that never showed one. */
+  category?: string;
 }
 
 /**
@@ -556,7 +566,14 @@ export interface PrintProjectSettings {
   themeLooks?: Partial<
     Record<
       RecipePrintTemplate,
-      { fontScale?: number; photoScale?: number; accent?: string; posterColor?: number; utensil?: string }
+      {
+        fontScale?: number;
+        photoScale?: number;
+        accent?: string;
+        posterColor?: number;
+        utensil?: string;
+        fields?: Partial<Record<string, boolean>>;
+      }
     >
   >;
   /** How the cook has styled single pages and the elements on them, keyed by

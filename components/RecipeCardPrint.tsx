@@ -56,6 +56,7 @@ import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
 import { chapterIntroFromRecipes } from "@/lib/chapterIntro";
 import { SUPPER_UTENSILS } from "@/lib/themeAccent";
 import { useThemeArt } from "@/lib/themeArt";
+import { headerParts, useFieldSwitches, type HeaderPart } from "@/lib/recipeFields";
 
 // Layout-budget engine (the character-cost heuristics that decide what fits on
 // a front/back face) lives in lib/recipeCardLayout.ts — this file re-exports
@@ -601,6 +602,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
 }) {
   const el = useElements();
   const themeArt = useThemeArt();
+  const fieldSwitches = useFieldSwitches();
   const source = sourceLabel(recipe);
   const meta = metaBits(recipe);
   // "This text can be clicked and typed into." True for the active card at all
@@ -1364,42 +1366,12 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     );
   }
 
-  return (
-    <article
-      className={`recipe-card recipe-card--${side} ${
-        continued ? "recipe-card--continued" : ""
-      } ${showPhoto ? "recipe-card--with-photo" : ""}`}
-      data-has-back={hasBackFace ? "true" : undefined}
-      data-preview-hidden={previewHidden ? "true" : undefined}
-      data-poster-color={template === "poster" ? (themeArt.posterColor ?? posterColor(recipeIndex)) : undefined}
-      /* A cookbook page carries a page number and chapter name in its foot.
-         Themes with art there hold the recipe higher to make room for them,
-         and the measurer renders with the same flag, so it measures the same
-         page the book prints. */
-      data-in-book={cookbookMode ? "true" : undefined}
-      /* The recipe's own language, when CookPilot was sure of it, so screen
-         readers voice it and the browser picks the right glyphs and
-         hyphenation. The card's own words follow it too: see `cardWords`.
-         A right-to-left recipe mirrors the card's text and columns; theme art
-         stays put (see "Right-to-left recipes" in app/print/print.css). */
-      lang={recipe.language}
-      dir={recipeTextDirection(recipe.language)}
-      style={Object.keys(cardStyle).length > 0 ? cardStyle : undefined}
-    >
-      <div className="recipe-card__accent" aria-hidden />
-      <TemplateDecoration
-        template={template}
-        show={showDecoration}
-        edgeOnly={cookbookMode && continued}
-        recipeIndex={recipeIndex}
-      />
-      {showHeader ? (
-        <header
-          className={`recipe-card__header ${
-            showPhoto ? "recipe-card__header--with-photo" : ""
-          }`}
-        >
-          <div className="recipe-card__headline">
+  /** One part of the header, as the theme places it (lib/recipeFields.tsx). */
+  function renderHeaderPart(part: HeaderPart) {
+    switch (part) {
+      case "title":
+        return (
+          <>
             {/* A real field only while it IS the field being edited — the same
                 on-demand swap `sectionTitle` makes, and for the same two
                 reasons. A permanently-mounted textarea is structural churn
@@ -1428,10 +1400,20 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 {recipe.title}
               </h1>
             )}
+          </>
+        );
+      case "headnote":
+        return (
+          <>
             {/* Cookbook pages use an editorial header hierarchy: title,
                 description, then cook time and servings. Plain recipe cards
                 remain title → meta with no description added. */}
             {renderCookbookDescription()}
+          </>
+        );
+      case "details":
+        return (
+          <>
             {/* The one field group that stays behind the reveal. Read mode
                 joins cook time and servings into a single "20 min · 4" string
                 while the editor splits them into two inputs, so there is no
@@ -1525,6 +1507,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 </p>
               )
             )}
+          </>
+        );
+      case "source":
+        return (
+          <>
             {/* Cookbook mode: the source link lives here, right under the meta
                 line, instead of in the footer where it competes with the page
                 folio. Same content/edit target as the footer version below. */}
@@ -1556,6 +1543,50 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 source && <p {...el("details")} className="recipe-card__source-line">{source}</p>
               )
             )}
+          </>
+        );
+    }
+  }
+
+  return (
+    <article
+      className={`recipe-card recipe-card--${side} ${
+        continued ? "recipe-card--continued" : ""
+      } ${showPhoto ? "recipe-card--with-photo" : ""}`}
+      data-has-back={hasBackFace ? "true" : undefined}
+      data-preview-hidden={previewHidden ? "true" : undefined}
+      data-poster-color={template === "poster" ? (themeArt.posterColor ?? posterColor(recipeIndex)) : undefined}
+      /* A cookbook page carries a page number and chapter name in its foot.
+         Themes with art there hold the recipe higher to make room for them,
+         and the measurer renders with the same flag, so it measures the same
+         page the book prints. */
+      data-in-book={cookbookMode ? "true" : undefined}
+      /* The recipe's own language, when CookPilot was sure of it, so screen
+         readers voice it and the browser picks the right glyphs and
+         hyphenation. The card's own words follow it too: see `cardWords`.
+         A right-to-left recipe mirrors the card's text and columns; theme art
+         stays put (see "Right-to-left recipes" in app/print/print.css). */
+      lang={recipe.language}
+      dir={recipeTextDirection(recipe.language)}
+      style={Object.keys(cardStyle).length > 0 ? cardStyle : undefined}
+    >
+      <div className="recipe-card__accent" aria-hidden />
+      <TemplateDecoration
+        template={template}
+        show={showDecoration}
+        edgeOnly={cookbookMode && continued}
+        recipeIndex={recipeIndex}
+      />
+      {showHeader ? (
+        <header
+          className={`recipe-card__header ${
+            showPhoto ? "recipe-card__header--with-photo" : ""
+          }`}
+        >
+          <div className="recipe-card__headline">
+            {headerParts(fieldSwitches, cookbookMode).map((part) => (
+              <Fragment key={part}>{renderHeaderPart(part)}</Fragment>
+            ))}
           </div>
           {showPhoto && !hasImage && (
             <span className="recipe-card__photo recipe-card__photo--placeholder">

@@ -71,6 +71,8 @@ export function printableRecipe(recipe: Recipe): Recipe {
     instructions: recipe.instructions,
     ingredientsHeading: recipe.ingredientsHeading,
     stepsHeading: recipe.stepsHeading,
+    contributor: recipe.contributor,
+    category: recipe.category,
   };
 }
 

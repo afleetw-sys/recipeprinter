@@ -343,6 +343,9 @@ function assembleWorkingCopy(printable: QueueItem[], meta: ProjectMeta, id: stri
   // later came back having forgotten it was sorted A-Z.
   const template = (stored.template as RecipePrintTemplate) ?? "classic";
   const themeLooks = normalizeThemeLooks(stored.themeLooks, stored);
+  // The current theme's look, flattened into the settings as before. Its
+  // field switches stay inside `themeLooks` only.
+  const { fields: _fields, ...currentLook } = lookFor(themeLooks, template);
   const fromMeta = projectContentFromMeta(meta, {
     cardSize: (stored.cardSize as PrintCardSize) ?? "letter",
     template,
@@ -350,7 +353,7 @@ function assembleWorkingCopy(printable: QueueItem[], meta: ProjectMeta, id: stri
     showPhoto: stored.showPhoto ?? true,
     showSourceUrl: stored.showSourceUrl ?? true,
     showCutLines: stored.showCutLines ?? false,
-    ...lookFor(themeLooks, template),
+    ...currentLook,
     themeLooks,
   });
 

@@ -16,6 +16,7 @@ import { normalizePhotoScale } from "@/lib/photoScale";
 import { accentRootProps } from "@/lib/themeAccent";
 import { lookFor, normalizeThemeLooks } from "@/lib/themeLooks";
 import { ThemeArtProvider } from "@/lib/themeArt";
+import { RecipeFieldsProvider } from "@/lib/recipeFields";
 import {
   coverWrapGeometry,
   coverWrapGeometryFromSheet,
@@ -519,6 +520,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
 
   return (
     <ThemeArtProvider value={themeArt}>
+    <RecipeFieldsProvider value={look.fields}>
     <div
       className={`recipe-page-deck rp-exporting ${preset.pageClass}${preset.coilBound ? " rp-coil" : ""} ${
         cookbookMode ? "recipe-page-deck--book" : ""
@@ -558,6 +560,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
         </div>
       ))}
     </div>
+    </RecipeFieldsProvider>
     </ThemeArtProvider>
   );
 }
