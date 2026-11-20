@@ -5,6 +5,7 @@ import {
   PUBLISHER,
   NAV_LINKS,
   FAQ,
+  FAQ_GROUPS,
   absoluteUrl,
 } from "@/lib/seo";
 import { SEO_LANDING_PAGES } from "@/lib/seoLandingPages";
@@ -27,7 +28,18 @@ export function GET() {
       `- [${page.title}](${absoluteUrl(`/${page.slug}`)}): ${page.description}`,
   ).join("\n");
 
-  const faq = FAQ.map((item) => `### ${item.question}\n${item.answer}`).join("\n\n");
+  // The same sections as /faq, the Cookbook-or-Pro answer first.
+  const qa = (item: (typeof FAQ)[number]) => `#### ${item.question}\n${item.answer}`;
+  const faq = [
+    { heading: "Cookbook or Pro", items: FAQ.filter((item) => item.group === "compare") },
+    ...FAQ_GROUPS.map(({ id, heading }) => ({
+      heading,
+      items: FAQ.filter((item) => item.group === id),
+    })),
+  ]
+    .filter((section) => section.items.length > 0)
+    .map((section) => `### ${section.heading}\n\n${section.items.map(qa).join("\n\n")}`)
+    .join("\n\n");
 
   const body = `# ${SITE_NAME}
 
