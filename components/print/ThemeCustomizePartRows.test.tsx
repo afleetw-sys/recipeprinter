@@ -3,6 +3,13 @@ import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { ThemeCustomizePanel } from "@/components/print/ThemeCustomizePanel";
 
+// The panel's Layout and Divider pickers place their thumb with one; jsdom has none.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as unknown as typeof ResizeObserver;
+
 afterEach(() => {
   cleanup();
   document.body.innerHTML = "";
@@ -48,6 +55,10 @@ describe("Customize theme's Fine-tune sizes rows", () => {
           setPosterColor={() => {}}
           utensil={null}
           setUtensil={() => {}}
+          stacked={false}
+          setStacked={() => {}}
+          divider={false}
+          setDivider={() => {}}
           template="classic"
           customized
           onReset={() => {}}

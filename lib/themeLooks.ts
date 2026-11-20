@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { DEFAULT_FONT_SCALE, normalizeFontScale, type FontScale } from "@/lib/fontScale";
 import { DEFAULT_PHOTO_SCALE, legacyPhotoScale, normalizePhotoScale, type PhotoScale } from "@/lib/photoScale";
 import { RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
@@ -12,7 +13,7 @@ import type { RecipePrintTemplate } from "@/types/recipe";
 
 /**
  * What a cook has customized about one theme: its text size, photo size,
- * accent color, and for a theme whose art takes turns by recipe, one piece for
+ * accent color, ingredients stacked or not, lines between groups, and for a theme whose art takes turns by recipe, one piece for
  * every recipe instead (Poster's band color, Supper's utensil).
  * Each theme keeps its own. Changing Bistro's text size leaves Garden's alone,
  * and switching back to Bistro brings Bistro's back, so trying themes never
@@ -31,6 +32,12 @@ export interface ThemeLook {
   posterColor?: number;
   /** Supper: one utensil for every recipe. Absent: they take turns. */
   utensil?: SupperUtensil;
+  /** Ingredients above the steps on every recipe. Absent: side by side
+      whenever the whole recipe fits on the front, stacked otherwise. */
+  stacked?: true;
+  /** A line between a recipe's groups ("For the sauce", "For the dough"),
+      in its ingredients and its steps. */
+  divider?: true;
 }
 
 export type ThemeLooks = Partial<Record<RecipePrintTemplate, ThemeLook>>;
@@ -43,6 +50,8 @@ export interface ResolvedThemeLook {
   /** null: taking turns. */
   posterColor: number | null;
   utensil: SupperUtensil | null;
+  stacked: boolean;
+  divider: boolean;
 }
 
 export const DEFAULT_THEME_LOOK: ResolvedThemeLook = {
@@ -51,7 +60,20 @@ export const DEFAULT_THEME_LOOK: ResolvedThemeLook = {
   accent: null,
   posterColor: null,
   utensil: null,
+  stacked: false,
+  divider: false,
 };
+
+/**
+ * The divider as print.css reads it: `--rp-divider` is 1 or 0, multiplied into
+ * the line's width and the room around it. A variable rather than a class so
+ * the closest root wins, the way text size works: the off-screen measurers sit
+ * inside the page root and must be able to measure the other answer while the
+ * deck still shows the last one.
+ */
+export function dividerVars(divider: boolean): CSSProperties {
+  return { "--rp-divider": divider ? 1 : 0 } as CSSProperties;
+}
 
 export function lookFor(looks: ThemeLooks, template: RecipePrintTemplate): ResolvedThemeLook {
   const look = looks[template];
@@ -61,6 +83,8 @@ export function lookFor(looks: ThemeLooks, template: RecipePrintTemplate): Resol
     accent: look?.accent ?? null,
     posterColor: look?.posterColor ?? null,
     utensil: look?.utensil ?? null,
+    stacked: look?.stacked === true,
+    divider: look?.divider === true,
   };
 }
 
@@ -72,7 +96,9 @@ export function isCustomized(look: ResolvedThemeLook): boolean {
     look.photoScale !== DEFAULT_PHOTO_SCALE ||
     look.accent !== null ||
     look.posterColor !== null ||
-    look.utensil !== null
+    look.utensil !== null ||
+    look.stacked ||
+    look.divider
   );
 }
 
@@ -93,6 +119,8 @@ export function withLook(
   if (next.accent !== null) look.accent = next.accent;
   if (next.posterColor !== null) look.posterColor = next.posterColor;
   if (next.utensil !== null) look.utensil = next.utensil;
+  if (next.stacked) look.stacked = true;
+  if (next.divider) look.divider = true;
   return { ...rest, [template]: look };
 }
 
@@ -108,13 +136,15 @@ export function normalizeThemeLooks(stored: unknown, legacy: { fontScale?: unkno
     for (const option of RECIPE_PRINT_TEMPLATE_OPTIONS) {
       const raw = (stored as Record<string, unknown>)[option.id];
       if (!raw || typeof raw !== "object") continue;
-      const { fontScale, photoScale, accent, posterColor, utensil } = raw as Record<string, unknown>;
+      const { fontScale, photoScale, accent, posterColor, utensil, stacked, divider } = raw as Record<string, unknown>;
       looks = withLook(looks, option.id, {
         fontScale: normalizeFontScale(fontScale),
         photoScale: normalizePhotoScale(photoScale),
         accent: normalizeAccent(accent, option.id),
         posterColor: option.id === "poster" ? normalizePosterColor(posterColor) : null,
         utensil: option.id === "supper" ? normalizeUtensil(utensil) : null,
+        stacked: stacked === true,
+        divider: divider === true,
       });
     }
     return looks;

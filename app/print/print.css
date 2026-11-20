@@ -9318,6 +9318,27 @@ textarea.recipe-card__toc-title {
   margin-top: 21px;
 }
 
+/* ── Customize theme's dividers (lib/themeLooks.ts).
+   A line above each group's heading ("For the sauce", "For the dough") after
+   the first, in ingredients and steps alike, in the theme's accent. The
+   heading's own top padding is the room under the line. Its width is
+   `--rp-divider` (1 or 0) times 1px, so the off-screen measurers can measure
+   with it while the deck still shows the last layout (see `dividerVars`).
+
+   A group that starts a column has no line (nothing above it to divide from),
+   nor does a group continued from the column before, which has no heading.
+   The column-split probe gets the line too, so the split is measured with it,
+   and so does a heading being edited, so editing it moves nothing. */
+.recipe-card__section-group:not(:first-child) > :is(.recipe-card__section-title, .recipe-card__section-title-edit),
+.recipe-card__section-groups--probe > :not(:first-child) > .recipe-card__section-title {
+  border-top: calc(var(--rp-divider, 0) * 1px) solid color-mix(in srgb, var(--recipe-accent) 55%, transparent);
+}
+
+/* A heading being edited: the line is on its wrapper, not the field too. */
+.recipe-card__section-title-edit > .recipe-card__section-title {
+  border-top: 0;
+}
+
 .recipe-card__label {
   font-size: var(--recipe-card-label-size);
   font-weight: 800;
