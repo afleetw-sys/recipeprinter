@@ -1,3 +1,4 @@
+import type { FieldSwitches } from "@/lib/recipeFields";
 import type { Recipe, RecipeIngredient, RecipeInstruction } from "@/types/recipe";
 
 // Fixture corpus for the layout measurement harness (app/print/harness).
@@ -19,6 +20,9 @@ export interface HarnessRecipe {
   /** Why this fixture exists — which boundary/edge case it targets. */
   note: string;
   recipe: Recipe;
+  /** The theme's field switches to measure it under (lib/recipeFields.ts).
+      Absent: the theme as it ships, which is every fixture made before. */
+  fields?: FieldSwitches;
 }
 
 // 4:3 solid placeholder — the card CSS sizes the photo box, so the pixels
@@ -303,6 +307,27 @@ export const HARNESS_RECIPES: HarnessRecipe[] = [
         ...makeIngredients(6),
       ],
       instructions: makeSteps(5, 12),
+    }),
+  },
+  {
+    id: "long-notes",
+    label: "Southwest Cornbread-Pecan Stuffing (long notes)",
+    note:
+      "Notes after the steps, longer than a 6x4 face holds: they must run on to the next face, whole sentences at a time, never shrink or clip. Description, contributor and category take header room too.",
+    fields: { description: true, contributor: true, category: true, note: true },
+    recipe: base({
+      title: "Southwest Cornbread-Pecan Stuffing",
+      description: "This recipe for Southwest Cornbread-Pecan Stuffing, by Brittany O'Brien, is from the O'Brien Family Recipes cookbook.",
+      contributor: "Brittany O'Brien",
+      category: "Side Dishes",
+      ingredients: makeIngredients(8, "stuffing ingredient"),
+      instructions: makeSteps(5, 14),
+      note: [
+        "This recipe came from Aunt Carroll FitzPatrick Scott. I believe she got it from the Austin American Statesman in 1997, back when she still had time to read the paper. It is a Scott family favorite for Thanksgiving dinner, and now for the O'Briens too.",
+        "Make the cornbread a day ahead so it dries out a little; it soaks up the stock better and the stuffing holds its shape in the cups. Toast the pecans in a dry pan until they smell nutty, then chop them coarsely so there are still big pieces. If you can't find poblanos, a small can of mild green chiles works, though the roasted ones taste smokier. The cups can be filled the night before, covered and chilled; pour the cream over just before they go in the oven and give them five extra minutes. Leftovers reheat well in a low oven, loosely covered, with a splash more stock. We have doubled it for a crowd of twenty and baked it in two big dishes, which takes closer to an hour.",
+        "For Thanksgiving we bake the cups on the lower rack while the turkey rests, then slide them up under the broiler for a minute so the tops crisp. The year we ran out of custard cups we used a muffin tin, buttered well, and pulled them out with a spoon; they held together fine but browned faster, so check them at fifteen minutes. My mother adds a handful of dried cranberries, which Aunt Carroll never approved of, and my brother leaves out the cayenne for the kids. Both versions get eaten. If you make it with chorizo, cut the salt in half, because the sausage is already seasoned, and drain it very well so the cups don't turn greasy.",
+        "Aunt Carroll always said the secret was the English muffins. Don't skip them.",
+      ].join("\n"),
     }),
   },
 ];

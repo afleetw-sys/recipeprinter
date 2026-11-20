@@ -99,15 +99,54 @@ export function bylineFields(switches: FieldSwitches | undefined, cookbook: bool
 }
 
 /**
- * What prints after the steps, in order: today only the cook's note, when the
- * theme shows Notes on its own and this recipe has one. Each entry is one
- * unbreakable block that the page split moves whole (lib/recipeCardLayout.ts,
+ * One piece of what prints after the steps: a sentence or so of the cook's
+ * note. `key` is what a page carries (`RecipeFace.tail`): "note:<paragraph>.<piece>".
+ */
+export interface TailPiece {
+  key: string;
+  paragraph: number;
+  text: string;
+}
+
+/**
+ * The note in pieces the page split can move one at a time, so a note longer
+ * than a page runs on to the next one instead of being shrunk to fit. Split
+ * at sentence ends, never inside bold or italic (an odd count of `*` so far
+ * means a marker is still open, lib/richText.ts), and joined back together the
+ * pieces are the paragraph exactly. No lookbehind: it crashes Safari < 16.4.
+ */
+export function notePieces(note: string): TailPiece[] {
+  const pieces: TailPiece[] = [];
+  note
+    .split("\n")
+    .filter((paragraph) => paragraph.trim())
+    .forEach((paragraph, p) => {
+      const sentences = paragraph.match(/[^.!?]+(?:[.!?]+["')\]]*)?\s*|[.!?]+\s*/g) ?? [paragraph];
+      const merged: string[] = [];
+      let open = false;
+      for (const sentence of sentences) {
+        if (open && merged.length > 0) merged[merged.length - 1] += sentence;
+        else merged.push(sentence);
+        if ((sentence.match(/\*/g)?.length ?? 0) % 2 === 1) open = !open;
+      }
+      merged.forEach((text, i) => pieces.push({ key: `note:${p}.${i}`, paragraph: p, text }));
+    });
+  return pieces;
+}
+
+/** The first piece of the note, which carries its "Notes" label. */
+export const FIRST_NOTE_PIECE = "note:0.0";
+
+/**
+ * What prints after the steps, in order: the cook's note, in pieces, when the
+ * theme shows Notes on its own and this recipe has one. The page split moves
+ * each piece like a step (lib/recipeCardLayout.ts,
  * components/RecipeFaceMeasurer.tsx), so an empty list is the split as it
  * always was.
  */
-export function tailFields(recipe: Recipe, switches: FieldSwitches | undefined, cookbook: boolean): RecipeFieldId[] {
+export function tailFields(recipe: Recipe, switches: FieldSwitches | undefined, cookbook: boolean): string[] {
   if (usesHeadnote(switches, cookbook) || !fieldShown(switches, "note", cookbook)) return [];
-  return fieldValue(recipe, "note") ? ["note"] : [];
+  return notePieces(fieldValue(recipe, "note")).map((piece) => piece.key);
 }
 
 /** The switches as a key for measured pages: a page measured with Notes at the

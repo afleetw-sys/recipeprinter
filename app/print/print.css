@@ -9362,13 +9362,19 @@ textarea.recipe-card__toc-title {
   align-content: start;
 }
 
-.recipe-card__tail-item {
+.recipe-card__tail {
   grid-column: 1 / -1;
   margin-top: 14px;
 }
 
-.recipe-print-preview--letter .recipe-card__tail-item {
+.recipe-print-preview--letter .recipe-card__tail {
   margin-top: 21px;
+}
+
+/* Each paragraph of the note is a run of sentence-sized pieces
+   (`.recipe-card__tail-item` spans) the measurer can move one at a time. */
+.recipe-card__tail-text + .recipe-card__tail-text {
+  margin-top: 0.45em;
 }
 
 .recipe-card__tail-text {

@@ -57,9 +57,11 @@ import { chapterIntroFromRecipes } from "@/lib/chapterIntro";
 import { SUPPER_UTENSILS } from "@/lib/themeAccent";
 import { useThemeArt } from "@/lib/themeArt";
 import {
+  FIRST_NOTE_PIECE,
   RECIPE_FIELDS,
   bylineFields,
   fieldValue,
+  notePieces,
   headerParts,
   type HeaderPart,
   type RecipeFieldId,
@@ -566,8 +568,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   recipe: Recipe;
   ingredients: Recipe["ingredients"];
   instructions: Recipe["instructions"];
-  /** What prints after the steps on this face (`RecipeFace.tail`). */
-  tail?: RecipeFieldId[];
+  /** What prints after the steps on this face (`RecipeFace.tail`): keys of
+      the note's pieces (lib/recipeFields.ts `notePieces`). */
+  tail?: string[];
   side: "front" | "back";
   showHeader: boolean;
   layout: CardSectionLayout;
@@ -1040,15 +1043,57 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   }
 
   /**
-   * What prints after the steps: the blocks the page split put on this face.
-   * A note "+" has just opened, empty, has no place in the split yet, so it
-   * opens at the foot of the recipe's first face; written, it is measured
-   * like any other.
+   * What prints after the steps on this face: the pieces of the note the page
+   * split put here (`RecipeFace.tail`), read back as its paragraphs, under
+   * "Notes" on the face that has its first piece. Each piece is its own span,
+   * so the measurer can move it on alone and a long note runs over as many
+   * pages as it needs. Clicking any of it opens the whole note where it
+   * starts; while it's open, its pieces on later faces step aside. A note "+"
+   * has just opened, empty, has no place in the split yet, so it opens at the
+   * foot of the recipe's first face.
    */
-  function tailItems(): RecipeFieldId[] {
-    const items = [...(tail ?? [])];
-    if (showHeader && editingNow({ kind: "field", field: "note" }) && !items.includes("note")) items.push("note");
-    return items;
+  function renderTail() {
+    const here = new Set(tail ?? []);
+    const note = fieldValue(recipe, "note");
+    const target: RecipeCardEditTarget = { kind: "field", field: "note" };
+    const editing = editingNow(target);
+    const startsHere = here.has(FIRST_NOTE_PIECE) || (editing && showHeader && !note);
+    const label = <p className="recipe-card__label">{RECIPE_FIELDS.note.label}</p>;
+    if (editing) {
+      return startsHere ? (
+        <div className="recipe-card__tail">
+          {label}
+          {renderFieldParagraph("note", "recipe-card__tail-text")}
+        </div>
+      ) : null;
+    }
+    const pieces = notePieces(note).filter((piece) => here.has(piece.key));
+    if (pieces.length === 0) return null;
+    const paragraphs: (typeof pieces)[] = [];
+    for (const piece of pieces) {
+      const last = paragraphs[paragraphs.length - 1];
+      if (last && last[0].paragraph === piece.paragraph) last.push(piece);
+      else paragraphs.push([piece]);
+    }
+    return (
+      <div className="recipe-card__tail">
+        {startsHere && label}
+        {paragraphs.map((paragraph) => (
+          <p
+            key={paragraph[0].key}
+            {...el("note")}
+            className={`recipe-card__tail-text ${canEdit ? "recipe-card__headnote--editable" : ""}`}
+            onClick={canEdit ? (event) => startEdit(target, note, event) : undefined}
+          >
+            {paragraph.map((piece) => (
+              <span key={piece.key} className="recipe-card__tail-item">
+                <RichText text={piece.text} />
+              </span>
+            ))}
+          </p>
+        ))}
+      </div>
+    );
   }
 
   function handleEditKeyDown(
@@ -1471,7 +1516,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     );
   }
 
-  const shownTail = tailItems();
+  const tailBlock = renderTail();
 
   /** One part of the header, as the theme places it (lib/recipeFields.ts). */
   function renderHeaderPart(part: HeaderPart) {
@@ -1738,7 +1783,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           !hasIngredientsSection ? "recipe-card__cols--single" : ""
         } ${ingredientsOnly ? "recipe-card__cols--ingredients-only" : ""} ${
           methodOnly ? "recipe-card__cols--method-only" : ""
-        } ${stackedLayout ? "recipe-card__cols--stacked" : ""}${shownTail.length > 0 ? " recipe-card__cols--with-tail" : ""}`}
+        } ${stackedLayout ? "recipe-card__cols--stacked" : ""}${tailBlock ? " recipe-card__cols--with-tail" : ""}`}
         style={shrinkStyle}
       >
         {hasIngredientsSection && (
@@ -1911,12 +1956,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             )}
           </section>
         )}
-        {shownTail.map((field) => (
-          <div key={field} className="recipe-card__tail-item">
-            <p className="recipe-card__label">{RECIPE_FIELDS[field].label}</p>
-            {field === "note" && renderFieldParagraph("note", "recipe-card__tail-text")}
-          </div>
-        ))}
+        {tailBlock}
       </div>
 
       {/* No footer in cookbook mode: the "Printed with RecipePrinter" brand is

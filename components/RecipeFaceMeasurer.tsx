@@ -23,7 +23,7 @@ import {
 } from "@/lib/faceMeasure";
 import { fontScaleVars, type FontScale } from "@/lib/fontScale";
 import { photoScaleVars, type PhotoScale } from "@/lib/photoScale";
-import type { RecipeFieldId } from "@/lib/recipeFields";
+import { FIRST_NOTE_PIECE } from "@/lib/recipeFields";
 import type { Recipe } from "@/types/recipe";
 
 // getRecipeFaces' character-count budget is a guess, not a measurement, so it
@@ -95,7 +95,7 @@ type FlowKind = "instructions" | "ingredients" | "tail";
 interface PopResult {
   shrunk: RecipeFace;
   kind: FlowKind;
-  items: Recipe["instructions"] | Recipe["ingredients"] | RecipeFieldId[];
+  items: Recipe["instructions"] | Recipe["ingredients"] | string[];
 }
 
 /** Everything on a face that pagination moves: its lines and its tail. */
@@ -154,10 +154,10 @@ function popTrailingItems(face: RecipeFace, overflowPx: number, cardEl: HTMLElem
 function prependItems(
   face: RecipeFace,
   kind: FlowKind,
-  items: Recipe["instructions"] | Recipe["ingredients"] | RecipeFieldId[],
+  items: Recipe["instructions"] | Recipe["ingredients"] | string[],
 ): RecipeFace {
   if (kind === "tail") {
-    return { ...face, tail: [...(items as RecipeFieldId[]), ...(face.tail ?? [])] };
+    return { ...face, tail: [...(items as string[]), ...(face.tail ?? [])] };
   }
   if (kind === "instructions") {
     return { ...face, instructions: [...(items as Recipe["instructions"]), ...face.instructions] };
@@ -245,7 +245,10 @@ function pullLeadingItems(face: RecipeFace, nextFace: RecipeFace, slackPx: numbe
   // has nothing else left to give.
   const nextTail = nextFace.tail ?? [];
   if (nextTail.length > 0 && nextFace.ingredients.length === 0 && nextFace.instructions.length === 0) {
-    const taken = takeLeadingItems(nextTail, slackPx, realItemHeights(nextCardEl, TAIL_ITEM_SELECTOR));
+    // The note's first piece brings its "Notes" label, which its own height
+    // doesn't include (the same charge `sectionLabelCostPx` makes for a list).
+    const labelCost = nextTail[0] === FIRST_NOTE_PIECE ? labelHeightPx(nextCardEl, ".recipe-card__tail") : 0;
+    const taken = takeLeadingItems(nextTail, slackPx - labelCost, realItemHeights(nextCardEl, TAIL_ITEM_SELECTOR));
     if (taken.length === 0) return null;
     return {
       grown: { ...face, tail: [...(face.tail ?? []), ...taken] },
@@ -304,7 +307,7 @@ export function RecipeFaceMeasurer({
   /** Customize theme's Stacked layout: never start side by side. */
   forceStacked?: boolean;
   /** What prints after the steps (lib/recipeFields.ts `tailFields`). */
-  tail?: RecipeFieldId[];
+  tail?: string[];
   onSettled: (pages: RecipeFace[]) => void;
 }) {
   // By value: a caller's fresh array each render must not restart the pass.
@@ -317,7 +320,7 @@ export function RecipeFaceMeasurer({
         template,
         fontScale: budgetScale ?? fontScale,
         forceStacked,
-        tail: tailKey ? (tailKey.split(",") as RecipeFieldId[]) : undefined,
+        tail: tailKey ? tailKey.split(",") : undefined,
       }).pages,
     [recipe, size, template, hasPhoto, showSourceUrl, fontScale, budgetScale, forceStacked, tailKey],
   );
@@ -581,7 +584,7 @@ export function RecipeFaceMeasurer({
           template,
           fontScale: budgetScale ?? fontScale,
           forceStacked: true,
-          tail: tailKey ? (tailKey.split(",") as RecipeFieldId[]) : undefined,
+          tail: tailKey ? tailKey.split(",") : undefined,
         }).pages,
       );
       return;

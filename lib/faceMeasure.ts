@@ -292,6 +292,9 @@ export function checkPageInvariants(
   instructionCount: number,
   ingredientIndexOf: (item: RecipeFace["ingredients"][number]) => number,
   instructionIndexOf: (item: RecipeFace["instructions"][number]) => number,
+  /** What should print after the steps, in order (`RecipeFace.tail`). Every
+      piece must appear exactly once, in order, across the faces. */
+  tail: readonly string[] = [],
 ): FaceInvariantResult {
   const ingredientIndices: number[] = [];
   const instructionIndices: number[] = [];
@@ -303,9 +306,12 @@ export function checkPageInvariants(
   const isIdentitySequence = (indices: number[], count: number) =>
     indices.length === count && indices.every((value, i) => value === i);
 
+  const placedTail = pages.flatMap((page) => page.tail ?? []);
   const complete =
     isIdentitySequence(ingredientIndices, ingredientCount) &&
-    isIdentitySequence(instructionIndices, instructionCount);
+    isIdentitySequence(instructionIndices, instructionCount) &&
+    placedTail.length === tail.length &&
+    placedTail.every((piece, i) => piece === tail[i]);
 
   const noEmptyFace = pages.every((page, i) => i === 0 || !isEmptyFace(page));
 

@@ -141,7 +141,7 @@ interface SplitOptions {
   // What prints after the steps (lib/recipeFields.ts `tailFields`). The
   // budget doesn't count it: it starts on the last face and the measurer moves
   // it on when it doesn't fit, as it does any line the guess got wrong.
-  tail?: RecipeFieldId[];
+  tail?: string[];
 }
 
 /** What a text-cost budget is worth at this text size: fewer characters per
@@ -734,7 +734,7 @@ export interface RecipeFace {
    * of a recipe whose theme shows nothing there, which is the split exactly
    * as it was before.
    */
-  tail?: RecipeFieldId[];
+  tail?: string[];
   /**
    * Shrink-to-fit factor for this face's content, 1 = unscaled. Set only by
    * the measurement pass, and only for a face that pagination genuinely
