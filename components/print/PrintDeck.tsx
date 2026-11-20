@@ -39,7 +39,15 @@ import { recipeLinkOn } from "@/lib/recipeLink";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { recipeNamesIntro } from "@/lib/chapterIntro";
 import { emptyRecipeFields } from "@/lib/recipeMissingFields";
-import { RECIPE_FIELDS, fieldShown, usesHeadnote, type FieldSwitches, type RecipeFieldId } from "@/lib/recipeFields";
+import {
+  RECIPE_FIELDS,
+  RECIPE_FIELD_IDS,
+  fieldShown,
+  fieldValue,
+  usesHeadnote,
+  type FieldSwitches,
+  type RecipeFieldId,
+} from "@/lib/recipeFields";
 import { removedHeadingsName } from "@/lib/recipeHeadings";
 import type { AddableRecipeLine } from "@/types/recipe";
 import {
@@ -693,7 +701,7 @@ export function PrintDeck(props: PrintDeckProps) {
       if (!showEmptyFields) toggleShowEmptyFields();
       focusFirstMissingField();
     };
-    const addableLines = (): { name: string; restore: () => void }[] => {
+    const addableLines = (): { name: string; hint?: string; restore: () => void }[] => {
       if (navItem.kind === "recipe") {
         const recipeId = navItem.recipeId;
         const recipe = items?.find((item) => item.id === recipeId)?.recipe;
@@ -704,27 +712,37 @@ export function PrintDeck(props: PrintDeckProps) {
         // page, and one that is missing is added here. A missing link is
         // always offered, and adding it on recipe cards turns the cards'
         // links on, as the button did.
-        const lines = emptyRecipeFields(recipe, {
-          cookbook,
-          showSourceUrl: true,
-          fieldSwitches,
-        }).map((field) => ({
+        // The recipe's fields (lib/recipeFields.ts), always: one that's there
+        // opens for editing, one that isn't opens empty, and either way it
+        // shows in this theme from then on. The hint says which it is, so a
+        // field added and left empty (it never prints) is still easy to find.
+        // On a cookbook page still printing description and note as one
+        // paragraph, picking either makes them two, so the note lands at the
+        // foot.
+        const fieldLines = RECIPE_FIELD_IDS.map((field) => {
+          const filled = Boolean(fieldValue(recipe, field));
+          const shown = fieldShown(fieldSwitches, field, cookbook);
+          return {
             name: RECIPE_LINE_NAMES[field],
+            hint: shown ? (filled ? "Added" : "Empty") : filled ? "Hidden" : undefined,
             restore: () => {
-              if (field === "link" && !cookbook && !showSourceUrl) setShowSourceUrl(true);
-              // Adding a field shows it in this theme. On a cookbook page
-              // still printing description and note as one paragraph, adding
-              // either one makes them two, so the note lands at the foot.
-              if (
-                (field === "description" || field === "contributor" || field === "category" || field === "note") &&
-                (!fieldShown(fieldSwitches, field, cookbook) ||
-                  ((field === "description" || field === "note") && usesHeadnote(fieldSwitches, cookbook)))
-              ) {
+              if (!shown || ((field === "description" || field === "note") && usesHeadnote(fieldSwitches, cookbook))) {
                 setFieldShown(field, true);
               }
               addField(recipeId, field);
             },
-          }));
+          };
+        });
+        const lines: { name: string; hint?: string; restore: () => void }[] = [
+          ...fieldLines,
+          ...emptyRecipeFields(recipe, { cookbook, showSourceUrl: true }).map((field) => ({
+            name: RECIPE_LINE_NAMES[field],
+            restore: () => {
+              if (field === "link" && !cookbook && !showSourceUrl) setShowSourceUrl(true);
+              addField(recipeId, field);
+            },
+          })),
+        ];
         // A link that is there but hidden (a book saved with the old "Recipe
         // link" switch off, or a recipe whose link was hidden by the toolbar
         // button that used to be here) comes back the same way. In a cookbook

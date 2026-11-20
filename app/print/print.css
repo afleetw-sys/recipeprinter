@@ -527,8 +527,19 @@
 }
 .add-line-menu__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(104px, 1fr));
+  grid-template-columns: repeat(2, minmax(124px, 1fr));
   gap: 2px;
+}
+/* Where a recipe field stands ("Added", "Empty", "Hidden"), quiet beside its
+   name, so one added and left empty is still easy to find. */
+.add-line-menu .cp-menu__item {
+  justify-content: space-between;
+  gap: 8px;
+}
+.add-line-menu__hint {
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-label);
+  font-weight: 500;
 }
 .add-line-menu .cp-menu__heading {
   padding: 3px 8px 2px;

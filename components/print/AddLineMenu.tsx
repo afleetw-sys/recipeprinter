@@ -30,7 +30,8 @@ export function AddLineMenu({
   triggerRef: RefObject<HTMLElement | null>;
   /** "Add to this recipe" on a recipe, "Add to this page" on a book page. */
   heading: string;
-  lines: { name: string; restore: () => void }[];
+  /** `hint` says where a recipe field stands ("Added", "Empty", "Hidden"). */
+  lines: { name: string; hint?: string; restore: () => void }[];
   page?: { name: string; add: () => void } | null;
   onClose: () => void;
 }) {
@@ -68,6 +69,7 @@ export function AddLineMenu({
             }}
           >
             {line.name}
+            {line.hint && <span className="add-line-menu__hint">{line.hint}</span>}
           </button>
         ))}
       </div>
