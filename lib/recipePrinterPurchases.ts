@@ -322,6 +322,7 @@ export function computeProLocks({
   photoScale = 1,
   accent = null,
   artChanged = false,
+  layoutChanged = false,
   elementTextSized = false,
 }: {
   customerInfo: CustomerInfo | null;
@@ -340,6 +341,9 @@ export function computeProLocks({
   /** One piece of art for every recipe where the theme takes turns (Poster's
       band, Supper's utensil): Pro the same way. */
   artChanged?: boolean;
+  /** Ingredients stacked above the steps, or lines between a recipe's
+      groups (lib/themeLooks.ts): Pro the same way. */
+  layoutChanged?: boolean;
   /** A single element on a recipe card has a text size other than Normal
       (lib/pageLooks.tsx): Pro the same way. */
   elementTextSized?: boolean;
@@ -355,10 +359,10 @@ export function computeProLocks({
   const cardSizeLocked = !cookbookMode && !canUseCardSize(customerInfo, cardSize);
   // A cookbook includes every theme, and how each looks with them: every
   // part of Customize theme the panel crowns on a card (text size, photo
-  // size, accent, a part's own size) is this one lock.
+  // size, accent, layout, dividers, a part's own size) is this one lock.
   const fontScaleLocked =
     !cookbookMode &&
-    (fontScale !== 1 || photoScale !== 1 || accent !== null || artChanged || elementTextSized) &&
+    (fontScale !== 1 || photoScale !== 1 || accent !== null || artChanged || layoutChanged || elementTextSized) &&
     !hasProEntitlement(customerInfo);
   // Printing more than one recipe in one job (outside a cookbook, which has
   // its own separate purchase model) is its own Pro-gated capability — see

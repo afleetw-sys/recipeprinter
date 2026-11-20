@@ -21,6 +21,7 @@ import {
   realItemHeights,
 } from "@/lib/faceMeasure";
 import { fontScaleVars, type FontScale } from "@/lib/fontScale";
+import { dividerVars } from "@/lib/themeLooks";
 import { photoScaleVars, type PhotoScale } from "@/lib/photoScale";
 import type { Recipe } from "@/types/recipe";
 
@@ -228,6 +229,8 @@ export function RecipeFaceMeasurer({
   budgetScale,
   floorScale,
   photoScale,
+  forceStacked = false,
+  divider = false,
   onSettled,
 }: {
   recipe: Recipe;
@@ -258,11 +261,16 @@ export function RecipeFaceMeasurer({
   fontScale?: FontScale;
   /** The cook's photo size (lib/photoScale.ts), on that root too. */
   photoScale?: PhotoScale;
+  /** Customize theme's Stacked layout: never start side by side. */
+  forceStacked?: boolean;
+  /** Customize theme's dividers (lib/themeLooks.ts), on this root too: the
+      lines are part of the recipe's height. */
+  divider?: boolean;
   onSettled: (pages: RecipeFace[]) => void;
 }) {
   const initialPages = useMemo(
-    () => getRecipeFaces(recipe, size, { hasPhoto, showSourceUrl, template, fontScale: budgetScale ?? fontScale }).pages,
-    [recipe, size, template, hasPhoto, showSourceUrl, fontScale, budgetScale],
+    () => getRecipeFaces(recipe, size, { hasPhoto, showSourceUrl, template, fontScale: budgetScale ?? fontScale, forceStacked }).pages,
+    [recipe, size, template, hasPhoto, showSourceUrl, fontScale, budgetScale, forceStacked],
   );
 
   const [pages, setPages] = useState<RecipeFace[]>(initialPages);
@@ -586,6 +594,7 @@ export function RecipeFaceMeasurer({
         ...cardVars,
         ...fontScaleVars(fontScale),
         ...photoScaleVars(photoScale),
+        ...dividerVars(divider),
       }}
       className={`recipe-print-preview ${previewSizeClass(size)} recipe-face-measurer`}
     >
