@@ -228,14 +228,14 @@ import {
   usePrintSettingsPersistence,
 } from "@/lib/printSettings";
 import { useFreeThemeOnOpen } from "@/lib/useFreeThemeOnOpen";
-import type { FontScale } from "@/lib/fontScale";
+import { DEFAULT_FONT_SCALE, type FontScale } from "@/lib/fontScale";
 import {
   hasNonNormalTextSize,
   prunePageLooks,
   RECIPES_ADDRESS,
   recipePageAddress,
 } from "@/lib/pageLooks";
-import type { PhotoScale } from "@/lib/photoScale";
+import { DEFAULT_PHOTO_SCALE, type PhotoScale } from "@/lib/photoScale";
 import { accentRootProps, type AccentColor, type SupperUtensil } from "@/lib/themeAccent";
 import { ThemeArtProvider } from "@/lib/themeArt";
 import { DEFAULT_THEME_LOOK, dividerVars, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
@@ -3761,6 +3761,15 @@ export default function PrintPage() {
   // Recipes only: the book's own pages (a blank page) never count toward a
   // free preview or anything else measured in recipes.
   const recipeCount = (items?.filter(isRecipeEntry).length ?? 0) + (hasInFlightImport ? 1 : 0);
+  // Only the recipes still here: a deleted recipe's sizes stay in the map
+  // and must not keep asking for Pro.
+  const elementTextSized = hasNonNormalTextSize(
+    prunePageLooks(
+      projectMeta.meta.pageLooks,
+      // The recipes still here, and the sizes set for every recipe's parts.
+      new Set([RECIPES_ADDRESS, ...(items ?? []).map((item) => recipePageAddress(item.id))]),
+    ),
+  );
   const { themeLocked, cardSizeLocked, fontScaleLocked, multiRecipeLocked, multiRecipeAddLocked, proLocked } =
     computeProLocks({
       customerInfo: effectiveCustomerInfo.customerInfo,
@@ -3774,15 +3783,7 @@ export default function PrintPage() {
       accent,
       artChanged: posterColor !== null || utensil !== null,
       layoutChanged: stacked || divider,
-      // Only the recipes still here: a deleted recipe's sizes stay in the map
-      // and must not keep asking for Pro.
-      elementTextSized: hasNonNormalTextSize(
-        prunePageLooks(
-          projectMeta.meta.pageLooks,
-          // The recipes still here, and the sizes set for every recipe's parts.
-          new Set([RECIPES_ADDRESS, ...(items ?? []).map((item) => recipePageAddress(item.id))]),
-        ),
-      ),
+      elementTextSized,
     });
   // A free, non-cookbook account can never hold more than one recipe — see
   // `hasMultiRecipeEntitlement`'s doc comment ("nothing to grandfather...
@@ -3936,6 +3937,19 @@ export default function PrintPage() {
     // recorded the server's count.
     proUpgradeTrigger === IMPORT_LIMIT_TRIGGER ? rememberedImportUsage() : null,
     recipeChoice ? { count: recipeChoice.recipes.length, source: recipeChoice.source } : null,
+    // So a lock's dialog names each Customize theme change that's Pro, in the
+    // panel's order and from the same values `computeProLocks` reads.
+    {
+      customized: [
+        accent !== null && "accent color",
+        posterColor !== null && "band color",
+        utensil !== null && "utensil",
+        stacked && "layout",
+        divider && "section dividers",
+        (fontScale !== DEFAULT_FONT_SCALE || elementTextSized) && "text size",
+        photoScale !== DEFAULT_PHOTO_SCALE && "photo size",
+      ].filter((label): label is string => Boolean(label)),
+    },
   );
 
   /**
