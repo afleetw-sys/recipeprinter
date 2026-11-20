@@ -9248,6 +9248,17 @@ textarea.recipe-card__toc-title {
   white-space: nowrap;
 }
 
+/* Contributor and Category (lib/recipeFields.tsx): the cookbook's facts on
+   any page, under the time and servings. They may wrap: a name runs longer
+   than a cook time. */
+.recipe-card__byline .recipe-card__fact {
+  white-space: normal;
+}
+
+.recipe-card__byline .recipe-card__fact-value {
+  max-width: none;
+}
+
 .recipe-card__fact-label {
   font-size: calc(7.5pt * var(--recipe-font-scale, 1));
   font-weight: 800;
@@ -9323,6 +9334,32 @@ textarea.recipe-card__toc-title {
 
 .recipe-print-preview--letter .recipe-card__cols--stacked .recipe-card__method {
   margin-top: 21px;
+}
+
+/* What prints after the steps (`RecipeFace.tail`, lib/recipeFields.tsx): the
+   cook's own notes, across the whole width under both columns, headed the way
+   the theme heads Ingredients and Steps. Rows sit at the top: a grid card's
+   rows otherwise stretch to the card's height and float the notes down to its
+   foot, away from the steps they follow. */
+.recipe-card__cols--with-tail {
+  align-content: start;
+}
+
+.recipe-card__tail-item {
+  grid-column: 1 / -1;
+  margin-top: 14px;
+}
+
+.recipe-print-preview--letter .recipe-card__tail-item {
+  margin-top: 21px;
+}
+
+.recipe-card__tail-text {
+  margin: 0;
+  font-size: var(--recipe-card-body-size);
+  line-height: 1.4;
+  color: var(--recipe-ink);
+  white-space: pre-wrap;
 }
 
 .recipe-card__label {

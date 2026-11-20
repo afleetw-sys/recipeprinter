@@ -80,6 +80,7 @@ export const TwoUpPrintPages = memo(function TwoUpPrintPages({
                       recipe={card.slot.recipe}
                       ingredients={card.slot.front.ingredients}
                       instructions={card.slot.front.instructions}
+                      tail={card.slot.front.tail}
                       side="front"
                       showHeader={!card.slot.isContinuation}
                       layout={card.slot.front.layout}
@@ -170,6 +171,7 @@ function BackFace({ card, template }: { card: TwoUpCard; template: RecipePrintTe
       recipe={card.slot.recipe}
       ingredients={back.ingredients}
       instructions={back.instructions}
+      tail={back.tail}
       side="back"
       showHeader={false}
       layout={back.layout}

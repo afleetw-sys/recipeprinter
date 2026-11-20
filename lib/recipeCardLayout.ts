@@ -1,6 +1,7 @@
 import { formatRecipeTime } from "@/lib/time";
 import { printableSourceUrl } from "@/lib/sourceUrl";
 import { stripRichText } from "@/lib/richText";
+import type { RecipeFieldId } from "@/lib/recipeFields";
 import type {
   CardSectionLayout,
   PrintCardSize,
@@ -137,6 +138,10 @@ interface SplitOptions {
   // at Normal; bigger type fits fewer characters per line AND fewer lines, so
   // a budget shrinks by the square (see `budgetScale`).
   fontScale?: number;
+  // What prints after the steps (lib/recipeFields.tsx `tailFields`). The
+  // budget doesn't count it: it starts on the last face and the measurer moves
+  // it on when it doesn't fit, as it does any line the guess got wrong.
+  tail?: RecipeFieldId[];
 }
 
 /** What a text-cost budget is worth at this text size: fewer characters per
@@ -724,6 +729,13 @@ export interface RecipeFace {
   instructions: Recipe["instructions"];
   layout: CardSectionLayout;
   /**
+   * What prints after the steps on this face (lib/recipeFields.tsx
+   * `tailFields`): whole blocks, never split. Absent or empty on every face
+   * of a recipe whose theme shows nothing there, which is the split exactly
+   * as it was before.
+   */
+  tail?: RecipeFieldId[];
+  /**
    * Shrink-to-fit factor for this face's content, 1 = unscaled. Set only by
    * the measurement pass, and only for a face that pagination genuinely
    * cannot rescue: one whose remaining content is a single unbreakable item
@@ -761,7 +773,11 @@ export type RecipeCardLineTarget =
 
 export type RecipeCardEditTarget =
   | { kind: "title" }
+  /** The website's description and the cook's note as one paragraph
+      (a cookbook page's headnote, lib/recipeNote.ts). */
   | { kind: "description" }
+  /** One field on its own (lib/recipeFields.tsx). */
+  | { kind: "field"; field: RecipeFieldId }
   | { kind: "cookTime" }
   | { kind: "servings" }
   | { kind: "image" }
@@ -1143,11 +1159,15 @@ export function getRecipeFaces(
     split.backLayout,
     budgetScale(options?.fontScale),
   );
-  const pages = [front, ...continuations];
+  const pages: RecipeFace[] = [front, ...continuations];
+  if (options?.tail?.length) {
+    const last = pages.length - 1;
+    pages[last] = { ...pages[last], tail: options.tail };
+  }
   const hasBack = continuations.length > 0;
   return {
-    front,
-    back: continuations[0] ?? null,
+    front: pages[0],
+    back: pages[1] ?? null,
     pages,
     hasBack,
   };

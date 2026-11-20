@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
+import type { Recipe } from "@/types/recipe";
 
 /**
  * A recipe is made of fields, and a theme decides which of them show and where.
@@ -23,15 +24,26 @@ import { createContext, useContext, type ReactNode } from "react";
  * become two fields: the description under the title, the note after the steps.
  */
 
-/** The fields a cook can show or hide, theme by theme. */
+/**
+ * The fields a cook can show or hide, theme by theme: what each is called, the
+ * label it prints with (none for the two paragraphs), and its value on a
+ * recipe. Where each goes is the theme's (`headerParts`, `tailFields`).
+ */
 export const RECIPE_FIELDS = {
-  description: { name: "Description" },
-  contributor: { name: "Contributor" },
-  category: { name: "Category" },
-  note: { name: "Notes" },
+  description: { name: "Description", label: null, read: (recipe: Recipe) => recipe.description },
+  contributor: { name: "Contributor", label: "Contributor", read: (recipe: Recipe) => recipe.contributor },
+  category: { name: "Category", label: "Category", read: (recipe: Recipe) => recipe.category },
+  note: { name: "Notes", label: "Notes", read: (recipe: Recipe) => recipe.note },
 } as const;
 
 export type RecipeFieldId = keyof typeof RECIPE_FIELDS;
+
+/** A field's printable value, or "" when it has none (an empty field never
+    prints). */
+export function fieldValue(recipe: Recipe, id: RecipeFieldId): string {
+  const value = RECIPE_FIELDS[id].read(recipe);
+  return value?.trim() ? value : "";
+}
 
 export const RECIPE_FIELD_IDS = Object.keys(RECIPE_FIELDS) as RecipeFieldId[];
 
@@ -66,12 +78,45 @@ export function fieldShown(switches: FieldSwitches | undefined, id: RecipeFieldI
   return cookbook && (id === "description" || id === "note");
 }
 
-/** The header's parts, top to bottom. */
-export type HeaderPart = "title" | "headnote" | "details" | "source";
+/**
+ * The header's parts, top to bottom. `byline` is Contributor and Category, one
+ * labelled fact each, under the time and servings. A part only holds what the
+ * theme shows, and the card skips one with nothing in it.
+ */
+export type HeaderPart = "title" | "headnote" | "description" | "details" | "byline" | "source";
 
 export function headerParts(switches: FieldSwitches | undefined, cookbook: boolean): HeaderPart[] {
-  if (!cookbook) return ["title", "details"];
-  return usesHeadnote(switches, cookbook) ? ["title", "headnote", "details", "source"] : ["title", "details", "source"];
+  if (usesHeadnote(switches, cookbook)) return ["title", "headnote", "details", "source"];
+  const shown = (id: RecipeFieldId) => fieldShown(switches, id, cookbook);
+  const parts: HeaderPart[] = ["title"];
+  if (shown("description")) parts.push("description");
+  parts.push("details");
+  if (shown("contributor") || shown("category")) parts.push("byline");
+  if (cookbook) parts.push("source");
+  return parts;
+}
+
+/** The byline's fields this theme shows, in order. */
+export function bylineFields(switches: FieldSwitches | undefined, cookbook: boolean): RecipeFieldId[] {
+  return (["contributor", "category"] as const).filter((id) => fieldShown(switches, id, cookbook));
+}
+
+/**
+ * What prints after the steps, in order: today only the cook's note, when the
+ * theme shows Notes on its own and this recipe has one. Each entry is one
+ * unbreakable block that the page split moves whole (lib/recipeCardLayout.ts,
+ * components/RecipeFaceMeasurer.tsx), so an empty list is the split as it
+ * always was.
+ */
+export function tailFields(recipe: Recipe, switches: FieldSwitches | undefined, cookbook: boolean): RecipeFieldId[] {
+  if (usesHeadnote(switches, cookbook) || !fieldShown(switches, "note", cookbook)) return [];
+  return fieldValue(recipe, "note") ? ["note"] : [];
+}
+
+/** The switches as a key for measured pages: a page measured with Notes at the
+    foot is a different page from one measured without. */
+export function fieldsKey(switches: FieldSwitches | undefined): string {
+  return RECIPE_FIELD_IDS.map((id) => (switches?.[id] === undefined ? "-" : switches[id] ? "1" : "0")).join("");
 }
 
 const RecipeFieldsContext = createContext<FieldSwitches | undefined>(undefined);

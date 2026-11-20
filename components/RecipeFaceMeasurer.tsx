@@ -13,6 +13,7 @@ import {
   INGREDIENT_ITEM_SELECTOR,
   INSTRUCTION_ITEM_SELECTOR,
   OVERFLOW_TOLERANCE_PX,
+  TAIL_ITEM_SELECTOR,
   blankStackedFace,
   colsOverflowPx,
   faceMeasureDetail,
@@ -22,6 +23,7 @@ import {
 } from "@/lib/faceMeasure";
 import { fontScaleVars, type FontScale } from "@/lib/fontScale";
 import { photoScaleVars, type PhotoScale } from "@/lib/photoScale";
+import type { RecipeFieldId } from "@/lib/recipeFields";
 import type { Recipe } from "@/types/recipe";
 
 // getRecipeFaces' character-count budget is a guess, not a measurement, so it
@@ -88,10 +90,17 @@ function minContentScale(fontScale: number | undefined): number {
 // the biggest type on the card, so even at this floor it is still a heading.
 const MIN_TITLE_FIT = 0.6;
 
+type FlowKind = "instructions" | "ingredients" | "tail";
+
 interface PopResult {
   shrunk: RecipeFace;
-  kind: "instructions" | "ingredients";
-  items: Recipe["instructions"] | Recipe["ingredients"];
+  kind: FlowKind;
+  items: Recipe["instructions"] | Recipe["ingredients"] | RecipeFieldId[];
+}
+
+/** Everything on a face that pagination moves: its lines and its tail. */
+function itemCount(face: RecipeFace): number {
+  return face.ingredients.length + face.instructions.length + (face.tail?.length ?? 0);
 }
 
 // Pops however many trailing items are actually needed to clear `overflowPx`,
@@ -99,6 +108,23 @@ interface PopResult {
 // mix (one long step among short ones) resolves in one step instead of
 // needing repeated one-item-at-a-time correction passes.
 function popTrailingItems(face: RecipeFace, overflowPx: number, cardEl: HTMLElement): PopResult | null {
+  // What prints after the steps goes first: it is the bottom of the face.
+  const tail = face.tail ?? [];
+  if (tail.length > 0) {
+    const heights = realItemHeights(cardEl, TAIL_ITEM_SELECTOR);
+    let cleared = 0;
+    let popCount = 0;
+    for (let i = heights.length - 1; i >= 0 && cleared < overflowPx; i--) {
+      cleared += heights[i] || 0;
+      popCount += 1;
+    }
+    popCount = Math.min(tail.length, Math.max(1, popCount));
+    return {
+      shrunk: { ...face, tail: tail.slice(0, tail.length - popCount) },
+      kind: "tail",
+      items: tail.slice(tail.length - popCount),
+    };
+  }
   const useInstructions = face.instructions.length > 0;
   const useIngredients = !useInstructions && face.ingredients.length > 0;
   if (!useInstructions && !useIngredients) return null;
@@ -127,9 +153,12 @@ function popTrailingItems(face: RecipeFace, overflowPx: number, cardEl: HTMLElem
 
 function prependItems(
   face: RecipeFace,
-  kind: "instructions" | "ingredients",
-  items: Recipe["instructions"] | Recipe["ingredients"],
+  kind: FlowKind,
+  items: Recipe["instructions"] | Recipe["ingredients"] | RecipeFieldId[],
 ): RecipeFace {
+  if (kind === "tail") {
+    return { ...face, tail: [...(items as RecipeFieldId[]), ...(face.tail ?? [])] };
+  }
   if (kind === "instructions") {
     return { ...face, instructions: [...(items as Recipe["instructions"]), ...face.instructions] };
   }
@@ -212,6 +241,18 @@ function pullLeadingItems(face: RecipeFace, nextFace: RecipeFace, slackPx: numbe
     };
   }
 
+  // The tail comes after every line, so it moves up only once the next face
+  // has nothing else left to give.
+  const nextTail = nextFace.tail ?? [];
+  if (nextTail.length > 0 && nextFace.ingredients.length === 0 && nextFace.instructions.length === 0) {
+    const taken = takeLeadingItems(nextTail, slackPx, realItemHeights(nextCardEl, TAIL_ITEM_SELECTOR));
+    if (taken.length === 0) return null;
+    return {
+      grown: { ...face, tail: [...(face.tail ?? []), ...taken] },
+      shrunkNext: { ...nextFace, tail: nextTail.slice(taken.length) },
+    };
+  }
+
   return null;
 }
 
@@ -229,6 +270,7 @@ export function RecipeFaceMeasurer({
   floorScale,
   photoScale,
   forceStacked = false,
+  tail,
   onSettled,
 }: {
   recipe: Recipe;
@@ -261,11 +303,23 @@ export function RecipeFaceMeasurer({
   photoScale?: PhotoScale;
   /** Customize theme's Stacked layout: never start side by side. */
   forceStacked?: boolean;
+  /** What prints after the steps (lib/recipeFields.tsx `tailFields`). */
+  tail?: RecipeFieldId[];
   onSettled: (pages: RecipeFace[]) => void;
 }) {
+  // By value: a caller's fresh array each render must not restart the pass.
+  const tailKey = tail?.join(",") ?? "";
   const initialPages = useMemo(
-    () => getRecipeFaces(recipe, size, { hasPhoto, showSourceUrl, template, fontScale: budgetScale ?? fontScale, forceStacked }).pages,
-    [recipe, size, template, hasPhoto, showSourceUrl, fontScale, budgetScale, forceStacked],
+    () =>
+      getRecipeFaces(recipe, size, {
+        hasPhoto,
+        showSourceUrl,
+        template,
+        fontScale: budgetScale ?? fontScale,
+        forceStacked,
+        tail: tailKey ? (tailKey.split(",") as RecipeFieldId[]) : undefined,
+      }).pages,
+    [recipe, size, template, hasPhoto, showSourceUrl, fontScale, budgetScale, forceStacked, tailKey],
   );
 
   const [pages, setPages] = useState<RecipeFace[]>(initialPages);
@@ -433,7 +487,10 @@ export function RecipeFaceMeasurer({
       anyOverflow = true;
 
       const page = next[i];
-      if (page.layout === "standard") {
+      // A side-by-side front whose lines fit and whose tail doesn't keeps its
+      // columns: the tail moves on (the pop below) rather than the recipe
+      // starting over stacked.
+      if (page.layout === "standard" && !page.tail?.length) {
         // The side-by-side front doesn't actually fit after all. Start over
         // with the stacked layout the rest of the split logic already uses
         // whenever anything spills past the front, instead of trying to
@@ -453,7 +510,7 @@ export function RecipeFaceMeasurer({
       // faster than its size (fewer lines as well as shorter ones), so the
       // square root of the shortfall is a first step that lands near, not far
       // under; the next pass measures again and takes another if it must.
-      if (i === 0 && page.ingredients.length + page.instructions.length === 0) {
+      if (i === 0 && itemCount(page) === 0) {
         const titleHeight = cardEl.querySelector(".recipe-card__title")?.getBoundingClientRect().height ?? 0;
         if (titleHeight > 0) {
           const needed = Math.sqrt(Math.max(0, titleHeight - overflowPx) / titleHeight) * 0.98;
@@ -470,9 +527,25 @@ export function RecipeFaceMeasurer({
       // pagination cannot win: popping it would empty this face and hand the
       // same item to the next one, where it overflows identically — the loop
       // would shuffle it forward forever. Shrink it to fit instead.
-      if (page.ingredients.length + page.instructions.length === 1) {
+      if (itemCount(page) === 1) {
         const { availableHeightPx } = faceMeasureDetail(cardEl);
         const contentHeight = availableHeightPx + overflowPx;
+        // Except on the front. Its header takes room no later face gives up,
+        // so once its one line is down to the smallest type and still doesn't
+        // fit beside the header (a description and a byline under a photo on
+        // a 6x4), or the header leaves it no room at all, the line moves on to
+        // the next face, which has the whole card, and the front keeps its
+        // header. Only a face that would otherwise settle clipped gets here.
+        const atFloor = (page.contentScale ?? 1) <= minContentScale(floorScale ?? fontScale) + 0.001;
+        if (i === 0 && (atFloor || availableHeightPx <= 0)) {
+          const popped = popTrailingItems(page, overflowPx, cardEl);
+          if (popped) {
+            next[i] = { ...popped.shrunk, contentScale: undefined };
+            next[i + 1] = prependItems(next[i + 1] ?? blankStackedFace(), popped.kind, popped.items);
+            changed = true;
+            continue;
+          }
+        }
         if (availableHeightPx > 0 && contentHeight > 0) {
           // 0.98 so it lands just inside the edge rather than exactly on it.
           // The square root because the shrunk block is also laid out wider
@@ -501,7 +574,16 @@ export function RecipeFaceMeasurer({
     }
 
     if (restartStacked) {
-      setPages(getRecipeFaces(recipe, size, { hasPhoto, showSourceUrl, template, fontScale: budgetScale ?? fontScale, forceStacked: true }).pages);
+      setPages(
+        getRecipeFaces(recipe, size, {
+          hasPhoto,
+          showSourceUrl,
+          template,
+          fontScale: budgetScale ?? fontScale,
+          forceStacked: true,
+          tail: tailKey ? (tailKey.split(",") as RecipeFieldId[]) : undefined,
+        }).pages,
+      );
       return;
     }
 
@@ -604,6 +686,7 @@ export function RecipeFaceMeasurer({
               recipe={recipe}
               ingredients={page.ingredients}
               instructions={page.instructions}
+              tail={page.tail}
               side={i === 0 ? "front" : "back"}
               showHeader={i === 0}
               layout={page.layout}

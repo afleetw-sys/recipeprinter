@@ -213,6 +213,14 @@ export function applyRecipeTargetEdit(
       note: split.note,
     });
   }
+  if (target.kind === "field") {
+    // One field on its own (lib/recipeFields.tsx). The description and the
+    // note keep their lines and formatting; a contributor or category is one
+    // line. Emptied, the field is gone from the recipe and so from the card.
+    const multiline = target.field === "description" || target.field === "note";
+    const stored = multiline ? (value.trim() ? value : undefined) : trimmed || undefined;
+    return printableRecipe({ ...recipe, [target.field]: stored });
+  }
   if (target.kind === "cookTime") {
     // The card shows ONE time, read as `totalTime || cookTime || prepTime`. What
     // is typed replaces the first two, which is enough to win that read. Emptying

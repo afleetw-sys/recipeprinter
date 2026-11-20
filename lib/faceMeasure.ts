@@ -10,13 +10,15 @@ export const OVERFLOW_TOLERANCE_PX = 1;
 
 export const INGREDIENT_ITEM_SELECTOR = ".recipe-card__ingredients li";
 export const INSTRUCTION_ITEM_SELECTOR = ".recipe-card__method li";
+/** A block after the steps (`RecipeFace.tail`), moved whole like a step. */
+export const TAIL_ITEM_SELECTOR = ".recipe-card__tail-item";
 
 export function blankStackedFace(): RecipeFace {
   return { ingredients: [], instructions: [], layout: "stacked" };
 }
 
 export function isEmptyFace(face: RecipeFace): boolean {
-  return face.ingredients.length === 0 && face.instructions.length === 0;
+  return face.ingredients.length === 0 && face.instructions.length === 0 && !face.tail?.length;
 }
 
 // Positive = overflowing by this many px, negative = this much real slack.
@@ -54,7 +56,7 @@ export function isEmptyFace(face: RecipeFace): boolean {
 // Measuring the leaves reads the true content bottom regardless of how the
 // flex boxes around them are sized.
 const CONTENT_LEAF_SELECTOR =
-  ".recipe-card__ingredients li, .recipe-card__method li, .recipe-card__label, .recipe-card__section-title";
+  ".recipe-card__ingredients li, .recipe-card__method li, .recipe-card__label, .recipe-card__section-title, .recipe-card__tail-item";
 
 // `useWideColumns` measures its chunks by rendering a hidden copy of every
 // item into `.recipe-card__section-groups--probe` (absolutely positioned at
@@ -246,7 +248,7 @@ export function faceMeasureDetail(cardEl: HTMLElement): FaceMeasureDetail {
   }
   const ingredientHeights = realItemHeights(cardEl, INGREDIENT_ITEM_SELECTOR);
   const instructionHeights = realItemHeights(cardEl, INSTRUCTION_ITEM_SELECTOR);
-  const itemHeights = [...ingredientHeights, ...instructionHeights];
+  const itemHeights = [...ingredientHeights, ...instructionHeights, ...realItemHeights(cardEl, TAIL_ITEM_SELECTOR)];
   const tallestItemPx = itemHeights.reduce((max, h) => Math.max(max, h), 0);
   // Ingredients always precede instructions in the flow, so the face's first
   // line is its first ingredient when it has any, else its first step.

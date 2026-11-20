@@ -1063,6 +1063,7 @@ export default function PrintPage() {
     fontScale,
     photoScale,
     stacked,
+    fieldSwitches,
     pageLooks: projectMeta.meta.pageLooks,
     // The preview page IS the book's real sheet, and so is the card every
     // recipe is measured against (see `presetCardDims`).

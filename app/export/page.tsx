@@ -480,6 +480,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     fontScale,
     photoScale,
     stacked: look.stacked,
+    fieldSwitches: look.fields,
     pageLooks,
     // The book's real page — what every recipe is measured against, and what
     // the preview draws too, so the two cannot disagree.
