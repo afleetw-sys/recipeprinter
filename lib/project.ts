@@ -17,13 +17,8 @@ import type {
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
 import { normalizePageLooks, withElementStyle, type ElementStyle, type PageLooks } from "@/lib/pageLooks";
-import {
-  META_RECOVERY_OWNER_KEY,
-  recoveryMirrorsAgree,
-  stampRecoveryOwner,
-} from "@/lib/recoveryMirror";
-import { adoptDurableWorkingBase } from "@/lib/workingBase";
-import { localStore, sessionStore } from "@/lib/storage";
+import { sessionStore } from "@/lib/storage";
+import { META_SESSION_KEY, recoverWorkingDraft, saveWorkingDraft } from "@/lib/workingDraft";
 import { blobUrlsIn, reviveLocalPhotoUrls, withRevivedUrls } from "@/lib/localPhotos";
 
 // The section/cover layer is purely organizational — which section each
@@ -39,11 +34,9 @@ import { blobUrlsIn, reviveLocalPhotoUrls, withRevivedUrls } from "@/lib/localPh
 // default name instead of a field this store would have to own and no one
 // could ever change.
 
-export const PROJECT_META_STORAGE_KEY = "recipeprinter:project-meta:v1";
-// Durable backup of the section/cover metadata, mirroring lib/queue.ts: the
-// session copy is wiped on tab close, so this localStorage copy lets a reopened
-// tab restore the in-progress book structure alongside its recipes.
-const PROJECT_META_RECOVERY_STORAGE_KEY = "recipeprinter:project-meta:recovery:v1";
+export const PROJECT_META_STORAGE_KEY = META_SESSION_KEY;
+// The session copy is wiped on tab close, so every write is also backed up to
+// the device together with the recipes, as one snapshot (lib/workingDraft).
 
 /** Book-wide default treatment for recipe photos (cookbook mode):
     - `none` — no recipe photos anywhere;
@@ -454,37 +447,10 @@ export function readMeta(): ProjectMeta {
       // Fall through to storage.
     }
   }
-  // Per-tab session copy wins; fall back to the durable mirror to restore a
-  // reopened tab, reseeding this tab's session from it (see lib/queue.ts).
-  let parsed = sessionStore.getJson<ProjectMeta>(PROJECT_META_STORAGE_KEY);
-  if (parsed === null) {
-    /**
-     * …but only when it belongs to the recipes being recovered alongside it.
-     *
-     * The recipes are mirrored under their own key on their own throttle, so
-     * with two tabs open the two mirrors are simply the last write to each and
-     * can be from different books. This is the half that has to give way: a
-     * meta carries `projectId`, and recovering one book's identity on top of
-     * another book's recipes points the reattach check — and the autosave
-     * behind it — at a saved document these recipes do not belong to.
-     *
-     * Dropping it costs a cover and some chapter names that describe recipes
-     * this tab does not have anyway, and the tab those came from still holds
-     * them live and files them to the shelf on its way out. What survives is
-     * the recipes, under a fresh identity, which is the outcome where nothing
-     * is overwritten. See lib/recoveryMirror.
-     */
-    const recovered = recoveryMirrorsAgree()
-      ? localStore.getJson<ProjectMeta>(PROJECT_META_RECOVERY_STORAGE_KEY)
-      : null;
-    if (recovered !== null) {
-      parsed = recovered;
-      sessionStore.setJson(PROJECT_META_STORAGE_KEY, recovered);
-      // The saved version this book structure was edited from travels with it
-      // (lib/workingBase), so a reopen can tell unsaved edits from stale ones.
-      adoptDurableWorkingBase(recovered.projectId);
-    }
-  }
+  // Per-tab session copy wins. A fresh tab first fills it, the recipes beside
+  // it and the saved version it was edited from, from the device's one snapshot.
+  recoverWorkingDraft();
+  const parsed = sessionStore.getJson<ProjectMeta>(PROJECT_META_STORAGE_KEY);
   return normalizeProjectMeta(parsed);
 }
 
@@ -500,7 +466,7 @@ export function readMeta(): ProjectMeta {
 // Deliberately a "schedule on first write, land on the timer" throttle rather
 // than a resetting debounce: continuous typing must not be able to starve the
 // write indefinitely, so nothing is ever more than this far from persisted. The
-// window is short on purpose — this mirror is what protects an unsaved book
+// window is short on purpose — the device snapshot is what protects an unsaved book
 // from a tab close, and `flushMetaWrites` covers the orderly teardown paths
 // exactly (see the hook's pagehide/visibilitychange effect).
 const META_PERSIST_DEBOUNCE_MS = 250;
@@ -519,11 +485,7 @@ function flushMetaWrites() {
   if (serialized === null) return;
   // Survivable if either fails: meta stays correct in memory for this page.
   sessionStore.set(PROJECT_META_STORAGE_KEY, serialized);
-  // Mirror to the durable backup so book structure survives a tab close.
-  const mirrored = localStore.set(PROJECT_META_RECOVERY_STORAGE_KEY, serialized);
-  // Stamped with this tab, so a reopened one can tell whether these chapters
-  // describe the recipes it is recovering beside them — see `readMeta`.
-  if (mirrored) stampRecoveryOwner(META_RECOVERY_OWNER_KEY);
+  saveWorkingDraft();
 }
 
 function writeMeta(meta: ProjectMeta) {

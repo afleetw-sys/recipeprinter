@@ -1,5 +1,5 @@
-import { localStore, sessionStore } from "@/lib/storage";
-import { META_RECOVERY_OWNER_KEY, stampRecoveryOwner } from "@/lib/recoveryMirror";
+import { sessionStore } from "@/lib/storage";
+import { BASE_SESSION_KEY, saveWorkingDraft } from "@/lib/workingDraft";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Which saved version the working copy was last in step with.
@@ -17,12 +17,11 @@ import { META_RECOVERY_OWNER_KEY, stampRecoveryOwner } from "@/lib/recoveryMirro
 // be written over it. This records that base: the project's id and the account
 // revision the working copy was loaded as or last saved as.
 //
-// Kept beside the working copy on the same terms as the mirrors themselves:
-// per tab in sessionStorage, and durably in localStorage stamped with the tab
-// that wrote it, so a reopened tab only adopts a base written by the same tab
-// as the book structure it is recovering (see lib/recoveryMirror). Without
-// that, two tabs on one book could pair one tab's stale edits with the other
-// tab's newer revision, and the stale edits would pass for the newer save.
+// Kept beside the working copy on the same terms: per tab in sessionStorage,
+// and on the device inside the same one snapshot as the recipes and the book
+// (lib/workingDraft), so a reopened tab gets back the base that belongs to the
+// very copy it recovers. Two tabs on one book can never pair one tab's stale
+// edits with the other tab's newer revision.
 //
 // It also says whether the working copy has edits the account hasn't received.
 // Only such a copy carries its base revision onto the device shelf, which is
@@ -34,8 +33,7 @@ import { META_RECOVERY_OWNER_KEY, stampRecoveryOwner } from "@/lib/recoveryMirro
 // meta, so a field every save updates would make every save look like an edit.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const WORKING_BASE_KEY = "recipeprinter:working-base:v1";
-const WORKING_BASE_OWNER_KEY = "recipeprinter:working-base:owner:v1";
+const WORKING_BASE_KEY = BASE_SESSION_KEY;
 
 interface WorkingBase {
   projectId: string;
@@ -51,7 +49,7 @@ function isWorkingBase(value: unknown): value is WorkingBase {
 
 function writeWorkingBase(base: WorkingBase): void {
   sessionStore.setJson(WORKING_BASE_KEY, base);
-  if (localStore.setJson(WORKING_BASE_KEY, base)) stampRecoveryOwner(WORKING_BASE_OWNER_KEY);
+  saveWorkingDraft();
 }
 
 /** The working copy is now in step with `revision` of `projectId` on the account. */
@@ -70,6 +68,7 @@ export function markWorkingCopyEdited(): void {
 /** The working copy has no saved version behind it any more (a new project). */
 export function forgetWorkingBase(): void {
   sessionStore.remove(WORKING_BASE_KEY);
+  saveWorkingDraft();
 }
 
 /** The account revision this tab's working copy of `projectId` was edited
@@ -79,18 +78,4 @@ export function unsavedEditsBase(projectId: string | undefined): number | null {
   if (!projectId) return null;
   const base = sessionStore.getJson<WorkingBase>(WORKING_BASE_KEY);
   return isWorkingBase(base) && base.projectId === projectId && base.unsaved ? base.revision : null;
-}
-
-/**
- * Called by a fresh tab as it recovers the durable meta mirror for `projectId`.
- * Adopts the durable base only when the same tab wrote both, so the revision
- * describes the very book structure being recovered.
- */
-export function adoptDurableWorkingBase(projectId: string | undefined): void {
-  if (!projectId) return;
-  const base = localStore.getJson<WorkingBase>(WORKING_BASE_KEY);
-  if (!isWorkingBase(base) || base.projectId !== projectId) return;
-  const owner = localStore.get(WORKING_BASE_OWNER_KEY);
-  if (owner === null || owner !== localStore.get(META_RECOVERY_OWNER_KEY)) return;
-  sessionStore.setJson(WORKING_BASE_KEY, base);
 }

@@ -15,8 +15,8 @@ import { hostnameOf as rawHostnameOf } from "@/lib/url";
 import { uid } from "@/lib/ids";
 import { deleteLocalPhoto, isBlobUrl, localPhotoUrls, reviveLocalPhotoUrls } from "@/lib/localPhotos";
 import { localProjectPhotoIds } from "@/lib/localProjects";
-import { QUEUE_RECOVERY_OWNER_KEY, stampRecoveryOwner } from "@/lib/recoveryMirror";
-import { localStore, sessionStore } from "@/lib/storage";
+import { sessionStore } from "@/lib/storage";
+import { QUEUE_SESSION_KEY, recoverWorkingDraft, saveWorkingDraft } from "@/lib/workingDraft";
 import { releaseImportPreview, setImportPreview } from "@/lib/importPreviews";
 import { fitBookRoom } from "@/lib/cookbookFreeSize";
 import { choiceLimit, needsChoice, readRecipeChoice, type RecipeChoice } from "@/lib/recipeChoice";
@@ -42,14 +42,12 @@ import { nextImportIndex, openImportTiming, takeImportTiming, type ImportTiming 
 
 // The print queue is session-based for the MVP, no accounts, no saved library.
 // It survives navigation to /print (same tab) via sessionStorage.
-export const QUEUE_STORAGE_KEY = "recipeprinter:queue:v1";
+export const QUEUE_STORAGE_KEY = QUEUE_SESSION_KEY;
 export const CURRENT_PRINT_JOB_STORAGE_KEY = "recipeprinter:print-job:current:v1";
-// Durable backup of the session queue. sessionStorage is wiped when the tab
-// closes; this localStorage mirror lets a reopened tab restore the in-progress
-// working set so a cook never loses an unsaved book/cards by closing the tab.
-// The session copy stays authoritative per-tab (two open tabs keep independent
-// live queues) — this mirror is only read to reseed a fresh tab that has none.
-const QUEUE_RECOVERY_STORAGE_KEY = "recipeprinter:queue:recovery:v1";
+// sessionStorage is wiped when the tab closes, so every write is also backed up
+// to the device, together with the book around these recipes, as one snapshot
+// a fresh tab restores (lib/workingDraft). The session copy stays the truth for
+// its own tab: two open tabs keep independent live queues.
 
 interface PrintJob {
   ids: string[];
@@ -99,15 +97,10 @@ export function readQueue(): QueueItem[] {
   // Land anything the throttle is still holding, so this reads the queue as it
   // actually is rather than as it was up to a quarter second ago.
   flushQueueWrites();
-  // The per-tab session copy is authoritative. Only when it's absent (a fresh
-  // tab, e.g. reopened after close) do we fall back to the durable localStorage
-  // mirror and reseed this tab's session from it.
-  let raw = sessionStore.get(QUEUE_STORAGE_KEY);
-  let recovered = false;
-  if (raw === null) {
-    raw = localStore.get(QUEUE_RECOVERY_STORAGE_KEY);
-    recovered = raw !== null;
-  }
+  // The per-tab session copy is authoritative. A fresh tab (one the phone
+  // threw away and reopened) first fills it from the device's snapshot.
+  recoverWorkingDraft();
+  const raw = sessionStore.get(QUEUE_STORAGE_KEY);
   if (raw === null) return [];
   let parsed: unknown;
   try {
@@ -116,23 +109,9 @@ export function readQueue(): QueueItem[] {
     return [];
   }
   if (!Array.isArray(parsed)) return [];
-  const sanitized = settleInterruptedParses(printableQueue(parsed as QueueItem[]));
   // A read stays pure: it never rewrites storage, even when sanitizing
-  // normalized a field — the next `commit` persists that. The one exception is
-  // recovery: a fresh tab reseeding from the durable mirror writes the set into
-  // this tab's own session (hydration itself doesn't persist).
-  if (recovered) {
-    const seeded = JSON.stringify(sanitized);
-    lastWrittenQueueJson = seeded;
-    // This tab's own session only. The durable mirror already holds these
-    // recipes, and rewriting it restamped it with THIS tab, so the meta mirror
-    // beside it (still stamped by the tab that wrote both) read as another
-    // tab's, and `readMeta` threw away the book's cover, chapters and identity.
-    // Whether that happened depended on which store hydrated first: /print got
-    // its book back, the home page filed the recipes under a brand-new id. The
-    // mirror is restamped by the first real edit, as before.
-    sessionStore.set(QUEUE_STORAGE_KEY, seeded);
-  }
+  // normalized a field. The next `commit` persists that.
+  const sanitized = settleInterruptedParses(printableQueue(parsed as QueueItem[]));
   return sanitized;
 }
 
@@ -186,34 +165,11 @@ function serializeQueue(items: QueueItem[]): string | null {
   }
 }
 
-let mirrorFailureWarned = false;
-
 function writeSerializedQueue(serialized: string) {
   // A failed write is survivable: the queue stays correct in memory for this
   // page, it just won't survive a navigation.
   sessionStore.set(QUEUE_STORAGE_KEY, serialized);
-  // Mirror to the durable backup so the working set survives a tab close.
-  // Best-effort like the session write — if localStorage is unavailable
-  // (private mode/quota) there's simply no cross-close recovery.
-  const mirrored = localStore.set(QUEUE_RECOVERY_STORAGE_KEY, serialized);
-  // Say which tab this mirror belongs to. Two tabs write this key on unrelated
-  // timers, and the project metadata is mirrored separately — so without the
-  // stamp a reopened tab can pair THESE recipes with ANOTHER book's identity.
-  // See lib/recoveryMirror.
-  if (mirrored) stampRecoveryOwner(QUEUE_RECOVERY_OWNER_KEY);
-  // `localStore.set` returns false rather than throwing, and this discarded it.
-  // The failure that matters is quota: the device shelf holds up to 40 whole
-  // projects in the same origin, so a heavy account can fill it — and from that
-  // moment the durable mirror silently stopped updating, with the working set
-  // lost on the next tab close and nothing anywhere saying so. Once per page,
-  // because a full origin fails on every write and a warning per keystroke is
-  // its own kind of useless.
-  if (!mirrored && !mirrorFailureWarned) {
-    mirrorFailureWarned = true;
-    console.warn(
-      "RecipePrinter: the durable queue mirror could not be written (storage full or unavailable) — work in this tab will not survive closing it",
-    );
-  }
+  saveWorkingDraft();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
