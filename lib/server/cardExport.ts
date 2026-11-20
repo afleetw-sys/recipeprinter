@@ -8,6 +8,7 @@ import { RECIPEPRINTER_PRO_ENTITLEMENT_ID } from "@/lib/proProduct";
 import type { ProLockReason } from "@/lib/recipePrinterPurchases";
 import { DEFAULT_FONT_SCALE, normalizeFontScale } from "@/lib/fontScale";
 import { DEFAULT_PHOTO_SCALE, normalizePhotoScale } from "@/lib/photoScale";
+import { isCustomized, lookFor, normalizeThemeLooks } from "@/lib/themeLooks";
 import type { ExportOutput, ExportPayload } from "@/types/export";
 import type { PrintCardSize, QueueItem, RecipePrintTemplate, Section } from "@/types/recipe";
 
@@ -85,14 +86,18 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
 
   const fontScale = normalizeFontScale(settings.fontScale);
   const photoScale = normalizePhotoScale(settings.photoScale);
+  // Every theme's look (accent, layout, divider), as the cook set it up.
+  const themeLooks = normalizeThemeLooks(settings.themeLooks, { fontScale });
 
   const pro = entitlements.includes(RECIPEPRINTER_PRO_ENTITLEMENT_ID);
   const ownsTheme = isPremiumTemplate(template) && entitlements.includes(entitlementForTemplate(template) ?? "");
   const reasons: ProLockReason[] = [];
   if (isPremiumTemplate(template) && !pro && !ownsTheme) reasons.push("theme");
   if (isProOnlyCardSize(cardSize) && !pro) reasons.push("card_size");
-  // Text and photo size are both Customize settings, Pro on a card.
-  if ((fontScale !== DEFAULT_FONT_SCALE || photoScale !== DEFAULT_PHOTO_SCALE) && !pro) reasons.push("font_size");
+  // Everything in Customize theme is Pro on a card.
+  const customized =
+    fontScale !== DEFAULT_FONT_SCALE || photoScale !== DEFAULT_PHOTO_SCALE || isCustomized(lookFor(themeLooks, template));
+  if (customized && !pro) reasons.push("font_size");
   if (recipeCount > 1 && !pro) reasons.push("multi_recipe");
   if (reasons.length > 0) return { ok: false, kind: "locked", reasons };
 
@@ -124,6 +129,7 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
           showCutLines: Boolean(settings.showCutLines),
           fontScale,
           photoScale,
+          themeLooks,
           cookbookMode: false,
         },
       },

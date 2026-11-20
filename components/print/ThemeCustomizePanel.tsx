@@ -22,6 +22,7 @@ import {
   type SupperUtensil,
 } from "@/lib/themeAccent";
 import { MenuSelect } from "@/components/MenuSelect";
+import { SegmentedControl } from "@/components/Controls";
 import type { RecipePrintTemplate } from "@/types/recipe";
 
 /**
@@ -48,6 +49,10 @@ export function ThemeCustomizePanel({
   setPosterColor,
   utensil,
   setUtensil,
+  stacked,
+  setStacked,
+  divider,
+  setDivider,
   template,
   customized,
   onReset,
@@ -73,6 +78,13 @@ export function ThemeCustomizePanel({
   /** Supper's utensil for every recipe, null while they take turns. */
   utensil: SupperUtensil | null;
   setUtensil: (value: SupperUtensil | null) => void;
+  /** Ingredients above the steps on every recipe, rather than side by side
+      whenever a recipe fits on one page (lib/themeLooks.ts). */
+  stacked: boolean;
+  setStacked: (value: boolean) => void;
+  /** A line between a recipe's groups ("For the sauce", "For the dough"). */
+  divider: boolean;
+  setDivider: (value: boolean) => void;
   /** Which theme, for its own colors and art choices. */
   template: RecipePrintTemplate;
   /** Whether this theme differs from how it ships. */
@@ -147,6 +159,33 @@ export function ThemeCustomizePanel({
         </div>
       )}
 
+      <ChoiceControl
+        label="Layout"
+        options={[
+          { id: "auto", label: "Automatic" },
+          { id: "stacked", label: "Stacked" },
+        ]}
+        value={stacked ? "stacked" : "auto"}
+        onChange={(value) => setStacked(value === "stacked")}
+        proMarked={proMarked && stacked}
+        proTooltip="The stacked layout is Pro"
+      />
+      {/* Only for a recipe in groups ("For the sauce"), which is all it
+          draws on. Kept while on, so it can always be turned back off. */}
+      {(divider || recipeGroupsDrawn()) && (
+        <ChoiceControl
+          label="Section dividers"
+          options={[
+            { id: "none", label: "None" },
+            { id: "line", label: "Line" },
+          ]}
+          value={divider ? "line" : "none"}
+          onChange={(value) => setDivider(value === "line")}
+          proMarked={proMarked && divider}
+          proTooltip="Section dividers are Pro"
+        />
+      )}
+
       <TextSizeControl fontScale={fontScale} setFontScale={setFontScale} proMarked={proMarked} />
 
       {setRecipePartSize && (
@@ -186,6 +225,51 @@ export function ThemeCustomizePanel({
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Whether some recipe page draws a group heading ("For the sauce"), read off
+    the page the way Fine-tune sizes reads which parts it has. */
+function recipeGroupsDrawn(): boolean {
+  if (typeof document === "undefined") return false;
+  return Boolean(
+    document.querySelector(".recipe-page-canvas .recipe-card__section-title"),
+  );
+}
+
+/**
+ * A pick between a few named choices, the theme's own first. Layout's
+ * Automatic puts ingredients beside the steps when the whole recipe fits on
+ * its page and above them when it doesn't; Stacked always puts them above.
+ */
+function ChoiceControl<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+  proMarked,
+  proTooltip,
+}: {
+  label: string;
+  options: Array<{ id: T; label: string }>;
+  value: T;
+  onChange: (value: T) => void;
+  /** Crown the choice made: true only off the theme's own. */
+  proMarked: boolean;
+  proTooltip: string;
+}) {
+  return (
+    <div className="recipe-config-section">
+      <div className="recipe-text-size__head">
+        <span className="recipe-config-label">{label}</span>
+        {proMarked && (
+          <span className="recipe-text-size__name">
+            <ProBadge variant="inline" label={false} tooltip={proTooltip} />
+          </span>
+        )}
+      </div>
+      <SegmentedControl label={label} options={options} value={value} onChange={onChange} />
     </div>
   );
 }
