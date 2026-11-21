@@ -53,7 +53,8 @@ export function AddLineMenu({
   /** "Add to this page" on a book page; none on a recipe, whose rows say
       what they are. */
   heading?: string | null;
-  lines: { name: string; restore: () => void }[];
+  /** `blank`: the recipe has nothing in this line yet, marked "+ Add". */
+  lines: { name: string; blank?: boolean; restore: () => void }[];
   page?: { name: string; add: () => void } | null;
   /** "Show on recipes": `scope` names what the switches apply to. */
   settings?: { scope: string; rows: FieldVisibilityRow[] } | null;
@@ -151,6 +152,14 @@ export function AddLineMenu({
                 }}
               >
                 <span className="add-line-menu__name">{line.name}</span>
+                {line.blank && (
+                  <span className="add-line-menu__add">
+                    {/* A heavier stroke than the toolbar's, so it holds its
+                        own at this size beside the word. */}
+                    <PlusIcon size={ICON_SIZE.xs} strokeWidth={2.5} />
+                    Add
+                  </span>
+                )}
               </button>
             ))}
             {/* Inside the scrolling list, so the list holds the panel's bottom

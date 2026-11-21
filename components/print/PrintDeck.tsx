@@ -28,6 +28,7 @@ import {
 } from "@/components/icons";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
+import { formatRecipeTime } from "@/lib/time";
 import { AddLineMenu, type FieldVisibilityRow } from "@/components/print/AddLineMenu";
 import { useHistoryFold } from "@/components/print/useHistoryFold";
 import { PhotoHoverHint } from "@/components/print/PhotoHoverHint";
@@ -42,6 +43,7 @@ import {
   RECIPE_FIELDS,
   fieldShown,
   fieldTicked,
+  fieldValue,
   type FieldSwitchId,
   type FieldSwitches,
   type RecipeFieldId,
@@ -243,6 +245,8 @@ interface PrintDeckProps {
   /** Recipe photos across the book, as "Show on recipes" switches them: the
       cards' photo setting, or a cookbook's photo style ("none" when off). */
   recipePhotos: { shown: boolean; set: (shown: boolean) => void };
+  /** Whether a recipe's photo is drawn, so the "+" marks Photo "Add" if not. */
+  recipeHasPhoto: (recipeId: string) => boolean;
   /** No multi-recipe entitlement and not a cookbook — the one recipe a Free
       cook can hold. Only then is the page toolbar's link toggle unambiguous:
       it reads as "this recipe's link" and IS this recipe's link, because
@@ -494,6 +498,7 @@ export function PrintDeck(props: PrintDeckProps) {
     fieldSwitches,
     setFieldShown,
     recipePhotos,
+    recipeHasPhoto,
     sheets,
     navItems,
     spreads,
@@ -700,7 +705,7 @@ export function PrintDeck(props: PrintDeckProps) {
       if (!showEmptyFields) toggleShowEmptyFields();
       focusFirstMissingField();
     };
-    const addableLines = (): { name: string; restore: () => void }[] => {
+    const addableLines = (): { name: string; blank?: boolean; restore: () => void }[] => {
       if (navItem.kind === "recipe") {
         const recipeId = navItem.recipeId;
         const recipe = items?.find((item) => item.id === recipeId)?.recipe;
@@ -714,19 +719,22 @@ export function PrintDeck(props: PrintDeckProps) {
         // ("Show on recipes", `fieldVisibility` below). On a cookbook page
         // still printing description and note as one paragraph, picking Notes
         // puts them at the foot.
-        type Line = { name: string; restore: () => void };
+        // A line with nothing in it yet says "+ Add" beside its name.
+        type Line = { name: string; blank?: boolean; restore: () => void };
         const field = (id: RecipeFieldId): Line => {
           const shown = fieldTicked(fieldSwitches, id, cookbook);
           return {
             name: RECIPE_LINE_NAMES[id],
+            blank: !fieldValue(recipe, id),
             restore: () => {
               if (!shown) setFieldShown(id, true, cookbook);
               addField(recipeId, id);
             },
           };
         };
-        const line = (id: "time" | "servings" | "ingredients" | "steps"): Line => ({
+        const line = (id: "time" | "servings" | "ingredients" | "steps", filled: boolean): Line => ({
           name: RECIPE_LINE_NAMES[id],
+          blank: !filled,
           restore: () => {
             if ((id === "time" || id === "servings") && !fieldShown(fieldSwitches, id, cookbook)) {
               setFieldShown(id, true, cookbook);
@@ -740,6 +748,7 @@ export function PrintDeck(props: PrintDeckProps) {
         const linkOn = recipeLinkOn(showSourceUrl, cookbook, projectMeta.meta.itemPlacements?.[recipeId]);
         const link: Line = {
           name: RECIPE_LINE_NAMES.link,
+          blank: !recipe.sourceUrl,
           restore: () => {
             if (recipe.sourceUrl && !linkOn) {
               if (cookbook) projectMeta.setItemPlacement(recipeId, { showSourceUrl: showSourceUrl ? undefined : true });
@@ -753,6 +762,7 @@ export function PrintDeck(props: PrintDeckProps) {
         const lines: Line[] = [
           {
             name: "Photo",
+            blank: !recipeHasPhoto(recipeId),
             restore: () => {
               if (!recipePhotos.shown) recipePhotos.set(true);
               openPhotoDialog(recipeId);
@@ -761,10 +771,10 @@ export function PrintDeck(props: PrintDeckProps) {
           field("description"),
           field("contributor"),
           field("category"),
-          line("time"),
-          line("servings"),
-          line("ingredients"),
-          line("steps"),
+          line("time", Boolean(formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime))),
+          line("servings", Boolean(recipe.servings ?? recipe.yield)),
+          line("ingredients", recipe.ingredients.length > 0),
+          line("steps", recipe.instructions.length > 0),
           field("note"),
           link,
         ];

@@ -591,6 +591,13 @@ export default function PrintPage() {
   const [railShake, setRailShake] = useState<{ recipeId: string; nonce: number } | null>(null);
   const queue = useQueue();
   const projectMeta = useProjectMeta();
+  // Whether a recipe has a photo the book draws, in its page or on the full
+  // page facing it. The page toolbar's "+" marks Photo "Add" when not.
+  const recipeHasPhoto = (recipeId: string) =>
+    Boolean(recipePhotoShown(recipeId)) &&
+    (cookbookMode
+      ? photoModeFor(recipeId) !== "none"
+      : (projectMeta.meta.itemPlacements?.[recipeId]?.showPhoto ?? showPhoto));
   // Which recipe fields the book shows, for every recipe in it whatever its
   // theme (lib/recipeFields.ts); switched in Recipe details' "Show on recipes".
   const fieldSwitches = projectMeta.meta.fieldSwitches;
@@ -7816,6 +7823,7 @@ export default function PrintPage() {
           showDescription={showDescription}
           fieldSwitches={fieldSwitches}
           setFieldShown={setFieldShown}
+          recipeHasPhoto={recipeHasPhoto}
           recipePhotos={{
             shown: cookbookMode ? photoStyle !== "none" : showPhoto,
             set: (shown) => (cookbookMode ? applyBookPhotoStyle(shown ? "card" : "none") : setAllShowPhoto(shown)),
