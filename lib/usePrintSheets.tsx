@@ -41,7 +41,7 @@ import {
   presetCardHeightIn,
   presetCardVars,
 } from "@/lib/cookbookPresets";
-import { sectionsWithBookPhotos } from "@/lib/bookPhotos";
+import { heroCrop, sectionsWithBookPhotos } from "@/lib/bookPhotos";
 import { RecipeFaceMeasurer } from "@/components/RecipeFaceMeasurer";
 import { fieldsKey, tailFields, type FieldSwitches } from "@/lib/recipeFields";
 import type {
@@ -1015,9 +1015,7 @@ export function usePrintSheets({
               recipeId: planSlot.itemId,
               label: entry.item.recipe.title || "Recipe",
               imageUrl: planSlot.heroImageUrl,
-              focusX: placement?.heroFocusX,
-              focusY: placement?.heroFocusY,
-              zoom: placement?.heroZoom,
+              ...heroCrop(placement, planSlot.heroImageUrl),
               queueIndex: entry.queueIndex,
             };
           }

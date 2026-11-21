@@ -6201,24 +6201,32 @@ export default function PrintPage() {
   /**
    * The photo a book of the cook's own photos shows for one recipe: picked
    * from the recipe's imported image, uploaded, or removed (`undefined`).
-   * Stored on the book, never on the recipe, so the imported image stays on
-   * offer in the picker. The photo being replaced joins the recipe's history,
-   * and picking one for a recipe showing none puts it in the page.
+   *
+   * Stored on the RECIPE, as a choice (`imageChosen`), so it follows the recipe
+   * into every format it is linked into: the cards printed from this book show
+   * the same photo. It used to be stored on the book (`placement.photoUrl`),
+   * which a recipe card never reads; a choice still kept there is cleared as
+   * this one replaces it. The photo being replaced, and the imported one,
+   * stay on offer in the picker through the recipe's photo history.
    */
   function chooseBookPhoto(recipeId: string, url: string | undefined) {
     const placement = projectMeta.meta.itemPlacements?.[recipeId];
     const item = items?.find((candidate) => candidate.id === recipeId);
-    const previous = item ? bookImageOf(item) : placement?.photoUrl;
-    if (url === previous) return;
+    const recipe = item?.recipe;
+    if (!item || !recipe) return;
+    const previous = bookImageOf(item);
+    if (url === previous && recipe.imageChosen) return;
+    queue.updateRecipe(recipeId, { ...recipe, image: url ?? "", imageChosen: true });
+    // Both the photo on the page and the one the recipe arrived with stay
+    // pickable, newest first, capped like every other photo history.
     const kept = placement?.photoHistory ?? [];
-    projectMeta.setItemPlacement(recipeId, {
-      // "" rather than nothing when the photo is removed, so a recipe imported
-      // from a photo doesn't fall back to showing it (see `bookRecipeImage`).
-      photoUrl: url ?? "",
-      ...(previous && !kept.includes(previous)
-        ? { photoHistory: [previous, ...kept.filter((entry) => entry !== url)].slice(0, 8) }
-        : {}),
-    });
+    const history = Array.from(
+      new Set([previous, recipe.image, ...kept].filter((entry): entry is string => Boolean(entry) && entry !== url)),
+    ).slice(0, 8);
+    const historyChanged = history.length !== kept.length || history.some((entry, index) => entry !== kept[index]);
+    if (placement?.photoUrl !== undefined || historyChanged) {
+      projectMeta.setItemPlacement(recipeId, { photoUrl: undefined, photoHistory: history.length ? history : undefined });
+    }
     if (url && photoModeFor(recipeId) === "none") projectMeta.setItemPhotoMode(recipeId, "card");
   }
   /**
@@ -6677,7 +6685,7 @@ export default function PrintPage() {
         onSelect={(url) =>
           ownPhotosOnly
             ? chooseBookPhoto(recipeId, url)
-            : updateRecipeAndRevealPhoto(recipeId, { ...recipe, image: url ?? "" })
+            : updateRecipeAndRevealPhoto(recipeId, { ...recipe, image: url ?? "", imageChosen: true })
         }
         // A cookbook page offers None / In page / Full page. A recipe card
         // has no facing page, so it offers None / In card: whether THIS card

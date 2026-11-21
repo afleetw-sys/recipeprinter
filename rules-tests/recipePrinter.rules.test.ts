@@ -671,3 +671,34 @@ describe("server-owned fields on the shared CookPilot user document", () => {
   });
 
 });
+
+describe("linked recipes", () => {
+  const path = "products/recipePrinter/users/owner/linkedRecipes/book_b1";
+  const record = {
+    recipe: { title: "Pie", ingredients: [], instructions: [] },
+    rev: 1,
+    updatedAt: 1,
+    projectIds: ["book"],
+    members: { book: "b1" },
+    origin: { rev: 1, base: {} },
+  };
+
+  test("only their owner can read, write or delete them", async () => {
+    const owner = environment.authenticatedContext("owner").firestore();
+    const stranger = environment.authenticatedContext("stranger").firestore();
+    const signedOut = environment.unauthenticatedContext().firestore();
+    await assertSucceeds(setDoc(doc(owner, path), record));
+    await assertSucceeds(getDoc(doc(owner, path)));
+    await assertFails(getDoc(doc(stranger, path)));
+    await assertFails(setDoc(doc(stranger, path), record));
+    await assertFails(getDoc(doc(signedOut, path)));
+    await assertSucceeds(setDoc(doc(owner, path), { ...record, rev: 2 }));
+    await assertSucceeds(deleteDoc(doc(owner, path)));
+  });
+
+  test("they carry recipe content and bookkeeping, nothing else", async () => {
+    const owner = environment.authenticatedContext("owner").firestore();
+    await assertFails(setDoc(doc(owner, path), { ...record, entitlements: ["pro"] }));
+    await assertFails(setDoc(doc(owner, path), { ...record, rev: "1" }));
+  });
+});

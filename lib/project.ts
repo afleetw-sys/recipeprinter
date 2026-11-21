@@ -136,6 +136,7 @@ export function recipePagePlacementHasValues(placement: RecipePagePlacement): bo
     placement.heroFocusX !== undefined ||
     placement.heroFocusY !== undefined ||
     placement.heroZoom !== undefined ||
+    placement.heroCropFor !== undefined ||
     placement.showPhoto !== undefined ||
     placement.showSourceUrl !== undefined ||
     placement.photoUrl !== undefined ||
@@ -1275,6 +1276,7 @@ export function useProjectMeta() {
         if (placement.heroFocusX !== undefined) kept.heroFocusX = placement.heroFocusX;
         if (placement.heroFocusY !== undefined) kept.heroFocusY = placement.heroFocusY;
         if (placement.heroZoom !== undefined) kept.heroZoom = placement.heroZoom;
+        if (placement.heroCropFor !== undefined) kept.heroCropFor = placement.heroCropFor;
         // The link override is not a photo placement either. Picking a book-wide
         // Photos option must not quietly turn one recipe's link back on or off.
         if (placement.showSourceUrl !== undefined) kept.showSourceUrl = placement.showSourceUrl;

@@ -126,6 +126,12 @@ export interface Recipe {
       other. Shown stacked under it — see lib/recipeNote.ts. */
   note?: string;
   image?: string;
+  /** The cook chose `image` themselves (picked or uploaded it, or removed the
+      photo, as `""`), rather than it arriving with the import. A book of the
+      cook's own photos shows a chosen photo whatever its source, and holds a
+      website's photo back otherwise (lib/bookPhotos.ts). Part of the recipe,
+      not the book, so the choice follows a linked recipe into every format. */
+  imageChosen?: boolean;
   sourceUrl?: string;
   sourceName?: string;
   /** The language the recipe is written in, as a BCP 47 tag ("de", "pt-BR").
@@ -349,7 +355,23 @@ export interface QueueItem {
    * that URL after a reload — and what the save-time sweep uploads from.
    */
   localPhotoId?: string;
+  /** This recipe is shared with other projects and kept in step with them.
+      See lib/linkedRecipes.ts. */
+  link?: RecipeLink;
   addedAt: number;
+}
+
+/**
+ * Which shared recipe record a linked copy belongs to (lib/linkedRecipeStore)
+ * and the version of it this copy last agreed with: the record's revision, and
+ * a fingerprint of each recipe field as it was then. Comparing a copy, that
+ * version and the record field by field is what tells an edit made here from
+ * one made elsewhere (lib/linkedRecipes.ts).
+ */
+export interface RecipeLink {
+  id: string;
+  rev: number;
+  base: Record<string, string>;
 }
 
 /* ── Print project ────────────────────────────────────────────────────────
@@ -447,6 +469,11 @@ export interface RecipePagePlacement {
       about the focal point above. 1 (or absent) = the plain cover crop; the
       page always stays fully covered, so there is nothing below 1. */
   heroZoom?: number;
+  /** The photo the crop above was set on. A linked recipe's photo can change
+      from somewhere else, and a crop made for one photo is wrong for another,
+      so the crop applies only while this is still the photo shown. Absent on
+      crops made before, which keep applying as they always did. */
+  heroCropFor?: string;
   /** Per-page override of the book-wide "Include recipe photo" default
       (cookbook mode). `undefined` = follow the global toggle; `true`/`false` =
       force this recipe's header photo on/off regardless. Ignored for

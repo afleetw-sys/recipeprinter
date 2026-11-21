@@ -1,5 +1,6 @@
 "use client";
 
+import { heroCrop } from "@/lib/bookPhotos";
 import { Fragment, useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { FontScale } from "@/lib/fontScale";
 import type { PhotoScale } from "@/lib/photoScale";
@@ -1362,15 +1363,32 @@ export function PrintDeck(props: PrintDeckProps) {
         // image page has no text on it, so there is no click-to-edit for the
         // drag to compete with and no reason to make it wait behind a reveal.
         focused && navItem.kind === "image"
-          ? {
-              focusX: projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroFocusX ?? 50,
-              focusY: projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroFocusY ?? 50,
-              onChange: (focusX, focusY) =>
-                projectMeta.setItemPlacement(navItem.recipeId, { heroFocusX: focusX, heroFocusY: focusY }),
-              zoom: projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroZoom ?? 1,
-              onZoomChange: (zoom) =>
-                projectMeta.setItemPlacement(navItem.recipeId, { heroZoom: zoom > 1 ? zoom : undefined }),
-            }
+          ? (() => {
+              // The crop is kept with the photo it was made on (see `heroCrop`),
+              // so a photo that changes from a linked card starts centred.
+              const slot = sheet.slots[navItem.slotIndex];
+              const shownUrl = slot?.kind === "image" ? slot.imageUrl : undefined;
+              const crop = heroCrop(projectMeta.meta.itemPlacements?.[navItem.recipeId], shownUrl);
+              return {
+                focusX: crop.focusX ?? 50,
+                focusY: crop.focusY ?? 50,
+                onChange: (focusX: number, focusY: number) =>
+                  projectMeta.setItemPlacement(navItem.recipeId, {
+                    heroFocusX: focusX,
+                    heroFocusY: focusY,
+                    heroZoom: crop.zoom,
+                    heroCropFor: shownUrl ?? "",
+                  }),
+                zoom: crop.zoom ?? 1,
+                onZoomChange: (zoom: number) =>
+                  projectMeta.setItemPlacement(navItem.recipeId, {
+                    heroFocusX: crop.focusX,
+                    heroFocusY: crop.focusY,
+                    heroZoom: zoom > 1 ? zoom : undefined,
+                    heroCropFor: shownUrl ?? "",
+                  }),
+              };
+            })()
           : undefined
       }
       tocKicker={projectMeta.meta.tocKicker}

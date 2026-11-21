@@ -12,14 +12,23 @@ import type { QueueItem, Recipe, RecipePagePlacement, Section } from "@/types/re
  *
  * `photoUrl: ""` is the cook having removed the photo, which also hides the
  * imported one.
+ *
+ * A recipe whose `imageChosen` is set carries the cook's choice itself: it is
+ * shown, or `""` shows none, in every book and on every card it is linked
+ * into. `placement.photoUrl` is where books kept that choice before, and is
+ * still read for a recipe that has never been given one.
  */
 export function bookRecipeImage(
-  item: { method?: QueueItem["method"]; recipe?: Pick<Recipe, "image"> },
+  item: { method?: QueueItem["method"]; recipe?: Pick<Recipe, "image" | "imageChosen"> },
   placement: RecipePagePlacement | undefined,
   ownPhotosOnly: boolean | undefined,
   websitePhotos?: boolean,
 ): string | undefined {
   if (!ownPhotosOnly) return item.recipe?.image || undefined;
+  // A photo the cook chose is part of the recipe now, wherever it was chosen
+  // (this book, another book, a recipe card). It wins over a choice older
+  // books kept on the page, which a linked recipe's newer choice replaces.
+  if (item.recipe?.imageChosen) return item.recipe.image || undefined;
   if (placement?.photoUrl !== undefined) return placement.photoUrl || undefined;
   const ownFile = item.method === "image" || item.method === "paprika";
   return ownFile || websitePhotos ? item.recipe?.image || undefined : undefined;
@@ -27,8 +36,13 @@ export function bookRecipeImage(
 
 /** Whether a recipe's imported photo is a website's, the kind a book of the
     cook's own photos holds back until `websitePhotos` is on. */
-export function hasWebsitePhoto(item: { method?: QueueItem["method"]; recipe?: Pick<Recipe, "image"> }): boolean {
-  return Boolean(item.recipe?.image) && item.method !== "image" && item.method !== "paprika";
+export function hasWebsitePhoto(item: { method?: QueueItem["method"]; recipe?: Pick<Recipe, "image" | "imageChosen"> }): boolean {
+  return (
+    Boolean(item.recipe?.image) &&
+    !item.recipe?.imageChosen &&
+    item.method !== "image" &&
+    item.method !== "paprika"
+  );
 }
 
 // One substituted recipe per (recipe, photo) pair, so the layout engine's
@@ -73,4 +87,19 @@ export function sectionsWithBookPhotos(
       return recipe === item.recipe ? item : { ...item, recipe };
     }),
   }));
+}
+
+/**
+ * A full-page photo's crop, but only while it is still the photo it was made
+ * for. A linked recipe's photo can change from another project, and a crop set
+ * for one picture is wrong for another, so the new photo starts centred. A crop
+ * recorded before `heroCropFor` existed keeps applying.
+ */
+export function heroCrop(
+  placement: RecipePagePlacement | undefined,
+  shownUrl: string | undefined,
+): { focusX?: number; focusY?: number; zoom?: number } {
+  if (!placement) return {};
+  if (placement.heroCropFor !== undefined && placement.heroCropFor !== (shownUrl ?? "")) return {};
+  return { focusX: placement.heroFocusX, focusY: placement.heroFocusY, zoom: placement.heroZoom };
 }

@@ -254,6 +254,23 @@ service cloud.firestore {
         }
       }
 
+      // Recipes shared between projects (lib/linkedRecipeStore): a cookbook and
+      // the recipe cards printed from it agree through one of these. Recipe
+      // content and bookkeeping only, never anything about a purchase: what a
+      // project may print is decided by the project and the server routes, so
+      // the owner may write this freely, as they may their own projects.
+      match /linkedRecipes/{recipeId} {
+        allow read, delete: if owns(uid);
+        allow create, update: if owns(uid)
+          && request.resource.data.keys().hasOnly([
+            "recipe", "rev", "updatedAt", "projectIds", "members", "origin"
+          ])
+          && request.resource.data.recipe is map
+          && request.resource.data.rev is int
+          && request.resource.data.projectIds is list
+          && request.resource.data.members is map;
+      }
+
       // A cookbook unlock is the $19.99 purchase record, so it is written by the
       // server or not at all: the RevenueCat webhook grants it with the admin
       // SDK (which bypasses rules) on the purchase event, and revokes it on
