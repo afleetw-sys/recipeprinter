@@ -553,8 +553,8 @@
 .add-line-menu__head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 2px;
+  padding-bottom: 2px;
 }
 .add-line-menu__back {
   display: inline-flex;
@@ -576,8 +576,9 @@
 }
 /* What the switches apply to: every recipe in this book. */
 .add-line-menu__scope {
+  flex: 1;
   margin: 0;
-  padding: 0 8px 4px;
+  padding: 0 8px 0 2px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-micro);
 }
