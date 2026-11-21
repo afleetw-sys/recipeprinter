@@ -16,6 +16,11 @@ import { useMenuDismiss } from "@/lib/useMenuDismiss";
  * `page` is a whole page the "+" can add next to this one (a chapter's photo
  * page beside it), ruled off under the lines because it isn't one of them.
  */
+/** Room kept clear below the panel, against the screen's bottom edge. */
+const SCREEN_MARGIN_PX = 8;
+/** Below this much room under the button, the panel moves up instead. */
+const MIN_ROOM_PX = 200;
+
 export function AddLineMenu({
   anchor,
   triggerRef,
@@ -37,13 +42,22 @@ export function AddLineMenu({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
+  // Opens under its button. The heading stays put and the rows scroll in what
+  // the screen has left below it, so a long list never pushes the panel up
+  // over its button or off the bottom (Amelia, 2026-11-21). Only when there is
+  // hardly any room below does the panel move up to make some.
   useLayoutEffect(() => {
     const node = ref.current;
-    if (!node) return;
+    const list = listRef.current;
+    if (!node || !list) return;
     const rect = node.getBoundingClientRect();
     node.style.left = `${Math.max(8, Math.min(anchor.x, window.innerWidth - rect.width - 8))}px`;
-    node.style.top = `${Math.max(8, Math.min(anchor.y, window.innerHeight - rect.height - 8))}px`;
+    const top = Math.max(8, Math.min(anchor.y, window.innerHeight - MIN_ROOM_PX));
+    node.style.top = `${top}px`;
+    const chrome = node.getBoundingClientRect().height - list.getBoundingClientRect().height;
+    list.style.maxHeight = `${Math.max(0, window.innerHeight - top - SCREEN_MARGIN_PX - chrome)}px`;
   }, [anchor]);
 
   useMenuDismiss([ref, triggerRef], onClose);
@@ -57,7 +71,7 @@ export function AddLineMenu({
       style={{ top: anchor.y, left: anchor.x }}
     >
       <p className="cp-menu__heading">{heading}</p>
-      <div className="add-line-menu__grid">
+      <div ref={listRef} className="add-line-menu__grid">
         {lines.map((line) => (
           <button
             key={line.name}
@@ -70,30 +84,27 @@ export function AddLineMenu({
             }}
           >
             <span className="add-line-menu__name">{line.name}</span>
-            {line.hint && (
-              <span className="add-line-menu__hint">
-                {line.hint === "Add" && <PlusIcon size={ICON_SIZE.xs} />}
-                {line.hint}
-              </span>
-            )}
+            {line.hint && <span className="add-line-menu__hint">{line.hint}</span>}
           </button>
         ))}
+        {/* Inside the scrolling list, so the list holds the panel's bottom
+            padding and nothing sits under it. */}
+        {page && lines.length > 0 && <div role="separator" className="add-line-menu__rule" />}
+        {page && (
+          <button
+            type="button"
+            role="menuitem"
+            className="cp-menu__item"
+            onClick={() => {
+              onClose();
+              page.add();
+            }}
+          >
+            <PlusIcon size={ICON_SIZE.sm} />
+            {page.name}
+          </button>
+        )}
       </div>
-      {page && lines.length > 0 && <div role="separator" className="add-line-menu__rule" />}
-      {page && (
-        <button
-          type="button"
-          role="menuitem"
-          className="cp-menu__item"
-          onClick={() => {
-            onClose();
-            page.add();
-          }}
-        >
-          <PlusIcon size={ICON_SIZE.sm} />
-          {page.name}
-        </button>
-      )}
     </div>,
     document.body,
   );

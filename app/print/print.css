@@ -521,24 +521,32 @@
 /* The page toolbar's "+" (AddLineMenu): one row per line or field, down a
    single column (Amelia, 2026-11-21), as narrow as the names and their hints
    allow rather than a chapter list's width. */
+/* The panel itself doesn't scroll (the rail menu's own cap is lifted) and has
+   no bottom padding: its rows scroll below a heading that stays put, and the
+   scrolling list carries the bottom padding (Amelia, 2026-11-21). */
 .add-line-menu.add-line-menu {
+  display: flex;
+  flex-direction: column;
   min-width: 188px;
   max-width: none;
-  padding: 4px;
+  max-height: none;
+  overflow: visible;
+  padding: 4px 4px 0;
 }
-/* A fixed height that scrolls inside itself (Amelia, 2026-11-21), so a recipe
-   with every line on offer doesn't run the panel down the page. A cover's two
-   rows stay two rows high. */
+/* Its height is what the screen has below the heading (AddLineMenu sets it
+   on open); 60vh until then. */
 .add-line-menu__grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 2px;
-  max-height: 264px;
+  max-height: 60vh;
   overflow-y: auto;
   overscroll-behavior: contain;
+  padding-bottom: 4px;
 }
-/* Name, then where a recipe field stands ("+ Add", "Hidden"; nothing once added),
-   quiet at the end, so one switched on and left empty is still easy to find. */
+/* Name, then where a recipe line stands ("Add", "Hidden"; nothing once
+   added), quiet at the end, so one switched on and left empty is still easy
+   to find. */
 .add-line-menu .cp-menu__item {
   gap: 10px;
 }
