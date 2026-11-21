@@ -55,7 +55,7 @@ import { composeNote } from "@/lib/recipeNote";
 import { PrintFormatToggle } from "@/components/print/PrintFormatToggle";
 import { NOT_IN_A_CHAPTER_LABEL, PageRail, type BookPageSlot, type RailSortMode } from "@/components/print/PageRail";
 import { PrintDeck, pendingSlotIndexIn } from "@/components/print/PrintDeck";
-import { deckIndexForPendingSlot, landingForRecipe } from "@/lib/pendingDeckSlot";
+import { deckIndexForPendingSlot, landingForRecipe, pendingBookPage } from "@/lib/pendingDeckSlot";
 import {
   usePrintSheets,
   type NavItem,
@@ -7284,13 +7284,26 @@ export default function PrintPage() {
         // to it. Both compare against `activeNavIndex` — pointing it at the
         // slot now makes the first a no-op and the second skip its scroll,
         // instead of bolting a "do not scroll" flag onto either.
+        //
+        // In a book that is the spread the loading page stands on
+        // (`pendingBookPage`), which for a recipe opening a new spread is the
+        // one after the anchor's. Parked on the anchor's own spread instead,
+        // the deck snapped back up to it when the recipe landed, then scrolled
+        // down again to a page that had appeared somewhere else.
+        const slot = pendingSlotIndexIn(navItems, pendingAddAfterRecipeId);
+        const anchorNav = cookbookView ? navItems[slot - 1] : undefined;
+        const bookPage = anchorNav
+          ? pendingBookPage({
+              spreads,
+              sheets,
+              anchorSheet: anchorNav.sheetIndex,
+              anchorId: anchorNav.recipeId,
+              fullPagePhotos: photoStyle === "full",
+            })
+          : null;
         setActiveNavIndex(
-          deckIndexForPendingSlot({
-            cookbookView,
-            slot: pendingSlotIndexIn(navItems, pendingAddAfterRecipeId),
-            navItems,
-            spreads,
-          }),
+          bookPage?.spread ??
+            deckIndexForPendingSlot({ cookbookView, slot, navItems, spreads }),
         );
         return;
       }
