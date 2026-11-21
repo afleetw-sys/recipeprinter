@@ -561,10 +561,21 @@
   font-size: var(--cp-fs-label);
   font-weight: 500;
 }
-/* "+ Add" reads as the action it is: bold, still in the quiet grey, so it
-   sits back behind the names. "Hidden" stays a lighter note. */
+/* "+ Add" reads as a button, not a second name: a small grey chip, smaller
+   than the names and on a tint of its own, darker while its row is hovered
+   (Amelia, 2026-11-21). Flat, like every control. "Hidden" stays a plain
+   note. */
 .add-line-menu__hint--add {
+  gap: 2px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  background: var(--cp-surface-strong);
+  font-size: var(--cp-fs-micro);
   font-weight: 700;
+  line-height: 1.4;
+}
+.add-line-menu .cp-menu__item:hover .add-line-menu__hint--add {
+  background: var(--cp-surface-strong-hover);
 }
 /* Rows hidden below: the list's last 28px fade out (AddLineMenu sets the
    class while there is more to scroll to). */
