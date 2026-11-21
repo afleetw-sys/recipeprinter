@@ -3217,13 +3217,13 @@ export default function PrintPage() {
 
   /**
    * "Change recipe" (a recipe card's toolbar, and the "Ready to print your
-   * next one?" dialog). Opens the same Add dialog as Add more,
-   * and the recipe the cook brings in takes the current one's place: same
-   * deck, same theme and size. See `swapRecipe`.
+   * next one?" dialog). Opens the same Add dialog as Add more, and the recipe
+   * the cook brings in takes that recipe's place (the one on screen, unless
+   * the toolbar names one): same deck, same theme and size. See `swapRecipe`.
    */
-  function printDifferentRecipe() {
+  function printDifferentRecipe(recipeId?: string) {
     track("print_different_recipe_clicked", { recipeCount });
-    swapRecipe();
+    swapRecipe(recipeId);
   }
 
   /**
@@ -6018,13 +6018,16 @@ export default function PrintPage() {
    * which is why this is the free account's way to a different recipe. It is
    * still an import, so a spent allowance still meets the paywall.
    */
-  function swapRecipe() {
+  function swapRecipe(recipeId?: string) {
     if (!proKnown) {
       whenProKnown({ kind: "swap" });
       return;
     }
     if (importPaywallIfSpent()) return;
-    const onScreen = activeRecipeId && items?.some((item) => item.id === activeRecipeId) ? activeRecipeId : null;
+    // The recipe whose toolbar was pressed, else the one on screen.
+    const named = recipeId && items?.some((item) => item.id === recipeId) ? recipeId : null;
+    const onScreen =
+      named ?? (activeRecipeId && items?.some((item) => item.id === activeRecipeId) ? activeRecipeId : null);
     const oldId = onScreen ?? items?.find((item) => item.status === "ready" && item.recipe)?.id ?? null;
     if (!oldId) {
       openAddRecipeBelow();
@@ -7529,17 +7532,24 @@ export default function PrintPage() {
                     extra "has a recipe" check here hid Save on an empty book
                     on desktop only, leaving a signed-out cook no way to keep
                     it. */}
-                {/* A cookbook saves itself, so its "Saved" is a state, read
-                    first, before the undo and redo that change it (Amelia,
-                    2026-11-04). On cards it is the Save button, beside Print. */}
-                {cookbookMode && renderSaveControl("header")}
+                {/* "Saved" is a state, read first, before the undo and redo
+                    that change it: cookbooks since 2026-11-04, and cards too
+                    since 2026-11-13 (Amelia: on every toolbar). The Save
+                    button it replaces sits in the same spot, so pressing it
+                    doesn't move anything. */}
+                {renderSaveControl("header")}
                 {historyControls("header")}
-                {!cookbookMode && renderSaveControl("header")}
                 {/* Only while there is something to save: once it's saving or
                     saved, the state beside it already says so, and the menu
-                    would hold nothing else. Phones keep theirs (no room for
-                    the state in the bar). */}
-                {saveStatus !== "saving" && !savedToProfile && renderSaveMenu("header")}
+                    would hold nothing else. Not beside the signed-out Save
+                    button either: both start the same save, and two controls
+                    for one action read as two different things (Amelia,
+                    2026-11-19). Phones keep theirs (no room for the state in
+                    the bar, and no Save button there). */}
+                {saveStatus !== "saving" &&
+                  !savedToProfile &&
+                  !(!cookPilotUser && keptAutomatically) &&
+                  renderSaveMenu("header")}
 
                 {/* Print is always here, as it is on a phone's bottom bar:
                     the page is for printing, and a button that appears only
