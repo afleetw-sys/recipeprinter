@@ -649,9 +649,8 @@
 }
 /* Rules the photo page off from the lines, edge to edge across the menu
    with the same breathing room above and below. */
-/* "+ Add" beside a line the recipe has nothing in yet: a small grey chip,
-   smaller than the names, darker while its row is hovered (Amelia,
-   2026-11-21). Flat, like every control. */
+/* "+ Add" beside a line the recipe has nothing in yet: plain grey text,
+   smaller than the names, no chip (Amelia, 2026-11-21). */
 .add-line-menu .cp-menu__item {
   gap: 10px;
 }
@@ -659,16 +658,9 @@
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 2px 8px 2px 6px;
-  border-radius: 999px;
-  background: var(--cp-surface-strong);
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-micro);
   font-weight: 700;
-  line-height: 1.4;
-}
-.add-line-menu .cp-menu__item:hover .add-line-menu__add {
-  background: var(--cp-surface-strong-hover);
 }
 .add-line-menu__rule {
   height: 1px;
@@ -2487,6 +2479,10 @@
    the element has with no size of its own. Scrolls, opened on the current
    size. */
 .text-size-menu.text-size-menu {
+  /* It borrows the "+" panel's look, not its column layout: that one pins a
+     footer under a list that scrolls by itself, and here the whole menu
+     scrolls, so a column squeezed every size row shorter than its text. */
+  display: block;
   min-width: 8.5em;
   /* The list's top padding is its heading's instead (below): a sticky
      heading sticks under the padding, and the sizes scrolled up through
@@ -2522,6 +2518,7 @@
   grid-template-columns: 1.25em auto 1fr;
   align-items: center;
   gap: 6px;
+  padding: 7px 10px;
   font-variant-numeric: tabular-nums;
 }
 .text-size-menu__check {
