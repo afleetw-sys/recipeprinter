@@ -3,6 +3,7 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useCookPilotAuth } from "@/components/CookPilotAuth";
 import { CookPilotImportSource, prewarmCookPilotImport } from "@/components/CookPilotRecipePicker";
+import { SavedRecipesSource, useSavedRecipesSource } from "@/components/import/SavedRecipesSource";
 import {
   PAPRIKA_ACCEPT,
   PaprikaImportSource,
@@ -19,6 +20,7 @@ import { useStandaloneProUpgrade } from "@/lib/useStandaloneProUpgrade";
 import { Dialog } from "@/components/Dialog";
 import type { QueueItem } from "@/types/recipe";
 import {
+  BookIcon,
   ChevronLeftIcon,
   CookPilotLogoIcon,
   ICON_SIZE,
@@ -47,7 +49,7 @@ export { prewarmCookPilotImport };
  * produce are namespaced by source so they can never collide.
  */
 
-type SourceId = "cookpilot" | "paprika";
+type SourceId = "cookpilot" | "paprika" | "saved";
 
 // Which source was last open, so returning to this tab picks up where the cook
 // left off instead of making them re-enter it every time. Module-scoped for the
@@ -259,7 +261,12 @@ export function RecipeAppsPanel({
   /** Opens the Pro upgrade dialog — only ever called while `locked`. */
   onLockedTap?: () => void;
 }) {
-  const [source, setSource] = useState<SourceId | null>(lastOpenSource);
+  // "Your recipes" is only offered where /print provides it (signed in, inside
+  // the Add dialog). A source remembered from there means nothing elsewhere.
+  const savedRecipes = useSavedRecipesSource();
+  const [source, setSource] = useState<SourceId | null>(() =>
+    lastOpenSource === "saved" && !savedRecipes ? null : lastOpenSource,
+  );
   // Paprika holds ONE library at a time, so there is nothing to choose between
   // on this screen: the button opens the system file dialog and the next
   // screen is the recipes in the file you picked. It used to take you to a
@@ -401,6 +408,22 @@ export function RecipeAppsPanel({
         />
   );
 
+  if (source === "saved" && savedRecipes) {
+    return (
+      <div className="flex flex-col gap-cp-4">
+        <button
+          type="button"
+          className="btn-ghost btn-compact self-start"
+          onClick={() => open(null)}
+        >
+          <ChevronLeftIcon size={ICON_SIZE.sm} />
+          Recipe apps
+        </button>
+        <SavedRecipesSource config={savedRecipes} items={items} commitLabel={commitLabel} commitRef={commitRef} />
+      </div>
+    );
+  }
+
   if (source === "cookpilot" || source === "paprika") {
     return (
       <div className="flex flex-col gap-cp-4">
@@ -463,6 +486,15 @@ export function RecipeAppsPanel({
       {/* Side by side, and stacked on a phone where two of these would be too
           narrow to read. */}
       <ul className="grid gap-cp-2 sm:grid-cols-2">
+        {savedRecipes && (
+          <IntegrationCard
+            name="Your recipes"
+            description="Use recipes from your other cookbooks and recipe cards. Edits stay in sync."
+            icon={<BookIcon size={22} />}
+            action="Choose recipes"
+            onOpen={() => open("saved")}
+          />
+        )}
         <IntegrationCard
           name="CookPilot"
           description={cookPilotDescription}

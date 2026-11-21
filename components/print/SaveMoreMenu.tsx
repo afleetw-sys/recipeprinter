@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { AnchoredMenu } from "@/components/AnchoredMenu";
-import { CheckIcon, CloudCheckIcon, ICON_SIZE, MoreHorizontalIcon, RedoIcon, SpinnerIcon, UndoIcon } from "@/components/icons";
+import { CheckIcon, CloudCheckIcon, ICON_SIZE, MoreHorizontalIcon, PrintIcon, RedoIcon, SpinnerIcon, UndoIcon } from "@/components/icons";
 
 export type SaveMenuState = "unsaved" | "saving" | "saved";
 
@@ -39,6 +39,7 @@ export function SaveMoreMenu({
   disabled = false,
   size,
   history,
+  printAsCards,
 }: {
   state: SaveMenuState;
   /** Starts the first save (or sign-in, signed out). */
@@ -49,6 +50,10 @@ export function SaveMoreMenu({
   size: "header" | "compact";
   /** Present only when undo and redo have no room in the bar. */
   history?: FoldedHistory;
+  /** A cookbook's "Print as recipe cards" (see PrintAsCardsDialog). Here
+      because this menu is on every screen size, and printing some of a book's
+      recipes as cards is a thing to do with the whole job, like saving it. */
+  printAsCards?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement | null>(null);
@@ -146,6 +151,26 @@ export function SaveMoreMenu({
             </>
           )}
           {row}
+          {printAsCards && (
+            <>
+              <div className="rp-save-menu__rule" role="separator" />
+              <button
+                type="button"
+                role="menuitem"
+                className="cp-menu__item cp-menu__item--stacked"
+                onClick={() => {
+                  close();
+                  printAsCards();
+                }}
+              >
+                <span className="rp-save-menu__label">
+                  <PrintIcon size={ICON_SIZE.md} />
+                  Print as recipe cards
+                </span>
+                <span className="cp-menu__note">Edits stay in sync with this cookbook.</span>
+              </button>
+            </>
+          )}
         </AnchoredMenu>
       )}
     </>

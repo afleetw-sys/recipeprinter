@@ -1271,6 +1271,19 @@
   line-height: 1.18;
 }
 
+/* Where else a linked recipe is ("Also in Family Cookbook"): so it is never a
+   surprise that an edit here changes it there. Quiet, one line. */
+.recipe-page-rail__linked {
+  display: block;
+  overflow: hidden;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-label);
+  font-weight: 500;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* PowerPoint-style "new slide" tile: the last child of the already-scrolling
    `.recipe-page-rail` (see its own `overflow-y: auto` above). `flex-shrink: 0`
    plus `position: sticky; bottom: 0` means it just sits below the last

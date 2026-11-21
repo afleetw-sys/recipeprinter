@@ -83,6 +83,7 @@ const UNTRACKED_META_KEYS = new Set([
   "lastImportSource",
   "cookbookIntent",
   "cookbookBornFresh",
+  "printOnly",
 ]);
 
 const LIST_CHANNELS = new Set<HistoryChannel>(["queue", "job"]);
@@ -380,7 +381,7 @@ function applyList(channel: HistoryChannel, list: unknown, changes: Change[], un
     if (value === undefined) {
       if (index >= 0) members.splice(index, 1);
     } else if (index >= 0) {
-      members[index] = [id, value];
+      members[index] = [id, channel === "queue" ? keepLink(members[index]![1], value) : value];
     } else {
       restores.push({ id, value, prev: (undo ? change.beforePrev : change.afterPrev) ?? null });
     }
@@ -407,6 +408,54 @@ function applyList(channel: HistoryChannel, list: unknown, changes: Change[], un
     pending = waiting;
   }
   return channel === "job" ? members.map(([id]) => id) : members.map(([, value]) => value);
+}
+
+/**
+ * A linked recipe's link says which version of its shared record the copy
+ * agrees with (lib/linkedRecipes). That is bookkeeping, not an edit: putting an
+ * older link back would make the copy disagree with a record it has already
+ * synced with, and treat its next save as an edit to fields it never touched.
+ * So undo and redo restore a recipe and leave its link as it is now.
+ */
+function keepLink(current: unknown, restored: unknown): unknown {
+  const now = current as QueueItem | undefined;
+  const next = restored as QueueItem | undefined;
+  if (!now || !next || now.link === next.link) return restored;
+  const kept = { ...next };
+  if (now.link) kept.link = now.link;
+  else delete kept.link;
+  return kept;
+}
+
+/**
+ * A linked recipe took fields from another project (see lib/linkedRecipes).
+ * That is not an edit here, so it is not undoable, but undoing an edit made
+ * here BEFORE it must not put those fields back the way they were either: undo
+ * writes a recipe back whole, and would quietly revert the other project's
+ * change, which then syncs out as if the cook had made it. So every recorded
+ * version of the recipe takes the same fields, and undo only ever undoes what
+ * was done here.
+ */
+export function rebaseRecipeFields(itemId: string, fields: Record<string, unknown>) {
+  const keys = Object.keys(fields);
+  if (keys.length === 0) return;
+  const rebase = (value: unknown): unknown => {
+    const item = value as QueueItem | undefined;
+    if (!item?.recipe) return value;
+    const recipe: Record<string, unknown> = { ...(item.recipe as unknown as Record<string, unknown>) };
+    for (const key of keys) {
+      if (fields[key] === undefined) delete recipe[key];
+      else recipe[key] = fields[key];
+    }
+    return { ...item, recipe };
+  };
+  for (const entry of undoStack.concat(redoStack)) {
+    for (const change of Array.from(entry.changes.values())) {
+      if (change.channel !== "queue" || change.path[0] !== itemId) continue;
+      change.before = rebase(change.before);
+      change.after = rebase(change.after);
+    }
+  }
 }
 
 function applyEntry(entry: Entry, undo: boolean) {
