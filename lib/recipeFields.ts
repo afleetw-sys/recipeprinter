@@ -28,7 +28,9 @@ import type { Recipe } from "@/types/recipe";
  */
 export const RECIPE_FIELDS = {
   description: { name: "Description", label: null, read: (recipe: Recipe) => recipe.description },
-  contributor: { name: "Contributor", label: "Contributor", read: (recipe: Recipe) => recipe.contributor },
+  // Stored as `contributor`; shown as "Source" (Amelia, 2026-11-21): who or
+  // where a family recipe came from.
+  contributor: { name: "Source", label: "Source", read: (recipe: Recipe) => recipe.contributor },
   category: { name: "Category", label: "Category", read: (recipe: Recipe) => recipe.category },
   note: { name: "Notes", label: "Notes", read: (recipe: Recipe) => recipe.note },
 } as const;
@@ -113,12 +115,15 @@ export function withFieldShown(
 export type HeaderPart = "title" | "headnote" | "description" | "details" | "byline" | "source";
 
 export function headerParts(switches: FieldSwitches | undefined, cookbook: boolean): HeaderPart[] {
-  if (usesHeadnote(switches, cookbook)) return ["title", "headnote", "details", "source"];
   const shown = (id: RecipeFieldId) => fieldShown(switches, id, cookbook);
+  // The byline shows wherever it is switched on, including a cookbook page
+  // still printing description and note as one paragraph: it used to be left
+  // out there, so adding a source from "+" drew nothing.
+  const byline: HeaderPart[] = shown("contributor") || shown("category") ? ["byline"] : [];
+  if (usesHeadnote(switches, cookbook)) return ["title", "headnote", "details", ...byline, "source"];
   const parts: HeaderPart[] = ["title"];
   if (shown("description")) parts.push("description");
-  parts.push("details");
-  if (shown("contributor") || shown("category")) parts.push("byline");
+  parts.push("details", ...byline);
   if (cookbook) parts.push("source");
   return parts;
 }

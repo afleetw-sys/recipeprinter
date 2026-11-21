@@ -725,19 +725,10 @@ export function PrintDeck(props: PrintDeckProps) {
           // say so; picking them puts them at the foot (`withFieldShown`).
           const withDescription = field === "note" && usesHeadnote(fieldSwitches, cookbook);
           const shown = fieldTicked(fieldSwitches, field, cookbook);
+          // Every blank field says "+ Add", shown in the theme or not.
           return {
             name: RECIPE_LINE_NAMES[field],
-            hint: withDescription
-              ? filled
-                ? "In description"
-                : undefined
-              : shown
-                ? filled
-                  ? "Added"
-                  : "Add"
-                : filled
-                  ? "Hidden"
-                  : undefined,
+            hint: !filled ? "Add" : withDescription ? "In description" : shown ? "Added" : "Hidden",
             restore: () => {
               if (!shown) setFieldShown(field, true, cookbook);
               addField(recipeId, field);
@@ -748,6 +739,7 @@ export function PrintDeck(props: PrintDeckProps) {
           ...fieldLines,
           ...emptyRecipeFields(recipe, { cookbook, showSourceUrl: true }).map((field) => ({
             name: RECIPE_LINE_NAMES[field],
+            hint: "Add",
             restore: () => {
               if (field === "link" && !cookbook && !showSourceUrl) setShowSourceUrl(true);
               addField(recipeId, field);
@@ -764,6 +756,7 @@ export function PrintDeck(props: PrintDeckProps) {
         ) {
           lines.unshift({
             name: RECIPE_LINE_NAMES.link,
+            hint: "Hidden",
             restore: () =>
               cookbook
                 ? projectMeta.setItemPlacement(recipeId, { showSourceUrl: showSourceUrl ? undefined : true })
@@ -773,13 +766,14 @@ export function PrintDeck(props: PrintDeckProps) {
         // A recipe drawn without a photo: opens its photo picker, the toolbar
         // Photo button's own dialog.
         if (!recipeHasPhoto(recipeId)) {
-          lines.unshift({ name: "Photo", restore: () => openPhotoDialog(recipeId) });
+          lines.unshift({ name: "Photo", hint: "Add", restore: () => openPhotoDialog(recipeId) });
         }
         // A removed "Ingredients" / "Steps" heading comes back as the default.
         const headings = removedHeadingsName(recipe);
         if (headings) {
           lines.push({
             name: headings === "heading" ? "Heading" : "Headings",
+            hint: "Add",
             restore: () => {
               restoreHeadings(recipeId);
             },
