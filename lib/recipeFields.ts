@@ -123,11 +123,16 @@ export function notePieces(note: string): TailPiece[] {
     .forEach((paragraph, p) => {
       const sentences = paragraph.match(/[^.!?]+(?:[.!?]+["')\]]*)?\s*|[.!?]+\s*/g) ?? [paragraph];
       const merged: string[] = [];
-      let open = false;
+      // Bold (`**`) and italic (`*`) counted apart: "**" is one marker, so
+      // counting asterisks made a bold run look closed. A stray literal `*`
+      // only means fewer places to split, never a broken run.
+      let bold = 0;
+      let italic = 0;
       for (const sentence of sentences) {
-        if (open && merged.length > 0) merged[merged.length - 1] += sentence;
+        if ((bold % 2 === 1 || italic % 2 === 1) && merged.length > 0) merged[merged.length - 1] += sentence;
         else merged.push(sentence);
-        if ((sentence.match(/\*/g)?.length ?? 0) % 2 === 1) open = !open;
+        bold += sentence.match(/\*\*/g)?.length ?? 0;
+        italic += sentence.replace(/\*\*/g, "").match(/\*/g)?.length ?? 0;
       }
       merged.forEach((text, i) => pieces.push({ key: `note:${p}.${i}`, paragraph: p, text }));
     });
