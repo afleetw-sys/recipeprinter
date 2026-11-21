@@ -1105,7 +1105,7 @@ export function PrintDeck(props: PrintDeckProps) {
                 <AddLineMenu
                   anchor={addMenuAt}
                   triggerRef={addMenuTriggerRef}
-                  heading={navItem.kind === "recipe" ? "Add to this recipe" : "Add to this page"}
+                  heading={navItem.kind === "recipe" ? "Recipe details" : "Add to this page"}
                   lines={missingLines}
                   page={addPhotoPage ? { name: "Photo page beside it", add: addPhotoPage } : null}
                   onClose={() => setAddMenuAt(null)}

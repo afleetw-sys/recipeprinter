@@ -28,7 +28,7 @@ export function AddLineMenu({
   /** The "+" button: pressing it again closes the menu rather than counting
       as a press outside, which closed it and then reopened it. */
   triggerRef: RefObject<HTMLElement | null>;
-  /** "Add to this recipe" on a recipe, "Add to this page" on a book page. */
+  /** "Recipe details" on a recipe, "Add to this page" on a book page. */
   heading: string;
   /** `hint` says where a recipe field stands ("Added", "Add", "Hidden"). */
   lines: { name: string; hint?: string; restore: () => void }[];
