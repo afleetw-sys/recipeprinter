@@ -494,6 +494,29 @@ export function useRecipeInlineEditor({
     (recipeId: string, field: AddableRecipeLine) => {
       if (!activeRecipeItem?.recipe || activeRecipeItem.id !== recipeId) return;
       const recipe = activeRecipeItem.recipe;
+      // Recipe details lists every line, so it opens one that's already there
+      // too: with what it holds, never a blank that would replace it.
+      if (field === "ingredients" && recipe.ingredients.length > 0) {
+        setEditingEdit({ recipeId, target: { kind: "ingredient", index: 0 } });
+        setEditValue(ingredientText(recipe.ingredients[0]));
+        return;
+      }
+      if (field === "steps" && recipe.instructions.length > 0) {
+        setEditingEdit({ recipeId, target: { kind: "step", index: 0 } });
+        setEditValue(recipe.instructions[0].text);
+        return;
+      }
+      if (field === "time" || field === "servings" || field === "link") {
+        setEditingEdit({ recipeId, target: FIELD_TARGETS[field] });
+        setEditValue(
+          field === "time"
+            ? recipe.totalTime || recipe.cookTime || recipe.prepTime || ""
+            : field === "servings"
+              ? recipe.servings === undefined ? "" : String(recipe.servings)
+              : recipe.sourceUrl ?? "",
+        );
+        return;
+      }
       if (field === "ingredients") {
         applyRecipeUpdate(recipeId, printableRecipe({ ...recipe, ingredients: [{ raw: "" }, ...recipe.ingredients] }));
         setEditingEdit({ recipeId, target: { kind: "ingredient", index: 0 } });

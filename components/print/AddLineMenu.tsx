@@ -7,8 +7,9 @@ import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
 /**
  * The page toolbar's "+": a short list of what this page can take, one row
- * each, down a single column: on a recipe its fields (lib/recipeFields.ts),
- * added or not, then its empty lines (lib/recipeMissingFields.ts). Picking one opens it on the page,
+ * each, down a single column. On a recipe ("Recipe details") it is every
+ * line and field the recipe has, always in the same order, each saying
+ * whether it's added (built in PrintDeck). Picking one opens it on the page,
  * ready to type. Opens under its button and keeps itself on screen, like
  * MoveToSectionMenu, whose shell this is.
  *

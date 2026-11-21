@@ -38,10 +38,9 @@ import { TwoUpPrintPages } from "@/components/print/TwoUpPrintPages";
 import { recipeLinkOn } from "@/lib/recipeLink";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { recipeNamesIntro } from "@/lib/chapterIntro";
-import { emptyRecipeFields } from "@/lib/recipeMissingFields";
+import { formatRecipeTime } from "@/lib/time";
 import {
   RECIPE_FIELDS,
-  RECIPE_FIELD_IDS,
   fieldTicked,
   fieldValue,
   usesHeadnote,
@@ -707,67 +706,65 @@ export function PrintDeck(props: PrintDeckProps) {
         const recipe = items?.find((item) => item.id === recipeId)?.recipe;
         if (!recipe) return [];
         const cookbook = Boolean(projectMeta.meta.cookbookMode);
-        // The link is this menu's too, now the toolbar has no link button
-        // (Amelia, 2026-11-04): a link that isn't wanted is deleted on the
-        // page, and one that is missing is added here. A missing link is
-        // always offered, and adding it on recipe cards turns the cards'
-        // links on, as the button did.
-        // The recipe's fields (lib/recipeFields.ts), always: one that's there
-        // opens for editing, one that isn't opens empty, and either way it
-        // shows in this theme from then on. The hint says which it is, so a
-        // field switched on and left empty (it never prints) reads "+ Add".
-        // On a cookbook page still printing description and note as one
-        // paragraph, picking either makes them two, so the note lands at the
-        // foot.
-        const fieldLines = RECIPE_FIELD_IDS.map((field) => {
-          const filled = Boolean(fieldValue(recipe, field));
-          // Notes still printing inside the description on a cookbook page
-          // say so; picking them puts them at the foot (`withFieldShown`).
-          const withDescription = field === "note" && usesHeadnote(fieldSwitches, cookbook);
-          const shown = fieldTicked(fieldSwitches, field, cookbook);
-          // Every blank field says "+ Add", shown in the theme or not.
+        // One fixed list, in the order the card reads, every item always there
+        // (Amelia, 2026-11-21: a consistent list): "+ Add" when it's blank,
+        // "Added" when it's on the card, "Hidden" when it's written but not
+        // shown. Picking one opens it on the card, ready to type, with what it
+        // already holds; a field the theme hides is switched on first. On a
+        // cookbook page still printing description and note as one paragraph,
+        // Notes reads "In description", and picking it puts them at the foot.
+        type Line = { name: string; hint?: string; restore: () => void };
+        const field = (id: RecipeFieldId): Line => {
+          const filled = Boolean(fieldValue(recipe, id));
+          const withDescription = id === "note" && usesHeadnote(fieldSwitches, cookbook);
+          const shown = fieldTicked(fieldSwitches, id, cookbook);
           return {
-            name: RECIPE_LINE_NAMES[field],
+            name: RECIPE_LINE_NAMES[id],
             hint: !filled ? "Add" : withDescription ? "In description" : shown ? "Added" : "Hidden",
             restore: () => {
-              if (!shown) setFieldShown(field, true, cookbook);
-              addField(recipeId, field);
+              if (!shown) setFieldShown(id, true, cookbook);
+              addField(recipeId, id);
             },
           };
+        };
+        const line = (id: "time" | "servings" | "ingredients" | "steps", filled: boolean): Line => ({
+          name: RECIPE_LINE_NAMES[id],
+          hint: filled ? "Added" : "Add",
+          restore: () => addField(recipeId, id),
         });
-        const lines: { name: string; hint?: string; restore: () => void }[] = [
-          ...fieldLines,
-          ...emptyRecipeFields(recipe, { cookbook, showSourceUrl: true }).map((field) => ({
-            name: RECIPE_LINE_NAMES[field],
-            hint: "Add",
-            restore: () => {
-              if (field === "link" && !cookbook && !showSourceUrl) setShowSourceUrl(true);
-              addField(recipeId, field);
-            },
-          })),
+        // The link: a recipe card's links come on with the first one added,
+        // as the toolbar's link button did; in a cookbook a hidden link comes
+        // back as this recipe's own override.
+        const linkOn = recipeLinkOn(showSourceUrl, cookbook, projectMeta.meta.itemPlacements?.[recipeId]);
+        const link: Line = {
+          name: RECIPE_LINE_NAMES.link,
+          hint: !recipe.sourceUrl ? "Add" : linkOn ? "Added" : "Hidden",
+          restore: () => {
+            if (recipe.sourceUrl && !linkOn) {
+              if (cookbook) projectMeta.setItemPlacement(recipeId, { showSourceUrl: showSourceUrl ? undefined : true });
+              else setShowSourceUrl(true);
+              return;
+            }
+            if (!cookbook && !showSourceUrl) setShowSourceUrl(true);
+            addField(recipeId, "link");
+          },
+        };
+        const lines: Line[] = [
+          {
+            name: "Photo",
+            hint: recipeHasPhoto(recipeId) ? "Added" : "Add",
+            restore: () => openPhotoDialog(recipeId),
+          },
+          field("description"),
+          field("contributor"),
+          field("category"),
+          line("time", Boolean(formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime))),
+          line("servings", Boolean(recipe.servings ?? recipe.yield)),
+          line("ingredients", recipe.ingredients.length > 0),
+          line("steps", recipe.instructions.length > 0),
+          field("note"),
+          link,
         ];
-        // A link that is there but hidden (a book saved with the old "Recipe
-        // link" switch off, or a recipe whose link was hidden by the toolbar
-        // button that used to be here) comes back the same way. In a cookbook
-        // only this recipe's: an override when the book's are off.
-        if (
-          recipe.sourceUrl &&
-          !recipeLinkOn(showSourceUrl, cookbook, projectMeta.meta.itemPlacements?.[recipeId])
-        ) {
-          lines.unshift({
-            name: RECIPE_LINE_NAMES.link,
-            hint: "Hidden",
-            restore: () =>
-              cookbook
-                ? projectMeta.setItemPlacement(recipeId, { showSourceUrl: showSourceUrl ? undefined : true })
-                : setShowSourceUrl(true),
-          });
-        }
-        // A recipe drawn without a photo: opens its photo picker, the toolbar
-        // Photo button's own dialog.
-        if (!recipeHasPhoto(recipeId)) {
-          lines.unshift({ name: "Photo", hint: "Add", restore: () => openPhotoDialog(recipeId) });
-        }
         // A removed "Ingredients" / "Steps" heading comes back as the default.
         const headings = removedHeadingsName(recipe);
         if (headings) {
