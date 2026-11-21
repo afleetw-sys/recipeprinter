@@ -341,7 +341,7 @@ interface PrintDeckProps {
   replacingRecipe: { recipeId: string; item: QueueItem } | null;
   /** Change recipe, on a recipe card's toolbar. Undefined in a cookbook,
       which is built by adding and never swapped wholesale. */
-  onChangeRecipe?: () => void;
+  onChangeRecipe?: (recipeId: string) => void;
   /** Imports that failed, which hold their slot rather than vanishing into a
       toast. Rendered by the same anchor rule as the parsing ones. */
   failedImports: QueueItem[];
@@ -955,7 +955,7 @@ export function PrintDeck(props: PrintDeckProps) {
                 title="Print a different recipe"
                 onClick={(event) => {
                   event.stopPropagation();
-                  onChangeRecipe();
+                  onChangeRecipe(navItem.recipeId);
                 }}
               >
                 Change recipe
