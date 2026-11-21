@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type Dispatch, type ReactNode, type RefObject, type SetStateAction } from "react";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
-import type { FieldSwitches, RecipeFieldId } from "@/lib/recipeFields";
 import { ICON_SIZE, XIcon } from "@/components/icons";
 import { SegmentedControl } from "@/components/Controls";
 import { PrintSetupControls } from "@/components/print/PrintSetupControls";
@@ -43,9 +42,6 @@ interface PrintConfigPanelProps {
   setUtensil: (value: SupperUtensil | null) => void;
   stacked: boolean;
   setStacked: (value: boolean) => void;
-  /** Which recipe fields the theme shows (lib/recipeFields.ts). */
-  fieldSwitches: FieldSwitches | undefined;
-  setFieldShown: (field: RecipeFieldId, shown: boolean, cookbook: boolean) => void;
   themeCustomized: boolean;
   resetThemeLook: () => void;
   /** Customize theme's Each part: the size every recipe's part has, and its
@@ -116,8 +112,6 @@ export function PrintConfigPanel({
   setUtensil,
   stacked,
   setStacked,
-  fieldSwitches,
-  setFieldShown,
   themeCustomized,
   resetThemeLook,
   recipePartSizes,
@@ -247,8 +241,6 @@ export function PrintConfigPanel({
             setUtensil={setUtensil}
             stacked={stacked}
             setStacked={setStacked}
-            fieldSwitches={fieldSwitches}
-            setFieldShown={setFieldShown}
             template={template}
             customized={themeCustomized}
             onReset={resetThemeLook}

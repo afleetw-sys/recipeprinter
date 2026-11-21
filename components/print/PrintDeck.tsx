@@ -38,11 +38,10 @@ import { TwoUpPrintPages } from "@/components/print/TwoUpPrintPages";
 import { recipeLinkOn } from "@/lib/recipeLink";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { recipeNamesIntro } from "@/lib/chapterIntro";
-import { formatRecipeTime } from "@/lib/time";
 import {
   RECIPE_FIELDS,
+  RECIPE_FIELD_IDS,
   fieldTicked,
-  fieldValue,
   usesHeadnote,
   type FieldSwitches,
   type RecipeFieldId,
@@ -322,8 +321,6 @@ interface PrintDeckProps {
   coverPhotoCandidates: string[];
   // Photo controls / helpers (defined in the page)
   renderPagePhotoControl: (recipeId: string) => ReactNode;
-  /** Whether a recipe's photo is drawn, so the "+" menu offers one if not. */
-  recipeHasPhoto: (recipeId: string) => boolean;
   /** The opener/title page's OWN photo slot — independent of the facing art
       page's, see `renderArtPhotoControl`. */
   renderCardPhotoControl: (sectionId: string) => ReactNode;
@@ -542,7 +539,6 @@ export function PrintDeck(props: PrintDeckProps) {
     setCoverForSide,
     coverPhotoCandidates,
     renderPagePhotoControl,
-    recipeHasPhoto,
     renderCardPhotoControl,
     renderArtPhotoControl,
     sectionRecipeImages,
@@ -700,36 +696,33 @@ export function PrintDeck(props: PrintDeckProps) {
       if (!showEmptyFields) toggleShowEmptyFields();
       focusFirstMissingField();
     };
-    const addableLines = (): { name: string; hint?: string; restore: () => void }[] => {
+    const addableLines = (): { name: string; restore: () => void }[] => {
       if (navItem.kind === "recipe") {
         const recipeId = navItem.recipeId;
         const recipe = items?.find((item) => item.id === recipeId)?.recipe;
         if (!recipe) return [];
         const cookbook = Boolean(projectMeta.meta.cookbookMode);
         // One fixed list, in the order the card reads, every item always there
-        // (Amelia, 2026-11-21: a consistent list): "+ Add" when it's blank,
-        // nothing beside it when it's on the card, "Hidden" when it's written
-        // but not shown. Picking one opens it on the card, ready to type, with what it
-        // already holds; a field the theme hides is switched on first. On a
-        // cookbook page still printing description and note as one paragraph,
-        // Notes reads "In description", and picking it puts them at the foot.
-        type Line = { name: string; hint?: string; restore: () => void };
+        // and nothing beside it (Amelia, 2026-11-21). Picking one adds it or
+        // opens it on the card, ready to type, with what it already holds; a
+        // field the theme hides is shown first, since it has to be on the card
+        // to be edited. Showing and hiding live behind the header's gear
+        // ("Show on recipes", `fieldVisibility` below). On a cookbook page
+        // still printing description and note as one paragraph, picking Notes
+        // puts them at the foot.
+        type Line = { name: string; restore: () => void };
         const field = (id: RecipeFieldId): Line => {
-          const filled = Boolean(fieldValue(recipe, id));
-          const withDescription = id === "note" && usesHeadnote(fieldSwitches, cookbook);
           const shown = fieldTicked(fieldSwitches, id, cookbook);
           return {
             name: RECIPE_LINE_NAMES[id],
-            hint: !filled ? "Add" : withDescription ? "In description" : shown ? undefined : "Hidden",
             restore: () => {
               if (!shown) setFieldShown(id, true, cookbook);
               addField(recipeId, id);
             },
           };
         };
-        const line = (id: "time" | "servings" | "ingredients" | "steps", filled: boolean): Line => ({
+        const line = (id: "time" | "servings" | "ingredients" | "steps"): Line => ({
           name: RECIPE_LINE_NAMES[id],
-          hint: filled ? undefined : "Add",
           restore: () => addField(recipeId, id),
         });
         // The link: a recipe card's links come on with the first one added,
@@ -738,7 +731,6 @@ export function PrintDeck(props: PrintDeckProps) {
         const linkOn = recipeLinkOn(showSourceUrl, cookbook, projectMeta.meta.itemPlacements?.[recipeId]);
         const link: Line = {
           name: RECIPE_LINE_NAMES.link,
-          hint: !recipe.sourceUrl ? "Add" : linkOn ? undefined : "Hidden",
           restore: () => {
             if (recipe.sourceUrl && !linkOn) {
               if (cookbook) projectMeta.setItemPlacement(recipeId, { showSourceUrl: showSourceUrl ? undefined : true });
@@ -750,18 +742,14 @@ export function PrintDeck(props: PrintDeckProps) {
           },
         };
         const lines: Line[] = [
-          {
-            name: "Photo",
-            hint: recipeHasPhoto(recipeId) ? undefined : "Add",
-            restore: () => openPhotoDialog(recipeId),
-          },
+          { name: "Photo", restore: () => openPhotoDialog(recipeId) },
           field("description"),
           field("contributor"),
           field("category"),
-          line("time", Boolean(formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime))),
-          line("servings", Boolean(recipe.servings ?? recipe.yield)),
-          line("ingredients", recipe.ingredients.length > 0),
-          line("steps", recipe.instructions.length > 0),
+          line("time"),
+          line("servings"),
+          line("ingredients"),
+          line("steps"),
           field("note"),
           link,
         ];
@@ -770,7 +758,6 @@ export function PrintDeck(props: PrintDeckProps) {
         if (headings) {
           lines.push({
             name: headings === "heading" ? "Heading" : "Headings",
-            hint: "Add",
             restore: () => {
               restoreHeadings(recipeId);
             },
@@ -878,6 +865,28 @@ export function PrintDeck(props: PrintDeckProps) {
     const addPhotoPage =
       dividerSection && !dividerHasFacing ? () => addChapterImagePage(dividerSection.id) : null;
     const missingLines = addableLines();
+    // "Show on recipes", behind Recipe details' gear: a switch per optional
+    // field, for every recipe in the theme on screen (`ThemeLook.fields`). The
+    // one place a field is shown or hidden; hiding never touches the recipe.
+    const fieldVisibility =
+      navItem.kind === "recipe"
+        ? (() => {
+            const cookbook = Boolean(projectMeta.meta.cookbookMode);
+            const theme = RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === previewTemplate)?.label;
+            return {
+              scope: theme ? `For every recipe in ${theme}` : "For every recipe in this theme",
+              rows: RECIPE_FIELD_IDS.map((id) => ({
+                name: RECIPE_FIELDS[id].name,
+                checked: fieldTicked(fieldSwitches, id, cookbook),
+                hint:
+                  id === "note" && usesHeadnote(fieldSwitches, cookbook)
+                    ? "Printing with the description"
+                    : undefined,
+                onChange: (shown: boolean) => setFieldShown(id, shown, cookbook),
+              })),
+            };
+          })()
+        : null;
 
     // Whether this KIND of page has an edit/reveal button at all.
     // A cover made into the cook's own image or a blank has no words or theme
@@ -1099,6 +1108,7 @@ export function PrintDeck(props: PrintDeckProps) {
                   heading={navItem.kind === "recipe" ? "Recipe details" : "Add to this page"}
                   lines={missingLines}
                   page={addPhotoPage ? { name: "Photo page beside it", add: addPhotoPage } : null}
+                  settings={fieldVisibility}
                   onClose={() => setAddMenuAt(null)}
                 />
               )}

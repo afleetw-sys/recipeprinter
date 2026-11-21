@@ -6664,13 +6664,6 @@ export default function PrintPage() {
     const recipeItem = items?.find((item) => item.id === recipeId);
     return ownPhotosOnly ? (recipeItem ? bookImageOf(recipeItem) : undefined) : recipeItem?.recipe?.image;
   };
-  // Whether a recipe has a photo the book draws, in its page or on the full
-  // page facing it. The page toolbar's "+" menu offers a photo when not.
-  const recipeHasPhoto = (recipeId: string) =>
-    Boolean(recipePhotoShown(recipeId)) &&
-    (cookbookMode
-      ? photoModeFor(recipeId) !== "none"
-      : (projectMeta.meta.itemPlacements?.[recipeId]?.showPhoto ?? showPhoto));
   const renderPagePhotoControl = (recipeId: string) => {
     const recipe = items?.find((item) => item.id === recipeId && item.recipe)?.recipe;
     // Every recipe page, photo or not. This used to bail on `!recipe.image`,
@@ -7945,7 +7938,6 @@ export default function PrintPage() {
           setCoverForSide={setCoverForSide}
           coverPhotoCandidates={coverPhotoCandidates}
           renderPagePhotoControl={renderPagePhotoControl}
-          recipeHasPhoto={recipeHasPhoto}
           renderCardPhotoControl={renderCardPhotoControl}
           renderArtPhotoControl={renderArtPhotoControl}
           sectionRecipeImages={bookSectionImages}
@@ -8000,8 +7992,6 @@ export default function PrintPage() {
           setUtensil={setUtensil}
           stacked={stacked}
           setStacked={setStacked}
-          fieldSwitches={fieldSwitches}
-          setFieldShown={setFieldShown}
           themeCustomized={
             isCustomized(themeLook) || Boolean(projectMeta.meta.pageLooks?.[RECIPES_ADDRESS])
           }

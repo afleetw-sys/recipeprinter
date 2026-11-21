@@ -544,44 +544,92 @@
   overscroll-behavior: contain;
   padding-bottom: 4px;
 }
-/* Name, then where a recipe line stands ("Add", "Hidden"; nothing once
-   added), quiet at the end, so one switched on and left empty is still easy
-   to find. */
-.add-line-menu .cp-menu__item {
-  gap: 10px;
-}
 .add-line-menu__name {
   flex: 1;
+  min-width: 0;
 }
-.add-line-menu__hint {
+/* The header: Recipe details and its gear, or Show on recipes and its back
+   button. Stays put while the rows scroll. */
+.add-line-menu__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.add-line-menu__gear,
+.add-line-menu__back {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
   color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-label);
+  cursor: pointer;
+}
+.add-line-menu__gear {
+  padding: 4px;
+}
+.add-line-menu__back {
+  padding: 0 4px 0 2px;
+}
+.add-line-menu__back .cp-menu__heading {
+  padding-left: 0;
+}
+.add-line-menu__gear:hover,
+.add-line-menu__back:hover {
+  background: var(--cp-surface-strong);
+  color: var(--cp-ink);
+}
+/* What the switches apply to: every recipe in this theme. */
+.add-line-menu__scope {
+  margin: 0;
+  padding: 0 8px 4px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-micro);
+}
+.add-line-menu__switch-row {
+  cursor: pointer;
+}
+.add-line-menu__switch-hint {
+  display: block;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-micro);
   font-weight: 500;
 }
-/* "+ Add" reads as a button, not a second name: a small grey chip, smaller
-   than the names and on a tint of its own, darker while its row is hovered
-   (Amelia, 2026-11-21). Flat, like every control. "Hidden" stays a plain
-   note. */
-.add-line-menu__hint--add {
-  gap: 2px;
-  padding: 2px 8px 2px 6px;
+/* A plain switch: a pill track and a knob, accent while on. */
+.add-line-menu__switch {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 28px;
+  height: 16px;
+  margin: 0;
   border-radius: 999px;
-  background: var(--cp-surface-strong);
-  font-size: var(--cp-fs-micro);
-  font-weight: 700;
-  line-height: 1.4;
+  background: var(--cp-line-strong);
+  cursor: pointer;
+  transition: background-color 120ms ease;
 }
-.add-line-menu .cp-menu__item:hover .add-line-menu__hint--add {
-  background: var(--cp-surface-strong-hover);
+.add-line-menu__switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--cp-card);
+  transition: transform 120ms ease;
 }
-/* Rows hidden below: the list's last 28px fade out (AddLineMenu sets the
-   class while there is more to scroll to). */
-.add-line-menu__grid--more {
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+.add-line-menu__switch:checked {
+  background: var(--cp-accent);
+}
+.add-line-menu__switch:checked::after {
+  transform: translateX(12px);
+}
+.add-line-menu__switch:focus-visible {
+  outline: 2px solid var(--cp-focus-ring, var(--cp-accent));
+  outline-offset: 2px;
 }
 .add-line-menu .cp-menu__heading {
   padding: 3px 8px 2px;
