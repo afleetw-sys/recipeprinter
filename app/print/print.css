@@ -537,20 +537,18 @@
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-/* Icon, name, then where a recipe field stands ("Added", "Empty", "Hidden"),
-   quiet at the end, so one added and left empty is still easy to find. */
+/* Name, then where a recipe field stands ("Added", "+ Add", "Hidden"),
+   quiet at the end, so one switched on and left empty is still easy to find. */
 .add-line-menu .cp-menu__item {
   gap: 10px;
-}
-.add-line-menu__icon {
-  display: inline-flex;
-  flex: none;
-  color: var(--cp-ink-soft);
 }
 .add-line-menu__name {
   flex: 1;
 }
 .add-line-menu__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-label);
   font-weight: 500;

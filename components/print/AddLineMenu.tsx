@@ -2,20 +2,7 @@
 
 import { useLayoutEffect, useRef, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import {
-  AccountIcon,
-  ClockIcon,
-  HeadingIcon,
-  ICON_SIZE,
-  ImageIcon,
-  LinkIcon,
-  ListIcon,
-  ListNumberedIcon,
-  PencilIcon,
-  TagIcon,
-  TextIcon,
-  UsersIcon,
-} from "@/components/icons";
+import { ICON_SIZE, PlusIcon } from "@/components/icons";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
 /**
@@ -28,30 +15,6 @@ import { useMenuDismiss } from "@/lib/useMenuDismiss";
  * `page` is a whole page the "+" can add next to this one (a chapter's photo
  * page beside it), ruled off under the lines because it isn't one of them.
  */
-/**
- * Each row's icon, by the name it shows, so every page kind's rows (a
- * recipe's, a cover's, a chapter's) get one from a single list. A name not
- * here is a line of text.
- */
-const LINE_ICONS: Record<string, (props: { size?: number }) => JSX.Element> = {
-  Photo: ImageIcon,
-  Description: TextIcon,
-  Contributor: AccountIcon,
-  Category: TagIcon,
-  Notes: PencilIcon,
-  "Cook time": ClockIcon,
-  Servings: UsersIcon,
-  Link: LinkIcon,
-  Ingredients: ListIcon,
-  Steps: ListNumberedIcon,
-  Heading: HeadingIcon,
-  Headings: HeadingIcon,
-  Title: HeadingIcon,
-  Author: AccountIcon,
-  Signature: AccountIcon,
-  Credit: AccountIcon,
-};
-
 export function AddLineMenu({
   anchor,
   triggerRef,
@@ -67,7 +30,7 @@ export function AddLineMenu({
   triggerRef: RefObject<HTMLElement | null>;
   /** "Add to this recipe" on a recipe, "Add to this page" on a book page. */
   heading: string;
-  /** `hint` says where a recipe field stands ("Added", "Empty", "Hidden"). */
+  /** `hint` says where a recipe field stands ("Added", "Add", "Hidden"). */
   lines: { name: string; hint?: string; restore: () => void }[];
   page?: { name: string; add: () => void } | null;
   onClose: () => void;
@@ -105,14 +68,13 @@ export function AddLineMenu({
               line.restore();
             }}
           >
-            <span className="add-line-menu__icon">
-              {(() => {
-                const Icon = LINE_ICONS[line.name] ?? TextIcon;
-                return <Icon size={ICON_SIZE.md} />;
-              })()}
-            </span>
             <span className="add-line-menu__name">{line.name}</span>
-            {line.hint && <span className="add-line-menu__hint">{line.hint}</span>}
+            {line.hint && (
+              <span className="add-line-menu__hint">
+                {line.hint === "Add" && <PlusIcon size={ICON_SIZE.xs} />}
+                {line.hint}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -127,10 +89,8 @@ export function AddLineMenu({
             page.add();
           }}
         >
-          <span className="add-line-menu__icon">
-            <ImageIcon size={ICON_SIZE.md} />
-          </span>
-          <span className="add-line-menu__name">{page.name}</span>
+          <PlusIcon size={ICON_SIZE.sm} />
+          {page.name}
         </button>
       )}
     </div>,

@@ -715,7 +715,7 @@ export function PrintDeck(props: PrintDeckProps) {
         // The recipe's fields (lib/recipeFields.ts), always: one that's there
         // opens for editing, one that isn't opens empty, and either way it
         // shows in this theme from then on. The hint says which it is, so a
-        // field added and left empty (it never prints) is still easy to find.
+        // field switched on and left empty (it never prints) reads "+ Add".
         // On a cookbook page still printing description and note as one
         // paragraph, picking either makes them two, so the note lands at the
         // foot.
@@ -734,7 +734,7 @@ export function PrintDeck(props: PrintDeckProps) {
               : shown
                 ? filled
                   ? "Added"
-                  : "Empty"
+                  : "Add"
                 : filled
                   ? "Hidden"
                   : undefined,

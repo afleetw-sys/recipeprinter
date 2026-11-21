@@ -582,37 +582,3 @@ export function AppleIcon({ size = ICON_SIZE.md }: { size?: number }) {
     </svg>
   );
 }
-
-// A label tag: a recipe's category ("Side Dishes").
-export const TagIcon = (p: IconProps) => (
-  <Base {...p}>
-    <path d="M3.5 12.6V4.8a1.3 1.3 0 011.3-1.3h7.8l8 8a1.3 1.3 0 010 1.8l-6.9 6.9a1.3 1.3 0 01-1.8 0z" />
-    <circle cx="8.3" cy="8.3" r="1.3" />
-  </Base>
-);
-
-// Bulleted lines: a recipe's ingredients.
-export const ListIcon = (p: IconProps) => (
-  <Base {...p}>
-    <path d="M9 6.5h11M9 12h11M9 17.5h11" />
-    <circle cx="4.5" cy="6.5" r="0.9" />
-    <circle cx="4.5" cy="12" r="0.9" />
-    <circle cx="4.5" cy="17.5" r="0.9" />
-  </Base>
-);
-
-// Numbered lines: a recipe's steps.
-export const ListNumberedIcon = (p: IconProps) => (
-  <Base {...p}>
-    <path d="M10 6.5h10M10 12h10M10 17.5h10" />
-    <path d="M4 5.5l1.3-.8v4" />
-    <path d="M3.8 13.4c.2-.9 2.4-1.1 2.4.3 0 .9-2.4 1.7-2.4 2.6h2.5" />
-  </Base>
-);
-
-// A capital H: a heading or a title line.
-export const HeadingIcon = (p: IconProps) => (
-  <Base {...p}>
-    <path d="M6 5v14M18 5v14M6 12h12" />
-  </Base>
-);
