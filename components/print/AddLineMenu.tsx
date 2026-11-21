@@ -2,19 +2,56 @@
 
 import { useLayoutEffect, useRef, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { ICON_SIZE, PlusIcon } from "@/components/icons";
+import {
+  AccountIcon,
+  ClockIcon,
+  HeadingIcon,
+  ICON_SIZE,
+  ImageIcon,
+  LinkIcon,
+  ListIcon,
+  ListNumberedIcon,
+  PencilIcon,
+  TagIcon,
+  TextIcon,
+  UsersIcon,
+} from "@/components/icons";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
 /**
- * The page toolbar's "+": a small panel of what this page can take, one tile
- * each, in two columns: on a recipe its empty lines and the fields the theme
- * is hiding (lib/recipeMissingFields.ts). Picking one opens it on the page,
+ * The page toolbar's "+": a short list of what this page can take, one row
+ * each, down a single column: on a recipe its fields (lib/recipeFields.ts),
+ * added or not, then its empty lines (lib/recipeMissingFields.ts). Picking one opens it on the page,
  * ready to type. Opens under its button and keeps itself on screen, like
  * MoveToSectionMenu, whose shell this is.
  *
  * `page` is a whole page the "+" can add next to this one (a chapter's photo
  * page beside it), ruled off under the lines because it isn't one of them.
  */
+/**
+ * Each row's icon, by the name it shows, so every page kind's rows (a
+ * recipe's, a cover's, a chapter's) get one from a single list. A name not
+ * here is a line of text.
+ */
+const LINE_ICONS: Record<string, (props: { size?: number }) => JSX.Element> = {
+  Photo: ImageIcon,
+  Description: TextIcon,
+  Contributor: AccountIcon,
+  Category: TagIcon,
+  Notes: PencilIcon,
+  "Cook time": ClockIcon,
+  Servings: UsersIcon,
+  Link: LinkIcon,
+  Ingredients: ListIcon,
+  Steps: ListNumberedIcon,
+  Heading: HeadingIcon,
+  Headings: HeadingIcon,
+  Title: HeadingIcon,
+  Author: AccountIcon,
+  Signature: AccountIcon,
+  Credit: AccountIcon,
+};
+
 export function AddLineMenu({
   anchor,
   triggerRef,
@@ -68,7 +105,13 @@ export function AddLineMenu({
               line.restore();
             }}
           >
-            {line.name}
+            <span className="add-line-menu__icon">
+              {(() => {
+                const Icon = LINE_ICONS[line.name] ?? TextIcon;
+                return <Icon size={ICON_SIZE.md} />;
+              })()}
+            </span>
+            <span className="add-line-menu__name">{line.name}</span>
             {line.hint && <span className="add-line-menu__hint">{line.hint}</span>}
           </button>
         ))}
@@ -84,8 +127,10 @@ export function AddLineMenu({
             page.add();
           }}
         >
-          <PlusIcon size={ICON_SIZE.sm} />
-          {page.name}
+          <span className="add-line-menu__icon">
+            <ImageIcon size={ICON_SIZE.md} />
+          </span>
+          <span className="add-line-menu__name">{page.name}</span>
         </button>
       )}
     </div>,

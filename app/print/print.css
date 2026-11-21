@@ -518,23 +518,37 @@
   overflow-y: auto;
 }
 
-/* The page toolbar's "+" (AddLineMenu): a small panel of one-word tiles in two
-   columns, as narrow as they allow rather than a chapter list's width. */
+/* The page toolbar's "+" (AddLineMenu): one row per line or field, down a
+   single column (Amelia, 2026-11-21), as narrow as the names and their hints
+   allow rather than a chapter list's width. */
 .add-line-menu.add-line-menu {
-  min-width: 0;
+  min-width: 188px;
   max-width: none;
   padding: 4px;
 }
+/* A fixed height that scrolls inside itself (Amelia, 2026-11-21), so a recipe
+   with every line on offer doesn't run the panel down the page. A cover's two
+   rows stay two rows high. */
 .add-line-menu__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(124px, 1fr));
+  grid-template-columns: 1fr;
   gap: 2px;
+  max-height: 264px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
-/* Where a recipe field stands ("Added", "Empty", "Hidden"), quiet beside its
-   name, so one added and left empty is still easy to find. */
+/* Icon, name, then where a recipe field stands ("Added", "Empty", "Hidden"),
+   quiet at the end, so one added and left empty is still easy to find. */
 .add-line-menu .cp-menu__item {
-  justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
+}
+.add-line-menu__icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--cp-ink-soft);
+}
+.add-line-menu__name {
+  flex: 1;
 }
 .add-line-menu__hint {
   color: var(--cp-ink-soft);
