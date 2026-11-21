@@ -605,12 +605,6 @@
   width: 100%;
   color: var(--cp-ink-soft);
 }
-.add-line-menu__switch-hint {
-  display: block;
-  color: var(--cp-ink-soft);
-  font-size: var(--cp-fs-micro);
-  font-weight: 500;
-}
 /* A plain switch: a pill track and a knob, accent while on. */
 .add-line-menu__switch {
   appearance: none;

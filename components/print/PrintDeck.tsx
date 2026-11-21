@@ -42,7 +42,6 @@ import {
   RECIPE_FIELDS,
   fieldShown,
   fieldTicked,
-  usesHeadnote,
   type FieldSwitchId,
   type FieldSwitches,
   type RecipeFieldId,
@@ -900,10 +899,6 @@ export function PrintDeck(props: PrintDeckProps) {
             const switched = (id: FieldSwitchId, name: string): FieldVisibilityRow => ({
               name,
               checked: fieldTicked(fieldSwitches, id, cookbook),
-              hint:
-                id === "note" && usesHeadnote(fieldSwitches, cookbook)
-                  ? "Printing with the description"
-                  : undefined,
               onChange: (shown: boolean) => setFieldShown(id, shown, cookbook),
             });
             return {

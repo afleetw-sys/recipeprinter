@@ -14,8 +14,6 @@ const MIN_ROOM_PX = 200;
 export interface FieldVisibilityRow {
   name: string;
   checked: boolean;
-  /** A quiet line under the name, when the switch needs one. */
-  hint?: string;
   /** Always on: a recipe without it isn't a recipe (title, ingredients, steps). */
   locked?: boolean;
   onChange: (shown: boolean) => void;
@@ -124,10 +122,7 @@ export function AddLineMenu({
                 className={`cp-menu__item add-line-menu__switch-row${row.locked ? " add-line-menu__switch-row--locked" : ""}`}
                 title={row.locked ? "Every recipe shows this" : undefined}
               >
-                <span className="add-line-menu__name">
-                  {row.name}
-                  {row.hint && <span className="add-line-menu__switch-hint">{row.hint}</span>}
-                </span>
+                <span className="add-line-menu__name">{row.name}</span>
                 <input
                   type="checkbox"
                   role="switch"
