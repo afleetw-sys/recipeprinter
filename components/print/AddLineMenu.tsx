@@ -84,7 +84,14 @@ export function AddLineMenu({
             }}
           >
             <span className="add-line-menu__name">{line.name}</span>
-            {line.hint && <span className="add-line-menu__hint">{line.hint}</span>}
+            {line.hint && (
+              <span className="add-line-menu__hint">
+                {/* A heavier stroke than the toolbar's, so it holds its own at
+                    this size beside the word. */}
+                {line.hint === "Add" && <PlusIcon size={ICON_SIZE.xs} strokeWidth={2.5} />}
+                {line.hint}
+              </span>
+            )}
           </button>
         ))}
         {/* Inside the scrolling list, so the list holds the panel's bottom
