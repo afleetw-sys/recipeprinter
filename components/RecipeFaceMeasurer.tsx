@@ -65,7 +65,15 @@ const MAX_STABILITY_POLLS = 6;
 // Measured convergence for well-behaved recipes peaks around 8 passes, so this
 // budget never binds on them while guaranteeing the loop always terminates
 // promptly on the pathological ones.
-const MAX_SETTLE_PASSES = 12;
+//
+// 24, not 12 (2026-11-20). The pull moves one line per pass, so a long recipe
+// spread over many faces can still be filling earlier faces when 12 run out.
+// It then settled on an under-filled arrangement, or with notes and a tall
+// header on a 6x4, on one that clipped (28px). Compared over every harness
+// combo (23,239 of them): only the 40-ingredient "huge" stress recipe changes,
+// 37 combos, all fuller earlier faces, 10 of them a page shorter (a last page
+// holding one step is gone), none newly failing or shrunk.
+const MAX_SETTLE_PASSES = 24;
 
 // Extra room, beyond the line's own height, that a face must have spare before
 // the pull will move content up into it. See the pull site for why.
