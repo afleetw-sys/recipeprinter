@@ -537,7 +537,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-/* Name, then where a recipe field stands ("Added", "+ Add", "Hidden"),
+/* Name, then where a recipe field stands ("+ Add", "Hidden"; nothing once added),
    quiet at the end, so one switched on and left empty is still easy to find. */
 .add-line-menu .cp-menu__item {
   gap: 10px;

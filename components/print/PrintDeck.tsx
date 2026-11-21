@@ -708,8 +708,8 @@ export function PrintDeck(props: PrintDeckProps) {
         const cookbook = Boolean(projectMeta.meta.cookbookMode);
         // One fixed list, in the order the card reads, every item always there
         // (Amelia, 2026-11-21: a consistent list): "+ Add" when it's blank,
-        // "Added" when it's on the card, "Hidden" when it's written but not
-        // shown. Picking one opens it on the card, ready to type, with what it
+        // nothing beside it when it's on the card, "Hidden" when it's written
+        // but not shown. Picking one opens it on the card, ready to type, with what it
         // already holds; a field the theme hides is switched on first. On a
         // cookbook page still printing description and note as one paragraph,
         // Notes reads "In description", and picking it puts them at the foot.
@@ -720,7 +720,7 @@ export function PrintDeck(props: PrintDeckProps) {
           const shown = fieldTicked(fieldSwitches, id, cookbook);
           return {
             name: RECIPE_LINE_NAMES[id],
-            hint: !filled ? "Add" : withDescription ? "In description" : shown ? "Added" : "Hidden",
+            hint: !filled ? "Add" : withDescription ? "In description" : shown ? undefined : "Hidden",
             restore: () => {
               if (!shown) setFieldShown(id, true, cookbook);
               addField(recipeId, id);
@@ -729,7 +729,7 @@ export function PrintDeck(props: PrintDeckProps) {
         };
         const line = (id: "time" | "servings" | "ingredients" | "steps", filled: boolean): Line => ({
           name: RECIPE_LINE_NAMES[id],
-          hint: filled ? "Added" : "Add",
+          hint: filled ? undefined : "Add",
           restore: () => addField(recipeId, id),
         });
         // The link: a recipe card's links come on with the first one added,
@@ -738,7 +738,7 @@ export function PrintDeck(props: PrintDeckProps) {
         const linkOn = recipeLinkOn(showSourceUrl, cookbook, projectMeta.meta.itemPlacements?.[recipeId]);
         const link: Line = {
           name: RECIPE_LINE_NAMES.link,
-          hint: !recipe.sourceUrl ? "Add" : linkOn ? "Added" : "Hidden",
+          hint: !recipe.sourceUrl ? "Add" : linkOn ? undefined : "Hidden",
           restore: () => {
             if (recipe.sourceUrl && !linkOn) {
               if (cookbook) projectMeta.setItemPlacement(recipeId, { showSourceUrl: showSourceUrl ? undefined : true });
@@ -752,7 +752,7 @@ export function PrintDeck(props: PrintDeckProps) {
         const lines: Line[] = [
           {
             name: "Photo",
-            hint: recipeHasPhoto(recipeId) ? "Added" : "Add",
+            hint: recipeHasPhoto(recipeId) ? undefined : "Add",
             restore: () => openPhotoDialog(recipeId),
           },
           field("description"),

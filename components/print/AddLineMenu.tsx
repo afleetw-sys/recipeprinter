@@ -31,7 +31,7 @@ export function AddLineMenu({
   triggerRef: RefObject<HTMLElement | null>;
   /** "Recipe details" on a recipe, "Add to this page" on a book page. */
   heading: string;
-  /** `hint` says where a recipe field stands ("Added", "Add", "Hidden"). */
+  /** `hint` says where a recipe line stands ("Add", "Hidden"); none once it is on the card. */
   lines: { name: string; hint?: string; restore: () => void }[];
   page?: { name: string; add: () => void } | null;
   onClose: () => void;
