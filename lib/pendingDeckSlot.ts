@@ -131,3 +131,56 @@ export function hostedPendingPage({
   if (!next || next.single || next.left === null) return null;
   return isRoom(next.left) ? { spread: index + 1, side: "left" } : null;
 }
+
+/**
+ * Where a book's loading page stands, which is where its recipe will land.
+ *
+ * On cards the loading card sits in the slot the recipe takes, so the card
+ * simply becomes the recipe. A book's loading page used to be drawn as a lone
+ * page centred under the spread it followed, with the deck parked on that
+ * spread. The recipe then opened a NEW spread, on its left page: the lone page
+ * vanished, the deck snapped back to the spread before, and scrolled down to
+ * a page that had appeared somewhere else.
+ *
+ * - `hosted`: an empty page already in the book (`hostedPendingPage`).
+ * - otherwise a spread of its own, drawn where the new spread will be, with
+ *   the loading page on the side the recipe opens on: the left, or the right
+ *   facing its full-page photo.
+ *
+ * Null when the recipe takes the anchor's facing page and that page holds
+ * something (a recipe added mid-book beside another): there is no slot to
+ * stand in without laying the book out again first.
+ */
+export function pendingBookPage(input: {
+  spreads: readonly { left: number | null; right: number | null; single?: boolean }[];
+  sheets: readonly HostSheet[];
+  anchorSheet: number | null;
+  anchorId: string | null;
+  fullPagePhotos: boolean;
+}): { spread: number; side: "left" | "right"; hosted: boolean } | null {
+  const hosted = hostedPendingPage(input);
+  if (hosted) return { ...hosted, hosted: true };
+  const { spreads, sheets, anchorSheet, anchorId, fullPagePhotos } = input;
+  if (anchorSheet === null) return null;
+  const idOf = (slot: HostSheet["slots"][number]) => (slot?.kind === "recipe" ? slot.recipeId : slot?.id);
+  let last = anchorSheet;
+  if (anchorId) {
+    for (let i = anchorSheet + 1; i < sheets.length; i += 1) {
+      if (!sheets[i]?.slots.some((slot) => idOf(slot) === anchorId)) break;
+      last = i;
+    }
+  }
+  const index = spreads.findIndex((spread) => spread.left === last || spread.right === last);
+  const spread = spreads[index];
+  if (!spread) return null;
+  if (fullPagePhotos) return { spread: index + 1, side: "right", hosted: false };
+  // Nothing is set beside the contents or a cover, so the recipe starts the
+  // next spread whichever side the anchor ended on.
+  const frontMatter = Boolean(
+    sheets[last]?.slots.some((slot) => slot?.kind === "toc" || slot?.kind === "cover"),
+  );
+  if (spread.single || spread.right === last || frontMatter) {
+    return { spread: index + 1, side: "left", hosted: false };
+  }
+  return null;
+}

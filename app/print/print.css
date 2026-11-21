@@ -1724,12 +1724,14 @@
 }
 
 .recipe-page-slide.is-settling,
+.recipe-spread__page.is-settling,
 .recipe-page-rail__item.is-settling {
   animation: rp-settle-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .recipe-page-slide.is-settling,
+  .recipe-spread__page.is-settling,
   .recipe-page-rail__item.is-settling {
     animation: none;
   }

@@ -68,7 +68,7 @@ import { importLoadingLabel } from "@/lib/importProgress";
 import { importPreview } from "@/lib/importPreviews";
 import { BACK_COVER_NAV_ID } from "@/lib/railPending";
 import { coverSideOf } from "@/lib/pageDeletion";
-import { hostedPendingPage } from "@/lib/pendingDeckSlot";
+import { pendingBookPage } from "@/lib/pendingDeckSlot";
 import type { CoverConfig, QueueItem, Section } from "@/types/recipe";
 
 type CoverSide = "front" | "back" | "dedication";
@@ -1394,9 +1394,9 @@ export function PrintDeck(props: PrintDeckProps) {
   // book's last page, which `pendingAnchorIndexIn` leaves as null.
   const hostAnchorIndex =
     pendingAnchorIndex ?? (!pendingAddAfterRecipeId && navItems.length > 0 ? navItems.length - 1 : null);
-  const hostTarget =
+  const bookPage =
     cookbookView && hostAnchorIndex !== null
-      ? hostedPendingPage({
+      ? pendingBookPage({
           spreads,
           sheets,
           anchorSheet: navItems[hostAnchorIndex]?.sheetIndex ?? null,
@@ -1404,7 +1404,15 @@ export function PrintDeck(props: PrintDeckProps) {
           fullPagePhotos: photoStyle === "full",
         })
       : null;
+  const hostTarget = bookPage?.hosted ? bookPage : null;
   const blankHostedImport = hostTarget ? (parsingImports[0] ?? null) : null;
+  /** Loading on a spread of its own, the one the recipe is about to open
+      (`pendingBookPage`), rather than as a lone page below the spread. */
+  const spreadImport = bookPage && !bookPage.hosted ? (parsingImports[0] ?? null) : null;
+  /** The spread the loading pages follow: the one before the spread the
+      recipe opens, when it opens one (a recipe running onto a later spread
+      than its first page's), otherwise the anchor's. */
+  const pendingAfterSpread = spreadImport ? bookPage!.spread - 1 : pendingAnchorSpreadIndex;
   /** The loading page itself: the photo being read, or what is being fetched. */
   const pendingSheet = (pendingItem: QueueItem) => (
     <div
@@ -1442,7 +1450,7 @@ export function PrintDeck(props: PrintDeckProps) {
           <div
             className={`recipe-page-slide recipe-page-pending ${
               activeImportId === pendingItem.id ? "is-active" : ""
-            }`}
+            } ${pendingItem === spreadImport ? "recipe-page-slide--spread no-print" : ""}`}
             // A page slide is a button you click to move to it. These were
             // neither, so a card that is still loading or has failed behaved
             // unlike every other card in the deck. Only while it is NOT the
@@ -1470,7 +1478,32 @@ export function PrintDeck(props: PrintDeckProps) {
             // the sheets pipeline and has no slot in `slideRefs` to hold one.
             data-pending-page={index === 0 && !blankHostedImport ? "" : undefined}
           >
-            {pendingSheet(pendingItem)}
+            {pendingItem === spreadImport ? (
+              // Shaped like the spread the recipe opens, the loading page on
+              // the side it lands, so the page arrives where this one stood.
+              <div className="recipe-spread">
+                {(["left", "right"] as const).map((side) =>
+                  side === bookPage?.side ? (
+                    <div className="recipe-spread__cell" key={side}>
+                      {pendingSheet(pendingItem)}
+                    </div>
+                  ) : stackSpreads ? null : (
+                    <div className="recipe-spread__cell" key={side}>
+                      <div
+                        className="recipe-spread__blank recipe-spread__blank--trailing"
+                        aria-hidden
+                        style={{
+                          width: `${previewDims.w * deckScale}px`,
+                          height: `${previewDims.h * deckScale}px`,
+                        }}
+                      />
+                    </div>
+                  ),
+                )}
+              </div>
+            ) : (
+              pendingSheet(pendingItem)
+            )}
           </div>
         ))}
       </>
@@ -2042,7 +2075,12 @@ export function PrintDeck(props: PrintDeckProps) {
                         : focusedSheet === sheetIndex);
                     return (
                       <div
-                        className={`recipe-spread__page ${isFocused ? "is-focused" : ""}`}
+                        className={`recipe-spread__page ${isFocused ? "is-focused" : ""} ${
+                          // Settles into the slot its loading page held, as a
+                          // card does (`settlingIds`). The page, not the
+                          // spread: the page facing it was already there.
+                          pageNav?.recipeId && settlingIds?.has(pageNav.recipeId) ? "is-settling" : ""
+                        }`}
                         onMouseDown={notePhotoPointer}
                         onClick={(event) => {
                           event.stopPropagation();
@@ -2138,7 +2176,7 @@ export function PrintDeck(props: PrintDeckProps) {
                           )}
                       </div>
                     </div>
-                    {index === pendingAnchorSpreadIndex && (
+                    {index === pendingAfterSpread && (
                       <>
                         {failedPages}
                         {pendingPages}
@@ -2340,7 +2378,7 @@ export function PrintDeck(props: PrintDeckProps) {
                 </Fragment>
               );
             })}
-          {(cookbookView ? pendingAnchorSpreadIndex === null : pendingAnchorIndex === null) && (
+          {(cookbookView ? pendingAfterSpread === null : pendingAnchorIndex === null) && (
             <>
               {failedPages}
               {pendingPages}
