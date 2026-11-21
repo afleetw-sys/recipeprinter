@@ -243,8 +243,6 @@ import {
   fieldShown,
   fieldValue,
   usesHeadnote,
-  withFieldShown,
-  type RecipeFieldId,
 } from "@/lib/recipeFields";
 import { RecipeFieldsProvider } from "@/lib/recipeFieldsContext";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
@@ -428,7 +426,7 @@ export default function PrintPage() {
       the current theme's. Pro on recipe cards; included in a cookbook. */
   const [themeLooks, setThemeLooks] = useState<ThemeLooks>({});
   const themeLook = lookFor(themeLooks, template);
-  const { fontScale, photoScale, accent, posterColor, utensil, stacked, fields: fieldSwitches } = themeLook;
+  const { fontScale, photoScale, accent, posterColor, utensil, stacked } = themeLook;
   const accentRoot = accentRootProps(accent, template);
   const themeArt = useMemo(() => ({ posterColor, utensil }), [posterColor, utensil]);
   const setFontScale = useCallback(
@@ -455,25 +453,8 @@ export default function PrintPage() {
     (value: boolean) => setThemeLooks((looks) => withLook(looks, template, { stacked: value })),
     [template],
   );
-  /** Shows or hides one recipe field in this theme (lib/recipeFields.ts).
-      Never touches what any recipe holds. */
-  const setFieldShown = useCallback(
-    (field: RecipeFieldId, shown: boolean, cookbook: boolean) =>
-      setThemeLooks((looks) =>
-        withLook(looks, template, {
-          fields: withFieldShown(lookFor(looks, template).fields, field, shown, cookbook),
-        }),
-      ),
-    [template],
-  );
-  // Back to the theme as it ships, except which fields it shows: those aren't
-  // a customization (lib/themeLooks.ts `isCustomized`), so a reset that hid
-  // the cook's contributor would be a surprise.
   const resetThemeLook = useCallback(
-    () =>
-      setThemeLooks((looks) =>
-        withLook(looks, template, { ...DEFAULT_THEME_LOOK, fields: lookFor(looks, template).fields }),
-      ),
+    () => setThemeLooks((looks) => withLook(looks, template, DEFAULT_THEME_LOOK)),
     [template],
   );
   const [showDonateDialog, setShowDonateDialog] = useState(false);
@@ -610,6 +591,10 @@ export default function PrintPage() {
   const [railShake, setRailShake] = useState<{ recipeId: string; nonce: number } | null>(null);
   const queue = useQueue();
   const projectMeta = useProjectMeta();
+  // Which recipe fields the book shows, for every recipe in it whatever its
+  // theme (lib/recipeFields.ts); switched in Recipe details' "Show on recipes".
+  const fieldSwitches = projectMeta.meta.fieldSwitches;
+  const setFieldShown = projectMeta.setFieldShown;
   /**
    * Recipe order within each section, read off the BOOK rather than held here.
    *
@@ -7831,6 +7816,10 @@ export default function PrintPage() {
           showDescription={showDescription}
           fieldSwitches={fieldSwitches}
           setFieldShown={setFieldShown}
+          recipePhotos={{
+            shown: cookbookMode ? photoStyle !== "none" : showPhoto,
+            set: (shown) => (cookbookMode ? applyBookPhotoStyle(shown ? "card" : "none") : setAllShowPhoto(shown)),
+          }}
           singleRecipeOnly={singleRecipeOnly}
           sheets={sheets}
           navItems={navItems}

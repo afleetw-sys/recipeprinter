@@ -60,6 +60,7 @@ import {
   FIRST_NOTE_PIECE,
   RECIPE_FIELDS,
   bylineFields,
+  fieldShown,
   fieldValue,
   notePieces,
   headerParts,
@@ -618,22 +619,34 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   const themeArt = useThemeArt();
   const fieldSwitches = useFieldSwitches();
   const source = sourceLabel(recipe);
-  const meta = metaBits(recipe);
+  // Cook time and servings the book has switched off (lib/recipeFields.ts)
+  // read as missing everywhere on the card, the cookbook facts included.
+  const timeOn = fieldShown(fieldSwitches, "time", cookbookMode);
+  const servesOn = fieldShown(fieldSwitches, "servings", cookbookMode);
+  const factsRecipe: Recipe =
+    timeOn && servesOn
+      ? recipe
+      : {
+          ...recipe,
+          ...(timeOn ? {} : { totalTime: undefined, cookTime: undefined, prepTime: undefined }),
+          ...(servesOn ? {} : { servings: undefined, yield: undefined }),
+        };
+  const meta = metaBits(factsRecipe);
   // "This text can be clicked and typed into." True for the active card at all
   // times now -- see `activeInlineEdit`.
   const canEdit = Boolean(inlineEdit);
   // "Show me what isn't here yet." Only ever true while the reveal is on.
   const showEmpty = canEdit && showEmptyFields;
-  const metaTime = formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) || "";
-  const metaServes = recipe.servings ?? recipe.yield;
+  const metaTime = formatRecipeTime(factsRecipe.totalTime || factsRecipe.cookTime || factsRecipe.prepTime) || "";
+  const metaServes = factsRecipe.servings ?? factsRecipe.yield;
   // The card's meta line while it is being edited: what is there, and a field
   // while one is open. A line with nothing in it is not drawn at all, not even
   // as a prompt: the card on screen is the card that prints, laid out by the
   // measurer, and a prompt taking room here pushed a full 4x6 card's last
   // lines under its footer. Empty lines are added from the page toolbar's
   // "+" menu instead (`addField`).
-  const metaTimeShown = Boolean(metaTime) || editingNow({ kind: "cookTime" });
-  const metaServesShown = Boolean(metaServes) || editingNow({ kind: "servings" });
+  const metaTimeShown = timeOn && (Boolean(metaTime) || editingNow({ kind: "cookTime" }));
+  const metaServesShown = servesOn && (Boolean(metaServes) || editingNow({ kind: "servings" }));
   // A recipe with no ingredients at all still gets a slot (an "Add ingredient"
   // prompt) so there is somewhere to start — otherwise an empty recipe could
   // never get past its first field.
@@ -880,14 +893,14 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     // A label while the card is being edited, so its label text hands the
     // click to the value field inside it.
     const FactTag = canEdit && inlineEdit ? "label" : "span";
-    const time = formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) || "";
-    const servings = recipe.servings ?? recipe.yield;
+    const time = formatRecipeTime(factsRecipe.totalTime || factsRecipe.cookTime || factsRecipe.prepTime) || "";
+    const servings = factsRecipe.servings ?? factsRecipe.yield;
     // A fact with nothing in it is not drawn (see the meta line), except as
     // its field while the "+" menu has it open: the same field as editing
     // one that's there, only empty, not the boxed prompt other added lines
     // open as.
-    const timeOpen = editingNow({ kind: "cookTime" });
-    const servingsOpen = editingNow({ kind: "servings" });
+    const timeOpen = timeOn && editingNow({ kind: "cookTime" });
+    const servingsOpen = servesOn && editingNow({ kind: "servings" });
     if (!time && !timeOpen && !servings && !servingsOpen) return null;
 
     return (

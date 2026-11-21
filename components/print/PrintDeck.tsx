@@ -28,7 +28,7 @@ import {
 } from "@/components/icons";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
-import { AddLineMenu } from "@/components/print/AddLineMenu";
+import { AddLineMenu, type FieldVisibilityRow } from "@/components/print/AddLineMenu";
 import { useHistoryFold } from "@/components/print/useHistoryFold";
 import { PhotoHoverHint } from "@/components/print/PhotoHoverHint";
 import { ZoomControl } from "@/components/print/ZoomControl";
@@ -40,9 +40,10 @@ import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { recipeNamesIntro } from "@/lib/chapterIntro";
 import {
   RECIPE_FIELDS,
-  RECIPE_FIELD_IDS,
+  fieldShown,
   fieldTicked,
   usesHeadnote,
+  type FieldSwitchId,
   type FieldSwitches,
   type RecipeFieldId,
 } from "@/lib/recipeFields";
@@ -236,10 +237,13 @@ interface PrintDeckProps {
   showSourceUrl: boolean;
   setShowSourceUrl: Dispatch<SetStateAction<boolean>>;
   showDescription: boolean;
-  /** The current theme's field switches (lib/recipeFields.ts), and the
-      setter "+" uses to show a field it adds. */
+  /** The book's field switches (lib/recipeFields.ts), and the setter "+"
+      uses to show a field it adds. */
   fieldSwitches: FieldSwitches | undefined;
-  setFieldShown: (field: RecipeFieldId, shown: boolean, cookbook: boolean) => void;
+  setFieldShown: (field: FieldSwitchId, shown: boolean, cookbook: boolean) => void;
+  /** Recipe photos across the book, as "Show on recipes" switches them: the
+      cards' photo setting, or a cookbook's photo style ("none" when off). */
+  recipePhotos: { shown: boolean; set: (shown: boolean) => void };
   /** No multi-recipe entitlement and not a cookbook — the one recipe a Free
       cook can hold. Only then is the page toolbar's link toggle unambiguous:
       it reads as "this recipe's link" and IS this recipe's link, because
@@ -490,6 +494,7 @@ export function PrintDeck(props: PrintDeckProps) {
     showDescription,
     fieldSwitches,
     setFieldShown,
+    recipePhotos,
     sheets,
     navItems,
     spreads,
@@ -723,7 +728,12 @@ export function PrintDeck(props: PrintDeckProps) {
         };
         const line = (id: "time" | "servings" | "ingredients" | "steps"): Line => ({
           name: RECIPE_LINE_NAMES[id],
-          restore: () => addField(recipeId, id),
+          restore: () => {
+            if ((id === "time" || id === "servings") && !fieldShown(fieldSwitches, id, cookbook)) {
+              setFieldShown(id, true, cookbook);
+            }
+            addField(recipeId, id);
+          },
         });
         // The link: a recipe card's links come on with the first one added,
         // as the toolbar's link button did; in a cookbook a hidden link comes
@@ -742,7 +752,13 @@ export function PrintDeck(props: PrintDeckProps) {
           },
         };
         const lines: Line[] = [
-          { name: "Photo", restore: () => openPhotoDialog(recipeId) },
+          {
+            name: "Photo",
+            restore: () => {
+              if (!recipePhotos.shown) recipePhotos.set(true);
+              openPhotoDialog(recipeId);
+            },
+          },
           field("description"),
           field("contributor"),
           field("category"),
@@ -865,25 +881,50 @@ export function PrintDeck(props: PrintDeckProps) {
     const addPhotoPage =
       dividerSection && !dividerHasFacing ? () => addChapterImagePage(dividerSection.id) : null;
     const missingLines = addableLines();
-    // "Show on recipes", behind Recipe details' gear: a switch per optional
-    // field, for every recipe in the theme on screen (`ThemeLook.fields`). The
-    // one place a field is shown or hidden; hiding never touches the recipe.
+    // "Show on recipes", behind the recipe list's settings button: a switch
+    // for every line a recipe has, in the list's order, for every recipe in
+    // this book whatever its theme (`ProjectMeta.fieldSwitches`; Amelia,
+    // 2026-11-21). Title, ingredients and steps are what a recipe is, so they
+    // stay on, locked. Photo and link are the book's existing photo and link
+    // settings. Hiding never touches what a recipe holds.
     const fieldVisibility =
       navItem.kind === "recipe"
         ? (() => {
             const cookbook = Boolean(projectMeta.meta.cookbookMode);
-            const theme = RECIPE_PRINT_TEMPLATE_OPTIONS.find((option) => option.id === previewTemplate)?.label;
+            const locked = (name: string): FieldVisibilityRow => ({
+              name,
+              checked: true,
+              locked: true,
+              onChange: () => {},
+            });
+            const switched = (id: FieldSwitchId, name: string): FieldVisibilityRow => ({
+              name,
+              checked: fieldTicked(fieldSwitches, id, cookbook),
+              hint:
+                id === "note" && usesHeadnote(fieldSwitches, cookbook)
+                  ? "Printing with the description"
+                  : undefined,
+              onChange: (shown: boolean) => setFieldShown(id, shown, cookbook),
+            });
             return {
-              scope: theme ? `For every recipe in ${theme}` : "For every recipe in this theme",
-              rows: RECIPE_FIELD_IDS.map((id) => ({
-                name: RECIPE_FIELDS[id].name,
-                checked: fieldTicked(fieldSwitches, id, cookbook),
-                hint:
-                  id === "note" && usesHeadnote(fieldSwitches, cookbook)
-                    ? "Printing with the description"
-                    : undefined,
-                onChange: (shown: boolean) => setFieldShown(id, shown, cookbook),
-              })),
+              scope: cookbook ? "For every recipe in this cookbook" : "For every recipe card here",
+              rows: [
+                locked("Title"),
+                { name: "Photo", checked: recipePhotos.shown, onChange: recipePhotos.set },
+                switched("description", RECIPE_LINE_NAMES.description),
+                switched("contributor", RECIPE_LINE_NAMES.contributor),
+                switched("category", RECIPE_LINE_NAMES.category),
+                switched("time", RECIPE_LINE_NAMES.time),
+                switched("servings", RECIPE_LINE_NAMES.servings),
+                locked(RECIPE_LINE_NAMES.ingredients),
+                locked(RECIPE_LINE_NAMES.steps),
+                switched("note", RECIPE_LINE_NAMES.note),
+                {
+                  name: RECIPE_LINE_NAMES.link,
+                  checked: showSourceUrl,
+                  onChange: (shown: boolean) => setShowSourceUrl(shown),
+                },
+              ],
             };
           })()
         : null;
@@ -1105,7 +1146,7 @@ export function PrintDeck(props: PrintDeckProps) {
                 <AddLineMenu
                   anchor={addMenuAt}
                   triggerRef={addMenuTriggerRef}
-                  heading={navItem.kind === "recipe" ? "Recipe details" : "Add to this page"}
+                  heading={navItem.kind === "recipe" ? null : "Add to this page"}
                   lines={missingLines}
                   page={addPhotoPage ? { name: "Photo page beside it", add: addPhotoPage } : null}
                   settings={fieldVisibility}

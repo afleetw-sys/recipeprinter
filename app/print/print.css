@@ -548,15 +548,14 @@
   flex: 1;
   min-width: 0;
 }
-/* The header: Recipe details and its gear, or Show on recipes and its back
-   button. Stays put while the rows scroll. */
+/* Show on recipes' header and its back button. Stays put while the rows
+   scroll. */
 .add-line-menu__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
-.add-line-menu__gear,
 .add-line-menu__back {
   display: inline-flex;
   align-items: center;
@@ -567,21 +566,17 @@
   color: var(--cp-ink-soft);
   cursor: pointer;
 }
-.add-line-menu__gear {
-  padding: 4px;
-}
 .add-line-menu__back {
   padding: 0 4px 0 2px;
 }
 .add-line-menu__back .cp-menu__heading {
   padding-left: 0;
 }
-.add-line-menu__gear:hover,
 .add-line-menu__back:hover {
   background: var(--cp-surface-strong);
   color: var(--cp-ink);
 }
-/* What the switches apply to: every recipe in this theme. */
+/* What the switches apply to: every recipe in this book. */
 .add-line-menu__scope {
   margin: 0;
   padding: 0 8px 4px;
@@ -590,6 +585,25 @@
 }
 .add-line-menu__switch-row {
   cursor: pointer;
+}
+/* Title, ingredients and steps: on, and staying on. */
+.add-line-menu__switch-row--locked {
+  cursor: default;
+}
+.add-line-menu__switch-row--locked .add-line-menu__switch {
+  opacity: 0.45;
+  cursor: default;
+}
+/* "Show on recipes", pinned under a recipe's list, ruled off from it edge to
+   edge, and never scrolled away. */
+.add-line-menu__foot {
+  margin: 0 -4px;
+  padding: 4px;
+  border-top: 1px solid var(--cp-line);
+}
+.add-line-menu__foot .cp-menu__item {
+  width: 100%;
+  color: var(--cp-ink-soft);
 }
 .add-line-menu__switch-hint {
   display: block;

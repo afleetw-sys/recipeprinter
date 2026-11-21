@@ -1,4 +1,5 @@
 import { entitlementForTemplate, isPremiumTemplate } from "@/lib/premiumTemplates";
+import { normalizeFieldSwitches } from "@/lib/recipeFields";
 import {
   isProOnlyCardSize,
   PRINT_CARD_SIZE_OPTIONS,
@@ -130,6 +131,7 @@ export function planCardExport(body: unknown, entitlements: readonly string[]): 
           fontScale,
           photoScale,
           themeLooks,
+          fieldSwitches: normalizeFieldSwitches(settings.fieldSwitches),
           cookbookMode: false,
         },
       },

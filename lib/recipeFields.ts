@@ -1,28 +1,28 @@
 import type { Recipe } from "@/types/recipe";
 
 /**
- * A recipe is made of fields, and a theme decides which of them show and where.
+ * A recipe is made of fields. The book decides which of them show, and the
+ * theme decides where.
  *
- * The data is the recipe's (`Recipe.description`, `.contributor`, ...). What a
- * theme does with it is its own: shown or not, kept per theme in
- * `ThemeLook.fields` (lib/themeLooks.ts) like its text size, so turning
- * Contributor on in Bistro leaves Garden as it was. Hiding a field never touches
- * the recipe, and an empty field never prints.
+ * The data is the recipe's (`Recipe.description`, `.contributor`, ...). Whether
+ * a field shows is the book's, for every recipe in it whatever its theme
+ * (`ProjectMeta.fieldSwitches`, switched in Recipe details' "Show on recipes",
+ * Amelia 2026-11-21). Hiding a field never touches the recipe, and an empty
+ * field never prints.
  *
- * The same placements are meant to drive every theme: the 17 built ones today,
- * and themes made from data later, which carry a list of placements of their own
- * instead of the default one here.
+ * Where a field goes is the theme's placement: the 17 built themes share the
+ * default one here, and themes made from data later can carry their own.
  *
- * Existing themes look as they always have. A theme no cook has switched a
- * field in stores nothing, and draws exactly what it drew before fields
- * existed: on a cookbook page that is the website's description and the cook's
- * note stacked in one paragraph under the title (`headnote`, lib/recipeNote.ts),
- * on a card neither. Only once a cook switches Description or Notes do they
- * become two fields: the description under the title, the note after the steps.
+ * A book no cook has switched a field in stores nothing, and draws exactly
+ * what it drew before fields existed: on a cookbook page that is the website's
+ * description and the cook's note stacked in one paragraph under the title
+ * (`headnote`, lib/recipeNote.ts), on a card neither. Only once a cook switches
+ * Description or Notes do they become two fields: the description under the
+ * title, the note after the steps.
  */
 
 /**
- * The fields a cook can show or hide, theme by theme: what each is called, the
+ * The recipe's own optional fields: what each is called, the
  * label it prints with (none for the two paragraphs), and its value on a
  * recipe. Where each goes is the theme's (`headerParts`, `tailFields`).
  */
@@ -46,14 +46,28 @@ export function fieldValue(recipe: Recipe, id: RecipeFieldId): string {
 
 export const RECIPE_FIELD_IDS = Object.keys(RECIPE_FIELDS) as RecipeFieldId[];
 
-/** One theme's switches. A field never switched is absent. */
-export type FieldSwitches = Partial<Record<RecipeFieldId, boolean>>;
+/**
+ * Everything "Show on recipes" can switch for itself: the optional fields, and
+ * a recipe's cook time and servings. (The photo and the link have switches
+ * too, but those are the book's own Photos and Recipe link settings; the
+ * title, ingredients and steps always print.)
+ */
+export type FieldSwitchId = RecipeFieldId | "time" | "servings";
+
+export const FIELD_SWITCH_IDS: FieldSwitchId[] = [...RECIPE_FIELD_IDS, "time", "servings"];
+
+/**
+ * One book's switches (`ProjectMeta.fieldSwitches`): every recipe in it,
+ * whichever theme it's in (Amelia, 2026-11-21). A field never switched is
+ * absent.
+ */
+export type FieldSwitches = Partial<Record<FieldSwitchId, boolean>>;
 
 /** Stored switches, read defensively: only known fields, only booleans. */
 export function normalizeFieldSwitches(stored: unknown): FieldSwitches | undefined {
   if (!stored || typeof stored !== "object") return undefined;
   const switches: FieldSwitches = {};
-  for (const id of RECIPE_FIELD_IDS) {
+  for (const id of FIELD_SWITCH_IDS) {
     const value = (stored as Record<string, unknown>)[id];
     if (typeof value === "boolean") switches[id] = value;
   }
@@ -67,13 +81,14 @@ export function usesHeadnote(switches: FieldSwitches | undefined, cookbook: bool
 }
 
 /**
- * Whether this theme shows a field. Unswitched, a theme shows what it always
- * did: a cookbook page its description and note, a card neither, and no theme
- * the new Contributor or Category.
+ * Whether the book shows a field. Unswitched, a book shows what it always
+ * did: cook time and servings everywhere, a cookbook page its description and
+ * note, a card neither, and nothing the new Contributor or Category.
  */
-export function fieldShown(switches: FieldSwitches | undefined, id: RecipeFieldId, cookbook: boolean): boolean {
+export function fieldShown(switches: FieldSwitches | undefined, id: FieldSwitchId, cookbook: boolean): boolean {
   const switched = switches?.[id];
   if (switched !== undefined) return switched;
+  if (id === "time" || id === "servings") return true;
   return cookbook && (id === "description" || id === "note");
 }
 
@@ -82,7 +97,7 @@ export function fieldShown(switches: FieldSwitches | undefined, id: RecipeFieldI
  * description and note as one paragraph, Notes reads unticked: they aren't on
  * their own yet, and ticking them is how they get there.
  */
-export function fieldTicked(switches: FieldSwitches | undefined, id: RecipeFieldId, cookbook: boolean): boolean {
+export function fieldTicked(switches: FieldSwitches | undefined, id: FieldSwitchId, cookbook: boolean): boolean {
   if (id === "note" && usesHeadnote(switches, cookbook)) return false;
   return fieldShown(switches, id, cookbook);
 }
@@ -96,7 +111,7 @@ export function fieldTicked(switches: FieldSwitches | undefined, id: RecipeField
  */
 export function withFieldShown(
   switches: FieldSwitches | undefined,
-  id: RecipeFieldId,
+  id: FieldSwitchId,
   shown: boolean,
   cookbook: boolean,
 ): FieldSwitches {
@@ -128,7 +143,7 @@ export function headerParts(switches: FieldSwitches | undefined, cookbook: boole
   return parts;
 }
 
-/** The byline's fields this theme shows, in order. */
+/** The byline's fields the book shows, in order. */
 export function bylineFields(switches: FieldSwitches | undefined, cookbook: boolean): RecipeFieldId[] {
   return (["contributor", "category"] as const).filter((id) => fieldShown(switches, id, cookbook));
 }
@@ -192,5 +207,5 @@ export function tailFields(recipe: Recipe, switches: FieldSwitches | undefined, 
 /** The switches as a key for measured pages: a page measured with Notes at the
     foot is a different page from one measured without. */
 export function fieldsKey(switches: FieldSwitches | undefined): string {
-  return RECIPE_FIELD_IDS.map((id) => (switches?.[id] === undefined ? "-" : switches[id] ? "1" : "0")).join("");
+  return FIELD_SWITCH_IDS.map((id) => (switches?.[id] === undefined ? "-" : switches[id] ? "1" : "0")).join("");
 }

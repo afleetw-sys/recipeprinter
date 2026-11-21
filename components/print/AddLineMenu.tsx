@@ -16,19 +16,23 @@ export interface FieldVisibilityRow {
   checked: boolean;
   /** A quiet line under the name, when the switch needs one. */
   hint?: string;
+  /** Always on: a recipe without it isn't a recipe (title, ingredients, steps). */
+  locked?: boolean;
   onChange: (shown: boolean) => void;
 }
 
 /**
- * The page toolbar's "+". On a recipe it is "Recipe details": every line and
- * field the recipe has, always in the same order, each a plain row; picking
- * one adds it or opens it on the card, ready to type (built in PrintDeck).
- * On a book page it is "Add to this page": the lines the page has taken off.
+ * The page toolbar's "+". On a recipe it is every line and field the recipe
+ * has, always in the same order, each a plain row with no heading over them;
+ * picking one adds it or opens it on the card, ready to type (built in
+ * PrintDeck). On a book page it is "Add to this page": the lines the page has
+ * taken off.
  *
- * `settings` puts a gear in a recipe's header, which turns the same popover
- * into "Show on recipes": a switch per optional field, for the current theme,
- * and a back button (Amelia, 2026-11-21). It is the one place a field is shown
- * or hidden; hiding never deletes what the field holds.
+ * `settings` pins a "Show on recipes" button under a recipe's list, always in
+ * sight however far the list scrolls, which turns the same popover into a
+ * switch per line for every recipe in the book, and a back button (Amelia,
+ * 2026-11-21). It is the one place a line is shown or hidden; hiding never
+ * deletes what it holds. Title, ingredients and steps are locked on.
  *
  * Opens under its button and keeps itself on screen, like MoveToSectionMenu,
  * whose shell this is. `page` is a whole page the "+" can add next to this
@@ -37,7 +41,7 @@ export interface FieldVisibilityRow {
 export function AddLineMenu({
   anchor,
   triggerRef,
-  heading,
+  heading = null,
   lines,
   page = null,
   settings = null,
@@ -48,8 +52,9 @@ export function AddLineMenu({
   /** The "+" button: pressing it again closes the menu rather than counting
       as a press outside, which closed it and then reopened it. */
   triggerRef: RefObject<HTMLElement | null>;
-  /** "Recipe details" on a recipe, "Add to this page" on a book page. */
-  heading: string;
+  /** "Add to this page" on a book page; none on a recipe, whose rows say
+      what they are. */
+  heading?: string | null;
   lines: { name: string; restore: () => void }[];
   page?: { name: string; add: () => void } | null;
   /** "Show on recipes": `scope` names what the switches apply to. */
@@ -95,7 +100,7 @@ export function AddLineMenu({
       ref={ref}
       className="cp-menu rail-tile-menu add-line-menu"
       role="menu"
-      aria-label={view === "settings" ? "Show on recipes" : heading}
+      aria-label={view === "settings" ? "Show on recipes" : (heading ?? "Recipe details")}
       style={{ top: anchor.y, left: anchor.x }}
     >
       {view === "settings" && settings ? (
@@ -105,7 +110,7 @@ export function AddLineMenu({
               type="button"
               className="add-line-menu__back"
               onClick={() => setView("list")}
-              aria-label={`Back to ${heading}`}
+              aria-label="Back"
             >
               <ChevronLeftIcon size={ICON_SIZE.sm} />
               <span className="cp-menu__heading">Show on recipes</span>
@@ -114,7 +119,11 @@ export function AddLineMenu({
           <p className="add-line-menu__scope">{settings.scope}</p>
           <div ref={listRef} className={listClass} onScroll={updateMore}>
             {settings.rows.map((row) => (
-              <label key={row.name} className="cp-menu__item add-line-menu__switch-row">
+              <label
+                key={row.name}
+                className={`cp-menu__item add-line-menu__switch-row${row.locked ? " add-line-menu__switch-row--locked" : ""}`}
+                title={row.locked ? "Every recipe shows this" : undefined}
+              >
                 <span className="add-line-menu__name">
                   {row.name}
                   {row.hint && <span className="add-line-menu__switch-hint">{row.hint}</span>}
@@ -124,6 +133,7 @@ export function AddLineMenu({
                   role="switch"
                   className="add-line-menu__switch"
                   checked={row.checked}
+                  disabled={row.locked}
                   onChange={(event) => row.onChange(event.target.checked)}
                 />
               </label>
@@ -132,20 +142,7 @@ export function AddLineMenu({
         </>
       ) : (
         <>
-          <div className="add-line-menu__head">
-            <p className="cp-menu__heading">{heading}</p>
-            {settings && (
-              <button
-                type="button"
-                className="add-line-menu__gear"
-                onClick={() => setView("settings")}
-                aria-label="Show on recipes"
-                title="Show on recipes"
-              >
-                <SettingsIcon size={ICON_SIZE.sm} />
-              </button>
-            )}
-          </div>
+          {heading && <p className="cp-menu__heading">{heading}</p>}
           <div ref={listRef} className={listClass} onScroll={updateMore}>
             {lines.map((line) => (
               <button
@@ -179,6 +176,15 @@ export function AddLineMenu({
               </button>
             )}
           </div>
+          {/* Outside the scrolling list, so it's always in sight. */}
+          {settings && (
+            <div className="add-line-menu__foot">
+              <button type="button" className="cp-menu__item" onClick={() => setView("settings")}>
+                <SettingsIcon size={ICON_SIZE.sm} />
+                Show on recipes
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>,

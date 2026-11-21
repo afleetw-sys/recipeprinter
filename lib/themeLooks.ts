@@ -8,7 +8,6 @@ import {
   type AccentColor,
   type SupperUtensil,
 } from "@/lib/themeAccent";
-import { normalizeFieldSwitches, type FieldSwitches } from "@/lib/recipeFields";
 import type { RecipePrintTemplate } from "@/types/recipe";
 
 /**
@@ -35,9 +34,6 @@ export interface ThemeLook {
   /** Ingredients above the steps on every recipe. Absent: side by side
       whenever the whole recipe fits on the front, stacked otherwise. */
   stacked?: true;
-  /** Which recipe fields this theme shows, as the cook switched them
-      (lib/recipeFields.ts). Absent: the theme as it ships. */
-  fields?: FieldSwitches;
 }
 
 export type ThemeLooks = Partial<Record<RecipePrintTemplate, ThemeLook>>;
@@ -51,8 +47,6 @@ export interface ResolvedThemeLook {
   posterColor: number | null;
   utensil: SupperUtensil | null;
   stacked: boolean;
-  /** undefined: no field switched, the theme as it ships. */
-  fields: FieldSwitches | undefined;
 }
 
 export const DEFAULT_THEME_LOOK: ResolvedThemeLook = {
@@ -62,7 +56,6 @@ export const DEFAULT_THEME_LOOK: ResolvedThemeLook = {
   posterColor: null,
   utensil: null,
   stacked: false,
-  fields: undefined,
 };
 
 export function lookFor(looks: ThemeLooks, template: RecipePrintTemplate): ResolvedThemeLook {
@@ -74,14 +67,11 @@ export function lookFor(looks: ThemeLooks, template: RecipePrintTemplate): Resol
     posterColor: look?.posterColor ?? null,
     utensil: look?.utensil ?? null,
     stacked: look?.stacked === true,
-    fields: look?.fields,
   };
 }
 
 /** Whether this theme differs from how it ships. Customizing a recipe card is
-    Pro; this is what the lock reads. Field switches don't count: showing what
-    the cook wrote on the recipe is free, and "+" switches a field on when it
-    adds one. */
+    Pro; this is what the lock reads. */
 export function isCustomized(look: ResolvedThemeLook): boolean {
   return (
     look.fontScale !== DEFAULT_FONT_SCALE ||
@@ -103,8 +93,7 @@ export function withLook(
   const next = { ...lookFor(looks, template), ...change };
   const rest = { ...looks };
   delete rest[template];
-  const fields = next.fields && Object.keys(next.fields).length > 0 ? next.fields : undefined;
-  if (!isCustomized(next) && !fields) return rest;
+  if (!isCustomized(next)) return rest;
   const look: ThemeLook = {};
   if (next.fontScale !== DEFAULT_FONT_SCALE) look.fontScale = next.fontScale;
   if (next.photoScale !== DEFAULT_PHOTO_SCALE) look.photoScale = next.photoScale;
@@ -112,7 +101,6 @@ export function withLook(
   if (next.posterColor !== null) look.posterColor = next.posterColor;
   if (next.utensil !== null) look.utensil = next.utensil;
   if (next.stacked) look.stacked = true;
-  if (fields) look.fields = fields;
   return { ...rest, [template]: look };
 }
 
@@ -128,7 +116,7 @@ export function normalizeThemeLooks(stored: unknown, legacy: { fontScale?: unkno
     for (const option of RECIPE_PRINT_TEMPLATE_OPTIONS) {
       const raw = (stored as Record<string, unknown>)[option.id];
       if (!raw || typeof raw !== "object") continue;
-      const { fontScale, photoScale, accent, posterColor, utensil, stacked, fields } = raw as Record<string, unknown>;
+      const { fontScale, photoScale, accent, posterColor, utensil, stacked } = raw as Record<string, unknown>;
       looks = withLook(looks, option.id, {
         fontScale: normalizeFontScale(fontScale),
         photoScale: normalizePhotoScale(photoScale),
@@ -136,7 +124,6 @@ export function normalizeThemeLooks(stored: unknown, legacy: { fontScale?: unkno
         posterColor: option.id === "poster" ? normalizePosterColor(posterColor) : null,
         utensil: option.id === "supper" ? normalizeUtensil(utensil) : null,
         stacked: stacked === true,
-        fields: normalizeFieldSwitches(fields),
       });
     }
     return looks;
