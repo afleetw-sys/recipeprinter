@@ -110,9 +110,9 @@ export function AddLineMenu({
               className="add-line-menu__back"
               onClick={() => setView("list")}
               aria-label="Back"
+              title="Back"
             >
               <ChevronLeftIcon size={ICON_SIZE.sm} />
-              <span className="cp-menu__heading">Show on recipes</span>
             </button>
           </div>
           <p className="add-line-menu__scope">{settings.scope}</p>

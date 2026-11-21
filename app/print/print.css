@@ -566,11 +566,9 @@
   color: var(--cp-ink-soft);
   cursor: pointer;
 }
+/* Just the arrow: the switches and their scope line say where you are. */
 .add-line-menu__back {
-  padding: 0 4px 0 2px;
-}
-.add-line-menu__back .cp-menu__heading {
-  padding-left: 0;
+  padding: 4px;
 }
 .add-line-menu__back:hover {
   background: var(--cp-surface-strong);
@@ -3875,6 +3873,43 @@ textarea.recipe-page-fields__input {
 
 .recipe-photo-preview__line--short {
   width: 65%;
+}
+
+/* Customize's Layout tiles (ThemeCustomizePanel `LayoutPreview`): the Photos
+   tiles, two across, each a page with a title bar and the ingredients
+   (tinted) beside or above the steps. */
+.recipe-layout-style {
+  grid-template-columns: repeat(2, 1fr);
+}
+.recipe-layout-preview__page {
+  width: 40px;
+  gap: 2px;
+}
+.recipe-layout-preview__title {
+  flex: none;
+  width: 70%;
+  height: 3px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--cp-ink-soft) 75%, transparent);
+}
+.recipe-layout-preview__body {
+  display: flex;
+  gap: 2px 3px;
+}
+.recipe-layout-preview__body--stacked {
+  flex-direction: column;
+}
+.recipe-layout-preview__col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.recipe-layout-preview__body:not(.recipe-layout-preview__body--stacked) .recipe-layout-preview__col:first-child {
+  flex: 0 0 40%;
+}
+.recipe-layout-preview__ingredient {
+  background: color-mix(in srgb, var(--cp-accent) 55%, var(--cp-card));
 }
 
 /* Full Page / Recipe Card — same tile pattern as .recipe-photo-style above

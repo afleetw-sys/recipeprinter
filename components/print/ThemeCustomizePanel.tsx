@@ -22,7 +22,7 @@ import {
   type SupperUtensil,
 } from "@/lib/themeAccent";
 import { MenuSelect } from "@/components/MenuSelect";
-import { SegmentedControl } from "@/components/Controls";
+import { SelectTile } from "@/components/Controls";
 import type { RecipePrintTemplate } from "@/types/recipe";
 
 /**
@@ -154,17 +154,7 @@ export function ThemeCustomizePanel({
         </div>
       )}
 
-      <ChoiceControl
-        label="Layout"
-        options={[
-          { id: "auto", label: "Automatic" },
-          { id: "stacked", label: "Stacked" },
-        ]}
-        value={stacked ? "stacked" : "auto"}
-        onChange={(value) => setStacked(value === "stacked")}
-        proMarked={proMarked && stacked}
-        proTooltip="The stacked layout is Pro"
-      />
+      <LayoutControl stacked={stacked} setStacked={setStacked} proMarked={proMarked && stacked} />
 
       <TextSizeControl fontScale={fontScale} setFontScale={setFontScale} proMarked={proMarked} />
 
@@ -210,38 +200,85 @@ export function ThemeCustomizePanel({
 }
 
 /**
- * A pick between a few named choices, the theme's own first. Layout's
- * Automatic puts ingredients beside the steps when the whole recipe fits on
- * its page and above them when it doesn't; Stacked always puts them above.
+ * Layout, as two picture tiles like Photos (Amelia, 2026-11-21), so the
+ * choice shows rather than names what it does. Automatic puts ingredients
+ * beside the steps when the whole recipe fits on its page and above them when
+ * it doesn't, drawn as its usual side-by-side page; Stacked always puts them
+ * above.
  */
-function ChoiceControl<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
+function LayoutControl({
+  stacked,
+  setStacked,
   proMarked,
-  proTooltip,
 }: {
-  label: string;
-  options: Array<{ id: T; label: string }>;
-  value: T;
-  onChange: (value: T) => void;
+  stacked: boolean;
+  setStacked: (value: boolean) => void;
   /** Crown the choice made: true only off the theme's own. */
   proMarked: boolean;
-  proTooltip: string;
 }) {
+  const name = useId();
+  const options = [
+    { id: "auto", label: "Automatic", on: !stacked },
+    { id: "stacked", label: "Stacked", on: stacked },
+  ] as const;
   return (
     <div className="recipe-config-section">
       <div className="recipe-text-size__head">
-        <span className="recipe-config-label">{label}</span>
+        <span className="recipe-config-label" id={`${name}-label`}>
+          Layout
+        </span>
         {proMarked && (
           <span className="recipe-text-size__name">
-            <ProBadge variant="inline" label={false} tooltip={proTooltip} />
+            <ProBadge variant="inline" label={false} tooltip="The stacked layout is Pro" />
           </span>
         )}
       </div>
-      <SegmentedControl label={label} options={options} value={value} onChange={onChange} />
+      <div className="recipe-photo-style recipe-layout-style" role="radiogroup" aria-labelledby={`${name}-label`}>
+        {options.map((option) => (
+          <SelectTile key={option.id} selected={option.on} className="recipe-photo-style__tile">
+            <input
+              type="radio"
+              name={name}
+              className="sr-only"
+              checked={option.on}
+              onChange={() => setStacked(option.id === "stacked")}
+            />
+            <LayoutPreview stacked={option.id === "stacked"} />
+            <span className="recipe-photo-style__tile-label">{option.label}</span>
+          </SelectTile>
+        ))}
+      </div>
     </div>
+  );
+}
+
+/** A tiny page: a title, then ingredients (tinted) beside or above the steps. */
+function LayoutPreview({ stacked }: { stacked: boolean }) {
+  const ingredients = (
+    <span className="recipe-layout-preview__col">
+      <span className="recipe-photo-preview__line recipe-layout-preview__ingredient" />
+      <span className="recipe-photo-preview__line recipe-layout-preview__ingredient" />
+      <span className="recipe-photo-preview__line recipe-layout-preview__ingredient recipe-photo-preview__line--short" />
+    </span>
+  );
+  const steps = (
+    <span className="recipe-layout-preview__col">
+      <span className="recipe-photo-preview__line" />
+      <span className="recipe-photo-preview__line" />
+      <span className="recipe-photo-preview__line" />
+      <span className="recipe-photo-preview__line recipe-photo-preview__line--short" />
+    </span>
+  );
+  return (
+    <span className="recipe-photo-preview" aria-hidden>
+      <span className="recipe-photo-preview__page recipe-layout-preview__page">
+        <span className="recipe-layout-preview__title" />
+        <span className={`recipe-layout-preview__body${stacked ? " recipe-layout-preview__body--stacked" : ""}`}>
+          {ingredients}
+          {steps}
+        </span>
+      </span>
+    </span>
   );
 }
 
