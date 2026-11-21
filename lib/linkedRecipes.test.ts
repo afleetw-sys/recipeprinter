@@ -142,3 +142,13 @@ describe("recipeToShare", () => {
     expect(recipeToShare(recipe, placement, ownPhotosOnly)).toBe(recipe);
   });
 });
+
+describe("the queue keeps a photo choice", () => {
+  it("printableRecipe carries imageChosen, so a picked photo survives an edit and a reload", async () => {
+    const { printableRecipe } = await import("@/lib/queue");
+    expect(printableRecipe({ ...base, image: "mine.jpg", imageChosen: true })).toMatchObject({
+      image: "mine.jpg",
+      imageChosen: true,
+    });
+  });
+});

@@ -7766,10 +7766,10 @@ export default function PrintPage() {
                     button either: both start the same save, and two controls
                     for one action read as two different things (Amelia,
                     2026-11-19). Phones keep theirs (no room for the state in
-                    the bar, and no Save button there). */}
-                {saveStatus !== "saving" &&
-                  !savedToProfile &&
-                  !(!cookPilotUser && keptAutomatically) &&
+                    the bar, and no Save button there). A cookbook with recipes
+                    keeps it, because it holds Print as recipe cards too. */}
+                {((saveStatus !== "saving" && !savedToProfile && !(!cookPilotUser && keptAutomatically)) ||
+                  (cookbookMode && recipeCount > 0)) &&
                   renderSaveMenu("header")}
 
                 {/* Print is always here, as it is on a phone's bottom bar:
