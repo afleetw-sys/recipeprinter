@@ -660,6 +660,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       !(firstStepHere === firstStep || (firstStepHere.step === firstStep.step && firstStepHere.text === firstStep.text)),
   );
   const instructionGroups = sectionGroups(instructions);
+  const lastStep = recipe.instructions?.[recipe.instructions.length - 1];
+  const lastStepHere = Boolean(lastStep && instructions[instructions.length - 1] === lastStep);
   const ingredientsWide = ingredientsOnly || stackedLayout;
   const methodWide = methodOnly || stackedLayout;
   // Chunks are the placeable units for the two-column split below: a group's
@@ -1063,7 +1065,18 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     const target: RecipeCardEditTarget = { kind: "field", field: "note" };
     const editing = editingNow(target);
     const startsHere = here.has(FIRST_NOTE_PIECE) || (editing && showHeader && !note);
-    const label = <p className="recipe-card__label">{RECIPE_FIELDS.note.label}</p>;
+    // "Notes" where they start; "Notes (continued)" on a face they carry on to,
+    // as the steps say where they pick up again.
+    const label = (
+      <p className="recipe-card__label">
+        {RECIPE_FIELDS.note.label}
+        {!startsHere && (
+          <span className="recipe-card__continued-inline" lang={cardWords.lang}>
+            {cardWords.note(cardWords.continued)}
+          </span>
+        )}
+      </p>
+    );
     if (editing) {
       return startsHere ? (
         <div className="recipe-card__tail">
@@ -1082,7 +1095,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     }
     return (
       <div className="recipe-card__tail">
-        {startsHere && label}
+        {label}
         {paragraphs.map((paragraph) => (
           <p
             key={paragraph[0].key}
@@ -1876,7 +1889,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           >
             {sectionLabel(
               "stepsHeading",
-              side === "front" && hasBackFace && !continued ? (
+              // Only while the steps really do carry on: a face can have a back
+              // that holds nothing but the end of the notes.
+              side === "front" && hasBackFace && !continued && !lastStepHere ? (
                 // A cookbook continues on the NEXT LEAF, never on the back of
                 // this one (see `continueOnBack` in lib/usePrintSheets.tsx —
                 // duplex is the recipe-card path only), so "on back" sent the
