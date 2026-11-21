@@ -227,3 +227,49 @@ export function cardSwitchesFromCookbook(bookSwitches: FieldSwitches | undefined
  * hiding one on the cards while the book shows it looks like the sync lost it.
  */
 export const LINES_THAT_FOLLOW_THE_COOKBOOK: readonly FieldSwitchId[] = RECIPE_FIELD_IDS;
+
+/** The recipe's lines, in the order the card reads, as the "+" list offers them. */
+export type RecipeLineId =
+  | "photo"
+  | "description"
+  | "contributor"
+  | "category"
+  | "time"
+  | "servings"
+  | "ingredients"
+  | "steps"
+  | "note"
+  | "link";
+
+export const RECIPE_LINE_ORDER: RecipeLineId[] = [
+  "photo",
+  "description",
+  "contributor",
+  "category",
+  "time",
+  "servings",
+  "ingredients",
+  "steps",
+  "note",
+  "link",
+];
+
+/**
+ * The rows the "+" list offers a recipe: every line the book prints. One
+ * switched off in "Show on recipes" is one the cook decided the book doesn't
+ * print, so it isn't offered (Amelia, 2026-11-21); it comes back by switching
+ * it on there. Photo and Link follow the book's photo and link settings;
+ * ingredients and steps are always offered.
+ */
+export function addableRecipeLines(
+  switches: FieldSwitches | undefined,
+  cookbook: boolean,
+  book: { photos: boolean; link: boolean },
+): RecipeLineId[] {
+  return RECIPE_LINE_ORDER.filter((line) => {
+    if (line === "photo") return book.photos;
+    if (line === "link") return book.link;
+    if (line === "ingredients" || line === "steps") return true;
+    return fieldShown(switches, line, cookbook);
+  });
+}
