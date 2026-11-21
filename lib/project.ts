@@ -17,6 +17,12 @@ import type {
 } from "@/types/recipe";
 import { uid } from "@/lib/ids";
 import { normalizePageLooks, withElementStyle, type ElementStyle, type PageLooks } from "@/lib/pageLooks";
+import {
+  normalizeFieldSwitches,
+  withFieldShown,
+  type FieldSwitchId,
+  type FieldSwitches,
+} from "@/lib/recipeFields";
 import { sessionStore } from "@/lib/storage";
 import { META_SESSION_KEY, recoverWorkingDraft, saveWorkingDraft } from "@/lib/workingDraft";
 import { blobUrlsIn, reviveLocalPhotoUrls, withRevivedUrls } from "@/lib/localPhotos";
@@ -173,6 +179,8 @@ export interface ProjectMeta {
   websitePhotos?: boolean;
   /** See `PrintProjectSettings.pageLooks` and lib/pageLooks.tsx. */
   pageLooks?: PageLooks;
+  /** See `PrintProjectSettings.fieldSwitches` and lib/recipeFields.ts. */
+  fieldSwitches?: FieldSwitches;
   /** Whether the cookbook renders a table-of-contents page. */
   tableOfContents?: boolean;
   /** Editable TOC heading text (the entries themselves are derived from the
@@ -397,6 +405,7 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
     projectId: cleanText(raw.projectId) ?? uid(),
     projectTitle: cleanText(raw.projectTitle),
     pageLooks: normalizePageLooks(raw.pageLooks),
+    fieldSwitches: normalizeFieldSwitches(raw.fieldSwitches),
     sections: settled
       ? sections
       : sections.map((section) => ({ ...section, subtitle: removed(section.subtitle) })),
@@ -1076,6 +1085,18 @@ export function useProjectMeta() {
     [update],
   );
 
+  /** Shows or hides one field on every recipe in the book (Recipe details'
+      "Show on recipes"). Never touches what a recipe holds. */
+  const setFieldShown = useCallback(
+    (field: FieldSwitchId, shown: boolean, cookbook: boolean) => {
+      update((current) => ({
+        ...current,
+        fieldSwitches: withFieldShown(current.fieldSwitches, field, shown, cookbook),
+      }));
+    },
+    [update],
+  );
+
   /** Takes every style off one page at once (Customize theme's Reset clears
       the sizes set for every recipe's parts this way, as one step). */
   const clearPageLook = useCallback(
@@ -1423,6 +1444,7 @@ export function useProjectMeta() {
     setTableOfContents,
     setTocKicker,
     setElementStyle,
+    setFieldShown,
     clearPageLook,
     setRailSortMode,
     setLastImportSource,

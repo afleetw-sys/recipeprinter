@@ -846,6 +846,7 @@ function ScaledPageBody({
                       recipe={slot.recipe}
                       ingredients={slot.front.ingredients}
                       instructions={slot.front.instructions}
+                      tail={slot.front.tail}
                       side="front"
                       showHeader={!slot.isContinuation}
                       layout={slot.front.layout}
@@ -901,6 +902,7 @@ function ScaledPageBody({
                         recipe={slot.recipe}
                         ingredients={slot.back.ingredients}
                         instructions={slot.back.instructions}
+                        tail={slot.back.tail}
                         side="back"
                         showHeader={false}
                         layout={slot.back.layout}

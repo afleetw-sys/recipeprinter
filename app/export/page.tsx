@@ -16,6 +16,8 @@ import { normalizePhotoScale } from "@/lib/photoScale";
 import { accentRootProps } from "@/lib/themeAccent";
 import { lookFor, normalizeThemeLooks } from "@/lib/themeLooks";
 import { ThemeArtProvider } from "@/lib/themeArt";
+import { RecipeFieldsProvider } from "@/lib/recipeFieldsContext";
+import { normalizeFieldSwitches } from "@/lib/recipeFields";
 import {
   coverWrapGeometry,
   coverWrapGeometryFromSheet,
@@ -412,6 +414,8 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   const photoScale = normalizePhotoScale(settings.photoScale);
   // The cook's accent for this theme (lib/themeAccent.ts), as on screen.
   const look = lookFor(normalizeThemeLooks(settings.themeLooks, settings), template);
+  // Which recipe fields the book shows (lib/recipeFields.ts), as on screen.
+  const fieldSwitches = useMemo(() => normalizeFieldSwitches(settings.fieldSwitches), [settings.fieldSwitches]);
   const accentRoot = accentRootProps(look.accent, template);
   // One band color or utensil for every recipe, as on screen (lib/themeArt.tsx).
   const themeArt = useMemo(() => ({ posterColor: look.posterColor, utensil: look.utensil }), [look.posterColor, look.utensil]);
@@ -479,6 +483,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     fontScale,
     photoScale,
     stacked: look.stacked,
+    fieldSwitches,
     pageLooks,
     // The book's real page — what every recipe is measured against, and what
     // the preview draws too, so the two cannot disagree.
@@ -519,6 +524,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
 
   return (
     <ThemeArtProvider value={themeArt}>
+    <RecipeFieldsProvider value={fieldSwitches}>
     <div
       className={`recipe-page-deck rp-exporting ${preset.pageClass}${preset.coilBound ? " rp-coil" : ""} ${
         cookbookMode ? "recipe-page-deck--book" : ""
@@ -558,6 +564,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
         </div>
       ))}
     </div>
+    </RecipeFieldsProvider>
     </ThemeArtProvider>
   );
 }

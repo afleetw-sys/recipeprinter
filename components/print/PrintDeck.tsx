@@ -28,7 +28,8 @@ import {
 } from "@/components/icons";
 import { RecipeLoadingState } from "@/components/RecipeLoadingState";
 import { MoveToSectionMenu } from "@/components/print/MoveToSectionMenu";
-import { AddLineMenu } from "@/components/print/AddLineMenu";
+import { formatRecipeTime } from "@/lib/time";
+import { AddLineMenu, type FieldVisibilityRow } from "@/components/print/AddLineMenu";
 import { useHistoryFold } from "@/components/print/useHistoryFold";
 import { PhotoHoverHint } from "@/components/print/PhotoHoverHint";
 import { ZoomControl } from "@/components/print/ZoomControl";
@@ -38,7 +39,15 @@ import { TwoUpPrintPages } from "@/components/print/TwoUpPrintPages";
 import { recipeLinkOn } from "@/lib/recipeLink";
 import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { recipeNamesIntro } from "@/lib/chapterIntro";
-import { emptyRecipeFields } from "@/lib/recipeMissingFields";
+import {
+  RECIPE_FIELDS,
+  fieldShown,
+  fieldTicked,
+  fieldValue,
+  type FieldSwitchId,
+  type FieldSwitches,
+  type RecipeFieldId,
+} from "@/lib/recipeFields";
 import { removedHeadingsName } from "@/lib/recipeHeadings";
 import type { AddableRecipeLine } from "@/types/recipe";
 import {
@@ -229,6 +238,15 @@ interface PrintDeckProps {
   showSourceUrl: boolean;
   setShowSourceUrl: Dispatch<SetStateAction<boolean>>;
   showDescription: boolean;
+  /** The book's field switches (lib/recipeFields.ts), and the setter "+"
+      uses to show a field it adds. */
+  fieldSwitches: FieldSwitches | undefined;
+  setFieldShown: (field: FieldSwitchId, shown: boolean, cookbook: boolean) => void;
+  /** Recipe photos across the book, as "Show on recipes" switches them: the
+      cards' photo setting, or a cookbook's photo style ("none" when off). */
+  recipePhotos: { shown: boolean; set: (shown: boolean) => void };
+  /** Whether a recipe's photo is drawn, so the "+" marks Photo "Add" if not. */
+  recipeHasPhoto: (recipeId: string) => boolean;
   /** No multi-recipe entitlement and not a cookbook — the one recipe a Free
       cook can hold. Only then is the page toolbar's link toggle unambiguous:
       it reads as "this recipe's link" and IS this recipe's link, because
@@ -310,8 +328,6 @@ interface PrintDeckProps {
   coverPhotoCandidates: string[];
   // Photo controls / helpers (defined in the page)
   renderPagePhotoControl: (recipeId: string) => ReactNode;
-  /** Whether a recipe's photo is drawn, so the "+" menu offers one if not. */
-  recipeHasPhoto: (recipeId: string) => boolean;
   /** The opener/title page's OWN photo slot — independent of the facing art
       page's, see `renderArtPhotoControl`. */
   renderCardPhotoControl: (sectionId: string) => ReactNode;
@@ -406,7 +422,10 @@ const RECIPE_LINE_NAMES: Record<AddableRecipeLine, string> = {
   link: "Link",
   time: "Cook time",
   servings: "Servings",
-  note: "Note",
+  description: RECIPE_FIELDS.description.name,
+  contributor: RECIPE_FIELDS.contributor.name,
+  category: RECIPE_FIELDS.category.name,
+  note: RECIPE_FIELDS.note.name,
   ingredients: "Ingredients",
   steps: "Steps",
 };
@@ -476,6 +495,10 @@ export function PrintDeck(props: PrintDeckProps) {
     showSourceUrl,
     setShowSourceUrl,
     showDescription,
+    fieldSwitches,
+    setFieldShown,
+    recipePhotos,
+    recipeHasPhoto,
     sheets,
     navItems,
     spreads,
@@ -525,7 +548,6 @@ export function PrintDeck(props: PrintDeckProps) {
     setCoverForSide,
     coverPhotoCandidates,
     renderPagePhotoControl,
-    recipeHasPhoto,
     renderCardPhotoControl,
     renderArtPhotoControl,
     sectionRecipeImages,
@@ -683,49 +705,79 @@ export function PrintDeck(props: PrintDeckProps) {
       if (!showEmptyFields) toggleShowEmptyFields();
       focusFirstMissingField();
     };
-    const addableLines = (): { name: string; restore: () => void }[] => {
+    const addableLines = (): { name: string; blank?: boolean; restore: () => void }[] => {
       if (navItem.kind === "recipe") {
         const recipeId = navItem.recipeId;
         const recipe = items?.find((item) => item.id === recipeId)?.recipe;
         if (!recipe) return [];
         const cookbook = Boolean(projectMeta.meta.cookbookMode);
-        // The link is this menu's too, now the toolbar has no link button
-        // (Amelia, 2026-11-04): a link that isn't wanted is deleted on the
-        // page, and one that is missing is added here. A missing link is
-        // always offered, and adding it on recipe cards turns the cards'
-        // links on, as the button did.
-        const lines = emptyRecipeFields(recipe, {
-          cookbook,
-          showSourceUrl: true,
-          showDescription,
-        }).map((field) => ({
-            name: RECIPE_LINE_NAMES[field],
+        // One fixed list, in the order the card reads, every item always there
+        // and nothing beside it (Amelia, 2026-11-21). Picking one adds it or
+        // opens it on the card, ready to type, with what it already holds; a
+        // field the theme hides is shown first, since it has to be on the card
+        // to be edited. Showing and hiding live behind the header's gear
+        // ("Show on recipes", `fieldVisibility` below). On a cookbook page
+        // still printing description and note as one paragraph, picking Notes
+        // puts them at the foot.
+        // A line with nothing in it yet says "+ Add" beside its name.
+        type Line = { name: string; blank?: boolean; restore: () => void };
+        const field = (id: RecipeFieldId): Line => {
+          const shown = fieldTicked(fieldSwitches, id, cookbook);
+          return {
+            name: RECIPE_LINE_NAMES[id],
+            blank: !fieldValue(recipe, id),
             restore: () => {
-              if (field === "link" && !cookbook && !showSourceUrl) setShowSourceUrl(true);
-              addField(recipeId, field);
+              if (!shown) setFieldShown(id, true, cookbook);
+              addField(recipeId, id);
             },
-          }));
-        // A link that is there but hidden (a book saved with the old "Recipe
-        // link" switch off, or a recipe whose link was hidden by the toolbar
-        // button that used to be here) comes back the same way. In a cookbook
-        // only this recipe's: an override when the book's are off.
-        if (
-          recipe.sourceUrl &&
-          !recipeLinkOn(showSourceUrl, cookbook, projectMeta.meta.itemPlacements?.[recipeId])
-        ) {
-          lines.unshift({
-            name: RECIPE_LINE_NAMES.link,
-            restore: () =>
-              cookbook
-                ? projectMeta.setItemPlacement(recipeId, { showSourceUrl: showSourceUrl ? undefined : true })
-                : setShowSourceUrl(true),
-          });
-        }
-        // A recipe drawn without a photo: opens its photo picker, the toolbar
-        // Photo button's own dialog.
-        if (!recipeHasPhoto(recipeId)) {
-          lines.unshift({ name: "Photo", restore: () => openPhotoDialog(recipeId) });
-        }
+          };
+        };
+        const line = (id: "time" | "servings" | "ingredients" | "steps", filled: boolean): Line => ({
+          name: RECIPE_LINE_NAMES[id],
+          blank: !filled,
+          restore: () => {
+            if ((id === "time" || id === "servings") && !fieldShown(fieldSwitches, id, cookbook)) {
+              setFieldShown(id, true, cookbook);
+            }
+            addField(recipeId, id);
+          },
+        });
+        // The link: a recipe card's links come on with the first one added,
+        // as the toolbar's link button did; in a cookbook a hidden link comes
+        // back as this recipe's own override.
+        const linkOn = recipeLinkOn(showSourceUrl, cookbook, projectMeta.meta.itemPlacements?.[recipeId]);
+        const link: Line = {
+          name: RECIPE_LINE_NAMES.link,
+          blank: !recipe.sourceUrl,
+          restore: () => {
+            if (recipe.sourceUrl && !linkOn) {
+              if (cookbook) projectMeta.setItemPlacement(recipeId, { showSourceUrl: showSourceUrl ? undefined : true });
+              else setShowSourceUrl(true);
+              return;
+            }
+            if (!cookbook && !showSourceUrl) setShowSourceUrl(true);
+            addField(recipeId, "link");
+          },
+        };
+        const lines: Line[] = [
+          {
+            name: "Photo",
+            blank: !recipeHasPhoto(recipeId),
+            restore: () => {
+              if (!recipePhotos.shown) recipePhotos.set(true);
+              openPhotoDialog(recipeId);
+            },
+          },
+          field("description"),
+          field("contributor"),
+          field("category"),
+          line("time", Boolean(formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime))),
+          line("servings", Boolean(recipe.servings ?? recipe.yield)),
+          line("ingredients", recipe.ingredients.length > 0),
+          line("steps", recipe.instructions.length > 0),
+          field("note"),
+          link,
+        ];
         // A removed "Ingredients" / "Steps" heading comes back as the default.
         const headings = removedHeadingsName(recipe);
         if (headings) {
@@ -838,6 +890,49 @@ export function PrintDeck(props: PrintDeckProps) {
     const addPhotoPage =
       dividerSection && !dividerHasFacing ? () => addChapterImagePage(dividerSection.id) : null;
     const missingLines = addableLines();
+    // "Show on recipes", behind the recipe list's settings button: a switch
+    // for every line a recipe has, in the list's order, for every recipe in
+    // this book whatever its theme (`ProjectMeta.fieldSwitches`; Amelia,
+    // 2026-11-21). Title, ingredients and steps are what a recipe is, so they
+    // stay on, locked. Photo and link are the book's existing photo and link
+    // settings. Hiding never touches what a recipe holds.
+    const fieldVisibility =
+      navItem.kind === "recipe"
+        ? (() => {
+            const cookbook = Boolean(projectMeta.meta.cookbookMode);
+            const locked = (name: string): FieldVisibilityRow => ({
+              name,
+              checked: true,
+              locked: true,
+              onChange: () => {},
+            });
+            const switched = (id: FieldSwitchId, name: string): FieldVisibilityRow => ({
+              name,
+              checked: fieldTicked(fieldSwitches, id, cookbook),
+              onChange: (shown: boolean) => setFieldShown(id, shown, cookbook),
+            });
+            return {
+              scope: cookbook ? "For every recipe in this cookbook" : "For every recipe card here",
+              rows: [
+                locked("Title"),
+                { name: "Photo", checked: recipePhotos.shown, onChange: recipePhotos.set },
+                switched("description", RECIPE_LINE_NAMES.description),
+                switched("contributor", RECIPE_LINE_NAMES.contributor),
+                switched("category", RECIPE_LINE_NAMES.category),
+                switched("time", RECIPE_LINE_NAMES.time),
+                switched("servings", RECIPE_LINE_NAMES.servings),
+                locked(RECIPE_LINE_NAMES.ingredients),
+                locked(RECIPE_LINE_NAMES.steps),
+                switched("note", RECIPE_LINE_NAMES.note),
+                {
+                  name: RECIPE_LINE_NAMES.link,
+                  checked: showSourceUrl,
+                  onChange: (shown: boolean) => setShowSourceUrl(shown),
+                },
+              ],
+            };
+          })()
+        : null;
 
     // Whether this KIND of page has an edit/reveal button at all.
     // A cover made into the cook's own image or a blank has no words or theme
@@ -1056,9 +1151,10 @@ export function PrintDeck(props: PrintDeckProps) {
                 <AddLineMenu
                   anchor={addMenuAt}
                   triggerRef={addMenuTriggerRef}
-                  heading={navItem.kind === "recipe" ? "Add to this recipe" : "Add to this page"}
+                  heading={navItem.kind === "recipe" ? null : "Add to this page"}
                   lines={missingLines}
                   page={addPhotoPage ? { name: "Photo page beside it", add: addPhotoPage } : null}
+                  settings={fieldVisibility}
                   onClose={() => setAddMenuAt(null)}
                 />
               )}

@@ -238,6 +238,13 @@ import {
 import { DEFAULT_PHOTO_SCALE, type PhotoScale } from "@/lib/photoScale";
 import { accentRootProps, type AccentColor, type SupperUtensil } from "@/lib/themeAccent";
 import { ThemeArtProvider } from "@/lib/themeArt";
+import {
+  RECIPE_FIELDS,
+  fieldShown,
+  fieldValue,
+  usesHeadnote,
+} from "@/lib/recipeFields";
+import { RecipeFieldsProvider } from "@/lib/recipeFieldsContext";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { asDerived, latestHistoryStep, undoEdit, useEditHistory } from "@/lib/editHistory";
 import { HistoryControls } from "@/components/print/HistoryControls";
@@ -584,6 +591,17 @@ export default function PrintPage() {
   const [railShake, setRailShake] = useState<{ recipeId: string; nonce: number } | null>(null);
   const queue = useQueue();
   const projectMeta = useProjectMeta();
+  // Whether a recipe has a photo the book draws, in its page or on the full
+  // page facing it. The page toolbar's "+" marks Photo "Add" when not.
+  const recipeHasPhoto = (recipeId: string) =>
+    Boolean(recipePhotoShown(recipeId)) &&
+    (cookbookMode
+      ? photoModeFor(recipeId) !== "none"
+      : (projectMeta.meta.itemPlacements?.[recipeId]?.showPhoto ?? showPhoto));
+  // Which recipe fields the book shows, for every recipe in it whatever its
+  // theme (lib/recipeFields.ts); switched in Recipe details' "Show on recipes".
+  const fieldSwitches = projectMeta.meta.fieldSwitches;
+  const setFieldShown = projectMeta.setFieldShown;
   /**
    * Recipe order within each section, read off the BOOK rather than held here.
    *
@@ -1062,6 +1080,7 @@ export default function PrintPage() {
     fontScale,
     photoScale,
     stacked,
+    fieldSwitches,
     pageLooks: projectMeta.meta.pageLooks,
     // The preview page IS the book's real sheet, and so is the card every
     // recipe is measured against (see `presetCardDims`).
@@ -6551,7 +6570,20 @@ export default function PrintPage() {
           { id: "title", label: "Title", value: recipe.title, onCommit: edit({ kind: "title" }) },
           { id: "time", label: "Time", value: formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) ?? "", onCommit: edit({ kind: "cookTime" }) },
           { id: "servings", label: "Servings", value: String(recipe.servings ?? recipe.yield ?? ""), onCommit: edit({ kind: "servings" }) },
-          { id: "note", label: "Note", value: composeNote(recipe.description, recipe.note, showDescription), multiline: true, onCommit: edit({ kind: "description" }) },
+          // Description and notes as one field while the theme prints them as
+          // one paragraph; otherwise each its own, with Contributor and
+          // Category where the theme shows them (lib/recipeFields.ts).
+          ...(usesHeadnote(fieldSwitches, cookbookMode)
+            ? [{ id: "note", label: "Note", value: composeNote(recipe.description, recipe.note, showDescription), multiline: true, onCommit: edit({ kind: "description" }) }]
+            : (["description", "contributor", "category", "note"] as const)
+                .filter((field) => fieldShown(fieldSwitches, field, cookbookMode))
+                .map((field) => ({
+                  id: field,
+                  label: RECIPE_FIELDS[field].name,
+                  value: fieldValue(recipe, field),
+                  multiline: field === "description" || field === "note",
+                  onCommit: edit({ kind: "field", field }),
+                }))),
           { id: "link", label: "Link", value: recipe.sourceUrl ?? "", onCommit: edit({ kind: "sourceUrl" }) },
         ]}
         toggles={[
@@ -6624,13 +6656,6 @@ export default function PrintPage() {
     const recipeItem = items?.find((item) => item.id === recipeId);
     return ownPhotosOnly ? (recipeItem ? bookImageOf(recipeItem) : undefined) : recipeItem?.recipe?.image;
   };
-  // Whether a recipe has a photo the book draws, in its page or on the full
-  // page facing it. The page toolbar's "+" menu offers a photo when not.
-  const recipeHasPhoto = (recipeId: string) =>
-    Boolean(recipePhotoShown(recipeId)) &&
-    (cookbookMode
-      ? photoModeFor(recipeId) !== "none"
-      : (projectMeta.meta.itemPlacements?.[recipeId]?.showPhoto ?? showPhoto));
   const renderPagePhotoControl = (recipeId: string) => {
     const recipe = items?.find((item) => item.id === recipeId && item.recipe)?.recipe;
     // Every recipe page, photo or not. This used to bail on `!recipe.image`,
@@ -7504,6 +7529,7 @@ export default function PrintPage() {
    */
   return (
     <ThemeArtProvider value={themeArt}>
+    <RecipeFieldsProvider value={fieldSwitches}>
     <div
       className={`h-dvh recipe-print-page ${printWatermarked ? "rp-print-locked" : ""} ${
         // A Pro benefit: no "Printed with RecipePrinter" line, on any theme.
@@ -7795,6 +7821,13 @@ export default function PrintPage() {
           showSourceUrl={showSourceUrl}
           setShowSourceUrl={setBookShowSourceUrl}
           showDescription={showDescription}
+          fieldSwitches={fieldSwitches}
+          setFieldShown={setFieldShown}
+          recipeHasPhoto={recipeHasPhoto}
+          recipePhotos={{
+            shown: cookbookMode ? photoStyle !== "none" : showPhoto,
+            set: (shown) => (cookbookMode ? applyBookPhotoStyle(shown ? "card" : "none") : setAllShowPhoto(shown)),
+          }}
           singleRecipeOnly={singleRecipeOnly}
           sheets={sheets}
           navItems={navItems}
@@ -7902,7 +7935,6 @@ export default function PrintPage() {
           setCoverForSide={setCoverForSide}
           coverPhotoCandidates={coverPhotoCandidates}
           renderPagePhotoControl={renderPagePhotoControl}
-          recipeHasPhoto={recipeHasPhoto}
           renderCardPhotoControl={renderCardPhotoControl}
           renderArtPhotoControl={renderArtPhotoControl}
           sectionRecipeImages={bookSectionImages}
@@ -8680,6 +8712,7 @@ export default function PrintPage() {
         </div>
       )}
     </div>
+    </RecipeFieldsProvider>
     </ThemeArtProvider>
   );
 }

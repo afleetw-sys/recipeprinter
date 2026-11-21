@@ -93,3 +93,44 @@ for (const { scale, font, book } of RUNS) {
     expect(result.structuralFailures, "combos missing a line, with a blank face, or out of order").toEqual([]);
   });
 }
+
+/**
+ * Notes after the steps (lib/recipeFields.ts) that are longer than a face
+ * holds run on to the next face, sentences at a time, rather than being
+ * shrunk to fit or cut off. Every theme, both sizes, photo and link on and
+ * off, at Normal and Biggest text, through the `long-notes` fixture. Its
+ * notes can't fit on one 6x4 face, so there they must cover more than one.
+ */
+interface NotesResult {
+  id: string;
+  pass: boolean;
+  shrunk: boolean;
+  tailFaces: number;
+  settledShape: string;
+}
+
+for (const font of [DEFAULT_FONT_SCALE, FONT_SCALES[FONT_SCALES.length - 1]]) {
+  test(`long notes run on to the next page without shrinking, at text size ${font}`, async ({ page }) => {
+    test.setTimeout(10 * 60_000);
+    await page.goto(`/print/harness?only=long-notes&font=${font}`);
+    await expect.poll(async () => (await report(page))?.envHealthy, { timeout: 30_000 }).toBe(true);
+    await page.getByRole("button", { name: "Run all" }).click();
+    await expect
+      .poll(async () => (await report(page))?.complete, { timeout: 8 * 60_000, intervals: [2_000] })
+      .toBe(true);
+
+    const results = await page.evaluate(
+      () =>
+        (window as unknown as { __layoutHarness: { dump: () => { results: NotesResult[] } } }).__layoutHarness.dump()
+          .results,
+    );
+    expect(results.length, "long-notes combos measured").toBeGreaterThan(0);
+    const describe = (r: NotesResult) => `${r.id}: ${r.settledShape}`;
+    expect(results.filter((r) => !r.pass).map(describe), "combos clipped or missing part of the notes").toEqual([]);
+    expect(results.filter((r) => r.shrunk).map(describe), "combos whose type was shrunk to fit").toEqual([]);
+    expect(
+      results.filter((r) => r.id.includes("|card-6x4|") && r.tailFaces < 2).map(describe),
+      "6x4 combos whose notes didn't run on to another face",
+    ).toEqual([]);
+  });
+}

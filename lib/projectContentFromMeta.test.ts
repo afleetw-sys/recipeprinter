@@ -190,6 +190,7 @@ describe("a saved book reopens with every part it was saved with", () => {
     ownPhotosOnly: true,
     websitePhotos: true,
     pageLooks: { cover: { elements: { "cover-title": { textSize: 1.2 } } } },
+    fieldSwitches: { contributor: true, time: false },
     tableOfContents: true,
     tocKicker: "In this book",
     tocTitle: "Inside",

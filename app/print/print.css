@@ -518,11 +518,126 @@
   overflow-y: auto;
 }
 
-/* The page toolbar's "+" menu (AddLineMenu): a few one-word rows, so it is
-   as narrow and tight as they allow rather than a chapter list's width. */
+/* The page toolbar's "+" (AddLineMenu): one row per line or field, down a
+   single column (Amelia, 2026-11-21), as narrow as the names and their hints
+   allow rather than a chapter list's width. */
+/* The panel itself doesn't scroll (the rail menu's own cap is lifted) and has
+   no bottom padding: its rows scroll below a heading that stays put, and the
+   scrolling list carries the bottom padding (Amelia, 2026-11-21). */
 .add-line-menu.add-line-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 188px;
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+  padding: 4px 4px 0;
+}
+/* Its height is what the screen has below the heading (AddLineMenu sets it
+   on open); 60vh until then. */
+.add-line-menu__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  max-height: 60vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 4px;
+}
+.add-line-menu__name {
+  flex: 1;
   min-width: 0;
+}
+/* Show on recipes' header and its back button. Stays put while the rows
+   scroll. */
+.add-line-menu__head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-bottom: 2px;
+}
+.add-line-menu__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--cp-ink-soft);
+  cursor: pointer;
+}
+/* "‹ Back", with the scope line under it. */
+.add-line-menu__back {
+  padding: 4px 6px 4px 2px;
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
+}
+.add-line-menu__back:hover {
+  background: var(--cp-surface-strong);
+  color: var(--cp-ink);
+}
+/* What the switches apply to: every recipe in this book. */
+.add-line-menu__scope {
+  margin: 0;
+  padding: 2px 8px 4px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-micro);
+}
+.add-line-menu__switch-row {
+  cursor: pointer;
+}
+/* Title, ingredients and steps: on, and staying on. */
+.add-line-menu__switch-row--locked {
+  cursor: default;
+}
+.add-line-menu__switch-row--locked .add-line-menu__switch {
+  opacity: 0.45;
+  cursor: default;
+}
+/* "Show on recipes", pinned under a recipe's list, ruled off from it edge to
+   edge, and never scrolled away. */
+.add-line-menu__foot {
+  margin: 0 -4px;
   padding: 4px;
+  border-top: 1px solid var(--cp-line);
+}
+.add-line-menu__foot .cp-menu__item {
+  width: 100%;
+  color: var(--cp-ink-soft);
+}
+/* A plain switch: a pill track and a knob, accent while on. */
+.add-line-menu__switch {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 28px;
+  height: 16px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--cp-line-strong);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.add-line-menu__switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--cp-card);
+  transition: transform 120ms ease;
+}
+.add-line-menu__switch:checked {
+  background: var(--cp-accent);
+}
+.add-line-menu__switch:checked::after {
+  transform: translateX(12px);
+}
+.add-line-menu__switch:focus-visible {
+  outline: 2px solid var(--cp-focus-ring, var(--cp-accent));
+  outline-offset: 2px;
 }
 .add-line-menu .cp-menu__heading {
   padding: 3px 8px 2px;
@@ -534,6 +649,19 @@
 }
 /* Rules the photo page off from the lines, edge to edge across the menu
    with the same breathing room above and below. */
+/* "+ Add" beside a line the recipe has nothing in yet: plain grey text,
+   smaller than the names, no chip (Amelia, 2026-11-21). */
+.add-line-menu .cp-menu__item {
+  gap: 10px;
+}
+.add-line-menu__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--cp-ink-soft);
+  font-size: var(--cp-fs-micro);
+  font-weight: 700;
+}
 .add-line-menu__rule {
   height: 1px;
   margin: 4px -4px;
@@ -2351,6 +2479,10 @@
    the element has with no size of its own. Scrolls, opened on the current
    size. */
 .text-size-menu.text-size-menu {
+  /* It borrows the "+" panel's look, not its column layout: that one pins a
+     footer under a list that scrolls by itself, and here the whole menu
+     scrolls, so a column squeezed every size row shorter than its text. */
+  display: block;
   min-width: 8.5em;
   /* The list's top padding is its heading's instead (below): a sticky
      heading sticks under the padding, and the sizes scrolled up through
@@ -2386,6 +2518,7 @@
   grid-template-columns: 1.25em auto 1fr;
   align-items: center;
   gap: 6px;
+  padding: 7px 10px;
   font-variant-numeric: tabular-nums;
 }
 .text-size-menu__check {
@@ -3742,6 +3875,43 @@ textarea.recipe-page-fields__input {
 
 .recipe-photo-preview__line--short {
   width: 65%;
+}
+
+/* Customize's Layout tiles (ThemeCustomizePanel `LayoutPreview`): the Photos
+   tiles, two across, each a page with a title bar and the ingredients
+   (tinted) beside or above the steps. */
+.recipe-layout-style {
+  grid-template-columns: repeat(2, 1fr);
+}
+.recipe-layout-preview__page {
+  width: 40px;
+  gap: 2px;
+}
+.recipe-layout-preview__title {
+  flex: none;
+  width: 70%;
+  height: 3px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--cp-ink-soft) 75%, transparent);
+}
+.recipe-layout-preview__body {
+  display: flex;
+  gap: 2px 3px;
+}
+.recipe-layout-preview__body--stacked {
+  flex-direction: column;
+}
+.recipe-layout-preview__col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.recipe-layout-preview__body:not(.recipe-layout-preview__body--stacked) .recipe-layout-preview__col:first-child {
+  flex: 0 0 40%;
+}
+.recipe-layout-preview__ingredient {
+  background: color-mix(in srgb, var(--cp-accent) 55%, var(--cp-card));
 }
 
 /* Full Page / Recipe Card — same tile pattern as .recipe-photo-style above
@@ -9248,6 +9418,34 @@ textarea.recipe-card__toc-title {
   white-space: nowrap;
 }
 
+/* A header taller than its page (a long description and a byline beside a
+   photo on a 6x4 at a big text size) has nothing left to move, so its new
+   fields shrink with the title as the last resort (`RecipeFace.titleFit`,
+   `--recipe-title-fit`). Set only on a face whose header overflowed; the
+   cookbook's own headnote and facts are left as they always were. */
+.recipe-card__header .recipe-card__description {
+  font-size: calc(10pt * var(--recipe-font-scale, 1) * var(--recipe-title-fit, 1));
+}
+
+.recipe-card__header .recipe-card__byline .recipe-card__fact-label {
+  font-size: calc(7.5pt * var(--recipe-font-scale, 1) * var(--recipe-title-fit, 1));
+}
+
+.recipe-card__header .recipe-card__byline .recipe-card__fact-value {
+  font-size: calc(10.5pt * var(--recipe-font-scale, 1) * var(--recipe-title-fit, 1));
+}
+
+/* Contributor and Category (lib/recipeFields.ts): the cookbook's facts on
+   any page, under the time and servings. They may wrap: a name runs longer
+   than a cook time. */
+.recipe-card__byline .recipe-card__fact {
+  white-space: normal;
+}
+
+.recipe-card__byline .recipe-card__fact-value {
+  max-width: none;
+}
+
 .recipe-card__fact-label {
   font-size: calc(7.5pt * var(--recipe-font-scale, 1));
   font-weight: 800;
@@ -9323,6 +9521,38 @@ textarea.recipe-card__toc-title {
 
 .recipe-print-preview--letter .recipe-card__cols--stacked .recipe-card__method {
   margin-top: 21px;
+}
+
+/* What prints after the steps (`RecipeFace.tail`, lib/recipeFields.ts): the
+   cook's own notes, across the whole width under both columns, headed the way
+   the theme heads Ingredients and Steps. Rows sit at the top: a grid card's
+   rows otherwise stretch to the card's height and float the notes down to its
+   foot, away from the steps they follow. */
+.recipe-card__cols--with-tail {
+  align-content: start;
+}
+
+.recipe-card__tail {
+  grid-column: 1 / -1;
+  margin-top: 14px;
+}
+
+.recipe-print-preview--letter .recipe-card__tail {
+  margin-top: 21px;
+}
+
+/* Each paragraph of the note is a run of sentence-sized pieces
+   (`.recipe-card__tail-item` spans) the measurer can move one at a time. */
+.recipe-card__tail-text + .recipe-card__tail-text {
+  margin-top: 0.45em;
+}
+
+.recipe-card__tail-text {
+  margin: 0;
+  font-size: var(--recipe-card-body-size);
+  line-height: 1.4;
+  color: var(--recipe-ink);
+  white-space: pre-wrap;
 }
 
 .recipe-card__label {

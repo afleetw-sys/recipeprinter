@@ -217,6 +217,7 @@ export const BOOK_SETTING_KEYS = [
   "ownPhotosOnly",
   "websitePhotos",
   "pageLooks",
+  "fieldSwitches",
   "sampleLines",
   "optionalLinesExplicit",
   "railSortMode",

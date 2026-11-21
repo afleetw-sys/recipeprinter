@@ -56,6 +56,18 @@ import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
 import { chapterIntroFromRecipes } from "@/lib/chapterIntro";
 import { SUPPER_UTENSILS } from "@/lib/themeAccent";
 import { useThemeArt } from "@/lib/themeArt";
+import {
+  FIRST_NOTE_PIECE,
+  RECIPE_FIELDS,
+  bylineFields,
+  fieldShown,
+  fieldValue,
+  notePieces,
+  headerParts,
+  type HeaderPart,
+  type RecipeFieldId,
+} from "@/lib/recipeFields";
+import { useFieldSwitches } from "@/lib/recipeFieldsContext";
 
 // Layout-budget engine (the character-cost heuristics that decide what fits on
 // a front/back face) lives in lib/recipeCardLayout.ts — this file re-exports
@@ -532,6 +544,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   recipe,
   ingredients,
   instructions,
+  tail,
   side,
   showHeader,
   layout,
@@ -556,6 +569,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   recipe: Recipe;
   ingredients: Recipe["ingredients"];
   instructions: Recipe["instructions"];
+  /** What prints after the steps on this face (`RecipeFace.tail`): keys of
+      the note's pieces (lib/recipeFields.ts `notePieces`). */
+  tail?: string[];
   side: "front" | "back";
   showHeader: boolean;
   layout: CardSectionLayout;
@@ -601,23 +617,36 @@ export const RecipeCardFace = memo(function RecipeCardFace({
 }) {
   const el = useElements();
   const themeArt = useThemeArt();
+  const fieldSwitches = useFieldSwitches();
   const source = sourceLabel(recipe);
-  const meta = metaBits(recipe);
+  // Cook time and servings the book has switched off (lib/recipeFields.ts)
+  // read as missing everywhere on the card, the cookbook facts included.
+  const timeOn = fieldShown(fieldSwitches, "time", cookbookMode);
+  const servesOn = fieldShown(fieldSwitches, "servings", cookbookMode);
+  const factsRecipe: Recipe =
+    timeOn && servesOn
+      ? recipe
+      : {
+          ...recipe,
+          ...(timeOn ? {} : { totalTime: undefined, cookTime: undefined, prepTime: undefined }),
+          ...(servesOn ? {} : { servings: undefined, yield: undefined }),
+        };
+  const meta = metaBits(factsRecipe);
   // "This text can be clicked and typed into." True for the active card at all
   // times now -- see `activeInlineEdit`.
   const canEdit = Boolean(inlineEdit);
   // "Show me what isn't here yet." Only ever true while the reveal is on.
   const showEmpty = canEdit && showEmptyFields;
-  const metaTime = formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) || "";
-  const metaServes = recipe.servings ?? recipe.yield;
+  const metaTime = formatRecipeTime(factsRecipe.totalTime || factsRecipe.cookTime || factsRecipe.prepTime) || "";
+  const metaServes = factsRecipe.servings ?? factsRecipe.yield;
   // The card's meta line while it is being edited: what is there, and a field
   // while one is open. A line with nothing in it is not drawn at all, not even
   // as a prompt: the card on screen is the card that prints, laid out by the
   // measurer, and a prompt taking room here pushed a full 4x6 card's last
   // lines under its footer. Empty lines are added from the page toolbar's
   // "+" menu instead (`addField`).
-  const metaTimeShown = Boolean(metaTime) || editingNow({ kind: "cookTime" });
-  const metaServesShown = Boolean(metaServes) || editingNow({ kind: "servings" });
+  const metaTimeShown = timeOn && (Boolean(metaTime) || editingNow({ kind: "cookTime" }));
+  const metaServesShown = servesOn && (Boolean(metaServes) || editingNow({ kind: "servings" }));
   // A recipe with no ingredients at all still gets a slot (an "Add ingredient"
   // prompt) so there is somewhere to start — otherwise an empty recipe could
   // never get past its first field.
@@ -644,6 +673,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       !(firstStepHere === firstStep || (firstStepHere.step === firstStep.step && firstStepHere.text === firstStep.text)),
   );
   const instructionGroups = sectionGroups(instructions);
+  const lastStep = recipe.instructions?.[recipe.instructions.length - 1];
+  const lastStepHere = Boolean(lastStep && instructions[instructions.length - 1] === lastStep);
   const ingredientsWide = ingredientsOnly || stackedLayout;
   const methodWide = methodOnly || stackedLayout;
   // Chunks are the placeable units for the two-column split below: a group's
@@ -706,6 +737,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     if (a.kind === "step" && b.kind === "step") return a.index === b.index;
     if (a.kind === "ingredientSection" && b.kind === "ingredientSection") return a.index === b.index;
     if (a.kind === "instructionSection" && b.kind === "instructionSection") return a.index === b.index;
+    if (a.kind === "field" && b.kind === "field") return a.field === b.field;
     return true;
   }
 
@@ -813,6 +845,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
 
   function renderCookbookDescription() {
     if (!cookbookMode || !showHeader) return null;
+    // "+" opening the description on its own while it still prints with the
+    // note: it opens here, where it is, and the note joins it again after.
+    if (editingNow({ kind: "field", field: "description" })) {
+      return renderFieldParagraph("description", "recipe-card__headnote");
+    }
     const target: RecipeCardEditTarget = { kind: "description" };
     // A field only while it is the one being edited. A note runs to several
     // lines more often than anything else on the card, and `rows` counts hard
@@ -856,14 +893,14 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     // A label while the card is being edited, so its label text hands the
     // click to the value field inside it.
     const FactTag = canEdit && inlineEdit ? "label" : "span";
-    const time = formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime) || "";
-    const servings = recipe.servings ?? recipe.yield;
+    const time = formatRecipeTime(factsRecipe.totalTime || factsRecipe.cookTime || factsRecipe.prepTime) || "";
+    const servings = factsRecipe.servings ?? factsRecipe.yield;
     // A fact with nothing in it is not drawn (see the meta line), except as
     // its field while the "+" menu has it open: the same field as editing
     // one that's there, only empty, not the boxed prompt other added lines
     // open as.
-    const timeOpen = editingNow({ kind: "cookTime" });
-    const servingsOpen = editingNow({ kind: "servings" });
+    const timeOpen = timeOn && editingNow({ kind: "cookTime" });
+    const servingsOpen = servesOn && editingNow({ kind: "servings" });
     if (!time && !timeOpen && !servings && !servingsOpen) return null;
 
     return (
@@ -940,6 +977,152 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             )}
           </FactTag>
         )}
+      </div>
+    );
+  }
+
+  /**
+   * Description or Notes as a field of its own: the paragraph a cookbook's
+   * headnote is, holding one of its two halves. Clicked into like the
+   * headnote; nothing drawn when empty, unless "+" has it open.
+   */
+  function renderFieldParagraph(field: "description" | "note", className: string) {
+    const target: RecipeCardEditTarget = { kind: "field", field };
+    // The book's "website description" box still leaves the blurb out where
+    // the theme hasn't been told otherwise; a cook who switched Description on
+    // asked for it.
+    const value =
+      field === "description" && !showDescription && fieldSwitches?.description === undefined
+        ? ""
+        : fieldValue(recipe, field);
+    if (canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, target)) {
+      return (
+        <InlineRichField
+          elementProps={el(field)}
+          className={`recipe-card__inline-textarea ${className} recipe-card__inline-rich${value ? "" : " recipe-card__inline-input--new"}`}
+          ariaLabel={RECIPE_FIELDS[field].name}
+          value={inlineEdit.value}
+          caret={takePendingCaret(target)}
+          onCommit={(next) => inlineEdit.onCommit(next)}
+          onCancel={() => inlineEdit.onCancel()}
+        />
+      );
+    }
+    if (!value) return null;
+    return (
+      <p
+        {...el(field)}
+        className={`${className} ${canEdit ? "recipe-card__headnote--editable" : ""}`}
+        onClick={canEdit ? (event) => startEdit(target, value, event) : undefined}
+      >
+        <RichText text={value} />
+      </p>
+    );
+  }
+
+  /** Contributor and Category, one labelled fact each, the way a cookbook's
+      cook time and servings are. */
+  function renderByline() {
+    const FactTag = canEdit && inlineEdit ? "label" : "span";
+    const facts = bylineFields(fieldSwitches, cookbookMode).filter(
+      (field) => fieldValue(recipe, field) || editingNow({ kind: "field", field }),
+    );
+    if (facts.length === 0) return null;
+    return (
+      <div {...el("byline")} className="recipe-card__facts recipe-card__byline">
+        {facts.map((field) => {
+          const target: RecipeCardEditTarget = { kind: "field", field };
+          const value = fieldValue(recipe, field);
+          return (
+            <FactTag
+              key={field}
+              className={`recipe-card__fact ${canEdit && inlineEdit ? "recipe-card__fact--editable" : ""}`}
+            >
+              <span className="recipe-card__fact-label">{RECIPE_FIELDS[field].label}</span>
+              {canEdit && inlineEdit ? (
+                <input
+                  ref={focusIfEditing(target)}
+                  className="recipe-card__inline-input recipe-card__fact-value"
+                  dir="auto"
+                  value={sameTarget(inlineEdit.editingTarget, target) ? inlineEdit.value : value}
+                  placeholder={`Add ${RECIPE_FIELDS[field].name.toLowerCase()}`}
+                  aria-label={RECIPE_FIELDS[field].name}
+                  onFocus={() => startEdit(target, value)}
+                  onChange={(event) => inlineEdit.onValueChange(event.target.value)}
+                  onBlur={commitEdit}
+                  onKeyDown={handleEditKeyDown}
+                />
+              ) : (
+                <strong className="recipe-card__fact-value">{value}</strong>
+              )}
+            </FactTag>
+          );
+        })}
+      </div>
+    );
+  }
+
+  /**
+   * What prints after the steps on this face: the pieces of the note the page
+   * split put here (`RecipeFace.tail`), read back as its paragraphs, under
+   * "Notes" on the face that has its first piece. Each piece is its own span,
+   * so the measurer can move it on alone and a long note runs over as many
+   * pages as it needs. Clicking any of it opens the whole note where it
+   * starts; while it's open, its pieces on later faces step aside. A note "+"
+   * has just opened, empty, has no place in the split yet, so it opens at the
+   * foot of the recipe's first face.
+   */
+  function renderTail() {
+    const here = new Set(tail ?? []);
+    const note = fieldValue(recipe, "note");
+    const target: RecipeCardEditTarget = { kind: "field", field: "note" };
+    const editing = editingNow(target);
+    const startsHere = here.has(FIRST_NOTE_PIECE) || (editing && showHeader && !note);
+    // "Notes" where they start; "Notes (continued)" on a face they carry on to,
+    // as the steps say where they pick up again.
+    // Renamed or removed on the card like Ingredients and Steps.
+    const label = sectionLabel(
+      "notesHeading",
+      !startsHere ? (
+        <span className="recipe-card__continued-inline" lang={cardWords.lang}>
+          {cardWords.note(cardWords.continued)}
+        </span>
+      ) : null,
+      null,
+    );
+    if (editing) {
+      return startsHere ? (
+        <div className="recipe-card__tail">
+          {label}
+          {renderFieldParagraph("note", "recipe-card__tail-text")}
+        </div>
+      ) : null;
+    }
+    const pieces = notePieces(note).filter((piece) => here.has(piece.key));
+    if (pieces.length === 0) return null;
+    const paragraphs: (typeof pieces)[] = [];
+    for (const piece of pieces) {
+      const last = paragraphs[paragraphs.length - 1];
+      if (last && last[0].paragraph === piece.paragraph) last.push(piece);
+      else paragraphs.push([piece]);
+    }
+    return (
+      <div className="recipe-card__tail">
+        {label}
+        {paragraphs.map((paragraph) => (
+          <p
+            key={paragraph[0].key}
+            {...el("note")}
+            className={`recipe-card__tail-text ${canEdit ? "recipe-card__headnote--editable" : ""}`}
+            onClick={canEdit ? (event) => startEdit(target, note, event) : undefined}
+          >
+            {paragraph.map((piece) => (
+              <span key={piece.key} className="recipe-card__tail-item">
+                <RichText text={piece.text} />
+              </span>
+            ))}
+          </p>
+        ))}
       </div>
     );
   }
@@ -1061,13 +1244,17 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   /** A list's headings, its own "Ingredients" and the section headings in
       it, are an element of their own: sized apart from the lines, following
       them until the cook gives the headings a size (lib/pageLooks.tsx). */
-  function headingsElement(kind: RecipeHeadingKind | "ingredientSection" | "instructionSection") {
+  function headingsElement(kind: Exclude<RecipeHeadingKind, "notesHeading"> | "ingredientSection" | "instructionSection") {
     return kind === "ingredientsHeading" || kind === "ingredientSection" ? "ingredients-headings" : "steps-headings";
   }
 
   function sectionLabel(kind: RecipeHeadingKind, suffix: ReactNode, addButton: ReactNode) {
     const target: RecipeCardEditTarget = { kind };
-    const headings = el(headingsElement(kind));
+    // Notes' heading has no size of its own, and stays the paragraph it has
+    // always been, so the foot prints as before.
+    const notes = kind === "notesHeading";
+    const headings = notes ? {} : el(headingsElement(kind));
+    const H2 = notes ? "p" : "h2";
     const heading = recipeHeading(recipe, kind);
     const defaultHeading = cardWords[kind];
     const defaultLang = cardWords.lang;
@@ -1076,7 +1263,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     const headingLang = recipe[kind] === undefined ? defaultLang : undefined;
     if (canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, target)) {
       return (
-        <h2 {...headings} className="recipe-card__label">
+        <H2 {...headings} className="recipe-card__label">
           <textarea
             ref={focusIfEditing(target)}
             className="recipe-card__inline-textarea recipe-card__label-input"
@@ -1087,13 +1274,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             onBlur={commitEdit}
             onKeyDown={handleEditKeyDown}
           />
-        </h2>
+        </H2>
       );
     }
     if (!heading) {
       if (showEmpty && canEdit) {
         return (
-          <h2
+          <H2
             {...headings}
             className="recipe-card__label recipe-card__label--empty"
             lang={defaultLang}
@@ -1104,20 +1291,20 @@ export const RecipeCardFace = memo(function RecipeCardFace({
               {suffix}
               {addButton}
             </span>
-          </h2>
+          </H2>
         );
       }
       return suffix ? (
-        <h2 {...headings} className="recipe-card__label">
+        <H2 {...headings} className="recipe-card__label">
           <span className="recipe-card__label-inline">
             {suffix}
             {addButton}
           </span>
-        </h2>
+        </H2>
       ) : null;
     }
     return (
-      <h2
+      <H2
         {...headings}
         className={`recipe-card__label ${canEdit ? "recipe-card__label--editable" : ""}`}
         lang={headingLang}
@@ -1128,7 +1315,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           {suffix}
           {addButton}
         </span>
-      </h2>
+      </H2>
     );
   }
 
@@ -1364,42 +1551,14 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     );
   }
 
-  return (
-    <article
-      className={`recipe-card recipe-card--${side} ${
-        continued ? "recipe-card--continued" : ""
-      } ${showPhoto ? "recipe-card--with-photo" : ""}`}
-      data-has-back={hasBackFace ? "true" : undefined}
-      data-preview-hidden={previewHidden ? "true" : undefined}
-      data-poster-color={template === "poster" ? (themeArt.posterColor ?? posterColor(recipeIndex)) : undefined}
-      /* A cookbook page carries a page number and chapter name in its foot.
-         Themes with art there hold the recipe higher to make room for them,
-         and the measurer renders with the same flag, so it measures the same
-         page the book prints. */
-      data-in-book={cookbookMode ? "true" : undefined}
-      /* The recipe's own language, when CookPilot was sure of it, so screen
-         readers voice it and the browser picks the right glyphs and
-         hyphenation. The card's own words follow it too: see `cardWords`.
-         A right-to-left recipe mirrors the card's text and columns; theme art
-         stays put (see "Right-to-left recipes" in app/print/print.css). */
-      lang={recipe.language}
-      dir={recipeTextDirection(recipe.language)}
-      style={Object.keys(cardStyle).length > 0 ? cardStyle : undefined}
-    >
-      <div className="recipe-card__accent" aria-hidden />
-      <TemplateDecoration
-        template={template}
-        show={showDecoration}
-        edgeOnly={cookbookMode && continued}
-        recipeIndex={recipeIndex}
-      />
-      {showHeader ? (
-        <header
-          className={`recipe-card__header ${
-            showPhoto ? "recipe-card__header--with-photo" : ""
-          }`}
-        >
-          <div className="recipe-card__headline">
+  const tailBlock = renderTail();
+
+  /** One part of the header, as the theme places it (lib/recipeFields.ts). */
+  function renderHeaderPart(part: HeaderPart) {
+    switch (part) {
+      case "title":
+        return (
+          <>
             {/* A real field only while it IS the field being edited — the same
                 on-demand swap `sectionTitle` makes, and for the same two
                 reasons. A permanently-mounted textarea is structural churn
@@ -1428,10 +1587,24 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 {recipe.title}
               </h1>
             )}
+          </>
+        );
+      case "headnote":
+        return (
+          <>
             {/* Cookbook pages use an editorial header hierarchy: title,
                 description, then cook time and servings. Plain recipe cards
                 remain title → meta with no description added. */}
             {renderCookbookDescription()}
+          </>
+        );
+      case "description":
+        return renderFieldParagraph("description", "recipe-card__headnote recipe-card__description");
+      case "byline":
+        return renderByline();
+      case "details":
+        return (
+          <>
             {/* The one field group that stays behind the reveal. Read mode
                 joins cook time and servings into a single "20 min · 4" string
                 while the editor splits them into two inputs, so there is no
@@ -1525,6 +1698,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 </p>
               )
             )}
+          </>
+        );
+      case "source":
+        return (
+          <>
             {/* Cookbook mode: the source link lives here, right under the meta
                 line, instead of in the footer where it competes with the page
                 folio. Same content/edit target as the footer version below. */}
@@ -1556,6 +1734,50 @@ export const RecipeCardFace = memo(function RecipeCardFace({
                 source && <p {...el("details")} className="recipe-card__source-line">{source}</p>
               )
             )}
+          </>
+        );
+    }
+  }
+
+  return (
+    <article
+      className={`recipe-card recipe-card--${side} ${
+        continued ? "recipe-card--continued" : ""
+      } ${showPhoto ? "recipe-card--with-photo" : ""}`}
+      data-has-back={hasBackFace ? "true" : undefined}
+      data-preview-hidden={previewHidden ? "true" : undefined}
+      data-poster-color={template === "poster" ? (themeArt.posterColor ?? posterColor(recipeIndex)) : undefined}
+      /* A cookbook page carries a page number and chapter name in its foot.
+         Themes with art there hold the recipe higher to make room for them,
+         and the measurer renders with the same flag, so it measures the same
+         page the book prints. */
+      data-in-book={cookbookMode ? "true" : undefined}
+      /* The recipe's own language, when CookPilot was sure of it, so screen
+         readers voice it and the browser picks the right glyphs and
+         hyphenation. The card's own words follow it too: see `cardWords`.
+         A right-to-left recipe mirrors the card's text and columns; theme art
+         stays put (see "Right-to-left recipes" in app/print/print.css). */
+      lang={recipe.language}
+      dir={recipeTextDirection(recipe.language)}
+      style={Object.keys(cardStyle).length > 0 ? cardStyle : undefined}
+    >
+      <div className="recipe-card__accent" aria-hidden />
+      <TemplateDecoration
+        template={template}
+        show={showDecoration}
+        edgeOnly={cookbookMode && continued}
+        recipeIndex={recipeIndex}
+      />
+      {showHeader ? (
+        <header
+          className={`recipe-card__header ${
+            showPhoto ? "recipe-card__header--with-photo" : ""
+          }`}
+        >
+          <div className="recipe-card__headline">
+            {headerParts(fieldSwitches, cookbookMode).map((part) => (
+              <Fragment key={part}>{renderHeaderPart(part)}</Fragment>
+            ))}
           </div>
           {showPhoto && !hasImage && (
             <span className="recipe-card__photo recipe-card__photo--placeholder">
@@ -1596,7 +1818,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           !hasIngredientsSection ? "recipe-card__cols--single" : ""
         } ${ingredientsOnly ? "recipe-card__cols--ingredients-only" : ""} ${
           methodOnly ? "recipe-card__cols--method-only" : ""
-        } ${stackedLayout ? "recipe-card__cols--stacked" : ""}`}
+        } ${stackedLayout ? "recipe-card__cols--stacked" : ""}${tailBlock ? " recipe-card__cols--with-tail" : ""}`}
         style={shrinkStyle}
       >
         {hasIngredientsSection && (
@@ -1684,7 +1906,9 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           >
             {sectionLabel(
               "stepsHeading",
-              side === "front" && hasBackFace && !continued ? (
+              // Only while the steps really do carry on: a face can have a back
+              // that holds nothing but the end of the notes.
+              side === "front" && hasBackFace && !continued && !lastStepHere ? (
                 // A cookbook continues on the NEXT LEAF, never on the back of
                 // this one (see `continueOnBack` in lib/usePrintSheets.tsx —
                 // duplex is the recipe-card path only), so "on back" sent the
@@ -1769,6 +1993,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             )}
           </section>
         )}
+        {tailBlock}
       </div>
 
       {/* No footer in cookbook mode: the "Printed with RecipePrinter" brand is

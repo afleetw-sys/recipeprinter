@@ -5,6 +5,7 @@ import { printableRecipe } from "@/lib/queue";
 import { storedRecipeHeading } from "@/lib/recipeHeadings";
 import { ingredientText } from "@/lib/recipeCardLayout";
 import { splitNote } from "@/lib/recipeNote";
+import { fieldValue } from "@/lib/recipeFields";
 import type {
   RecipeCardEditTarget,
   RecipeCardInlineEdit,
@@ -18,11 +19,10 @@ interface RecipeEditSelection {
 }
 
 /** The field each line the "+" menu can add is typed into. */
-const FIELD_TARGETS: Record<"link" | "time" | "servings" | "note", RecipeCardEditTarget> = {
+const FIELD_TARGETS: Record<"link" | "time" | "servings", RecipeCardEditTarget> = {
   link: { kind: "sourceUrl" },
   time: { kind: "cookTime" },
   servings: { kind: "servings" },
-  note: { kind: "description" },
 };
 
 function stripStepPrefix(value: string): string {
@@ -213,6 +213,14 @@ export function applyRecipeTargetEdit(
       note: split.note,
     });
   }
+  if (target.kind === "field") {
+    // One field on its own (lib/recipeFields.ts). The description and the
+    // note keep their lines and formatting; a contributor or category is one
+    // line. Emptied, the field is gone from the recipe and so from the card.
+    const multiline = target.field === "description" || target.field === "note";
+    const stored = multiline ? (value.trim() ? value : undefined) : trimmed || undefined;
+    return printableRecipe({ ...recipe, [target.field]: stored });
+  }
   if (target.kind === "cookTime") {
     // The card shows ONE time, read as `totalTime || cookTime || prepTime`. What
     // is typed replaces the first two, which is enough to win that read. Emptying
@@ -292,7 +300,7 @@ export function applyRecipeTargetEdit(
       instructions: applySectionTitleEdit(recipe.instructions, target.index, trimmed),
     });
   }
-  if (target.kind === "ingredientsHeading" || target.kind === "stepsHeading") {
+  if (target.kind === "ingredientsHeading" || target.kind === "stepsHeading" || target.kind === "notesHeading") {
     // Emptied is removed (`""`), the default typed back follows the default
     // again: see lib/recipeHeadings.ts.
     return printableRecipe({ ...recipe, [target.kind]: storedRecipeHeading(target.kind, value, recipe.language) });
@@ -486,6 +494,29 @@ export function useRecipeInlineEditor({
     (recipeId: string, field: AddableRecipeLine) => {
       if (!activeRecipeItem?.recipe || activeRecipeItem.id !== recipeId) return;
       const recipe = activeRecipeItem.recipe;
+      // Recipe details lists every line, so it opens one that's already there
+      // too: with what it holds, never a blank that would replace it.
+      if (field === "ingredients" && recipe.ingredients.length > 0) {
+        setEditingEdit({ recipeId, target: { kind: "ingredient", index: 0 } });
+        setEditValue(ingredientText(recipe.ingredients[0]));
+        return;
+      }
+      if (field === "steps" && recipe.instructions.length > 0) {
+        setEditingEdit({ recipeId, target: { kind: "step", index: 0 } });
+        setEditValue(recipe.instructions[0].text);
+        return;
+      }
+      if (field === "time" || field === "servings" || field === "link") {
+        setEditingEdit({ recipeId, target: FIELD_TARGETS[field] });
+        setEditValue(
+          field === "time"
+            ? recipe.totalTime || recipe.cookTime || recipe.prepTime || ""
+            : field === "servings"
+              ? recipe.servings === undefined ? "" : String(recipe.servings)
+              : recipe.sourceUrl ?? "",
+        );
+        return;
+      }
       if (field === "ingredients") {
         applyRecipeUpdate(recipeId, printableRecipe({ ...recipe, ingredients: [{ raw: "" }, ...recipe.ingredients] }));
         setEditingEdit({ recipeId, target: { kind: "ingredient", index: 0 } });
@@ -495,6 +526,12 @@ export function useRecipeInlineEditor({
           printableRecipe({ ...recipe, instructions: [{ step: 1, text: "" }, ...recipe.instructions] }),
         );
         setEditingEdit({ recipeId, target: { kind: "step", index: 0 } });
+      } else if (field === "description" || field === "contributor" || field === "category" || field === "note") {
+        // A field of its own (lib/recipeFields.ts). It may already hold
+        // words the theme was hiding, so it opens with them.
+        setEditingEdit({ recipeId, target: { kind: "field", field } });
+        setEditValue(fieldValue(recipe, field));
+        return;
       } else {
         setEditingEdit({ recipeId, target: FIELD_TARGETS[field] });
       }
@@ -503,7 +540,7 @@ export function useRecipeInlineEditor({
     [activeRecipeItem, applyRecipeUpdate],
   );
 
-  /** The "+" menu's "Heading(s)": a removed "Ingredients" / "Steps" heading
+  /** The "+" menu's "Heading(s)": a removed "Ingredients" / "Steps" / "Notes" heading
       comes back as the default. */
   const restoreHeadings = useCallback(
     (recipeId: string) => {
@@ -516,6 +553,7 @@ export function useRecipeInlineEditor({
           ...recipe,
           ingredientsHeading: headingBack(recipe.ingredientsHeading),
           stepsHeading: headingBack(recipe.stepsHeading),
+          notesHeading: headingBack(recipe.notesHeading),
         }),
       );
     },

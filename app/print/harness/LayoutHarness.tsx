@@ -17,6 +17,8 @@ import {
   type FaceMeasureDetail,
 } from "@/lib/faceMeasure";
 import { HARNESS_RECIPES, type HarnessRecipe } from "@/lib/__fixtures__/harnessRecipes";
+import { tailFields, type FieldSwitches } from "@/lib/recipeFields";
+import { RecipeFieldsProvider } from "@/lib/recipeFieldsContext";
 import { DEFAULT_FONT_SCALE, FONT_SCALES, fontScaleVars, normalizeFontScale, type FontScale } from "@/lib/fontScale";
 // Each text size is measured with the photo size a page at that text size had
 // when the photo still followed it (Biggest text, Bigger photo), so every photo
@@ -120,6 +122,10 @@ interface ComboResult {
   worstUnderfillPx: number;
   worstFace?: FaceMeasureDetail;
   settledShape?: string;
+  /** How many settled faces carry part of what prints after the steps. */
+  tailFaces: number;
+  /** Whether any settled face had its type shrunk to fit (`contentScale`). */
+  shrunk: boolean;
   pass: boolean;
   // The current engine never settled/measured this combo within the window
   // timeout — a finding in its own right (a hang or oscillation), recorded so
@@ -272,6 +278,7 @@ function FaceSetProbe({
               recipe={recipe}
               ingredients={page.ingredients}
               instructions={page.instructions}
+              tail={page.tail}
               side={i === 0 ? "front" : "back"}
               showHeader={i === 0}
               layout={page.layout}
@@ -299,14 +306,18 @@ function FaceSetProbe({
 function ComboRunner({
   combo,
   recipe,
+  fields,
   scale,
   onResult,
 }: {
   combo: Combo;
   recipe: Recipe;
+  /** The theme's field switches this fixture is measured under. */
+  fields?: FieldSwitches;
   scale: number;
   onResult: (result: ComboResult) => void;
 }) {
+  const tail = useMemo(() => tailFields(recipe, fields, combo.book), [recipe, fields, combo.book]);
   const guessPages = useMemo(
     () =>
       getRecipeFaces(recipe, combo.size, {
@@ -314,8 +325,9 @@ function ComboRunner({
         showSourceUrl: combo.showSourceUrl,
         template: combo.template,
         fontScale: combo.fontScale,
+        tail,
       }).pages,
-    [recipe, combo.size, combo.hasPhoto, combo.showSourceUrl, combo.template, combo.fontScale],
+    [recipe, combo.size, combo.hasPhoto, combo.showSourceUrl, combo.template, combo.fontScale, tail],
   );
 
   const [settledPages, setSettledPages] = useState<RecipeFace[] | null>(null);
@@ -335,6 +347,7 @@ function ComboRunner({
         recipe.instructions.length,
         (item) => recipe.ingredients.indexOf(item),
         (item) => recipe.instructions.indexOf(item),
+        tail,
       );
       const settledMax = round(maxOverflow(details.map((d) => d.overflowPx)));
       const inv1NoClip = settledMax <= OVERFLOW_TOLERANCE_PX;
@@ -394,7 +407,8 @@ function ComboRunner({
           (p, i) =>
             `${p.ingredients.length}i/${p.instructions.length}s(${p.layout})@${round(details[i]?.overflowPx ?? 0)}` +
             (p.contentScale && p.contentScale < 1 ? `x${p.contentScale.toFixed(2)}` : "") +
-            (p.titleFit && p.titleFit < 1 ? `t${p.titleFit.toFixed(2)}` : ""),
+            (p.titleFit && p.titleFit < 1 ? `t${p.titleFit.toFixed(2)}` : "") +
+            (p.tail?.length ? `+${p.tail.length}tail` : ""),
         )
         .join(" · ");
 
@@ -414,15 +428,17 @@ function ComboRunner({
         clipKind,
         worstFace,
         settledShape,
+        tailFaces: settled.filter((p) => p.tail?.length).length,
+        shrunk: settled.some((p) => (p.contentScale ?? 1) < 1),
         pass:
           inv1NoClip && invariants.complete && invariants.noEmptyFace && invariants.ingredientsBeforeInstructions,
       });
     },
-    [combo, guessPages, recipe, onResult],
+    [combo, guessPages, recipe, tail, onResult],
   );
 
   return (
-    <>
+    <RecipeFieldsProvider value={fields}>
       <RecipeFaceMeasurer
         recipe={recipe}
         size={combo.size}
@@ -434,6 +450,7 @@ function ComboRunner({
         cardVars={combo.book ? BOOK_CARD_VARS : undefined}
         fontScale={combo.fontScale}
         photoScale={legacyPhotoScale(combo.fontScale)}
+        tail={tail}
         onSettled={(pages) => setSettledPages((prev) => prev ?? pages)}
       />
       {settledPages && (
@@ -450,7 +467,7 @@ function ComboRunner({
           onMeasured={(o) => report(settledPages, o)}
         />
       )}
-    </>
+    </RecipeFieldsProvider>
   );
 }
 
@@ -488,6 +505,7 @@ const UNDERFILL_TOLERANCE_PX = 16;
 interface FlatCombo {
   combo: Combo;
   recipe: Recipe;
+  fields?: FieldSwitches;
   label: string;
 }
 
@@ -538,7 +556,7 @@ function LayoutSweep() {
       fontScales: scales,
       book: bookPages,
       flatCombos: HARNESS_RECIPES.filter((r) => !wanted || wanted.has(r.id)).flatMap((r) =>
-        combosFor(r, scales, bookPages).map((combo) => ({ combo, recipe: r.recipe, label: r.label })),
+        combosFor(r, scales, bookPages).map((combo) => ({ combo, recipe: r.recipe, fields: r.fields, label: r.label })),
       ) as FlatCombo[],
     };
   });
@@ -592,6 +610,8 @@ function LayoutSweep() {
             combo: f.combo,
             guessFaceCount: 0,
             settledFaceCount: 0,
+            tailFaces: 0,
+            shrunk: false,
             guessMaxOverflow: 0,
             settledMaxOverflow: 0,
             inv1NoClip: false,
@@ -780,6 +800,8 @@ function LayoutSweep() {
             clipKind: r.clipKind,
             worstFace: r.worstFace,
             settledShape: r.settledShape,
+            tailFaces: r.tailFaces,
+            shrunk: r.shrunk,
             pass: r.pass,
             timedOut: r.timedOut ?? false,
           })),
@@ -865,7 +887,14 @@ function LayoutSweep() {
       {/* Mount only the current sliding window of runners so the settle
           cascade stays bounded and probe effects can flush. */}
       {batch.map((f) => (
-        <ComboRunner key={f.combo.id} combo={f.combo} recipe={f.recipe} scale={renderScale} onResult={handleResult} />
+        <ComboRunner
+          key={f.combo.id}
+          combo={f.combo}
+          recipe={f.recipe}
+          fields={f.fields}
+          scale={renderScale}
+          onResult={handleResult}
+        />
       ))}
     </div>
   );

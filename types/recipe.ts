@@ -104,7 +104,16 @@ export interface RecipeNutrition {
 }
 
 /** A recipe line the page toolbar's "+" menu adds when it is empty. */
-export type AddableRecipeLine = "link" | "time" | "servings" | "note" | "ingredients" | "steps";
+export type AddableRecipeLine =
+  | "link"
+  | "time"
+  | "servings"
+  | "note"
+  | "description"
+  | "contributor"
+  | "category"
+  | "ingredients"
+  | "steps";
 
 export interface Recipe {
   title: string;
@@ -138,14 +147,27 @@ export interface Recipe {
       lib/recipeHeadings.ts. */
   ingredientsHeading?: string;
   stepsHeading?: string;
+  /** The "Notes" heading over notes printed at the foot, the same three
+      states (lib/recipeHeadings.ts). */
+  notesHeading?: string;
 
   tags?: string[];
   cuisine?: string;
   course?: string;
   nutrition?: RecipeNutrition;
 
+  /** The website's byline, as imported. Never printed: it is not the family
+      member a recipe came from, which is `contributor`. */
   author?: string;
   datePublished?: string;
+
+  /** Who in the family this recipe came from ("Aunt Carroll"). The cook's own:
+      an import never fills it. Printed where the theme shows Contributor
+      (lib/recipeFields.ts). */
+  contributor?: string;
+  /** The cook's own grouping ("Side Dishes"). Never filled from an imported
+      `course`, which would start printing on cards that never showed one. */
+  category?: string;
 }
 
 /**
@@ -556,13 +578,23 @@ export interface PrintProjectSettings {
   themeLooks?: Partial<
     Record<
       RecipePrintTemplate,
-      { fontScale?: number; photoScale?: number; accent?: string; posterColor?: number; utensil?: string }
+      {
+        fontScale?: number;
+        photoScale?: number;
+        accent?: string;
+        posterColor?: number;
+        utensil?: string;
+      }
     >
   >;
   /** How the cook has styled single pages and the elements on them, keyed by
       page address. See lib/pageLooks.tsx. Absent = every page follows its
       theme and the book's settings. */
   pageLooks?: PageLooks;
+  /** Which recipe fields the book shows, for every recipe in it whatever its
+      theme (lib/recipeFields.ts, Recipe details' "Show on recipes"). Absent =
+      the book as it always printed. */
+  fieldSwitches?: Partial<Record<string, boolean>>;
   /** See `ProjectMeta.sampleLines`: optional lines never written show sample
       text (lib/bookPageSamples.ts). Absent on books made before. */
   sampleLines?: boolean;

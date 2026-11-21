@@ -1,7 +1,8 @@
 import type { Recipe } from "@/types/recipe";
 
 /**
- * The two section headings on a recipe card, "Ingredients" and "Steps".
+ * The section headings on a recipe card, "Ingredients" and "Steps", and
+ * "Notes" over notes printed at the foot (lib/recipeFields.ts).
  *
  * A cook can rename either on one recipe, or remove it. People print more than
  * recipes (lesson notes, packing lists), and "Ingredients" over a list of
@@ -15,11 +16,12 @@ import type { Recipe } from "@/types/recipe";
  *   brought back;
  * - anything else: the cook's own heading.
  */
-export type RecipeHeadingKind = "ingredientsHeading" | "stepsHeading";
+export type RecipeHeadingKind = "ingredientsHeading" | "stepsHeading" | "notesHeading";
 
 export const DEFAULT_RECIPE_HEADINGS: Record<RecipeHeadingKind, string> = {
   ingredientsHeading: "Ingredients",
   stepsHeading: "Steps",
+  notesHeading: "Notes",
 };
 
 /**
@@ -38,6 +40,8 @@ export const DEFAULT_RECIPE_HEADINGS: Record<RecipeHeadingKind, string> = {
 export interface RecipeCardWords {
   ingredientsHeading: string;
   stepsHeading: string;
+  /** "Notes" in every language for now: the table has no word for it yet. */
+  notesHeading: string;
   /** After the steps heading on a card's front: the method runs on overleaf. */
   onBack: string;
   /** The same on a cookbook page, which runs on to the next leaf instead. */
@@ -129,6 +133,7 @@ export function recipeCardWords(
   return {
     ingredientsHeading,
     stepsHeading,
+    notesHeading: DEFAULT_RECIPE_HEADINGS.notesHeading,
     onBack,
     nextPage,
     continued,
@@ -203,6 +208,7 @@ export function removedHeadingsName(recipe: Recipe): string | null {
   const removed = [
     recipe.ingredients.length > 0 && recipe.ingredientsHeading === "",
     recipe.instructions.length > 0 && recipe.stepsHeading === "",
+    Boolean(recipe.note?.trim()) && recipe.notesHeading === "",
   ].filter(Boolean).length;
   if (removed === 0) return null;
   return removed === 1 ? "heading" : "headings";
