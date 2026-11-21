@@ -1080,15 +1080,15 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     const startsHere = here.has(FIRST_NOTE_PIECE) || (editing && showHeader && !note);
     // "Notes" where they start; "Notes (continued)" on a face they carry on to,
     // as the steps say where they pick up again.
-    const label = (
-      <p className="recipe-card__label">
-        {RECIPE_FIELDS.note.label}
-        {!startsHere && (
-          <span className="recipe-card__continued-inline" lang={cardWords.lang}>
-            {cardWords.note(cardWords.continued)}
-          </span>
-        )}
-      </p>
+    // Renamed or removed on the card like Ingredients and Steps.
+    const label = sectionLabel(
+      "notesHeading",
+      !startsHere ? (
+        <span className="recipe-card__continued-inline" lang={cardWords.lang}>
+          {cardWords.note(cardWords.continued)}
+        </span>
+      ) : null,
+      null,
     );
     if (editing) {
       return startsHere ? (
@@ -1244,13 +1244,17 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   /** A list's headings, its own "Ingredients" and the section headings in
       it, are an element of their own: sized apart from the lines, following
       them until the cook gives the headings a size (lib/pageLooks.tsx). */
-  function headingsElement(kind: RecipeHeadingKind | "ingredientSection" | "instructionSection") {
+  function headingsElement(kind: Exclude<RecipeHeadingKind, "notesHeading"> | "ingredientSection" | "instructionSection") {
     return kind === "ingredientsHeading" || kind === "ingredientSection" ? "ingredients-headings" : "steps-headings";
   }
 
   function sectionLabel(kind: RecipeHeadingKind, suffix: ReactNode, addButton: ReactNode) {
     const target: RecipeCardEditTarget = { kind };
-    const headings = el(headingsElement(kind));
+    // Notes' heading has no size of its own, and stays the paragraph it has
+    // always been, so the foot prints as before.
+    const notes = kind === "notesHeading";
+    const headings = notes ? {} : el(headingsElement(kind));
+    const H2 = notes ? "p" : "h2";
     const heading = recipeHeading(recipe, kind);
     const defaultHeading = cardWords[kind];
     const defaultLang = cardWords.lang;
@@ -1259,7 +1263,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     const headingLang = recipe[kind] === undefined ? defaultLang : undefined;
     if (canEdit && inlineEdit && sameTarget(inlineEdit.editingTarget, target)) {
       return (
-        <h2 {...headings} className="recipe-card__label">
+        <H2 {...headings} className="recipe-card__label">
           <textarea
             ref={focusIfEditing(target)}
             className="recipe-card__inline-textarea recipe-card__label-input"
@@ -1270,13 +1274,13 @@ export const RecipeCardFace = memo(function RecipeCardFace({
             onBlur={commitEdit}
             onKeyDown={handleEditKeyDown}
           />
-        </h2>
+        </H2>
       );
     }
     if (!heading) {
       if (showEmpty && canEdit) {
         return (
-          <h2
+          <H2
             {...headings}
             className="recipe-card__label recipe-card__label--empty"
             lang={defaultLang}
@@ -1287,20 +1291,20 @@ export const RecipeCardFace = memo(function RecipeCardFace({
               {suffix}
               {addButton}
             </span>
-          </h2>
+          </H2>
         );
       }
       return suffix ? (
-        <h2 {...headings} className="recipe-card__label">
+        <H2 {...headings} className="recipe-card__label">
           <span className="recipe-card__label-inline">
             {suffix}
             {addButton}
           </span>
-        </h2>
+        </H2>
       ) : null;
     }
     return (
-      <h2
+      <H2
         {...headings}
         className={`recipe-card__label ${canEdit ? "recipe-card__label--editable" : ""}`}
         lang={headingLang}
@@ -1311,7 +1315,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           {suffix}
           {addButton}
         </span>
-      </h2>
+      </H2>
     );
   }
 

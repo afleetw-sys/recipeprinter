@@ -300,7 +300,7 @@ export function applyRecipeTargetEdit(
       instructions: applySectionTitleEdit(recipe.instructions, target.index, trimmed),
     });
   }
-  if (target.kind === "ingredientsHeading" || target.kind === "stepsHeading") {
+  if (target.kind === "ingredientsHeading" || target.kind === "stepsHeading" || target.kind === "notesHeading") {
     // Emptied is removed (`""`), the default typed back follows the default
     // again: see lib/recipeHeadings.ts.
     return printableRecipe({ ...recipe, [target.kind]: storedRecipeHeading(target.kind, value, recipe.language) });
@@ -540,7 +540,7 @@ export function useRecipeInlineEditor({
     [activeRecipeItem, applyRecipeUpdate],
   );
 
-  /** The "+" menu's "Heading(s)": a removed "Ingredients" / "Steps" heading
+  /** The "+" menu's "Heading(s)": a removed "Ingredients" / "Steps" / "Notes" heading
       comes back as the default. */
   const restoreHeadings = useCallback(
     (recipeId: string) => {
@@ -553,6 +553,7 @@ export function useRecipeInlineEditor({
           ...recipe,
           ingredientsHeading: headingBack(recipe.ingredientsHeading),
           stepsHeading: headingBack(recipe.stepsHeading),
+          notesHeading: headingBack(recipe.notesHeading),
         }),
       );
     },

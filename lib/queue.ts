@@ -71,6 +71,7 @@ export function printableRecipe(recipe: Recipe): Recipe {
     instructions: recipe.instructions,
     ingredientsHeading: recipe.ingredientsHeading,
     stepsHeading: recipe.stepsHeading,
+    notesHeading: recipe.notesHeading,
     contributor: recipe.contributor,
     category: recipe.category,
   };

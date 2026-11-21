@@ -147,6 +147,9 @@ export interface Recipe {
       lib/recipeHeadings.ts. */
   ingredientsHeading?: string;
   stepsHeading?: string;
+  /** The "Notes" heading over notes printed at the foot, the same three
+      states (lib/recipeHeadings.ts). */
+  notesHeading?: string;
 
   tags?: string[];
   cuisine?: string;
