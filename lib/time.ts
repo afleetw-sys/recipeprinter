@@ -66,6 +66,10 @@ function minutesFromRecipeTime(value: string): number | null {
 const AUTHORED_QUALIFIER =
   /\d\s*(?:to|or)\b|\d\s*[-–—+/]|\b(?:at least|up to|or more|or so|about|around|roughly)\b|~/i;
 
+/** Nothing but numbers with time units: "24 hrs.", "1 hour 30 minutes", "1 hr, 15 min". */
+const ONLY_A_DURATION =
+  /^(?:\s*\d+(?:\.\d+)?\s*(?:h|hrs?|hours?|m|mins?|minutes?)\.?\s*(?:,|and)?)+\s*$/i;
+
 export function formatRecipeTime(value?: string | number | null): string | null {
   if (value === null || value === undefined) return null;
 
@@ -77,6 +81,11 @@ export function formatRecipeTime(value?: string | number | null): string | null 
   if (!trimmed) return null;
 
   if (AUTHORED_QUALIFIER.test(trimmed)) return trimmed;
+  // Tidied only when the text IS a duration ("45 minutes", "1 hour 30
+  // minutes", "PT30M"). Anything more the cook wrote ("45 minutes to one
+  // hour", "30 minutes plus chilling") is theirs and prints as written: the
+  // parser below would keep the first number and drop the rest.
+  if (!parseIsoDuration(trimmed) && !ONLY_A_DURATION.test(trimmed)) return trimmed;
 
   const minutes = minutesFromRecipeTime(trimmed);
   return minutes === null ? trimmed : formatMinutes(minutes) || trimmed;
