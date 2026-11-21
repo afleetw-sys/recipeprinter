@@ -1564,7 +1564,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
           </>
         );
       case "description":
-        return renderFieldParagraph("description", "recipe-card__headnote");
+        return renderFieldParagraph("description", "recipe-card__headnote recipe-card__description");
       case "byline":
         return renderByline();
       case "details":

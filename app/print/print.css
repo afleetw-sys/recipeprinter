@@ -9265,6 +9265,23 @@ textarea.recipe-card__toc-title {
   white-space: nowrap;
 }
 
+/* A header taller than its page (a long description and a byline beside a
+   photo on a 6x4 at a big text size) has nothing left to move, so its new
+   fields shrink with the title as the last resort (`RecipeFace.titleFit`,
+   `--recipe-title-fit`). Set only on a face whose header overflowed; the
+   cookbook's own headnote and facts are left as they always were. */
+.recipe-card__header .recipe-card__description {
+  font-size: calc(10pt * var(--recipe-font-scale, 1) * var(--recipe-title-fit, 1));
+}
+
+.recipe-card__header .recipe-card__byline .recipe-card__fact-label {
+  font-size: calc(7.5pt * var(--recipe-font-scale, 1) * var(--recipe-title-fit, 1));
+}
+
+.recipe-card__header .recipe-card__byline .recipe-card__fact-value {
+  font-size: calc(10.5pt * var(--recipe-font-scale, 1) * var(--recipe-title-fit, 1));
+}
+
 /* Contributor and Category (lib/recipeFields.ts): the cookbook's facts on
    any page, under the time and servings. They may wrap: a name runs longer
    than a cook time. */

@@ -522,7 +522,14 @@ export function RecipeFaceMeasurer({
       // square root of the shortfall is a first step that lands near, not far
       // under; the next pass measures again and takes another if it must.
       if (i === 0 && itemCount(page) === 0) {
-        const titleHeight = cardEl.querySelector(".recipe-card__title")?.getBoundingClientRect().height ?? 0;
+        // The description and byline (lib/recipeFields.ts) shrink with the
+        // title (print.css `--recipe-title-fit`), so where a header has them,
+        // its whole headline is what gives. Without them it is the title, as
+        // it always was.
+        const fitted = cardEl.querySelector(".recipe-card__description, .recipe-card__byline")
+          ? ".recipe-card__headline"
+          : ".recipe-card__title";
+        const titleHeight = cardEl.querySelector(fitted)?.getBoundingClientRect().height ?? 0;
         if (titleHeight > 0) {
           const needed = Math.sqrt(Math.max(0, titleHeight - overflowPx) / titleHeight) * 0.98;
           const nextFit = Math.max(MIN_TITLE_FIT, (page.titleFit ?? 1) * needed);
