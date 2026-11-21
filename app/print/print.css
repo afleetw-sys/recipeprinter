@@ -566,7 +566,7 @@
   color: var(--cp-ink-soft);
   cursor: pointer;
 }
-/* "‹ Back", with the scope line beside it. */
+/* "‹ Back", with the scope line under it. */
 .add-line-menu__back {
   padding: 4px 6px 4px 2px;
   font-size: var(--cp-fs-caption);
@@ -578,10 +578,8 @@
 }
 /* What the switches apply to: every recipe in this book. */
 .add-line-menu__scope {
-  flex: 1;
   margin: 0;
-  padding: 0 8px 0 6px;
-  text-align: right;
+  padding: 2px 8px 4px;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-micro);
 }

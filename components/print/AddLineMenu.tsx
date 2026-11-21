@@ -113,8 +113,8 @@ export function AddLineMenu({
               <ChevronLeftIcon size={ICON_SIZE.sm} />
               Back
             </button>
-            <p className="add-line-menu__scope">{settings.scope}</p>
           </div>
+          <p className="add-line-menu__scope">{settings.scope}</p>
           <div ref={listRef} className={listClass} onScroll={updateMore}>
             {settings.rows.map((row) => (
               <label
