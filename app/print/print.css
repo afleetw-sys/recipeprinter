@@ -566,9 +566,11 @@
   color: var(--cp-ink-soft);
   cursor: pointer;
 }
-/* Just the arrow: the switches and their scope line say where you are. */
+/* "‹ Back", with the scope line beside it. */
 .add-line-menu__back {
-  padding: 4px;
+  padding: 4px 6px 4px 2px;
+  font-size: var(--cp-fs-caption);
+  font-weight: 700;
 }
 .add-line-menu__back:hover {
   background: var(--cp-surface-strong);
@@ -578,7 +580,8 @@
 .add-line-menu__scope {
   flex: 1;
   margin: 0;
-  padding: 0 8px 0 2px;
+  padding: 0 8px 0 6px;
+  text-align: right;
   color: var(--cp-ink-soft);
   font-size: var(--cp-fs-micro);
 }
