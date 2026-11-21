@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, type RefObject } from "react";
+import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { ICON_SIZE, PlusIcon } from "@/components/icons";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
@@ -58,7 +58,16 @@ export function AddLineMenu({
     node.style.top = `${top}px`;
     const chrome = node.getBoundingClientRect().height - list.getBoundingClientRect().height;
     list.style.maxHeight = `${Math.max(0, window.innerHeight - top - SCREEN_MARGIN_PX - chrome)}px`;
+    updateMore();
   }, [anchor]);
+
+  // While rows are hidden below, the list's foot fades out, so it reads as
+  // scrollable rather than ending at a row that happens to be cut off.
+  const [more, setMore] = useState(false);
+  function updateMore() {
+    const list = listRef.current;
+    if (list) setMore(list.scrollTop + list.clientHeight < list.scrollHeight - 1);
+  }
 
   useMenuDismiss([ref, triggerRef], onClose);
 
@@ -71,7 +80,11 @@ export function AddLineMenu({
       style={{ top: anchor.y, left: anchor.x }}
     >
       <p className="cp-menu__heading">{heading}</p>
-      <div ref={listRef} className="add-line-menu__grid">
+      <div
+        ref={listRef}
+        className={`add-line-menu__grid${more ? " add-line-menu__grid--more" : ""}`}
+        onScroll={updateMore}
+      >
         {lines.map((line) => (
           <button
             key={line.name}
@@ -85,7 +98,7 @@ export function AddLineMenu({
           >
             <span className="add-line-menu__name">{line.name}</span>
             {line.hint && (
-              <span className="add-line-menu__hint">
+              <span className={`add-line-menu__hint${line.hint === "Add" ? " add-line-menu__hint--add" : ""}`}>
                 {/* A heavier stroke than the toolbar's, so it holds its own at
                     this size beside the word. */}
                 {line.hint === "Add" && <PlusIcon size={ICON_SIZE.xs} strokeWidth={2.5} />}

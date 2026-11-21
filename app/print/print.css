@@ -561,6 +561,17 @@
   font-size: var(--cp-fs-label);
   font-weight: 500;
 }
+/* "+ Add" reads as the action it is: bold, still in the quiet grey, so it
+   sits back behind the names. "Hidden" stays a lighter note. */
+.add-line-menu__hint--add {
+  font-weight: 700;
+}
+/* Rows hidden below: the list's last 28px fade out (AddLineMenu sets the
+   class while there is more to scroll to). */
+.add-line-menu__grid--more {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
 .add-line-menu .cp-menu__heading {
   padding: 3px 8px 2px;
 }
