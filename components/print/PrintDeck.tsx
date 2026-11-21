@@ -42,7 +42,7 @@ import { emptyRecipeFields } from "@/lib/recipeMissingFields";
 import {
   RECIPE_FIELDS,
   RECIPE_FIELD_IDS,
-  fieldShown,
+  fieldTicked,
   fieldValue,
   usesHeadnote,
   type FieldSwitches,
@@ -241,7 +241,7 @@ interface PrintDeckProps {
   /** The current theme's field switches (lib/recipeFields.ts), and the
       setter "+" uses to show a field it adds. */
   fieldSwitches: FieldSwitches | undefined;
-  setFieldShown: (field: RecipeFieldId, shown: boolean) => void;
+  setFieldShown: (field: RecipeFieldId, shown: boolean, cookbook: boolean) => void;
   /** No multi-recipe entitlement and not a cookbook — the one recipe a Free
       cook can hold. Only then is the page toolbar's link toggle unambiguous:
       it reads as "this recipe's link" and IS this recipe's link, because
@@ -721,14 +721,25 @@ export function PrintDeck(props: PrintDeckProps) {
         // foot.
         const fieldLines = RECIPE_FIELD_IDS.map((field) => {
           const filled = Boolean(fieldValue(recipe, field));
-          const shown = fieldShown(fieldSwitches, field, cookbook);
+          // Notes still printing inside the description on a cookbook page
+          // say so; picking them puts them at the foot (`withFieldShown`).
+          const withDescription = field === "note" && usesHeadnote(fieldSwitches, cookbook);
+          const shown = fieldTicked(fieldSwitches, field, cookbook);
           return {
             name: RECIPE_LINE_NAMES[field],
-            hint: shown ? (filled ? "Added" : "Empty") : filled ? "Hidden" : undefined,
+            hint: withDescription
+              ? filled
+                ? "In description"
+                : undefined
+              : shown
+                ? filled
+                  ? "Added"
+                  : "Empty"
+                : filled
+                  ? "Hidden"
+                  : undefined,
             restore: () => {
-              if (!shown || ((field === "description" || field === "note") && usesHeadnote(fieldSwitches, cookbook))) {
-                setFieldShown(field, true);
-              }
+              if (!shown) setFieldShown(field, true, cookbook);
               addField(recipeId, field);
             },
           };

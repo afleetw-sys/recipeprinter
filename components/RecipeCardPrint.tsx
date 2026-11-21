@@ -830,6 +830,11 @@ export const RecipeCardFace = memo(function RecipeCardFace({
 
   function renderCookbookDescription() {
     if (!cookbookMode || !showHeader) return null;
+    // "+" opening the description on its own while it still prints with the
+    // note: it opens here, where it is, and the note joins it again after.
+    if (editingNow({ kind: "field", field: "description" })) {
+      return renderFieldParagraph("description", "recipe-card__headnote");
+    }
     const target: RecipeCardEditTarget = { kind: "description" };
     // A field only while it is the one being edited. A note runs to several
     // lines more often than anything else on the card, and `rows` counts hard

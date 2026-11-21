@@ -76,6 +76,36 @@ export function fieldShown(switches: FieldSwitches | undefined, id: RecipeFieldI
 }
 
 /**
+ * Whether Customize shows a field as ticked. On a cookbook page still printing
+ * description and note as one paragraph, Notes reads unticked: they aren't on
+ * their own yet, and ticking them is how they get there.
+ */
+export function fieldTicked(switches: FieldSwitches | undefined, id: RecipeFieldId, cookbook: boolean): boolean {
+  if (id === "note" && usesHeadnote(switches, cookbook)) return false;
+  return fieldShown(switches, id, cookbook);
+}
+
+/**
+ * The switches with one field shown or hidden. A cookbook page printing
+ * description and note together becomes two fields the moment either is
+ * switched, and the other keeps printing: ticking Notes puts them at the
+ * foot under a description that stays put; unticking Description leaves the
+ * notes, now at the foot.
+ */
+export function withFieldShown(
+  switches: FieldSwitches | undefined,
+  id: RecipeFieldId,
+  shown: boolean,
+  cookbook: boolean,
+): FieldSwitches {
+  const split =
+    usesHeadnote(switches, cookbook) && (id === "description" || id === "note")
+      ? { description: true, note: true }
+      : {};
+  return { ...switches, ...split, [id]: shown };
+}
+
+/**
  * The header's parts, top to bottom. `byline` is Contributor and Category, one
  * labelled fact each, under the time and servings. A part only holds what the
  * theme shows, and the card skips one with nothing in it.

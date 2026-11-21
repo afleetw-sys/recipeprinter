@@ -243,6 +243,7 @@ import {
   fieldShown,
   fieldValue,
   usesHeadnote,
+  withFieldShown,
   type RecipeFieldId,
 } from "@/lib/recipeFields";
 import { RecipeFieldsProvider } from "@/lib/recipeFieldsContext";
@@ -457,9 +458,11 @@ export default function PrintPage() {
   /** Shows or hides one recipe field in this theme (lib/recipeFields.ts).
       Never touches what any recipe holds. */
   const setFieldShown = useCallback(
-    (field: RecipeFieldId, shown: boolean) =>
+    (field: RecipeFieldId, shown: boolean, cookbook: boolean) =>
       setThemeLooks((looks) =>
-        withLook(looks, template, { fields: { ...lookFor(looks, template).fields, [field]: shown } }),
+        withLook(looks, template, {
+          fields: withFieldShown(lookFor(looks, template).fields, field, shown, cookbook),
+        }),
       ),
     [template],
   );

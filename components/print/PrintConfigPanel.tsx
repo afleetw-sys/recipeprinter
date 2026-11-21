@@ -45,7 +45,7 @@ interface PrintConfigPanelProps {
   setStacked: (value: boolean) => void;
   /** Which recipe fields the theme shows (lib/recipeFields.ts). */
   fieldSwitches: FieldSwitches | undefined;
-  setFieldShown: (field: RecipeFieldId, shown: boolean) => void;
+  setFieldShown: (field: RecipeFieldId, shown: boolean, cookbook: boolean) => void;
   themeCustomized: boolean;
   resetThemeLook: () => void;
   /** Customize theme's Each part: the size every recipe's part has, and its

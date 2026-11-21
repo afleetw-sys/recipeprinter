@@ -23,7 +23,14 @@ import {
 } from "@/lib/themeAccent";
 import { MenuSelect } from "@/components/MenuSelect";
 import { Checkbox, CheckboxGroup, SegmentedControl } from "@/components/Controls";
-import { RECIPE_FIELDS, RECIPE_FIELD_IDS, fieldShown, type FieldSwitches, type RecipeFieldId } from "@/lib/recipeFields";
+import {
+  RECIPE_FIELDS,
+  RECIPE_FIELD_IDS,
+  fieldTicked,
+  usesHeadnote,
+  type FieldSwitches,
+  type RecipeFieldId,
+} from "@/lib/recipeFields";
 import type { RecipePrintTemplate } from "@/types/recipe";
 
 /**
@@ -86,7 +93,7 @@ export function ThemeCustomizePanel({
   /** Which recipe fields this theme shows (lib/recipeFields.ts). Content
       stays on each recipe; these only decide whether it prints. */
   fieldSwitches?: FieldSwitches;
-  setFieldShown?: (field: RecipeFieldId, shown: boolean) => void;
+  setFieldShown?: (field: RecipeFieldId, shown: boolean, cookbook: boolean) => void;
   /** Which theme, for its own colors and art choices. */
   template: RecipePrintTemplate;
   /** Whether this theme differs from how it ships. */
@@ -179,8 +186,13 @@ export function ThemeCustomizePanel({
             <Checkbox
               key={field}
               label={RECIPE_FIELDS[field].name}
-              checked={fieldShown(fieldSwitches, field, cookbook)}
-              onChange={(event) => setFieldShown(field, event.target.checked)}
+              hint={
+                field === "note" && usesHeadnote(fieldSwitches, cookbook)
+                  ? "Printing with the description. Tick to put them at the bottom."
+                  : undefined
+              }
+              checked={fieldTicked(fieldSwitches, field, cookbook)}
+              onChange={(event) => setFieldShown(field, event.target.checked, cookbook)}
             />
           ))}
         </CheckboxGroup>
