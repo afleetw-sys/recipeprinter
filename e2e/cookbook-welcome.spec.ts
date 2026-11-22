@@ -24,9 +24,8 @@ test("the new-cookbook welcome's Start adding recipes opens Add recipes", async 
  * A signed-out cook's way to keep a book is Save, which signs them in. The
  * phone's top bar offered it from the start, but the desktop header held it
  * back until the first recipe, so an empty book on a computer had no Save at
- * all. Every width offers it on a book that hasn't had a recipe yet: the
- * desktop header as a button, the phone layout as the Save row of its top
- * bar's "⋯".
+ * all. Every width offers it on a book that hasn't had a recipe yet, as the
+ * same save cloud in the header and the phone's top bar.
  */
 test("a new signed-out cookbook offers Save at every width", async ({ page }) => {
   const missing: string[] = [];
@@ -46,24 +45,8 @@ test("a new signed-out cookbook offers Save at every width", async ({ page }) =>
     // Every new book opens with its welcome, the Cookbook tab's included.
     await closeCookbookWalkthrough(page);
 
-    // Which layout is drawn, not which width was asked for: a touch screen
-    // picks its layout by the device (DECK_MOBILE_QUERY), so the iPhone
-    // project stretched to 1440px is still the phone layout.
-    const phoneLayout = await page.locator(".recipe-mobile-topbar").isVisible();
-    const save =
-      phoneLayout
-        ? await page
-            .getByRole("button", { name: "More" })
-            .filter({ visible: true })
-            .first()
-            .click({ timeout: 5_000 })
-            .then(() => page.getByRole("menuitem", { name: /^Save/ }))
-            .catch(() => null)
-        : page.getByRole("button", { name: "Sign in to save cookbook" });
-    if (!save) {
-      missing.push(name);
-      continue;
-    }
+    // The same save cloud on every layout (Amelia, 2026-11-22).
+    const save = page.getByRole("button", { name: "Sign in to save to Projects" });
     await save
       .filter({ visible: true })
       .first()

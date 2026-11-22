@@ -309,10 +309,23 @@ export const CheckCircleIcon = (p: IconProps) => (
   </Base>
 );
 
+// The save cloud's two states (SaveCloudButton). The cloud is open at the
+// bottom and the arrow or check drops through the gap at full size: drawn
+// inside a closed cloud, both were too small to read at header size
+// (Amelia, 2026-11-22). Same construction as Lucide's cloud icons (ISC).
 export const CloudCheckIcon = (p: IconProps) => (
   <Base {...p}>
-    <path d="M17.5 19H8a6 6 0 1 1 5.7-7.9h1.8a4 4 0 1 1 2 7.9Z" />
-    <path d="M9 14.5l2 2 3.5-3.5" />
+    <path d="M5 17.74A7 7 0 1 1 15.71 10h1.79a4.5 4.5 0 0 1 1.5 8.74" />
+    <path d="M9 18l2.5 2.5L17 15" />
+  </Base>
+);
+
+// Not saved yet: the same open cloud with an arrow coming down through it.
+export const CloudDownloadIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M4.39 15.27A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.44 8.28" />
+    <path d="M12 13v8" />
+    <path d="M8 17l4 4 4-4" />
   </Base>
 );
 

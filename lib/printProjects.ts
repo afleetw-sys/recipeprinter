@@ -704,7 +704,7 @@ export async function loadPrintProject(ownerUid: string, projectId: string): Pro
 export async function loadPrintProjectHead(
   ownerUid: string,
   projectId: string,
-): Promise<{ id: string; revision: number; createdAt?: number } | null> {
+): Promise<{ id: string; revision: number; createdAt?: number; updatedAt?: number } | null> {
   const [{ doc, getDoc }, { getDb }] = await Promise.all([
     import("firebase/firestore"),
     import("@/lib/firebase/db"),
@@ -717,6 +717,7 @@ export async function loadPrintProjectHead(
     id: String(data.id ?? projectId),
     revision: Number(data.revision ?? 0),
     createdAt: data.createdAt,
+    updatedAt: Number(data.updatedAt) || undefined,
   };
 }
 

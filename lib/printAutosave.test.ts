@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { autosaveVerdict, LOADED_BASELINE, shouldFlushOnHide, type FlushOnHideState, shouldSaveOnLeave } from "@/lib/printAutosave";
+import { autosaveVerdict, keepsItself, LOADED_BASELINE, shouldFlushOnHide, type FlushOnHideState, shouldSaveOnLeave } from "@/lib/printAutosave";
 
 describe("autosaveVerdict", () => {
   it("does nothing when the book matches what was last saved", () => {
@@ -86,5 +86,24 @@ describe("shouldSaveOnLeave", () => {
     const fingerprint = () => "book";
     expect(shouldSaveOnLeave({ saveInFlight: true, saveQueued: false, lastSavedFingerprint: "book" }, fingerprint)).toBe(true);
     expect(shouldSaveOnLeave({ saveInFlight: false, saveQueued: true, lastSavedFingerprint: "book" }, fingerprint)).toBe(true);
+  });
+});
+
+describe("keepsItself", () => {
+  it("keeps a job the cook already asked to keep, whatever it shrinks to and grows back to", () => {
+    // A single card saved from the cloud, emptied (which takes its account copy
+    // away), then given a recipe back by Undo: it was asked for, so it is kept
+    // again, the same as a cookbook or a two-card job would be.
+    for (const cookbookMode of [false, true]) {
+      for (const recipeCount of [1, 2, 5]) {
+        expect(keepsItself({ cookbookMode, recipeCount, askedToKeep: true })).toBe(true);
+      }
+    }
+  });
+
+  it("still leaves a single card nobody asked to keep as a quick print", () => {
+    expect(keepsItself({ cookbookMode: false, recipeCount: 1, askedToKeep: false })).toBe(false);
+    expect(keepsItself({ cookbookMode: false, recipeCount: 2, askedToKeep: false })).toBe(true);
+    expect(keepsItself({ cookbookMode: true, recipeCount: 1, askedToKeep: false })).toBe(true);
   });
 });
