@@ -118,16 +118,10 @@ export function MakeCookbookDialog({
         {/* The price in the box it has everywhere else (the cookbook welcome),
             with what a free book holds under it in the same box. */}
         <div className="cookbook-tour__price !mt-0">
+          {/* The price alone, no struck-through regular price beside it
+              (Amelia, 2026-11-22): "for your first cookbook with Pro" says
+              why it's lower. */}
           <p className="cookbook-tour__amount">
-            {discounted && (
-              <>
-                <s className="cookbook-tour__was">
-                  <span className="sr-only">Was </span>
-                  {local(fullPrice ?? price)}
-                </s>{" "}
-                <span className="sr-only">now </span>
-              </>
-            )}
             {local(price)}{" "}
             <span className="cookbook-tour__per">{discounted ? "for your first cookbook with Pro" : "per cookbook"}</span>
           </p>
