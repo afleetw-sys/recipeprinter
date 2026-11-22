@@ -120,13 +120,15 @@ export function MakeCookbookDialog({
             )}
             {local(price)} <span className="cookbook-tour__per">per cookbook{discounted ? " with Pro" : ""}</span>
           </p>
-          <p>{PREVIEW_RULE}</p>
-          {waiting > 0 && (
-            <p>
-              Your first {FREE_COOKBOOK_RECIPES} recipes go in now. The other {waiting}{" "}
-              {waiting === 1 ? "is" : "are"} added when you buy the cookbook.
-            </p>
-          )}
+          {/* One short line, not the welcome's two (Amelia, 2026-11-22: too
+              much text, on a phone especially). */}
+          <p>
+            {waiting > 0
+              ? `Preview ${FREE_COOKBOOK_RECIPES} recipes free. ${waiting === 1 ? "The last one comes" : `The other ${waiting} come`} in when you buy.`
+              : IMPORT_ALLOWANCE_LIVE
+                ? `Preview up to ${FREE_COOKBOOK_RECIPES} recipes free.`
+                : PREVIEW_RULE}
+          </p>
         </div>
 
         <Checkbox
