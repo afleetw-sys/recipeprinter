@@ -118,7 +118,7 @@ export function MakeCookbookDialog({
                 <span className="sr-only">now </span>
               </>
             )}
-            {local(price)} <span className="cookbook-tour__per">per cookbook{discounted ? " with Pro" : ""}</span>
+            {local(price)} <span className="cookbook-tour__per">{discounted ? "for your first cookbook with Pro" : "per cookbook"}</span>
           </p>
           {/* One short line, not the welcome's two (Amelia, 2026-11-22: too
               much text, on a phone especially). */}
