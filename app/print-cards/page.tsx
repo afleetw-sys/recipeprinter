@@ -51,10 +51,10 @@ export default function PrintCardsPage() {
       router.replace("/print");
       return;
     }
-    // "Make a cookbook" from recipe cards: a new book, which opens with the
-    // cookbook welcome like every new book, and knows where any recipes that
-    // didn't fit the free book are waiting.
-    const bookFromCards = sessionStore.getJson<{ projectId: string | null; waiting: number }>(BOOK_FROM_CARDS_KEY);
+    // "Make a cookbook" from recipe cards: a new book, which skips the welcome
+    // (its own dialog came first) and knows where any recipes that didn't fit
+    // the free book are waiting.
+    const bookFromCards = sessionStore.getJson<{ projectId: string | null; waitingIds: string[]; linked: boolean }>(BOOK_FROM_CARDS_KEY);
     sessionStore.remove(BOOK_FROM_CARDS_KEY);
     if (bookFromCards) {
       sessionStore.remove(CARDS_FROM_COOKBOOK_KEY);

@@ -216,13 +216,20 @@ export interface ProjectMeta {
       to Projects from the start, even with one recipe (see `keepsItself`):
       the cook made it on purpose, from a book they keep, so it is kept too. */
   cardsFromCookbook?: boolean;
-  /** A cookbook made from recipe cards ("Make a cookbook"), and the card
-      project it came from. A free book holds the first ten; the rest wait in
-      that project, and are added from it once this book is bought. Cleared
-      once they are. */
+  /** Made from recipe cards ("Make a cookbook"). Its own dialog explained the
+      cookbook before it was made, so the book opens without the welcome. */
+  bookFromCards?: boolean;
+  /** The card project a book made from recipe cards came from, while some of
+      its recipes are still waiting there: a free book holds the first ten,
+      and the rest are added from it once this book is bought. Cleared once
+      they are. */
   fillFromProjectId?: string;
-  /** How many recipes are waiting there, for the welcome to say. */
-  waitingRecipeCount?: number;
+  /** Whether those waiting recipes come in kept the same as the cards (the
+      dialog's checkbox), or as separate copies. */
+  fillFromLinked?: boolean;
+  /** Which of that project's items are waiting, so exactly those come in,
+      however the book was made (linked or not) and whatever it holds by then. */
+  fillFromItemIds?: string[];
   /** This book's unwritten optional lines (a cover's author and edition, a
       dedication's message and signature, a back cover's lines, a chapter's
       subtitle) are told apart from removed ones: `undefined` shows its "+"
@@ -1350,7 +1357,7 @@ export function useProjectMeta() {
       cookbook?: boolean;
       cardsFromCookbook?: boolean;
       fieldSwitches?: FieldSwitches;
-      fillFrom?: { projectId: string | null; waiting: number };
+      fillFrom?: { projectId: string | null; waitingIds: string[]; linked: boolean };
     } = {}) => {
       resetHistory();
       commit({
@@ -1358,8 +1365,14 @@ export function useProjectMeta() {
         projectId: uid(),
         cardsFromCookbook: options.cardsFromCookbook || undefined,
         fieldSwitches: options.fieldSwitches,
-        fillFromProjectId: options.fillFrom?.waiting ? (options.fillFrom.projectId ?? undefined) : undefined,
-        waitingRecipeCount: options.fillFrom?.waiting || undefined,
+        bookFromCards: options.fillFrom ? true : undefined,
+        ...(options.fillFrom?.projectId && options.fillFrom.waitingIds.length > 0
+          ? {
+              fillFromProjectId: options.fillFrom.projectId,
+              fillFromLinked: options.fillFrom.linked,
+              fillFromItemIds: options.fillFrom.waitingIds,
+            }
+          : {}),
         cookbookIntent: options.cookbook || undefined,
         cookbookBornFresh: options.cookbook || undefined,
         // A new book starts its optional lines with sample text (see the field).
@@ -1380,8 +1393,8 @@ export function useProjectMeta() {
     () => {
       withoutHistory(() =>
         update((current) =>
-          current.fillFromProjectId || current.waitingRecipeCount
-            ? { ...current, fillFromProjectId: undefined, waitingRecipeCount: undefined }
+          current.fillFromProjectId || current.fillFromItemIds
+            ? { ...current, fillFromProjectId: undefined, fillFromLinked: undefined, fillFromItemIds: undefined }
             : current,
         ),
       );

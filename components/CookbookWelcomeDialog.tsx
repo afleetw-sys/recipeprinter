@@ -116,7 +116,6 @@ export function CookbookWelcomeDialog({
   price,
   fullPrice,
   hasRecipes,
-  waitingRecipes = 0,
   onStart,
   onLookAround,
   onClose,
@@ -132,10 +131,6 @@ export function CookbookWelcomeDialog({
       got here by importing from the homepage, so `onStart` shows them the book
       instead of asking for a first recipe, and the button says so. */
   hasRecipes: boolean;
-  /** Recipes left out of a book made from recipe cards, because a free book
-      holds ten. They come in once it is bought, which the
-      last step says, so nobody wonders where they went. */
-  waitingRecipes?: number;
   onStart: () => void;
   /** Close onto the empty book without opening Add recipes. */
   onLookAround: () => void;
@@ -276,12 +271,6 @@ export function CookbookWelcomeDialog({
                   {local(price)} <span className="cookbook-tour__per">per cookbook</span>
                 </p>
                 <p>{discounted ? `20% off your first cookbook with Pro. ${PREVIEW_RULE}` : PREVIEW_RULE}</p>
-                {waitingRecipes > 0 && (
-                  <p>
-                    Your first {FREE_COOKBOOK_RECIPES} recipes are in. The other {waitingRecipes}{" "}
-                    {waitingRecipes === 1 ? "comes" : "come"} in when you buy this cookbook.
-                  </p>
-                )}
               </div>
             )}
           </div>

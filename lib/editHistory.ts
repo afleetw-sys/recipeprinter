@@ -84,8 +84,10 @@ const UNTRACKED_META_KEYS = new Set([
   "cookbookIntent",
   "cookbookBornFresh",
   "cardsFromCookbook",
+  "bookFromCards",
   "fillFromProjectId",
-  "waitingRecipeCount",
+  "fillFromLinked",
+  "fillFromItemIds",
 ]);
 
 const LIST_CHANNELS = new Set<HistoryChannel>(["queue", "job"]);
