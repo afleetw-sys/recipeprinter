@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { Dialog } from "@/components/Dialog";
-import { CookPilotLoginForm } from "@/components/CookPilotAuth";
+import { CookPilotLoginDialog } from "@/components/CookPilotAuth";
 import { CheckIcon, ICON_SIZE, XIcon } from "@/components/icons";
 import { track, type ProDeclineReason } from "@/lib/analytics";
 import {
@@ -45,17 +45,11 @@ const DECLINE_REASONS: { reason: ProDeclineReason; label: string }[] = [
 /**
  * The one Pro upsell screen in the app — one dialog, start to finish.
  *
- * Flow: choose a plan → sign in if needed → checkout. Both steps live in
- * this same component/`Dialog` instance so a signed-out cook never sees a
- * second popup open — picking a plan while signed out swaps this dialog's
- * own content over to sign-in, and succeeding there starts checkout for the
- * plan already chosen, with no second "confirm your plan" step. A
- * signed-in cook skips straight from plan choice to checkout, same as
- * before.
- *
- * The sign-in step embeds `CookPilotLoginForm` (the same form
- * `CookPilotLoginDialog` uses) rather than reimplementing email/password/
- * Google/Apple sign-in here.
+ * Flow: choose a plan → sign in if needed → checkout. Picking a plan while
+ * signed out replaces this dialog with the ordinary sign-in dialog
+ * (`CookPilotLoginDialog`, worded for Pro), and succeeding there starts
+ * checkout for the plan already chosen, with no second "confirm your plan"
+ * step. A signed-in cook goes straight from plan choice to checkout.
  *
  * Closing from the plan step, before Continue was ever pressed, turns the
  * dialog into one question: why not upgrade today. A tap on an answer records it
@@ -115,7 +109,6 @@ export function ProUpgradeDialog({
   const [otherText, setOtherText] = useState("");
   const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>(DEFAULT_PRO_CYCLE);
   const [pendingCycle, setPendingCycle] = useState<ProBillingCycle | null>(null);
-  const [formBusy, setFormBusy] = useState(false);
   const uid = cookPilotUser?.uid ?? null;
   // Whether this account has been asked on any device. Null until read, and
   // the question waits for the answer: closing before it arrives just closes.
@@ -193,7 +186,7 @@ export function ProUpgradeDialog({
     onClose();
   }
 
-  const closeDisabled = busy || formBusy;
+  const closeDisabled = busy;
   const { label: price, annualPerMonth, annualTotal } = useVisitorPrices();
   // Annual reads as a monthly figure, so the two plans compare like for like,
   // and always says what it charges once a year right beside it.
@@ -202,6 +195,36 @@ export function ProUpgradeDialog({
   const billedYearly = `Billed yearly at ${annualTotal}`;
   // The plan cards add their own " / month", so the monthly price drops its "/mo".
   const monthlyAmount = price(PRO_PRICE_FALLBACKS.monthly).replace(/\s*\/\s*mo\.?$/i, "");
+
+  // Signing in is the ordinary sign-in dialog, the same one every other
+  // door opens (Amelia, 2026-11-22), not a form inside this one beside the
+  // picture. It says what it is for, and succeeding starts checkout for the
+  // plan already chosen. Closing it closes the upgrade too; "Back to plans"
+  // returns to the plan step.
+  if (step === "signin") {
+    const plan = pendingCycle
+      ? ` for ${PRO_CYCLE_LABEL[pendingCycle]}, ${cyclePrice(pendingCycle)}${
+          pendingCycle === "annual" ? ` ${billedYearly.toLowerCase()},` : ","
+        }`
+      : "";
+    return (
+      <CookPilotLoginDialog
+        onClose={handleClose}
+        onAuthenticated={() => {
+          if (pendingCycle) onChoose(pendingCycle);
+        }}
+        intro={{
+          title: "Sign in to get Pro",
+          body: `Pro stays with your account on every device. Checkout${plan} opens right after you sign in.`,
+        }}
+        footer={
+          <button type="button" className="btn-ghost btn-compact w-full" onClick={() => setStep("plan")}>
+            Back to plans
+          </button>
+        }
+      />
+    );
+  }
 
   return (
     <Dialog
@@ -415,40 +438,7 @@ export function ProUpgradeDialog({
           </button>
           <p className="text-center text-cp-label text-ink-soft">Cancel any time from Settings.</p>
         </>
-      ) : (
-        <>
-          <div className="pr-8">
-            <h2 id="pro-upgrade-title" className="text-cp-dialog-title font-extrabold tracking-tight">
-              Sign in to get Pro
-            </h2>
-            <p className="mt-1 text-cp-body text-ink-soft">
-              Pro belongs to your account, so it works on any device you sign in on. Checkout opens
-              right after you sign in.
-            </p>
-            {pendingCycle && (
-              <p className="mt-2 text-cp-label text-ink-soft font-semibold">
-                {PRO_CYCLE_LABEL[pendingCycle]} · {cyclePrice(pendingCycle)}
-                {pendingCycle === "annual" && `, ${billedYearly.toLowerCase()}`}
-              </p>
-            )}
-          </div>
-          <CookPilotLoginForm
-            autoFocus
-            onBusyChange={setFormBusy}
-            onAuthenticated={() => {
-              if (pendingCycle) onChoose(pendingCycle);
-            }}
-          />
-          <button
-            type="button"
-            className="btn-ghost btn-compact w-full"
-            disabled={formBusy}
-            onClick={() => setStep("plan")}
-          >
-            Back to plans
-          </button>
-        </>
-      )}
+      ) : null}
       </div>
       {/* The picture (Amelia, 2026-11-16): the left half on a computer, for
           every step so the dialog never changes size. None on a phone
