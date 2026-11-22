@@ -136,6 +136,7 @@ export function recipePagePlacementHasValues(placement: RecipePagePlacement): bo
     placement.heroFocusX !== undefined ||
     placement.heroFocusY !== undefined ||
     placement.heroZoom !== undefined ||
+    placement.heroCropFor !== undefined ||
     placement.showPhoto !== undefined ||
     placement.showSourceUrl !== undefined ||
     placement.photoUrl !== undefined ||
@@ -211,6 +212,24 @@ export interface ProjectMeta {
       book on arrival"; once `scaffoldCookbook` runs, this records that the
       project was born a cookbook, with no prior recipe-cards state. */
   cookbookBornFresh?: boolean;
+  /** A card job made by "Print as recipe cards" from a cookbook. It is saved
+      to Projects from the start, even with one recipe (see `keepsItself`):
+      the cook made it on purpose, from a book they keep, so it is kept too. */
+  cardsFromCookbook?: boolean;
+  /** Made from recipe cards ("Make a cookbook"). Its own dialog explained the
+      cookbook before it was made, so the book opens without the welcome. */
+  bookFromCards?: boolean;
+  /** The card project a book made from recipe cards came from, while some of
+      its recipes are still waiting there: a free book holds the first ten,
+      and the rest are added from it once this book is bought. Cleared once
+      they are. */
+  fillFromProjectId?: string;
+  /** Whether those waiting recipes come in kept the same as the cards (the
+      dialog's checkbox), or as separate copies. */
+  fillFromLinked?: boolean;
+  /** Which of that project's items are waiting, so exactly those come in,
+      however the book was made (linked or not) and whatever it holds by then. */
+  fillFromItemIds?: string[];
   /** This book's unwritten optional lines (a cover's author and edition, a
       dedication's message and signature, a back cover's lines, a chapter's
       subtitle) are told apart from removed ones: `undefined` shows its "+"
@@ -1275,6 +1294,7 @@ export function useProjectMeta() {
         if (placement.heroFocusX !== undefined) kept.heroFocusX = placement.heroFocusX;
         if (placement.heroFocusY !== undefined) kept.heroFocusY = placement.heroFocusY;
         if (placement.heroZoom !== undefined) kept.heroZoom = placement.heroZoom;
+        if (placement.heroCropFor !== undefined) kept.heroCropFor = placement.heroCropFor;
         // The link override is not a photo placement either. Picking a book-wide
         // Photos option must not quietly turn one recipe's link back on or off.
         if (placement.showSourceUrl !== undefined) kept.showSourceUrl = placement.showSourceUrl;
@@ -1333,11 +1353,26 @@ export function useProjectMeta() {
    * (docs/import-meter-plan.md, section 1.3).
    */
   const startNewProject = useCallback(
-    (options: { cookbook?: boolean } = {}) => {
+    (options: {
+      cookbook?: boolean;
+      cardsFromCookbook?: boolean;
+      fieldSwitches?: FieldSwitches;
+      fillFrom?: { projectId: string | null; waitingIds: string[]; linked: boolean };
+    } = {}) => {
       resetHistory();
       commit({
         ...EMPTY_META,
         projectId: uid(),
+        cardsFromCookbook: options.cardsFromCookbook || undefined,
+        fieldSwitches: options.fieldSwitches,
+        bookFromCards: options.fillFrom ? true : undefined,
+        ...(options.fillFrom?.projectId && options.fillFrom.waitingIds.length > 0
+          ? {
+              fillFromProjectId: options.fillFrom.projectId,
+              fillFromLinked: options.fillFrom.linked,
+              fillFromItemIds: options.fillFrom.waitingIds,
+            }
+          : {}),
         cookbookIntent: options.cookbook || undefined,
         cookbookBornFresh: options.cookbook || undefined,
         // A new book starts its optional lines with sample text (see the field).
@@ -1350,6 +1385,21 @@ export function useProjectMeta() {
       });
     },
     [commit],
+  );
+
+  /** Clears "the rest of these recipes wait in that card project" once they
+      have been added (see `ProjectMeta.fillFromProjectId`). */
+  const clearFillFrom = useCallback(
+    () => {
+      withoutHistory(() =>
+        update((current) =>
+          current.fillFromProjectId || current.fillFromItemIds
+            ? { ...current, fillFromProjectId: undefined, fillFromLinked: undefined, fillFromItemIds: undefined }
+            : current,
+        ),
+      );
+    },
+    [update],
   );
 
   /** Consumes the "make this a cookbook" choice carried from the library, so it
@@ -1464,6 +1514,7 @@ export function useProjectMeta() {
     setOwnPhotosOnly,
     startNewProject,
     clearCookbookIntent,
+    clearFillFrom,
     replaceMeta,
     getMeta,
     restoreMeta: commit,

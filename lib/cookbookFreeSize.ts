@@ -34,3 +34,19 @@ export function bookRoomLeft(input: {
 export function fitBookRoom<T>(incoming: T[], room: number | null): T[] {
   return room === null ? incoming : incoming.slice(0, room);
 }
+
+/**
+ * Whether a book made from recipe cards may now take the recipes that didn't
+ * fit its free preview (`ProjectMeta.fillFromProjectId`): only once THIS book
+ * is confirmed bought, never while that is still being checked (when
+ * `bookRoomLeft` deliberately doesn't cap), and never on Pro, which doesn't
+ * buy a cookbook.
+ */
+export function waitingRecipesMayArrive(input: {
+  waitingIn: string | undefined;
+  signedIn: boolean;
+  cookbookMode: boolean;
+  bookBought: boolean;
+}): boolean {
+  return Boolean(input.waitingIn) && input.signedIn && input.cookbookMode && input.bookBought;
+}

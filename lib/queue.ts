@@ -59,6 +59,10 @@ export function printableRecipe(recipe: Recipe): Recipe {
     description: recipe.description,
     note: recipe.note,
     image: recipe.image,
+    // The cook's own photo choice (see `Recipe.imageChosen`): dropping it here
+    // made a photo picked in a book of the cook's own photos read as a
+    // website's, and vanish from the page.
+    imageChosen: recipe.imageChosen,
     sourceUrl: recipe.sourceUrl,
     sourceName: recipe.sourceName,
     language: recipe.language,

@@ -19,6 +19,7 @@ import type { PhotoScale } from "@/lib/photoScale";
 import type { ThemeLooks } from "@/lib/themeLooks";
 import { metaSectionsFromFull, type ProjectMeta } from "@/lib/project";
 import { stripUndefined } from "@/lib/firebase/stripUndefined";
+import { slimRecipe } from "@/lib/slimIngredients";
 import { projectLibraryChanged } from "@/lib/projectCount";
 import {
   recipePrinterProjectPath,
@@ -116,23 +117,9 @@ export function slimIngredients(project: PrintProject): PrintProject {
     sections: project.sections.map((section) => ({
       ...section,
       items: section.items.map((item) => {
-        const recipe = item.recipe;
-        if (!recipe?.ingredients?.length) return item;
-        let changed = false;
-        const ingredients = recipe.ingredients.map((ingredient) => {
-          if (!ingredient.raw?.trim()) return ingredient;
-          if (
-            ingredient.amount === undefined &&
-            ingredient.unit === undefined &&
-            ingredient.name === undefined &&
-            ingredient.note === undefined
-          ) {
-            return ingredient;
-          }
-          changed = true;
-          return { raw: ingredient.raw, section: ingredient.section };
-        });
-        return changed ? { ...item, recipe: { ...recipe, ingredients } } : item;
+        if (!item.recipe) return item;
+        const recipe = slimRecipe(item.recipe);
+        return recipe === item.recipe ? item : { ...item, recipe };
       }),
     })),
   };
@@ -831,6 +818,12 @@ export async function deletePrintProject(
   await deleteDoc(doc(db, ...recipePrinterProjectPath(ownerUid, projectId)));
   // Gone from the account: the menu's count re-reads (see savePrintProject).
   projectLibraryChanged(ownerUid);
+  // It stops sharing its recipes. Every other project keeps its copy, still
+  // linked to the rest; a record this was the last member of goes.
+  // Best-effort: a failure leaves a membership the next reconcile tidies.
+  await import("@/lib/linkedRecipeStore")
+    .then(({ leaveLinkedRecipes }) => leaveLinkedRecipes(ownerUid, projectId))
+    .catch((error) => console.warn("RecipePrinter: could not unlink a deleted project's recipes", error));
   // Best-effort: the project is gone either way, and a photo that fails to
   // delete costs a little storage, not a broken book.
   const storage = getFirebaseStorage();
@@ -879,6 +872,11 @@ async function photosOnlyThisProjectUses(
   const others = (await loadPrintProjectSummaries(ownerUid)).filter((summary) => summary.id !== projectId);
   const otherProjects = await Promise.all(others.map((summary) => loadPrintProject(ownerUid, summary.id)));
   const inUse: string[] = Array.from(keepUrls);
+  // A linked recipe's photo can sit in its shared record before the other
+  // projects using it have opened and taken it in (lib/linkedRecipeStore), so
+  // those count as in use too.
+  const { linkedRecipePhotoUrls } = await import("@/lib/linkedRecipeStore");
+  inUse.push(...(await linkedRecipePhotoUrls(ownerUid)));
   for (const other of otherProjects) {
     if (other) inUse.push(...(await collectProjectPhotoUrls(other)));
   }

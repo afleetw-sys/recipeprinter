@@ -1,5 +1,6 @@
 "use client";
 
+import { heroCrop } from "@/lib/bookPhotos";
 import { Fragment, useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { FontScale } from "@/lib/fontScale";
 import type { PhotoScale } from "@/lib/photoScale";
@@ -41,10 +42,12 @@ import { gutterSideForRole } from "@/lib/cookbookPresets";
 import { recipeNamesIntro } from "@/lib/chapterIntro";
 import {
   RECIPE_FIELDS,
-  fieldShown,
+  addableRecipeLines,
   fieldTicked,
   fieldValue,
+  LINES_THAT_FOLLOW_THE_COOKBOOK,
   type FieldSwitchId,
+  type RecipeLineId,
   type FieldSwitches,
   type RecipeFieldId,
 } from "@/lib/recipeFields";
@@ -242,6 +245,10 @@ interface PrintDeckProps {
       uses to show a field it adds. */
   fieldSwitches: FieldSwitches | undefined;
   setFieldShown: (field: FieldSwitchId, shown: boolean, cookbook: boolean) => void;
+  /** Recipe cards holding recipes kept in step with a cookbook: their own
+      words show as the book shows them, so "Show on recipes" doesn't offer
+      those lines here (`LINES_THAT_FOLLOW_THE_COOKBOOK`). */
+  linesFollowCookbook?: boolean;
   /** Recipe photos across the book, as "Show on recipes" switches them: the
       cards' photo setting, or a cookbook's photo style ("none" when off). */
   recipePhotos: { shown: boolean; set: (shown: boolean) => void };
@@ -496,6 +503,7 @@ export function PrintDeck(props: PrintDeckProps) {
     setShowSourceUrl,
     showDescription,
     fieldSwitches,
+    linesFollowCookbook = false,
     setFieldShown,
     recipePhotos,
     recipeHasPhoto,
@@ -712,13 +720,12 @@ export function PrintDeck(props: PrintDeckProps) {
         if (!recipe) return [];
         const cookbook = Boolean(projectMeta.meta.cookbookMode);
         // One fixed list, in the order the card reads, every item always there
-        // and nothing beside it (Amelia, 2026-11-21). Picking one adds it or
-        // opens it on the card, ready to type, with what it already holds; a
-        // field the theme hides is shown first, since it has to be on the card
-        // to be edited. Showing and hiding live behind the header's gear
-        // ("Show on recipes", `fieldVisibility` below). On a cookbook page
-        // still printing description and note as one paragraph, picking Notes
-        // puts them at the foot.
+        // and nothing beside it (Amelia, 2026-11-21), except the lines the book
+        // doesn't print: those are switched back on in "Show on recipes"
+        // (`fieldVisibility` below), not here. Picking one adds it or opens it
+        // on the card, ready to type, with what it already holds. On a
+        // cookbook page still printing description and note as one paragraph,
+        // picking Notes puts them at the foot.
         // A line with nothing in it yet says "+ Add" beside its name.
         type Line = { name: string; blank?: boolean; restore: () => void };
         const field = (id: RecipeFieldId): Line => {
@@ -735,12 +742,7 @@ export function PrintDeck(props: PrintDeckProps) {
         const line = (id: "time" | "servings" | "ingredients" | "steps", filled: boolean): Line => ({
           name: RECIPE_LINE_NAMES[id],
           blank: !filled,
-          restore: () => {
-            if ((id === "time" || id === "servings") && !fieldShown(fieldSwitches, id, cookbook)) {
-              setFieldShown(id, true, cookbook);
-            }
-            addField(recipeId, id);
-          },
+          restore: () => addField(recipeId, id),
         });
         // The link: a recipe card's links come on with the first one added,
         // as the toolbar's link button did; in a cookbook a hidden link comes
@@ -759,25 +761,28 @@ export function PrintDeck(props: PrintDeckProps) {
             addField(recipeId, "link");
           },
         };
-        const lines: Line[] = [
-          {
+        const rows: Record<RecipeLineId, () => Line> = {
+          photo: () => ({
             name: "Photo",
             blank: !recipeHasPhoto(recipeId),
-            restore: () => {
-              if (!recipePhotos.shown) recipePhotos.set(true);
-              openPhotoDialog(recipeId);
-            },
-          },
-          field("description"),
-          field("contributor"),
-          field("category"),
-          line("time", Boolean(formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime))),
-          line("servings", Boolean(recipe.servings ?? recipe.yield)),
-          line("ingredients", recipe.ingredients.length > 0),
-          line("steps", recipe.instructions.length > 0),
-          field("note"),
-          link,
-        ];
+            restore: () => openPhotoDialog(recipeId),
+          }),
+          description: () => field("description"),
+          contributor: () => field("contributor"),
+          category: () => field("category"),
+          time: () => line("time", Boolean(formatRecipeTime(recipe.totalTime || recipe.cookTime || recipe.prepTime))),
+          servings: () => line("servings", Boolean(recipe.servings ?? recipe.yield)),
+          ingredients: () => line("ingredients", recipe.ingredients.length > 0),
+          steps: () => line("steps", recipe.instructions.length > 0),
+          note: () => field("note"),
+          link: () => link,
+        };
+        // Only what the book prints: a line switched off in "Show on recipes"
+        // isn't offered (lib/recipeFields.ts `addableRecipeLines`).
+        const lines: Line[] = addableRecipeLines(fieldSwitches, cookbook, {
+          photos: recipePhotos.shown,
+          link: showSourceUrl,
+        }).map((id) => rows[id]());
         // A removed "Ingredients" / "Steps" heading comes back as the default.
         const headings = removedHeadingsName(recipe);
         if (headings) {
@@ -906,11 +911,14 @@ export function PrintDeck(props: PrintDeckProps) {
               locked: true,
               onChange: () => {},
             });
-            const switched = (id: FieldSwitchId, name: string): FieldVisibilityRow => ({
-              name,
-              checked: fieldTicked(fieldSwitches, id, cookbook),
-              onChange: (shown: boolean) => setFieldShown(id, shown, cookbook),
-            });
+            const switched = (id: FieldSwitchId, name: string): FieldVisibilityRow | null =>
+              !cookbook && linesFollowCookbook && LINES_THAT_FOLLOW_THE_COOKBOOK.includes(id)
+                ? null
+                : {
+                    name,
+                    checked: fieldTicked(fieldSwitches, id, cookbook),
+                    onChange: (shown: boolean) => setFieldShown(id, shown, cookbook),
+                  };
             return {
               scope: cookbook ? "For every recipe in this cookbook" : "For every recipe card here",
               rows: [
@@ -929,7 +937,7 @@ export function PrintDeck(props: PrintDeckProps) {
                   checked: showSourceUrl,
                   onChange: (shown: boolean) => setShowSourceUrl(shown),
                 },
-              ],
+              ].filter((row): row is FieldVisibilityRow => row !== null),
             };
           })()
         : null;
@@ -1362,15 +1370,32 @@ export function PrintDeck(props: PrintDeckProps) {
         // image page has no text on it, so there is no click-to-edit for the
         // drag to compete with and no reason to make it wait behind a reveal.
         focused && navItem.kind === "image"
-          ? {
-              focusX: projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroFocusX ?? 50,
-              focusY: projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroFocusY ?? 50,
-              onChange: (focusX, focusY) =>
-                projectMeta.setItemPlacement(navItem.recipeId, { heroFocusX: focusX, heroFocusY: focusY }),
-              zoom: projectMeta.meta.itemPlacements?.[navItem.recipeId]?.heroZoom ?? 1,
-              onZoomChange: (zoom) =>
-                projectMeta.setItemPlacement(navItem.recipeId, { heroZoom: zoom > 1 ? zoom : undefined }),
-            }
+          ? (() => {
+              // The crop is kept with the photo it was made on (see `heroCrop`),
+              // so a photo that changes from a linked card starts centred.
+              const slot = sheet.slots[navItem.slotIndex];
+              const shownUrl = slot?.kind === "image" ? slot.imageUrl : undefined;
+              const crop = heroCrop(projectMeta.meta.itemPlacements?.[navItem.recipeId], shownUrl);
+              return {
+                focusX: crop.focusX ?? 50,
+                focusY: crop.focusY ?? 50,
+                onChange: (focusX: number, focusY: number) =>
+                  projectMeta.setItemPlacement(navItem.recipeId, {
+                    heroFocusX: focusX,
+                    heroFocusY: focusY,
+                    heroZoom: crop.zoom,
+                    heroCropFor: shownUrl ?? "",
+                  }),
+                zoom: crop.zoom ?? 1,
+                onZoomChange: (zoom: number) =>
+                  projectMeta.setItemPlacement(navItem.recipeId, {
+                    heroFocusX: crop.focusX,
+                    heroFocusY: crop.focusY,
+                    heroZoom: zoom > 1 ? zoom : undefined,
+                    heroCropFor: shownUrl ?? "",
+                  }),
+              };
+            })()
           : undefined
       }
       tocKicker={projectMeta.meta.tocKicker}

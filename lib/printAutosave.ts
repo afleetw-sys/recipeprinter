@@ -85,3 +85,22 @@ export function shouldSaveOnLeave(
   if (state.lastSavedFingerprint === LOADED_BASELINE) return false;
   return fingerprint() !== state.lastSavedFingerprint;
 }
+
+/**
+ * Whether a signed-in cook's job saves itself to Projects without being asked:
+ * a cookbook from the moment it exists, a card job once it holds a second
+ * recipe (one card is a quick print), and recipe cards made from a cookbook
+ * ("Print as recipe cards", `ProjectMeta.cardsFromCookbook`) from the start,
+ * since the cook made them on purpose from a book they keep.
+ */
+export function keepsItself({
+  cookbookMode,
+  recipeCount,
+  cardsFromCookbook,
+}: {
+  cookbookMode: boolean;
+  recipeCount: number;
+  cardsFromCookbook?: boolean;
+}): boolean {
+  return cookbookMode || recipeCount >= 2 || Boolean(cardsFromCookbook && recipeCount >= 1);
+}

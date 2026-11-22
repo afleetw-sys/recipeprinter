@@ -12,6 +12,15 @@ export function recipePrinterProjectPath(uid: string, projectId: string) {
   return [...recipePrinterProjectsPath(uid), projectId] as const;
 }
 
+/** Recipes shared between projects (lib/linkedRecipeStore). */
+export function recipePrinterLinkedRecipesPath(uid: string) {
+  return [...recipePrinterUserPath(uid), "linkedRecipes"] as const;
+}
+
+export function recipePrinterLinkedRecipePath(uid: string, recipeId: string) {
+  return [...recipePrinterLinkedRecipesPath(uid), recipeId] as const;
+}
+
 export function recipePrinterUnlocksPath(uid: string) {
   return [...recipePrinterUserPath(uid), "cookbookUnlocks"] as const;
 }

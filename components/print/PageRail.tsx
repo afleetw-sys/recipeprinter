@@ -264,6 +264,11 @@ interface PageRailProps {
       thumbnail. Cookbook view only. */
   missingBookPages: readonly BookPageSlot[];
   onAddBookPage: (page: BookPageSlot) => void;
+  /** "Also in Family Cookbook" under a recipe linked into other projects, or
+      null. See lib/linkedRecipes. */
+  linkedNote?: (recipeId: string) => string | null;
+  /** A cookbook's "Print as recipe cards", from a tile's right-click menu. */
+  printAsCards?: (recipeIds: string[]) => void;
 }
 
 // The left rail: a scrollable page list (reorder / structure) plus the
@@ -313,6 +318,8 @@ export function PageRail(props: PageRailProps) {
     goToSlide,
     missingBookPages,
     onAddBookPage,
+    linkedNote,
+    printAsCards,
     railShake,
     pendingAddAfterRecipeId,
     pendingAddSectionId,
@@ -1816,6 +1823,9 @@ export function PageRail(props: PageRailProps) {
                     <span className="recipe-page-rail__label">
                       <span className="recipe-page-rail__title">{navItem.label}</span>
                       <span className="recipe-page-rail__meta">{navItem.pageLabel}</span>
+                      {navItem.kind === "recipe" && linkedNote?.(navItem.recipeId) && (
+                        <span className="recipe-page-rail__linked">{linkedNote(navItem.recipeId)}</span>
+                      )}
                     </span>
                   </button>
                 </div>
@@ -1862,6 +1872,7 @@ export function PageRail(props: PageRailProps) {
                   : moveRecipesToSection(tileMenu.ids, sectionId)
               }
               onNewSection={() => makeSectionFromSelection(new Set(tileMenu.ids))}
+              onPrintAsCards={printAsCards ? () => printAsCards(tileMenu.ids) : undefined}
               onClose={() => setTileMenu(null)}
             />
           )}

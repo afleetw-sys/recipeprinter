@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { ICON_SIZE, PlusIcon } from "@/components/icons";
+import { ICON_SIZE, PlusIcon, PrintIcon } from "@/components/icons";
 import { useMenuDismiss } from "@/lib/useMenuDismiss";
 
 /** A chapter a recipe can be moved into. */
@@ -40,6 +40,7 @@ export function MoveToSectionMenu({
   sections,
   onMove,
   onNewSection,
+  onPrintAsCards,
   onClose,
 }: {
   /** Viewport coordinates to open at: the pointer, or a trigger's corner. */
@@ -52,6 +53,8 @@ export function MoveToSectionMenu({
   onMove: (sectionId: string) => void;
   /** Omit to hide the "Add chapter" row. */
   onNewSection?: () => void;
+  /** A cookbook's "Print as recipe cards" for what was right-clicked. */
+  onPrintAsCards?: () => void;
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -103,6 +106,20 @@ export function MoveToSectionMenu({
         >
           <PlusIcon size={ICON_SIZE.sm} />
           Add chapter
+        </button>
+      )}
+      {onPrintAsCards && (
+        <button
+          type="button"
+          role="menuitem"
+          className="cp-menu__item cp-menu__item--make"
+          onClick={() => {
+            onPrintAsCards();
+            onClose();
+          }}
+        >
+          <PrintIcon size={ICON_SIZE.sm} />
+          Print as recipe cards
         </button>
       )}
     </div>,

@@ -209,3 +209,67 @@ export function tailFields(recipe: Recipe, switches: FieldSwitches | undefined, 
 export function fieldsKey(switches: FieldSwitches | undefined): string {
   return FIELD_SWITCH_IDS.map((id) => (switches?.[id] === undefined ? "-" : switches[id] ? "1" : "0")).join("");
 }
+
+/**
+ * The lines recipe cards show when they are kept in step with a cookbook:
+ * exactly the ones the book shows. Cards on their own hide the description
+ * and notes by default, which a cookbook shows; on cards that are the same
+ * recipes as the book, a description missing from the card but there in the
+ * book reads as lost, so the cards start out matching the book instead.
+ */
+export function cardSwitchesFromCookbook(bookSwitches: FieldSwitches | undefined): FieldSwitches {
+  return Object.fromEntries(FIELD_SWITCH_IDS.map((id) => [id, fieldShown(bookSwitches, id, true)])) as FieldSwitches;
+}
+
+/**
+ * On cards kept in step with a cookbook these lines aren't switched on or off
+ * card by card ("Show on recipes"): they are the recipe's own words, and
+ * hiding one on the cards while the book shows it looks like the sync lost it.
+ */
+export const LINES_THAT_FOLLOW_THE_COOKBOOK: readonly FieldSwitchId[] = RECIPE_FIELD_IDS;
+
+/** The recipe's lines, in the order the card reads, as the "+" list offers them. */
+export type RecipeLineId =
+  | "photo"
+  | "description"
+  | "contributor"
+  | "category"
+  | "time"
+  | "servings"
+  | "ingredients"
+  | "steps"
+  | "note"
+  | "link";
+
+export const RECIPE_LINE_ORDER: RecipeLineId[] = [
+  "photo",
+  "description",
+  "contributor",
+  "category",
+  "time",
+  "servings",
+  "ingredients",
+  "steps",
+  "note",
+  "link",
+];
+
+/**
+ * The rows the "+" list offers a recipe: every line the book prints. One
+ * switched off in "Show on recipes" is one the cook decided the book doesn't
+ * print, so it isn't offered (Amelia, 2026-11-21); it comes back by switching
+ * it on there. Photo and Link follow the book's photo and link settings;
+ * ingredients and steps are always offered.
+ */
+export function addableRecipeLines(
+  switches: FieldSwitches | undefined,
+  cookbook: boolean,
+  book: { photos: boolean; link: boolean },
+): RecipeLineId[] {
+  return RECIPE_LINE_ORDER.filter((line) => {
+    if (line === "photo") return book.photos;
+    if (line === "link") return book.link;
+    if (line === "ingredients" || line === "steps") return true;
+    return fieldShown(switches, line, cookbook);
+  });
+}
