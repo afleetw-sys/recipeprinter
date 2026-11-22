@@ -115,5 +115,5 @@ export async function openRecipePage(page: Page) {
 
 /** The header's save state once everything has been written. */
 export async function saved(page: Page) {
-  await expect(page.getByRole("banner").getByRole("status")).toHaveText("Saved");
+  await expect(page.getByRole("banner").getByRole("button", { name: "Saved to Projects" })).toBeVisible();
 }

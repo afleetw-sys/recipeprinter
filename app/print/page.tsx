@@ -193,7 +193,6 @@ import {
   PagesIcon,
   SettingsIcon,
   PagePlusIcon,
-  CheckIcon,
   CrownIcon,
   ICON_SIZE,
   ImageIcon,
@@ -250,7 +249,8 @@ import { RecipeFieldsProvider } from "@/lib/recipeFieldsContext";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { asDerived, latestHistoryStep, undoEdit, useEditHistory } from "@/lib/editHistory";
 import { HistoryControls } from "@/components/print/HistoryControls";
-import { SaveMoreMenu } from "@/components/print/SaveMoreMenu";
+import { PrintMoreMenu } from "@/components/print/PrintMoreMenu";
+import { SaveCloudButton } from "@/components/print/SaveCloudButton";
 import { openingPageFor } from "@/lib/frontMatterPage";
 import type {
   CookbookFrontMatter,
@@ -690,6 +690,18 @@ export default function PrintPage() {
   // async saves, which can run before React commits the state update.
   const savedProjectIdRef = useRef<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<AccountSaveStatus | null>(null);
+  /** When the account copy was last written: a save landing here, or the
+      saved document's own `updatedAt` when it was opened. The saved cloud's
+      popover says how long ago (`SaveCloudButton`). */
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  /**
+   * The project this page has saved to the account at least once. It outlives
+   * the account copy itself: emptying a kept job deletes that copy (see the
+   * emptied-book effect), and when a recipe comes back (Undo, or adding one)
+   * the job is still one the cook asked to keep, so it is kept again rather
+   * than left unsaved because it now holds a single card.
+   */
+  const [everKeptProjectId, setEverKeptProjectId] = useState<string | null>(null);
   const [projectLoading, setProjectLoading] = useState(Boolean(accountProjectId));
   /**
    * How opening a bookmarked `?project=` link turned out.
@@ -840,6 +852,9 @@ export default function PrintPage() {
   useEffect(() => {
     savedProjectIdRef.current = null;
     setSavedProjectId(null);
+    setLastSavedAt(null);
+    // Asked to keep in the last account, not this one.
+    setEverKeptProjectId(null);
     projectRevisionRef.current = 0;
     lastSavedFingerprintRef.current = null;
     lastAttemptedFingerprintRef.current = null;
@@ -3195,7 +3210,10 @@ export default function PrintPage() {
       adoptProject: adoptAnonymousProject,
       isConflictError: (error) => error instanceof PrintProjectConflictError,
       adoptionFailed: () => readAdoptionManifest()?.status === "failed",
-      setSaveStatus,
+      setSaveStatus: (status) => {
+        setSaveStatus(status);
+        if (status === "saved") setLastSavedAt(Date.now());
+      },
       setSavedProjectId,
       showToast,
       adoptUploadedPhotos: (uploaded) => queue.adoptUploadedPhotos(uploaded),
@@ -4557,6 +4575,7 @@ export default function PrintPage() {
           projectRevisionRef.current = Number(account.revision ?? 0);
           savedProjectIdRef.current = account.id;
           setSavedProjectId(account.id);
+          setLastSavedAt(Number(account.updatedAt) || null);
           rememberWorkingBase(account.id, projectRevisionRef.current);
           markWorkingCopyEdited();
           lastSavedFingerprintRef.current = null;
@@ -4567,6 +4586,7 @@ export default function PrintPage() {
           projectRevisionRef.current = Number(project.revision ?? 0);
           savedProjectIdRef.current = project.id;
           setSavedProjectId(project.id);
+          setLastSavedAt(Number(project.updatedAt) || null);
           rememberWorkingBase(project.id, projectRevisionRef.current);
           lastSavedFingerprintRef.current = LOADED_BASELINE;
           // Whatever this document loaded as IS the last thing it was saved
@@ -4697,6 +4717,7 @@ export default function PrintPage() {
         savedProjectIdRef.current = head.id;
         rememberWorkingBase(head.id, head.revision);
         setSavedProjectId(head.id);
+        setLastSavedAt(head.updatedAt ?? null);
         // The other reattach path (the `?project=` loader above) sets these
         // same three right after finding its match; this one didn't, which
         // is the whole bug report — a refresh restored the ID (autosave
@@ -4942,7 +4963,8 @@ export default function PrintPage() {
    * recipe: one recipe is a quick print that should not feel like a project,
    * two is something a cook is putting together and will want back. Neither
    * has a Save button. Below that (one card) nothing is written until the job
-   * grows or somebody signs in and asks, from the leave dialog.
+   * grows or somebody presses the save cloud, and a job saved once stays kept
+   * (`everKeptProjectId`).
    *
    * This is the one save nobody presses. It fires once per project, after the
    * build reveal has finished so the book that lands is the finished one and
@@ -4960,10 +4982,14 @@ export default function PrintPage() {
    * and a failure surfaces in the header with a retry.
    */
   const keptOnItsOwnRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (savedProjectId) setEverKeptProjectId(savedProjectId);
+  }, [savedProjectId]);
   const keptAutomatically = keepsItself({
     cookbookMode,
     recipeCount: items?.length ?? 0,
     cardsFromCookbook: projectMeta.meta.cardsFromCookbook,
+    askedToKeep: everKeptProjectId !== null && everKeptProjectId === cookbookProjectId,
   });
   useEffect(() => {
     if (!cookPilotUser || !keptAutomatically || savedToProfile) return;
@@ -5427,6 +5453,7 @@ export default function PrintPage() {
       if (savedProjectIdRef.current !== projectId) return;
       savedProjectIdRef.current = null;
       setSavedProjectId(null);
+      setLastSavedAt(null);
       projectRevisionRef.current = 0;
       forgetWorkingBase();
       lastSavedFingerprintRef.current = null;
@@ -5722,24 +5749,18 @@ export default function PrintPage() {
    * topbar (see PrintDeck.tsx) so the two can't drift into reporting save
    * state differently.
    *
-   * There is no prominent Save button. One recipe is a quick, one-time print
-   * and should not feel like a project; from the second recipe, and from the
-   * start for a cookbook, a signed-in cook's job is kept on its own (see
-   * `keptAutomatically`). So this reports rather than asks:
+   * One cloud icon, the same on both layouts (Amelia, 2026-11-22):
    *
-   * - a failure: the word as a button that retries, in the error colour;
-   * - saving: a quiet spinner and "Saving…";
-   * - kept: a quiet, persistent check and "Saved", for a cookbook too, free
-   *   or bought. It used to sit in a cookbook's page rail beside the recipe
-   *   count; it's here, beside Buy & download, on every project (Amelia,
-   *   2026-11-03), and the rail keeps only the count;
-   * - not kept and nothing to report: nothing.
+   * - a failure: the words as a button that retries, in the error colour,
+   *   in the cloud's place, because it has to be read without pressing;
+   * - not saved: a cloud with an arrow into it. Pressing it saves (signed in)
+   *   or opens sign-in (signed out); from then on autosave owns the project;
+   * - saving: the spinner in the same spot;
+   * - saved: a cloud with a check, which says "Changes saved" and when.
    *
-   * The one place a button survives is a SIGNED-OUT cook with a project worth
-   * keeping (two recipes or a cookbook). There is no account to write to, so
-   * nothing can happen automatically and the only way to keep it is to sign
-   * in; "Save" is the door to that. A single card gets no door at all: it is a
-   * quick print, and leaving never asks about it.
+   * What is kept without pressing is unchanged: from the second recipe, and
+   * from the start for a cookbook, a signed-in cook's job saves on its own
+   * (`keptAutomatically`). A single card waits for the cloud to be pressed.
    */
   // `size` is the bar it is drawn in: `SiteHeader`'s 32px controls, the same
   // as the homepage's header (Amelia, 2026-10-11), or the phone bar's 30px.
@@ -5759,56 +5780,36 @@ export default function PrintPage() {
           </button>
         );
       }
-      if (saveStatus === "saving") {
-        return (
-          <span className="rp-save-status" role="status" aria-live="polite">
-            <SpinnerIcon size={ICON_SIZE.sm} />
-            {SAVE_STATUS_LABEL.saving}
-          </span>
-        );
-      }
     }
-    if (savedToProfile) {
-      return (
-        <span className="rp-save-status" role="status" aria-live="polite">
-          <CheckIcon size={ICON_SIZE.sm} />
-          {SAVE_STATUS_LABEL.saved}
-        </span>
-      );
-    }
-    // Signed in, not kept yet: a single card, or a job about to be kept on its
-    // own. Nothing to press and nothing to claim.
-    if (cookPilotUser || !keptAutomatically) return null;
-    return (
-      <button
-        type="button"
-        className={`btn btn-secondary btn-${size}`}
-        onClick={() => void handleSaveProject()}
-        aria-label={cookbookMode ? "Sign in to save cookbook" : "Sign in to save project"}
-      >
-        Save
-      </button>
-    );
-  }
-
-  /**
-   * The header's "⋯" (`SaveMoreMenu`), on every job, desktop and phone, so a
-   * single recipe card can be saved too (Amelia, 2026-11-13). It doesn't
-   * change what is kept automatically; it is only a way to ask sooner. The
-   * first press is an ordinary explicit save (sign-in first when signed out),
-   * and `savedToProfile` then hands the job to the autosave like any other.
-   */
-  function renderSaveMenu(size: "header" | "compact", historyFolded = false) {
     const state = saveStatus === "saving" ? "saving" : savedToProfile ? "saved" : "unsaved";
     return (
-      <SaveMoreMenu
+      <SaveCloudButton
         state={state}
-        // Signed out, an empty book still gets its door to sign-in (see the
-        // header's note on why); signed in, there is nothing to write yet.
+        savedAt={lastSavedAt}
+        signedIn={Boolean(cookPilotUser)}
+        // Signed out, an empty book still gets its door to sign-in; signed in,
+        // there is nothing to write yet.
         disabled={Boolean(cookPilotUser) && !items?.length}
         onSave={() => void handleSaveProject()}
         size={size}
-        printAsCards={cookbookMode && recipeCount > 0 ? () => openPrintAsCards() : undefined}
+      />
+    );
+  }
+
+  /** Whole-job actions the "⋯" holds besides folded undo and redo. */
+  const printAsCardsOffered = cookbookMode && recipeCount > 0;
+
+  /**
+   * The header's "⋯" (`PrintMoreMenu`): Make a cookbook, Print as recipe
+   * cards, and on a phone, undo and redo when they don't fit. Only drawn when
+   * it has one of those to hold; saving is the cloud beside it.
+   */
+  function renderMoreMenu(size: "header" | "compact", historyFolded = false) {
+    if (!historyFolded && !printAsCardsOffered && !makeCookbookOffered) return null;
+    return (
+      <PrintMoreMenu
+        size={size}
+        printAsCards={printAsCardsOffered ? () => openPrintAsCards() : undefined}
         makeCookbook={makeCookbookOffered ? () => setMakeCookbookOpen(true) : undefined}
         history={
           historyFolded
@@ -5824,19 +5825,12 @@ export default function PrintPage() {
     );
   }
 
-  /**
-   * The phone bar has no room for the save state beside undo, redo and the
-   * account, so it lives in the "⋯" menu. A failure stays in the bar as
-   * `renderSaveControl` draws it, beside the menu: it is the one state that
-   * must be seen without opening anything. Undo and redo join the menu when
-   * the bar is too narrow for them (`useHistoryFold`, in PrintDeck).
-   */
+  /** The phone bar: the same save cloud as the desktop header, then the "⋯". */
   function renderPhoneSaveControl(historyFolded: boolean) {
-    const failed = saveStatus && SAVE_FAILURES.has(saveStatus) ? renderSaveControl() : null;
     return (
       <>
-        {failed}
-        {renderSaveMenu("compact", historyFolded)}
+        {renderSaveControl("compact")}
+        {renderMoreMenu("compact", historyFolded)}
       </>
     );
   }
@@ -7914,18 +7908,9 @@ export default function PrintPage() {
                     doesn't move anything. */}
                 {renderSaveControl("header")}
                 {historyControls("header")}
-                {/* Only while there is something to save: once it's saving or
-                    saved, the state beside it already says so, and the menu
-                    would hold nothing else. Not beside the signed-out Save
-                    button either: both start the same save, and two controls
-                    for one action read as two different things (Amelia,
-                    2026-11-19). Phones keep theirs (no room for the state in
-                    the bar, and no Save button there). A cookbook with recipes
-                    keeps it, because it holds Print as recipe cards too. */}
-                {((saveStatus !== "saving" && !savedToProfile && !(!cookPilotUser && keptAutomatically)) ||
-                  (cookbookMode && recipeCount > 0) ||
-                  makeCookbookOffered) &&
-                  renderSaveMenu("header")}
+                {/* Make a cookbook and Print as recipe cards, when there is
+                    one to offer. Saving is the cloud before undo and redo. */}
+                {renderMoreMenu("header")}
 
                 {/* Print is always here, as it is on a phone's bottom bar:
                     the page is for printing, and a button that appears only

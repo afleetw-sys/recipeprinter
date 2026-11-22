@@ -13606,7 +13606,16 @@ textarea.recipe-card__toc-title {
   border-radius: 8px;
 }
 
-/* The header's "⋯" menu (SaveMoreMenu), desktop and phone. */
+/* The save cloud (SaveCloudButton), desktop header and phone bar alike. Its
+   saving state is a span, not a button, so it centres its spinner itself. */
+.rp-save-cloud {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+/* The saved cloud's popover, and the header's "⋯" (PrintMoreMenu). */
 .rp-save-menu {
   /* As wide as its longest line, so "Changes will save automatically." sits
      on one line instead of breaking after "save" (Amelia, 2026-11-13). Only a

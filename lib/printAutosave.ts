@@ -92,15 +92,28 @@ export function shouldSaveOnLeave(
  * recipe (one card is a quick print), and recipe cards made from a cookbook
  * ("Print as recipe cards", `ProjectMeta.cardsFromCookbook`) from the start,
  * since the cook made them on purpose from a book they keep.
+ *
+ * And any job that has been saved before (`askedToKeep`). Removing every
+ * recipe deletes the account copy (nothing writes an empty book), and without
+ * this a single saved card brought back by Undo stayed unsaved: the cloud went
+ * back to "not saved" over a card the cook had already saved, and nothing
+ * wrote it again.
  */
 export function keepsItself({
   cookbookMode,
   recipeCount,
   cardsFromCookbook,
+  askedToKeep = false,
 }: {
   cookbookMode: boolean;
   recipeCount: number;
   cardsFromCookbook?: boolean;
+  askedToKeep?: boolean;
 }): boolean {
-  return cookbookMode || recipeCount >= 2 || Boolean(cardsFromCookbook && recipeCount >= 1);
+  return (
+    askedToKeep ||
+    cookbookMode ||
+    recipeCount >= 2 ||
+    Boolean(cardsFromCookbook && recipeCount >= 1)
+  );
 }

@@ -2,9 +2,7 @@
 
 import { useRef, useState } from "react";
 import { AnchoredMenu } from "@/components/AnchoredMenu";
-import { CheckIcon, CloudCheckIcon, ICON_SIZE, MoreHorizontalIcon, PrintIcon, BookIcon, RedoIcon, SpinnerIcon, UndoIcon } from "@/components/icons";
-
-export type SaveMenuState = "unsaved" | "saving" | "saved";
+import { BookIcon, ICON_SIZE, MoreHorizontalIcon, PrintIcon, RedoIcon, UndoIcon } from "@/components/icons";
 
 /** Undo and redo, when the bar has folded them in here (`useHistoryFold`). */
 export interface FoldedHistory {
@@ -15,45 +13,26 @@ export interface FoldedHistory {
 }
 
 /**
- * The "⋯" in the /print header, desktop and phone alike, and always there,
- * whatever the job holds (Amelia, 2026-11-13). It is the one door to keeping a
- * job the automatic save would not keep on its own: a single recipe card.
+ * The /print header's "⋯", desktop and phone: things to do with the whole
+ * job that have no button of their own. Recipe cards' "Make a cookbook", a
+ * cookbook's "Print as recipe cards", and on a phone, undo and redo when the
+ * bar has no room for them.
  *
- * The automatic rule is unchanged (a cookbook, or a second card, is kept for a
- * signed-in cook without asking). This only adds a way to ask sooner. Pressing
- * "Save to Projects" is the same explicit save as everywhere else: signed out
- * it goes to sign-in and the save carries on after, signed in it writes the
- * project, and from then on the ordinary autosave owns it.
- *
- * Why "Save to Projects" and not "Turn on autosave": autosave isn't a switch
- * here, there is no way to turn it off again, and a label that reads like a
- * toggle invites the cook to look for one. Saving is what they're doing; that
- * it keeps saving is what the note under it, and the first-save toast, say.
- *
- * A save that FAILED is not in here: the page keeps that in the bar itself,
- * because a failure is the one save state someone has to see without looking.
+ * Saving used to live here too. It is the cloud beside it now
+ * (`SaveCloudButton`, Amelia, 2026-11-22), the same on both layouts, so this
+ * only shows when it has one of the rows above to hold (`hasPrintMoreRows`).
  */
-export function SaveMoreMenu({
-  state,
-  onSave,
-  disabled = false,
+export function PrintMoreMenu({
   size,
   history,
   printAsCards,
   makeCookbook,
 }: {
-  state: SaveMenuState;
-  /** Starts the first save (or sign-in, signed out). */
-  onSave: () => void;
-  /** Nothing to save yet: an empty deck. */
-  disabled?: boolean;
   /** The bar it sits in: `SiteHeader`'s 32px controls or the phone's 30px. */
   size: "header" | "compact";
   /** Present only when undo and redo have no room in the bar. */
   history?: FoldedHistory;
-  /** A cookbook's "Print as recipe cards" (see PrintAsCardsDialog). Here
-      because this menu is on every screen size, and printing some of a book's
-      recipes as cards is a thing to do with the whole job, like saving it. */
+  /** A cookbook's "Print as recipe cards" (see PrintAsCardsDialog). */
   printAsCards?: () => void;
   /** Recipe cards' "Make a cookbook": a new book with these recipes. */
   makeCookbook?: () => void;
@@ -61,49 +40,7 @@ export function SaveMoreMenu({
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement | null>(null);
   const close = () => setOpen(false);
-
-  let row;
-  if (state === "saved") {
-    row = (
-      <div role="menuitem" aria-disabled="true" className="cp-menu__item cp-menu__item--stacked rp-save-menu__row">
-        <span className="rp-save-menu__label">
-          <CheckIcon size={ICON_SIZE.md} />
-          Saved
-        </span>
-        <span className="cp-menu__note">Changes save automatically.</span>
-      </div>
-    );
-  } else if (state === "saving") {
-    row = (
-      <div role="menuitem" aria-disabled="true" className="cp-menu__item rp-save-menu__row">
-        <span className="rp-save-menu__label" role="status" aria-live="polite">
-          <SpinnerIcon size={ICON_SIZE.md} />
-          Saving…
-        </span>
-      </div>
-    );
-  } else {
-    row = (
-      <button
-        type="button"
-        role="menuitem"
-        className="cp-menu__item cp-menu__item--stacked"
-        disabled={disabled}
-        onClick={() => {
-          close();
-          onSave();
-        }}
-      >
-        <span className="rp-save-menu__label">
-          <CloudCheckIcon size={ICON_SIZE.md} />
-          Save to Projects
-        </span>
-        {/* That it keeps saving is said once it has, by the first save's
-            toast (FIRST_SAVE_TOAST), not promised here beforehand. */}
-        {disabled && <span className="cp-menu__note">Add a recipe first.</span>}
-      </button>
-    );
-  }
+  const rule = <div className="rp-save-menu__rule" role="separator" />;
 
   return (
     <>
@@ -150,13 +87,11 @@ export function SaveMoreMenu({
                 <RedoIcon size={ICON_SIZE.md} />
                 Redo
               </button>
-              <div className="rp-save-menu__rule" role="separator" />
             </>
           )}
-          {row}
           {makeCookbook && (
             <>
-              <div className="rp-save-menu__rule" role="separator" />
+              {history && rule}
               <button
                 type="button"
                 role="menuitem"
@@ -176,7 +111,7 @@ export function SaveMoreMenu({
           )}
           {printAsCards && (
             <>
-              <div className="rp-save-menu__rule" role="separator" />
+              {(history || makeCookbook) && rule}
               <button
                 type="button"
                 role="menuitem"

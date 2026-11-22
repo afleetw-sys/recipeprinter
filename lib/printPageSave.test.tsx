@@ -313,9 +313,10 @@ async function editASetting(setting: "setShowSourceUrl" | "setShowPhoto" = "setS
 
 /** What the header's save control says. The toast is a role=status too, so it is excluded. */
 function saveControlText(): string {
-  return Array.from(document.querySelectorAll(".rp-save-status, .rp-save-state, [role='status']"))
+  // The cloud is an icon, so it says where saving stands in its label.
+  return Array.from(document.querySelectorAll(".rp-save-cloud, .rp-save-state, [role='status']"))
     .filter((node) => !node.closest(".recipe-toast"))
-    .map((node) => node.textContent?.trim())
+    .map((node) => (node.getAttribute("aria-label") ?? node.textContent)?.trim())
     .filter(Boolean)
     .join(" | ");
 }
@@ -377,7 +378,7 @@ describe("what gets kept, and when", () => {
     await settle(5000);
     expect(io.adoptAnonymousProject).not.toHaveBeenCalled();
     expect(io.savePrintProject).not.toHaveBeenCalled();
-    expect(document.querySelector("button[aria-label='Sign in to save project']")).not.toBeNull();
+    expect(document.querySelector("button[aria-label='Sign in to save to Projects']")).not.toBeNull();
   });
 
   it("keeps a signed-in two-recipe job on its own, exactly once, and says so", async () => {
@@ -647,7 +648,7 @@ describe("signing in to keep something", () => {
     await renderPrintPage();
     await settle(500);
     await act(async () => {
-      (document.querySelector("button[aria-label='Sign in to save project']") as HTMLButtonElement).click();
+      (document.querySelector("button[aria-label='Sign in to save to Projects']") as HTMLButtonElement).click();
     });
     await settle(50);
     expect(io.adoptAnonymousProject).not.toHaveBeenCalled();
@@ -663,7 +664,7 @@ describe("signing in to keep something", () => {
     const first = await renderPrintPage();
     await settle(500);
     await act(async () => {
-      (document.querySelector("button[aria-label='Sign in to save project']") as HTMLButtonElement).click();
+      (document.querySelector("button[aria-label='Sign in to save to Projects']") as HTMLButtonElement).click();
     });
     first.unmount();
 
@@ -685,7 +686,7 @@ describe("a different account", () => {
     act(() => authStore.set({ user: null }));
     await settle(50);
     await act(async () => {
-      (document.querySelector("button[aria-label='Sign in to save project']") as HTMLButtonElement).click();
+      (document.querySelector("button[aria-label='Sign in to save to Projects']") as HTMLButtonElement).click();
     });
     await settle(50);
     const adoptsBefore = io.adoptAnonymousProject.mock.calls.length;
