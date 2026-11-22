@@ -95,9 +95,9 @@ export function SaveMoreMenu({
           <CloudCheckIcon size={ICON_SIZE.md} />
           Save to Projects
         </span>
-        <span className="cp-menu__note">
-          {disabled ? "Add a recipe first." : "Changes will save automatically."}
-        </span>
+        {/* That it keeps saving is said once it has, by the first save's
+            toast (FIRST_SAVE_TOAST), not promised here beforehand. */}
+        {disabled && <span className="cp-menu__note">Add a recipe first.</span>}
       </button>
     );
   }
