@@ -54,8 +54,9 @@ export function CookbookIntro({ busy, onStart }: { busy: boolean; onStart: () =>
             sentence broke wherever the width happened to put it. */}
         <p className="rp-cookbook-page__price text-cp-small text-ink-soft">
           <b className="font-semibold text-ink">
-            {local(discounted ? COOKBOOK_DISCOUNT_PRICE_FALLBACK : COOKBOOK_PRICE_FALLBACK)} per cookbook
-            {discounted && " with Pro"}.
+            {/* The Pro price is 20% off the FIRST cookbook only, never every one. */}
+            {local(discounted ? COOKBOOK_DISCOUNT_PRICE_FALLBACK : COOKBOOK_PRICE_FALLBACK)}{" "}
+            {discounted ? "for your first cookbook with Pro" : "per cookbook"}.
           </b>{" "}
           <span>{PREVIEW_RULE}</span>
         </p>

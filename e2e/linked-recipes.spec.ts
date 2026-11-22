@@ -62,7 +62,7 @@ test("a book's recipe printed as a card stays the same recipe, and the cards are
   if (await row.count()) await row.click();
   await expect(dialog.getByRole("checkbox", { name: `Don't add ${RECIPE_TITLE}`, exact: true })).toBeVisible();
   // Kept in step with the book unless the cook unticks it.
-  await expect(dialog.getByRole("checkbox", { name: /Keep the cards and the cookbook the same/ })).toBeChecked();
+  await expect(dialog.getByRole("checkbox", { name: /Recipe edits update both the cards and the cookbook/ })).toBeChecked();
   await dialog.getByRole("button", { name: /Print as a recipe card/ }).click();
 
   // A card job of that recipe, saying where else it is.
