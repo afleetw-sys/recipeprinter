@@ -176,7 +176,7 @@ describe("what a project takes from its metadata", () => {
    came back missing after a reload). */
 describe("a saved book reopens with every part it was saved with", () => {
   /** Only these are not the book: they steer the first arrival and are spent. */
-  type Transient = "cookbookIntent" | "cookbookBornFresh" | "cookbookIntroduced" | "printOnly";
+  type Transient = "cookbookIntent" | "cookbookBornFresh" | "cookbookIntroduced" | "cardsFromCookbook";
   const book: Required<Omit<ProjectMeta, Transient>> = {
     projectId: "proj-1",
     sourceProjectId: "older-1",

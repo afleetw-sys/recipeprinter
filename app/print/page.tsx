@@ -4958,7 +4958,7 @@ export default function PrintPage() {
   const keptAutomatically = keepsItself({
     cookbookMode,
     recipeCount: items?.length ?? 0,
-    printOnly: projectMeta.meta.printOnly,
+    cardsFromCookbook: projectMeta.meta.cardsFromCookbook,
   });
   useEffect(() => {
     if (!cookPilotUser || !keptAutomatically || savedToProfile) return;
@@ -5085,21 +5085,23 @@ export default function PrintPage() {
   }
 
   /**
-   * Opens the chosen recipes as a new card job, linked to this book.
+   * Opens the chosen recipes as a new card job, saved to Projects.
    *
-   * Each recipe joins (or starts) its shared record, so an edit on a card
-   * reaches the book. The copies travel to /print through the ordinary
+   * With `keepInSync` (the dialog's checkbox, on by default) each recipe joins
+   * (or starts) its shared record, so an edit on a card reaches the book and
+   * the other way round. Without it the cards are separate copies, to trim for
+   * a card without touching the book. The copies travel to /print through the ordinary
    * pending-import hand-off, by way of /print-cards, which sets the book aside
    * the way "New recipe cards" does. The book is saved on the way out, like
    * leaving by the logo. Signed out there is no account to share through, so
    * the cards are plain copies of a book nobody has saved.
    */
-  async function printRecipesAsCards(itemIds: string[]) {
+  async function printRecipesAsCards(itemIds: string[], keepInSync: boolean) {
     const chosen = itemIds
       .map((id) => items?.find((item) => item.id === id))
       .filter((item): item is QueueItem & { recipe: Recipe } => Boolean(item?.recipe) && item?.status === "ready");
     if (chosen.length === 0) return;
-    const owner = cookPilotUser?.uid ?? null;
+    const owner = keepInSync ? (cookPilotUser?.uid ?? null) : null;
     const { shareRecipe } = await import("@/lib/linkedRecipeStore");
     const copies = await Promise.all(
       chosen.map(async (item): Promise<QueueItem> => {
@@ -5123,7 +5125,7 @@ export default function PrintPage() {
           title: joined.recipe.title || item.title,
           recipe: joined.recipe,
           ...(joined.link ? { link: joined.link } : {}),
-          localPhotoId: owner ? undefined : item.localPhotoId,
+          localPhotoId: joined.link ? undefined : item.localPhotoId,
           addedAt: Date.now(),
         };
       }),

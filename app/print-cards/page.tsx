@@ -22,8 +22,8 @@ import { clearPendingImport, hasPendingImport } from "@/lib/pendingImport";
  * up from the pending import the book left (lib/pendingImport), like any other
  * hand-off.
  *
- * The new job is `printOnly`: it never saves itself as a project (see
- * `keepsItself`), so printing from a book does not fill Projects with copies.
+ * The new job is `cardsFromCookbook`: a signed-in cook's cards are saved to
+ * Projects straight away, like a new cookbook (see `keepsItself`).
  */
 export default function PrintCardsPage() {
   const router = useRouter();
@@ -48,7 +48,7 @@ export default function PrintCardsPage() {
       router.replace("/print");
       return;
     }
-    startNewProject({ printOnly: true });
+    startNewProject({ cardsFromCookbook: true });
     router.replace("/print");
   }, [hydrated, metaHydrated, items, meta, clear, startNewProject, router]);
 

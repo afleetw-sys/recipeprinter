@@ -167,7 +167,7 @@ export function SaveMoreMenu({
                   <PrintIcon size={ICON_SIZE.md} />
                   Print as recipe cards
                 </span>
-                <span className="cp-menu__note">Edits stay in sync with this cookbook.</span>
+                <span className="cp-menu__note">Choose recipes from this cookbook.</span>
               </button>
             </>
           )}

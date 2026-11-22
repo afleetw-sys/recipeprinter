@@ -89,20 +89,18 @@ export function shouldSaveOnLeave(
 /**
  * Whether a signed-in cook's job saves itself to Projects without being asked:
  * a cookbook from the moment it exists, a card job once it holds a second
- * recipe (one card is a quick print). A card job opened by "Print as recipe
- * cards" never does (`ProjectMeta.printOnly`): it is a print of recipes the
- * cookbook already keeps, and saving it would add a project every time a cook
- * printed from their book. "Save to Projects" still keeps any of them.
+ * recipe (one card is a quick print), and recipe cards made from a cookbook
+ * ("Print as recipe cards", `ProjectMeta.cardsFromCookbook`) from the start,
+ * since the cook made them on purpose from a book they keep.
  */
 export function keepsItself({
   cookbookMode,
   recipeCount,
-  printOnly,
+  cardsFromCookbook,
 }: {
   cookbookMode: boolean;
   recipeCount: number;
-  printOnly?: boolean;
+  cardsFromCookbook?: boolean;
 }): boolean {
-  if (printOnly && !cookbookMode) return false;
-  return cookbookMode || recipeCount >= 2;
+  return cookbookMode || recipeCount >= 2 || Boolean(cardsFromCookbook && recipeCount >= 1);
 }

@@ -85,12 +85,13 @@ describe("recipes brought into a cookbook count toward its free size", () => {
   });
 });
 
-describe("printing from a cookbook does not add projects", () => {
+describe("which jobs save themselves", () => {
   it.each([
     [{ cookbookMode: false, recipeCount: 1 }, false],
     [{ cookbookMode: false, recipeCount: 2 }, true],
     [{ cookbookMode: true, recipeCount: 0 }, true],
-    [{ cookbookMode: false, recipeCount: 12, printOnly: true }, false],
+    [{ cookbookMode: false, recipeCount: 1, cardsFromCookbook: true }, true],
+    [{ cookbookMode: false, recipeCount: 0, cardsFromCookbook: true }, false],
   ])("%o keeps itself: %s", (job, expected) => {
     expect(keepsItself(job)).toBe(expected);
   });

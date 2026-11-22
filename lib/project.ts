@@ -212,12 +212,10 @@ export interface ProjectMeta {
       book on arrival"; once `scaffoldCookbook` runs, this records that the
       project was born a cookbook, with no prior recipe-cards state. */
   cookbookBornFresh?: boolean;
-  /** A card job opened by "Print as recipe cards" from a cookbook. It is a
-      print, not a project: it never saves itself however many recipes it
-      holds (see `keptAutomatically` on /print), so printing a few cards from
-      a book doesn't leave a new project behind every time. "Save to Projects"
-      still keeps it. Its linked recipes sync either way. */
-  printOnly?: boolean;
+  /** A card job made by "Print as recipe cards" from a cookbook. It is saved
+      to Projects from the start, even with one recipe (see `keepsItself`):
+      the cook made it on purpose, from a book they keep, so it is kept too. */
+  cardsFromCookbook?: boolean;
   /** This book's unwritten optional lines (a cover's author and edition, a
       dedication's message and signature, a back cover's lines, a chapter's
       subtitle) are told apart from removed ones: `undefined` shows its "+"
@@ -1341,12 +1339,12 @@ export function useProjectMeta() {
    * (docs/import-meter-plan.md, section 1.3).
    */
   const startNewProject = useCallback(
-    (options: { cookbook?: boolean; printOnly?: boolean } = {}) => {
+    (options: { cookbook?: boolean; cardsFromCookbook?: boolean } = {}) => {
       resetHistory();
       commit({
         ...EMPTY_META,
         projectId: uid(),
-        printOnly: options.printOnly || undefined,
+        cardsFromCookbook: options.cardsFromCookbook || undefined,
         cookbookIntent: options.cookbook || undefined,
         cookbookBornFresh: options.cookbook || undefined,
         // A new book starts its optional lines with sample text (see the field).

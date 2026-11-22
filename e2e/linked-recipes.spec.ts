@@ -30,7 +30,7 @@ async function linkedRecordsText(request: APIRequestContext, uid: string): Promi
 
 const servings = (page: Page) => selectedPage(page).getByRole("textbox", { name: "Servings", exact: true });
 
-test("a book's recipe printed as a card stays the same recipe, and printing adds no project", async ({
+test("a book's recipe printed as a card stays the same recipe, and the cards are kept in Projects", async ({
   page,
   request,
 }) => {
@@ -61,6 +61,8 @@ test("a book's recipe printed as a card stays the same recipe, and printing adds
   const row = dialog.getByRole("checkbox", { name: `Add ${RECIPE_TITLE}`, exact: true });
   if (await row.count()) await row.click();
   await expect(dialog.getByRole("checkbox", { name: `Don't add ${RECIPE_TITLE}`, exact: true })).toBeVisible();
+  // Kept in step with the book unless the cook unticks it.
+  await expect(dialog.getByRole("checkbox", { name: /Keep the cards and the cookbook the same/ })).toBeChecked();
   await dialog.getByRole("button", { name: /Print as a recipe card/ }).click();
 
   // A card job of that recipe, saying where else it is.
@@ -78,8 +80,8 @@ test("a book's recipe printed as a card stays the same recipe, and printing adds
     .poll(async () => /"servings":\s*\{\s*"(stringValue|integerValue)":\s*"7"/.test(await linkedRecordsText(request, uid)))
     .toBe(true);
 
-  // Printing from the book made no new project.
-  expect(await savedProjectIds(request, uid)).toEqual([projectId]);
+  // The cards are saved as their own project, beside the book, with one recipe.
+  await expect.poll(async () => (await savedProjectIds(request, uid)).length).toBe(2);
 
   // The book, reopened, has the card's edit.
   await page.goto("/projects");
@@ -88,5 +90,5 @@ test("a book's recipe printed as a card stays the same recipe, and printing adds
   await deckSettled(page);
   await openRecipePage(page);
   await expect(servings(page)).toHaveValue("7");
-  expect(await savedProjectIds(request, uid)).toEqual([projectId]);
+  expect(await savedProjectIds(request, uid)).toHaveLength(2);
 });
