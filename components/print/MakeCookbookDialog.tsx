@@ -20,11 +20,11 @@ const ART: ProDialogImage[] = [
   },
 ];
 
-/** The cookbook welcome's highlights, as one list (see CookbookWelcomeDialog). */
+// Two, each one line (Amelia, 2026-11-22: the dialog was too much). The
+// picture already shows a recipe becoming a cookbook page.
 const HIGHLIGHTS = [
-  "Each recipe becomes a real cookbook page, with its photo.",
-  "Chapters and a table of contents, done for you.",
-  "A cover that's all yours, ready to print at home, a copy shop or as a hardcover.",
+  "Chapters, contents and a cover, done for you.",
+  "Print at home, at a copy shop or as a hardcover.",
 ] as const;
 
 /**
@@ -83,7 +83,7 @@ export function MakeCookbookDialog({
       panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[820px] max-h-[92dvh] sm:max-h-[calc(100dvh-48px)] sm:h-auto rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-0 flex flex-col sm:flex-row relative overflow-y-auto sm:overflow-hidden"
       portal
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-cp-4 p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:overflow-y-auto sm:p-cp-6 sm:justify-center">
+      <div className="flex min-w-0 flex-1 flex-col gap-cp-5 p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:overflow-y-auto sm:p-cp-6 sm:justify-center">
         <button
           type="button"
           className="icon-close-btn absolute right-3 top-3 z-10"
@@ -94,74 +94,79 @@ export function MakeCookbookDialog({
           <XIcon size={ICON_SIZE.md} />
         </button>
 
-        <h2 id="make-cookbook-title" className="pr-8 text-cp-dialog-title font-extrabold tracking-tight">
-          Make a cookbook from these recipes
-        </h2>
+        {/* Three groups, close inside and apart between: what it is, what it
+            costs, then the choice and the button. Every block used to sit the
+            same distance from the next, which read as a lot of things. */}
+        <div>
+          <h2 id="make-cookbook-title" className="pr-8 text-cp-dialog-title font-extrabold tracking-tight">
+            Make a cookbook from these recipes
+          </h2>
+          <ul className="mt-cp-3 flex flex-col gap-[4px]">
+            {HIGHLIGHTS.map((line) => (
+              <li key={line} className="flex items-start gap-cp-2 text-cp-small text-ink-soft">
+                <CheckIcon size={ICON_SIZE.sm} className="mt-[2px] shrink-0 text-brand" />
+                {line}
+              </li>
+            ))}
+          </ul>
+        </div>
 
-        <ul className="flex flex-col gap-[6px]">
-          {HIGHLIGHTS.map((line) => (
-            <li key={line} className="flex items-start gap-cp-2 text-cp-small text-ink">
-              <CheckIcon size={ICON_SIZE.sm} className="mt-[2px] shrink-0 text-brand" />
-              {line}
-            </li>
-          ))}
-        </ul>
-
-        <div className="cookbook-tour__price">
-          <p className="cookbook-tour__amount">
+        {/* The price as a line, not a box: the box read as a second dialog. */}
+        <div>
+          <p className="text-cp-body text-ink">
             {discounted && (
               <>
-                <s className="cookbook-tour__was">
+                <s className="text-ink-soft">
                   <span className="sr-only">Was </span>
                   {local(fullPrice ?? price)}
                 </s>{" "}
                 <span className="sr-only">now </span>
               </>
             )}
-            {local(price)} <span className="cookbook-tour__per">{discounted ? "for your first cookbook with Pro" : "per cookbook"}</span>
+            <b className="font-extrabold">{local(price)}</b>{" "}
+            <span className="text-ink-soft">{discounted ? "for your first cookbook with Pro" : "per cookbook"}</span>
           </p>
-          {/* One short line, not the welcome's two (Amelia, 2026-11-22: too
-              much text, on a phone especially). */}
-          <p>
+          <p className="mt-[2px] text-cp-small text-ink-soft">
             {waiting > 0
-              ? `Preview ${FREE_COOKBOOK_RECIPES} recipes free. ${waiting === 1 ? "The last one comes" : `The other ${waiting} come`} in when you buy.`
+              ? `Preview ${FREE_COOKBOOK_RECIPES} free. ${waiting === 1 ? "The last one comes" : `The other ${waiting} come`} in when you buy.`
               : IMPORT_ALLOWANCE_LIVE
                 ? `Preview up to ${FREE_COOKBOOK_RECIPES} recipes free.`
                 : PREVIEW_RULE}
           </p>
         </div>
 
-        <Checkbox
-          checked={keepInSync}
-          onChange={(event) => setKeepInSync(event.target.checked)}
-          label="Keep the cards and the cookbook the same"
-          hint="Change a recipe in one and it changes in the other."
-        />
+        <div className="flex flex-col gap-cp-3">
+          <Checkbox
+            checked={keepInSync}
+            onChange={(event) => setKeepInSync(event.target.checked)}
+            label="Keep the cards and the cookbook the same"
+          />
 
-        {error && (
-          <p className="field-error" role="alert">
-            {error}
-          </p>
-        )}
+          {error && (
+            <p className="field-error" role="alert">
+              {error}
+            </p>
+          )}
 
-        <button
-          type="button"
-          className="btn btn-primary w-full"
-          disabled={busy || recipeCount === 0}
-          onClick={async () => {
-            setBusy(true);
-            setError(null);
-            try {
-              await onMake(keepInSync);
-            } catch {
-              setError("We couldn't make your cookbook. Please try again.");
-              setBusy(false);
-            }
-          }}
-        >
-          {busy && <SpinnerIcon size={ICON_SIZE.md} />}
-          Make my cookbook
-        </button>
+          <button
+            type="button"
+            className="btn btn-primary w-full"
+            disabled={busy || recipeCount === 0}
+            onClick={async () => {
+              setBusy(true);
+              setError(null);
+              try {
+                await onMake(keepInSync);
+              } catch {
+                setError("We couldn't make your cookbook. Please try again.");
+                setBusy(false);
+              }
+            }}
+          >
+            {busy && <SpinnerIcon size={ICON_SIZE.md} />}
+            Make my cookbook
+          </button>
+        </div>
       </div>
       {/* After the words, so first focus lands there; drawn first on a
           computer, and not at all on a phone, as in the Pro dialog. */}
