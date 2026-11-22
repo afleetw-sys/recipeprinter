@@ -868,7 +868,13 @@ export default function PrintPage() {
   }, [cookPilotUser?.uid]);
 
   const [showCookPilotLogin, setShowCookPilotLogin] = useState(false);
-  const [cookPilotLoginReason, setCookPilotLoginReason] = useState<"default" | "purchase">("default");
+  /**
+   * Why sign-in opened, so it can say so. "default" is the general wording
+   * (the same as signing in from the avatar); "purchase" is Buy & download on
+   * a cookbook; "save" is the save cloud, which says what saving will do
+   * (`signInIntro`). Pro signs in inside its own dialog (ProUpgradeDialog).
+   */
+  const [cookPilotLoginReason, setCookPilotLoginReason] = useState<"default" | "purchase" | "save">("default");
   const printRequestedRef = useRef(false);
   // The document title becomes the browser's default "Save as PDF" filename, so
   // a cookbook export is named after the book (e.g. "Grandma's Cookbook.pdf")
@@ -3119,7 +3125,7 @@ export default function PrintPage() {
       // `lib/saveIntent`, which is what makes the press survive that.
       saveAfterLoginRef.current = true;
       rememberSaveIntent(cookbookProjectId);
-      setCookPilotLoginReason("default");
+      setCookPilotLoginReason("save");
       setShowCookPilotLogin(true);
       return;
     }
@@ -5744,6 +5750,22 @@ export default function PrintPage() {
      the library. The header is left to say which document you're in and let you
      get back to the rest of them. */
 
+  /** What the sign-in dialog says above its form when the save cloud opened
+      it: what is being saved, and that it keeps saving after. Anything else
+      keeps the dialog's own wording. */
+  function signInIntro(): { title: string; body: string } | undefined {
+    if (cookPilotLoginReason !== "save") return undefined;
+    return cookbookMode
+      ? {
+          title: "Sign in to save your cookbook",
+          body: "We'll keep it in Projects and save every change after that, so you can open it again on any device.",
+        }
+      : {
+          title: "Sign in to save your recipe cards",
+          body: "We'll keep them in Projects and save every change after that, so you can open them again on any device.",
+        };
+  }
+
   /**
    * How this project stands — shared by the desktop header and the mobile
    * topbar (see PrintDeck.tsx) so the two can't drift into reporting save
@@ -7809,7 +7831,8 @@ export default function PrintPage() {
               cancelSaveAfterLogin();
             }}
             onAuthenticated={() => setShowCookPilotLogin(false)}
-            reason={cookPilotLoginReason}
+            reason={cookPilotLoginReason === "save" ? "default" : cookPilotLoginReason}
+            intro={signInIntro()}
           />
         )}
       </div>
@@ -9009,7 +9032,8 @@ export default function PrintPage() {
             cancelSaveAfterLogin();
           }}
           onAuthenticated={() => setShowCookPilotLogin(false)}
-          reason={cookPilotLoginReason}
+          reason={cookPilotLoginReason === "save" ? "default" : cookPilotLoginReason}
+          intro={signInIntro()}
         />
       )}
       {toastMessage && (

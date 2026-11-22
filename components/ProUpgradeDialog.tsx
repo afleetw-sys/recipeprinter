@@ -419,10 +419,11 @@ export function ProUpgradeDialog({
         <>
           <div className="pr-8">
             <h2 id="pro-upgrade-title" className="text-cp-dialog-title font-extrabold tracking-tight">
-              Sign in to continue
+              Sign in to get Pro
             </h2>
             <p className="mt-1 text-cp-body text-ink-soft">
-              Sign in or create an account to keep your Pro membership and purchases in one place.
+              Pro belongs to your account, so it works on any device you sign in on. Checkout opens
+              right after you sign in.
             </p>
             {pendingCycle && (
               <p className="mt-2 text-cp-label text-ink-soft font-semibold">
