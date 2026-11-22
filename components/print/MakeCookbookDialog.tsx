@@ -78,12 +78,14 @@ export function MakeCookbookDialog({
       labelledBy="make-cookbook-title"
       // The Pro dialog's shell, so every dialog with a picture is the same
       // shape: the picture on the left on a computer, none on a phone, the
-      // words and the one button on the right.
+      // words and the one button on the right. At least 420px tall on a
+      // computer, so the picture has room: the title at the top, the choice
+      // and the button at the bottom, the price between (Amelia, 2026-11-22).
       className="fixed inset-0 z-[var(--z-dialog)] flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
-      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[820px] max-h-[92dvh] sm:max-h-[calc(100dvh-48px)] sm:h-auto rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-0 flex flex-col sm:flex-row relative overflow-y-auto sm:overflow-hidden"
+      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[820px] max-h-[92dvh] sm:max-h-[calc(100dvh-48px)] sm:h-auto sm:min-h-[420px] rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-0 flex flex-col sm:flex-row relative overflow-y-auto sm:overflow-hidden"
       portal
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-cp-5 p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:overflow-y-auto sm:p-cp-6 sm:justify-center">
+      <div className="flex min-w-0 flex-1 flex-col gap-cp-5 p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:overflow-y-auto sm:p-cp-6 sm:justify-between">
         <button
           type="button"
           className="icon-close-btn absolute right-3 top-3 z-10"
@@ -111,22 +113,23 @@ export function MakeCookbookDialog({
           </ul>
         </div>
 
-        {/* The price as a line, not a box: the box read as a second dialog. */}
-        <div>
-          <p className="text-cp-body text-ink">
+        {/* The price in the box it has everywhere else (the cookbook welcome),
+            with what a free book holds under it in the same box. */}
+        <div className="cookbook-tour__price !mt-0">
+          <p className="cookbook-tour__amount">
             {discounted && (
               <>
-                <s className="text-ink-soft">
+                <s className="cookbook-tour__was">
                   <span className="sr-only">Was </span>
                   {local(fullPrice ?? price)}
                 </s>{" "}
                 <span className="sr-only">now </span>
               </>
             )}
-            <b className="font-extrabold">{local(price)}</b>{" "}
-            <span className="text-ink-soft">{discounted ? "for your first cookbook with Pro" : "per cookbook"}</span>
+            {local(price)}{" "}
+            <span className="cookbook-tour__per">{discounted ? "for your first cookbook with Pro" : "per cookbook"}</span>
           </p>
-          <p className="mt-[2px] text-cp-small text-ink-soft">
+          <p>
             {waiting > 0
               ? `Preview ${FREE_COOKBOOK_RECIPES} free. ${waiting === 1 ? "The last one comes" : `The other ${waiting} come`} in when you buy.`
               : IMPORT_ALLOWANCE_LIVE
