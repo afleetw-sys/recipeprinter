@@ -1,13 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { Dialog } from "@/components/Dialog";
+import { ProDialogArt } from "@/components/ProDialogArt";
+import type { ProDialogImage } from "@/lib/proUpgradeCopy";
 import { Checkbox } from "@/components/Controls";
 import { CheckIcon, ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
 import { PREVIEW_RULE } from "@/components/CookbookWelcomeDialog";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
 import { FREE_COOKBOOK_RECIPES, IMPORT_ALLOWANCE_LIVE } from "@/lib/freeImports";
+
+/** The cookbook welcome's first picture (see CookbookWelcomeDialog). */
+const ART: ProDialogImage[] = [
+  {
+    src: "/images/cookbook-onboarding-hero.jpg",
+    alt: "An open cookbook showing a photo of bourbon chicken beside its recipe page",
+    width: 1536,
+    height: 1024,
+  },
+];
 
 /** The cookbook welcome's highlights, as one list (see CookbookWelcomeDialog). */
 const HIGHLIGHTS = [
@@ -62,42 +73,40 @@ export function MakeCookbookDialog({
 
   return (
     <Dialog
-      open={open}
       onClose={busy ? () => {} : onClose}
+      closeDisabled={busy}
       labelledBy="make-cookbook-title"
-      className="recipe-add-dialog no-print"
-      backdropClassName="recipe-add-dialog__backdrop"
-      panelClassName="recipe-add-dialog__panel"
+      // The Pro dialog's shell, so every dialog with a picture is the same
+      // shape: the picture on the left on a computer, none on a phone, the
+      // words and the one button on the right.
+      className="fixed inset-0 z-[var(--z-dialog)] flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
+      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[820px] max-h-[92dvh] sm:max-h-[calc(100dvh-48px)] sm:h-auto rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-0 flex flex-col sm:flex-row relative overflow-y-auto sm:overflow-hidden"
+      portal
     >
-      <div className="recipe-add-dialog__header">
-        <h2 id="make-cookbook-title">Make a cookbook from these recipes</h2>
+      <div className="flex min-w-0 flex-1 flex-col gap-cp-4 p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:overflow-y-auto sm:p-cp-6 sm:justify-center">
         <button
           type="button"
-          className="recipe-add-dialog__close icon-close-btn"
+          className="icon-close-btn absolute right-3 top-3 z-10"
           aria-label="Close"
-          onClick={onClose}
           disabled={busy}
+          onClick={onClose}
         >
           <XIcon size={ICON_SIZE.md} />
         </button>
-      </div>
-      <div className="recipe-add-dialog__body flex flex-col gap-cp-4">
-        <Image
-          src="/images/cookbook-onboarding-hero.jpg"
-          alt="An open cookbook showing a photo of bourbon chicken beside its recipe page"
-          width={1536}
-          height={1024}
-          className="w-full rounded-xl object-cover"
-          style={{ aspectRatio: "16 / 7" }}
-        />
-        <ul className="flex flex-col gap-cp-2">
+
+        <h2 id="make-cookbook-title" className="pr-8 text-cp-dialog-title font-extrabold tracking-tight">
+          Make a cookbook from these recipes
+        </h2>
+
+        <ul className="flex flex-col gap-[6px]">
           {HIGHLIGHTS.map((line) => (
-            <li key={line} className="flex items-start gap-cp-2 text-cp-body text-ink">
-              <CheckIcon size={ICON_SIZE.md} className="mt-[2px] flex-shrink-0 text-brand" />
-              <span>{line}</span>
+            <li key={line} className="flex items-start gap-cp-2 text-cp-small text-ink">
+              <CheckIcon size={ICON_SIZE.sm} className="mt-[2px] shrink-0 text-brand" />
+              {line}
             </li>
           ))}
         </ul>
+
         <div className="cookbook-tour__price">
           <p className="cookbook-tour__amount">
             {discounted && (
@@ -119,19 +128,20 @@ export function MakeCookbookDialog({
             </p>
           )}
         </div>
+
         <Checkbox
           checked={keepInSync}
           onChange={(event) => setKeepInSync(event.target.checked)}
           label="Keep the cards and the cookbook the same"
           hint="Change a recipe in one and it changes in the other."
         />
+
         {error && (
           <p className="field-error" role="alert">
             {error}
           </p>
         )}
-      </div>
-      <div className="recipe-add-dialog__footer">
+
         <button
           type="button"
           className="btn btn-primary w-full"
@@ -151,6 +161,9 @@ export function MakeCookbookDialog({
           Make my cookbook
         </button>
       </div>
+      {/* After the words, so first focus lands there; drawn first on a
+          computer, and not at all on a phone, as in the Pro dialog. */}
+      <ProDialogArt images={ART} className="hidden sm:order-first sm:block sm:w-[44%] sm:shrink-0" />
     </Dialog>
   );
 }
