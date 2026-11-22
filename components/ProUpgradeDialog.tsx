@@ -190,8 +190,6 @@ export function ProUpgradeDialog({
   const { label: price, annualPerMonth, annualTotal } = useVisitorPrices();
   // Annual reads as a monthly figure, so the two plans compare like for like,
   // and always says what it charges once a year right beside it.
-  const cyclePrice = (cycle: ProBillingCycle) =>
-    cycle === "annual" ? `${annualPerMonth}/mo` : price(PRO_PRICE_FALLBACKS.monthly);
   const billedYearly = `Billed yearly at ${annualTotal}`;
   // The plan cards add their own " / month", so the monthly price drops its "/mo".
   const monthlyAmount = price(PRO_PRICE_FALLBACKS.monthly).replace(/\s*\/\s*mo\.?$/i, "");
@@ -202,11 +200,6 @@ export function ProUpgradeDialog({
   // plan already chosen. Closing it closes the upgrade too; "Back to plans"
   // returns to the plan step.
   if (step === "signin") {
-    const plan = pendingCycle
-      ? ` for ${PRO_CYCLE_LABEL[pendingCycle]}, ${cyclePrice(pendingCycle)}${
-          pendingCycle === "annual" ? ` ${billedYearly.toLowerCase()},` : ","
-        }`
-      : "";
     return (
       <CookPilotLoginDialog
         onClose={handleClose}
@@ -215,7 +208,7 @@ export function ProUpgradeDialog({
         }}
         intro={{
           title: "Sign in to get Pro",
-          body: `Pro stays with your account on every device. Checkout${plan} opens right after you sign in.`,
+          body: "Pro stays with your account on every device.",
         }}
         footer={
           <button type="button" className="btn-ghost btn-compact w-full" onClick={() => setStep("plan")}>
