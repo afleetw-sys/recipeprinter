@@ -212,6 +212,7 @@ export function resetImportUsageForTest(): void {
   pendingDedupeKeys.clear();
   listeners.clear();
   unanswered = null;
+  siteAddress = null;
 }
 
 /**
@@ -377,19 +378,63 @@ async function authReady(): Promise<void> {
   }
 }
 
+/**
+ * This browser's address as recipeprinter.com sees it, signed by our server
+ * (app/api/meter-address). A network block is copied from PostHog, which sees
+ * that address, while this browser may reach the meter over IPv6 under another
+ * one; sending it lets the block apply. Fetched when the meter is warmed (the
+ * import panel opening) and kept until a couple of minutes before the
+ * signature runs out. A meter call never waits for it: one that goes out first
+ * is checked by the address the meter sees, as before.
+ */
+type SiteAddress = { ip: string; exp: number; sig: string };
+type SiteAddressEntry = { value?: SiteAddress | null };
+let siteAddress: SiteAddressEntry | null = null;
+const SITE_ADDRESS_REFRESH_MS = 2 * 60 * 1000;
+
+function loadSiteAddress(): SiteAddressEntry {
+  const current = siteAddress;
+  if (current && (current.value === undefined || (current.value && current.value.exp - Date.now() > SITE_ADDRESS_REFRESH_MS))) {
+    return current;
+  }
+  const entry: SiteAddressEntry = {};
+  siteAddress = entry;
+  void Promise.resolve()
+    .then(() => fetch("/api/meter-address", { cache: "no-store" }))
+    .then(async (response) => {
+      if (response.status !== 200) return null;
+      const body = (await response.json()) as Partial<SiteAddress>;
+      return typeof body.ip === "string" && typeof body.exp === "number" && typeof body.sig === "string"
+        ? { ip: body.ip, exp: body.exp, sig: body.sig }
+        : null;
+    })
+    .catch(() => null)
+    .then((value) => {
+      entry.value = value;
+      // Nothing to send (a blip, or nothing signed): ask again next time.
+      if (!value && siteAddress === entry) siteAddress = null;
+    });
+  return entry;
+}
+
 async function callMeter(
   data: Record<string, unknown>,
   onStage: (stage: MeterStage) => void = () => {},
 ): Promise<unknown> {
   // Through `callCookPilotParser`, like `loadImageImportQuota`, so the call
   // carries App Check and `rpAnonId` the same way every parser call does.
+  const address = loadSiteAddress();
   const { callCookPilotParser } = await import("@/lib/parser");
   onStage("app_check");
   await appCheckTokenReady();
   onStage("auth");
   await authReady();
   onStage("call");
-  return callCookPilotParser(IMPORT_METER_CALLABLE, { ...data, ...browserTimeZone() });
+  return callCookPilotParser(IMPORT_METER_CALLABLE, {
+    ...data,
+    ...browserTimeZone(),
+    ...(address.value && address.value.exp > Date.now() ? { siteAddress: address.value } : {}),
+  });
 }
 
 /**
@@ -448,6 +493,7 @@ function reportUnavailable(
 export function warmImportMeter(nowMs: number = Date.now()): void {
   if (!meterReachableHere() || useLocalFunctions || importsKnownUnlimited()) return;
   wakeFunction(IMPORT_METER_CALLABLE, nowMs);
+  void loadSiteAddress();
 }
 
 /**
