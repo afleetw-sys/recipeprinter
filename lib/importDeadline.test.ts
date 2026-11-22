@@ -112,7 +112,9 @@ describe("a link import that outlives its deadline", () => {
   test("stops the route request, never starts the fallback, and fails as a timeout", async () => {
     const signals = routeHangs();
     const { result } = startImport();
-    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() =>
+      expect(vi.mocked(fetch).mock.calls.filter(([url]) => String(url).includes("/api/parse"))).toHaveLength(1),
+    );
 
     await vi.advanceTimersByTimeAsync(URL_IMPORT_DEADLINE_MS - 5_000);
     expect(signals[0]?.aborted).toBe(false);
