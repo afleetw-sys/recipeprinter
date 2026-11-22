@@ -31,6 +31,22 @@ describe("formatRecipeTime", () => {
     expect(formatRecipeTime("1 hour 30 minutes")).toBe("1 hr 30 min");
   });
 
+  it("keeps the cook's words whenever there is more than a duration", () => {
+    // Cindy's card read "Preparation Time: 45 minutes to one hour" and printed
+    // "45 min" (2026-11-21): the range ran on in words, so nothing caught it.
+    // Only a time that is a duration and nothing else is safe to tidy.
+    for (const written of [
+      "45 minutes to one hour",
+      "30 minutes plus chilling",
+      "1 hour, then overnight",
+      "20 minutes (longer for a crisp crust)",
+      "5 hours on low or 3 on high",
+      "15 minutes active",
+    ]) {
+      expect(formatRecipeTime(written)).toBe(written);
+    }
+  });
+
   it("passes through anything it cannot read", () => {
     expect(formatRecipeTime("overnight")).toBe("overnight");
   });
