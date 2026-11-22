@@ -216,6 +216,13 @@ export interface ProjectMeta {
       to Projects from the start, even with one recipe (see `keepsItself`):
       the cook made it on purpose, from a book they keep, so it is kept too. */
   cardsFromCookbook?: boolean;
+  /** A cookbook made from recipe cards ("Make a cookbook"), and the card
+      project it came from. A free book holds the first ten; the rest wait in
+      that project, and are added from it once this book is bought. Cleared
+      once they are. */
+  fillFromProjectId?: string;
+  /** How many recipes are waiting there, for the welcome to say. */
+  waitingRecipeCount?: number;
   /** This book's unwritten optional lines (a cover's author and edition, a
       dedication's message and signature, a back cover's lines, a chapter's
       subtitle) are told apart from removed ones: `undefined` shows its "+"
@@ -1339,13 +1346,20 @@ export function useProjectMeta() {
    * (docs/import-meter-plan.md, section 1.3).
    */
   const startNewProject = useCallback(
-    (options: { cookbook?: boolean; cardsFromCookbook?: boolean; fieldSwitches?: FieldSwitches } = {}) => {
+    (options: {
+      cookbook?: boolean;
+      cardsFromCookbook?: boolean;
+      fieldSwitches?: FieldSwitches;
+      fillFrom?: { projectId: string | null; waiting: number };
+    } = {}) => {
       resetHistory();
       commit({
         ...EMPTY_META,
         projectId: uid(),
         cardsFromCookbook: options.cardsFromCookbook || undefined,
         fieldSwitches: options.fieldSwitches,
+        fillFromProjectId: options.fillFrom?.waiting ? (options.fillFrom.projectId ?? undefined) : undefined,
+        waitingRecipeCount: options.fillFrom?.waiting || undefined,
         cookbookIntent: options.cookbook || undefined,
         cookbookBornFresh: options.cookbook || undefined,
         // A new book starts its optional lines with sample text (see the field).
@@ -1358,6 +1372,21 @@ export function useProjectMeta() {
       });
     },
     [commit],
+  );
+
+  /** Clears "the rest of these recipes wait in that card project" once they
+      have been added (see `ProjectMeta.fillFromProjectId`). */
+  const clearFillFrom = useCallback(
+    () => {
+      withoutHistory(() =>
+        update((current) =>
+          current.fillFromProjectId || current.waitingRecipeCount
+            ? { ...current, fillFromProjectId: undefined, waitingRecipeCount: undefined }
+            : current,
+        ),
+      );
+    },
+    [update],
   );
 
   /** Consumes the "make this a cookbook" choice carried from the library, so it
@@ -1472,6 +1501,7 @@ export function useProjectMeta() {
     setOwnPhotosOnly,
     startNewProject,
     clearCookbookIntent,
+    clearFillFrom,
     replaceMeta,
     getMeta,
     restoreMeta: commit,

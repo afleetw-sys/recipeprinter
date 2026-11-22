@@ -10,7 +10,7 @@ import { releaseWorkingProject } from "@/lib/releaseWorkingProject";
 import { clearPendingImport, hasPendingImport } from "@/lib/pendingImport";
 import { sessionStore } from "@/lib/storage";
 import type { FieldSwitches } from "@/lib/recipeFields";
-import { CARDS_FROM_COOKBOOK_KEY } from "@/lib/linkedRecipes";
+import { BOOK_FROM_CARDS_KEY, CARDS_FROM_COOKBOOK_KEY } from "@/lib/linkedRecipes";
 
 /**
  * "Print as recipe cards" from a cookbook lands here on its way to /print.
@@ -48,6 +48,17 @@ export default function PrintCardsPage() {
       // book is worse than not opening the cards, and the recipes must not
       // land in the book instead, so they are dropped.
       clearPendingImport();
+      router.replace("/print");
+      return;
+    }
+    // "Make a cookbook" from recipe cards: a new book, which opens with the
+    // cookbook welcome like every new book, and knows where any recipes that
+    // didn't fit the free book are waiting.
+    const bookFromCards = sessionStore.getJson<{ projectId: string | null; waiting: number }>(BOOK_FROM_CARDS_KEY);
+    sessionStore.remove(BOOK_FROM_CARDS_KEY);
+    if (bookFromCards) {
+      sessionStore.remove(CARDS_FROM_COOKBOOK_KEY);
+      startNewProject({ cookbook: true, fillFrom: bookFromCards });
       router.replace("/print");
       return;
     }

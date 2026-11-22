@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { AnchoredMenu } from "@/components/AnchoredMenu";
-import { CheckIcon, CloudCheckIcon, ICON_SIZE, MoreHorizontalIcon, PrintIcon, RedoIcon, SpinnerIcon, UndoIcon } from "@/components/icons";
+import { CheckIcon, CloudCheckIcon, ICON_SIZE, MoreHorizontalIcon, PrintIcon, BookIcon, RedoIcon, SpinnerIcon, UndoIcon } from "@/components/icons";
 
 export type SaveMenuState = "unsaved" | "saving" | "saved";
 
@@ -40,6 +40,7 @@ export function SaveMoreMenu({
   size,
   history,
   printAsCards,
+  makeCookbook,
 }: {
   state: SaveMenuState;
   /** Starts the first save (or sign-in, signed out). */
@@ -54,6 +55,8 @@ export function SaveMoreMenu({
       because this menu is on every screen size, and printing some of a book's
       recipes as cards is a thing to do with the whole job, like saving it. */
   printAsCards?: () => void;
+  /** Recipe cards' "Make a cookbook": a new book with these recipes. */
+  makeCookbook?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement | null>(null);
@@ -151,6 +154,26 @@ export function SaveMoreMenu({
             </>
           )}
           {row}
+          {makeCookbook && (
+            <>
+              <div className="rp-save-menu__rule" role="separator" />
+              <button
+                type="button"
+                role="menuitem"
+                className="cp-menu__item cp-menu__item--stacked"
+                onClick={() => {
+                  close();
+                  makeCookbook();
+                }}
+              >
+                <span className="rp-save-menu__label">
+                  <BookIcon size={ICON_SIZE.md} />
+                  Make a cookbook
+                </span>
+                <span className="cp-menu__note">Start a cookbook with these recipes.</span>
+              </button>
+            </>
+          )}
           {printAsCards && (
             <>
               <div className="rp-save-menu__rule" role="separator" />

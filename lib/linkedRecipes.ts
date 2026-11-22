@@ -24,6 +24,11 @@ import { slimRecipe } from "@/lib/slimIngredients";
     has to survive the one navigation. */
 export const CARDS_FROM_COOKBOOK_KEY = "recipeprinter:cards-from-cookbook:v1";
 
+/** "Make a cookbook" from recipe cards leaves this for /print-cards: the card
+    project the book comes from, and how many of its recipes wait for the book
+    to be bought (see `ProjectMeta.fillFromProjectId`). */
+export const BOOK_FROM_CARDS_KEY = "recipeprinter:book-from-cards:v1";
+
 /** One fingerprint per recipe field, keyed by field name. */
 export type FieldPrints = Record<string, string>;
 

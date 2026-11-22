@@ -3,7 +3,7 @@ import type { CustomerInfo } from "@revenuecat/purchases-js";
 import type { QueueItem, Recipe } from "@/types/recipe";
 import { computeProLocks } from "@/lib/recipePrinterPurchases";
 import { planCardExport } from "@/lib/server/cardExport";
-import { bookRoomLeft } from "@/lib/cookbookFreeSize";
+import { bookRoomLeft, waitingRecipesMayArrive } from "@/lib/cookbookFreeSize";
 import { keepsItself } from "@/lib/printAutosave";
 
 /* Moving recipes between a cookbook and recipe cards must never move a
@@ -94,5 +94,20 @@ describe("which jobs save themselves", () => {
     [{ cookbookMode: false, recipeCount: 0, cardsFromCookbook: true }, false],
   ])("%o keeps itself: %s", (job, expected) => {
     expect(keepsItself(job)).toBe(expected);
+  });
+});
+
+describe("a cookbook made from recipe cards", () => {
+  const waiting = { waitingIn: "cards-1", signedIn: true, cookbookMode: true };
+
+  it("takes the recipes that didn't fit only once this book is bought", () => {
+    expect(waitingRecipesMayArrive({ ...waiting, bookBought: false })).toBe(false);
+    expect(waitingRecipesMayArrive({ ...waiting, bookBought: true })).toBe(true);
+  });
+
+  it("never while signed out, outside the book, or with nothing waiting", () => {
+    expect(waitingRecipesMayArrive({ ...waiting, signedIn: false, bookBought: true })).toBe(false);
+    expect(waitingRecipesMayArrive({ ...waiting, cookbookMode: false, bookBought: true })).toBe(false);
+    expect(waitingRecipesMayArrive({ ...waiting, waitingIn: undefined, bookBought: true })).toBe(false);
   });
 });

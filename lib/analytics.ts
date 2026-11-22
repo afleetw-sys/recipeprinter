@@ -437,6 +437,9 @@ type EventProps = {
   /** "Print as recipe cards" from a cookbook opened a card job of these
    *  recipes. `linked` is false signed out, where they are plain copies. */
   print_as_cards: { recipeCount: number; linked: boolean };
+  /** "Make a cookbook" from recipe cards opened a new book. `waiting` didn't
+   *  fit the free book and come in once it is bought. */
+  make_cookbook_from_cards: { recipeCount: number; waiting: number; linked: boolean };
   /** The Pro upgrade dialog was shown. `trigger` matches
    *  `pro_feature_encountered`'s `source` when it opened one, or names the
    *  entry point otherwise (e.g. "account_menu"). */

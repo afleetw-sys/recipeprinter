@@ -155,8 +155,8 @@ import {
   rememberPrintPrimaryAction,
   type PrintPrimaryAction,
 } from "@/lib/printPrimaryAction";
-import { bookRoomLeft } from "@/lib/cookbookFreeSize";
-import { FREE_COOKBOOK_RECIPES } from "@/lib/freeImports";
+import { bookRoomLeft, waitingRecipesMayArrive } from "@/lib/cookbookFreeSize";
+import { FREE_COOKBOOK_RECIPES, IMPORT_ALLOWANCE_LIVE } from "@/lib/freeImports";
 import { BookCapDialog } from "@/components/print/BookCapDialog";
 import {
   markPhotoStyleTipSeen,
@@ -272,7 +272,7 @@ import {
 import { hasPendingImport, stashPendingImport, takePendingImport } from "@/lib/pendingImport";
 import { useLinkedRecipes } from "@/lib/useLinkedRecipes";
 import { uid as newItemId } from "@/lib/ids";
-import { applyRemoteFields, CARDS_FROM_COOKBOOK_KEY, recipeToShare } from "@/lib/linkedRecipes";
+import { applyRemoteFields, BOOK_FROM_CARDS_KEY, CARDS_FROM_COOKBOOK_KEY, recipeToShare } from "@/lib/linkedRecipes";
 import { PrintAsCardsDialog } from "@/components/print/PrintAsCardsDialog";
 import { SavedRecipesContext } from "@/components/import/SavedRecipesSource";
 import { isIOSPrinter, isWebKitPrinter, printNeedsLiveGesture } from "@/lib/printGesture";
@@ -5070,6 +5070,13 @@ export default function PrintPage() {
     [cookPilotUser, swapDialogOpen, cookbookProjectId],
   );
 
+  /** Recipe cards offer "Make a cookbook" from their ⋯, unless they were
+      printed from a cookbook in the first place. Signed in only: the recipes a
+      free book can't hold yet wait in the saved card project, and buying the
+      book needs an account anyway. */
+  const makeCookbookOffered =
+    Boolean(cookPilotUser) && !cookbookMode && !projectMeta.meta.cardsFromCookbook && recipeCount > 0;
+
   const [printCardsOpen, setPrintCardsOpen] = useState(false);
   const [printCardsInitialIds, setPrintCardsInitialIds] = useState<string[]>([]);
   /** Opens "Print as recipe cards" with these recipes ticked: the rail's
@@ -5103,9 +5110,53 @@ export default function PrintPage() {
       .map((id) => items?.find((item) => item.id === id))
       .filter((item): item is QueueItem & { recipe: Recipe } => Boolean(item?.recipe) && item?.status === "ready");
     if (chosen.length === 0) return;
-    const owner = keepInSync ? (cookPilotUser?.uid ?? null) : null;
+    const copies = await copiesForNewJob(chosen, keepInSync);
+    // Cards kept in step with the book show the lines the book shows (see
+    // `cardSwitchesFromCookbook`); separate copies start as any new cards do.
+    if (copies.some((copy) => copy.link)) sessionStore.setJson(CARDS_FROM_COOKBOOK_KEY, cardSwitchesFromCookbook(fieldSwitches));
+    else sessionStore.remove(CARDS_FROM_COOKBOOK_KEY);
+    sessionStore.remove(BOOK_FROM_CARDS_KEY);
+    track("print_as_cards", { recipeCount: copies.length, linked: copies.some((copy) => copy.link) });
+    await leaveForNewJob(copies);
+  }
+
+  /**
+   * "Make a cookbook" from a card job: a new cookbook holding these cards'
+   * recipes, linked like "Print as recipe cards" the other way round.
+   *
+   * A free book holds ten (FREE_COOKBOOK_RECIPES): the first ones come in, and the
+   * rest stay where they already are, in this card project. The book remembers
+   * it (`fillFromProjectId`) and takes the rest from it once it is bought, so
+   * nothing is held anywhere new, and nothing waits on a dialog being answered
+   * or survives only in a page that checkout might reload. The welcome every new
+   * book opens with says how many are waiting.
+   */
+  async function makeCookbookFromCards() {
+    const recipes = (items ?? []).filter(
+      (item): item is QueueItem & { recipe: Recipe } => Boolean(item.recipe) && item.status === "ready" && !isBookPage(item),
+    );
+    if (recipes.length === 0) return;
+    const first = IMPORT_ALLOWANCE_LIVE ? recipes.slice(0, FREE_COOKBOOK_RECIPES) : recipes;
+    const waiting = recipes.length - first.length;
+    const copies = await copiesForNewJob(first, true);
+    sessionStore.remove(CARDS_FROM_COOKBOOK_KEY);
+    sessionStore.setJson(BOOK_FROM_CARDS_KEY, {
+      projectId: savedToProfile && cookPilotUser ? cookbookProjectId : null,
+      waiting,
+    });
+    track("make_cookbook_from_cards", { recipeCount: recipes.length, waiting, linked: copies.some((copy) => copy.link) });
+    await leaveForNewJob(copies);
+  }
+
+  /** The new job's copies of these recipes: linked to them when `linked` and
+      signed in (lib/linkedRecipeStore), plain copies otherwise. */
+  async function copiesForNewJob(
+    chosen: Array<QueueItem & { recipe: Recipe }>,
+    linked: boolean,
+  ): Promise<QueueItem[]> {
+    const owner = linked ? (cookPilotUser?.uid ?? null) : null;
     const { shareRecipe } = await import("@/lib/linkedRecipeStore");
-    const copies = await Promise.all(
+    return Promise.all(
       chosen.map(async (item): Promise<QueueItem> => {
         const shared = recipeToShare(item.recipe, projectMeta.meta.itemPlacements?.[item.id], ownPhotosOnly);
         const joined = owner
@@ -5132,13 +5183,13 @@ export default function PrintPage() {
         };
       }),
     );
+  }
+
+  /** Hands the copies to a new job by way of /print-cards, which sets this
+      project aside first, and saves this one on the way out, exactly as
+      leaving by the logo does. */
+  async function leaveForNewJob(copies: QueueItem[]) {
     if (!(await stashPendingImport({ kind: "ready", recipes: copies }))) throw new Error("Hand-off refused");
-    // Cards kept in step with the book show the lines the book shows (see
-    // `cardSwitchesFromCookbook`); separate copies start as any new cards do.
-    if (copies.some((copy) => copy.link)) sessionStore.setJson(CARDS_FROM_COOKBOOK_KEY, cardSwitchesFromCookbook(fieldSwitches));
-    else sessionStore.remove(CARDS_FROM_COOKBOOK_KEY);
-    track("print_as_cards", { recipeCount: copies.length, linked: Boolean(owner) });
-    // Saved on the way out, exactly as leaving by the logo does.
     if (autosaveEnabledForCurrentMode && queue.items.some((item) => item.status === "ready" && item.recipe)) {
       const worthSaving = shouldSaveOnLeave(
         {
@@ -5154,6 +5205,73 @@ export default function PrintPage() {
     setPrintCardsOpen(false);
     navigateAfterOverlayHistory(() => router.push("/print-cards"));
   }
+
+  /**
+   * A book made from recipe cards, now bought: the recipes that didn't fit the
+   * free book come in from the card project they waited in. Only ever after a
+   * confirmed purchase of THIS book (`isCookbookProjectUnlocked`), never while
+   * the purchase check is still loading, and once: the marker is cleared first.
+   */
+  const fillingFromCardsRef = useRef(false);
+  useEffect(() => {
+    const sourceId = projectMeta.meta.fillFromProjectId;
+    const owner = cookPilotUser?.uid;
+    const bookBought = cookbookAccessStatus === "unlocked" || isCookbookProjectUnlocked(cookbookProjectId);
+    if (fillingFromCardsRef.current) return;
+    if (!waitingRecipesMayArrive({ waitingIn: sourceId, signedIn: Boolean(owner), cookbookMode, bookBought })) return;
+    if (!sourceId || !owner) return;
+    fillingFromCardsRef.current = true;
+    void (async () => {
+      try {
+        const [{ loadPrintProject }, { linkedRecipeId }] = await Promise.all([
+          import("@/lib/printProjects"),
+          import("@/lib/linkedRecipeStore"),
+        ]);
+        const source = await loadPrintProject(owner, sourceId);
+        const inBook = new Set(queue.getItems().flatMap((item) => (item.link ? [item.link.id] : [])));
+        const rest = (source?.sections ?? [])
+          .flatMap((section) => section.items)
+          .filter(
+            (item): item is QueueItem & { recipe: Recipe } =>
+              Boolean(item.recipe) && item.status === "ready" && !isBookPage(item),
+          )
+          .filter((item) => !inBook.has(item.link?.id ?? linkedRecipeId(sourceId, item.id)));
+        const { shareRecipe } = await import("@/lib/linkedRecipeStore");
+        const copies = await Promise.all(
+          rest.map(async (item): Promise<QueueItem> => {
+            const joined = await shareRecipe(owner, {
+              projectId: sourceId,
+              member: true,
+              itemId: item.id,
+              recipe: item.recipe,
+              shared: item.recipe,
+              link: item.link,
+            });
+            return {
+              id: newItemId(),
+              method: item.method,
+              source: item.source,
+              originalUrl: item.originalUrl,
+              status: "ready",
+              title: joined.recipe.title || item.title,
+              recipe: joined.recipe,
+              link: joined.link,
+              addedAt: Date.now(),
+            };
+          }),
+        );
+        projectMeta.clearFillFrom();
+        const added = copies.length > 0 ? queue.addReadyRecipes(copies, { pickedAsMulti: true }) : 0;
+        if (added > 0) showToast(added === 1 ? "We added your other recipe." : `We added your other ${added} recipes.`);
+      } catch (error) {
+        // Tried again on the next visit: the marker is still there.
+        fillingFromCardsRef.current = false;
+        console.warn("RecipePrinter: could not add the rest of the cards' recipes", error);
+      }
+    })();
+    // The queue and meta setters are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectMeta.meta.fillFromProjectId, cookPilotUser, cookbookMode, cookbookAccessStatus, cookbookProjectId]);
 
 
   /**
@@ -5664,6 +5782,7 @@ export default function PrintPage() {
         onSave={() => void handleSaveProject()}
         size={size}
         printAsCards={cookbookMode && recipeCount > 0 ? () => openPrintAsCards() : undefined}
+        makeCookbook={makeCookbookOffered ? () => void makeCookbookFromCards() : undefined}
         history={
           historyFolded
             ? {
@@ -7777,7 +7896,8 @@ export default function PrintPage() {
                     the bar, and no Save button there). A cookbook with recipes
                     keeps it, because it holds Print as recipe cards too. */}
                 {((saveStatus !== "saving" && !savedToProfile && !(!cookPilotUser && keptAutomatically)) ||
-                  (cookbookMode && recipeCount > 0)) &&
+                  (cookbookMode && recipeCount > 0) ||
+                  makeCookbookOffered) &&
                   renderSaveMenu("header")}
 
                 {/* Print is always here, as it is on a phone's bottom bar:
@@ -8673,6 +8793,7 @@ export default function PrintPage() {
         price={cookbookPrice}
         fullPrice={cookbookDiscountEligible ? COOKBOOK_PRICE_FALLBACK : undefined}
         hasRecipes={recipeCount > 0}
+        waitingRecipes={projectMeta.meta.waitingRecipeCount ?? 0}
         onClose={() => {
           // The X, Escape and the backdrop only dismiss the panel. The cook
           // just watched this book get built; closing the thing sitting on top
