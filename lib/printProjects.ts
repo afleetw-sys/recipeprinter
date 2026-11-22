@@ -19,6 +19,7 @@ import type { PhotoScale } from "@/lib/photoScale";
 import type { ThemeLooks } from "@/lib/themeLooks";
 import { metaSectionsFromFull, type ProjectMeta } from "@/lib/project";
 import { stripUndefined } from "@/lib/firebase/stripUndefined";
+import { slimRecipe } from "@/lib/slimIngredients";
 import { projectLibraryChanged } from "@/lib/projectCount";
 import {
   recipePrinterProjectPath,
@@ -116,23 +117,9 @@ export function slimIngredients(project: PrintProject): PrintProject {
     sections: project.sections.map((section) => ({
       ...section,
       items: section.items.map((item) => {
-        const recipe = item.recipe;
-        if (!recipe?.ingredients?.length) return item;
-        let changed = false;
-        const ingredients = recipe.ingredients.map((ingredient) => {
-          if (!ingredient.raw?.trim()) return ingredient;
-          if (
-            ingredient.amount === undefined &&
-            ingredient.unit === undefined &&
-            ingredient.name === undefined &&
-            ingredient.note === undefined
-          ) {
-            return ingredient;
-          }
-          changed = true;
-          return { raw: ingredient.raw, section: ingredient.section };
-        });
-        return changed ? { ...item, recipe: { ...recipe, ingredients } } : item;
+        if (!item.recipe) return item;
+        const recipe = slimRecipe(item.recipe);
+        return recipe === item.recipe ? item : { ...item, recipe };
       }),
     })),
   };

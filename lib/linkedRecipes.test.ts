@@ -152,3 +152,15 @@ describe("the queue keeps a photo choice", () => {
     });
   });
 });
+
+describe("a copy read back from the account", () => {
+  it("is not an edit just because its ingredients were slimmed by the save", () => {
+    const full = {
+      ...base,
+      ingredients: [{ raw: "2 cups flour", amount: "2", unit: "cups", name: "flour" } as Recipe["ingredients"][number]],
+    };
+    const slimmed = { ...full, ingredients: [{ raw: "2 cups flour" } as Recipe["ingredients"][number]] };
+    expect(changedFields(slimmed, fieldPrints(full))).toEqual([]);
+    expect(mergeLinked(slimmed, fieldPrints(full), full).pushes).toBe(false);
+  });
+});

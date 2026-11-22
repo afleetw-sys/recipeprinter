@@ -1,4 +1,5 @@
 import type { Recipe, RecipeLink, RecipePagePlacement } from "@/types/recipe";
+import { slimRecipe } from "@/lib/slimIngredients";
 
 /**
  * Linked recipes: one recipe used in several projects (a cookbook and the
@@ -58,16 +59,23 @@ function presentKeys(recipe: Recipe): string[] {
     .map(([key]) => key);
 }
 
+/**
+ * Fingerprints are taken of the recipe as a save stores it (`slimRecipe`): a
+ * copy read back from the account has slimmed ingredients and one still in the
+ * page does not, and those are the same recipe. Comparing them unslimmed made
+ * a freshly opened copy look edited, and it wrote itself out for nothing.
+ */
 export function fieldPrints(recipe: Recipe): FieldPrints {
+  const stored = slimRecipe(recipe);
   const prints: FieldPrints = {};
-  for (const key of presentKeys(recipe)) {
-    prints[key] = fingerprint((recipe as unknown as Record<string, unknown>)[key]);
+  for (const key of presentKeys(stored)) {
+    prints[key] = fingerprint((stored as unknown as Record<string, unknown>)[key]);
   }
   return prints;
 }
 
 function printOf(recipe: Recipe, key: string): string | undefined {
-  const value = (recipe as unknown as Record<string, unknown>)[key];
+  const value = (slimRecipe(recipe) as unknown as Record<string, unknown>)[key];
   return value === undefined ? undefined : fingerprint(value);
 }
 
@@ -177,7 +185,7 @@ export function recipeToShare(
 
 /** Undefined fields dropped, the way Firestore stores (and hands back) them. */
 export function storedRecipe(recipe: Recipe): Recipe {
-  return JSON.parse(JSON.stringify(recipe)) as Recipe;
+  return JSON.parse(JSON.stringify(slimRecipe(recipe))) as Recipe;
 }
 
 /** A link agreeing with `recipe` at record version `rev`. */
