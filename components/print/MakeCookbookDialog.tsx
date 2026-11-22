@@ -22,9 +22,9 @@ const ART: ProDialogImage[] = [
   },
 ];
 
-// Two, each one line (Amelia, 2026-11-22: the dialog was too much). The
-// picture already shows a recipe becoming a cookbook page.
+// Three, each one line (Amelia, 2026-11-22: the dialog was too much).
 const HIGHLIGHTS = [
+  "Each recipe becomes a real cookbook page, with its photo.",
   "Chapters, contents and a cover, done for you.",
   "Print at home, at a copy shop or as a hardcover.",
 ] as const;
@@ -145,7 +145,7 @@ export function MakeCookbookDialog({
             <Checkbox
               checked={keepInSync}
               onChange={(event) => setKeepInSync(event.target.checked)}
-              label="Keep the cards and the cookbook the same"
+              label="Recipe edits update both the cards and the cookbook"
             />
 
             {error && (

@@ -78,8 +78,7 @@ export function PrintAsCardsDialog({
           className="mt-cp-3"
           checked={keepInSync}
           onChange={(event) => setKeepInSync(event.target.checked)}
-          label="Keep the cards and the cookbook the same"
-          hint="Change a recipe in one and it changes in the other."
+          label="Recipe edits update both the cards and the cookbook"
         />
         {error && (
           <p className="field-error mt-cp-2" role="alert">
