@@ -18,6 +18,11 @@ import type { Recipe, RecipeLink, RecipePagePlacement } from "@/types/recipe";
  * project, because it lives outside `Recipe` already.
  */
 
+/** Where "Print as recipe cards" leaves the lines the new cards should show
+    for /print-cards (see `cardSwitchesFromCookbook`). Session storage: it only
+    has to survive the one navigation. */
+export const CARDS_FROM_COOKBOOK_KEY = "recipeprinter:cards-from-cookbook:v1";
+
 /** One fingerprint per recipe field, keyed by field name. */
 export type FieldPrints = Record<string, string>;
 

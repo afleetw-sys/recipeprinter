@@ -45,6 +45,7 @@ import {
   fieldShown,
   fieldTicked,
   fieldValue,
+  LINES_THAT_FOLLOW_THE_COOKBOOK,
   type FieldSwitchId,
   type FieldSwitches,
   type RecipeFieldId,
@@ -243,6 +244,10 @@ interface PrintDeckProps {
       uses to show a field it adds. */
   fieldSwitches: FieldSwitches | undefined;
   setFieldShown: (field: FieldSwitchId, shown: boolean, cookbook: boolean) => void;
+  /** Recipe cards holding recipes kept in step with a cookbook: their own
+      words show as the book shows them, so "Show on recipes" doesn't offer
+      those lines here (`LINES_THAT_FOLLOW_THE_COOKBOOK`). */
+  linesFollowCookbook?: boolean;
   /** Recipe photos across the book, as "Show on recipes" switches them: the
       cards' photo setting, or a cookbook's photo style ("none" when off). */
   recipePhotos: { shown: boolean; set: (shown: boolean) => void };
@@ -497,6 +502,7 @@ export function PrintDeck(props: PrintDeckProps) {
     setShowSourceUrl,
     showDescription,
     fieldSwitches,
+    linesFollowCookbook = false,
     setFieldShown,
     recipePhotos,
     recipeHasPhoto,
@@ -907,11 +913,14 @@ export function PrintDeck(props: PrintDeckProps) {
               locked: true,
               onChange: () => {},
             });
-            const switched = (id: FieldSwitchId, name: string): FieldVisibilityRow => ({
-              name,
-              checked: fieldTicked(fieldSwitches, id, cookbook),
-              onChange: (shown: boolean) => setFieldShown(id, shown, cookbook),
-            });
+            const switched = (id: FieldSwitchId, name: string): FieldVisibilityRow | null =>
+              !cookbook && linesFollowCookbook && LINES_THAT_FOLLOW_THE_COOKBOOK.includes(id)
+                ? null
+                : {
+                    name,
+                    checked: fieldTicked(fieldSwitches, id, cookbook),
+                    onChange: (shown: boolean) => setFieldShown(id, shown, cookbook),
+                  };
             return {
               scope: cookbook ? "For every recipe in this cookbook" : "For every recipe card here",
               rows: [
@@ -930,7 +939,7 @@ export function PrintDeck(props: PrintDeckProps) {
                   checked: showSourceUrl,
                   onChange: (shown: boolean) => setShowSourceUrl(shown),
                 },
-              ],
+              ].filter((row): row is FieldVisibilityRow => row !== null),
             };
           })()
         : null;

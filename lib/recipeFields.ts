@@ -209,3 +209,21 @@ export function tailFields(recipe: Recipe, switches: FieldSwitches | undefined, 
 export function fieldsKey(switches: FieldSwitches | undefined): string {
   return FIELD_SWITCH_IDS.map((id) => (switches?.[id] === undefined ? "-" : switches[id] ? "1" : "0")).join("");
 }
+
+/**
+ * The lines recipe cards show when they are kept in step with a cookbook:
+ * exactly the ones the book shows. Cards on their own hide the description
+ * and notes by default, which a cookbook shows; on cards that are the same
+ * recipes as the book, a description missing from the card but there in the
+ * book reads as lost, so the cards start out matching the book instead.
+ */
+export function cardSwitchesFromCookbook(bookSwitches: FieldSwitches | undefined): FieldSwitches {
+  return Object.fromEntries(FIELD_SWITCH_IDS.map((id) => [id, fieldShown(bookSwitches, id, true)])) as FieldSwitches;
+}
+
+/**
+ * On cards kept in step with a cookbook these lines aren't switched on or off
+ * card by card ("Show on recipes"): they are the recipe's own words, and
+ * hiding one on the cards while the book shows it looks like the sync lost it.
+ */
+export const LINES_THAT_FOLLOW_THE_COOKBOOK: readonly FieldSwitchId[] = RECIPE_FIELD_IDS;

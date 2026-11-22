@@ -240,10 +240,12 @@ import { accentRootProps, type AccentColor, type SupperUtensil } from "@/lib/the
 import { ThemeArtProvider } from "@/lib/themeArt";
 import {
   RECIPE_FIELDS,
+  cardSwitchesFromCookbook,
   fieldShown,
   fieldValue,
   usesHeadnote,
 } from "@/lib/recipeFields";
+import { sessionStore } from "@/lib/storage";
 import { RecipeFieldsProvider } from "@/lib/recipeFieldsContext";
 import { DEFAULT_THEME_LOOK, isCustomized, lookFor, normalizeThemeLooks, withLook, type ThemeLooks } from "@/lib/themeLooks";
 import { asDerived, latestHistoryStep, undoEdit, useEditHistory } from "@/lib/editHistory";
@@ -270,7 +272,7 @@ import {
 import { hasPendingImport, stashPendingImport, takePendingImport } from "@/lib/pendingImport";
 import { useLinkedRecipes } from "@/lib/useLinkedRecipes";
 import { uid as newItemId } from "@/lib/ids";
-import { applyRemoteFields, recipeToShare } from "@/lib/linkedRecipes";
+import { applyRemoteFields, CARDS_FROM_COOKBOOK_KEY, recipeToShare } from "@/lib/linkedRecipes";
 import { PrintAsCardsDialog } from "@/components/print/PrintAsCardsDialog";
 import { SavedRecipesContext } from "@/components/import/SavedRecipesSource";
 import { isIOSPrinter, isWebKitPrinter, printNeedsLiveGesture } from "@/lib/printGesture";
@@ -5131,6 +5133,10 @@ export default function PrintPage() {
       }),
     );
     if (!(await stashPendingImport({ kind: "ready", recipes: copies }))) throw new Error("Hand-off refused");
+    // Cards kept in step with the book show the lines the book shows (see
+    // `cardSwitchesFromCookbook`); separate copies start as any new cards do.
+    if (copies.some((copy) => copy.link)) sessionStore.setJson(CARDS_FROM_COOKBOOK_KEY, cardSwitchesFromCookbook(fieldSwitches));
+    else sessionStore.remove(CARDS_FROM_COOKBOOK_KEY);
     track("print_as_cards", { recipeCount: copies.length, linked: Boolean(owner) });
     // Saved on the way out, exactly as leaving by the logo does.
     if (autosaveEnabledForCurrentMode && queue.items.some((item) => item.status === "ready" && item.recipe)) {
@@ -8008,6 +8014,7 @@ export default function PrintPage() {
           setShowSourceUrl={setBookShowSourceUrl}
           showDescription={showDescription}
           fieldSwitches={fieldSwitches}
+          linesFollowCookbook={!cookbookMode && Boolean(items?.some((item) => item.link))}
           setFieldShown={setFieldShown}
           recipeHasPhoto={recipeHasPhoto}
           recipePhotos={{

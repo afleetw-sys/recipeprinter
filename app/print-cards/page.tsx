@@ -8,6 +8,9 @@ import { useQueue } from "@/lib/queue";
 import { useProjectMeta } from "@/lib/project";
 import { releaseWorkingProject } from "@/lib/releaseWorkingProject";
 import { clearPendingImport, hasPendingImport } from "@/lib/pendingImport";
+import { sessionStore } from "@/lib/storage";
+import type { FieldSwitches } from "@/lib/recipeFields";
+import { CARDS_FROM_COOKBOOK_KEY } from "@/lib/linkedRecipes";
 
 /**
  * "Print as recipe cards" from a cookbook lands here on its way to /print.
@@ -48,7 +51,9 @@ export default function PrintCardsPage() {
       router.replace("/print");
       return;
     }
-    startNewProject({ cardsFromCookbook: true });
+    const fieldSwitches = sessionStore.getJson<FieldSwitches>(CARDS_FROM_COOKBOOK_KEY) ?? undefined;
+    sessionStore.remove(CARDS_FROM_COOKBOOK_KEY);
+    startNewProject({ cardsFromCookbook: true, fieldSwitches });
     router.replace("/print");
   }, [hydrated, metaHydrated, items, meta, clear, startNewProject, router]);
 

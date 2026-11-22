@@ -1339,12 +1339,13 @@ export function useProjectMeta() {
    * (docs/import-meter-plan.md, section 1.3).
    */
   const startNewProject = useCallback(
-    (options: { cookbook?: boolean; cardsFromCookbook?: boolean } = {}) => {
+    (options: { cookbook?: boolean; cardsFromCookbook?: boolean; fieldSwitches?: FieldSwitches } = {}) => {
       resetHistory();
       commit({
         ...EMPTY_META,
         projectId: uid(),
         cardsFromCookbook: options.cardsFromCookbook || undefined,
+        fieldSwitches: options.fieldSwitches,
         cookbookIntent: options.cookbook || undefined,
         cookbookBornFresh: options.cookbook || undefined,
         // A new book starts its optional lines with sample text (see the field).
