@@ -6,9 +6,8 @@ import { filterImportSummaries, importSearchText, type ImportSummary } from "@/l
 import { ingredientText } from "@/lib/recipeCardLayout";
 import { allSelectableSelected as allSelectableSelectedIn, selectableQueueIds, toggleSelection } from "@/lib/importSelection";
 import { isBookPage } from "@/lib/bookPages";
-import { recipeToShare } from "@/lib/linkedRecipes";
+import { copiesOfPickedRecipes } from "@/lib/savedRecipeCopies";
 import { projectListTitle } from "@/lib/projectLibrary";
-import { uid as newId } from "@/lib/ids";
 import { RecipeSourceList, type LibraryCommitRef } from "@/components/import/RecipeSourceList";
 import { BookIcon } from "@/components/icons";
 
@@ -16,9 +15,8 @@ import { BookIcon } from "@/components/icons";
  * "Your recipes": the recipes already in the cook's other saved projects, to
  * use here without importing them again.
  *
- * A recipe added from here is LINKED, not copied: it is the same recipe in both
- * places, and an edit in either reaches the other (lib/linkedRecipes). That is
- * what makes it different from importing the same link twice.
+ * A recipe added from here is a separate copy (lib/savedRecipeCopies): an edit
+ * here never changes the project it came from (Amelia, 2026-11-22).
  *
  * Only /print offers it, and only signed in, by providing this context around
  * the Add dialog. Everything else about the dialog is unchanged.
@@ -27,7 +25,7 @@ export interface SavedRecipesSourceConfig {
   uid: string;
   /** The project being added to, left out of the list. */
   currentProjectId: string;
-  /** Adds the linked copies. Free accounts may pick several here: they are
+  /** Adds the copies. Free accounts may pick several here: they are
       previewed, and printing more than one is what asks for Pro. */
   onAdd: (items: QueueItem[]) => number;
 }
@@ -146,33 +144,7 @@ export function SavedRecipesSource({
     setCommitting(true);
     setError(null);
     try {
-      const { shareRecipe } = await import("@/lib/linkedRecipeStore");
-      const copies = await Promise.all(
-        chosen.map(async ({ project, item }) => {
-          const ownPhotosOnly = Boolean(project.settings?.cookbookMode && project.settings?.ownPhotosOnly);
-          const shared = recipeToShare(item.recipe!, project.itemPlacements?.[item.id], ownPhotosOnly);
-          const { recipe, link } = await shareRecipe(config.uid, {
-            projectId: project.id,
-            member: true,
-            itemId: item.id,
-            recipe: item.recipe!,
-            shared,
-            link: item.link,
-          });
-          const copy: QueueItem = {
-            id: newId(),
-            method: item.method,
-            source: item.source,
-            originalUrl: item.originalUrl,
-            status: "ready",
-            title: recipe.title || item.title,
-            recipe,
-            link,
-            addedAt: Date.now(),
-          };
-          return copy;
-        }),
-      );
+      const copies = copiesOfPickedRecipes(chosen);
       config.onAdd(copies);
       setSelectedIds(new Set());
       return true;
