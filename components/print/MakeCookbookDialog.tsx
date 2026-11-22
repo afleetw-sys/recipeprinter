@@ -118,9 +118,9 @@ export function MakeCookbookDialog({
                 <span className="sr-only">now </span>
               </>
             )}
-            {local(price)} <span className="cookbook-tour__per">per cookbook</span>
+            {local(price)} <span className="cookbook-tour__per">per cookbook{discounted ? " with Pro" : ""}</span>
           </p>
-          <p>{discounted ? `20% off your first cookbook with Pro. ${PREVIEW_RULE}` : PREVIEW_RULE}</p>
+          <p>{PREVIEW_RULE}</p>
           {waiting > 0 && (
             <p>
               Your first {FREE_COOKBOOK_RECIPES} recipes go in now. The other {waiting}{" "}
