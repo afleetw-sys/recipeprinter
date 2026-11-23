@@ -9448,6 +9448,21 @@ textarea.recipe-card__toc-title {
   font-size: calc(10.5pt * var(--recipe-font-scale, 1) * var(--recipe-title-fit, 1));
 }
 
+/* On recipe cards the new fields take the card's own role sizes, so they
+   grow and shrink with 6x4, 4x6 and full page like the steps beside them.
+   The fixed sizes above are a cookbook page's, where they always were. */
+.recipe-card:not([data-in-book]) .recipe-card__header .recipe-card__description {
+  font-size: calc(var(--recipe-card-body-size) * var(--recipe-title-fit, 1));
+}
+
+.recipe-card:not([data-in-book]) .recipe-card__header .recipe-card__byline .recipe-card__fact-label {
+  font-size: calc(var(--recipe-card-label-size) * var(--recipe-title-fit, 1));
+}
+
+.recipe-card:not([data-in-book]) .recipe-card__header .recipe-card__byline .recipe-card__fact-value {
+  font-size: calc(var(--recipe-card-body-size) * var(--recipe-title-fit, 1));
+}
+
 /* Contributor and Category (lib/recipeFields.ts): the cookbook's facts on
    any page, under the time and servings. They may wrap: a name runs longer
    than a cook time. */
