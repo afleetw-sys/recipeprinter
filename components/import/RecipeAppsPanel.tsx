@@ -2,6 +2,7 @@
 
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useCookPilotAuth } from "@/components/CookPilotAuth";
+import { LogoMark } from "@/components/Logo";
 import { CookPilotImportSource, prewarmCookPilotImport } from "@/components/CookPilotRecipePicker";
 import { SavedRecipesSource, useSavedRecipesSource } from "@/components/import/SavedRecipesSource";
 import {
@@ -20,7 +21,6 @@ import { useStandaloneProUpgrade } from "@/lib/useStandaloneProUpgrade";
 import { Dialog } from "@/components/Dialog";
 import type { QueueItem } from "@/types/recipe";
 import {
-  BookIcon,
   ChevronLeftIcon,
   CookPilotLogoIcon,
   ICON_SIZE,
@@ -62,7 +62,6 @@ function IntegrationCard({
   description,
   status,
   note,
-  addedCount,
   icon,
   action,
   onOpen,
@@ -81,11 +80,6 @@ function IntegrationCard({
   status?: string;
   /** A passing state that is not worth a chip, like a check in flight. */
   note?: string;
-  /** How many of this app's recipes are in the list. CookPilot only: a
-      Paprika count read beside "N recipes loaded" as if it described the open
-      file, when it counted every Paprika recipe added from any file
-      (Amelia, 2026-11-12). */
-  addedCount?: number;
   /** The product's own mark, at whatever size suits it. CookPilot's is a
       transparent glyph that wants room around it; Paprika's is a square app
       icon. Passing a node rather than a component is what lets each one arrive
@@ -128,11 +122,6 @@ function IntegrationCard({
           {status && (
             <span className="inline-flex items-center rounded-lg bg-[var(--cp-accent-soft)] px-2 py-0.5 text-cp-caption font-bold text-ink">
               {status}
-            </span>
-          )}
-          {addedCount !== undefined && addedCount > 0 && (
-            <span className="inline-flex items-center rounded-lg bg-[var(--cp-accent-soft)] px-2 py-0.5 text-cp-caption font-bold text-ink">
-              {addedCount} added
             </span>
           )}
         </div>
@@ -261,12 +250,10 @@ export function RecipeAppsPanel({
   /** Opens the Pro upgrade dialog — only ever called while `locked`. */
   onLockedTap?: () => void;
 }) {
-  // "Your recipes" is only offered where /print provides it (signed in, inside
-  // the Add dialog). A source remembered from there means nothing elsewhere.
+  // /print's extras for the RecipePrinter tile (leave out the open project,
+  // add straight into it). The tile itself needs only an account.
   const savedRecipes = useSavedRecipesSource();
-  const [source, setSource] = useState<SourceId | null>(() =>
-    lastOpenSource === "saved" && !savedRecipes ? null : lastOpenSource,
-  );
+  const [source, setSource] = useState<SourceId | null>(() => lastOpenSource);
   // Paprika holds ONE library at a time, so there is nothing to choose between
   // on this screen: the button opens the system file dialog and the next
   // screen is the recipes in the file you picked. It used to take you to a
@@ -306,11 +293,6 @@ export function RecipeAppsPanel({
     lastOpenSource = next;
     setSource(next);
   }
-
-  const cookPilotAdded = useMemo(
-    () => items.filter((item) => item.method === "cookpilot").length,
-    [items],
-  );
 
   // ── How many recipes CookPilot holds ──────────────────────────────────
   // The LIBRARY total, from the server-side aggregation, not a tally of what
@@ -352,11 +334,13 @@ export function RecipeAppsPanel({
   // accounts start. The picker would open on an empty list, so the card points
   // at the app instead.
   const cookPilotEmpty = Boolean(ready && user && cookPilotTotal === 0);
+  // One short line (Amelia, 2026-11-22): the card's name and button carry the
+  // rest, and that the account is shared is not news worth a sentence here.
   const cookPilotDescription = !user
-    ? "Sign in and your saved recipes come straight across."
+    ? "Sign in to bring over your saved recipes."
     : cookPilotEmpty
-      ? "Your RecipePrinter account works in CookPilot too. Recipes you save there will show up here."
-      : "Your RecipePrinter account works in CookPilot too, so your saved recipes are ready to bring across.";
+      ? "Recipes you save in CookPilot show up here."
+      : "Bring over your saved CookPilot recipes.";
 
   const paprikaLibrary = useMemo(
     () => cachedPaprikaLibrary(),
@@ -408,7 +392,7 @@ export function RecipeAppsPanel({
         />
   );
 
-  if (source === "saved" && savedRecipes) {
+  if (source === "saved" && ready && user) {
     return (
       <div className="flex flex-col gap-cp-4">
         <button
@@ -419,7 +403,20 @@ export function RecipeAppsPanel({
           <ChevronLeftIcon size={ICON_SIZE.sm} />
           Recipe apps
         </button>
-        <SavedRecipesSource config={savedRecipes} items={items} commitLabel={commitLabel} commitRef={commitRef} />
+        <SavedRecipesSource
+          uid={user.uid}
+          currentProjectId={savedRecipes?.currentProjectId}
+          onAdd={savedRecipes?.onAdd ?? onAddRecipes}
+          items={items}
+          commitLabel={commitLabel}
+          commitRef={commitRef}
+          // On /print a free account may pick several: they're previewed, and
+          // printing more than one is what asks for Pro. Anywhere else the
+          // picks go the way CookPilot's do, under the same limits.
+          locked={savedRecipes ? false : locked}
+          singleSelect={savedRecipes ? false : effectiveSingleSelect}
+          onLockedTap={onUpgradeTap}
+        />
       </div>
     );
   }
@@ -486,11 +483,14 @@ export function RecipeAppsPanel({
       {/* Side by side, and stacked on a phone where two of these would be too
           narrow to read. */}
       <ul className="grid gap-cp-2 sm:grid-cols-2">
-        {savedRecipes && (
+        {/* The cook's own recipes, from their other RecipePrinter projects:
+            one more app to bring recipes from, first because it is this one.
+            Whenever they're signed in, on every page (Amelia, 2026-11-22). */}
+        {ready && user && (
           <IntegrationCard
-            name="Your recipes"
-            description="Add recipes you already have in your cookbooks and recipe cards."
-            icon={<BookIcon size={22} />}
+            name="RecipePrinter"
+            description="From your cookbooks and recipe cards."
+            icon={<LogoMark size={26} rounded={7} />}
             action="Choose recipes"
             onOpen={() => open("saved")}
           />
@@ -500,7 +500,6 @@ export function RecipeAppsPanel({
           description={cookPilotDescription}
           status={cookPilotStatus}
           note={cookPilotNote}
-          addedCount={cookPilotAdded}
           icon={<CookPilotLogoIcon size={22} />}
           // Pressing this while signed out lands on a sign-in screen, not a
           // recipe list (see CookPilotImportSource's `!user` branch) — the
