@@ -72,21 +72,22 @@ export function PrintAsCardsDialog({
         </button>
       </div>
       <div className="recipe-add-dialog__body">
-        <p className="text-cp-caption text-ink-soft mb-cp-3">Choose the recipes to print as cards.</p>
         <BookRecipePicker recipes={recipes} selectedIds={selected} onSelectedIdsChange={setSelected} />
+      </div>
+      {/* The choice sits in the footer with the button, always in view, not at
+          the end of a list that can run to hundreds of recipes (Amelia,
+          2026-11-22). */}
+      <div className="recipe-add-dialog__footer flex flex-col gap-cp-3">
         <Checkbox
-          className="mt-cp-3"
           checked={keepInSync}
           onChange={(event) => setKeepInSync(event.target.checked)}
           label="Recipe edits update both the cards and the cookbook"
         />
         {error && (
-          <p className="field-error mt-cp-2" role="alert">
+          <p className="field-error" role="alert">
             {error}
           </p>
         )}
-      </div>
-      <div className="recipe-add-dialog__footer">
         <button
           type="button"
           className="btn btn-primary w-full"
