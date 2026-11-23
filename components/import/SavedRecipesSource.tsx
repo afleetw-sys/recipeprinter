@@ -4,7 +4,12 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { PrintProject, QueueItem } from "@/types/recipe";
 import { filterImportSummaries, importSearchText, type ImportSummary } from "@/lib/importSummary";
 import { ingredientText } from "@/lib/recipeCardLayout";
-import { allSelectableSelected as allSelectableSelectedIn, selectableQueueIds, toggleSelection } from "@/lib/importSelection";
+import {
+  allSelectableSelected as allSelectableSelectedIn,
+  selectableQueueIds,
+  toggleSelection,
+  toggleSingleSelection,
+} from "@/lib/importSelection";
 import { isBookPage } from "@/lib/bookPages";
 import { copiesOfPickedRecipes } from "@/lib/savedRecipeCopies";
 import { projectListTitle } from "@/lib/projectLibrary";
@@ -12,14 +17,16 @@ import { RecipeSourceList, type LibraryCommitRef } from "@/components/import/Rec
 import { BookIcon } from "@/components/icons";
 
 /**
- * "Your recipes": the recipes already in the cook's other saved projects, to
- * use here without importing them again.
+ * The RecipePrinter tile under Recipe apps: the recipes already in the cook's
+ * other saved projects, to use again without importing them. Offered wherever
+ * the cook is signed in (Amelia, 2026-11-22), beside CookPilot and Paprika.
  *
  * A recipe added from here is a separate copy (lib/savedRecipeCopies): an edit
  * here never changes the project it came from (Amelia, 2026-11-22).
  *
- * Only /print offers it, and only signed in, by providing this context around
- * the Add dialog. Everything else about the dialog is unchanged.
+ * /print provides this context around its Add dialog, so the project being
+ * added to is left out of the list and picks go straight into it. Elsewhere
+ * there is no context and the picks go the way CookPilot's do.
  */
 export interface SavedRecipesSourceConfig {
   uid: string;
@@ -60,15 +67,28 @@ async function loadProjects(uid: string, ids: string[]): Promise<PrintProject[]>
 }
 
 export function SavedRecipesSource({
-  config,
+  uid,
+  currentProjectId,
+  onAdd,
   items,
   commitLabel,
   commitRef,
+  locked = false,
+  singleSelect = false,
+  onLockedTap,
 }: {
-  config: SavedRecipesSourceConfig;
+  uid: string;
+  /** The project being added to, left out of the list, when there is one. */
+  currentProjectId?: string | null;
+  /** Adds the copies. */
+  onAdd: (items: QueueItem[]) => number;
   items: QueueItem[];
   commitLabel: string;
   commitRef?: LibraryCommitRef;
+  /** The same plan limits CookPilot's list has, where they apply. */
+  locked?: boolean;
+  singleSelect?: boolean;
+  onLockedTap?: () => void;
 }) {
   const [projects, setProjects] = useState<PrintProject[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -81,9 +101,9 @@ export function SavedRecipesSource({
     void (async () => {
       try {
         const { loadPrintProjectSummaries } = await import("@/lib/printProjects");
-        const summaries = await loadPrintProjectSummaries(config.uid);
-        const ids = summaries.filter((summary) => summary.id !== config.currentProjectId).map((summary) => summary.id);
-        const loaded = await loadProjects(config.uid, ids);
+        const summaries = await loadPrintProjectSummaries(uid);
+        const ids = summaries.filter((summary) => summary.id !== currentProjectId).map((summary) => summary.id);
+        const loaded = await loadProjects(uid, ids);
         if (live) setProjects(loaded);
       } catch {
         if (live) setError("We couldn't load your projects. Please try again.");
@@ -92,7 +112,7 @@ export function SavedRecipesSource({
     return () => {
       live = false;
     };
-  }, [config.uid, config.currentProjectId]);
+  }, [uid, currentProjectId]);
 
   // One row per recipe, however many projects it is in: a recipe linked into
   // a book and its cards is one recipe, listed once.
@@ -145,7 +165,7 @@ export function SavedRecipesSource({
     setError(null);
     try {
       const copies = copiesOfPickedRecipes(chosen);
-      config.onAdd(copies);
+      onAdd(copies);
       setSelectedIds(new Set());
       return true;
     } catch {
@@ -175,9 +195,16 @@ export function SavedRecipesSource({
       allSelectableSelected={allVisibleSelected}
       onToggle={(row) => {
         if (addedIds.has(row.queueId)) return;
-        setSelectedIds((current) => toggleSelection(current, row.queueId));
+        if (locked) {
+          onLockedTap?.();
+          return;
+        }
+        setSelectedIds((current) =>
+          singleSelect ? toggleSingleSelection(current, row.queueId) : toggleSelection(current, row.queueId),
+        );
       }}
       onToggleAll={() => {
+        if (locked) return;
         if (allVisibleSelected) {
           const visible = new Set(visibleRows.map((row) => row.queueId));
           setSelectedIds((current) => new Set(Array.from(current).filter((id) => !visible.has(id))));
@@ -188,6 +215,9 @@ export function SavedRecipesSource({
       onCommit={() => void handleCommit()}
       commitLabel={commitLabel}
       hideCommit={Boolean(commitRef)}
+      onUpgrade={onLockedTap}
+      locked={locked}
+      singleSelect={singleSelect}
       committing={committing}
       queryText={queryText}
       onQueryChange={setQueryText}
