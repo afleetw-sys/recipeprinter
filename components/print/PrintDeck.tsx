@@ -45,7 +45,7 @@ import {
   addableRecipeLines,
   fieldTicked,
   fieldValue,
-  LINES_THAT_FOLLOW_THE_COOKBOOK,
+  fieldSwitchOffered,
   type FieldSwitchId,
   type RecipeLineId,
   type FieldSwitches,
@@ -245,9 +245,8 @@ interface PrintDeckProps {
       uses to show a field it adds. */
   fieldSwitches: FieldSwitches | undefined;
   setFieldShown: (field: FieldSwitchId, shown: boolean, cookbook: boolean) => void;
-  /** Recipe cards holding recipes kept in step with a cookbook: their own
-      words show as the book shows them, so "Show on recipes" doesn't offer
-      those lines here (`LINES_THAT_FOLLOW_THE_COOKBOOK`). */
+  /** Recipe cards holding recipes kept in step with a cookbook
+      (`fieldSwitchOffered`). */
   linesFollowCookbook?: boolean;
   /** Recipe photos across the book, as "Show on recipes" switches them: the
       cards' photo setting, or a cookbook's photo style ("none" when off). */
@@ -912,7 +911,7 @@ export function PrintDeck(props: PrintDeckProps) {
               onChange: () => {},
             });
             const switched = (id: FieldSwitchId, name: string): FieldVisibilityRow | null =>
-              !cookbook && linesFollowCookbook && LINES_THAT_FOLLOW_THE_COOKBOOK.includes(id)
+              !fieldSwitchOffered(id, { cookbook, synced: linesFollowCookbook })
                 ? null
                 : {
                     name,

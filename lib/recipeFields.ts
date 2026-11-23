@@ -222,11 +222,16 @@ export function cardSwitchesFromCookbook(bookSwitches: FieldSwitches | undefined
 }
 
 /**
- * On cards kept in step with a cookbook these lines aren't switched on or off
- * card by card ("Show on recipes"): they are the recipe's own words, and
- * hiding one on the cards while the book shows it looks like the sync lost it.
+ * Whether "Show on recipes" offers a field's switch: always, on cards and in
+ * cookbooks, synced or not. `synced`: recipe cards holding recipes kept in
+ * step with a cookbook. Those start with the book's line choices
+ * (`cardSwitchesFromCookbook`), but they are copied once, when the cards are
+ * made; with the switches withheld, a line the book had off (Source, by
+ * default) could never be put on the cards (Amelia, 2026-11-23).
  */
-export const LINES_THAT_FOLLOW_THE_COOKBOOK: readonly FieldSwitchId[] = RECIPE_FIELD_IDS;
+export function fieldSwitchOffered(_id: FieldSwitchId, _where: { cookbook: boolean; synced: boolean }): boolean {
+  return true;
+}
 
 /** The recipe's lines, in the order the card reads, as the "+" list offers them. */
 export type RecipeLineId =
