@@ -84,7 +84,7 @@ export function MakeCookbookDialog({
       // computer, so the picture has room: what it is at the top, the choice
       // and the button at the bottom, the price centred between.
       className="fixed inset-0 z-[var(--z-dialog)] flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
-      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[820px] max-h-[92dvh] sm:max-h-[calc(100dvh-48px)] sm:h-auto sm:min-h-[356px] rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-0 flex flex-col sm:flex-row relative overflow-y-auto sm:overflow-hidden"
+      panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[770px] max-h-[92dvh] sm:max-h-[calc(100dvh-48px)] sm:h-auto sm:min-h-[356px] rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-0 flex flex-col sm:flex-row relative overflow-y-auto sm:overflow-hidden"
       portal
     >
       <div className="flex min-w-0 flex-1 flex-col gap-cp-5 p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:overflow-y-auto sm:p-cp-6 sm:justify-between">
@@ -168,8 +168,10 @@ export function MakeCookbookDialog({
         </div>
       </div>
       {/* After the words, so first focus lands there; drawn first on a
-          computer, and not at all on a phone, as in the Pro dialog. */}
-      <ProDialogArt images={ART} className="hidden sm:order-first sm:block sm:w-[44%] sm:shrink-0" />
+          computer, and not at all on a phone, as in the Pro dialog. Narrower
+          than the Pro dialog's (40% of 770px, Amelia, 2026-11-22): the cover
+          is a tall book, and a wide panel was mostly empty background. */}
+      <ProDialogArt images={ART} className="hidden sm:order-first sm:block sm:w-[40%] sm:shrink-0" />
     </Dialog>
   );
 }
