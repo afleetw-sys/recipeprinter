@@ -489,7 +489,7 @@ export function RecipeAppsPanel({
         {savedRecipes && (
           <IntegrationCard
             name="Your recipes"
-            description="Use recipes from your other cookbooks and recipe cards. Edits stay in sync."
+            description="Add recipes you already have in your cookbooks and recipe cards."
             icon={<BookIcon size={22} />}
             action="Choose recipes"
             onOpen={() => open("saved")}
