@@ -724,7 +724,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     pickerGroup: "output",
     intent: "Utility SEO",
     initialImportMode: "url",
-    importSubmitLabel: "Add your first recipe",
+    importSubmitLabel: "Make it printable",
     heroImage: "card",
     cookbookPitch: true,
     title: "Print Multiple Recipes at Once | RecipePrinter",
@@ -736,7 +736,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     howToHeading: "How to print multiple recipes",
     howTo: [
       {
-        name: "Add your first recipe",
+        name: "Make it printable",
         text: "Paste the link to a recipe. You can also upload a screenshot or photo of it, bring it in from a recipe app, or paste in the text. Look it over, then add it to your collection.",
       },
       {
@@ -2060,7 +2060,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     contentUpdated: "2026-10-06",
     copyReviewed: "2026-10-02",
     captureHeading: "Start with one recipe",
-    importSubmitLabel: "Add your first recipe",
+    importSubmitLabel: "Make it printable",
     initialImportMode: "url",
     layout: "capture-first",
     primaryKeyword: "organize recipes",
