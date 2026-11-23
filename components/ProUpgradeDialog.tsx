@@ -219,6 +219,86 @@ export function ProUpgradeDialog({
     );
   }
 
+  // Asking why is its own small dialog once the pitch has closed (Amelia,
+  // 2026-11-22): left beside the product picture, it read as the pitch
+  // still holding on after a no.
+  if (step === "decline") {
+    return (
+      <Dialog
+        onClose={onClose}
+        labelledBy="pro-decline-title"
+        className="fixed inset-0 z-[var(--z-dialog)] flex items-end sm:items-center justify-center dialog-scrim p-0 sm:px-cp-4 sm:py-cp-6"
+        panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[440px] max-h-[92dvh] overflow-y-auto rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:p-cp-6 flex flex-col gap-cp-4 relative"
+        portal
+      >
+        <button type="button" className="icon-close-btn absolute right-3 top-3 z-10" aria-label="Close" onClick={onClose}>
+          <XIcon size={ICON_SIZE.md} />
+        </button>
+        <div className="pr-8">
+          <h2 id="pro-decline-title" className="text-cp-dialog-title font-extrabold tracking-tight">
+            Not upgrading today?
+          </h2>
+          <p className="mt-1 text-cp-body text-ink-soft">Tell me why in one tap. It helps me make RecipePrinter better.</p>
+        </div>
+        <div className="flex flex-col gap-cp-2">
+          {DECLINE_REASONS.map(({ reason, label }) => (
+            <button
+              key={reason}
+              type="button"
+              className="btn btn-secondary w-full"
+              onClick={() => answerDecline(reason)}
+            >
+              {label}
+            </button>
+          ))}
+          <button
+            type="button"
+            className="btn btn-secondary w-full"
+            aria-expanded={otherOpen}
+            aria-controls="pro-decline-other-form"
+            onClick={() => setOtherOpen((open) => !open)}
+            style={
+              otherOpen
+                ? {
+                    borderColor: "var(--cp-selected-border)",
+                    background: "var(--cp-selected-fill)",
+                    color: "var(--cp-selected-text)",
+                  }
+                : undefined
+            }
+          >
+            Other
+          </button>
+          {otherOpen && (
+            <form
+              id="pro-decline-other-form"
+              className="flex flex-col gap-cp-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const detail = otherText.trim().slice(0, 500);
+                if (detail) answerDecline("other", detail);
+              }}
+            >
+              <textarea
+                className="field"
+                aria-label="Your reason"
+                placeholder="Your reason"
+                rows={2}
+                maxLength={500}
+                value={otherText}
+                onChange={(event) => setOtherText(event.target.value)}
+                autoFocus
+              />
+              <button type="submit" className="btn btn-primary w-full" disabled={!otherText.trim()}>
+                Send
+              </button>
+            </form>
+          )}
+        </div>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog
       onClose={handleClose}
@@ -228,7 +308,13 @@ export function ProUpgradeDialog({
       panelClassName="panel panel--modal mobile-sheet-panel w-full sm:max-w-[820px] max-h-[92dvh] sm:max-h-[calc(100dvh-48px)] sm:h-auto rounded-t-2xl rounded-b-none sm:rounded-2xl border-0 sm:border p-0 flex flex-col sm:flex-row relative overflow-y-auto sm:overflow-hidden"
       portal
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-cp-4 p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:overflow-y-auto sm:p-cp-6 sm:justify-center">
+      {/* Centred by auto margins on the first and last of the text (after
+          the close button), not justify-center: when the text is taller than
+          a short or zoomed window, justify-center pushes the overflow out
+          above as well as below, where scrolling can't reach, and the title
+          was lost off the top. Auto margins collapse to nothing instead, so
+          it starts at the top and scrolls. */}
+      <div className="flex min-w-0 flex-1 flex-col gap-cp-4 p-cp-5 pb-[max(20px,env(safe-area-inset-bottom))] sm:overflow-y-auto sm:p-cp-6 sm:[&>:nth-child(2)]:mt-auto sm:[&>:last-child]:mb-auto">
       <button
         type="button"
         className="icon-close-btn absolute right-3 top-3 z-10"
@@ -298,70 +384,6 @@ export function ProUpgradeDialog({
                 />
               )}
             </div>
-          </div>
-        </>
-      ) : step === "decline" ? (
-        <>
-          <div className="pr-8">
-            <h2 id="pro-upgrade-title" className="text-cp-dialog-title font-extrabold tracking-tight">
-              Not upgrading today?
-            </h2>
-            <p className="mt-1 text-cp-body text-ink-soft">Tell me why in one tap. It helps me make RecipePrinter better.</p>
-          </div>
-          <div className="flex flex-col gap-cp-2">
-            {DECLINE_REASONS.map(({ reason, label }) => (
-              <button
-                key={reason}
-                type="button"
-                className="btn btn-secondary w-full"
-                onClick={() => answerDecline(reason)}
-              >
-                {label}
-              </button>
-            ))}
-            <button
-              type="button"
-              className="btn btn-secondary w-full"
-              aria-expanded={otherOpen}
-              aria-controls="pro-decline-other-form"
-              onClick={() => setOtherOpen((open) => !open)}
-              style={
-                otherOpen
-                  ? {
-                      borderColor: "var(--cp-selected-border)",
-                      background: "var(--cp-selected-fill)",
-                      color: "var(--cp-selected-text)",
-                    }
-                  : undefined
-              }
-            >
-              Other
-            </button>
-            {otherOpen && (
-              <form
-                id="pro-decline-other-form"
-                className="flex flex-col gap-cp-2"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  const detail = otherText.trim().slice(0, 500);
-                  if (detail) answerDecline("other", detail);
-                }}
-              >
-                <textarea
-                  className="field"
-                  aria-label="Your reason"
-                  placeholder="Your reason"
-                  rows={2}
-                  maxLength={500}
-                  value={otherText}
-                  onChange={(event) => setOtherText(event.target.value)}
-                  autoFocus
-                />
-                <button type="submit" className="btn btn-primary w-full" disabled={!otherText.trim()}>
-                  Send
-                </button>
-              </form>
-            )}
           </div>
         </>
       ) : step === "plan" ? (
