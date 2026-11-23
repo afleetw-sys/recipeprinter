@@ -2325,7 +2325,7 @@ export function PrintDeck(props: PrintDeckProps) {
                                 <span className="photo-placeholder__icon">
                                   <PagePlusIcon size={18} />
                                 </span>
-                                <span className="photo-placeholder__title">Make it printable</span>
+                                <span className="photo-placeholder__title">Add your first recipe</span>
                                 <span className="photo-placeholder__note">
                                   Your recipes start here, right after the contents.
                                 </span>
