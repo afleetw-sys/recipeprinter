@@ -5627,7 +5627,7 @@ textarea.recipe-page-fields__input {
   cursor: pointer;
 }
 
-/* An empty cookbook's "Add your first recipe" page (PrintDeck): the image
+/* An empty cookbook's "Make it printable" page (PrintDeck): the image
    page's placeholder, asking for a recipe instead. It sits outside any scaled
    page, so it is at the workspace's own sizes already. */
 .recipe-first-recipe {

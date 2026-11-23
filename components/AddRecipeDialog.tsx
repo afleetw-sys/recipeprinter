@@ -80,7 +80,7 @@ export function AddRecipeDialog({
   /** Opened from a chapter's "Add existing": the book's own recipes instead
       of the import tabs. Ignored when there is nothing to bring in. */
   from?: "new" | "book";
-  /** "Add your first recipe" when opened from the cookbook welcome. */
+  /** "Make it printable" when opened from the cookbook welcome. */
   title?: string;
   /** Opened from "Change recipe": what comes in takes the current recipe's
       place, so the dialog says so and its button reads Replace. */

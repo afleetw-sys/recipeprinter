@@ -8850,7 +8850,7 @@ export default function PrintPage() {
           //
           // Only an empty book, though. A cook who arrived here by importing a
           // recipe (still parsing counts) is already started, and lands on the
-          // book that recipe began rather than on "Add your first recipe". The
+          // book that recipe began rather than on "Make it printable". The
           // button reads "Take a look" for them (`hasRecipes`).
           if (recipeCount > 0) return;
           setAddingFirstRecipe(true);
@@ -8968,7 +8968,7 @@ export default function PrintPage() {
           // Closed without adding anything: the swap never happened.
           if (swapRef.current && !swapRef.current.baseline) swapRef.current = null;
         }}
-        title={addingFirstRecipe ? "Add your first recipe" : swapDialogOpen ? "Print a different recipe" : undefined}
+        title={addingFirstRecipe ? "Make it printable" : swapDialogOpen ? "Print a different recipe" : undefined}
         replacing={swapDialogOpen && !addingFirstRecipe}
         items={queue.items}
         onAddUrl={(url) => {
