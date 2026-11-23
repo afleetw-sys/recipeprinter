@@ -13,12 +13,11 @@ import type { Recipe } from "@/types/recipe";
  * Where a field goes is the theme's placement: the 17 built themes share the
  * default one here, and themes made from data later can carry their own.
  *
- * A book no cook has switched a field in stores nothing, and draws exactly
- * what it drew before fields existed: on a cookbook page that is the website's
- * description and the cook's note stacked in one paragraph under the title
- * (`headnote`, lib/recipeNote.ts), on a card neither. Only once a cook switches
- * Description or Notes do they become two fields: the description under the
- * title, the note after the steps.
+ * Every field starts on (Amelia, 2026-11-23). A book no cook has switched a
+ * field in stores nothing: a card shows the description under the title and
+ * the note after the steps; a cookbook page stacks them in one paragraph under
+ * the title (`headnote`, lib/recipeNote.ts) until the cook switches
+ * Description or Notes, which makes them two fields as on a card.
  */
 
 /**
@@ -81,15 +80,12 @@ export function usesHeadnote(switches: FieldSwitches | undefined, cookbook: bool
 }
 
 /**
- * Whether the book shows a field. Unswitched, a book shows what it always
- * did: cook time and servings everywhere, a cookbook page its description and
- * note, a card neither, and nothing the new Contributor or Category.
+ * Whether the book shows a field. Every field starts on, on cards and in
+ * cookbooks, and the cook switches off what they don't want (Amelia,
+ * 2026-11-23). An empty field still never prints.
  */
-export function fieldShown(switches: FieldSwitches | undefined, id: FieldSwitchId, cookbook: boolean): boolean {
-  const switched = switches?.[id];
-  if (switched !== undefined) return switched;
-  if (id === "time" || id === "servings") return true;
-  return cookbook && (id === "description" || id === "note");
+export function fieldShown(switches: FieldSwitches | undefined, id: FieldSwitchId, _cookbook: boolean): boolean {
+  return switches?.[id] ?? true;
 }
 
 /**
@@ -212,10 +208,8 @@ export function fieldsKey(switches: FieldSwitches | undefined): string {
 
 /**
  * The lines recipe cards show when they are kept in step with a cookbook:
- * exactly the ones the book shows. Cards on their own hide the description
- * and notes by default, which a cookbook shows; on cards that are the same
- * recipes as the book, a description missing from the card but there in the
- * book reads as lost, so the cards start out matching the book instead.
+ * exactly the ones the book shows: a line switched off in the book, missing
+ * from the card but there on the cook's other cards, reads as lost.
  */
 export function cardSwitchesFromCookbook(bookSwitches: FieldSwitches | undefined): FieldSwitches {
   return Object.fromEntries(FIELD_SWITCH_IDS.map((id) => [id, fieldShown(bookSwitches, id, true)])) as FieldSwitches;
