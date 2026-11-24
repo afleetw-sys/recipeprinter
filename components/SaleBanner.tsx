@@ -77,11 +77,23 @@ export function SaleBanner() {
     const banner = bannerRef.current;
     if (!banner || typeof ResizeObserver === "undefined") return;
     const root = document.documentElement;
-    const publish = () => root.style.setProperty(SALE_BANNER_HEIGHT_VAR, `${banner.offsetHeight}px`);
+    // Only a real change is written, once a frame: every write restyles the
+    // whole page, and /print re-measures its deck when it does.
+    let frame = 0;
+    const publish = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const next = `${banner.offsetHeight}px`;
+        if (root.style.getPropertyValue(SALE_BANNER_HEIGHT_VAR) !== next) {
+          root.style.setProperty(SALE_BANNER_HEIGHT_VAR, next);
+        }
+      });
+    };
     publish();
     const observer = new ResizeObserver(publish);
     observer.observe(banner);
     return () => {
+      cancelAnimationFrame(frame);
       observer.disconnect();
       root.style.removeProperty(SALE_BANNER_HEIGHT_VAR);
     };
