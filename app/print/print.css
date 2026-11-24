@@ -6965,10 +6965,13 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
    its own, so it kept this white on every theme's paper and couldn't be read.
    Each rule that colours `.recipe-card__cover-author` has an edition twin with
    the same selector right after it (e2e/cover-edition.spec.ts). This one is
-   scoped to the cover only because globals.css owns the bare class (its size). */
+   scoped to the cover only because globals.css owns the bare class (its size).
+   Its weight is the author line's too: set in regular weight, a real line
+   that prints read as faint placeholder text. */
 .recipe-card--cover .recipe-card__cover-edition {
   color: #fff;
   opacity: 0.86;
+  font-weight: 700;
 }
 
 /* Back cover: centered closing content on the template's own paper. */

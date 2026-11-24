@@ -559,6 +559,79 @@ function TemplateDecoration({
   return null;
 }
 
+/** The plain-text offset of a DOM position inside `root`: what the field,
+    which renders the same marked-up text, counts as the same place. */
+function plainTextOffset(root: Node, node: Node, offset: number): number {
+  const range = document.createRange();
+  range.selectNodeContents(root);
+  range.setEnd(node, offset);
+  return range.toString().length;
+}
+
+/** The element whose text the field will hold: a step's number is a sibling
+    of its text, not part of it. */
+function editTextRoot(event: ReactMouseEvent): HTMLElement {
+  const host = event.currentTarget as HTMLElement;
+  return host.querySelector<HTMLElement>("[data-edit-text]") ?? host;
+}
+
+function caretFromClick(event: ReactMouseEvent): CaretRange | null {
+  const root = editTextRoot(event);
+  // A drag that ended here: keep what it selected, when all of it is text of
+  // this one field. A drag across several lines belongs to the line toolbar
+  // (lib/lineSelection), and its click never lands on a single line anyway.
+  const selection = window.getSelection();
+  if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    if (root.contains(range.startContainer) && root.contains(range.endContainer)) {
+      return {
+        start: plainTextOffset(root, range.startContainer, range.startOffset),
+        end: plainTextOffset(root, range.endContainer, range.endOffset),
+      };
+    }
+  }
+  // `caretRangeFromPoint` is the WebKit/Blink spelling; Firefox has
+  // `caretPositionFromPoint`. Neither is required for correctness — without
+  // one the caret goes to the end of the field, which is still a reasonable
+  // place to start typing.
+  const doc = document as Document & {
+    caretRangeFromPoint?: (x: number, y: number) => Range | null;
+    caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+  };
+  let node: Node | null = null;
+  let offset = 0;
+  if (typeof doc.caretRangeFromPoint === "function") {
+    const range = doc.caretRangeFromPoint(event.clientX, event.clientY);
+    if (range) {
+      node = range.startContainer;
+      offset = range.startOffset;
+    }
+  } else {
+    const position = doc.caretPositionFromPoint?.(event.clientX, event.clientY);
+    if (position) {
+      node = position.offsetNode;
+      offset = position.offset;
+    }
+  }
+  if (!node || node.nodeType !== Node.TEXT_NODE || !root.contains(node)) return null;
+  const at = plainTextOffset(root, node, offset);
+  return { start: at, end: at };
+}
+
+/**
+ * Opens a book page's line (a cover's, a chapter opener's) with the caret
+ * where the click that opened it landed (`caretFromClick`), or at its end,
+ * never at its start: words that print are the cook's to add to, not a hint
+ * to type over. The "+" menu's select-all (PrintDeck `openAddedLine`) runs
+ * after this and still wins for a line it just put back.
+ */
+function placeOpenedCaret(field: HTMLTextAreaElement, pending: { current: CaretRange | null }) {
+  const range = pending.current;
+  pending.current = null;
+  const end = field.value.length;
+  field.setSelectionRange(Math.min(range?.start ?? end, end), Math.min(range?.end ?? end, end));
+}
+
 export const RecipeCardFace = memo(function RecipeCardFace({
   recipe,
   ingredients,
@@ -779,65 +852,6 @@ export const RecipeCardFace = memo(function RecipeCardFace({
    * you had to select it all over again in the field.
    */
   const pendingCaret = useRef<{ target: RecipeCardEditTarget; range: CaretRange | null } | null>(null);
-
-  /** The plain-text offset of a DOM position inside `root`: what the field,
-      which renders the same marked-up text, counts as the same place. */
-  function plainTextOffset(root: Node, node: Node, offset: number): number {
-    const range = document.createRange();
-    range.selectNodeContents(root);
-    range.setEnd(node, offset);
-    return range.toString().length;
-  }
-
-  /** The element whose text the field will hold: a step's number is a sibling
-      of its text, not part of it. */
-  function editTextRoot(event: ReactMouseEvent): HTMLElement {
-    const host = event.currentTarget as HTMLElement;
-    return host.querySelector<HTMLElement>("[data-edit-text]") ?? host;
-  }
-
-  function caretFromClick(event: ReactMouseEvent): CaretRange | null {
-    const root = editTextRoot(event);
-    // A drag that ended here: keep what it selected, when all of it is text of
-    // this one field. A drag across several lines belongs to the line toolbar
-    // (lib/lineSelection), and its click never lands on a single line anyway.
-    const selection = window.getSelection();
-    if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      if (root.contains(range.startContainer) && root.contains(range.endContainer)) {
-        return {
-          start: plainTextOffset(root, range.startContainer, range.startOffset),
-          end: plainTextOffset(root, range.endContainer, range.endOffset),
-        };
-      }
-    }
-    // `caretRangeFromPoint` is the WebKit/Blink spelling; Firefox has
-    // `caretPositionFromPoint`. Neither is required for correctness — without
-    // one the caret goes to the end of the field, which is still a reasonable
-    // place to start typing.
-    const doc = document as Document & {
-      caretRangeFromPoint?: (x: number, y: number) => Range | null;
-      caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
-    };
-    let node: Node | null = null;
-    let offset = 0;
-    if (typeof doc.caretRangeFromPoint === "function") {
-      const range = doc.caretRangeFromPoint(event.clientX, event.clientY);
-      if (range) {
-        node = range.startContainer;
-        offset = range.startOffset;
-      }
-    } else {
-      const position = doc.caretPositionFromPoint?.(event.clientX, event.clientY);
-      if (position) {
-        node = position.offsetNode;
-        offset = position.offset;
-      }
-    }
-    if (!node || node.nodeType !== Node.TEXT_NODE || !root.contains(node)) return null;
-    const at = plainTextOffset(root, node, offset);
-    return { start: at, end: at };
-  }
 
   function startEdit(target: RecipeCardEditTarget, value: string, event?: ReactMouseEvent) {
     pendingCaret.current = { target, range: event ? caretFromClick(event) : null };
@@ -2211,6 +2225,8 @@ export const DividerFace = memo(function DividerFace({
   // place of on every recipe page (lib/bookTheme). An older book's openers
   // never carried it, and still don't.
   const quietTheme = useQuietTheme();
+  // Where the click that opens a line landed in it (`placeOpenedCaret`).
+  const openerCaret = useRef<CaretRange | null>(null);
   // A chapter just made opens its title with "New chapter" selected, so the
   // first key replaces it. Once, when the field opens: the page clears
   // `titleSelected` on the first edit, so a redraw while typing doesn't take
@@ -2269,6 +2285,8 @@ export const DividerFace = memo(function DividerFace({
 
   function fieldOpener(open: () => void) {
     return (event: ReactMouseEvent) => {
+      // Where the press landed in the words, read while they are still words.
+      openerCaret.current = caretFromClick(event);
       // Also stops the text-selection drag a mousedown on a paragraph starts,
       // which would otherwise leave the words highlighted behind the field.
       event.preventDefault();
@@ -2323,6 +2341,7 @@ export const DividerFace = memo(function DividerFace({
           placeholder={placeholder}
           aria-label={ariaLabel}
           onChange={(event) => onChange(event.target.value)}
+          onFocus={(event) => placeOpenedCaret(event.currentTarget, openerCaret)}
           onBlur={() => close()}
           onKeyDown={(event) => {
             if (event.key === "Escape") {
@@ -2653,6 +2672,8 @@ export const CoverFace = memo(function CoverFace({
 }) {
   const el = useElements();
   const quietTheme = useQuietTheme();
+  // Where the click that opens a line landed in it (`placeOpenedCaret`).
+  const coverCaret = useRef<CaretRange | null>(null);
   const canEdit = Boolean(inlineEdit);
   const showEmpty = canEdit && showEmptyFields;
   const draft = inlineEdit?.cover ?? cover;
@@ -2751,6 +2772,7 @@ export const CoverFace = memo(function CoverFace({
           placeholder={placeholder}
           aria-label={ariaLabel}
           onChange={(event) => onChange(event.target.value)}
+          onFocus={(event) => placeOpenedCaret(event.currentTarget, coverCaret)}
           onBlur={() => close()}
           onKeyDown={(event) => {
             if (event.key === "Escape") {
@@ -2779,7 +2801,8 @@ export const CoverFace = memo(function CoverFace({
           data-field-line={name}
           onClick={
             canEdit
-              ? () => {
+              ? (event) => {
+                  coverCaret.current = caretFromClick(event);
                   // Editing sample words starts from them, as the cook's own:
                   // deleting them all is what takes the line off.
                   if (sample) onChange(sample);
