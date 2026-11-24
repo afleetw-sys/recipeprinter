@@ -22,6 +22,7 @@ import {
 } from "@/lib/proProduct";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
 import {
+  BLACK_FRIDAY_COOKBOOK_PRICE,
   BLACK_FRIDAY_PRO_MONTHLY_MONTHS,
   BLACK_FRIDAY_PRO_MONTHLY_PRICE,
   isBlackFridayLive,
@@ -404,6 +405,14 @@ export function ProUpgradeDialog({
             {title}
           </h2>
           {body && <p className="text-cp-body text-ink-soft">{body}</p>}
+          {/* Both of the sale's offers, for someone not on Pro
+              (lib/blackFriday.ts). Never the $9.99 member price. */}
+          {saleLive && (
+            <p className="text-cp-small font-semibold text-[var(--cp-premium)]">
+              Sale through Sunday: Pro is half off your first {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months, and cookbooks
+              are {price(BLACK_FRIDAY_COOKBOOK_PRICE)}.
+            </p>
+          )}
 
           {/* A long list kept quiet (Amelia, 2026-11-17): a soft lead-in
               rather than a bold heading, small type on an even pitch, and
