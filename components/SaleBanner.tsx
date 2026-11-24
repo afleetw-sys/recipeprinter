@@ -115,7 +115,6 @@ export function SaleBanner() {
   return (
     <div ref={bannerRef} role="region" aria-label="Sale" className="rp-sale-banner no-print">
       <div className="rp-sale-banner__inner">
-        <span className="pro-sale-badge">Limited time offer</span>
         <p className="rp-sale-banner__text">
           {/* Both offers, Pro first (Amelia, 2026-11-24): most people buy Pro,
               not a book. */}
