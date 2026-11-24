@@ -283,8 +283,8 @@ function ScaledPageBody({
     );
     if (!imageSlot) return null;
     // A full page the cook chose before adding its photo: an empty page
-    // holding the photo's place. Screen only; the export refuses to print one
-    // (see `emptyPhotoTitles` on the print page). Clicking it opens the
+    // holding the photo's place. Screen only; the export sets one to None
+    // before printing (see `withoutEmptyPhotos` in lib/bookPhotos). Clicking it opens the
     // photo picker like clicking any photo does (PHOTO_SURFACES in PrintDeck).
     if (!imageSlot.imageUrl) {
       return (

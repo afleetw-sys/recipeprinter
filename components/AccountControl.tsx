@@ -141,6 +141,7 @@ export function AccountControl({
   saveStatus,
   onRetry,
   onSave,
+  hideUsageBadge = false,
 }: {
   /** Sizes every control in here to the bar it is in. `true` is the
       workspace's own 30px chrome (the print deck's mobile bar); `"header"` is
@@ -154,6 +155,10 @@ export function AccountControl({
       where the "Saved" word already appears rather than as a full-width button
       in a settings panel two columns away. */
   onSave?: () => void;
+  /** Leaves the free-import ring off the avatar. Inside a cookbook the ring
+      is noise beside the book (Amelia, 2026-11-24); the count is still in the
+      menu, one press away. */
+  hideUsageBadge?: boolean;
 }) {
   const [showMenu, setShowMenu] = useState(false);
   /** A click that landed before the menu chunk did, replayed once it mounts. */
@@ -281,7 +286,7 @@ export function AccountControl({
           <SignedOutAccountGlyph />
         </IconButton>
       )}
-      <ImportUsageBadge />
+      {!hideUsageBadge && <ImportUsageBadge />}
       </div>
     </div>
   );

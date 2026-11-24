@@ -305,7 +305,14 @@ import { autosaveVerdict, keepsItself, LOADED_BASELINE, shouldFlushOnHide, shoul
 import { readRailWidths, writeRailWidths, type RailWidthMode, type RailWidths } from "@/lib/railWidth";
 import { organizeFlipProgress } from "@/lib/organizeFlip";
 import { RailResizer } from "@/components/print/RailResizer";
-import { bookRecipeImage, hasWebsitePhoto, historyAfterReplacing, photoArrivedWith } from "@/lib/bookPhotos";
+import {
+  bookRecipeImage,
+  hasWebsitePhoto,
+  historyAfterReplacing,
+  photoArrivedWith,
+  photoModeForNewPhoto,
+  withoutEmptyPhotos,
+} from "@/lib/bookPhotos";
 
 /** The cookbook settings panel's Page tab, and the phone's This page tile and
     sheet that stand in for it. Off for now; see the PrintConfigPanel call. */
@@ -1129,32 +1136,6 @@ export default function PrintPage() {
     // recipe is measured against (see `presetCardDims`).
     preset: projectMeta.meta.cookbookPreset,
   });
-
-  // Recipes whose photo is still a placeholder, full page or in page (books
-  // of the cook's own photos only). The export refuses to print a placeholder
-  // and names these instead.
-  const emptyPhotoTitles = useMemo(() => {
-    if (!ownPhotosOnly) return [];
-    const titles = new Set<string>();
-    for (const sheet of sheets) {
-      for (const slot of sheet.slots) {
-        if (slot?.kind === "image" && !slot.imageUrl) titles.add(slot.label);
-        // A chapter's image page with nothing on it yet.
-        if (
-          slot?.kind === "section-photo" &&
-          slot.mode !== "none" &&
-          !(slot.mode === "photo" ? slot.photoUrl : slot.gridImages?.length) &&
-          !slot.caption?.trim()
-        ) {
-          titles.add(slot.title || "A chapter");
-        }
-        if (slot?.kind === "recipe" && slot.showPhoto && !slot.isContinuation && !slot.recipe.image) {
-          titles.add(slot.recipe.title || "Untitled recipe");
-        }
-      }
-    }
-    return Array.from(titles);
-  }, [ownPhotosOnly, sheets]);
 
   // The preview is double-buffered (see `usePrintSheets`): it keeps painting the
   // last complete layout while a new one is measured, so a settings change no
@@ -4292,19 +4273,23 @@ export default function PrintPage() {
   ) {
     projectMeta.setCookbookPreset(presetId);
     track("cookbook_preset_selected", { preset: presetId });
-    const project = currentExportProject();
+    // A photo page still waiting for its photo (a book of the cook's own
+    // photos) is set to None rather than holding up the download: printed,
+    // it would be a placeholder, and the cook asked for the book. The book
+    // changes to match, so the screen shows what was printed.
+    const cleared = withoutEmptyPhotos(projectMeta.meta, sheets);
+    if (cleared.recipeIds.length > 0 || cleared.sectionIds.length > 0) {
+      track("cookbook_export_cleared_empty_photos", {
+        preset: presetId,
+        count: cleared.recipeIds.length + cleared.sectionIds.length,
+      });
+      for (const id of cleared.recipeIds) projectMeta.setItemPhotoMode(id, "none");
+      for (const id of cleared.sectionIds) projectMeta.updateSection(id, { artPhotoMode: "none" });
+    }
+    const project = currentExportProject(cleared.meta);
     if (!project) return;
     setCookbookExportNeedsAuth(false);
     setCookbookExportNeedsAccount(false);
-    if (emptyPhotoTitles.length > 0) {
-      track("cookbook_export_blocked_empty_photos", { preset: presetId, count: emptyPhotoTitles.length });
-      setCookbookExportError(
-        emptyPhotoTitles.length === 1
-          ? `"${emptyPhotoTitles[0]}" is waiting for its photo. Add one, or set its photo to None, then download again.`
-          : `${emptyPhotoTitles.length} recipes are waiting for photos: ${emptyPhotoTitles.join(", ")}. Add their photos, or set them to None, then download again.`,
-      );
-      return;
-    }
     setCookbookExportError(null);
     setExportingPreset(presetId);
     setCookbookExportProgress("preparing");
@@ -4388,7 +4373,7 @@ export default function PrintPage() {
    * who paid for a cookbook should not meet a sign-in wall on the way to
    * downloading it.
    */
-  function currentExportProject(): PrintProject | null {
+  function currentExportProject(meta: ProjectMeta = projectMeta.meta): PrintProject | null {
     if (!items?.length) return null;
     /**
      * Two fields the SAVE carries and a render must not, dropped here by name
@@ -4405,13 +4390,13 @@ export default function PrintPage() {
      * below passes.
      */
     const { stashedCookbook: _setAside, projectTitle: _libraryName, ...fromMeta } =
-      projectContentFromMeta(projectMeta.meta, currentLayoutSettings());
+      projectContentFromMeta(meta, currentLayoutSettings());
     return assemblePrintProject({
       ...fromMeta,
       id: cookbookProjectId,
       ownerUid: cookPilotUser?.uid ?? "",
       title: fromMeta.cover?.title,
-      sections,
+      sections: meta === projectMeta.meta ? sections : buildSections(items, meta),
       // This export IS the book, whatever the live view is set to. A cook who
       // switched to recipe cards and then exported the stashed book still gets
       // a book.
@@ -5609,7 +5594,7 @@ export default function PrintPage() {
     if (cookbookMode) {
       newlyReady.forEach((item) => {
         if (item.method === "image" && item.recipe?.image && photoModeFor(item.id) === "none") {
-          projectMeta.setItemPhotoMode(item.id, "card");
+          showNewPhoto(item.id);
         }
       });
     }
@@ -6528,6 +6513,21 @@ export default function PrintPage() {
   const clearPhotoDialogSignal = (key: string) =>
     setPhotoDialog((current) => (current?.key === key ? null : current));
 
+  /**
+   * A photo just landed on a recipe showing none. It takes the book's Photos
+   * (see `photoModeForNewPhoto`): following the book when that is where it
+   * ends up, so a later book-wide change still moves it, and the layout half
+   * only, so the photo it holds stays.
+   */
+  function showNewPhoto(recipeId: string) {
+    const mode = photoModeForNewPhoto(photoStyle);
+    if (mode === photoStyle) {
+      projectMeta.setItemPlacement(recipeId, { pageLayout: undefined, showPhoto: undefined });
+    } else {
+      projectMeta.setItemPhotoMode(recipeId, mode);
+    }
+  }
+
   function setRecipePhotoMode(recipeId: string, mode: PhotoStyle) {
     notePhotoChoice(recipeId, mode);
     if (showEmptyFields && activeRecipeId === recipeId) keepEditingRef.current = recipeId;
@@ -6591,7 +6591,7 @@ export default function PrintPage() {
     if (placement?.photoUrl !== undefined || historyChanged) {
       projectMeta.setItemPlacement(recipeId, { photoUrl: undefined, photoHistory: history.length ? history : undefined });
     }
-    if (url && photoModeFor(recipeId) === "none") projectMeta.setItemPhotoMode(recipeId, "card");
+    if (url && photoModeFor(recipeId) === "none") showNewPhoto(recipeId);
   }
   /**
    * Counts a per-recipe photo choice toward the streak, and once it is long
@@ -7547,7 +7547,7 @@ export default function PrintPage() {
       }
       if (!next.image || next.image === previous?.image) return;
       if (cookbookMode) {
-        if (photoModeFor(id) === "none") projectMeta.setItemPhotoMode(id, "card");
+        if (photoModeFor(id) === "none") showNewPhoto(id);
         return;
       }
       /* Picking a photo is choosing to show it on THIS card: with "Include
@@ -7960,6 +7960,7 @@ export default function PrintPage() {
             finishes it.
           */
           lead={renderProUpgradeButton("header")}
+          hideUsageBadge={cookbookMode}
           actions={
               <>
                 {/* How this project stands, to the LEFT of the action rather

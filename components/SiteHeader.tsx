@@ -20,6 +20,7 @@ export function SiteHeader({
   center,
   wordmark = true,
   onNavigateHome,
+  hideUsageBadge = false,
 }: {
   backHref?: string;
   actions?: ReactNode;
@@ -52,6 +53,8 @@ export function SiteHeader({
       the open project away (and animates it going) before it leaves, and owns
       the push itself. */
   onNavigateHome?: () => void;
+  /** See `AccountControl`'s own `hideUsageBadge`. */
+  hideUsageBadge?: boolean;
 }) {
   const logo = (
     <>
@@ -165,6 +168,7 @@ export function SiteHeader({
           saveStatus={saveStatus}
           onRetry={onRetrySave}
           onSave={onSave}
+          hideUsageBadge={hideUsageBadge}
         />
       </div>
     </header>

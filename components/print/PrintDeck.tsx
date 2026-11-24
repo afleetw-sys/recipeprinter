@@ -1805,7 +1805,7 @@ export function PrintDeck(props: PrintDeckProps) {
               {/* The same account control the desktop header carries.
                   "Where is my account" should not have a different answer on
                   a phone, and it had none at all here. */}
-              <AccountControl compact />
+              <AccountControl compact hideUsageBadge={Boolean(projectMeta.meta.cookbookMode)} />
             </div>
           </div>
           {/* Drawn with the rest of the deck (`renderAllPages`), so it is
