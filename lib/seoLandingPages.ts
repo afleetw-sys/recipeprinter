@@ -4501,36 +4501,34 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     h1: "A CreateMyCookbook alternative that does the typing for you",
     anchor: "CreateMyCookbook alternative",
     lede:
-      `With CreateMyCookbook, you type each recipe into its designer or pay its team to type them. RecipePrinter reads them in as you add them, from a recipe link or a photo of a handwritten card. It's ${COOKBOOK_PRICE_FALLBACK} once per cookbook for a print-ready file you print at home or order bound from the printer you choose.`,
+      `Paste a link from any recipe site, Instagram or TikTok, or snap a photo of a handwritten card, and RecipePrinter lays the recipe out on the page, ready to edit. Pick a theme and it builds the cover, chapters and contents. It's ${COOKBOOK_PRICE_FALLBACK} once per cookbook for a print-ready file you can print anywhere.`,
     featureSections: [
       {
         heading: "Recipes go in without anyone typing them",
         image: "handwritten-card",
         body:
-          "Typing is the slow part of a family cookbook. CreateMyCookbook offers WeTypeIt, where its team types the recipes you photograph, usually within a few hours: 10 free, then from about 60¢ each. RecipePrinter reads a photo of a handwritten card while you wait, and pulls a recipe straight from a link, at no extra cost.",
-        afterBody:
+          "Typing is the slow part of a family cookbook. With RecipePrinter, you snap a photo of a handwritten card and it reads it while you wait, at no extra cost. A recipe from a website, Instagram, TikTok or Pinterest comes straight in from its link.",
+        afterBody: [
           "Check each one against the original and change anything you want before it goes in the book. Every word is editable.",
+          "CreateMyCookbook's answer is WeTypeIt: its team types the recipes you photograph, usually within a few hours, with 10 free and then from about 60¢ each.",
+        ],
         links: [{ phrase: "handwritten card", href: "/handwritten-recipes-to-cookbook" }],
       },
       {
-        heading: "The finished book is a file you keep",
-        image: "convert-to-pdf",
-        body:
-          "CreateMyCookbook prints and ships each copy for you, and its price includes the printing. RecipePrinter gives you a print-ready PDF instead, sized for the binding you pick, and you choose who prints it.",
-        afterBody: [
-          "Run a few pages at home, take the file to a copy shop, or order bound copies online. Printing is a separate cost, set by whoever prints it.",
-          "You can keep editing after you buy and download a new version whenever you like, at no extra cost.",
-        ],
-      },
-      {
-        heading: "Where CreateMyCookbook is the better choice",
+        heading: "A book that looks designed, not filled in",
         image: "bound-cookbook",
         body:
-          "If you want one order that ends with a finished book on your doorstep, CreateMyCookbook does that. You design the book, pick a binding, and it prints and ships the copies, usually within a week plus shipping.",
-        afterBody: [
-          "It's also the better fit if you want relatives to log in and type their own recipes, or you want a softcover, a ring binder, or its 7.75 × 9.75 inch size.",
-          "With RecipePrinter, you order the printing yourself. At download it points you to a printer for the binding you chose.",
-        ],
+          "Pick a theme and every page follows it: the cover, a chapter opener for each section, and a contents page numbered for you. Give a recipe a full-page photo beside it, or use your own design for the cover.",
+        afterBody:
+          "Move a recipe or a whole chapter and the page numbers keep up. You can edit on your phone or your computer.",
+      },
+      {
+        heading: "Print it anywhere, as often as you like",
+        image: "convert-to-pdf",
+        body:
+          "Your download is a print-ready PDF sized for the binding you pick: a lay-flat spiral, a hardcover, or loose pages for a binder. Print a few copies at home, take it to a copy shop, or order bound copies from Lulu or Blurb.",
+        afterBody:
+          "Keep editing after you buy and download a new version whenever you like, at no extra cost. Printing is paid to whoever prints it.",
       },
     ],
     comparison: {
@@ -4546,19 +4544,10 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       // phrase like "Depends on format" answers nothing and still draws a tick.
       groups: [
         {
-          title: "What you pay",
-          rows: [
-            { feature: "To make the book", us: `${COOKBOOK_PRICE_FALLBACK} once`, them: "Free" },
-            { feature: "Each printed copy", us: "Extra, at your printer's price", them: "From $19.95, printing included" },
-            { feature: "Shipping", us: "Set by your printer", them: "Extra, by weight" },
-            { feature: "Try it before you pay", us: "10 recipes free", them: "Free until you order" },
-            { feature: "Book without the maker's logo", us: true, them: "25% extra" },
-          ],
-        },
-        {
           title: "Getting recipes in",
           rows: [
             { feature: "Import from a recipe link", us: true, them: false },
+            { feature: "Import from Instagram or TikTok", us: true, them: false },
             { feature: "Photo of a handwritten card", us: "Read while you wait, included", them: "Their team types it: 10 free, then from 60¢" },
             { feature: "Relatives add their own recipes", us: false, them: true },
           ],
@@ -4567,9 +4556,18 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
           title: "The book",
           rows: [
             { feature: "Cover, chapters, and contents", us: true, them: true },
-            { feature: "Recipe photos", us: true, them: "Photo pages priced as color" },
+            { feature: "Recipe photos", us: "Full-page, beside the recipe", them: "Photo pages priced as color" },
             { feature: "Binding", us: "Spiral, hardcover, or loose pages", them: "Softcover, spiral, hardcover, or binder" },
             { feature: "Page size", us: "8.5 × 11 or 8 × 10 in", them: "7.75 × 9.75 in" },
+          ],
+        },
+        {
+          title: "What you pay",
+          rows: [
+            { feature: "To make the book", us: `${COOKBOOK_PRICE_FALLBACK} once`, them: "Free" },
+            { feature: "Each printed copy", us: "Your printer's price", them: "From $19.95, printing included" },
+            { feature: "Shipping", us: "Set by your printer", them: "Extra, by weight" },
+            { feature: "Book without the maker's logo", us: true, them: "25% extra" },
           ],
         },
         {
