@@ -29,6 +29,50 @@ export function CookbookStartButton({
   /** `link`: words inside a sentence (a page's subtitle), not a button. */
   variant?: "button" | "link";
 }) {
+  const { opening, start } = useStartCookbook();
+
+  if (variant === "link") {
+    return (
+      <button
+        type="button"
+        className="inline cursor-pointer border-0 bg-transparent p-0 font-semibold text-ink underline underline-offset-[0.16em] hover:text-accent-ink"
+        aria-busy={opening || undefined}
+        onClick={start}
+      >
+        {label}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={`btn btn-primary${compact ? " btn-header" : ""}`}
+      aria-label={compact ? label : undefined}
+      aria-busy={opening || undefined}
+      onClick={start}
+    >
+      {/* In the header on the narrowest phones (under 360px), just "Start":
+          the bar also holds the logo, Upgrade and the account. */}
+      {compact ? (
+        <>
+          <span className="max-[359px]:hidden">{label}</span>
+          <span className="hidden max-[359px]:inline" aria-hidden>Start</span>
+        </>
+      ) : (
+        label
+      )}
+      {/* No arrow in the header either: the label only fits on its own. */}
+      {opening ? <SpinnerIcon size={ICON_SIZE.md} /> : !compact && <ArrowRightIcon size={ICON_SIZE.md} />}
+    </button>
+  );
+}
+
+/**
+ * Opens a new, empty cookbook on /print, the way the homepage's Cookbook tab
+ * does with nothing added. Shared by this button and the sale banner.
+ */
+export function useStartCookbook() {
   const router = useRouter();
   const { startNewProject } = useProjectMeta();
   const [opening, setOpening] = useState(false);
@@ -46,39 +90,5 @@ export function CookbookStartButton({
     router.push("/print");
   }
 
-  if (variant === "link") {
-    return (
-      <button
-        type="button"
-        className="inline cursor-pointer border-0 bg-transparent p-0 font-semibold text-ink underline underline-offset-[0.16em] hover:text-accent-ink"
-        aria-busy={opening || undefined}
-        onClick={() => void start()}
-      >
-        {label}
-      </button>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      className={`btn btn-primary${compact ? " btn-header" : ""}`}
-      aria-label={compact ? label : undefined}
-      aria-busy={opening || undefined}
-      onClick={() => void start()}
-    >
-      {/* In the header on the narrowest phones (under 360px), just "Start":
-          the bar also holds the logo, Upgrade and the account. */}
-      {compact ? (
-        <>
-          <span className="max-[359px]:hidden">{label}</span>
-          <span className="hidden max-[359px]:inline" aria-hidden>Start</span>
-        </>
-      ) : (
-        label
-      )}
-      {/* No arrow in the header either: the label only fits on its own. */}
-      {opening ? <SpinnerIcon size={ICON_SIZE.md} /> : !compact && <ArrowRightIcon size={ICON_SIZE.md} />}
-    </button>
-  );
+  return { opening, start: () => void start() };
 }

@@ -8,6 +8,8 @@ import { track } from "@/lib/analytics";
 import { DEFAULT_PRO_CYCLE, PRO_MONTHLY_PRICE_FALLBACK, type ProBillingCycle } from "@/lib/proProduct";
 import { BASIC_BENEFITS, FREE_IMPORTS_BENEFIT, PRO_BENEFITS } from "@/lib/proUpgradeCopy";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
+import { BLACK_FRIDAY_PRO_MONTHLY_MONTHS, BLACK_FRIDAY_PRO_MONTHLY_PRICE, proCycleToOpenOn } from "@/lib/blackFriday";
+import { useSaleLive } from "@/lib/useSaleLive";
 
 /**
  * Free beside Pro, for someone on the free plan: Settings' Plan section,
@@ -25,7 +27,8 @@ export function FreePlanCards({
   /** Only changes which price the Pro card quotes before you've bought
       anything — `ProUpgradeDialog` still has its own cycle picker once
       you're actually choosing. */
-  const [billingCycle, setBillingCycle] = useState<ProBillingCycle>(DEFAULT_PRO_CYCLE);
+  const [billingCycle, setBillingCycle] = useState<ProBillingCycle>(proCycleToOpenOn);
+  const saleLive = useSaleLive();
   const { label: price, annualSavingsPercent, annualPerMonth, annualTotal } = useVisitorPrices();
 
   return (
@@ -90,6 +93,19 @@ export function FreePlanCards({
               {annualPerMonth}/mo <span className="pro-plan-card__note">· Save {annualSavingsPercent}%</span>
               <span className="block text-cp-label font-normal">Billed yearly at {annualTotal}</span>
             </p>
+          ) : saleLive ? (
+            // The sale's intro price (lib/blackFriday.ts).
+            <p className="mt-1 text-cp-body font-bold text-ink-soft">
+              <s className="font-semibold">
+                <span className="sr-only">Was </span>
+                {price(PRO_MONTHLY_PRICE_FALLBACK)}
+              </s>{" "}
+              <span className="sr-only">now </span>
+              {price(BLACK_FRIDAY_PRO_MONTHLY_PRICE)}/mo
+              <span className="block text-cp-label font-normal">
+                50% off your first {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months, then {price(PRO_MONTHLY_PRICE_FALLBACK)}.
+              </span>
+            </p>
           ) : (
             <p className="mt-1 text-cp-body font-bold text-ink-soft">{price(PRO_MONTHLY_PRICE_FALLBACK)}</p>
           )}
@@ -111,7 +127,7 @@ export function FreePlanCards({
             disabled={busy}
             onClick={() => onUpgrade(billingCycle)}
           >
-            {busy ? "Opening checkout…" : "Upgrade"}
+            {busy ? "Opening checkout…" : saleLive && billingCycle === "monthly" ? "Claim offer" : "Upgrade"}
           </button>
         </div>
       </div>

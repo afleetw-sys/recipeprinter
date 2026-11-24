@@ -1,5 +1,6 @@
 "use client";
 
+import { SalePrice } from "@/components/SalePrice";
 import { Dialog } from "@/components/Dialog";
 import { IconButton } from "@/components/Controls";
 import { ICON_SIZE, SpinnerIcon, XIcon } from "@/components/icons";
@@ -16,6 +17,7 @@ export function BookCapDialog({
   kept,
   freeRecipes,
   price,
+  wasPrice,
   willAddRest,
   busy,
   onBuy,
@@ -28,6 +30,8 @@ export function BookCapDialog({
   freeRecipes: number;
   /** The cookbook's price as shown at checkout, e.g. "$15.99". */
   price: string;
+  /** The regular price, struck through before it, while it's on sale. */
+  wasPrice?: string | null;
   /** Buying adds the recipes that didn't fit, without importing them again. */
   willAddRest: boolean;
   busy: boolean;
@@ -71,7 +75,7 @@ export function BookCapDialog({
         </button>
         <button type="button" className="btn btn-primary" disabled={busy} onClick={onBuy}>
           {busy ? <SpinnerIcon size={ICON_SIZE.md} /> : null}
-          Get the full cookbook · {price}
+          Get the full cookbook · <SalePrice price={price} was={wasPrice} />
         </button>
       </div>
     </Dialog>

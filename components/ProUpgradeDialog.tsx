@@ -21,6 +21,12 @@ import {
   type ProBillingCycle,
 } from "@/lib/proProduct";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
+import {
+  BLACK_FRIDAY_PRO_MONTHLY_MONTHS,
+  BLACK_FRIDAY_PRO_MONTHLY_PRICE,
+  isBlackFridayLive,
+  proCycleToOpenOn,
+} from "@/lib/blackFriday";
 import { shareLink } from "@/lib/shareLink";
 import { inviteShareText } from "@/lib/referral";
 
@@ -107,7 +113,10 @@ export function ProUpgradeDialog({
   // "Other" on the decline question: opens a box for the cook's own reason.
   const [otherOpen, setOtherOpen] = useState(false);
   const [otherText, setOtherText] = useState("");
-  const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>(DEFAULT_PRO_CYCLE);
+  // Monthly during the sale (the deal "Claim offer" points at), else the default.
+  const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>(proCycleToOpenOn);
+  const [saleLive] = useState(() => isBlackFridayLive());
+  const saleTitle = saleLive && title === GENERIC_COPY.title;
   const [pendingCycle, setPendingCycle] = useState<ProBillingCycle | null>(null);
   const uid = cookPilotUser?.uid ?? null;
   // Whether this account has been asked on any device. Null until read, and
@@ -193,6 +202,8 @@ export function ProUpgradeDialog({
   const billedYearly = `Billed yearly at ${annualTotal}`;
   // The plan cards add their own " / month", so the monthly price drops its "/mo".
   const monthlyAmount = price(PRO_PRICE_FALLBACKS.monthly).replace(/\s*\/\s*mo\.?$/i, "");
+  // During the sale Monthly is $2.49 for its first 3 months (lib/blackFriday.ts).
+  const saleMonthlyAmount = price(BLACK_FRIDAY_PRO_MONTHLY_PRICE);
 
   // Signing in is the ordinary sign-in dialog, the same one every other
   // door opens (Amelia, 2026-11-22), not a form inside this one beside the
@@ -390,10 +401,23 @@ export function ProUpgradeDialog({
         <>
           {/* No crown beside the title (Amelia, 2026-11-16): the picture
               and the title carry it. */}
+          {/* During the sale (lib/blackFriday.ts) the plain upgrade pitch
+              becomes the offer, said once in the title (Amelia, 2026-11-24,
+              after Canva's): the plan cards and fine print don't repeat it.
+              A dialog opened by a locked feature keeps its own title, with
+              the badge. */}
+          {saleLive && <span className="pro-sale-badge">Limited time offer</span>}
           <h2 id="pro-upgrade-title" className="pr-8 text-cp-dialog-title font-extrabold tracking-tight">
-            {title}
+            {saleTitle ? (
+              <>
+                Enjoy <span className="text-[var(--cp-accent-warm)]">50% off</span> your first{" "}
+                {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months of RecipePrinter Pro
+              </>
+            ) : (
+              title
+            )}
           </h2>
-          {body && <p className="text-cp-body text-ink-soft">{body}</p>}
+          {body && !saleTitle && <p className="text-cp-body text-ink-soft">{body}</p>}
 
           {/* A long list kept quiet (Amelia, 2026-11-17): a soft lead-in
               rather than a bold heading, small type on an even pitch, and
@@ -433,7 +457,16 @@ export function ProUpgradeDialog({
                     {cycle === "annual" && <span className="pro-plan-save-tag">Save more</span>}
                   </span>
                   <span className="pro-plan-option__price">
-                    {cycle === "annual" ? annualPerMonth : monthlyAmount}
+                    {cycle === "monthly" && saleLive && (
+                      <>
+                        <s className="pro-plan-option__was">
+                          <span className="sr-only">Was </span>
+                          {monthlyAmount}
+                        </s>{" "}
+                        <span className="sr-only">now </span>
+                      </>
+                    )}
+                    {cycle === "annual" ? annualPerMonth : saleLive ? saleMonthlyAmount : monthlyAmount}
                     <span className="pro-plan-option__per"> / month</span>
                   </span>
                   {/* Annual says what it charges once a year; Monthly's
@@ -449,9 +482,14 @@ export function ProUpgradeDialog({
             disabled={busy}
             onClick={() => handleContinue(selectedCycle)}
           >
-            {ctaLabel}
+            {saleLive && selectedCycle === "monthly" ? "Claim offer" : ctaLabel}
           </button>
-          <p className="text-center text-cp-label text-ink-soft">Cancel any time from Settings.</p>
+          <p className="text-center text-cp-label text-ink-soft">
+            {/* What the sale price turns into, said once, in the fine print. */}
+            {saleLive && selectedCycle === "monthly"
+              ? `Then ${monthlyAmount} a month. New members only. Cancel any time from Settings.`
+              : "Cancel any time from Settings."}
+          </p>
         </>
       ) : null}
       </div>

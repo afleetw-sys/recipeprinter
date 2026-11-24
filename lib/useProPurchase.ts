@@ -1,5 +1,6 @@
 "use client";
 
+import { isBlackFridayLive } from "@/lib/blackFriday";
 import { useRef, useState } from "react";
 import type { User } from "firebase/auth";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
@@ -104,6 +105,9 @@ export function useProPurchase({
 
     setProBusy(true);
     clearToast();
+    // Monthly during the sale is the intro-priced product (lib/blackFriday.ts).
+    const sale =
+      cycle === "monthly" && isBlackFridayLive() ? { discount: "black_friday" as const } : {};
     // Bought as the account's uid, linked first, never whatever id the page
     // held: nothing while sign-in's link was still out (or for good once it
     // failed), or the guest id when checkout fires straight after signing in
@@ -125,7 +129,7 @@ export function useProPurchase({
         onSettled("already-active");
         return;
       }
-      track("purchase_started", { product: "pro", cycle, customerId });
+      track("purchase_started", { product: "pro", cycle, customerId, ...sale });
       const result = await purchaseRecipePrinterPro({
         userId: customerId,
         email: account.email,
@@ -135,7 +139,7 @@ export function useProPurchase({
       markCustomerInfoVerified();
 
       if (result.cancelled) {
-        track("purchase_cancelled", { product: "pro", cycle, customerId });
+        track("purchase_cancelled", { product: "pro", cycle, customerId, ...sale });
         onSettled("cancelled");
         return;
       }
@@ -144,6 +148,7 @@ export function useProPurchase({
         product: "pro",
         cycle,
         customerId,
+        ...sale,
         ...referralPurchaseProps(cachedReferralSummary()),
       });
 
@@ -165,6 +170,7 @@ export function useProPurchase({
         cycle,
         reason: truncateReason(error),
         customerId,
+        ...sale,
       });
       showErrorToast(friendlyPurchaseSetupError(error));
       onSettled("failed");

@@ -1,5 +1,7 @@
 "use client";
 
+import { cookbookPriceLabel, isSaleDiscount, type CookbookDiscount } from "@/lib/cookbookProduct";
+import { SalePrice } from "@/components/SalePrice";
 import { useEffect, useState } from "react";
 import { Dialog } from "@/components/Dialog";
 import { ProDialogArt } from "@/components/ProDialogArt";
@@ -45,6 +47,7 @@ export function MakeCookbookDialog({
   recipeCount,
   price,
   fullPrice,
+  discount = fullPrice ? "pro_first" : null,
   onMake,
 }: {
   open: boolean;
@@ -54,6 +57,8 @@ export function MakeCookbookDialog({
   price: string;
   /** The regular price, when `price` is the Pro first-cookbook discount. */
   fullPrice?: string;
+  /** Why the price is lower (lib/cookbookProduct.ts `cookbookOfferFor`). */
+  discount?: CookbookDiscount | null;
   /** Rejects if the book could not be made; the dialog stays open then. */
   onMake: (keepInSync: boolean) => Promise<void>;
 }) {
@@ -118,12 +123,17 @@ export function MakeCookbookDialog({
         {/* The price in the box it has everywhere else (the cookbook welcome),
             with what a free book holds under it in the same box. */}
         <div className="cookbook-tour__price !mt-0">
-          {/* The price alone, no struck-through regular price beside it
-              (Amelia, 2026-11-22): "for your first cookbook with Pro" says
-              why it's lower. */}
+          {/* The Pro first-book price alone, no struck-through regular price
+              (Amelia, 2026-11-22): "for your first cookbook with Pro" says why
+              it's lower. A sale price shows the regular one crossed out
+              (2026-11-24). */}
           <p className="cookbook-tour__amount">
-            {local(price)}{" "}
-            <span className="cookbook-tour__per">{discounted ? "for your first cookbook with Pro" : "per cookbook"}</span>
+            <SalePrice
+              price={local(price)}
+              was={discounted && isSaleDiscount(discount) && fullPrice ? local(fullPrice) : null}
+              wasClassName="cookbook-tour__was"
+            />{" "}
+            <span className="cookbook-tour__per">{cookbookPriceLabel(discounted ? discount : null, { withPro: true })}</span>
           </p>
           <p>
             {waiting > 0

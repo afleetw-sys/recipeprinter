@@ -4521,6 +4521,8 @@ textarea.recipe-page-fields__input {
   .recipe-print-page {
     position: fixed;
     inset: 0;
+    /* Below the sale banner while it shows (components/SaleBanner.tsx). */
+    top: var(--rp-sale-banner-h, 0px);
     /* Its own `h-dvh` would otherwise win over `bottom: 0`. */
     height: auto;
     overflow: hidden;

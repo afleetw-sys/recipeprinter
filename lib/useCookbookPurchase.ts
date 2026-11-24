@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
-import { COOKBOOK_DISCOUNT_PRICE_FALLBACK, COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
+import type { CookbookOffer } from "@/lib/cookbookProduct";
 import { friendlyPurchaseSetupError } from "@/lib/friendlyErrors";
 import { track, truncateReason } from "@/lib/analytics";
 import { reportCookbookCheckoutStarted, reportCookbookPurchase } from "@/lib/adTags";
@@ -22,12 +22,11 @@ interface UseCookbookPurchaseOptions {
   cookPilotUser: User | null;
   cookbookMode: boolean;
   projectId: string;
-  /** Whether THIS purchase, right now, qualifies for 20% off (active Pro,
-      never granted a cookbook before) — computed by the caller from
-      `effectiveCustomerInfo`/the signed-in profile (lib/cookbookProduct.ts's
-      `isFirstCookbookDiscountEligible`), re-checked fresh at call time
-      rather than cached here. */
-  discountEligible: boolean;
+  /** The price THIS purchase is offered at, right now, and the package that
+      charges it (lib/cookbookProduct.ts `cookbookOfferFor`) — computed by the
+      caller from `effectiveCustomerInfo`/the signed-in profile, re-checked
+      fresh at call time rather than cached here. */
+  offer: CookbookOffer;
   showToast: (message: string) => void;
   /** For a failure the cook needs to notice. Optional: a caller with only one
       kind of message (the account menu's inline status) falls back to `showToast`. */
@@ -60,8 +59,8 @@ interface UseCookbookPurchaseOptions {
  * behind when the account-wide entitlement bridge below was deleted, and while
  * they sat in the signature this looked like a hook that consults entitlements.
  * It does not: ACCESS here is one thing, a server-written unlock document,
- * unrelated to Pro. `discountEligible` is the one exception, and it's
- * PRICE, not access — a plain boolean the caller has already resolved
+ * unrelated to Pro. `offer` is the one exception, and it's
+ * PRICE, not access — an offer the caller has already resolved
  * (Pro status and prior-grant history live entirely outside this hook), used
  * only to pick which of two identically-unlocking RevenueCat products to
  * check out with.
@@ -70,7 +69,7 @@ export function useCookbookPurchase({
   cookPilotUser,
   cookbookMode,
   projectId,
-  discountEligible,
+  offer,
   showToast,
   showErrorToast = showToast,
   clearToast,
@@ -186,7 +185,8 @@ export function useCookbookPurchase({
     // Captured once, at the start of this specific purchase: whatever was
     // true the moment the buyer committed, not re-read mid-flow, and visible
     // to the catch block below too.
-    const usingDiscount = discountEligible;
+    const usingOffer = offer;
+    const discountProps = usingOffer.discount ? { discount: usingOffer.discount } : {};
     try {
       if (isCookbookProjectUnlocked(projectId)) {
         setProjectUnlocked(true);
@@ -201,21 +201,21 @@ export function useCookbookPurchase({
       track("purchase_started", {
         product: "cookbook",
         customerId,
-        ...(usingDiscount ? { discount: "pro_first" as const } : {}),
+        ...discountProps,
       });
       reportCookbookCheckoutStarted();
       const result = await purchaseRecipePrinterCookbook({
         userId: customerId,
         email: cookPilotUser.email,
         projectId,
-        discountEligible: usingDiscount,
+        offer: usingOffer,
       });
 
       if (result.cancelled) {
         track("purchase_cancelled", {
           product: "cookbook",
           customerId,
-          ...(usingDiscount ? { discount: "pro_first" as const } : {}),
+          ...discountProps,
         });
         return;
       }
@@ -223,7 +223,7 @@ export function useCookbookPurchase({
       track("purchase_completed", {
         product: "cookbook",
         customerId,
-        ...(usingDiscount ? { discount: "pro_first" as const } : {}),
+        ...discountProps,
       });
       if (result.paid) reportCookbookPurchase(result.paid);
 
@@ -241,7 +241,7 @@ export function useCookbookPurchase({
       // lands.
 
       onFreshPurchase();
-      onCookbookGranted(usingDiscount);
+      onCookbookGranted(usingOffer.discount !== null);
       onUnlocked(true);
     } catch (error) {
       // See the same catch in usePremiumTemplatePurchase: a charge that
@@ -250,7 +250,7 @@ export function useCookbookPurchase({
         product: "cookbook",
         reason: truncateReason(error),
         customerId,
-        ...(usingDiscount ? { discount: "pro_first" as const } : {}),
+        ...discountProps,
       });
       showErrorToast(friendlyPurchaseSetupError(error));
     } finally {
@@ -265,7 +265,8 @@ export function useCookbookPurchase({
     // who merely opens a cookbook. Checkout states the authoritative price —
     // this is just which fallback to show beforehand, picked the same way
     // `packageForCookbook` picks which product to actually buy.
-    cookbookPrice: discountEligible ? COOKBOOK_DISCOUNT_PRICE_FALLBACK : COOKBOOK_PRICE_FALLBACK,
+    cookbookPrice: offer.price,
+    cookbookFullPrice: offer.fullPrice,
     cookbookLocked,
     cookbookAccessStatus,
     cookbookPurchaseBusy,

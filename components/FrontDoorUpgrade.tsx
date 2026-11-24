@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { CrownIcon, ICON_SIZE } from "@/components/icons";
+import { useSaleLive } from "@/lib/useSaleLive";
 import {
   importsKnownUnlimited,
   rememberedImportUsage,
@@ -63,32 +64,48 @@ export function FrontDoorUpgradeHost() {
   return <FrontDoorUpgradeDialog openSignal={request.signal} trigger={request.trigger} spent={request.spent} />;
 }
 
+/**
+ * Opens the upgrade dialog under `trigger`: the page's host when it has one,
+ * else a dialog of the caller's own, which the caller renders.
+ */
+export function useFrontDoorUpgrade(trigger: string): [() => void, ReactNode] {
+  // Every page's header carries the upgrade button, but only pages with an
+  // import box mount `FrontDoorUpgradeHost`. Elsewhere (the guides, Settings,
+  // Projects) the caller opens the same dialog itself.
+  const [ownSignal, setOwnSignal] = useState(0);
+  const open = () => {
+    if (hosts.size > 0) requestUpgrade(trigger);
+    else setOwnSignal((signal) => signal + 1);
+  };
+  return [open, ownSignal > 0 ? <FrontDoorUpgradeDialog openSignal={ownSignal} trigger={trigger} spent={false} /> : null];
+}
+
 /** "Upgrade to Pro", beside the wordmark. Gone for a cook this browser knows
     is Pro; in the page's HTML for everyone else, so it never pops in. */
 export function FrontDoorUpgradeButton() {
   const pro = useSyncExternalStore(subscribeImportUsage, importsKnownUnlimited, () => false);
-  // Every page's header carries this, but only pages with an import box mount
-  // `FrontDoorUpgradeHost`. Elsewhere (the guides, Settings, Projects) the
-  // button opens the same dialog itself.
-  const [ownSignal, setOwnSignal] = useState(0);
+  const [openUpgrade, upgradeDialog] = useFrontDoorUpgrade("topbar_button");
+  const saleLive = useSaleLive();
   if (pro) return null;
   return (
     <>
       <button
         type="button"
         className="btn btn-premium btn-header rp-upgrade-collapsible"
-        aria-label="Upgrade to Pro"
-        title="Upgrade to Pro"
-        onClick={() => {
-          if (hosts.size > 0) requestUpgrade("topbar_button");
-          else setOwnSignal((signal) => signal + 1);
-        }}
+        aria-label={saleLive ? "Claim offer" : "Upgrade to Pro"}
+        title={saleLive ? "Claim offer" : "Upgrade to Pro"}
+        onClick={openUpgrade}
       >
         <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-        {/* The crown alone at 820px and under, as on /print's phone bar. */}
-        <span className="rp-upgrade-collapsible__label">Upgrade to Pro</span>
+        {/* The crown alone at 820px and under, as on /print's phone bar, except
+            during the sale, when "Claim offer" shows at every width. Both are
+            in the HTML; the layout's inline script picks one before paint. */}
+        <span className="rp-upgrade-collapsible__label">
+          <span className="rp-sale-hide">Upgrade to Pro</span>
+          <span className="rp-sale-only">Claim offer</span>
+        </span>
       </button>
-      {ownSignal > 0 && <FrontDoorUpgradeDialog openSignal={ownSignal} trigger="topbar_button" spent={false} />}
+      {upgradeDialog}
     </>
   );
 }
