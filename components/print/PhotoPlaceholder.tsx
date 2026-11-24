@@ -3,7 +3,7 @@ import { ImageIcon } from "@/components/icons";
 /**
  * Where a photo goes before the cook has added one: a recipe's full page, a
  * chapter's image page, or a recipe's in-page photo. Screen only; the export
- * refuses to print one (see `emptyPhotoTitles` on the print page). Clicking it
+ * sets one to None before printing (see `withoutEmptyPhotos` in lib/bookPhotos). Clicking it
  * opens the photo picker, like clicking any photo (PHOTO_SURFACES in
  * PrintDeck).
  *

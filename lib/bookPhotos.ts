@@ -1,4 +1,6 @@
 import type { QueueItem, Recipe, RecipePagePlacement, Section } from "@/types/recipe";
+import type { PhotoStyle, ProjectMeta } from "@/lib/project";
+import type { PageSheet } from "@/lib/usePrintSheets";
 
 /**
  * Which photo a cookbook shows for one recipe.
@@ -132,4 +134,73 @@ export function historyAfterReplacing(
 ): string[] | undefined {
   const arrived = previous?.image && !previous.imageChosen ? previous.image : photoArrivedWith(kept);
   return arrived ? [arrived] : undefined;
+}
+
+/**
+ * The placement a recipe takes when a photo lands on it while it shows none:
+ * imported from the cook's photo, picked in its photo dialog, or added by hand.
+ * It follows the book's Photos, so a Full page book stays Full page. A book
+ * set to None still shows the photo just added, in the page.
+ */
+export function photoModeForNewPhoto(bookStyle: PhotoStyle): PhotoStyle {
+  return bookStyle === "none" ? "card" : bookStyle;
+}
+
+/**
+ * The book with every photo still waiting to be added set to None: a full
+ * page or in-page recipe photo, or a chapter's facing photo, that is still a
+ * placeholder. The export prints what is there rather than refusing over a
+ * page the cook may never fill, and the book is changed to match, so the
+ * screen shows what was printed.
+ *
+ * Only a book of the cook's own photos has placeholders. Recipe placements
+ * are written the way `setItemPhotoMode(id, "none")` writes them, keeping the
+ * photo, history and link the cook set.
+ */
+export function withoutEmptyPhotos(
+  meta: ProjectMeta,
+  sheets: readonly PageSheet[],
+): { meta: ProjectMeta; recipeIds: string[]; sectionIds: string[] } {
+  if (!meta.ownPhotosOnly) return { meta, recipeIds: [], sectionIds: [] };
+  const recipeIds = new Set<string>();
+  const sectionIds = new Set<string>();
+  for (const sheet of sheets) {
+    for (const slot of sheet.slots) {
+      if (slot?.kind === "image" && !slot.imageUrl) recipeIds.add(slot.recipeId);
+      if (slot?.kind === "recipe" && slot.showPhoto && !slot.isContinuation && !slot.recipe.image) {
+        recipeIds.add(slot.recipeId);
+      }
+      if (
+        slot?.kind === "section-photo" &&
+        slot.mode !== "none" &&
+        !(slot.mode === "photo" ? slot.photoUrl : slot.gridImages?.length) &&
+        !slot.caption?.trim()
+      ) {
+        sectionIds.add(slot.sectionId);
+      }
+    }
+  }
+  if (recipeIds.size === 0 && sectionIds.size === 0) return { meta, recipeIds: [], sectionIds: [] };
+  const itemPlacements = { ...(meta.itemPlacements ?? {}) };
+  for (const id of Array.from(recipeIds)) {
+    const { showSourceUrl, photoUrl, photoHistory } = itemPlacements[id] ?? {};
+    itemPlacements[id] = {
+      pageLayout: "full",
+      showPhoto: false,
+      ...(showSourceUrl !== undefined ? { showSourceUrl } : {}),
+      ...(photoUrl !== undefined ? { photoUrl } : {}),
+      ...(photoHistory?.length ? { photoHistory } : {}),
+    };
+  }
+  return {
+    meta: {
+      ...meta,
+      itemPlacements,
+      sections: meta.sections.map((section) =>
+        sectionIds.has(section.id) ? { ...section, artPhotoMode: "none" } : section,
+      ),
+    },
+    recipeIds: Array.from(recipeIds),
+    sectionIds: Array.from(sectionIds),
+  };
 }
