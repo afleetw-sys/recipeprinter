@@ -204,6 +204,25 @@ const lora = localFont({
   adjustFontFallback: "Times New Roman",
 });
 
+// Winter's faces: Shantell Sans, a hand-drawn marker face, for titles (it
+// matches the artist's sketched snowman), and Nunito's rounded sans for the
+// body. Card-only, so preload: false.
+const shantellSans = localFont({
+  src: "./fonts/shantell-sans/shantell-sans-latin-wght-normal.woff2",
+  weight: "300 800",
+  variable: "--font-shantell-sans",
+  display: "swap",
+  preload: false,
+});
+
+const nunito = localFont({
+  src: "./fonts/nunito/nunito-latin-wght-normal.woff2",
+  weight: "200 900",
+  variable: "--font-nunito",
+  display: "swap",
+  preload: false,
+});
+
 // Quilt's face, title and body: Jost, a Futura-style geometric sans, for the
 // tiles' mid-century look.
 const jost = localFont({
@@ -311,7 +330,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${termes.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${berkshireSwash.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${fraunces.variable} ${figtree.variable} ${creepster.variable} ${lora.variable} ${karla.variable}`}
+      className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${termes.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${berkshireSwash.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${fraunces.variable} ${figtree.variable} ${creepster.variable} ${lora.variable} ${shantellSans.variable} ${nunito.variable} ${karla.variable}`}
     >
       <head>
         {/* The ad tags (Google Ads, Reddit Ads), in the HTML so the platforms

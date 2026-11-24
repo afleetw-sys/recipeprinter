@@ -449,6 +449,23 @@ function HalloweenArt() {
   );
 }
 
+// Winter: a snowflake top-left, a cluster of flakes top-right and a waving
+// snowman bottom-right, each drawn to sit in its corner as she placed it
+// (public/images/winter-*.svg). Plain vector paths in one flat colour, no
+// patterns or embedded rasters, so they print sharp in Chrome and Firefox.
+function WinterArt() {
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element -- fixed decorative art, not a photo to optimize */}
+      <img className="recipe-card__winter-flakes-left" src="/images/winter-flakes-left.svg" alt="" aria-hidden />
+      {/* eslint-disable-next-line @next/next/no-img-element -- fixed decorative art, not a photo to optimize */}
+      <img className="recipe-card__winter-flakes-right" src="/images/winter-flakes-right.svg" alt="" aria-hidden />
+      {/* eslint-disable-next-line @next/next/no-img-element -- fixed decorative art, not a photo to optimize */}
+      <img className="recipe-card__winter-snowman" src="/images/winter-snowman.svg" alt="" aria-hidden />
+    </>
+  );
+}
+
 // Supper: a deep red rounded frame with a utensil set into its bottom edge.
 // The utensil takes turns down the list (fork, spoon, knife) by the recipe's
 // place in it, so every face of one recipe carries the same one. Each image is
@@ -537,6 +554,7 @@ function TemplateDecoration({
   if (template === "christmas") return edgeOnly ? null : <ChristmasHats />;
   if (template === "fall") return edgeOnly ? null : <FallArt />;
   if (template === "halloween") return edgeOnly ? null : <HalloweenArt />;
+  if (template === "winter") return edgeOnly ? null : <WinterArt />;
   return null;
 }
 

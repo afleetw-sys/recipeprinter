@@ -62,7 +62,8 @@ export type RecipePrintTemplate =
   | "poster"
   | "christmas"
   | "fall"
-  | "halloween";
+  | "halloween"
+  | "winter";
 
 export type CardSectionLayout = "standard" | "stacked";
 

@@ -7612,6 +7612,20 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   bottom: calc(282 * var(--halloween-u) + 0.08in);
 }
 
+/* Winter: the page number rises above the snowman, as Fall's does above the
+   pumpkins. */
+.recipe-template--winter .recipe-book-folio {
+  bottom: calc(283 * var(--winter-u) + 0.08in);
+}
+
+.recipe-print-preview--card-6x4 .recipe-card-set.recipe-template--winter .recipe-card[data-in-book] {
+  --recipe-card-keepout-h: 1.26in;
+}
+
+.recipe-print-preview--letter .recipe-card-set.recipe-template--winter .recipe-card[data-in-book] {
+  --recipe-card-keepout-h: 1.62in;
+}
+
 .recipe-print-preview--card-6x4 .recipe-card-set.recipe-template--halloween .recipe-card[data-in-book] {
   --recipe-card-keepout-h: 1.22in;
 }
@@ -7634,6 +7648,7 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
 .recipe-template--garden .recipe-card-page[data-edge-only] .recipe-book-runhead,
 .recipe-template--garden .recipe-card-page[data-edge-only] .recipe-book-folio,
 .recipe-template--fall .recipe-card-page[data-edge-only] .recipe-book-folio,
+.recipe-template--winter .recipe-card-page[data-edge-only] .recipe-book-folio,
 .recipe-template--halloween .recipe-card-page[data-edge-only] .recipe-book-runhead {
   bottom: 0.24in;
 }
@@ -7642,7 +7657,8 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
 .recipe-print-preview .recipe-card-set.recipe-template--market .recipe-card.recipe-card--continued[data-in-book],
 .recipe-print-preview .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--continued[data-in-book],
 .recipe-print-preview .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--continued[data-in-book] {
+.recipe-print-preview .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--continued[data-in-book],
+.recipe-print-preview .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--continued[data-in-book] {
   --recipe-card-padding-bottom: 0.42in;
   --recipe-card-keepout-w: 0in;
   --recipe-card-keepout-h: 0in;
@@ -7652,13 +7668,15 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
 .recipe-print-preview--letter .recipe-card-set.recipe-template--market .recipe-card.recipe-card--continued[data-in-book],
 .recipe-print-preview--letter .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--continued[data-in-book],
 .recipe-print-preview--letter .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview--letter .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--continued[data-in-book] {
+.recipe-print-preview--letter .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--continued[data-in-book],
+.recipe-print-preview--letter .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--continued[data-in-book] {
   --recipe-card-padding-bottom: 0.5in;
 }
 
 /* Fall's continued book pages have no leaves to clear, and Halloween's no
    hand to wrap around. */
-.recipe-print-preview .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--continued[data-in-book] {
+.recipe-print-preview .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--continued[data-in-book],
+.recipe-print-preview .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--continued[data-in-book] {
   --recipe-card-padding-top: 0.16in;
 }
 
@@ -10481,7 +10499,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--poster,
   .recipe-template--christmas,
   .recipe-template--fall,
-  .recipe-template--halloween
+  .recipe-template--halloween,
+  .recipe-template--winter
 ) .recipe-card__footer {
   display: none;
 }
@@ -10501,7 +10520,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--poster,
   .recipe-template--christmas,
   .recipe-template--fall,
-  .recipe-template--halloween
+  .recipe-template--halloween,
+  .recipe-template--winter
 ) .recipe-card__footer:has(.recipe-card__footer-source) {
   display: flex;
 }
@@ -10521,7 +10541,8 @@ textarea.recipe-card__toc-title {
   .recipe-template--poster,
   .recipe-template--christmas,
   .recipe-template--fall,
-  .recipe-template--halloween
+  .recipe-template--halloween,
+  .recipe-template--winter
 ) .recipe-card__footer-brand {
   display: none;
 }
@@ -11899,12 +11920,12 @@ textarea.recipe-card__toc-title {
 /* A smaller photo than the default on the newer themes, whose art already
    gives the card its picture: 0.72in on a 6x4 (Keepsake's size) and 1.3in on
    Full Page, against the default 0.92in / 1.7in. */
-.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster, .recipe-template--christmas, .recipe-template--fall, .recipe-template--halloween) .recipe-card__header--with-photo .recipe-card__photo {
+.recipe-print-preview--card-6x4 :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster, .recipe-template--christmas, .recipe-template--fall, .recipe-template--halloween, .recipe-template--winter) .recipe-card__header--with-photo .recipe-card__photo {
   width: calc((0.72in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
   height: calc((0.72in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
 
-.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster, .recipe-template--christmas, .recipe-template--fall, .recipe-template--halloween) .recipe-card__header--with-photo .recipe-card__photo {
+.recipe-print-preview--letter :is(.recipe-template--typewriter, .recipe-template--garden, .recipe-template--quilt, .recipe-template--market, .recipe-template--supper, .recipe-template--diner, .recipe-template--poster, .recipe-template--christmas, .recipe-template--fall, .recipe-template--halloween, .recipe-template--winter) .recipe-card__header--with-photo .recipe-card__photo {
   width: calc((1.3in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
   height: calc((1.3in - var(--recipe-photo-mat, 0px)) * var(--recipe-photo-scale, 1) + var(--recipe-photo-mat, 0px));
 }
@@ -12083,7 +12104,8 @@ textarea.recipe-card__toc-title {
 .recipe-template--poster .recipe-card__header,
 .recipe-template--christmas .recipe-card__header,
 .recipe-template--fall .recipe-card__header,
-.recipe-template--halloween .recipe-card__header {
+.recipe-template--halloween .recipe-card__header,
+.recipe-template--winter .recipe-card__header {
   border-bottom: 0;
 }
 
@@ -12958,7 +12980,7 @@ textarea.recipe-card__toc-title {
   width: calc(334 * var(--fall-u));
 }
 
-/* The steps wrap around the pumpkins instead of a step moving on to the next
+/* (Winter's snowman uses these rules too.) The steps wrap around the pumpkins instead of a step moving on to the next
    face. The steps' last column (or their single column) is stretched down to
    the foot of the card, and two floats at its start put a pumpkin-sized box
    in its bottom corner: a zero-width one as tall as the column less the box,
@@ -12972,26 +12994,26 @@ textarea.recipe-card__toc-title {
    column and its lists take margins for the gaps they had (as Halloween's
    hand does). Set on the card, where the keep-out is, so a cookbook's taller
    corner and a continued page's none carry through. */
-.recipe-template--fall .recipe-card {
-  --fall-wrap-w: calc(var(--recipe-card-keepout-w, 0in) - var(--recipe-card-padding-x));
-  --fall-wrap-h: calc(var(--recipe-card-keepout-h, 0in) - var(--recipe-card-padding-bottom));
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card {
+  --corner-wrap-w: calc(var(--recipe-card-keepout-w, 0in) - var(--recipe-card-padding-x));
+  --corner-wrap-h: calc(var(--recipe-card-keepout-h, 0in) - var(--recipe-card-padding-bottom));
 }
 
-.recipe-template--fall .recipe-card__cols:is(.recipe-card__cols--stacked, .recipe-card__cols--single, .recipe-card__cols--method-only) {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__cols:is(.recipe-card__cols--stacked, .recipe-card__cols--single, .recipe-card__cols--method-only) {
   display: flex;
   flex-direction: column;
 }
 
-.recipe-template--fall .recipe-card__cols:is(.recipe-card__cols--stacked, .recipe-card__cols--method-only) {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__cols:is(.recipe-card__cols--stacked, .recipe-card__cols--method-only) {
   gap: 0;
 }
 
-.recipe-template--fall .recipe-card__cols > * {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__cols > * {
   flex: 0 0 auto;
   min-width: 0;
 }
 
-.recipe-template--fall .recipe-card__cols > .recipe-card__method:last-child {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__cols > .recipe-card__method:last-child {
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
@@ -12999,38 +13021,38 @@ textarea.recipe-card__toc-title {
 
 /* In a block the label's top margin folded into the section's; in a flex
    column it would add to it. */
-.recipe-template--fall .recipe-card__cols--stacked .recipe-card__method > .recipe-card__label:first-child {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__cols--stacked .recipe-card__method > .recipe-card__label:first-child {
   margin-top: 0;
 }
 
-.recipe-template--fall .recipe-card__method > .recipe-card__section-groups:not(.recipe-card__section-groups--probe) {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__method > .recipe-card__section-groups:not(.recipe-card__section-groups--probe) {
   flex: 1 0 auto;
 }
 
-.recipe-template--fall .recipe-card__method .recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe),
-.recipe-template--fall .recipe-card__method .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__method .recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe),
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__method .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child {
   display: block;
 }
 
-.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) > * + * {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) > * + * {
   margin-top: calc(var(--recipe-card-step-gap) * 0.3);
 }
 
-.recipe-print-preview--letter .recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) > * + * {
+.recipe-print-preview--letter :is(.recipe-template--fall, .recipe-template--winter) .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) > * + * {
   margin-top: calc(var(--recipe-card-step-gap) * 1.5);
 }
 
-.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) ol {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) ol {
   display: block;
 }
 
-.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li + li {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li + li {
   margin-top: var(--recipe-card-step-gap);
 }
 
 /* A step there is a plain block, its number in the left gutter where the
    flex row put it, so only the lines level with the pumpkins wrap short. */
-.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li {
   display: block;
   padding-left: calc(11pt + 5pt);
 }
@@ -13038,40 +13060,169 @@ textarea.recipe-card__toc-title {
 /* The step being edited wraps the same way. Its field clips its overflow,
    which makes it a box of its own, and a box that cannot fit beside the
    pumpkins drops below them, off the card. A div needs no clipping. */
-.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li > .recipe-card__inline-rich {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li > .recipe-card__inline-rich {
   overflow: visible;
 }
 
-.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li > .recipe-card__step-number {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li > .recipe-card__step-number {
   position: absolute;
   top: 0;
   left: 0;
 }
 
-.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child)::before {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child)::before {
   content: "";
   float: right;
   width: 0;
-  height: max(0px, calc(100% - var(--fall-wrap-h)));
+  height: max(0px, calc(100% - var(--corner-wrap-h)));
 }
 
-.recipe-template--fall .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) > :first-child::before {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) > :first-child::before {
   content: "";
   float: right;
   clear: right;
-  width: max(0px, var(--fall-wrap-w));
-  height: max(0px, var(--fall-wrap-h));
+  width: max(0px, var(--corner-wrap-w));
+  height: max(0px, var(--corner-wrap-h));
 }
 
 /* A two-sided back with ingredients beside the steps swaps the columns, so
    the steps are on the left, away from the pumpkins. */
-.recipe-print-preview[data-double-sided="true"] .recipe-template--fall .recipe-card--back:has(.recipe-card__cols:not(.recipe-card__cols--single):not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only):not(.recipe-card__cols--method-only)) {
-  --fall-wrap-w: 0in;
+.recipe-print-preview[data-double-sided="true"] :is(.recipe-template--fall, .recipe-template--winter) .recipe-card--back:has(.recipe-card__cols:not(.recipe-card__cols--single):not(.recipe-card__cols--stacked):not(.recipe-card__cols--ingredients-only):not(.recipe-card__cols--method-only)) {
+  --corner-wrap-w: 0in;
 }
 
 /* The leaves are the cover's top edge; the shared accent band would lie over
    them. */
 .recipe-template--fall .recipe-card__cover-band {
+  display: none;
+}
+
+/* ── Winter (seasonal) ─────────────────────────────────────────────────────
+   Frosty gray stock (#f0f1f4) with the artist's snowflakes in both top
+   corners and a snowman in the bottom-right. Measured off her mockup, 1988
+   units across: `--winter-u` is one of those units at this card's width. All
+   three pieces are drawn at the same scale (1.33 mockup units to an SVG
+   unit) and sit where she put them: one snowflake at the left, 20 in and 18
+   down, 100 wide (101 tall), inside the side padding so the text starts
+   where it does on any card; right flakes 18 in and 7 down, 158 wide (183
+   tall); snowman 38 in and 18 up, 207 wide (265 tall).
+
+   The art never moves. Only the right cluster's top reaches past the side
+   padding (180 units in, down to 92), so a face with a header starts high
+   with the header stopping short of it, and a face without one (a back, a
+   continued face) starts below it. The snowman
+   is a keep-out corner the steps wrap around, as Fall's pumpkins are. */
+.recipe-template--winter {
+  --recipe-bg: #f0f1f4;
+  --recipe-ink: #33364a;
+  --recipe-muted: #676b85;
+  --recipe-accent: #5d6283;
+  --recipe-accent-2: #5d6283;
+  --recipe-bullet: #8d92b0;
+  --recipe-line: rgba(93, 98, 131, 0.24);
+  --recipe-step-bg: #e3e4ea;
+  --recipe-footer: #676b85;
+  --recipe-radius: 0;
+  --recipe-title-font: var(--font-shantell-sans), "Comic Sans MS", system-ui, sans-serif;
+  --winter-u: calc(var(--recipe-card-width) / 1988);
+  font-family: var(--font-nunito), system-ui, sans-serif;
+}
+
+.recipe-template--winter .recipe-card {
+  background-color: #f0f1f4;
+  --recipe-card-padding-x: 0.48in;
+  --recipe-card-padding-top: calc(95 * var(--winter-u) + 0.03in);
+}
+
+.recipe-template--winter .recipe-card:has(.recipe-card__header) {
+  --recipe-card-padding-top: 0.24in;
+}
+
+.recipe-print-preview--letter .recipe-template--winter .recipe-card {
+  --recipe-card-padding-x: 0.7in;
+}
+
+.recipe-print-preview--letter .recipe-template--winter .recipe-card:has(.recipe-card__header) {
+  --recipe-card-padding-top: 0.42in;
+}
+
+.recipe-template--winter .recipe-card__header {
+  padding-right: max(0px, calc(180 * var(--winter-u) - var(--recipe-card-padding-x)));
+}
+
+.recipe-template--winter .recipe-card[dir="rtl"] .recipe-card__header {
+  padding-left: max(0px, calc(180 * var(--winter-u) - var(--recipe-card-padding-x)));
+  padding-right: 0;
+}
+
+.recipe-print-preview--card-6x4 .recipe-template--winter .recipe-card {
+  --recipe-card-keepout-w: 0.8in;
+  --recipe-card-keepout-h: 0.9in;
+}
+
+.recipe-print-preview--letter .recipe-template--winter .recipe-card {
+  --recipe-card-keepout-w: 1.12in;
+  --recipe-card-keepout-h: 1.26in;
+}
+
+.recipe-template--winter .recipe-card__title {
+  color: #5d6283;
+  font-size: calc(var(--recipe-card-title-size) * 1.04 * var(--recipe-title-fit, 1));
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.recipe-template--winter .recipe-card__step-number {
+  color: #5d6283;
+}
+
+.recipe-template--winter .recipe-card__photo-img {
+  border-radius: 4px;
+}
+
+.recipe-template--winter .recipe-card__footer {
+  right: calc(var(--recipe-card-padding-x) + var(--recipe-card-keepout-w, 0in));
+}
+
+.recipe-card__winter-flakes-left,
+.recipe-card__winter-flakes-right,
+.recipe-card__winter-snowman {
+  position: absolute;
+  display: none;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-template--winter .recipe-card__winter-flakes-left,
+.recipe-template--winter .recipe-card__winter-flakes-right,
+.recipe-template--winter .recipe-card__winter-snowman {
+  display: block;
+}
+
+.recipe-card__winter-flakes-left {
+  top: calc(18 * var(--winter-u));
+  left: calc(20 * var(--winter-u));
+  width: calc(100 * var(--winter-u));
+}
+
+.recipe-card__winter-flakes-right {
+  top: calc(7 * var(--winter-u));
+  right: calc(18 * var(--winter-u));
+  width: calc(158 * var(--winter-u));
+}
+
+.recipe-card__winter-snowman {
+  right: calc(38 * var(--winter-u));
+  bottom: calc(18 * var(--winter-u));
+  width: calc(207 * var(--winter-u));
+}
+
+/* The flakes are the cover's top edge; the shared accent band would lie over
+   them. */
+.recipe-template--winter .recipe-card__cover-band {
   display: none;
 }
 
@@ -13271,25 +13422,26 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--fall .recipe-card[dir="rtl"],
+.recipe-template--winter .recipe-card[dir="rtl"],
 .recipe-template--garden .recipe-card[dir="rtl"] {
   --recipe-card-keepout-side: left;
 }
 
-.recipe-template--fall .recipe-card[dir="rtl"] .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child)::before {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card[dir="rtl"] .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child)::before {
   float: left;
 }
 
-.recipe-template--fall .recipe-card[dir="rtl"] .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) > :first-child::before {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card[dir="rtl"] .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) > :first-child::before {
   float: left;
   clear: left;
 }
 
-.recipe-template--fall .recipe-card[dir="rtl"] .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card[dir="rtl"] .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li {
   padding-left: 0;
   padding-right: calc(11pt + 5pt);
 }
 
-.recipe-template--fall .recipe-card[dir="rtl"] .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li > .recipe-card__step-number {
+:is(.recipe-template--fall, .recipe-template--winter) .recipe-card[dir="rtl"] .recipe-card__method :is(.recipe-card__section-groups:not(.recipe-card__section-groups--columns):not(.recipe-card__section-groups--probe), .recipe-card__section-groups--columns > .recipe-card__section-groups-column:last-child) li > .recipe-card__step-number {
   left: auto;
   right: 0;
 }
@@ -13299,13 +13451,31 @@ textarea.recipe-card__toc-title {
   right: 0;
 }
 
+/* Winter's left snowflake and right cluster swap corners whole, each at its
+   own inset. */
+.recipe-template--winter .recipe-card[dir="rtl"] .recipe-card__winter-flakes-left {
+  left: auto;
+  right: calc(20 * var(--winter-u));
+}
+
+.recipe-template--winter .recipe-card[dir="rtl"] .recipe-card__winter-flakes-right {
+  right: auto;
+  left: calc(18 * var(--winter-u));
+}
+
 .recipe-template--fall .recipe-card[dir="rtl"] .recipe-card__fall-pumpkins,
 .recipe-template--garden .recipe-card[dir="rtl"] .recipe-card__garden-tomatoes {
   right: auto;
   left: 0;
 }
 
+.recipe-template--winter .recipe-card[dir="rtl"] .recipe-card__winter-snowman {
+  right: auto;
+  left: calc(38 * var(--winter-u));
+}
+
 .recipe-template--fall .recipe-card[dir="rtl"] .recipe-card__footer,
+.recipe-template--winter .recipe-card[dir="rtl"] .recipe-card__footer,
 .recipe-template--garden .recipe-card[dir="rtl"] .recipe-card__footer {
   right: var(--recipe-card-padding-x);
   left: calc(var(--recipe-card-padding-x) + var(--recipe-card-keepout-w, 0in));
@@ -13327,15 +13497,21 @@ textarea.recipe-card__toc-title {
   bottom: calc(230 * var(--fall-u) + 0.08in);
 }
 
+.recipe-template--winter .recipe-card-page[data-dir="rtl"] .recipe-book-runhead {
+  bottom: calc(283 * var(--winter-u) + 0.08in);
+}
+
 .recipe-template--halloween .recipe-card-page[data-dir="rtl"] .recipe-book-folio {
   bottom: calc(282 * var(--halloween-u) + 0.08in);
 }
 
 .recipe-template--fall .recipe-card-page[data-dir="rtl"] .recipe-book-folio,
+.recipe-template--winter .recipe-card-page[data-dir="rtl"] .recipe-book-folio,
 .recipe-template--halloween .recipe-card-page[data-dir="rtl"] .recipe-book-runhead,
 .recipe-template--garden .recipe-card-page[data-dir="rtl"][data-edge-only] .recipe-book-runhead,
 .recipe-template--garden .recipe-card-page[data-dir="rtl"][data-edge-only] .recipe-book-folio,
 .recipe-template--fall .recipe-card-page[data-dir="rtl"][data-edge-only] .recipe-book-runhead,
+.recipe-template--winter .recipe-card-page[data-dir="rtl"][data-edge-only] .recipe-book-runhead,
 .recipe-template--halloween .recipe-card-page[data-dir="rtl"][data-edge-only] .recipe-book-folio {
   bottom: 0.24in;
 }
@@ -13365,7 +13541,10 @@ textarea.recipe-card__toc-title {
     .recipe-card__christmas-hats,
     .recipe-card__fall-leaves,
     .recipe-card__fall-pumpkins,
-    .recipe-card__halloween-grave
+    .recipe-card__halloween-grave,
+    .recipe-card__winter-flakes-left,
+    .recipe-card__winter-flakes-right,
+    .recipe-card__winter-snowman
   ),
 .recipe-card.recipe-card--chapter-with-photo
   :is(
@@ -13383,7 +13562,10 @@ textarea.recipe-card__toc-title {
     .recipe-card__christmas-hats,
     .recipe-card__fall-leaves,
     .recipe-card__fall-pumpkins,
-    .recipe-card__halloween-grave
+    .recipe-card__halloween-grave,
+    .recipe-card__winter-flakes-left,
+    .recipe-card__winter-flakes-right,
+    .recipe-card__winter-snowman
   ) {
   display: none;
 }

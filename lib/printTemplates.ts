@@ -86,4 +86,10 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
     detail: "Linen stock, a red title and a row of Santa hats",
     featured: { from: "11-01", to: "12-31" },
   },
+  {
+    id: "winter",
+    label: "Winter",
+    detail: "Frosty gray stock, snowflakes up top and a waving snowman",
+    featured: { from: "11-01", to: "12-31" },
+  },
 ];

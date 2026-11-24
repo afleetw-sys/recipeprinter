@@ -143,6 +143,7 @@ export const THEME_ACCENTS: Record<RecipePrintTemplate, string> = {
   christmas: "#c92e31",
   fall: "#91583b",
   halloween: "#b0501c",
+  winter: "#5d6283",
 };
 
 function accentOption(template: RecipePrintTemplate, accent: unknown): AccentOption | undefined {
