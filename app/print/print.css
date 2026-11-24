@@ -14140,3 +14140,14 @@ textarea.recipe-card__toc-title {
     display: none;
   }
 }
+
+/* Customize theme: use white instead of the theme's full-page color, in the
+   live preview and every output. Keep borders, illustrations and accent fills:
+   only the card's paper changes. The variable also covers SVG-backed faces
+   whose background rect reads `--recipe-bg`. */
+.recipe-background-off {
+  --recipe-bg: #fff !important;
+}
+.recipe-background-off .recipe-card {
+  background: #fff !important;
+}

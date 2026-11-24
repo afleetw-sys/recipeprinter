@@ -57,6 +57,8 @@ describe("Customize theme's Fine-tune sizes rows", () => {
           setUtensil={() => {}}
           stacked={false}
           setStacked={() => {}}
+          background
+          setBackground={() => {}}
           template="classic"
           customized
           onReset={() => {}}

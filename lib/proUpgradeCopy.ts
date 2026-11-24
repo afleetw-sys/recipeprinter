@@ -177,6 +177,7 @@ const CUSTOMIZED_PART: Record<string, string> = {
   "accent color": "a custom accent color",
   "band color": "one band color",
   utensil: "one utensil",
+  "background color": "no background color",
   layout: "the stacked layout",
   "text size": "a custom text size",
   "photo size": "a custom photo size",
