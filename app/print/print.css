@@ -7706,9 +7706,10 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
 }
 
 /* Fall's continued book pages have no leaves to clear, and Halloween's no
-   hand to wrap around. */
-.recipe-print-preview .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--edge-only,
-.recipe-print-preview .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--edge-only {
+   hand to wrap around. Continued pages only: a quiet book's first page of a
+   recipe has no leaves either, but keeps the room above its title. */
+.recipe-print-preview .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--edge-only.recipe-card--continued,
+.recipe-print-preview .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--edge-only.recipe-card--continued {
   --recipe-card-padding-top: 0.16in;
 }
 
@@ -13644,7 +13645,7 @@ textarea.recipe-card__toc-title {
    recipe page is already edge-only (no illustrations: see `TemplateDecoration`
    and the `.recipe-card--edge-only` layout rules above); here the edge that is
    left prints light: thinner frames, paler strips and bands, and no Supper
-   utensil. Colour and weight, never position, so nothing here moves text or
+   frame or utensil at all. Colour and weight, never position, so nothing here moves text or
    changes what the face measurer reads. Books made before never get
    `data-quiet-theme` and print exactly as they did. */
 .recipe-card[data-quiet-theme]:not(.recipe-card--divider)
@@ -13660,13 +13661,11 @@ textarea.recipe-card__toc-title {
   opacity: 0.3;
 }
 
+/* Supper's frame and utensil are its chapter openers' alone: its recipe
+   pages are plain paper. */
 .recipe-card[data-quiet-theme]:not(.recipe-card--divider)
-  :is(.recipe-card__supper-utensil, .recipe-card__supper-utensil-tint) {
+  :is(.recipe-card__supper-frame, .recipe-card__supper-utensil, .recipe-card__supper-utensil-tint) {
   display: none;
-}
-
-.recipe-card[data-quiet-theme]:not(.recipe-card--divider) .recipe-card__supper-frame {
-  border-width: calc(5 * var(--supper-u));
 }
 
 .recipe-card[data-quiet-theme]:not(.recipe-card--divider) .recipe-card__poster-frame {
