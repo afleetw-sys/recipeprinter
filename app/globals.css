@@ -1956,6 +1956,19 @@
     font-size: var(--cp-fs-label);
     line-height: 1.35;
   }
+  /* The sale's "Limited time offer" pill over the Pro dialog's title
+   (lib/blackFriday.ts). A solid fill is fine here: it's a badge, the one
+   place a colour means exactly one thing. */
+  .pro-sale-badge {
+    align-self: flex-start;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--cp-error);
+    color: var(--cp-card);
+    font-size: var(--cp-fs-label);
+    font-weight: 700;
+    line-height: 1.5;
+  }
   /* The regular price, struck through beside the sale one (lib/blackFriday.ts). */
   .pro-plan-option__was {
     color: var(--cp-ink-soft);
@@ -3437,18 +3450,19 @@ html[data-sale] .rp-sale-hide {
   }
 }
 
-/* Flat, with a hairline under it (flat-design policy): a strip of the Pro
-   tint, the words centred and free to wrap, so it grows with zoom. */
+/* A dark strip so it reads as the sale at a glance (Amelia, 2026-11-24),
+   flat with no shadow. The words are centred and free to wrap, so it grows
+   with zoom. */
 .rp-sale-banner {
   display: none;
   position: relative;
   align-items: center;
   justify-content: center;
-  padding: 8px 44px;
-  background: var(--cp-premium-soft);
-  border-bottom: 1px solid var(--cp-line);
-  color: var(--cp-ink);
-  font-size: var(--cp-fs-small);
+  min-height: 48px;
+  padding: 12px 52px;
+  background: var(--cp-ink);
+  color: var(--cp-card);
+  font-size: var(--cp-fs-body);
   line-height: 1.4;
   text-align: center;
 }
@@ -3478,7 +3492,7 @@ html[data-bf-pro] .rp-sale-banner__cta {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--cp-premium);
+  color: var(--cp-premium-bright);
   font: inherit;
   font-weight: 700;
   text-decoration: underline;
@@ -3487,11 +3501,11 @@ html[data-bf-pro] .rp-sale-banner__cta {
   white-space: nowrap;
 }
 .rp-sale-banner__cta:hover {
-  color: var(--cp-ink);
+  color: var(--cp-card);
 }
 .rp-sale-banner__cta:focus-visible,
 .rp-sale-banner__close:focus-visible {
-  outline: var(--cp-focus-ring);
+  outline: 2px solid var(--cp-premium-bright);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -3508,12 +3522,12 @@ html[data-bf-pro] .rp-sale-banner__cta {
   border: 0;
   border-radius: 8px;
   background: none;
-  color: var(--cp-ink-soft);
+  color: color-mix(in srgb, var(--cp-card) 75%, transparent);
   cursor: pointer;
 }
 .rp-sale-banner__close:hover {
-  background: color-mix(in srgb, var(--cp-premium) 12%, transparent);
-  color: var(--cp-ink);
+  background: color-mix(in srgb, var(--cp-card) 12%, transparent);
+  color: var(--cp-card);
 }
 @media print {
   .rp-sale-banner {

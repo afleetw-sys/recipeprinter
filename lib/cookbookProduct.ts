@@ -136,14 +136,14 @@ export function cookbookPriceLabel(
   { withPro = false }: { withPro?: boolean } = {},
 ): string {
   if (discount === "pro_first") return withPro ? "for your first cookbook with Pro" : "for your first cookbook";
-  if (discount) return "per cookbook through Sunday";
+  if (discount) return "per cookbook, on sale until Sunday";
   return "per cookbook";
 }
 
 /** A short line saying why the price is lower, or "" at full price. */
 export function cookbookDiscountNote(discount: CookbookDiscount | null): string {
   if (discount === "pro_first") return "20% off your first cookbook with Pro.";
-  if (discount === "black_friday_pro") return "Our thank-you sale price for Pro members, through Sunday.";
-  if (discount === "black_friday") return "Sale price, through Sunday.";
+  if (discount === "black_friday_pro") return "Our thank-you sale price for Pro members. Ends Sunday.";
+  if (discount === "black_friday") return "Sale price. Ends Sunday.";
   return "";
 }

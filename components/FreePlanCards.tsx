@@ -101,9 +101,9 @@ export function FreePlanCards({
                 {price(PRO_MONTHLY_PRICE_FALLBACK)}
               </s>{" "}
               <span className="sr-only">now </span>
-              {price(BLACK_FRIDAY_PRO_MONTHLY_PRICE)}/mo <span className="pro-plan-card__note">· Sale</span>
+              {price(BLACK_FRIDAY_PRO_MONTHLY_PRICE)}/mo
               <span className="block text-cp-label font-normal">
-                For {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months, then {price(PRO_MONTHLY_PRICE_FALLBACK)}. New members only.
+                50% off for {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months, then {price(PRO_MONTHLY_PRICE_FALLBACK)}.
               </span>
             </p>
           ) : (

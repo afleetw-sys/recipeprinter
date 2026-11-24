@@ -22,7 +22,6 @@ import {
 } from "@/lib/proProduct";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
 import {
-  BLACK_FRIDAY_COOKBOOK_PRICE,
   BLACK_FRIDAY_PRO_MONTHLY_MONTHS,
   BLACK_FRIDAY_PRO_MONTHLY_PRICE,
   isBlackFridayLive,
@@ -117,6 +116,7 @@ export function ProUpgradeDialog({
   // Monthly during the sale (the deal "Claim offer" points at), else the default.
   const [selectedCycle, setSelectedCycle] = useState<ProBillingCycle>(proCycleToOpenOn);
   const [saleLive] = useState(() => isBlackFridayLive());
+  const saleTitle = saleLive && title === GENERIC_COPY.title;
   const [pendingCycle, setPendingCycle] = useState<ProBillingCycle | null>(null);
   const uid = cookPilotUser?.uid ?? null;
   // Whether this account has been asked on any device. Null until read, and
@@ -401,18 +401,23 @@ export function ProUpgradeDialog({
         <>
           {/* No crown beside the title (Amelia, 2026-11-16): the picture
               and the title carry it. */}
+          {/* During the sale (lib/blackFriday.ts) the plain upgrade pitch
+              becomes the offer, said once in the title (Amelia, 2026-11-24,
+              after Canva's): the plan cards and fine print don't repeat it.
+              A dialog opened by a locked feature keeps its own title, with
+              the badge. */}
+          {saleLive && <span className="pro-sale-badge">Limited time offer</span>}
           <h2 id="pro-upgrade-title" className="pr-8 text-cp-dialog-title font-extrabold tracking-tight">
-            {title}
+            {saleTitle ? (
+              <>
+                Enjoy <span className="text-[var(--cp-accent)]">50% off</span> RecipePrinter Pro for{" "}
+                {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months
+              </>
+            ) : (
+              title
+            )}
           </h2>
-          {body && <p className="text-cp-body text-ink-soft">{body}</p>}
-          {/* Both of the sale's offers, for someone not on Pro
-              (lib/blackFriday.ts). Never the $9.99 member price. */}
-          {saleLive && (
-            <p className="text-cp-small font-semibold text-[var(--cp-premium)]">
-              Sale through Sunday: Pro is half off your first {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months, and cookbooks
-              are {price(BLACK_FRIDAY_COOKBOOK_PRICE)}.
-            </p>
-          )}
+          {body && !saleTitle && <p className="text-cp-body text-ink-soft">{body}</p>}
 
           {/* A long list kept quiet (Amelia, 2026-11-17): a soft lead-in
               rather than a bold heading, small type on an even pitch, and
@@ -450,7 +455,6 @@ export function ProUpgradeDialog({
                   <span className="pro-plan-option__name">
                     {PRO_CYCLE_LABEL[cycle]}
                     {cycle === "annual" && <span className="pro-plan-save-tag">Save more</span>}
-                    {cycle === "monthly" && saleLive && <span className="pro-plan-save-tag">Sale</span>}
                   </span>
                   <span className="pro-plan-option__price">
                     {cycle === "monthly" && saleLive && (
@@ -466,14 +470,8 @@ export function ProUpgradeDialog({
                     <span className="pro-plan-option__per"> / month</span>
                   </span>
                   {/* Annual says what it charges once a year; Monthly's
-                      "/ month" already says it all (Amelia, 2026-11-17),
-                      except during the sale, when it says how long $2.49 lasts. */}
+                      "/ month" already says it all (Amelia, 2026-11-17). */}
                   {cycle === "annual" && <span className="pro-plan-option__note">{billedYearly}</span>}
-                  {cycle === "monthly" && saleLive && (
-                    <span className="pro-plan-option__note">
-                      For {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months, then {monthlyAmount}. New members only.
-                    </span>
-                  )}
                 </button>
               );
             })}
@@ -486,7 +484,12 @@ export function ProUpgradeDialog({
           >
             {saleLive && selectedCycle === "monthly" ? "Claim offer" : ctaLabel}
           </button>
-          <p className="text-center text-cp-label text-ink-soft">Cancel any time from Settings.</p>
+          <p className="text-center text-cp-label text-ink-soft">
+            {/* What the sale price turns into, said once, in the fine print. */}
+            {saleLive && selectedCycle === "monthly"
+              ? `Then ${monthlyAmount} a month. New members only. Cancel any time from Settings.`
+              : "Cancel any time from Settings."}
+          </p>
         </>
       ) : null}
       </div>

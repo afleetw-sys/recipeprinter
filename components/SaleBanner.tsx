@@ -84,15 +84,14 @@ export function SaleBanner() {
     <div role="region" aria-label="Sale" className="rp-sale-banner no-print">
       <p className="rp-sale-banner__text">
         <span className="rp-sale-banner__all">
-          <b>Sale through Sunday:</b> cookbooks are {price(BLACK_FRIDAY_COOKBOOK_PRICE)}, and Pro is half off for
-          your first {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months.
+          <b>Sale:</b> 50% off Pro for {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months, and cookbooks are{" "}
+          {price(BLACK_FRIDAY_COOKBOOK_PRICE)}. Ends Sunday.
         </span>
         <span className="rp-sale-banner__member">
-          <b>Thanks for being a Pro member.</b> Every cookbook is {price(BLACK_FRIDAY_PRO_COOKBOOK_PRICE)} through
-          Sunday.
+          <b>Thanks for being Pro:</b> every cookbook is {price(BLACK_FRIDAY_PRO_COOKBOOK_PRICE)}. Ends Sunday.
         </span>
         <span className="rp-sale-banner__new">
-          <b>Sale through Sunday:</b> cookbooks are {price(BLACK_FRIDAY_COOKBOOK_PRICE)}.
+          <b>Sale:</b> cookbooks are {price(BLACK_FRIDAY_COOKBOOK_PRICE)}. Ends Sunday.
         </span>{" "}
         <button type="button" className="rp-sale-banner__cta" onClick={openUpgrade}>
           Claim offer
