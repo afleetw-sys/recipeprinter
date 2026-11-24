@@ -337,6 +337,9 @@ export interface QueueItem {
   /** The failure's bucket, for surfaces too small for `error`'s full sentence
       (the toast). Absent on items that failed before this was recorded. */
   errorCode?: ImportFailureCode;
+  /** Getting Pro would get past this failure, so its card may offer Pro. Only
+      ever the hourly photo limit outside a cookbook (`ImportError.offersPro`). */
+  offersPro?: boolean;
   /**
    * The page that was parsing this went away before the parse finished (a
    * reload, a sign-in redirect, a discarded tab), so there is no answer to wait

@@ -606,6 +606,32 @@ describe("parseImages at the hourly photo limit", () => {
     );
   });
 
+  // A free cook building a cookbook was sent to buy Pro by this limit, and Pro
+  // doesn't unlock a cookbook (2026-11-24). A book never needs Pro, so inside
+  // one the limit says when photos come back and nothing else, whatever shape
+  // the backend's error takes, and CookPilot is told the photos are for a book.
+  it("never pitches Pro for photos going into a cookbook", async () => {
+    const shapes = [
+      limitError({ reason: "image_hourly_limit", limit: 10, resetsAtMs: RESETS_AT, pro: false }, 10),
+      limitError(undefined, 10),
+    ];
+    for (const shape of shapes) {
+      callable.mockReset();
+      callable.mockRejectedValue(shape);
+      const onCards = (await parseImages(["data:image/jpeg;base64,AAAA"]).catch((err: unknown) => err)) as ImportError;
+      const inBook = (await parseImages(["data:image/jpeg;base64,AAAA"], { forCookbook: true }).catch(
+        (err: unknown) => err,
+      )) as ImportError;
+
+      expect(onCards.offersPro).toBe(true);
+      expect(inBook).toBeInstanceOf(ImportError);
+      expect(inBook.code).toBe("rate_limited");
+      expect(inBook.offersPro).toBe(false);
+      expect(inBook.message).not.toMatch(/\bPro\b/);
+      expect(callable).toHaveBeenLastCalledWith(expect.objectContaining({ forCookbook: true }));
+    }
+  });
+
   it("still names the number when the backend sends no details", async () => {
     callable.mockRejectedValue(limitError(undefined));
 
