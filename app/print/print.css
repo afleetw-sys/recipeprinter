@@ -13679,6 +13679,16 @@ textarea.recipe-card__toc-title {
   --rp-foot-inset-l: var(--recipe-card-padding-x);
 }
 
+/* Keepsake's inset frame is drawn by the card itself, so it goes here too:
+   covers, the dedication and chapter openers keep it. */
+.recipe-template--keepsake .recipe-card[data-quiet-theme]:not(.recipe-card--divider):not(.recipe-card--cover) {
+  box-shadow: none;
+}
+
+.recipe-template--keepsake .recipe-card[data-quiet-theme]:not(.recipe-card--divider):not(.recipe-card--cover)::before {
+  display: none;
+}
+
 /* Counter's big accent disc on its paper covers and opening page. */
 .recipe-template--counter .recipe-card--cover[data-quiet-theme][data-cover-mode="none"] .recipe-card__cover-photo::after {
   display: none;

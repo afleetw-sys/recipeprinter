@@ -2913,7 +2913,10 @@ export const CoverFace = memo(function CoverFace({
           </div>
         )}
         {/* No `TemplateDecoration`: the opening page keeps only the cover
-            band, the quiet accent at its top, like the front of any book. */}
+            band, the quiet accent at its top, like the front of any book,
+            and the front cover's frame on the themes that have one
+            (Heirloom, Keepsake). */}
+        <div className="recipe-card__cover-frame" aria-hidden />
         <div className="recipe-card__cover-band" aria-hidden>
           {(template ?? draft.template) === "bistro" && <BistroCoverBandArt />}
         </div>
@@ -3027,6 +3030,10 @@ export const CoverFace = memo(function CoverFace({
           template={template ?? draft.template}
           show={showDecoration && (template ?? draft.template) !== "bistro"}
         />
+        {/* The front cover's frame (Heirloom's and Keepsake's), so the back
+            cover and dedication are dressed like the cover they belong to
+            rather than plain paper. Hidden on every other theme. */}
+        <div className="recipe-card__cover-frame" aria-hidden />
         <div className="recipe-card__cover-band" aria-hidden>
           {(template ?? draft.template) === "bistro" && <BistroCoverBandArt />}
         </div>
