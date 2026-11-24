@@ -4564,8 +4564,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
         {
           title: "What you pay",
           rows: [
-            { feature: "To make the book", us: `${COOKBOOK_PRICE_FALLBACK} once`, them: "Free" },
-            { feature: "Each printed copy", us: "Your printer's price", them: "From $19.95, printing included" },
+            { feature: "Price", us: `${COOKBOOK_PRICE_FALLBACK} per cookbook, plus printing`, them: "From $19.95 per copy, printing included" },
             { feature: "Shipping", us: "Set by your printer", them: "Extra, by weight" },
             { feature: "Book without the maker's logo", us: true, them: "25% extra" },
           ],
