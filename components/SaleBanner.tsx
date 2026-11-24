@@ -37,7 +37,7 @@ function currentStanding(): SaleStanding {
  *
  * Three versions, and "$9.99" is only ever in the member's: someone who isn't
  * Pro must never upgrade expecting a price going Pro now doesn't give.
- * - Not Pro, or signed out: Pro's intro price, "Claim offer".
+ * - Not Pro, or signed out: Pro's intro price, then the $15.99 book, "Claim offer".
  * - Pro since before the sale: their $9.99 book.
  * - Went Pro during the sale: the $15.99 book.
  *
@@ -83,11 +83,11 @@ export function SaleBanner() {
   return (
     <div role="region" aria-label="Sale" className="rp-sale-banner no-print">
       <p className="rp-sale-banner__text">
-        {/* Leads with Pro (Amelia, 2026-11-24): most people buy Pro, not a
-            book. What Pro gets you is left off on a phone to keep it short. */}
+        {/* Both offers, Pro first (Amelia, 2026-11-24): most people buy Pro,
+            not a book. */}
         <span className="rp-sale-banner__all">
-          <b>This week only:</b> Pro is half price for {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months.
-          <span className="max-sm:hidden"> Every theme, 4×6 cards and unlimited imports.</span>
+          <b>This week only:</b> Pro is half price for {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months, and cookbooks are{" "}
+          {price(BLACK_FRIDAY_COOKBOOK_PRICE)}.
         </span>
         <span className="rp-sale-banner__member">
           <b>Just for Pro members:</b> every cookbook is {price(BLACK_FRIDAY_PRO_COOKBOOK_PRICE)} until Sunday.
