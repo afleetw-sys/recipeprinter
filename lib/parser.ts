@@ -55,13 +55,19 @@ export interface ImportErrorMeta {
  * message stays user-facing; `code` is for us.
  */
 export class ImportError extends Error {
+  /** Whether getting Pro would get past this failure, so the failed card may
+      offer it: only the hourly photo limit, on the free plan, outside a
+      cookbook (see `parseImages`). */
+  readonly offersPro: boolean;
   constructor(
     message: string,
     readonly code: ImportFailureCode = "unknown",
     readonly meta?: ImportErrorMeta,
+    opts?: { offersPro?: boolean },
   ) {
     super(message);
     this.name = "ImportError";
+    this.offersPro = opts?.offersPro === true;
   }
 }
 
@@ -597,11 +603,18 @@ function photoRecipeNodes(data: unknown): unknown[] {
  * with a roundup link, the queue decides how many the cook keeps: all of them
  * in a cookbook (up to its free size) or for Pro, the first otherwise.
  */
-export async function parseImages(images: string[]): Promise<Recipe[]> {
+export async function parseImages(images: string[], opts?: { forCookbook?: boolean }): Promise<Recipe[]> {
+  const forCookbook = opts?.forCookbook === true;
   try {
     // `multiRecipe`, as `parseUrlAll` sends it: without it CookPilot reads
-    // several recipes on a photo as one.
-    const data = await callCookPilotParser("parseRecipeFromImages", { images, multiRecipe: true });
+    // several recipes on a photo as one. `forCookbook` tells CookPilot the
+    // photos are going into a book, which its own free size bounds rather
+    // than Pro, so the hourly photo limit can treat it that way.
+    const data = await callCookPilotParser("parseRecipeFromImages", {
+      images,
+      multiRecipe: true,
+      ...(forCookbook ? { forCookbook: true } : {}),
+    });
     const recipes = photoRecipeNodes(data).flatMap((node) => {
       const recipe = adaptCookPilotRecipe(node);
       if (!recipe) return [];
@@ -617,10 +630,17 @@ export async function parseImages(images: string[]): Promise<Recipe[]> {
     }
     return recipes;
   } catch (err) {
-    throw friendlyError(
+    const friendly = friendlyError(
       err,
       "We couldn't read a complete recipe from those photos. Make sure the title, ingredients, and steps are visible.",
     );
+    // The hourly photo limit is the one failure Pro gets past. A free cook
+    // building a cookbook was sent to buy Pro by it (2026-11-24), and Pro
+    // doesn't unlock a book, so inside one it only says when photos come back.
+    const imageLimit = friendly.code === "rate_limited" ? imageLimitDetails(err) : null;
+    if (!imageLimit) throw friendly;
+    const offersPro = !imageLimit.pro && !forCookbook;
+    throw new ImportError(imageLimitMessage(imageLimit, { offersPro }), "rate_limited", friendly.meta, { offersPro });
   }
 }
 

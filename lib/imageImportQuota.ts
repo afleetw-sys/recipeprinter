@@ -59,13 +59,18 @@ export function formatResetTime(ms: number): string {
 
 /**
  * What a cook who ran out of photo imports reads. It says why (the hour's
- * allowance is used up), when it comes back, and, on the free plan, what Pro
- * would give them instead.
+ * allowance is used up), when it comes back, and, when `offersPro`, what Pro
+ * would give them instead. That is the free plan on recipe cards only: a
+ * cookbook never needs Pro, and Pro doesn't unlock one, so photos going into a
+ * book are never a reason to pitch it (see `parseImages`).
  */
-export function imageLimitMessage({ limit, resetsAtMs, pro }: ImageLimitDetails): string {
+export function imageLimitMessage(
+  { limit, resetsAtMs, pro }: ImageLimitDetails,
+  { offersPro = !pro }: { offersPro?: boolean } = {},
+): string {
   const used = `You've already done ${limit} image imports this hour.`;
   const when = resetsAtMs !== null ? `at ${formatResetTime(resetsAtMs)}` : "within the hour";
-  if (pro) return `${used} You can import more images ${when}.`;
+  if (!offersPro) return `${used} You can import more images ${when}.`;
   return `${used} You can import more ${when}, or upgrade to Pro for ${IMAGE_IMPORTS_PER_HOUR_PRO} image imports an hour.`;
 }
 

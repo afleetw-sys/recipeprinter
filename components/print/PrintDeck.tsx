@@ -1676,11 +1676,9 @@ export function PrintDeck(props: PrintDeckProps) {
                 item={failedItem}
                 onTryAnotherWay={() => onTryAnotherImportWay(failedItem.id)}
                 onRemove={() => onRemoveImport(failedItem.id)}
-                onUpgrade={
-                  failedItem.method === "image" && failedItem.errorCode === "rate_limited"
-                    ? onUpgradeForImageImports
-                    : undefined
-                }
+                // Only a failure Pro gets past: the hourly photo limit on recipe
+                // cards. Inside a cookbook it never offers Pro (`parseImages`).
+                onUpgrade={failedItem.offersPro ? onUpgradeForImageImports : undefined}
               />
             </div>
           </div>

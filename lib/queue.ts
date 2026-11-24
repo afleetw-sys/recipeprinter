@@ -490,6 +490,19 @@ function extraItemsFor(base: QueueItem | undefined, fallbackSource: string, reci
 }
 
 /** Options every parser-backed `add*` takes. */
+/**
+ * Whether photos being read are going into a cookbook: the book is open, the
+ * import box says so, or the import lands in a book that is still being made
+ * (`meterExempt`). Such photos are never a reason to pitch Pro (`parseImages`).
+ */
+function photosForCookbook(
+  cookbookMode: boolean,
+  importContext: ImportContextProps | undefined,
+  opts: AddImportOptions | undefined,
+): boolean {
+  return cookbookMode || importContext?.context === "cookbook" || opts?.meterExempt === true;
+}
+
 export interface AddImportOptions {
   /** Swap recipe: this recipe is being replaced by the one added, so it
       doesn't count toward the one-recipe card limit (see `addReadyRecipes`). */
@@ -1089,6 +1102,7 @@ export function useQueue() {
           // Carried on the item so the toast can be short without inventing a
           // reason: a placeholder host is its own bucket, not a parse failure.
           errorCode: placeholder ? "placeholder" : category,
+          ...(err instanceof ImportError && err.offersPro ? { offersPro: true } : {}),
         });
         // A reserved address is someone trying the box out, not a site that
         // failed to parse, so nothing about it is worth reproducing later. It
@@ -1245,7 +1259,8 @@ export function useQueue() {
         async () => {
           const images = await prepareImageDataUrls(files);
           failedImages.splice(0, failedImages.length, ...images);
-          return withImportedPhoto(await parseImages(images), storedPhoto);
+          const forCookbook = photosForCookbook(cookbookModeRef.current, importContextRef.current, opts);
+          return withImportedPhoto(await parseImages(images, { forCookbook }), storedPhoto);
         },
         { failedImages, meterExempt: opts?.meterExempt },
       ).finally(() => releaseImportPreview(id));
@@ -1265,7 +1280,10 @@ export function useQueue() {
       void runParse(
         id,
         { source: "image" },
-        async () => withImportedPhoto(await parseImages(images), storedPhoto),
+        async () => {
+          const forCookbook = photosForCookbook(cookbookModeRef.current, importContextRef.current, opts);
+          return withImportedPhoto(await parseImages(images, { forCookbook }), storedPhoto);
+        },
         { failedImages: images, meterExempt: opts?.meterExempt },
       ).finally(() => releaseImportPreview(id));
     },
