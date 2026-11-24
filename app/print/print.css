@@ -14142,12 +14142,16 @@ textarea.recipe-card__toc-title {
 }
 
 /* Customize theme: use white instead of the theme's full-page color, in the
-   live preview and every output. Keep borders, illustrations and accent fills:
-   only the card's paper changes. The variable also covers SVG-backed faces
-   whose background rect reads `--recipe-bg`. */
-.recipe-background-off {
+   live preview and every output. Scope this to the page deck: the settings
+   panel sits under the same workspace root, and its theme thumbnails must
+   always show each theme's own default background. Keep borders,
+   illustrations and accent fills; only the card's paper changes. Setting the
+   variable on the card also covers SVG-backed faces whose background rect
+   reads `--recipe-bg`. Export roots are themselves `.recipe-page-deck`; the
+   editor's deck is a descendant of the workspace root. */
+.recipe-background-off.recipe-page-deck .recipe-card,
+.recipe-background-off .recipe-page-deck .recipe-card,
+.recipe-background-off .rp-twoup .recipe-card {
   --recipe-bg: #fff !important;
-}
-.recipe-background-off .recipe-card {
   background: #fff !important;
 }
