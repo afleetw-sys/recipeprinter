@@ -379,6 +379,15 @@ describe("computeProLocks — the print page's Pro-gate matrix", () => {
     }
   });
 
+  test("a white theme background locks free cards, but not a cookbook or Pro", () => {
+    const free = { ...baseArgs, customerInfo: NO_ENTITLEMENTS, cardSize: "letter" as const };
+    const pro = { ...free, customerInfo: customerWith({ pro: { productIdentifier: "pro_monthly" } }) };
+    expect(computeProLocks({ ...free, backgroundChanged: false }).fontScaleLocked).toBe(false);
+    expect(computeProLocks({ ...free, backgroundChanged: true }).fontScaleLocked).toBe(true);
+    expect(computeProLocks({ ...free, backgroundChanged: true, cookbookMode: true }).proLocked).toBe(false);
+    expect(computeProLocks({ ...pro, backgroundChanged: true }).proLocked).toBe(false);
+  });
+
   test("cookbook mode exempts every lock regardless of entitlement", () => {
     const locks = computeProLocks({ ...baseArgs, customerInfo: NO_ENTITLEMENTS, cookbookMode: true, recipeCount: 5 });
     expect(locks.proLocked).toBe(false);
