@@ -13640,36 +13640,39 @@ textarea.recipe-card__toc-title {
 }
 
 /* ── A quiet book's recipe pages ──────────────────────────────────────────
-   A book with `quietTheme` (lib/bookTheme.tsx) keeps its theme in the
-   background on recipe pages and lets it show on chapter openers. Every
-   recipe page is already edge-only (no illustrations: see `TemplateDecoration`
-   and the `.recipe-card--edge-only` layout rules above); here the edge that is
-   left prints light: thinner frames, paler strips and bands, and no Supper
-   frame or utensil at all. Colour and weight, never position, so nothing here moves text or
-   changes what the face measurer reads. Books made before never get
-   `data-quiet-theme` and print exactly as they did. */
-.recipe-card[data-quiet-theme]:not(.recipe-card--divider)
-  :is(
-    .recipe-card__checker,
-    .recipe-card__counter-band,
-    .recipe-card__pantry-rules,
-    .recipe-card__quilt,
-    .recipe-card__market-bar,
-    .recipe-card__poster-band
-  ),
+   A book with `quietTheme` (lib/bookTheme.tsx) shows its theme's art on
+   chapter openers and none on recipe pages: no spine, band, strip, ruled
+   lines or frame there (RecipeCardFace skips its `TemplateDecoration`), only
+   the theme's paper, type and colours. Art is shown or not, never faded.
+   Books made before never get `data-quiet-theme` and print as they did. */
 .recipe-card-page:has(.recipe-card[data-quiet-theme]) .recipe-card-page__spine {
-  opacity: 0.3;
-}
-
-/* Supper's frame and utensil are its chapter openers' alone: its recipe
-   pages are plain paper. */
-.recipe-card[data-quiet-theme]:not(.recipe-card--divider)
-  :is(.recipe-card__supper-frame, .recipe-card__supper-utensil, .recipe-card__supper-utensil-tint) {
   display: none;
 }
 
-.recipe-card[data-quiet-theme]:not(.recipe-card--divider) .recipe-card__poster-frame {
-  border-width: calc(5 * var(--poster-u));
+/* Heirloom's utensil row is drawn by the card itself, not the art layer, so
+   it goes here: chapter openers keep it. */
+.recipe-template--heirloom .recipe-card[data-quiet-theme]:not(.recipe-card--divider)::before {
+  display: none;
+}
+
+/* Quilt's recipe pages left an inch down the left edge for its strip. With no
+   strip there, the recipe, its footer and the page foot take the usual margin.
+   Named with the card set to outrank the theme's own padding. */
+.recipe-card-set.recipe-template--quilt .recipe-card[data-quiet-theme]:not(.recipe-card--divider) {
+  padding-left: var(--recipe-card-padding-x);
+}
+
+.recipe-card-set.recipe-template--quilt .recipe-card[data-quiet-theme]:not(.recipe-card--divider) .recipe-card__footer {
+  left: var(--recipe-card-padding-x);
+}
+
+.recipe-card-set.recipe-template--quilt .recipe-card-page:has(.recipe-card[data-quiet-theme]:not(.recipe-card--divider)) {
+  --rp-foot-inset-l: var(--recipe-card-padding-x);
+}
+
+/* Counter's big accent disc on its paper covers and opening page. */
+.recipe-template--counter .recipe-card--cover[data-quiet-theme][data-cover-mode="none"] .recipe-card__cover-photo::after {
+  display: none;
 }
 
 /* A quiet book's chapter openers carry the full art. Quilt's strip runs down
@@ -13697,15 +13700,6 @@ textarea.recipe-card__toc-title {
   padding-bottom: calc(176 * var(--christmas-u) + 0.2in);
 }
 
-/* Heirloom's utensil row is drawn by the card itself, not the art layer. */
-.recipe-template--heirloom .recipe-card[data-quiet-theme]:not(.recipe-card--divider)::before {
-  opacity: 0.1;
-}
-
-/* Poster's title tab keeps the recipe's colour, washed toward the paper. */
-.recipe-template--poster .recipe-card[data-quiet-theme]:not(.recipe-card--divider) .recipe-card__headline {
-  background: color-mix(in srgb, var(--poster-color) 35%, var(--recipe-bg));
-}
 
 /* Print and its download arrow as one control: a hairline of the header
    between two halves that share their outer corners. Alone (a cookbook has no

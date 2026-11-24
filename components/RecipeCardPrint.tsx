@@ -1788,7 +1788,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       <div className="recipe-card__accent" aria-hidden />
       <TemplateDecoration
         template={template}
-        show={showDecoration}
+        // A quiet book's recipe pages carry no art; its chapter openers do.
+        show={showDecoration && !quietTheme}
         edgeOnly={edgeOnly}
         recipeIndex={recipeIndex}
       />
@@ -2852,6 +2853,7 @@ export const CoverFace = memo(function CoverFace({
       <article
         className="recipe-card recipe-card--cover recipe-card--cover-back recipe-card--cover-dedication"
         data-cover-mode={dedicationMode}
+        data-quiet-theme={quietTheme ? "true" : undefined}
         data-cover-text={dedicationTextEmpty ? "none" : undefined}
         data-preview-hidden={previewHidden ? "true" : undefined}
       >
@@ -2960,6 +2962,7 @@ export const CoverFace = memo(function CoverFace({
       <article
         className="recipe-card recipe-card--cover recipe-card--cover-back"
         data-cover-mode={backCoverMode}
+        data-quiet-theme={quietTheme ? "true" : undefined}
         data-cover-text={backTextEmpty ? "none" : undefined}
         data-preview-hidden={previewHidden ? "true" : undefined}
       >
@@ -3094,6 +3097,7 @@ export const CoverFace = memo(function CoverFace({
       className="recipe-card recipe-card--cover recipe-card--cover-front"
       data-cover-mode={coverMode}
       data-cover-photo={photoInCard ? "card" : undefined}
+      data-quiet-theme={quietTheme ? "true" : undefined}
       data-cover-text={coverTextEmpty ? "none" : undefined}
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
