@@ -180,6 +180,7 @@ import { resolveEffectiveCustomerInfo } from "@/lib/proAccessFallback";
 import { cookbookOfferFor, isSaleDiscount } from "@/lib/cookbookProduct";
 import { wasProBeforeBlackFriday } from "@/lib/blackFriday";
 import { useSaleLive } from "@/lib/useSaleLive";
+import { SALE_CLAIM_PRO_EVENT } from "@/components/SaleBanner";
 import {
   DEFAULT_COOKBOOK_PRESET_ID,
   getCookbookPreset,
@@ -4045,6 +4046,16 @@ export default function PrintPage() {
     track("paywall_viewed", { trigger, ...printPaywallReason(trigger) });
     setShowProUpgradeDialog(true);
   }
+
+  // The sale banner's "Claim Pro" (components/SaleBanner.tsx) opens this page's
+  // own dialog, whose purchase updates the workspace, not a second one.
+  const openProUpgradeDialogRef = useRef(openProUpgradeDialog);
+  openProUpgradeDialogRef.current = openProUpgradeDialog;
+  useEffect(() => {
+    const open = () => openProUpgradeDialogRef.current("sale_banner");
+    window.addEventListener(SALE_CLAIM_PRO_EVENT, open);
+    return () => window.removeEventListener(SALE_CLAIM_PRO_EVENT, open);
+  }, []);
 
   /**
    * A plan was chosen while signed out — `ProUpgradeDialog` is about to swap
@@ -7935,7 +7946,7 @@ export default function PrintPage() {
     <RecipeFieldsProvider value={fieldSwitches}>
     <QuietThemeProvider quiet={cookbookMode && Boolean(projectMeta.meta.quietTheme)}>
     <div
-      className={`h-dvh recipe-print-page ${printWatermarked ? "rp-print-locked" : ""} ${
+      className={`h-dvh rp-print-frame recipe-print-page ${printWatermarked ? "rp-print-locked" : ""} ${
         // A Pro benefit: no "Printed with RecipePrinter" line, on any theme.
         // On the page root, not the shell, because the off-screen measurers
         // (`measurers` below) must lay cards out exactly as the deck does.

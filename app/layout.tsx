@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { SaleBanner } from "@/components/SaleBanner";
 import { saleInlineScript } from "@/lib/blackFriday";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -345,6 +346,8 @@ export default function RootLayout({
         <script id="rp-sale" dangerouslySetInnerHTML={{ __html: saleInlineScript() }} />
       </head>
       <body>
+        {/* The sale bar (lib/blackFriday.ts), on every page until dismissed. */}
+        <SaleBanner />
         <TranslatedPageGuard />
         <KeyboardInsetWatcher />
         <NoFocusZoom />

@@ -103,7 +103,7 @@ export function FreePlanCards({
               <span className="sr-only">now </span>
               {price(BLACK_FRIDAY_PRO_MONTHLY_PRICE)}/mo
               <span className="block text-cp-label font-normal">
-                50% off for {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months, then {price(PRO_MONTHLY_PRICE_FALLBACK)}.
+                50% off your first {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months, then {price(PRO_MONTHLY_PRICE_FALLBACK)}.
               </span>
             </p>
           ) : (

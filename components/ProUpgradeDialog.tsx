@@ -410,8 +410,8 @@ export function ProUpgradeDialog({
           <h2 id="pro-upgrade-title" className="pr-8 text-cp-dialog-title font-extrabold tracking-tight">
             {saleTitle ? (
               <>
-                Enjoy <span className="text-[var(--cp-accent-warm)]">50% off</span> RecipePrinter Pro for{" "}
-                {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months
+                Enjoy <span className="text-[var(--cp-accent-warm)]">50% off</span> your first{" "}
+                {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months of RecipePrinter Pro
               </>
             ) : (
               title

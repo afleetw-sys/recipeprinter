@@ -62,6 +62,9 @@
      be, which was 2.17:1 on card and too faint to be the chip's boundary. */
   --cp-premium: #9b6a12;
   --cp-premium-soft: #fff8dc;
+  /* The sale banner's height while it shows, set by components/SaleBanner.tsx
+     so /print, which fills one screen, can leave room for it. */
+  --rp-sale-banner-h: 0px;
   /* A brighter variant of the same semantic, for the Pro sparkle/crown mark
      (components/ProBadge.tsx) — --cp-premium itself is tuned for ink-sized
      TEXT on its own soft tint, which read as too muted for a small icon,
@@ -3451,14 +3454,14 @@ html[data-sale] .rp-sale-hide {
 }
 
 /* A dark strip so it reads as the sale at a glance (Amelia, 2026-11-24),
-   flat with no shadow. The words are centred and free to wrap, so it grows
-   with zoom. */
+   flat with no shadow: the "Limited time offer" badge, one line of offer, and
+   two real buttons. It wraps, so it grows with zoom and on a phone. */
 .rp-sale-banner {
   display: none;
   position: relative;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
+  min-height: 64px;
   padding: 12px 52px;
   background: var(--cp-ink);
   color: var(--cp-card);
@@ -3469,45 +3472,70 @@ html[data-sale] .rp-sale-hide {
 html[data-sale]:not([data-bf-dismissed]):not([data-bf-pro="pending"]) .rp-sale-banner {
   display: flex;
 }
+.rp-sale-banner__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+}
 .rp-sale-banner__text {
   margin: 0;
+  font-weight: 600;
 }
-.rp-sale-banner__text b {
-  font-weight: 700;
+.rp-sale-banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
 }
 .rp-sale-banner__member,
-.rp-sale-banner__new {
+.rp-sale-banner__new,
+.rp-sale-banner__for-pro {
   display: none;
 }
 html[data-bf-pro="member"] .rp-sale-banner__member,
-html[data-bf-pro="new"] .rp-sale-banner__new {
+html[data-bf-pro="new"] .rp-sale-banner__new,
+html[data-bf-pro] .rp-sale-banner__for-pro {
   display: inline;
 }
-html[data-bf-pro="member"] .rp-sale-banner__all,
-html[data-bf-pro="new"] .rp-sale-banner__all,
-html[data-bf-pro] .rp-sale-banner__cta {
+html[data-bf-pro] .rp-sale-banner__all,
+html[data-bf-pro] .rp-sale-banner__for-all {
   display: none;
 }
-.rp-sale-banner__cta {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--cp-premium-bright);
+/* Buttons change colour on hover, never position. */
+.rp-sale-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
   font: inherit;
+  font-size: var(--cp-fs-small);
   font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
   white-space: nowrap;
+  cursor: pointer;
 }
-.rp-sale-banner__cta:hover {
+.rp-sale-btn--pro {
+  border: 1px solid var(--cp-premium-bright);
+  background: var(--cp-premium-bright);
+  color: var(--cp-ink);
+}
+.rp-sale-btn--pro:hover {
+  background: color-mix(in srgb, var(--cp-premium-bright) 85%, var(--cp-card));
+}
+.rp-sale-btn--book {
+  border: 1px solid color-mix(in srgb, var(--cp-card) 55%, transparent);
+  background: transparent;
   color: var(--cp-card);
 }
-.rp-sale-banner__cta:focus-visible,
+.rp-sale-btn--book:hover {
+  background: color-mix(in srgb, var(--cp-card) 12%, transparent);
+}
+.rp-sale-btn:focus-visible,
 .rp-sale-banner__close:focus-visible {
   outline: 2px solid var(--cp-premium-bright);
   outline-offset: 2px;
-  border-radius: 6px;
 }
 .rp-sale-banner__close {
   position: absolute;
@@ -3528,6 +3556,13 @@ html[data-bf-pro] .rp-sale-banner__cta {
 .rp-sale-banner__close:hover {
   background: color-mix(in srgb, var(--cp-card) 12%, transparent);
   color: var(--cp-card);
+}
+/* /print fills exactly one screen (and on a phone is pinned over it), so it
+   gives up the banner's measured height (components/SaleBanner.tsx). */
+@media screen {
+  .rp-print-frame {
+    height: calc(100dvh - var(--rp-sale-banner-h, 0px));
+  }
 }
 @media print {
   .rp-sale-banner {
