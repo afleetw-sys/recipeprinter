@@ -4474,7 +4474,7 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
   },
   {
     slug: "createmycookbook-alternative",
-    contentUpdated: "2026-10-10",
+    contentUpdated: "2026-11-24",
     primaryKeyword: "CreateMyCookbook alternative",
     // Not "cookbook maker" or "family recipe book": those are other pages'
     // primaries, linked from here instead.
@@ -4494,74 +4494,91 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
     layout: "capture-first",
     heroImage: "printed-cookbook",
     importSubmitLabel: "Start a cookbook",
+    captureReassurance: `Try it with 10 recipes free. ${COOKBOOK_PRICE_FALLBACK} once to download the finished book.`,
     title: "CreateMyCookbook Alternative for Family Cookbooks | RecipePrinter",
     description:
-      "Compare RecipePrinter with CreateMyCookbook. Import recipes from links, photos, and handwritten cards, build your cookbook, and export a print-ready PDF.",
-    h1: "A CreateMyCookbook alternative that reads your recipes",
+      "Compare RecipePrinter with CreateMyCookbook: what each costs, how recipes get in, and who prints the book. RecipePrinter reads recipes from links and handwritten cards, so nobody retypes them.",
+    h1: "A CreateMyCookbook alternative that does the typing for you",
     anchor: "CreateMyCookbook alternative",
     lede:
-      "CreateMyCookbook helps you build and order a printed cookbook. RecipePrinter starts one step earlier: paste a recipe link, upload a handwritten card or photo, or add recipe text, then organize everything into a cookbook and export the finished file to print wherever you want.",
+      `With CreateMyCookbook, you type each recipe into its designer or pay its team to type them. RecipePrinter reads them in as you add them, from a recipe link or a photo of a handwritten card. It's ${COOKBOOK_PRICE_FALLBACK} once per cookbook for a print-ready file you print at home or order bound from the printer you choose.`,
     featureSections: [
       {
-        heading: "Turn recipe cards into editable recipes",
+        heading: "Recipes go in without anyone typing them",
         image: "handwritten-card",
         body:
-          "Recipe cards are often the slowest part of making a family cookbook, because someone has to type them in. With RecipePrinter, you upload a photo of a handwritten card and get editable ingredients and instructions.",
+          "Typing is the slow part of a family cookbook. CreateMyCookbook offers WeTypeIt, where its team types the recipes you photograph, usually within a few hours: 10 free, then from about 60¢ each. RecipePrinter reads a photo of a handwritten card while you wait, and pulls a recipe straight from a link, at no extra cost.",
         afterBody:
-          "Check it against the card and change anything you want before the recipe goes in the book.",
+          "Check each one against the original and change anything you want before it goes in the book. Every word is editable.",
         links: [{ phrase: "handwritten card", href: "/handwritten-recipes-to-cookbook" }],
       },
       {
-        heading: "One price for the book, not for every copy",
+        heading: "The finished book is a file you keep",
         image: "convert-to-pdf",
         body:
-          "RecipePrinter charges per cookbook and gives you a print-ready PDF. From there, you decide how many copies to print and where to print them.",
+          "CreateMyCookbook prints and ships each copy for you, and its price includes the printing. RecipePrinter gives you a print-ready PDF instead, sized for the binding you pick, and you choose who prints it.",
         afterBody: [
-          "That can make more sense if you want to print at home, use a local copy shop, compare online printing services, or make more copies later.",
-          "You can keep editing the cookbook after you buy it and export an updated version whenever you need one.",
+          "Run a few pages at home, take the file to a copy shop, or order bound copies online. Printing is a separate cost, set by whoever prints it.",
+          "You can keep editing after you buy and download a new version whenever you like, at no extra cost.",
         ],
       },
       {
         heading: "Where CreateMyCookbook is the better choice",
         image: "bound-cookbook",
         body:
-          "If you want one company to handle both the cookbook software and the printing, CreateMyCookbook may be the better fit. You build the book, choose a print option, and finished copies are shipped to you.",
+          "If you want one order that ends with a finished book on your doorstep, CreateMyCookbook does that. You design the book, pick a binding, and it prints and ships the copies, usually within a week plus shipping.",
         afterBody: [
-          "It may also suit you better if you want contributors to enter their own recipes directly.",
-          "RecipePrinter gives you more control over where the book gets printed, but that also means arranging the printing yourself.",
+          "It's also the better fit if you want relatives to log in and type their own recipes, or you want a softcover, a ring binder, or its 7.75 × 9.75 inch size.",
+          "With RecipePrinter, you order the printing yourself. At download it points you to a printer for the binding you chose.",
         ],
       },
     ],
     comparison: {
       competitor: "CreateMyCookbook",
-      checked: "October 2026",
+      checked: "November 2026",
       sources: [
-        { href: "https://www.createmycookbook.com/", label: "its website" },
         { href: "https://www.createmycookbook.com/books/pricing", label: "its pricing page" },
+        { href: "https://www.createmycookbook.com/wetypeit", label: "its WeTypeIt page" },
+        { href: "https://www.createmycookbook.com/shipping_policy", label: "its shipping policy" },
       ],
+      // Each row is a question a shopper is asking, and each cell answers it
+      // the way they'd want it answered: yes, no, a price or a number. A
+      // phrase like "Depends on format" answers nothing and still draws a tick.
       groups: [
+        {
+          title: "What you pay",
+          rows: [
+            { feature: "To make the book", us: `${COOKBOOK_PRICE_FALLBACK} once`, them: "Free" },
+            { feature: "Each printed copy", us: "Extra, at your printer's price", them: "From $19.95, printing included" },
+            { feature: "Shipping", us: "Set by your printer", them: "Extra, by weight" },
+            { feature: "Try it before you pay", us: "10 recipes free", them: "Free until you order" },
+            { feature: "Book without the maker's logo", us: true, them: "25% extra" },
+          ],
+        },
         {
           title: "Getting recipes in",
           rows: [
-            { feature: "Pasted recipe text", us: "Formats the recipe for you", them: "Formats it in the recipe form" },
-            { feature: "From a recipe link", us: "Reads the recipe from the link", them: "Copy the text from the page and paste it" },
-            { feature: "From a photo of a handwritten card", us: "Reads it into editable text", them: "WeTypeIt: their team types it, sold as credits" },
-            { feature: "Contributors adding recipes", us: "They send recipes to you to add", them: "Invite contributors to add recipes and photos" },
+            { feature: "Import from a recipe link", us: true, them: false },
+            { feature: "Photo of a handwritten card", us: "Read while you wait, included", them: "Their team types it: 10 free, then from 60¢" },
+            { feature: "Relatives add their own recipes", us: false, them: true },
           ],
         },
         {
           title: "The book",
           rows: [
-            { feature: "Cover, chapters, and contents", us: "Built from your recipes, all editable", them: "Built in its online designer" },
-            { feature: "Binding", us: "Print-ready file for spiral or hardcover; your printer binds it", them: "Softcover, wire-o, hardback, and binder options" },
+            { feature: "Cover, chapters, and contents", us: true, them: true },
+            { feature: "Recipe photos", us: true, them: "Photo pages priced as color" },
+            { feature: "Binding", us: "Spiral, hardcover, or loose pages", them: "Softcover, spiral, hardcover, or binder" },
+            { feature: "Page size", us: "8.5 × 11 or 8 × 10 in", them: "7.75 × 9.75 in" },
           ],
         },
         {
-          title: "Printing and price",
+          title: "Printing and after",
           rows: [
-            { feature: "Printed and shipped to you", us: false, them: "Ordered through CreateMyCookbook" },
-            { feature: "Print-ready PDF", us: "Included with cookbook export", them: "eCookbook PDF, sold separately" },
-            { feature: "What you pay", us: `${COOKBOOK_PRICE_FALLBACK} per cookbook, plus your printer`, them: "Depends on format, page count, and quantity" },
+            { feature: "Printed and shipped to you", us: "You order it from Lulu, Blurb, or a copy shop", them: true },
+            { feature: "Print-ready PDF", us: true, them: "eCookbook for reading, $9.94" },
+            { feature: "Time to a finished book", us: "Download right after you buy", them: "3 to 7 business days, plus shipping" },
+            { feature: "Edit after you buy", us: true, them: true },
           ],
         },
       ],
@@ -4571,22 +4588,32 @@ export const SEO_LANDING_PAGES: SeoLandingPage[] = [
       {
         question: "How do I choose between them?",
         answer:
-          "Choose CreateMyCookbook if you want the same service to help you build the book and print the finished copies. Choose RecipePrinter if your bigger problem is getting recipes from websites, photos, and handwritten cards into one cookbook, and you want to choose where the final PDF is printed.",
+          "Choose CreateMyCookbook if you want one service to print and ship the books, or relatives to type their own recipes in. Choose RecipePrinter if your recipes are on websites, in photos, and on handwritten cards and you'd rather not type them, or you want the print-ready file to print where you like.",
       },
       {
         question: "What does each one cost?",
-        answer: `RecipePrinter charges ${COOKBOOK_PRICE_FALLBACK} per cookbook, which includes the print-ready PDF. Printing is separate and depends on the printer you choose. CreateMyCookbook's pricing depends on the book format, page count, quantity, and printing options, so check its current pricing before ordering.`,
+        answer: `RecipePrinter is ${COOKBOOK_PRICE_FALLBACK} once per cookbook, and you can try it with 10 recipes before you pay. Printing is separate: paper and ink at home, or a print service's price for a bound copy. CreateMyCookbook's designer is free, and each printed copy starts at $19.95 for a softcover, $24.95 for spiral, and $39.95 for a hardcover, more with extra or color pages, plus shipping. It discounts orders of 20 or more.`,
+      },
+      {
+        question: "Is it hard to get the book printed myself?",
+        answer:
+          "No. When you download, RecipePrinter suggests a printer for the binding you picked, such as Lulu for a spiral-bound book or Blurb for a hardcover. You upload the file there, and they print, bind and ship it to you. For a simple copy, a home printer or a local copy shop works too.",
+        links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
+      },
+      {
+        question: "Does CreateMyCookbook give you a PDF?",
+        answer:
+          "It sells an eCookbook for reading on a phone, tablet, Kindle or computer, for $9.94, or $2.95 alongside a printed copy. It's made for reading. RecipePrinter's download is a print-ready PDF, sized for the printer and binding you choose.",
+      },
+      {
+        question: "Can I change the book after I've paid?",
+        answer:
+          "Yes, with both. RecipePrinter lets you keep editing the cookbook and download a new version whenever you like. CreateMyCookbook keeps your book on file so you can change it before ordering more copies.",
       },
       {
         question: "What about Heritage Cookbook?",
         answer:
           "Heritage Cookbook is a separate company that works in a similar way: you build the book in its online designer, can invite contributors, and order printed copies. RecipePrinter is the better fit when your main job is bringing in recipes from links, photos, or handwritten cards before you build the cookbook.",
-      },
-      {
-        question: "Can RecipePrinter print and ship my cookbook?",
-        answer:
-          "RecipePrinter doesn't print or ship books. You choose who prints it, and extra copies cost only the printing. When you download, it suggests options for each format, such as Lulu for a spiral-bound book or Blurb for a hardcover, as well as your own printer or a local copy shop.",
-        links: [{ href: "/how-to-print-a-cookbook", label: "How to print a cookbook" }],
       },
       {
         question: "Can I use my own cover or chapter page designs?",
