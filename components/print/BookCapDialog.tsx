@@ -56,7 +56,7 @@ export function BookCapDialog({
       </h2>
       <div className="mt-cp-3 flex flex-col gap-cp-3 text-cp-body leading-relaxed text-ink-soft">
         <p>
-          A free preview holds {recipes(freeRecipes)}, so you can see how your cookbook looks before you buy it.
+          A free preview holds {recipes(freeRecipes)}.
           {kept > 0 ? ` We added ${kept} of the ${found} you picked.` : ""}
         </p>
         <p>
