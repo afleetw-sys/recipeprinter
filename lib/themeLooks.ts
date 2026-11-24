@@ -1,6 +1,6 @@
 import { DEFAULT_FONT_SCALE, normalizeFontScale, type FontScale } from "@/lib/fontScale";
 import { DEFAULT_PHOTO_SCALE, legacyPhotoScale, normalizePhotoScale, type PhotoScale } from "@/lib/photoScale";
-import { RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
+import { hasThemeBackgroundColor, RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
 import {
   normalizeAccent,
   normalizePosterColor,
@@ -98,6 +98,7 @@ export function withLook(
   change: Partial<ResolvedThemeLook>,
 ): ThemeLooks {
   const next = { ...lookFor(looks, template), ...change };
+  if (!hasThemeBackgroundColor(template)) next.background = true;
   const rest = { ...looks };
   delete rest[template];
   if (!isCustomized(next)) return rest;
@@ -132,7 +133,7 @@ export function normalizeThemeLooks(stored: unknown, legacy: { fontScale?: unkno
         posterColor: option.id === "poster" ? normalizePosterColor(posterColor) : null,
         utensil: option.id === "supper" ? normalizeUtensil(utensil) : null,
         stacked: stacked === true,
-        background: background !== false,
+        background: hasThemeBackgroundColor(option.id) ? background !== false : true,
       });
     }
     return looks;
