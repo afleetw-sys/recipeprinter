@@ -6961,6 +6961,16 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   field-sizing: content;
 }
 
+/* The edition line reads like the author line above it. It had no colour of
+   its own, so it kept this white on every theme's paper and couldn't be read.
+   Each rule that colours `.recipe-card__cover-author` has an edition twin with
+   the same selector right after it (e2e/cover-edition.spec.ts). This one is
+   scoped to the cover only because globals.css owns the bare class (its size). */
+.recipe-card--cover .recipe-card__cover-edition {
+  color: #fff;
+  opacity: 0.86;
+}
+
 /* Back cover: centered closing content on the template's own paper. */
 .recipe-card__cover-back-content {
   position: absolute;
@@ -7068,6 +7078,12 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   text-shadow: none;
   opacity: 1;
 }
+.recipe-template--heirloom .recipe-card__cover-edition,
+.recipe-template--keepsake .recipe-card__cover-edition {
+  color: var(--recipe-accent);
+  text-shadow: none;
+  opacity: 1;
+}
 .recipe-template--heirloom .recipe-card__cover-subtitle,
 .recipe-template--keepsake .recipe-card__cover-subtitle {
   margin-bottom: 0.28in;
@@ -7076,6 +7092,10 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
 .recipe-template--keepsake .recipe-card__cover-author {
   color: var(--recipe-muted);
   margin-top: 0.3in;
+}
+.recipe-template--heirloom .recipe-card__cover-edition,
+.recipe-template--keepsake .recipe-card__cover-edition {
+  color: var(--recipe-muted);
 }
 .recipe-template--heirloom .recipe-card__cover-rule,
 .recipe-template--keepsake .recipe-card__cover-rule {
@@ -7160,6 +7180,10 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   text-shadow: none;
   opacity: 1;
 }
+.recipe-template--bistro .recipe-card__cover-edition {
+  text-shadow: none;
+  opacity: 1;
+}
 .recipe-template--bistro .recipe-card__cover-title {
   color: var(--recipe-accent-2);
 }
@@ -7167,6 +7191,9 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   color: var(--recipe-accent);
 }
 .recipe-template--bistro .recipe-card__cover-author {
+  color: var(--recipe-ink);
+}
+.recipe-template--bistro .recipe-card__cover-edition {
   color: var(--recipe-ink);
 }
 .recipe-template--bistro .recipe-card__cover-rule {
@@ -7215,6 +7242,11 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   text-shadow: none;
   opacity: 1;
   text-transform: uppercase;
+}
+.recipe-template--counter .recipe-card__cover-edition {
+  color: var(--recipe-ink);
+  text-shadow: none;
+  opacity: 1;
 }
 .recipe-template--counter .recipe-card__cover-subtitle {
   color: var(--recipe-accent-2);
@@ -8185,6 +8217,10 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   text-align: center;
   opacity: 1;
 }
+.recipe-card--cover-front[data-cover-mode="none"] .recipe-card__cover-edition {
+  color: var(--recipe-muted);
+  opacity: 1;
+}
 .recipe-card--cover-front[data-cover-mode="none"] .recipe-card__cover-rule {
   background: var(--recipe-accent);
   margin-left: auto;
@@ -8269,6 +8305,12 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   color: var(--recipe-muted);
   text-shadow: none;
   text-align: center;
+  opacity: 1;
+}
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="grid"] .recipe-card__cover-edition,
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="photo"] .recipe-card__cover-edition {
+  color: var(--recipe-muted);
+  text-shadow: none;
   opacity: 1;
 }
 .recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="grid"] .recipe-card__cover-rule,
