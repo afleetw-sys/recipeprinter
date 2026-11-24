@@ -1341,7 +1341,6 @@ export default function PrintPage() {
       // Nothing being carried can also be a drop target — a selection can't
       // land on itself, and neither can a single card.
       const rows = geometry.recipes.filter((row) => !moving.has(row.id));
-      if (rows.length === 0) return null;
 
       // The expanded organizer is a 2D card grid, so resolve against the card
       // nearest the pointer and use its left/right half as before/after. The
@@ -1537,6 +1536,10 @@ export default function PrintPage() {
         };
       }
 
+      // The flat list drops beside another recipe, so it needs one. The
+      // organizer above doesn't: a book's only recipe still goes into an empty
+      // chapter, which an early return here used to forbid.
+      if (rows.length === 0) return null;
       const k = midpointIndex(rows.map((r) => r.rect));
       const before = k < rows.length ? rows[k] : rows[rows.length - 1];
       const indicator = {
