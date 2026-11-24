@@ -177,7 +177,7 @@ import {
 } from "@/lib/recipePrinterPurchases";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { resolveEffectiveCustomerInfo } from "@/lib/proAccessFallback";
-import { cookbookOfferFor } from "@/lib/cookbookProduct";
+import { cookbookOfferFor, isSaleDiscount } from "@/lib/cookbookProduct";
 import { wasProBeforeBlackFriday } from "@/lib/blackFriday";
 import { useSaleLive } from "@/lib/useSaleLive";
 import {
@@ -8795,6 +8795,7 @@ export default function PrintPage() {
             limit={recipeChoiceLimit}
             cookbook={cookbookMode}
             bookPrice={cookbookPrice}
+            bookWasPrice={isSaleDiscount(cookbookOffer.discount) ? cookbookFullPrice : null}
             busy={cookbookMode && cookbookPurchaseBusy}
             phone={deckMobile}
             onAdd={(chosen) => {
@@ -8821,6 +8822,7 @@ export default function PrintPage() {
           kept={bookCapDialog.kept}
           freeRecipes={FREE_COOKBOOK_RECIPES}
           price={cookbookPrice}
+          wasPrice={isSaleDiscount(cookbookOffer.discount) ? cookbookFullPrice : null}
           willAddRest={Boolean(bookCapDialog.withheld?.length)}
           busy={cookbookPurchaseBusy}
           onClose={() => setBookCapDialog(null)}

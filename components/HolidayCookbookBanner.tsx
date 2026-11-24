@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { cookbookOfferFor, cookbookPriceLabel, type CookbookOffer } from "@/lib/cookbookProduct";
+import { cookbookOfferFor, cookbookPriceLabel, isSaleDiscount, type CookbookOffer } from "@/lib/cookbookProduct";
+import { SalePrice } from "@/components/SalePrice";
 import { isBlackFridayLive } from "@/lib/blackFriday";
 import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
@@ -51,9 +52,13 @@ export function HolidayCookbookBanner({
           </h2>
           <p className="mt-cp-3 text-cp-body-lg leading-relaxed text-ink-soft">
             Build your cookbook and print it anywhere.{" "}
-            {/* Just the price they will pay, no strikethrough: the welcome
-                dialog on /print does the explaining. */}
-            <>Preview up to 10 recipes free, then {price(offer.price)} {cookbookPriceLabel(offer.discount, { withPro: true })} to download or add more.</>
+            {/* The price they will pay; during the sale, the regular one struck
+                through before it. */}
+            <>
+              Preview up to 10 recipes free, then{" "}
+              <SalePrice price={price(offer.price)} was={isSaleDiscount(offer.discount) ? price(offer.fullPrice) : null} />{" "}
+              {cookbookPriceLabel(offer.discount, { withPro: true })} to download or add more.
+            </>
           </p>
         </div>
         <button

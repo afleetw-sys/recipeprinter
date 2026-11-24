@@ -1,5 +1,6 @@
 "use client";
 
+import { SalePrice } from "@/components/SalePrice";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Recipe } from "@/types/recipe";
 import type { RecipeChoice } from "@/lib/recipeChoice";
@@ -63,6 +64,7 @@ export function FoundRecipesDialog({
   limit,
   cookbook,
   bookPrice,
+  bookWasPrice,
   busy = false,
   phone = false,
   onAdd,
@@ -76,6 +78,8 @@ export function FoundRecipesDialog({
   cookbook: boolean;
   /** The cookbook's price as shown at checkout, e.g. "$15.99". */
   bookPrice?: string;
+  /** The regular book price, struck through before `bookPrice` while it's on sale. */
+  bookWasPrice?: string | null;
   /** Buying the cookbook is under way. */
   busy?: boolean;
   /** A phone: a bottom sheet with one Add, instead of a dialog. */
@@ -140,9 +144,19 @@ export function FoundRecipesDialog({
   const thumbnails = choice.recipes.some((recipe) => Boolean(recipe.image));
   const titleText = `We found ${count} recipes ${WHERE[choice.source]}`;
   const addLabel = chosen <= 1 ? "Add recipe" : `Add ${chosen} recipes`;
-  const getAllLabel = cookbook
-    ? `Get the full cookbook${bookPrice ? ` · ${bookPrice}` : ""}`
-    : `Get all ${count} with Pro`;
+  const getAllLabel = cookbook ? (
+    <>
+      Get the full cookbook
+      {bookPrice ? (
+        <>
+          {" · "}
+          <SalePrice price={bookPrice} was={bookWasPrice} />
+        </>
+      ) : null}
+    </>
+  ) : (
+    `Get all ${count} with Pro`
+  );
 
   // What the limit is and what to do about it. The way to all of them isn't
   // in the sentence: it's its own control right under or beside Add.

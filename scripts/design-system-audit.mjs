@@ -51,6 +51,10 @@ const allowedClayText = new Map([
     '<span className="text-[var(--cp-accent-warm)]">worth making again.</span>',
     "app/page.tsx — the h1, 800 weight at 44px desktop / 28px mobile",
   ],
+  [
+    'Enjoy <span className="text-[var(--cp-accent-warm)]">50% off</span> RecipePrinter Pro for{" "}',
+    "components/ProUpgradeDialog.tsx — the sale title, 800 weight at --cp-fs-dialog-title (1.24rem, 19.8px)",
+  ],
 ]);
 
 const exemptTsx = new Set([

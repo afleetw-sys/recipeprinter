@@ -4,7 +4,8 @@ import Image from "next/image";
 import { ArrowRightIcon, ICON_SIZE } from "@/components/icons";
 import { PREVIEW_RULE } from "@/components/CookbookWelcomeDialog";
 import { useCookbookOffer } from "@/components/HolidayCookbookBanner";
-import { cookbookPriceLabel } from "@/lib/cookbookProduct";
+import { cookbookPriceLabel, isSaleDiscount } from "@/lib/cookbookProduct";
+import { SalePrice } from "@/components/SalePrice";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
 import { COOKBOOK_HERO as HERO } from "@/lib/cookbookHero";
 
@@ -55,7 +56,8 @@ export function CookbookIntro({ busy, onStart }: { busy: boolean; onStart: () =>
         <p className="rp-cookbook-page__price text-cp-small text-ink-soft">
           <b className="font-semibold text-ink">
             {/* The Pro price is 20% off the FIRST cookbook only, never every one. */}
-            {local(offer.price)} {cookbookPriceLabel(offer.discount, { withPro: true })}.
+            <SalePrice price={local(offer.price)} was={isSaleDiscount(offer.discount) ? local(offer.fullPrice) : null} wasClassName="font-normal text-ink-soft" />{" "}
+            {cookbookPriceLabel(offer.discount, { withPro: true })}.
           </b>{" "}
           <span>{PREVIEW_RULE}</span>
         </p>

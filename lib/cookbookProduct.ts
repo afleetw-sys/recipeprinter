@@ -136,7 +136,7 @@ export function cookbookPriceLabel(
   { withPro = false }: { withPro?: boolean } = {},
 ): string {
   if (discount === "pro_first") return withPro ? "for your first cookbook with Pro" : "for your first cookbook";
-  if (discount) return "per cookbook, on sale until Sunday";
+  if (discount) return "per cookbook";
   return "per cookbook";
 }
 
@@ -146,4 +146,10 @@ export function cookbookDiscountNote(discount: CookbookDiscount | null): string 
   if (discount === "black_friday_pro") return "Our thank-you sale price for Pro members. Ends Sunday.";
   if (discount === "black_friday") return "Sale price. Ends Sunday.";
   return "";
+}
+
+/** A sale offer (lib/blackFriday.ts), which shows its regular price struck
+ *  through. The Pro first-book price doesn't: its label says why it's lower. */
+export function isSaleDiscount(discount: CookbookDiscount | null): boolean {
+  return discount === "black_friday" || discount === "black_friday_pro";
 }
