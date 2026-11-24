@@ -274,7 +274,7 @@ export function CookbookWelcomeDialog({
                   )}
                   {local(price)} <span className="cookbook-tour__per">{cookbookPriceLabel(discounted ? discount : null)}</span>
                 </p>
-                <p>{discounted && discount ? `${cookbookDiscountNote(discount)} ${PREVIEW_RULE}` : PREVIEW_RULE}</p>
+                <p>{[discounted && discount ? cookbookDiscountNote(discount) : "", PREVIEW_RULE].filter(Boolean).join(" ")}</p>
               </div>
             )}
           </div>

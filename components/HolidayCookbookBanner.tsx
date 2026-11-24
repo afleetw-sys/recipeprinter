@@ -57,7 +57,8 @@ export function HolidayCookbookBanner({
             <>
               Preview up to 10 recipes free, then{" "}
               <SalePrice price={price(offer.price)} was={isSaleDiscount(offer.discount) ? price(offer.fullPrice) : null} />{" "}
-              {cookbookPriceLabel(offer.discount, { withPro: true })} to download or add more.
+              {cookbookPriceLabel(offer.discount, { withPro: true, deadline: false })} to download or add more
+              {isSaleDiscount(offer.discount) ? ". Sale price when you purchase this week." : "."}
             </>
           </p>
         </div>

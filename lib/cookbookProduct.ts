@@ -133,18 +133,18 @@ export const FULL_PRICE_COOKBOOK_OFFER: CookbookOffer = cookbookOfferFor({
 /** The words after a cookbook's price ("$15.99 per cookbook"), by offer. */
 export function cookbookPriceLabel(
   discount: CookbookDiscount | null,
-  { withPro = false }: { withPro?: boolean } = {},
+  { withPro = false, deadline = true }: { withPro?: boolean; deadline?: boolean } = {},
 ): string {
   if (discount === "pro_first") return withPro ? "for your first cookbook with Pro" : "for your first cookbook";
-  if (discount) return "per cookbook";
+  // Starting a book doesn't hold the price; buying does (Amelia, 2026-11-24).
+  if (discount) return deadline ? "per cookbook when you purchase this week" : "per cookbook";
   return "per cookbook";
 }
 
 /** A short line saying why the price is lower, or "" at full price. */
 export function cookbookDiscountNote(discount: CookbookDiscount | null): string {
   if (discount === "pro_first") return "20% off your first cookbook with Pro.";
-  if (discount === "black_friday_pro") return "Our thank-you sale price for Pro members. Ends Sunday.";
-  if (discount === "black_friday") return "Sale price. Ends Sunday.";
+  if (discount === "black_friday_pro") return "Your Pro member price.";
   return "";
 }
 
