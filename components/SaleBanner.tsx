@@ -35,6 +35,14 @@ export const SALE_CLAIM_PRO_EVENT = "rp:sale-claim-pro";
  *  can leave room for it. 0 when it's hidden or dismissed. */
 const SALE_BANNER_HEIGHT_VAR = "--rp-sale-banner-h";
 
+/** Hides the banner for good on this browser. Pressing either offer does it
+ *  too (Amelia, 2026-11-24): they've seen it and acted on it. */
+function dismissSaleBanner(via: "close" | "claim_pro" | "claim_cookbook") {
+  localStore.set(BLACK_FRIDAY_DISMISSED_KEY, "1");
+  document.documentElement.setAttribute(BLACK_FRIDAY_DISMISSED_ATTR, "");
+  track("sale_banner_dismissed", { standing: currentStanding(), via });
+}
+
 function currentStanding(): SaleStanding {
   const value = document.documentElement.getAttribute(BLACK_FRIDAY_PRO_ATTR);
   return value === "member" || value === "new" ? value : "none";
@@ -76,6 +84,7 @@ export function SaleBanner() {
   }, []);
 
   function claimPro() {
+    dismissSaleBanner("claim_pro");
     if (onPrint) window.dispatchEvent(new Event(SALE_CLAIM_PRO_EVENT));
     else openUpgrade();
   }
@@ -106,42 +115,40 @@ export function SaleBanner() {
     };
   }, []);
 
-  function dismiss() {
-    localStore.set(BLACK_FRIDAY_DISMISSED_KEY, "1");
-    document.documentElement.setAttribute(BLACK_FRIDAY_DISMISSED_ATTR, "");
-    track("sale_banner_dismissed", { standing: currentStanding() });
-  }
 
   return (
-    <div ref={bannerRef} role="region" aria-label="Sale" className="rp-sale-banner no-print">
-      <div className="rp-sale-banner__inner">
-        <p className="rp-sale-banner__text">
-          {/* Both offers, Pro first (Amelia, 2026-11-24): most people buy Pro,
-              not a book. */}
-          <span className="rp-sale-banner__all">
-            50% off your first {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months of Pro, and cookbooks are{" "}
-            {price(BLACK_FRIDAY_COOKBOOK_PRICE)} this week.
-          </span>
-          <span className="rp-sale-banner__member">
-            Just for Pro members: every cookbook is {price(BLACK_FRIDAY_PRO_COOKBOOK_PRICE)} until Sunday.
-          </span>
-          <span className="rp-sale-banner__new">
-            Cookbooks are {price(BLACK_FRIDAY_COOKBOOK_PRICE)} until Sunday.
-          </span>
-        </p>
-        <div className="rp-sale-banner__actions">
-          <button type="button" className="rp-sale-btn rp-sale-btn--pro rp-sale-banner__for-all" onClick={claimPro}>
-            Claim Pro
-          </button>
-          {/* Not on /print: a new book there would put away the one that's open. */}
-          {!onPrint && <SaleCookbookButton />}
+    <>
+      <div ref={bannerRef} role="region" aria-label="Sale" className="rp-sale-banner no-print">
+        <div className="rp-sale-banner__inner">
+          <p className="rp-sale-banner__text">
+            {/* Both offers, Pro first (Amelia, 2026-11-24): most people buy Pro,
+                not a book. */}
+            <span className="rp-sale-banner__all">
+              50% off your first {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months of Pro, and cookbooks are{" "}
+              {price(BLACK_FRIDAY_COOKBOOK_PRICE)} this week.
+            </span>
+            <span className="rp-sale-banner__member">
+              Just for Pro members: every cookbook is {price(BLACK_FRIDAY_PRO_COOKBOOK_PRICE)} until Sunday.
+            </span>
+            <span className="rp-sale-banner__new">
+              Cookbooks are {price(BLACK_FRIDAY_COOKBOOK_PRICE)} until Sunday.
+            </span>
+          </p>
+          <div className="rp-sale-banner__actions">
+            <button type="button" className="rp-sale-btn rp-sale-btn--pro rp-sale-banner__for-all" onClick={claimPro}>
+              Claim Pro
+            </button>
+            {/* Not on /print: a new book there would put away the one that's open. */}
+            {!onPrint && <SaleCookbookButton />}
+          </div>
         </div>
+        <button type="button" className="rp-sale-banner__close" aria-label="Dismiss sale banner" onClick={() => dismissSaleBanner("close")}>
+          <XIcon size={ICON_SIZE.md} />
+        </button>
       </div>
-      <button type="button" className="rp-sale-banner__close" aria-label="Dismiss sale banner" onClick={dismiss}>
-        <XIcon size={ICON_SIZE.md} />
-      </button>
+      {/* Outside the bar: pressing Claim Pro hides the bar, not the dialog. */}
       {upgradeDialog}
-    </div>
+    </>
   );
 }
 
@@ -154,7 +161,10 @@ function SaleCookbookButton() {
       type="button"
       className="rp-sale-btn rp-sale-btn--book"
       aria-busy={opening || undefined}
-      onClick={start}
+      onClick={() => {
+        dismissSaleBanner("claim_cookbook");
+        start();
+      }}
     >
       <span className="rp-sale-banner__for-all">Claim cookbook</span>
       <span className="rp-sale-banner__for-pro">Start a cookbook</span>
