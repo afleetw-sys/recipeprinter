@@ -487,13 +487,15 @@ export interface RecipePagePlacement {
       the rest of the book. */
   showSourceUrl?: boolean;
   /**
-   * Photos this recipe has worn, oldest first, minus whichever is current.
+   * The photo this recipe was imported with, once the cook has replaced it.
    *
-   * Choosing a custom photo overwrites `recipe.image`, and the picker's list of
-   * candidates for a recipe IS `[recipe.image]` — so the imported photo left
-   * the dialog the moment it was replaced, with no way back to it short of
-   * re-importing the recipe. Kept here rather than on the recipe because it is
-   * a fact about this project's presentation, not about the recipe itself.
+   * Choosing a custom photo overwrites `recipe.image`, so without this the
+   * imported photo left the dialog the moment it was replaced, with no way back
+   * to it short of re-importing the recipe. Photos the cook uploaded and then
+   * replaced are not kept: a new photo changes the recipe's one photo. Books
+   * from before 2026-11-24 kept every replaced photo, newest first; read it
+   * through `photoArrivedWith` (lib/bookPhotos.ts). Kept here rather than on
+   * the recipe because it is a fact about this project's presentation.
    */
   photoHistory?: string[];
   /**

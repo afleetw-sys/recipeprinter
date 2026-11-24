@@ -66,7 +66,8 @@ export function ImagePicker({
   placementBelow?: boolean;
   /** A page-layout choice that goes with the photos, above them: where a
       front cover's photo sits (lib/bookTheme.tsx). Unlike `placementOptions`
-      it leaves the picker an ordinary one. */
+      it leaves the picker an ordinary one. An option with the id `none`
+      takes the place of the None tile. */
   layoutChoice?: {
     label: string;
     value: string;
@@ -166,6 +167,7 @@ export function ImagePicker({
      visible without a photo, and the one control that would give you one is
      the control being hidden. With no photo, the upload always shows. */
   const placementNone = recipeMode && placement === "none" && Boolean(current);
+  const layoutOffersNone = Boolean(layoutChoice?.options.some((option) => option.id === "none"));
 
   function choose(action: () => void) {
     action();
@@ -441,8 +443,10 @@ export function ImagePicker({
               {uploadInput}
             </label>
 
-            {/* Cover/plain pickers keep a "None" tile to clear the photo. */}
-            {!recipeMode && (
+            {/* Cover/plain pickers keep a "None" tile to clear the photo,
+                unless the layout row above already offers None (the front
+                cover), where a second None would only repeat it. */}
+            {!recipeMode && !layoutOffersNone && (
               <button
                 type="button"
                 className={`image-picker__photo image-picker__photo--action ${
