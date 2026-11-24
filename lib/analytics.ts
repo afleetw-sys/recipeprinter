@@ -464,6 +464,8 @@ type EventProps = {
    *  pressed. Separate from `pro_continue_clicked` so the funnel can tell
    *  "compared plans" apart from "committed to one". */
   pro_plan_selected: { cycle: "monthly" | "annual" };
+  /** The sale banner (components/SaleBanner.tsx) was closed, by which version. */
+  sale_banner_dismissed: { standing: "member" | "new" | "none" };
   /** Continue was pressed on the upgrade dialog's plan step, for whichever
    *  cycle was selected at the time — the step right before checkout (signed
    *  in) or the sign-in gate (signed out). */
@@ -569,14 +571,14 @@ type EventProps = {
     /** Set only for a `product: "cookbook"` purchase resolved against the
      *  discounted product — lets the funnel measure how often the 20%-off
      *  first-cookbook perk is actually used, not just offered. */
-    discount?: "pro_first";
+    discount?: "pro_first" | "black_friday" | "black_friday_pro";
     customerId?: string;
   };
   purchase_completed: {
     product: PurchasedProduct;
     template?: RecipePrintTemplate;
     cycle?: "monthly" | "annual";
-    discount?: "pro_first";
+    discount?: "pro_first" | "black_friday" | "black_friday_pro";
     customerId?: string;
     /** Referral facts, so paid conversion can be split by them (lib/referral). */
     acquired_via_referral?: boolean;
@@ -587,7 +589,7 @@ type EventProps = {
     product: PurchasedProduct;
     template?: RecipePrintTemplate;
     cycle?: "monthly" | "annual";
-    discount?: "pro_first";
+    discount?: "pro_first" | "black_friday" | "black_friday_pro";
     customerId?: string;
   };
   /**
@@ -603,7 +605,7 @@ type EventProps = {
     product: PurchasedProduct;
     template?: RecipePrintTemplate;
     cycle?: "monthly" | "annual";
-    discount?: "pro_first";
+    discount?: "pro_first" | "black_friday" | "black_friday_pro";
     reason: string;
     customerId?: string;
   };

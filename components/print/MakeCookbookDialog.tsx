@@ -1,5 +1,6 @@
 "use client";
 
+import { cookbookPriceLabel, type CookbookDiscount } from "@/lib/cookbookProduct";
 import { useEffect, useState } from "react";
 import { Dialog } from "@/components/Dialog";
 import { ProDialogArt } from "@/components/ProDialogArt";
@@ -45,6 +46,7 @@ export function MakeCookbookDialog({
   recipeCount,
   price,
   fullPrice,
+  discount = fullPrice ? "pro_first" : null,
   onMake,
 }: {
   open: boolean;
@@ -54,6 +56,8 @@ export function MakeCookbookDialog({
   price: string;
   /** The regular price, when `price` is the Pro first-cookbook discount. */
   fullPrice?: string;
+  /** Why the price is lower (lib/cookbookProduct.ts `cookbookOfferFor`). */
+  discount?: CookbookDiscount | null;
   /** Rejects if the book could not be made; the dialog stays open then. */
   onMake: (keepInSync: boolean) => Promise<void>;
 }) {
@@ -123,7 +127,7 @@ export function MakeCookbookDialog({
               why it's lower. */}
           <p className="cookbook-tour__amount">
             {local(price)}{" "}
-            <span className="cookbook-tour__per">{discounted ? "for your first cookbook with Pro" : "per cookbook"}</span>
+            <span className="cookbook-tour__per">{cookbookPriceLabel(discounted ? discount : null, { withPro: true })}</span>
           </p>
           <p>
             {waiting > 0

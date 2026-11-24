@@ -3,8 +3,8 @@
 import Image from "next/image";
 import { ArrowRightIcon, ICON_SIZE } from "@/components/icons";
 import { PREVIEW_RULE } from "@/components/CookbookWelcomeDialog";
-import { useFirstCookbookDiscount } from "@/components/HolidayCookbookBanner";
-import { COOKBOOK_DISCOUNT_PRICE_FALLBACK, COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
+import { useCookbookOffer } from "@/components/HolidayCookbookBanner";
+import { cookbookPriceLabel } from "@/lib/cookbookProduct";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
 import { COOKBOOK_HERO as HERO } from "@/lib/cookbookHero";
 
@@ -32,7 +32,7 @@ const STEPS = [
  */
 export function CookbookIntro({ busy, onStart }: { busy: boolean; onStart: () => void }) {
   const { label: local } = useVisitorPrices();
-  const discounted = useFirstCookbookDiscount();
+  const offer = useCookbookOffer();
   return (
     <section aria-label="Start a cookbook" className="rp-cookbook-page animate-fade-up">
       <div className="rp-cookbook-page__go">
@@ -55,8 +55,7 @@ export function CookbookIntro({ busy, onStart }: { busy: boolean; onStart: () =>
         <p className="rp-cookbook-page__price text-cp-small text-ink-soft">
           <b className="font-semibold text-ink">
             {/* The Pro price is 20% off the FIRST cookbook only, never every one. */}
-            {local(discounted ? COOKBOOK_DISCOUNT_PRICE_FALLBACK : COOKBOOK_PRICE_FALLBACK)}{" "}
-            {discounted ? "for your first cookbook with Pro" : "per cookbook"}.
+            {local(offer.price)} {cookbookPriceLabel(offer.discount, { withPro: true })}.
           </b>{" "}
           <span>{PREVIEW_RULE}</span>
         </p>

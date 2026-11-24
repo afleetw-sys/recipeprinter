@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { FULL_PRICE_COOKBOOK_OFFER } from "@/lib/cookbookProduct";
 import { act, renderHook } from "@testing-library/react";
 import type { User } from "firebase/auth";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -37,7 +38,7 @@ function setup(cookPilotUser: User | null) {
       cookPilotUser,
       cookbookMode: true,
       projectId: "book-1",
-      discountEligible: false,
+      offer: FULL_PRICE_COOKBOOK_OFFER,
       showToast: vi.fn(),
       clearToast: vi.fn(),
       onFreshPurchase: vi.fn(),

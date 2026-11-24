@@ -21,6 +21,7 @@ import {
   RECIPEPRINTER_COOKBOOK_OFFERING_ID,
   RECIPEPRINTER_COOKBOOK_PACKAGE_ID,
   RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
+  type CookbookOffer,
 } from "@/lib/cookbookProduct";
 import {
   proPackageId,
@@ -29,6 +30,11 @@ import {
   RECIPEPRINTER_PRO_OFFERING_ID,
   type ProBillingCycle,
 } from "@/lib/proProduct";
+import {
+  BLACK_FRIDAY_PRO_MONTHLY_PACKAGE_ID,
+  BLACK_FRIDAY_PRO_MONTHLY_PRODUCT_ID,
+  isBlackFridayLive,
+} from "@/lib/blackFriday";
 import { isProOnlyCardSize } from "@/lib/printTemplates";
 import type { PrintCardSize, RecipePrintTemplate } from "@/types/recipe";
 import { revenueCatIdentityTransition } from "@/lib/purchaseAccess";
@@ -869,24 +875,19 @@ async function checkout(
 }
 
 /**
- * Resolves the regular cookbook package, or — when `discountEligible` — the
- * discounted one instead. Same entitlement either way (see
- * lib/cookbookProduct.ts); only the price and product id differ, exactly
- * how `packageForPro` already picks between two priced variants of `pro`.
+ * Resolves the package for the price this cook was offered
+ * (lib/cookbookProduct.ts `cookbookOfferFor`): the regular cookbook, the
+ * 20%-off-first one, or a Black Friday one. All unlock the same way; only the
+ * price and product id differ. A missing package fails the purchase rather
+ * than falling back, so nobody is ever charged a price they weren't shown.
  */
 async function packageForCookbook(
   purchases: Purchases,
   userId: string,
-  discountEligible: boolean,
+  offer: Pick<CookbookOffer, "packageId" | "productId">,
 ): Promise<Package> {
   const offering = await offeringFor(purchases, userId, RECIPEPRINTER_COOKBOOK_OFFERING_ID);
-  const rcPackage = discountEligible
-    ? findPackage(
-        offering,
-        RECIPEPRINTER_COOKBOOK_DISCOUNT_PACKAGE_ID,
-        RECIPEPRINTER_COOKBOOK_DISCOUNT_PRODUCT_ID,
-      )
-    : findPackage(offering, RECIPEPRINTER_COOKBOOK_PACKAGE_ID, RECIPEPRINTER_COOKBOOK_PRODUCT_ID);
+  const rcPackage = findPackage(offering, offer.packageId, offer.productId);
   if (!rcPackage) throw new Error("The cookbook upgrade isn't ready to buy yet.");
   return rcPackage;
 }
@@ -895,19 +896,19 @@ export async function purchaseRecipePrinterCookbook({
   userId,
   email,
   projectId,
-  discountEligible,
+  offer,
 }: {
   userId: string;
   email?: string | null;
   projectId: string;
-  discountEligible: boolean;
+  offer: Pick<CookbookOffer, "packageId" | "productId" | "discount">;
 }): Promise<CheckoutResult> {
   loadStripeEarly();
   const purchases = await getPurchases(userId);
   // All at once: none of these needs another's answer, and run in a row they
   // were most of the wait for the payment form (see lib/checkoutLoad.test.ts).
   const [rcPackage] = await Promise.all([
-    packageForCookbook(purchases, userId, discountEligible),
+    packageForCookbook(purchases, userId, offer),
     purchases.preload(),
     // Give the cookbook-unlock webhook a reliable purchase→project map. Webhook
     // payloads carry subscriber attributes, but not the purchase-time `metadata`
@@ -926,7 +927,7 @@ export async function purchaseRecipePrinterCookbook({
     product: "recipeprinter",
     offer: "cookbook",
     cookbook_project_id: projectId,
-    ...(discountEligible ? { discount: "pro_first" } : {}),
+    ...(offer.discount ? { discount: offer.discount } : {}),
   });
 }
 
@@ -935,10 +936,13 @@ async function packageForPro(
   userId: string,
   cycle: ProBillingCycle,
 ): Promise<Package> {
+  // During the sale, monthly is the intro-priced product (lib/blackFriday.ts).
+  // Missing, the purchase fails rather than charging $4.99 where $2.49 was shown.
+  const onSale = cycle === "monthly" && isBlackFridayLive();
   const rcPackage = findPackage(
     await offeringFor(purchases, userId, RECIPEPRINTER_PRO_OFFERING_ID),
-    proPackageId(cycle),
-    proProductId(cycle),
+    onSale ? BLACK_FRIDAY_PRO_MONTHLY_PACKAGE_ID : proPackageId(cycle),
+    onSale ? BLACK_FRIDAY_PRO_MONTHLY_PRODUCT_ID : proProductId(cycle),
   );
   if (!rcPackage) throw new Error("RecipePrinter Pro isn't ready to buy yet.");
   return rcPackage;
@@ -960,6 +964,7 @@ export async function purchaseRecipePrinterPro({
     product: "recipeprinter",
     offer: "pro",
     cycle,
+    ...(cycle === "monthly" && isBlackFridayLive() ? { discount: "black_friday" } : {}),
   });
 }
 

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { FULL_PRICE_COOKBOOK_OFFER } from "@/lib/cookbookProduct";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -103,7 +104,7 @@ const checkouts = {
   pro: (purchases: typeof import("./recipePrinterPurchases")) =>
     purchases.purchaseRecipePrinterPro({ userId: "uid", cycle: "annual" }),
   cookbook: (purchases: typeof import("./recipePrinterPurchases")) =>
-    purchases.purchaseRecipePrinterCookbook({ userId: "uid", projectId: "p1", discountEligible: false }),
+    purchases.purchaseRecipePrinterCookbook({ userId: "uid", projectId: "p1", offer: FULL_PRICE_COOKBOOK_OFFER }),
 };
 
 test.each(Object.keys(checkouts) as (keyof typeof checkouts)[])(
@@ -192,7 +193,7 @@ const afterSignIn = {
         cookPilotUser: { uid: "uid", email: null } as never,
         cookbookMode: true,
         projectId: "p1",
-        discountEligible: false,
+        offer: FULL_PRICE_COOKBOOK_OFFER,
         showToast: vi.fn(),
         clearToast: vi.fn(),
         onFreshPurchase: vi.fn(),

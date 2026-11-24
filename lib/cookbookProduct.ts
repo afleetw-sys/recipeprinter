@@ -1,3 +1,12 @@
+import {
+  BLACK_FRIDAY_COOKBOOK_PACKAGE_ID,
+  BLACK_FRIDAY_COOKBOOK_PRICE,
+  BLACK_FRIDAY_COOKBOOK_PRODUCT_ID,
+  BLACK_FRIDAY_PRO_COOKBOOK_PACKAGE_ID,
+  BLACK_FRIDAY_PRO_COOKBOOK_PRICE,
+  BLACK_FRIDAY_PRO_COOKBOOK_PRODUCT_ID,
+} from "@/lib/blackFriday";
+
 // One purchase unlocks one stable cookbook project. The RevenueCat web product
 // behind this identifier must be configured as a repeat-purchasable consumable;
 // the permanent ownership record is our project-scoped unlock, not a global
@@ -45,4 +54,96 @@ export function isFirstCookbookDiscountEligible({
   firstCookbookGrantedAt: number | null;
 }): boolean {
   return hasPro && firstCookbookGrantedAt === null;
+}
+
+/** Which discount a cookbook purchase uses, as checkout metadata and analytics
+ *  carry it. Null is the full price. */
+export type CookbookDiscount = "pro_first" | "black_friday" | "black_friday_pro";
+
+export interface CookbookOffer {
+  discount: CookbookDiscount | null;
+  packageId: string;
+  productId: string;
+  /** What this cook pays, as a display fallback (checkout states the real one). */
+  price: string;
+  /** The regular price, for a struck-through "was". */
+  fullPrice: string;
+}
+
+/**
+ * The one cookbook price this cook is offered right now, and the RevenueCat
+ * package that charges it. During Black Friday (lib/blackFriday.ts): a member
+ * who was Pro before the sale gets $9.99 on every book, everyone else $15.99.
+ * Otherwise the 20%-off-first rule above, or full price.
+ */
+export function cookbookOfferFor({
+  hasPro,
+  proBeforeSale,
+  firstCookbookGrantedAt,
+  saleLive,
+}: {
+  hasPro: boolean;
+  proBeforeSale: boolean;
+  firstCookbookGrantedAt: number | null;
+  saleLive: boolean;
+}): CookbookOffer {
+  if (saleLive) {
+    return hasPro && proBeforeSale
+      ? {
+          discount: "black_friday_pro",
+          packageId: BLACK_FRIDAY_PRO_COOKBOOK_PACKAGE_ID,
+          productId: BLACK_FRIDAY_PRO_COOKBOOK_PRODUCT_ID,
+          price: BLACK_FRIDAY_PRO_COOKBOOK_PRICE,
+          fullPrice: COOKBOOK_PRICE_FALLBACK,
+        }
+      : {
+          discount: "black_friday",
+          packageId: BLACK_FRIDAY_COOKBOOK_PACKAGE_ID,
+          productId: BLACK_FRIDAY_COOKBOOK_PRODUCT_ID,
+          price: BLACK_FRIDAY_COOKBOOK_PRICE,
+          fullPrice: COOKBOOK_PRICE_FALLBACK,
+        };
+  }
+  if (isFirstCookbookDiscountEligible({ hasPro, firstCookbookGrantedAt })) {
+    return {
+      discount: "pro_first",
+      packageId: RECIPEPRINTER_COOKBOOK_DISCOUNT_PACKAGE_ID,
+      productId: RECIPEPRINTER_COOKBOOK_DISCOUNT_PRODUCT_ID,
+      price: COOKBOOK_DISCOUNT_PRICE_FALLBACK,
+      fullPrice: COOKBOOK_PRICE_FALLBACK,
+    };
+  }
+  return {
+    discount: null,
+    packageId: RECIPEPRINTER_COOKBOOK_PACKAGE_ID,
+    productId: RECIPEPRINTER_COOKBOOK_PRODUCT_ID,
+    price: COOKBOOK_PRICE_FALLBACK,
+    fullPrice: COOKBOOK_PRICE_FALLBACK,
+  };
+}
+
+/** The full-price offer: what tests and a cook with nothing known get. */
+export const FULL_PRICE_COOKBOOK_OFFER: CookbookOffer = cookbookOfferFor({
+  hasPro: false,
+  proBeforeSale: false,
+  firstCookbookGrantedAt: null,
+  saleLive: false,
+});
+
+/** The words after a cookbook's price ("$15.99 per cookbook"), by offer. */
+export function cookbookPriceLabel(
+  discount: CookbookDiscount | null,
+  { withPro = false }: { withPro?: boolean } = {},
+): string {
+  if (discount === "pro_first") return withPro ? "for your first cookbook with Pro" : "for your first cookbook";
+  if (discount) return "per cookbook through Sunday";
+  return "per cookbook";
+}
+
+/** A short line saying why the price is lower, or "" at full price. */
+export function cookbookDiscountNote(discount: CookbookDiscount | null): string {
+  if (discount === "pro_first") return "20% off your first cookbook with Pro.";
+  if (discount === "black_friday_pro") return "Our thank-you sale price for Pro members, through Sunday.";
+  if (discount === "black_friday") return "Sale price, through Sunday.";
+  return "";
 }

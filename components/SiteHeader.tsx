@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { LogoMark, Wordmark } from "@/components/Logo";
 import { AccountControl, type AccountSaveStatus } from "@/components/AccountControl";
 import { FrontDoorUpgradeButton } from "@/components/FrontDoorUpgrade";
+import { SaleBanner } from "@/components/SaleBanner";
 
 // Minimal top bar shared across every page, mirrors CookPilot's cp-topbar.
 // The logo is a home link so the product always feels like one focused utility,
@@ -71,6 +72,11 @@ export function SiteHeader({
   );
 
   return (
+    <>
+    {/* The sale bar, on every page with the default upgrade button (not the
+        workspace, which brings its own, nor the error pages). Shown only by
+        CSS while the sale runs (lib/blackFriday.ts). */}
+    {lead === undefined && <SaleBanner />}
     <header
       /* One bar height everywhere: the workspace and the marketing pages used
          to run 56px and 62px respectively (`compact`), which is the sizing
@@ -168,5 +174,6 @@ export function SiteHeader({
         />
       </div>
     </header>
+    </>
   );
 }

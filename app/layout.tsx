@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { saleInlineScript } from "@/lib/blackFriday";
 import localFont from "next/font/local";
 import "./globals.css";
 import { NoFocusZoom } from "@/components/NoFocusZoom";
@@ -330,6 +331,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      // The sale script (below) marks <html> before React hydrates it.
+      suppressHydrationWarning
       className={`${manrope.variable} ${playfair.variable} ${birthstone.variable} ${gochiHand.variable} ${courierPrime.variable} ${termes.variable} ${cormorant.variable} ${nunitoSans.variable} ${jost.variable} ${anton.variable} ${berkshireSwash.variable} ${caprasimo.variable} ${dmSerifDisplay.variable} ${dmSans.variable} ${fraunces.variable} ${figtree.variable} ${creepster.variable} ${lora.variable} ${shantellSans.variable} ${nunito.variable} ${karla.variable}`}
     >
       <head>
@@ -337,6 +340,9 @@ export default function RootLayout({
             can find them; their privacy checks run inside before they load
             anything (lib/adTags.ts). */}
         <script id="google-tag" dangerouslySetInnerHTML={{ __html: adTagsInlineScript() }} />
+        {/* The sale (lib/blackFriday.ts): marks <html> before paint, so the
+            banner and "Claim offer" never flash in or out. */}
+        <script id="rp-sale" dangerouslySetInnerHTML={{ __html: saleInlineScript() }} />
       </head>
       <body>
         <TranslatedPageGuard />

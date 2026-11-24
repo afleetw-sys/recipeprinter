@@ -1,5 +1,6 @@
 "use client";
 
+import { cookbookDiscountNote, cookbookPriceLabel, type CookbookDiscount } from "@/lib/cookbookProduct";
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
 import { Dialog } from "@/components/Dialog";
@@ -115,6 +116,7 @@ export function CookbookWelcomeDialog({
   open,
   price,
   fullPrice,
+  discount = fullPrice ? "pro_first" : null,
   hasRecipes,
   onStart,
   onLookAround,
@@ -127,6 +129,8 @@ export function CookbookWelcomeDialog({
       struck through first so $15.99 reads as a perk on this book, not as what
       a cookbook costs. */
   fullPrice?: string;
+  /** Why the price is lower (lib/cookbookProduct.ts `cookbookOfferFor`). */
+  discount?: CookbookDiscount | null;
   /** The book already holds a recipe (one still importing counts): the cook
       got here by importing from the homepage, so `onStart` shows them the book
       instead of asking for a first recipe, and the button says so. */
@@ -268,9 +272,9 @@ export function CookbookWelcomeDialog({
                       <span className="sr-only">now </span>
                     </>
                   )}
-                  {local(price)} <span className="cookbook-tour__per">{discounted ? "for your first cookbook" : "per cookbook"}</span>
+                  {local(price)} <span className="cookbook-tour__per">{cookbookPriceLabel(discounted ? discount : null)}</span>
                 </p>
-                <p>{discounted ? `20% off your first cookbook with Pro. ${PREVIEW_RULE}` : PREVIEW_RULE}</p>
+                <p>{discounted && discount ? `${cookbookDiscountNote(discount)} ${PREVIEW_RULE}` : PREVIEW_RULE}</p>
               </div>
             )}
           </div>

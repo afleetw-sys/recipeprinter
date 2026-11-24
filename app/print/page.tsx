@@ -177,7 +177,9 @@ import {
 } from "@/lib/recipePrinterPurchases";
 import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { resolveEffectiveCustomerInfo } from "@/lib/proAccessFallback";
-import { COOKBOOK_PRICE_FALLBACK, isFirstCookbookDiscountEligible } from "@/lib/cookbookProduct";
+import { cookbookOfferFor } from "@/lib/cookbookProduct";
+import { wasProBeforeBlackFriday } from "@/lib/blackFriday";
+import { useSaleLive } from "@/lib/useSaleLive";
 import {
   DEFAULT_COOKBOOK_PRESET_ID,
   getCookbookPreset,
@@ -3704,13 +3706,19 @@ export default function PrintPage() {
   // never had a cookbook grant land before. Recomputed every render, not
   // cached past a purchase — see `onCookbookGranted` below for how a fresh
   // grant invalidates this immediately, in the same session.
-  const cookbookDiscountEligible = isFirstCookbookDiscountEligible({
+  // During the sale (lib/blackFriday.ts) this is $9.99 for a member from
+  // before the sale and $15.99 for everyone else.
+  const saleLive = useSaleLive();
+  const cookbookOffer = cookbookOfferFor({
     hasPro: hasProEntitlement(effectiveCustomerInfo.customerInfo),
+    proBeforeSale: wasProBeforeBlackFriday(effectiveCustomerInfo.customerInfo),
     firstCookbookGrantedAt,
+    saleLive,
   });
 
   const {
     cookbookPrice,
+    cookbookFullPrice,
     cookbookLocked,
     cookbookAccessStatus,
     cookbookPurchaseBusy,
@@ -3720,7 +3728,7 @@ export default function PrintPage() {
     cookPilotUser,
     cookbookMode: Boolean(projectMeta.meta.cookbookMode),
     projectId: cookbookProjectId,
-    discountEligible: cookbookDiscountEligible,
+    offer: cookbookOffer,
     showToast,
     showErrorToast,
     clearToast,
@@ -5904,8 +5912,8 @@ export default function PrintPage() {
         <button
           type="button"
           className="icon-button rp-history-button rp-history-button--compact rp-upgrade-icon"
-          aria-label="Upgrade to Pro"
-          title="Upgrade to Pro"
+          aria-label={saleLive ? "Claim offer" : "Upgrade to Pro"}
+          title={saleLive ? "Claim offer" : "Upgrade to Pro"}
           onClick={() => openProUpgradeDialog("topbar_button")}
         >
           <CrownIcon size={ICON_SIZE.md} />
@@ -5919,7 +5927,7 @@ export default function PrintPage() {
         onClick={() => openProUpgradeDialog("topbar_button")}
       >
         <CrownIcon size={ICON_SIZE.md} className="text-[var(--cp-premium-bright)]" />
-        <span>Upgrade to Pro</span>
+        <span>{saleLive ? "Claim offer" : "Upgrade to Pro"}</span>
       </button>
     );
   }
@@ -8869,7 +8877,8 @@ export default function PrintPage() {
         open={showCookbookOfferDialog}
         cover={projectMeta.meta.cover ?? defaultCover()}
         price={cookbookPrice}
-        fullPrice={cookbookDiscountEligible ? COOKBOOK_PRICE_FALLBACK : undefined}
+        fullPrice={cookbookFullPrice !== cookbookPrice ? cookbookFullPrice : undefined}
+        discount={cookbookOffer.discount}
         hasRecipes={recipeCount > 0}
         onClose={() => {
           // The X, Escape and the backdrop only dismiss the panel. The cook
@@ -8981,7 +8990,8 @@ export default function PrintPage() {
           onClose={() => setMakeCookbookOpen(false)}
           recipeCount={(items ?? []).filter((item) => item.recipe && item.status === "ready" && !isBookPage(item)).length}
           price={cookbookPrice}
-          fullPrice={cookbookDiscountEligible ? COOKBOOK_PRICE_FALLBACK : undefined}
+          fullPrice={cookbookFullPrice !== cookbookPrice ? cookbookFullPrice : undefined}
+        discount={cookbookOffer.discount}
           onMake={makeCookbookFromCards}
         />
       )}

@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { COOKBOOK_DISCOUNT_PRICE_FALLBACK, COOKBOOK_PRICE_FALLBACK } from "@/lib/cookbookProduct";
+import { cookbookOfferFor, cookbookPriceLabel, type CookbookOffer } from "@/lib/cookbookProduct";
+import { isBlackFridayLive } from "@/lib/blackFriday";
 import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
 
@@ -35,7 +36,7 @@ export function HolidayCookbookBanner({
   onWarm?: () => void;
 }) {
   const { label: price } = useVisitorPrices();
-  const discounted = useFirstCookbookDiscount();
+  const offer = useCookbookOffer();
   return (
     <section
       aria-labelledby="rp-holiday-cookbook-heading"
@@ -50,15 +51,9 @@ export function HolidayCookbookBanner({
           </h2>
           <p className="mt-cp-3 text-cp-body-lg leading-relaxed text-ink-soft">
             Build your cookbook and print it anywhere.{" "}
-            {discounted ? (
-              // Just the price they will pay, no strikethrough: the welcome
-              // dialog on /print does the explaining. "First" because the
-              // discount is on one book only, and it names Pro so the lower
-              // price reads as a membership perk.
-              <>Preview up to 10 recipes free, then {price(COOKBOOK_DISCOUNT_PRICE_FALLBACK)} to download or add more to your first cookbook with Pro.</>
-            ) : (
-              <>Preview up to 10 recipes free, then {price(COOKBOOK_PRICE_FALLBACK)} per cookbook to download or add more.</>
-            )}
+            {/* Just the price they will pay, no strikethrough: the welcome
+                dialog on /print does the explaining. */}
+            <>Preview up to 10 recipes free, then {price(offer.price)} {cookbookPriceLabel(offer.discount, { withPro: true })} to download or add more.</>
           </p>
         </div>
         <button
@@ -87,25 +82,28 @@ export function HolidayCookbookBanner({
 }
 
 /**
- * True once this browser's account is confirmed eligible for the Pro
- * first-cookbook price. Starts false, and stays false for anyone this browser
- * has never seen signed in: the check needs Firebase and RevenueCat, and the
- * homepage does not load either for a visitor who has no account to check.
- * For everyone else it waits for idle, like the header's avatar does.
+ * The cookbook price to show this browser's cook. It starts as the price for
+ * someone who isn't Pro (the sale price during the sale, else full), and stays
+ * that way for anyone this browser has never seen signed in: the check needs
+ * Firebase and RevenueCat, and the homepage does not load either for a visitor
+ * who has no account to check. For everyone else it waits for idle, like the
+ * header's avatar does, then shows their own price.
  */
-export function useFirstCookbookDiscount(): boolean {
-  const [eligible, setEligible] = useState(false);
+export function useCookbookOffer(): CookbookOffer {
+  const [offer, setOffer] = useState<CookbookOffer>(() =>
+    cookbookOfferFor({ hasPro: false, proBeforeSale: false, firstCookbookGrantedAt: null, saleLive: isBlackFridayLive() }),
+  );
   useEffect(() => {
     if (!readCookPilotWasSignedIn()) return;
     let alive = true;
     const run = () => {
       import("@/lib/cookbookDiscountCheck")
-        .then(({ checkFirstCookbookDiscount }) => checkFirstCookbookDiscount())
+        .then(({ checkCookbookOffer }) => checkCookbookOffer())
         .then((result) => {
-          if (alive) setEligible(result);
+          if (alive) setOffer(result);
         })
         .catch((error) => {
-          console.warn("RecipePrinter: could not check the cookbook discount", error);
+          console.warn("RecipePrinter: could not check the cookbook price", error);
         });
     };
     if ("requestIdleCallback" in window) {
@@ -121,5 +119,5 @@ export function useFirstCookbookDiscount(): boolean {
       clearTimeout(timer);
     };
   }, []);
-  return eligible;
+  return offer;
 }

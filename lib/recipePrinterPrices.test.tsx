@@ -70,6 +70,10 @@ function knownToRevenueCat() {
 }
 
 beforeEach(() => {
+  // Outside the Black Friday window (lib/blackFriday.ts), whose sale packages
+  // these fake offerings don't carry.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-10T12:00:00Z"));
   vi.resetModules();
   vi.stubEnv("NEXT_PUBLIC_REVENUECAT_WEB_API_KEY", "rcb_sb_test");
   window.localStorage.clear();
@@ -89,6 +93,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllEnvs();
 });
 
@@ -98,7 +103,7 @@ describe("checkout", () => {
     const purchases = await import("./recipePrinterPurchases");
 
     await purchases.purchaseRecipePrinterPro({ userId: "uid", cycle: "annual" });
-    await purchases.purchaseRecipePrinterCookbook({ userId: "uid", projectId: "p1", discountEligible: true });
+    await purchases.purchaseRecipePrinterCookbook({ userId: "uid", projectId: "p1", offer: { discount: "pro_first", packageId: "cookbook_pro_first", productId: "cookbook_pro_first" } });
 
     // One fetch serves both checkouts (lib/checkoutLoad.test.ts), and it names CAD.
     expect(sdk.getOfferings.mock.calls.map(([params]) => params)).toEqual([{ currency: "CAD" }]);
