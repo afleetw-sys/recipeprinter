@@ -8915,13 +8915,16 @@ textarea.recipe-card__toc-title {
    grid-photo cover then sizes to its (square) images and shoves the title lockup
    off the bottom of the page (fixed only by an edit-triggered reflow). Covers
    manage their own stacking, so re-assert their pieces as absolute. Placed after
-   all four theme rules so it wins on source order at equal specificity. */
+   all four theme rules so it wins on source order at equal specificity. The
+   back cover and dedication's words were missed, so on Heirloom and Keepsake
+   they sat at the top of the page instead of its middle. */
 .recipe-card--cover > .recipe-card__cover-photo,
 .recipe-card--cover > .recipe-card__cover-image,
 .recipe-card--cover > .recipe-card__cover-scrim,
 .recipe-card--cover > .recipe-card__cover-band,
 .recipe-card--cover > .recipe-card__cover-frame,
-.recipe-card--cover > .recipe-card__cover-content {
+.recipe-card--cover > .recipe-card__cover-content,
+.recipe-card--cover > .recipe-card__cover-back-content {
   position: absolute;
 }
 
