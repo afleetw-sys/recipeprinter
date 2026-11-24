@@ -8235,13 +8235,16 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
 /* A photo "in the card" (`data-cover-photo="card"`, CoverConfig.photoPlacement):
    the theme's designed cover above, the picture under the words, inside the
    same centered lockup so the two move as one. Sized by the page, not the
-   photo, so every book's cover holds the same shape whatever is chosen. */
+   photo, so every book's cover holds the same shape whatever is chosen.
+   The gap above it is at least the one between a theme's rule and its author
+   line (Heirloom's is 0.58in): any less and the byline and edition drift
+   down onto the photo instead of reading with the title. */
 .recipe-card__cover-inset {
   position: relative;
   flex: none;
   width: 82%;
-  height: calc(var(--recipe-card-min-height, 11in) * 0.34);
-  margin-top: 0.26in;
+  height: calc(var(--recipe-card-min-height, 11in) * 0.3);
+  margin-top: 0.56in;
   overflow: hidden;
   border-radius: 0.06in;
   background: color-mix(in srgb, var(--recipe-bg) 88%, var(--recipe-muted));
