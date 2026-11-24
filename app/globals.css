@@ -3461,8 +3461,8 @@ html[data-sale] .rp-sale-hide {
   position: relative;
   align-items: center;
   justify-content: center;
-  min-height: 64px;
-  padding: 12px 52px;
+  min-height: 52px;
+  padding: 8px 52px;
   background: var(--cp-ink);
   color: var(--cp-card);
   font-size: var(--cp-fs-body);
@@ -3477,7 +3477,7 @@ html[data-sale]:not([data-bf-dismissed]):not([data-bf-pro="pending"]) .rp-sale-b
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 8px 14px;
+  gap: 6px 12px;
 }
 .rp-sale-banner__text {
   margin: 0;
@@ -3487,7 +3487,7 @@ html[data-sale]:not([data-bf-dismissed]):not([data-bf-pro="pending"]) .rp-sale-b
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
 }
 .rp-sale-banner__member,
 .rp-sale-banner__new,
@@ -3507,9 +3507,9 @@ html[data-bf-pro] .rp-sale-banner__for-all {
 .rp-sale-btn {
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
-  padding: 0 14px;
-  border-radius: 8px;
+  min-height: 28px;
+  padding: 0 11px;
+  border-radius: 7px;
   font: inherit;
   font-size: var(--cp-fs-small);
   font-weight: 700;
