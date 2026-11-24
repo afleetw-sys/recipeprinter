@@ -24,6 +24,7 @@ import {
 import { MenuSelect } from "@/components/MenuSelect";
 import { Checkbox, SelectTile } from "@/components/Controls";
 import type { RecipePrintTemplate } from "@/types/recipe";
+import { hasThemeBackgroundColor } from "@/lib/printTemplates";
 
 /**
  * The settings panel's Customize view: everything about how the current theme
@@ -159,7 +160,7 @@ export function ThemeCustomizePanel({
         </div>
       )}
 
-      <div className="recipe-config-section">
+      {hasThemeBackgroundColor(template) && <div className="recipe-config-section">
         <Checkbox
           label={
             <>
@@ -173,7 +174,7 @@ export function ThemeCustomizePanel({
           checked={background}
           onChange={(event) => setBackground(event.target.checked)}
         />
-      </div>
+      </div>}
 
       <LayoutControl stacked={stacked} setStacked={setStacked} proMarked={proMarked && stacked} />
 
