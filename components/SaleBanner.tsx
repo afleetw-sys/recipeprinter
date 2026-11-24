@@ -17,7 +17,8 @@ import {
   type SaleStanding,
 } from "@/lib/blackFriday";
 import { readCookPilotWasSignedIn } from "@/lib/cookPilotSession";
-import { localStore } from "@/lib/storage";
+import { localStore, sessionStore } from "@/lib/storage";
+import { importsKnownUnlimited, subscribeImportUsage } from "@/lib/importMeter";
 import { useVisitorPrices } from "@/lib/visitorCurrency";
 
 function applyStanding(standing: SaleStanding) {
@@ -34,6 +35,9 @@ export const SALE_CLAIM_PRO_EVENT = "rp:sale-claim-pro";
 /** The banner's height on `<html>`, so /print, which fills exactly one screen,
  *  can leave room for it. 0 when it's hidden or dismissed. */
 const SALE_BANNER_HEIGHT_VAR = "--rp-sale-banner-h";
+
+/** Set once this visit has settled who's looking (see the check below). */
+const STANDING_CHECKED_KEY = "rp.saleStandingChecked";
 
 /** Hides the banner for good on this browser. Pressing either offer does it
  *  too (Amelia, 2026-11-24): they've seen it and acted on it. */
@@ -89,6 +93,10 @@ export function SaleBanner() {
     else openUpgrade();
   }
 
+  // Who's looking: settled once per visit, at idle, for a browser that has
+  // been signed in (it loads Firebase and RevenueCat, which most pages don't),
+  // and again the moment this browser learns the cook is Pro (signing in in a
+  // popup, or buying), since the bar lives in the layout and never remounts.
   useEffect(() => {
     const root = document.documentElement;
     if (!root.hasAttribute("data-sale")) return;
@@ -97,21 +105,43 @@ export function SaleBanner() {
       return;
     }
     let alive = true;
-    import("@/lib/cookbookDiscountCheck")
-      .then(({ checkSaleStanding }) => checkSaleStanding())
-      .then((standing) => {
-        if (alive) applyStanding(standing);
-      })
-      .catch((error) => {
-        console.warn("RecipePrinter: could not check the sale price", error);
-        // Waiting on a check that failed: show the version for everyone
-        // rather than nothing.
-        if (alive && root.getAttribute(BLACK_FRIDAY_PRO_ATTR) === "pending") {
-          root.removeAttribute(BLACK_FRIDAY_PRO_ATTR);
-        }
-      });
+    const check = () => {
+      import("@/lib/cookbookDiscountCheck")
+        .then(({ checkSaleStanding }) => checkSaleStanding())
+        .then((standing) => {
+          if (!alive) return;
+          applyStanding(standing);
+          sessionStore.set(STANDING_CHECKED_KEY, "1");
+        })
+        .catch((error) => {
+          console.warn("RecipePrinter: could not check the sale price", error);
+          // Waiting on a check that failed: show the version for everyone
+          // rather than nothing.
+          if (alive && root.getAttribute(BLACK_FRIDAY_PRO_ATTR) === "pending") {
+            root.removeAttribute(BLACK_FRIDAY_PRO_ATTR);
+          }
+        });
+    };
+    let cancelIdle = () => {};
+    if (!sessionStore.get(STANDING_CHECKED_KEY) || root.getAttribute(BLACK_FRIDAY_PRO_ATTR) === "pending") {
+      if ("requestIdleCallback" in window) {
+        const handle = window.requestIdleCallback(check, { timeout: 3000 });
+        cancelIdle = () => window.cancelIdleCallback(handle);
+      } else {
+        const timer = setTimeout(check, 1500);
+        cancelIdle = () => clearTimeout(timer);
+      }
+    }
+    let knownPro = importsKnownUnlimited();
+    const stopListening = subscribeImportUsage(() => {
+      const nowPro = importsKnownUnlimited();
+      if (nowPro && !knownPro) check();
+      knownPro = nowPro;
+    });
     return () => {
       alive = false;
+      cancelIdle();
+      stopListening();
     };
   }, []);
 
