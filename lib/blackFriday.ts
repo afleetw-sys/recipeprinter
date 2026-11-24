@@ -2,7 +2,8 @@ import type { CustomerInfo } from "@revenuecat/purchases-js";
 import { DEFAULT_PRO_CYCLE, RECIPEPRINTER_PRO_ENTITLEMENT_ID, type ProBillingCycle } from "@/lib/proProduct";
 
 /**
- * Black Friday 2026 (Amelia, 2026-11-24): Tue Nov 24 to Sun Nov 30, Pacific.
+ * Black Friday 2026 (Amelia, 2026-11-24): Tue Nov 24 5pm Eastern to the end of
+ * Sun Nov 30 Pacific.
  *
  * - Pro members who were already Pro when the sale began: every cookbook $9.99.
  * - Everyone else: cookbooks $15.99, and Pro monthly $2.49 for 3 months, then
@@ -20,8 +21,9 @@ import { DEFAULT_PRO_CYCLE, RECIPEPRINTER_PRO_ENTITLEMENT_ID, type ProBillingCyc
  * what actually ends the sale.
  */
 
-/** Tue Nov 24 2026, 00:00 PST. */
-export const BLACK_FRIDAY_STARTS_AT_MS = Date.UTC(2026, 10, 24, 8, 0, 0);
+/** Tue Nov 24 2026, 5:00pm Eastern (Amelia, 2026-11-24). Also the line for
+ *  "Pro before the sale" and "bought a cookbook before the sale". */
+export const BLACK_FRIDAY_STARTS_AT_MS = Date.UTC(2026, 10, 24, 22, 0, 0);
 /** Sun Nov 30 2026, 23:59:59 PST (end exclusive at midnight). */
 export const BLACK_FRIDAY_ENDS_AT_MS = Date.UTC(2026, 11, 1, 8, 0, 0);
 
