@@ -238,7 +238,7 @@ export function ProUpgradeDialog({
           <h2 id="pro-decline-title" className="text-cp-dialog-title font-extrabold tracking-tight">
             Not upgrading today?
           </h2>
-          <p className="mt-1 text-cp-body text-ink-soft">Tell me why in one tap. It helps me make RecipePrinter better.</p>
+          <p className="mt-1 text-cp-body text-ink-soft">Your feedback helps make RecipePrinter better.</p>
         </div>
         <div className="flex flex-col gap-cp-2">
           {DECLINE_REASONS.map(({ reason, label }) => (
