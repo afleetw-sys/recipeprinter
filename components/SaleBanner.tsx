@@ -154,8 +154,8 @@ export function SaleBanner() {
             {/* Both offers, Pro first (Amelia, 2026-11-24): most people buy Pro,
                 not a book. */}
             <span className="rp-sale-banner__all">
-              50% off your first {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months of Pro, and cookbooks are{" "}
-              {price(BLACK_FRIDAY_COOKBOOK_PRICE)} this week.
+              This week only: Pro is 50% off for {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months, and cookbooks are{" "}
+              {price(BLACK_FRIDAY_COOKBOOK_PRICE)}.
             </span>
             <span className="rp-sale-banner__member">
               Just for Pro members: every cookbook is {price(BLACK_FRIDAY_PRO_COOKBOOK_PRICE)} until Sunday.
