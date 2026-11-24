@@ -5,6 +5,7 @@ import {
   BLACK_FRIDAY_PRO_COOKBOOK_PACKAGE_ID,
   BLACK_FRIDAY_PRO_COOKBOOK_PRICE,
   BLACK_FRIDAY_PRO_COOKBOOK_PRODUCT_ID,
+  sitsOutTheSale,
 } from "@/lib/blackFriday";
 
 // One purchase unlocks one stable cookbook project. The RevenueCat web product
@@ -87,7 +88,7 @@ export function cookbookOfferFor({
   firstCookbookGrantedAt: number | null;
   saleLive: boolean;
 }): CookbookOffer {
-  if (saleLive) {
+  if (saleLive && !sitsOutTheSale({ hasPro, firstCookbookGrantedAt })) {
     return hasPro && proBeforeSale
       ? {
           discount: "black_friday_pro",

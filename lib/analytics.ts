@@ -465,7 +465,7 @@ type EventProps = {
    *  "compared plans" apart from "committed to one". */
   pro_plan_selected: { cycle: "monthly" | "annual" };
   /** The sale banner (components/SaleBanner.tsx) was closed, by which version. */
-  sale_banner_dismissed: { standing: "member" | "new" | "none"; via: "close" | "claim_pro" | "claim_cookbook" };
+  sale_banner_dismissed: { standing: "member" | "new" | "none" | "excluded"; via: "close" | "claim_pro" | "claim_cookbook" };
   /** Continue was pressed on the upgrade dialog's plan step, for whichever
    *  cycle was selected at the time — the step right before checkout (signed
    *  in) or the sign-in gate (signed out). */

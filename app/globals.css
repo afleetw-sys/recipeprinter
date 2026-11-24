@@ -3469,7 +3469,8 @@ html[data-sale] .rp-sale-hide {
   line-height: 1.4;
   text-align: center;
 }
-html[data-sale]:not([data-bf-dismissed]):not([data-bf-pro="pending"]) .rp-sale-banner {
+/* "excluded": a Pro member who bought a cookbook before the sale sits it out. */
+html[data-sale]:not([data-bf-dismissed]):not([data-bf-pro="pending"]):not([data-bf-pro="excluded"]) .rp-sale-banner {
   display: flex;
 }
 .rp-sale-banner__inner {

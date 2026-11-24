@@ -2,7 +2,7 @@
 
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { cookbookOfferFor, type CookbookOffer } from "@/lib/cookbookProduct";
-import { isBlackFridayLive, wasProBeforeBlackFriday } from "@/lib/blackFriday";
+import { isBlackFridayLive, sitsOutTheSale, wasProBeforeBlackFriday, type SaleStanding } from "@/lib/blackFriday";
 import { resolveEffectiveCustomerInfo } from "@/lib/proAccessFallback";
 import {
   hasProEntitlement,
@@ -35,11 +35,13 @@ export async function checkCookbookOffer(): Promise<CookbookOffer> {
 /**
  * Where this browser's account stands in the sale (lib/blackFriday.ts), for
  * the banner: "member" was Pro before it began ($9.99 books), "new" went Pro
- * since ($15.99 books, nothing more to sell), "none" isn't Pro.
+ * since ($15.99 books, nothing more to sell), "excluded" is a member who
+ * bought a book before it (no sale, no bar), "none" isn't Pro.
  */
-export async function checkSaleStanding(): Promise<"member" | "new" | "none"> {
+export async function checkSaleStanding(): Promise<SaleStanding> {
   const standing = await readStanding();
   if (!standing?.hasPro) return "none";
+  if (sitsOutTheSale(standing)) return "excluded";
   return standing.proBeforeSale ? "member" : "new";
 }
 

@@ -49,7 +49,7 @@ function dismissSaleBanner(via: "close" | "claim_pro" | "claim_cookbook") {
 
 function currentStanding(): SaleStanding {
   const value = document.documentElement.getAttribute(BLACK_FRIDAY_PRO_ATTR);
-  return value === "member" || value === "new" ? value : "none";
+  return value === "member" || value === "new" || value === "excluded" ? value : "none";
 }
 
 /**

@@ -85,7 +85,22 @@ export function upgradeButtonLabel(nowMs: number = Date.now()): string {
 /** The account's place in the sale, cached for the inline script so the right
  *  banner shows on first paint next time (components/SaleBanner.tsx). */
 export const SALE_STANDING_KEY = "rp.sale2026Standing";
-export type SaleStanding = "member" | "new" | "none";
+export type SaleStanding = "member" | "new" | "none" | "excluded";
+
+/**
+ * A Pro member who bought a cookbook before the sale began sits the sale out
+ * (Amelia, 2026-11-24): no bar, no sale price. A first book bought DURING the
+ * sale doesn't count, so a member's $9.99 book doesn't cost them the next one.
+ */
+export function sitsOutTheSale({
+  hasPro,
+  firstCookbookGrantedAt,
+}: {
+  hasPro: boolean;
+  firstCookbookGrantedAt: number | null;
+}): boolean {
+  return hasPro && firstCookbookGrantedAt !== null && firstCookbookGrantedAt < BLACK_FRIDAY_STARTS_AT_MS;
+}
 
 /** importMeter's "this browser knows the cook is Pro" hint (lib/importMeter.ts
  *  `UNLIMITED_STORAGE_KEY`), read by the inline script below. */
@@ -103,5 +118,5 @@ const PRO_HINT_KEY = "recipeprinter:import-unlimited:v1";
 export function saleInlineScript(): string {
   const start = BLACK_FRIDAY_STARTS_AT_MS;
   const end = BLACK_FRIDAY_ENDS_AT_MS;
-  return `(function(){try{var d=document.documentElement,n=Date.now();if(!(${PREVIEW ? "true" : "false"}||(n>=${start}&&n<${end})))return;d.setAttribute("data-sale","");var l=window.localStorage;if(l.getItem(${JSON.stringify(BLACK_FRIDAY_DISMISSED_KEY)}))d.setAttribute(${JSON.stringify(BLACK_FRIDAY_DISMISSED_ATTR)},"");var s=l.getItem(${JSON.stringify(SALE_STANDING_KEY)});if(s==="member"||s==="new")d.setAttribute(${JSON.stringify(BLACK_FRIDAY_PRO_ATTR)},s);else if(s!=="none"&&l.getItem(${JSON.stringify(PRO_HINT_KEY)})==="true")d.setAttribute(${JSON.stringify(BLACK_FRIDAY_PRO_ATTR)},"pending");}catch(e){}})();`;
+  return `(function(){try{var d=document.documentElement,n=Date.now();if(!(${PREVIEW ? "true" : "false"}||(n>=${start}&&n<${end})))return;d.setAttribute("data-sale","");var l=window.localStorage;if(l.getItem(${JSON.stringify(BLACK_FRIDAY_DISMISSED_KEY)}))d.setAttribute(${JSON.stringify(BLACK_FRIDAY_DISMISSED_ATTR)},"");var s=l.getItem(${JSON.stringify(SALE_STANDING_KEY)});if(s==="member"||s==="new"||s==="excluded")d.setAttribute(${JSON.stringify(BLACK_FRIDAY_PRO_ATTR)},s);else if(s!=="none"&&l.getItem(${JSON.stringify(PRO_HINT_KEY)})==="true")d.setAttribute(${JSON.stringify(BLACK_FRIDAY_PRO_ATTR)},"pending");}catch(e){}})();`;
 }
