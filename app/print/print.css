@@ -7285,6 +7285,15 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   margin-left: auto;
   margin-right: auto;
 }
+/* A text-only framed opener centres its words on the page. The opener is a
+   plain block here and its body only as tall as its words, so the body's
+   own centring had no height to work in and the words printed at the top.
+   Filling the page gives it the room. */
+.recipe-template--heirloom .recipe-card--chapter:not(.recipe-card--chapter-with-photo) > .recipe-card__chapter-body,
+.recipe-template--keepsake .recipe-card--chapter:not(.recipe-card--chapter-with-photo) > .recipe-card__chapter-body {
+  box-sizing: border-box;
+  min-height: 100%;
+}
 /* Keepsake's chapter draws no inset frame of its own: the card's double
    border is its frame. One was declared here, but the theme's
    `.recipe-card > * { position: relative }` below beat its `absolute`, so it
