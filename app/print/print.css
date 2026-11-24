@@ -13187,7 +13187,7 @@ textarea.recipe-card__toc-title {
 }
 
 /* ── Winter (seasonal) ─────────────────────────────────────────────────────
-   Frosty gray stock (#f0f1f4) with the artist's snowflakes in both top
+   White stock with the artist's snowflakes in both top
    corners and a snowman in the bottom-right. Measured off her mockup, 1988
    units across: `--winter-u` is one of those units at this card's width. All
    three pieces are drawn at the same scale (1.33 mockup units to an SVG
@@ -13202,7 +13202,7 @@ textarea.recipe-card__toc-title {
    continued face) starts below it. The snowman
    is a keep-out corner the steps wrap around, as Fall's pumpkins are. */
 .recipe-template--winter {
-  --recipe-bg: #f0f1f4;
+  --recipe-bg: #fff;
   --recipe-ink: #33364a;
   --recipe-muted: #676b85;
   --recipe-accent: #5d6283;
@@ -13218,7 +13218,7 @@ textarea.recipe-card__toc-title {
 }
 
 .recipe-template--winter .recipe-card {
-  background-color: #f0f1f4;
+  background-color: #fff;
   --recipe-card-padding-x: 0.48in;
   --recipe-card-padding-top: calc(95 * var(--winter-u) + 0.03in);
 }
@@ -14141,4 +14141,19 @@ textarea.recipe-card__toc-title {
   .rp-signin-hint {
     display: none;
   }
+}
+
+/* Customize theme: use white instead of the theme's full-page color, in the
+   live preview and every output. Scope this to the page deck: the settings
+   panel sits under the same workspace root, and its theme thumbnails must
+   always show each theme's own default background. Keep borders,
+   illustrations and accent fills; only the card's paper changes. Setting the
+   variable on the card also covers SVG-backed faces whose background rect
+   reads `--recipe-bg`. Export roots are themselves `.recipe-page-deck`; the
+   editor's deck is a descendant of the workspace root. */
+.recipe-background-off.recipe-page-deck .recipe-card,
+.recipe-background-off .recipe-page-deck .recipe-card,
+.recipe-background-off .rp-twoup .recipe-card {
+  --recipe-bg: #fff !important;
+  background: #fff !important;
 }

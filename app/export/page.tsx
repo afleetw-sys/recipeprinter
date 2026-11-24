@@ -344,7 +344,9 @@ function CoverWrapDocument({ payload }: { payload: ExportPayload }) {
     // The front panel places its photo as the book does (lib/bookTheme.tsx).
     <QuietThemeProvider quiet={Boolean(project.settings.quietTheme)}>
     <div
-      className={`recipe-page-deck rp-exporting rp-page-cover-wrap ${accentRoot.className}`}
+      className={`recipe-page-deck rp-exporting rp-page-cover-wrap ${accentRoot.className}${
+        look.background ? "" : " recipe-background-off"
+      }`}
       style={{ ...wrapStyle, ...accentRoot.style }}
       data-export-root="true"
     >
@@ -533,7 +535,9 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
     <div
       className={`recipe-page-deck rp-exporting ${preset.pageClass}${preset.coilBound ? " rp-coil" : ""} ${
         cookbookMode ? "recipe-page-deck--book" : ""
-      }${payload.brandHidden ? " recipe-print-page--pro" : ""} ${accentRoot.className}`}
+      }${payload.brandHidden ? " recipe-print-page--pro" : ""} ${accentRoot.className}${
+        look.background ? "" : " recipe-background-off"
+      }`}
       style={{ ...exportStyle, ...accentRoot.style }}
       data-export-root="true"
       data-photo-finish={payload.photoFinish ?? "standard"}

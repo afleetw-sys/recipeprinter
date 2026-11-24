@@ -329,6 +329,7 @@ export function computeProLocks({
   accent = null,
   artChanged = false,
   layoutChanged = false,
+  backgroundChanged = false,
   elementTextSized = false,
 }: {
   customerInfo: CustomerInfo | null;
@@ -350,6 +351,8 @@ export function computeProLocks({
   /** Ingredients stacked above the steps, or lines between a recipe's
       groups (lib/themeLooks.ts): Pro the same way. */
   layoutChanged?: boolean;
+  /** The theme's full-page background color is turned off. */
+  backgroundChanged?: boolean;
   /** A single element on a recipe card has a text size other than Normal
       (lib/pageLooks.tsx): Pro the same way. */
   elementTextSized?: boolean;
@@ -368,7 +371,13 @@ export function computeProLocks({
   // size, accent, layout, dividers, a part's own size) is this one lock.
   const fontScaleLocked =
     !cookbookMode &&
-    (fontScale !== 1 || photoScale !== 1 || accent !== null || artChanged || layoutChanged || elementTextSized) &&
+    (fontScale !== 1 ||
+      photoScale !== 1 ||
+      accent !== null ||
+      artChanged ||
+      layoutChanged ||
+      backgroundChanged ||
+      elementTextSized) &&
     !hasProEntitlement(customerInfo);
   // Printing more than one recipe in one job (outside a cookbook, which has
   // its own separate purchase model) is its own Pro-gated capability — see

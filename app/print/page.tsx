@@ -447,7 +447,7 @@ export default function PrintPage() {
       the current theme's. Pro on recipe cards; included in a cookbook. */
   const [themeLooks, setThemeLooks] = useState<ThemeLooks>({});
   const themeLook = lookFor(themeLooks, template);
-  const { fontScale, photoScale, accent, posterColor, utensil, stacked } = themeLook;
+  const { fontScale, photoScale, accent, posterColor, utensil, stacked, background } = themeLook;
   const accentRoot = accentRootProps(accent, template);
   const themeArt = useMemo(() => ({ posterColor, utensil }), [posterColor, utensil]);
   const setFontScale = useCallback(
@@ -472,6 +472,10 @@ export default function PrintPage() {
   );
   const setStacked = useCallback(
     (value: boolean) => setThemeLooks((looks) => withLook(looks, template, { stacked: value })),
+    [template],
+  );
+  const setBackground = useCallback(
+    (value: boolean) => setThemeLooks((looks) => withLook(looks, template, { background: value })),
     [template],
   );
   const resetThemeLook = useCallback(
@@ -3852,6 +3856,7 @@ export default function PrintPage() {
       accent,
       artChanged: posterColor !== null || utensil !== null,
       layoutChanged: stacked,
+      backgroundChanged: !background,
       elementTextSized,
     });
   // A free, non-cookbook account can never hold more than one recipe — see
@@ -4013,6 +4018,7 @@ export default function PrintPage() {
         accent !== null && "accent color",
         posterColor !== null && "band color",
         utensil !== null && "utensil",
+        !background && "background color",
         stacked && "layout",
         (fontScale !== DEFAULT_FONT_SCALE || elementTextSized) && "text size",
         photoScale !== DEFAULT_PHOTO_SCALE && "photo size",
@@ -7951,7 +7957,7 @@ export default function PrintPage() {
         // On the page root, not the shell, because the off-screen measurers
         // (`measurers` below) must lay cards out exactly as the deck does.
         brandHidden ? "recipe-print-page--pro" : ""
-      } ${accentRoot.className}`}
+      } ${accentRoot.className}${background ? "" : " recipe-background-off"}`}
       // The theme's accent, if the cook changed it: every page here (deck,
       // rail, what prints) takes it from the root (lib/themeAccent.ts).
       style={accentRoot.style}
@@ -8399,6 +8405,8 @@ export default function PrintPage() {
           setUtensil={setUtensil}
           stacked={stacked}
           setStacked={setStacked}
+          background={background}
+          setBackground={setBackground}
           themeCustomized={
             isCustomized(themeLook) || Boolean(projectMeta.meta.pageLooks?.[RECIPES_ADDRESS])
           }

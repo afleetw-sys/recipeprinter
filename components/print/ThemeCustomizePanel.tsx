@@ -22,8 +22,9 @@ import {
   type SupperUtensil,
 } from "@/lib/themeAccent";
 import { MenuSelect } from "@/components/MenuSelect";
-import { SelectTile } from "@/components/Controls";
+import { Checkbox, SelectTile } from "@/components/Controls";
 import type { RecipePrintTemplate } from "@/types/recipe";
+import { hasThemeBackgroundColor } from "@/lib/printTemplates";
 
 /**
  * The settings panel's Customize view: everything about how the current theme
@@ -51,6 +52,8 @@ export function ThemeCustomizePanel({
   setUtensil,
   stacked,
   setStacked,
+  background,
+  setBackground,
   template,
   customized,
   onReset,
@@ -80,6 +83,9 @@ export function ThemeCustomizePanel({
       whenever a recipe fits on one page (lib/themeLooks.ts). */
   stacked: boolean;
   setStacked: (value: boolean) => void;
+  /** Whether the theme's full-page background color is shown. */
+  background: boolean;
+  setBackground: (value: boolean) => void;
   /** Which theme, for its own colors and art choices. */
   template: RecipePrintTemplate;
   /** Whether this theme differs from how it ships. */
@@ -153,6 +159,22 @@ export function ThemeCustomizePanel({
           />
         </div>
       )}
+
+      {hasThemeBackgroundColor(template) && <div className="recipe-config-section">
+        <Checkbox
+          label={
+            <>
+              Background color
+              {proMarked && !background && (
+                <ProBadge variant="inline" label={false} tooltip="A white background is Pro" />
+              )}
+            </>
+          }
+          hint="Turn off for a white background."
+          checked={background}
+          onChange={(event) => setBackground(event.target.checked)}
+        />
+      </div>}
 
       <LayoutControl stacked={stacked} setStacked={setStacked} proMarked={proMarked && stacked} />
 

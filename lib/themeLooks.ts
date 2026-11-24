@@ -1,6 +1,6 @@
 import { DEFAULT_FONT_SCALE, normalizeFontScale, type FontScale } from "@/lib/fontScale";
 import { DEFAULT_PHOTO_SCALE, legacyPhotoScale, normalizePhotoScale, type PhotoScale } from "@/lib/photoScale";
-import { RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
+import { hasThemeBackgroundColor, RECIPE_PRINT_TEMPLATE_OPTIONS } from "@/lib/printTemplates";
 import {
   normalizeAccent,
   normalizePosterColor,
@@ -34,6 +34,9 @@ export interface ThemeLook {
   /** Ingredients above the steps on every recipe. Absent: side by side
       whenever the whole recipe fits on the front, stacked otherwise. */
   stacked?: true;
+  /** False: use white instead of the theme's full-page background color.
+      Absent keeps the theme's background. */
+  background?: false;
 }
 
 export type ThemeLooks = Partial<Record<RecipePrintTemplate, ThemeLook>>;
@@ -47,6 +50,7 @@ export interface ResolvedThemeLook {
   posterColor: number | null;
   utensil: SupperUtensil | null;
   stacked: boolean;
+  background: boolean;
 }
 
 export const DEFAULT_THEME_LOOK: ResolvedThemeLook = {
@@ -56,6 +60,7 @@ export const DEFAULT_THEME_LOOK: ResolvedThemeLook = {
   posterColor: null,
   utensil: null,
   stacked: false,
+  background: true,
 };
 
 export function lookFor(looks: ThemeLooks, template: RecipePrintTemplate): ResolvedThemeLook {
@@ -67,6 +72,7 @@ export function lookFor(looks: ThemeLooks, template: RecipePrintTemplate): Resol
     posterColor: look?.posterColor ?? null,
     utensil: look?.utensil ?? null,
     stacked: look?.stacked === true,
+    background: look?.background !== false,
   };
 }
 
@@ -79,7 +85,8 @@ export function isCustomized(look: ResolvedThemeLook): boolean {
     look.accent !== null ||
     look.posterColor !== null ||
     look.utensil !== null ||
-    look.stacked
+    look.stacked ||
+    !look.background
   );
 }
 
@@ -91,6 +98,7 @@ export function withLook(
   change: Partial<ResolvedThemeLook>,
 ): ThemeLooks {
   const next = { ...lookFor(looks, template), ...change };
+  if (!hasThemeBackgroundColor(template)) next.background = true;
   const rest = { ...looks };
   delete rest[template];
   if (!isCustomized(next)) return rest;
@@ -101,6 +109,7 @@ export function withLook(
   if (next.posterColor !== null) look.posterColor = next.posterColor;
   if (next.utensil !== null) look.utensil = next.utensil;
   if (next.stacked) look.stacked = true;
+  if (!next.background) look.background = false;
   return { ...rest, [template]: look };
 }
 
@@ -116,7 +125,7 @@ export function normalizeThemeLooks(stored: unknown, legacy: { fontScale?: unkno
     for (const option of RECIPE_PRINT_TEMPLATE_OPTIONS) {
       const raw = (stored as Record<string, unknown>)[option.id];
       if (!raw || typeof raw !== "object") continue;
-      const { fontScale, photoScale, accent, posterColor, utensil, stacked } = raw as Record<string, unknown>;
+      const { fontScale, photoScale, accent, posterColor, utensil, stacked, background } = raw as Record<string, unknown>;
       looks = withLook(looks, option.id, {
         fontScale: normalizeFontScale(fontScale),
         photoScale: normalizePhotoScale(photoScale),
@@ -124,6 +133,7 @@ export function normalizeThemeLooks(stored: unknown, legacy: { fontScale?: unkno
         posterColor: option.id === "poster" ? normalizePosterColor(posterColor) : null,
         utensil: option.id === "supper" ? normalizeUtensil(utensil) : null,
         stacked: stacked === true,
+        background: hasThemeBackgroundColor(option.id) ? background !== false : true,
       });
     }
     return looks;

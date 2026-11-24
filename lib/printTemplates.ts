@@ -53,37 +53,43 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
       tagged and at the top of the Pro themes (see lib/seasonalThemes).
       Outside the window it is in the collapsed "Seasonal themes" group. */
   featured?: ThemeSeason;
+  /** The theme lays a non-white color across its paper, so Customize can
+      offer a white-background alternative. */
+  backgroundColor?: true;
 }> = [
   { id: "document", label: "Document", detail: "Plain black type, like a printed document" },
   { id: "classic", label: "Classic", detail: "Cornflower and slate, clean cookbook card" },
   { id: "pantry", label: "Pantry", detail: "Fine ruled lines with small ingredient sketches" },
-  { id: "typewriter", label: "Typewriter", detail: "Black and white, typed on an index card" },
-  { id: "bistro", label: "Bistro", detail: "Blue checks, tomato red, playful kitchen card" },
-  { id: "diner", label: "Diner", detail: "A bold outlined red title and a dashed sky-blue photo frame" },
-  { id: "supper", label: "Supper", detail: "A deep red frame set with a fork, spoon or knife" },
+  { id: "typewriter", label: "Typewriter", detail: "Black and white, typed on an index card", backgroundColor: true },
+  { id: "bistro", label: "Bistro", detail: "Blue checks, tomato red, playful kitchen card", backgroundColor: true },
+  { id: "diner", label: "Diner", detail: "A bold outlined red title and a dashed sky-blue photo frame", backgroundColor: true },
+  { id: "supper", label: "Supper", detail: "A deep red frame set with a fork, spoon or knife", backgroundColor: true },
   { id: "poster", label: "Poster", detail: "A bold title tab and a color band that changes each recipe" },
-  { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake" },
-  { id: "market", label: "Market", detail: "A thin teal bar up top and a row of cut-paper groceries below" },
-  { id: "garden", label: "Garden", detail: "Soft green stock, rolling hills and a vine of tomatoes" },
-  { id: "counter", label: "Counter", detail: "Black-and-white notes with tiny counter details" },
-  { id: "keepsake", label: "Keepsake", detail: "Cream recipe-box card with classic family style" },
-  { id: "quilt", label: "Quilt", detail: "Warm cream with a quilted strip of green and rust tiles" },
+  { id: "heirloom", label: "Heirloom", detail: "Cream stock, red utensil keepsake", backgroundColor: true },
+  { id: "market", label: "Market", detail: "A thin teal bar up top and a row of cut-paper groceries below", backgroundColor: true },
+  { id: "garden", label: "Garden", detail: "Soft green stock, rolling hills and a vine of tomatoes", backgroundColor: true },
+  { id: "counter", label: "Counter", detail: "Black-and-white notes with tiny counter details", backgroundColor: true },
+  { id: "keepsake", label: "Keepsake", detail: "Cream recipe-box card with classic family style", backgroundColor: true },
+  { id: "quilt", label: "Quilt", detail: "Warm cream with a quilted strip of green and rust tiles", backgroundColor: true },
   {
     id: "fall",
     label: "Fall",
     detail: "Cream stock, falling leaves and a pile of pumpkins",
+    backgroundColor: true,
     featured: { from: "09-01", to: "12-01" },
   },
   {
     id: "halloween",
     label: "Halloween",
     detail: "Parchment stock, a reaching hand and a jack-o'-lantern by a headstone",
+    backgroundColor: true,
     featured: { from: "09-15", to: "11-01" },
   },
   {
     id: "christmas",
     label: "Christmas",
     detail: "Linen stock, a red title and a row of Santa hats",
+    backgroundColor: true,
     featured: { from: "11-01", to: "12-31" },
   },
   {
@@ -93,3 +99,7 @@ export const RECIPE_PRINT_TEMPLATE_OPTIONS: Array<{
     featured: { from: "11-01", to: "12-31" },
   },
 ];
+
+export function hasThemeBackgroundColor(template: RecipePrintTemplate): boolean {
+  return RECIPE_PRINT_TEMPLATE_OPTIONS.some((option) => option.id === template && option.backgroundColor === true);
+}
