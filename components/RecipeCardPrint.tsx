@@ -56,6 +56,7 @@ import { markImageAvailable, markImageUnavailable } from "@/lib/imageFailure";
 import { chapterIntroFromRecipes } from "@/lib/chapterIntro";
 import { SUPPER_UTENSILS } from "@/lib/themeAccent";
 import { useThemeArt } from "@/lib/themeArt";
+import { coverPhotoPlacement, useQuietTheme } from "@/lib/bookTheme";
 import {
   FIRST_NOTE_PIECE,
   RECIPE_FIELDS,
@@ -636,6 +637,10 @@ export const RecipeCardFace = memo(function RecipeCardFace({
   const el = useElements();
   const themeArt = useThemeArt();
   const fieldSwitches = useFieldSwitches();
+  // A quiet book's recipe pages wear only the theme's edge, softened, on every
+  // page, the way an older book's continued pages already do (lib/bookTheme).
+  const quietTheme = useQuietTheme() && Boolean(cookbookMode);
+  const edgeOnly = Boolean(cookbookMode) && (continued || quietTheme);
   const source = sourceLabel(recipe);
   // Cook time and servings the book has switched off (lib/recipeFields.ts)
   // read as missing everywhere on the card, the cookbook facts included.
@@ -1761,7 +1766,8 @@ export const RecipeCardFace = memo(function RecipeCardFace({
     <article
       className={`recipe-card recipe-card--${side} ${
         continued ? "recipe-card--continued" : ""
-      } ${showPhoto ? "recipe-card--with-photo" : ""}`}
+      } ${edgeOnly ? "recipe-card--edge-only" : ""} ${showPhoto ? "recipe-card--with-photo" : ""}`}
+      data-quiet-theme={quietTheme ? "true" : undefined}
       data-has-back={hasBackFace ? "true" : undefined}
       data-preview-hidden={previewHidden ? "true" : undefined}
       data-poster-color={template === "poster" ? (themeArt.posterColor ?? posterColor(recipeIndex)) : undefined}
@@ -1783,7 +1789,7 @@ export const RecipeCardFace = memo(function RecipeCardFace({
       <TemplateDecoration
         template={template}
         show={showDecoration}
-        edgeOnly={cookbookMode && continued}
+        edgeOnly={edgeOnly}
         recipeIndex={recipeIndex}
       />
       {showHeader ? (
@@ -2174,7 +2180,10 @@ export const DividerFace = memo(function DividerFace({
   inlineEdit,
   showEmptyFields = false,
   sampleLines = false,
+  template,
 }: {
+  /** The book's theme, for the art a quiet book shows here (lib/bookTheme). */
+  template?: RecipePrintTemplate;
   title: string;
   chapterNumber?: number;
   showChapterNumber?: boolean;
@@ -2196,6 +2205,11 @@ export const DividerFace = memo(function DividerFace({
   sampleLines?: boolean;
 }) {
   const el = useElements();
+  const themeArt = useThemeArt();
+  // A quiet book shows its theme's full art here, where a chapter starts, in
+  // place of on every recipe page (lib/bookTheme). An older book's openers
+  // never carried it, and still don't.
+  const quietTheme = useQuietTheme();
   // A chapter just made opens its title with "New chapter" selected, so the
   // first key replaces it. Once, when the field opens: the page clears
   // `titleSelected` on the first edit, so a redraw while typing doesn't take
@@ -2406,6 +2420,13 @@ export const DividerFace = memo(function DividerFace({
       className={`recipe-card recipe-card--divider recipe-card--chapter${hasCardPhoto ? " recipe-card--chapter-with-photo" : ""}${cardPhotoFull ? " recipe-card--chapter-photo-full" : ""}`}
       data-chapter-text={cardPhotoFull && !cardBodyHasText ? "none" : undefined}
       data-preview-hidden={previewHidden ? "true" : undefined}
+      data-quiet-theme={quietTheme ? "true" : undefined}
+      // Poster's band takes the chapter's turn, as its recipes' do.
+      data-poster-color={
+        quietTheme && template === "poster"
+          ? (themeArt.posterColor ?? posterColor(chapterNumber - 1))
+          : undefined
+      }
     >
       <div className="recipe-card__chapter-photo" aria-hidden>
         {cardPhotoMode === "photo" && cardPhotoUrl ? (
@@ -2435,7 +2456,11 @@ export const DividerFace = memo(function DividerFace({
       {/* The chapter opener's photo is changed from the page toolbar, like
           every other page's. */}
       <div className="recipe-card__chapter-frame" aria-hidden />
-      {/* No `TemplateDecoration`: a chapter opener's photo is its decoration. */}
+      {/* An older book's opener has no `TemplateDecoration`: its photo is its
+          decoration. A quiet book's carries the theme's full art; a photo
+          still replaces it (print.css, "A photo replaces the theme's
+          decoration"). */}
+      <TemplateDecoration template={template} show={quietTheme} recipeIndex={chapterNumber - 1} />
       <div className="recipe-card__chapter-body">
         <span className="recipe-card__chapter-ornament" aria-hidden />
         {showChapterNumber && (
@@ -2626,6 +2651,7 @@ export const CoverFace = memo(function CoverFace({
   inlineEdit?: CoverCardInlineEdit;
 }) {
   const el = useElements();
+  const quietTheme = useQuietTheme();
   const canEdit = Boolean(inlineEdit);
   const showEmpty = canEdit && showEmptyFields;
   const draft = inlineEdit?.cover ?? cover;
@@ -3010,12 +3036,17 @@ export const CoverFace = memo(function CoverFace({
   const gridImages = (draft.gridImages ?? []).filter(Boolean);
   const requestedLayout = draft.layout ??
     (gridImages.length > 0 ? "collage" : draft.imageUrl ? "photo" : "typographic");
-  const coverMode =
+  const photoMode =
     requestedLayout === "collage" && gridImages.length > 0
       ? "grid"
       : requestedLayout === "photo" && draft.imageUrl
         ? "photo"
         : "none";
+  // A photo "in the card" sits under the words on the theme's own designed
+  // page, so the page is styled as a cover with no photo behind it (paper,
+  // frame, the theme's art) and the picture is drawn in the lockup instead.
+  const photoInCard = photoMode !== "none" && coverPhotoPlacement(draft, quietTheme) === "card";
+  const coverMode = photoInCard ? "none" : photoMode;
   // Responsive collage: columns + banner adapt to the photo count so any number
   // (2, 3, 5, …) fills the frame with no empty cells. Shared with section grids.
   const { columns: gridColumns, firstSpans: gridFirstSpans } = photoGridLayout(gridImages.length);
@@ -3024,6 +3055,34 @@ export const CoverFace = memo(function CoverFace({
   // plate that backs it, its rule and its ornament (see `data-cover-text` in
   // print.css). Not while the fields are revealed or one is open, when the empty
   // lines have to be there to be typed into.
+  const insetPhoto = photoInCard ? (
+    <div
+      className={`recipe-card__cover-inset ${photoMode === "grid" ? "recipe-card__cover-photo--grid" : ""}`}
+      style={photoMode === "grid" ? ({ "--cover-grid-cols": gridColumns } as CSSProperties) : undefined}
+      aria-hidden
+    >
+      {photoMode === "grid" ? (
+        gridImages.slice(0, 6).map((image, index) => (
+          <span
+            key={`${image}-${index}`}
+            className={`recipe-card__cover-grid-cell ${
+              gridFirstSpans && index === 0 ? "recipe-card__cover-grid-img--wide" : ""
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img referrerPolicy="no-referrer" src={image} alt="" className="recipe-card__cover-grid-img" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+            <span className="photo-unavailable-message">Photo unavailable</span>
+          </span>
+        ))
+      ) : (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img referrerPolicy="no-referrer" src={draft.imageUrl} alt="" className="recipe-card__cover-inset-image" onLoad={(event) => markImageAvailable(event.currentTarget)} onError={(event) => markImageUnavailable(event.currentTarget)} />
+          <span className="photo-unavailable-message">Photo unavailable</span>
+        </>
+      )}
+    </div>
+  ) : null;
   const coverTextEmpty =
     ![draft.title, draft.subtitle, draft.author, draft.edition].some((line) => line?.trim()) &&
     !showEmpty &&
@@ -3034,6 +3093,7 @@ export const CoverFace = memo(function CoverFace({
     <article
       className="recipe-card recipe-card--cover recipe-card--cover-front"
       data-cover-mode={coverMode}
+      data-cover-photo={photoInCard ? "card" : undefined}
       data-cover-text={coverTextEmpty ? "none" : undefined}
       data-preview-hidden={previewHidden ? "true" : undefined}
     >
@@ -3115,6 +3175,7 @@ export const CoverFace = memo(function CoverFace({
           className: "recipe-card__cover-edition",
           onChange: (value) => set({ edition: value }),
         })}
+        {insetPhoto}
       </div>
     </article>
   );

@@ -200,6 +200,7 @@ describe("a saved book reopens with every part it was saved with", () => {
     cookbookMode: true,
     optionalLinesExplicit: true,
     sampleLines: true,
+    quietTheme: true,
     cookbookPreset: "hardcover-8x10",
     sections: [
       {

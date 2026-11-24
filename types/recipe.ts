@@ -535,6 +535,12 @@ export interface CoverConfig {
   /** What a `pageType: "image"` page shows. Its own field, apart from the
       design's `imageUrl`, so neither choice overwrites the other. */
   pageImageUrl?: string;
+  /** Front cover only: where its photo or collage goes. "card": a smaller
+      picture under the title, on the theme's own designed page. "background":
+      the picture fills the page with the words over it. Unset follows the
+      book: "card" in a book with `quietTheme`, "background" in every book
+      made before (lib/bookTheme.tsx `coverPhotoPlacement`). */
+  photoPlacement?: "card" | "background";
 }
 
 /** A book page's own words and pictures, in the shape a dedication keeps them,
@@ -626,6 +632,8 @@ export interface PrintProjectSettings {
   /** See `ProjectMeta.sampleLines`: optional lines never written show sample
       text (lib/bookPageSamples.ts). Absent on books made before. */
   sampleLines?: boolean;
+  /** See `ProjectMeta.quietTheme`. Absent on books made before. */
+  quietTheme?: boolean;
   /** See `ProjectMeta.optionalLinesExplicit`. Saved so a reloaded book isn't
       taken for one from before optional lines and migrated again. */
   optionalLinesExplicit?: boolean;

@@ -237,6 +237,7 @@ import {
 import { DEFAULT_PHOTO_SCALE, type PhotoScale } from "@/lib/photoScale";
 import { accentRootProps, type AccentColor, type SupperUtensil } from "@/lib/themeAccent";
 import { ThemeArtProvider } from "@/lib/themeArt";
+import { QuietThemeProvider, coverPhotoPlacement } from "@/lib/bookTheme";
 import {
   RECIPE_FIELDS,
   cardSwitchesFromCookbook,
@@ -351,6 +352,12 @@ const COVER_LOOKS: LookOption[] = [
   { id: "typographic", label: "Just text", preview: "text" },
   { id: "photo", label: "Text on a photo", preview: "text-on-photo" },
   { id: "own-image", label: "Your own image", preview: "own-image" },
+];
+/** Where a front cover's photo goes (CoverConfig.photoPlacement): in the page
+    under the title, or filling it, in the words the recipe photos use. */
+const COVER_PHOTO_PLACEMENTS = [
+  { id: "card", label: "In page" },
+  { id: "background", label: "Full page" },
 ];
 const CHAPTER_LOOKS: LookOption[] = [
   { id: "none", label: "Just text", preview: "text" },
@@ -1930,6 +1937,9 @@ export default function PrintPage() {
     projectMeta.setCookbookMode(true);
     // Every book scaffolded from here on shows only photos the cook adds.
     projectMeta.setOwnPhotosOnly();
+    // A book made from here on keeps its theme quiet on recipe pages, even
+    // one made from older recipe cards (lib/bookTheme.tsx).
+    projectMeta.setQuietTheme();
     const patch = buildCookbookScaffoldPatch(projectMeta.meta, items ?? [], template);
     if (patch.template !== template) setTemplate(patch.template);
     // The recipe link is on by default here, the same as on cards:
@@ -6675,7 +6685,13 @@ export default function PrintPage() {
           look={{
             label: "Look",
             value: look,
-            options: COVER_LOOKS,
+            // A front cover whose photo sits under the title isn't text on a photo.
+            options:
+              side === "front" && coverPhotoPlacement(cover, Boolean(projectMeta.meta.quietTheme)) === "card"
+                ? COVER_LOOKS.map((option) =>
+                    option.id === "photo" ? { ...option, label: "With a photo", preview: "text-with-photo" } : option,
+                  )
+                : COVER_LOOKS,
             onChange: (id) => {
               if (id === "own-image") {
                 set({ pageType: "image" });
@@ -7150,6 +7166,19 @@ export default function PrintPage() {
             imageUrl: undefined,
             layout: urls.length ? "collage" : "typographic",
           })
+        }
+        // The front cover's photo goes under the title or fills the page
+        // (lib/bookTheme.tsx). Offered once there is a photo to place.
+        layoutChoice={
+          side === "front" && (cover.imageUrl || gridImages.length)
+            ? {
+                label: "Photo layout",
+                value: coverPhotoPlacement(cover, Boolean(projectMeta.meta.quietTheme)),
+                options: COVER_PHOTO_PLACEMENTS,
+                onChange: (id) =>
+                  setCoverForSide(side, { ...cover, photoPlacement: id as "card" | "background" }),
+              }
+            : undefined
         }
         openSignal={photoDialogSignal(`cover:${side}`)}
         onOpenSignalConsumed={() => clearPhotoDialogSignal(`cover:${side}`)}
@@ -7883,6 +7912,7 @@ export default function PrintPage() {
   return (
     <ThemeArtProvider value={themeArt}>
     <RecipeFieldsProvider value={fieldSwitches}>
+    <QuietThemeProvider quiet={cookbookMode && Boolean(projectMeta.meta.quietTheme)}>
     <div
       className={`h-dvh recipe-print-page ${printWatermarked ? "rp-print-locked" : ""} ${
         // A Pro benefit: no "Printed with RecipePrinter" line, on any theme.
@@ -9101,6 +9131,7 @@ export default function PrintPage() {
         </div>
       )}
     </div>
+    </QuietThemeProvider>
     </RecipeFieldsProvider>
     </ThemeArtProvider>
   );

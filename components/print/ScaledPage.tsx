@@ -48,6 +48,7 @@ import {
   type PageLooks,
 } from "@/lib/pageLooks";
 import { photoScaleVars, type PhotoScale } from "@/lib/photoScale";
+import { useQuietTheme } from "@/lib/bookTheme";
 
 /**
  * A physical sheet rendered at true page size, scaled down by `scale` on
@@ -185,6 +186,7 @@ function ScaledPageBody({
   // file — so the preview cannot show a page shape the book does not have (see
   // `presetCardDims`). A plain card project keeps its own fixed page.
   const bookPreset = getCookbookPreset(preset);
+  const quietTheme = useQuietTheme();
   const dims = cookbookMode ? presetCardDims(bookPreset) : PAGE_DIMS[size];
   const cardVars = cookbookMode
     ? (presetCardVars(bookPreset) as CSSProperties)
@@ -683,6 +685,7 @@ function ScaledPageBody({
               >
                 {anySlot.kind === "divider" ? (
                   <DividerFace
+                    template={template}
                     title={anySlot.displayTitle}
                     recipeTitles={anySlot.recipeTitles}
                     chapterNumber={anySlot.chapterNumber}
@@ -774,10 +777,12 @@ function ScaledPageBody({
               }
               // A page a recipe runs onto: its card draws only the theme's
               // edge, so the page furniture drops to where the art was.
+              // Every recipe page of a quiet book is one too (lib/bookTheme).
               data-edge-only={
                 cookbookMode &&
                 sheet.slots.some(
-                  (slot) => slot?.kind === "recipe" && slot.isContinuation,
+                  (slot) =>
+                    slot?.kind === "recipe" && (slot.isContinuation || quietTheme),
                 )
                   ? "true"
                   : undefined

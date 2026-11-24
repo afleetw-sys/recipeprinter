@@ -7653,34 +7653,34 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   bottom: 0.24in;
 }
 
-.recipe-print-preview .recipe-card-set.recipe-template--christmas .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview .recipe-card-set.recipe-template--market .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--continued[data-in-book] {
+.recipe-print-preview .recipe-card-set.recipe-template--christmas .recipe-card.recipe-card--edge-only,
+.recipe-print-preview .recipe-card-set.recipe-template--market .recipe-card.recipe-card--edge-only,
+.recipe-print-preview .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--edge-only,
+.recipe-print-preview .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--edge-only,
+.recipe-print-preview .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--edge-only,
+.recipe-print-preview .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--edge-only {
   --recipe-card-padding-bottom: 0.42in;
   --recipe-card-keepout-w: 0in;
   --recipe-card-keepout-h: 0in;
 }
 
-.recipe-print-preview--letter .recipe-card-set.recipe-template--christmas .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview--letter .recipe-card-set.recipe-template--market .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview--letter .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview--letter .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview--letter .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview--letter .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--continued[data-in-book] {
+.recipe-print-preview--letter .recipe-card-set.recipe-template--christmas .recipe-card.recipe-card--edge-only,
+.recipe-print-preview--letter .recipe-card-set.recipe-template--market .recipe-card.recipe-card--edge-only,
+.recipe-print-preview--letter .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--edge-only,
+.recipe-print-preview--letter .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--edge-only,
+.recipe-print-preview--letter .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--edge-only,
+.recipe-print-preview--letter .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--edge-only {
   --recipe-card-padding-bottom: 0.5in;
 }
 
 /* Fall's continued book pages have no leaves to clear, and Halloween's no
    hand to wrap around. */
-.recipe-print-preview .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--continued[data-in-book] {
+.recipe-print-preview .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--edge-only,
+.recipe-print-preview .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--edge-only {
   --recipe-card-padding-top: 0.16in;
 }
 
-.recipe-print-preview .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--continued[data-in-book] .recipe-card__method::before {
+.recipe-print-preview .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--edge-only .recipe-card__method::before {
   display: none;
 }
 
@@ -8190,6 +8190,32 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   margin-left: auto;
   margin-right: auto;
   opacity: 1;
+}
+
+/* A photo "in the card" (`data-cover-photo="card"`, CoverConfig.photoPlacement):
+   the theme's designed cover above, the picture under the words, inside the
+   same centered lockup so the two move as one. Sized by the page, not the
+   photo, so every book's cover holds the same shape whatever is chosen. */
+.recipe-card__cover-inset {
+  position: relative;
+  flex: none;
+  width: 82%;
+  height: calc(var(--recipe-card-min-height, 11in) * 0.34);
+  margin-top: 0.26in;
+  overflow: hidden;
+  border-radius: 0.06in;
+  background: color-mix(in srgb, var(--recipe-bg) 88%, var(--recipe-muted));
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-card__cover-inset-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 /* ── Photo covers on the paper themes: readable title plate ────────────────
@@ -13568,6 +13594,76 @@ textarea.recipe-card__toc-title {
     .recipe-card__winter-snowman
   ) {
   display: none;
+}
+
+/* ── A quiet book's recipe pages ──────────────────────────────────────────
+   A book with `quietTheme` (lib/bookTheme.tsx) keeps its theme in the
+   background on recipe pages and lets it show on chapter openers. Every
+   recipe page is already edge-only (no illustrations: see `TemplateDecoration`
+   and the `.recipe-card--edge-only` layout rules above); here the edge that is
+   left prints light: thinner frames, paler strips and bands, and no Supper
+   utensil. Colour and weight, never position, so nothing here moves text or
+   changes what the face measurer reads. Books made before never get
+   `data-quiet-theme` and print exactly as they did. */
+.recipe-card[data-quiet-theme]:not(.recipe-card--divider)
+  :is(
+    .recipe-card__checker,
+    .recipe-card__counter-band,
+    .recipe-card__pantry-rules,
+    .recipe-card__quilt,
+    .recipe-card__market-bar,
+    .recipe-card__poster-band
+  ),
+.recipe-card-page:has(.recipe-card[data-quiet-theme]) .recipe-card-page__spine {
+  opacity: 0.3;
+}
+
+.recipe-card[data-quiet-theme]:not(.recipe-card--divider)
+  :is(.recipe-card__supper-utensil, .recipe-card__supper-utensil-tint) {
+  display: none;
+}
+
+.recipe-card[data-quiet-theme]:not(.recipe-card--divider) .recipe-card__supper-frame {
+  border-width: calc(5 * var(--supper-u));
+}
+
+.recipe-card[data-quiet-theme]:not(.recipe-card--divider) .recipe-card__poster-frame {
+  border-width: calc(5 * var(--poster-u));
+}
+
+/* A quiet book's chapter openers carry the full art. Quilt's strip runs down
+   the opener's left edge, where its words start, so they start past it. */
+.recipe-template--quilt .recipe-card--divider[data-quiet-theme] .recipe-card__chapter-body {
+  padding-left: calc(var(--quilt-strip) + var(--quilt-gutter) + 0.2in);
+}
+
+/* Art along the foot (Halloween's headstone under the words, Garden's hills,
+   Market's groceries, Christmas's hats) stays put; the opener's words sit
+   above it, as a recipe page's do. */
+.recipe-template--halloween .recipe-card--divider[data-quiet-theme] .recipe-card__chapter-body {
+  padding-bottom: calc(282 * var(--halloween-u) + 0.2in);
+}
+
+.recipe-template--garden .recipe-card--divider[data-quiet-theme] .recipe-card__chapter-body {
+  padding-bottom: calc(var(--garden-foot) + 0.2in);
+}
+
+.recipe-template--market .recipe-card--divider[data-quiet-theme] .recipe-card__chapter-body {
+  padding-bottom: calc(var(--market-band-top) + 0.2in);
+}
+
+.recipe-template--christmas .recipe-card--divider[data-quiet-theme] .recipe-card__chapter-body {
+  padding-bottom: calc(176 * var(--christmas-u) + 0.2in);
+}
+
+/* Heirloom's utensil row is drawn by the card itself, not the art layer. */
+.recipe-template--heirloom .recipe-card[data-quiet-theme]:not(.recipe-card--divider)::before {
+  opacity: 0.1;
+}
+
+/* Poster's title tab keeps the recipe's colour, washed toward the paper. */
+.recipe-template--poster .recipe-card[data-quiet-theme]:not(.recipe-card--divider) .recipe-card__headline {
+  background: color-mix(in srgb, var(--poster-color) 35%, var(--recipe-bg));
 }
 
 /* Print and its download arrow as one control: a hairline of the header

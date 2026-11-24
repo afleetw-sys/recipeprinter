@@ -206,6 +206,7 @@ export const BOOK_SETTING_KEYS = [
   "pageLooks",
   "fieldSwitches",
   "sampleLines",
+  "quietTheme",
   "optionalLinesExplicit",
   "railSortMode",
   "lastImportSource",
