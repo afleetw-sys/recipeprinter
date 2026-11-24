@@ -103,3 +103,33 @@ export function heroCrop(
   if (placement.heroCropFor !== undefined && placement.heroCropFor !== (shownUrl ?? "")) return {};
   return { focusX: placement.heroFocusX, focusY: placement.heroFocusY, zoom: placement.heroZoom };
 }
+
+/**
+ * The photo a recipe arrived with, once the cook has replaced it: the one
+ * earlier photo its picker still offers.
+ *
+ * A recipe has one photo, so a new one changes it rather than adding to a
+ * pile. A photo the cook uploaded and then replaced (a mistake, usually) is
+ * gone from the picker; only the import's own photo stays, since there is no
+ * other way back to it short of importing the recipe again.
+ *
+ * `photoHistory` is now only ever that one photo. Books from before kept every
+ * replaced photo, newest first, so the import's photo, where there was one, is
+ * the last of them.
+ */
+export function photoArrivedWith(history: readonly string[] | undefined): string | undefined {
+  return history?.at(-1);
+}
+
+/**
+ * The history to keep after `previous` (the photo being replaced) gives way to
+ * a new one: the import's photo, either `previous` itself when the cook had
+ * not chosen it, or the one already kept.
+ */
+export function historyAfterReplacing(
+  previous: { image?: string; imageChosen?: boolean } | undefined,
+  kept: readonly string[] | undefined,
+): string[] | undefined {
+  const arrived = previous?.image && !previous.imageChosen ? previous.image : photoArrivedWith(kept);
+  return arrived ? [arrived] : undefined;
+}

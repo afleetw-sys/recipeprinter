@@ -31,6 +31,7 @@ export function ImagePicker({
   placementOptions,
   onPlacementChange,
   placementBelow = false,
+  layoutChoice,
   openSignal,
   onOpenSignalConsumed,
   onOpenChange,
@@ -63,6 +64,16 @@ export function ImagePicker({
       or hide, so it leads with the photo. A cookbook page keeps placement on
       top: In page and Full page are a real layout choice made first. */
   placementBelow?: boolean;
+  /** A page-layout choice that goes with the photos, above them: where a
+      front cover's photo sits (lib/bookTheme.tsx). Unlike `placementOptions`
+      it leaves the picker an ordinary one. An option with the id `none`
+      takes the place of the None tile. */
+  layoutChoice?: {
+    label: string;
+    value: string;
+    options: Array<{ id: string; label: string }>;
+    onChange: (id: string) => void;
+  };
   /** Opens the dialog from outside. Choosing "In page" or "Full page" for a
       recipe that has no photo yet is a request for a photo, so the thing that
       asks for one opens by itself instead of leaving a placement set to
@@ -156,6 +167,7 @@ export function ImagePicker({
      visible without a photo, and the one control that would give you one is
      the control being hidden. With no photo, the upload always shows. */
   const placementNone = recipeMode && placement === "none" && Boolean(current);
+  const layoutOffersNone = Boolean(layoutChoice?.options.some((option) => option.id === "none"));
 
   function choose(action: () => void) {
     action();
@@ -351,6 +363,25 @@ export function ImagePicker({
       </section>
     ) : null;
 
+  const layoutSection = layoutChoice ? (
+    <section className="image-picker__placement" aria-label={layoutChoice.label}>
+      <h3>{layoutChoice.label}</h3>
+      <div className="image-picker__placement-row" role="group">
+        {layoutChoice.options.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            className={`image-picker__placement-btn ${layoutChoice.value === option.id ? "is-active" : ""}`}
+            aria-pressed={layoutChoice.value === option.id}
+            onClick={() => layoutChoice.onChange(option.id)}
+          >
+            <span className="image-picker__placement-label">{option.label}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  ) : null;
+
   // Shared by both chromes below: the drop veil, the placement row (recipe
   // mode only), the photo grid (or the "hidden" note in its place), and any
   // error. Only the HEADING and the grid-mode footer differ — the desktop
@@ -372,6 +403,7 @@ export function ImagePicker({
       )}
 
       {!placementBelow && placementSection}
+      {layoutSection}
 
         {placementNone ? (
           <p className="image-picker__placement-note">
@@ -411,8 +443,10 @@ export function ImagePicker({
               {uploadInput}
             </label>
 
-            {/* Cover/plain pickers keep a "None" tile to clear the photo. */}
-            {!recipeMode && (
+            {/* Cover/plain pickers keep a "None" tile to clear the photo,
+                unless the layout row above already offers None (the front
+                cover), where a second None would only repeat it. */}
+            {!recipeMode && !layoutOffersNone && (
               <button
                 type="button"
                 className={`image-picker__photo image-picker__photo--action ${

@@ -242,6 +242,12 @@ export interface ProjectMeta {
       optional line it never wrote shows its sample text. Absent on every book
       made before, where such a line counts as taken off. */
   sampleLines?: boolean;
+  /** This book keeps its theme quiet on recipe pages (only the theme's edge,
+      softened) and shows it in full on chapter openers, and its cover photo
+      defaults to a picture under the title (lib/bookTheme.tsx). Set on books
+      made from 2026-11-23 on; absent on every book made before, which keep
+      the art on every recipe page exactly as they always printed. */
+  quietTheme?: boolean;
   /** The print-format preset this cookbook exports at (trim/bleed/margin/gutter
       — see lib/cookbookPresets.ts). Absent = the default preset. Cookbook-only;
       cleared when the project stops being a cookbook. */
@@ -287,7 +293,7 @@ export function normalizeProjectMeta(value: unknown): ProjectMeta {
   if (!value || typeof value !== "object") {
     // Nothing written yet, so nothing to migrate: whatever is added from here
     // on shows its prompts.
-    return { sections: [], projectId: uid(), optionalLinesExplicit: true, sampleLines: true };
+    return { sections: [], projectId: uid(), optionalLinesExplicit: true, sampleLines: true, quietTheme: true };
   }
   const raw = value as Partial<ProjectMeta>;
   const legacyOpeners = Boolean(raw.sectionDividers);
@@ -1239,6 +1245,11 @@ export function useProjectMeta() {
     update((current) => (current.ownPhotosOnly ? current : { ...current, ownPhotosOnly: true }));
   }, [update]);
 
+  /** See `ProjectMeta.quietTheme`. Only ever turned on, for a book being made. */
+  const setQuietTheme = useCallback(() => {
+    update((current) => (current.quietTheme ? current : { ...current, quietTheme: true }));
+  }, [update]);
+
   /** See `PrintProjectSettings.websitePhotos`. */
   const setWebsitePhotos = useCallback(
     (value: boolean) => {
@@ -1378,6 +1389,7 @@ export function useProjectMeta() {
         // A new book starts its optional lines with sample text (see the field).
         optionalLinesExplicit: true,
         sampleLines: true,
+        quietTheme: true,
         // Whether the cookbook pitch has been seen is a fact about the PERSON,
         // not the project. Resetting it per project would re-pitch the product
         // to someone already on their second book.
@@ -1512,6 +1524,7 @@ export function useProjectMeta() {
     setPhotoStyle,
     setWebsitePhotos,
     setOwnPhotosOnly,
+    setQuietTheme,
     startNewProject,
     clearCookbookIntent,
     clearFillFrom,

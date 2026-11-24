@@ -33,7 +33,11 @@ const BOOK = [
   recipe("r4", "Plain Toast", { instructions: [] }),
 ];
 
-async function openOrganizer(page: Page, sections?: Array<{ id: string; title: string; itemIds: string[] }>) {
+async function openOrganizer(
+  page: Page,
+  sections?: Array<{ id: string; title: string; itemIds: string[] }>,
+  book: Array<ReturnType<typeof recipe>> = BOOK,
+) {
   await page.addInitScript(([items, chapters]) => {
     if (sessionStorage.getItem("recipeprinter:queue:v1")) return;
     const queue = JSON.parse(items) as Array<{ id: string }>;
@@ -51,7 +55,7 @@ async function openOrganizer(page: Page, sections?: Array<{ id: string; title: s
           : [{ id: "s1", title: "Dinners", itemIds: queue.map((item) => item.id) }],
       }),
     );
-  }, [JSON.stringify(BOOK), sections ? JSON.stringify(sections) : ""] as const);
+  }, [JSON.stringify(book), sections ? JSON.stringify(sections) : ""] as const);
   await page.goto("/print");
   // A new cookbook opens under its welcome; close it as a cook would.
   await closeCookbookWalkthrough(page);
@@ -123,5 +127,32 @@ test("a recipe dropped anywhere in a chapter lands in that chapter", async ({ pa
     await page.mouse.move(target.x, target.y + 1, { steps: 2 });
     await page.mouse.up();
     await expect(chapter.locator(`[data-rail-recipe="${id}"]`), `${id} dropped ${where}`).toHaveCount(1);
+  }
+});
+
+/**
+ * A book's only recipe couldn't be dragged into a chapter (Amelia,
+ * 2026-11-23). Both ways a one-recipe book has it: not in a chapter yet, or
+ * in another chapter, dropped into an empty one.
+ */
+test("a book's only recipe can be dragged into a chapter", async ({ page }) => {
+  const starts: Array<[string, Array<{ id: string; title: string; itemIds: string[] }>]> = [
+    ["not in a chapter", [{ id: "s0", title: "", itemIds: ["r1"] }, { id: "s1", title: "Dinners", itemIds: [] }]],
+    ["in another chapter", [{ id: "s2", title: "Breakfast", itemIds: ["r1"] }, { id: "s1", title: "Dinners", itemIds: [] }]],
+  ];
+  for (const [where, sections] of starts) {
+    await page.evaluate(() => sessionStorage.clear()).catch(() => undefined);
+    await openOrganizer(page, sections, [recipe("r1", "Lemon Chicken")]);
+    const chapter = page.locator('[data-rail-section="s1"]');
+    await expect(chapter).toBeVisible();
+    const from = await page.locator('[data-rail-recipe="r1"]').boundingBox();
+    const box = await chapter.boundingBox();
+    const target = { x: box!.x + box!.width / 2, y: box!.y + box!.height - 30 };
+    await page.mouse.move(from!.x + from!.width / 2, from!.y + from!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(target.x, target.y, { steps: 12 });
+    await page.mouse.move(target.x, target.y + 1, { steps: 2 });
+    await page.mouse.up();
+    await expect(chapter.locator('[data-rail-recipe="r1"]'), `dragged from ${where}`).toHaveCount(1);
   }
 });

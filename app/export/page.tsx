@@ -16,6 +16,7 @@ import { normalizePhotoScale } from "@/lib/photoScale";
 import { accentRootProps } from "@/lib/themeAccent";
 import { lookFor, normalizeThemeLooks } from "@/lib/themeLooks";
 import { ThemeArtProvider } from "@/lib/themeArt";
+import { QuietThemeProvider } from "@/lib/bookTheme";
 import { RecipeFieldsProvider } from "@/lib/recipeFieldsContext";
 import { normalizeFieldSwitches } from "@/lib/recipeFields";
 import {
@@ -340,6 +341,8 @@ function CoverWrapDocument({ payload }: { payload: ExportPayload }) {
   const backCover = project.backCover ?? cover;
 
   return (
+    // The front panel places its photo as the book does (lib/bookTheme.tsx).
+    <QuietThemeProvider quiet={Boolean(project.settings.quietTheme)}>
     <div
       className={`recipe-page-deck rp-exporting rp-page-cover-wrap ${accentRoot.className}`}
       style={{ ...wrapStyle, ...accentRoot.style }}
@@ -389,6 +392,7 @@ function CoverWrapDocument({ payload }: { payload: ExportPayload }) {
         />
       </div>
     </div>
+    </QuietThemeProvider>
   );
 }
 
@@ -525,6 +529,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
   return (
     <ThemeArtProvider value={themeArt}>
     <RecipeFieldsProvider value={fieldSwitches}>
+    <QuietThemeProvider quiet={cookbookMode && Boolean(settings.quietTheme)}>
     <div
       className={`recipe-page-deck rp-exporting ${preset.pageClass}${preset.coilBound ? " rp-coil" : ""} ${
         cookbookMode ? "recipe-page-deck--book" : ""
@@ -564,6 +569,7 @@ function InteriorDocument({ payload }: { payload: ExportPayload }) {
         </div>
       ))}
     </div>
+    </QuietThemeProvider>
     </RecipeFieldsProvider>
     </ThemeArtProvider>
   );

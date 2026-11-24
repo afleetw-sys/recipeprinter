@@ -237,6 +237,7 @@ import {
 import { DEFAULT_PHOTO_SCALE, type PhotoScale } from "@/lib/photoScale";
 import { accentRootProps, type AccentColor, type SupperUtensil } from "@/lib/themeAccent";
 import { ThemeArtProvider } from "@/lib/themeArt";
+import { QuietThemeProvider, coverPhotoPlacement } from "@/lib/bookTheme";
 import {
   RECIPE_FIELDS,
   cardSwitchesFromCookbook,
@@ -304,7 +305,7 @@ import { autosaveVerdict, keepsItself, LOADED_BASELINE, shouldFlushOnHide, shoul
 import { readRailWidths, writeRailWidths, type RailWidthMode, type RailWidths } from "@/lib/railWidth";
 import { organizeFlipProgress } from "@/lib/organizeFlip";
 import { RailResizer } from "@/components/print/RailResizer";
-import { bookRecipeImage, hasWebsitePhoto } from "@/lib/bookPhotos";
+import { bookRecipeImage, hasWebsitePhoto, historyAfterReplacing, photoArrivedWith } from "@/lib/bookPhotos";
 
 /** The cookbook settings panel's Page tab, and the phone's This page tile and
     sheet that stand in for it. Off for now; see the PrintConfigPanel call. */
@@ -351,6 +352,15 @@ const COVER_LOOKS: LookOption[] = [
   { id: "typographic", label: "Just text", preview: "text" },
   { id: "photo", label: "Text on a photo", preview: "text-on-photo" },
   { id: "own-image", label: "Your own image", preview: "own-image" },
+];
+/** Where a front cover's photo goes (CoverConfig.photoPlacement): behind the
+    title, in the page under it, or no photo at all. None stands in for the
+    picker's None tile. Not "Full page": in a book that means a photo on a page
+    of its own, and a cover's background photo is the title's backdrop. */
+const COVER_PHOTO_PLACEMENTS = [
+  { id: "background", label: "Background" },
+  { id: "card", label: "In page" },
+  { id: "none", label: "None" },
 ];
 const CHAPTER_LOOKS: LookOption[] = [
   { id: "none", label: "Just text", preview: "text" },
@@ -1334,7 +1344,6 @@ export default function PrintPage() {
       // Nothing being carried can also be a drop target — a selection can't
       // land on itself, and neither can a single card.
       const rows = geometry.recipes.filter((row) => !moving.has(row.id));
-      if (rows.length === 0) return null;
 
       // The expanded organizer is a 2D card grid, so resolve against the card
       // nearest the pointer and use its left/right half as before/after. The
@@ -1530,6 +1539,10 @@ export default function PrintPage() {
         };
       }
 
+      // The flat list drops beside another recipe, so it needs one. The
+      // organizer above doesn't: a book's only recipe still goes into an empty
+      // chapter, which an early return here used to forbid.
+      if (rows.length === 0) return null;
       const k = midpointIndex(rows.map((r) => r.rect));
       const before = k < rows.length ? rows[k] : rows[rows.length - 1];
       const indicator = {
@@ -1930,6 +1943,9 @@ export default function PrintPage() {
     projectMeta.setCookbookMode(true);
     // Every book scaffolded from here on shows only photos the cook adds.
     projectMeta.setOwnPhotosOnly();
+    // A book made from here on keeps its theme quiet on recipe pages, even
+    // one made from older recipe cards (lib/bookTheme.tsx).
+    projectMeta.setQuietTheme();
     const patch = buildCookbookScaffoldPatch(projectMeta.meta, items ?? [], template);
     if (patch.template !== template) setTemplate(patch.template);
     // The recipe link is on by default here, the same as on cards:
@@ -6550,8 +6566,8 @@ export default function PrintPage() {
    * into every format it is linked into: the cards printed from this book show
    * the same photo. It used to be stored on the book (`placement.photoUrl`),
    * which a recipe card never reads; a choice still kept there is cleared as
-   * this one replaces it. The photo being replaced, and the imported one,
-   * stay on offer in the picker through the recipe's photo history.
+   * this one replaces it. The photo the recipe was imported with stays on
+   * offer in the picker through `photoHistory`; one being replaced does not.
    */
   function chooseBookPhoto(recipeId: string, url: string | undefined) {
     const placement = projectMeta.meta.itemPlacements?.[recipeId];
@@ -6561,12 +6577,10 @@ export default function PrintPage() {
     const previous = bookImageOf(item);
     if (url === previous && recipe.imageChosen) return;
     queue.updateRecipe(recipeId, { ...recipe, image: url ?? "", imageChosen: true });
-    // Both the photo on the page and the one the recipe arrived with stay
-    // pickable, newest first, capped like every other photo history.
+    // Only the photo the recipe arrived with stays pickable; one the cook
+    // picked or uploaded and is now replacing is changed, not kept.
     const kept = placement?.photoHistory ?? [];
-    const history = Array.from(
-      new Set([previous, recipe.image, ...kept].filter((entry): entry is string => Boolean(entry) && entry !== url)),
-    ).slice(0, 8);
+    const history = historyAfterReplacing(recipe, kept) ?? [];
     const historyChanged = history.length !== kept.length || history.some((entry, index) => entry !== kept[index]);
     if (placement?.photoUrl !== undefined || historyChanged) {
       projectMeta.setItemPlacement(recipeId, { photoUrl: undefined, photoHistory: history.length ? history : undefined });
@@ -6675,7 +6689,13 @@ export default function PrintPage() {
           look={{
             label: "Look",
             value: look,
-            options: COVER_LOOKS,
+            // A front cover whose photo sits under the title isn't text on a photo.
+            options:
+              side === "front" && coverPhotoPlacement(cover, Boolean(projectMeta.meta.quietTheme)) === "card"
+                ? COVER_LOOKS.map((option) =>
+                    option.id === "photo" ? { ...option, label: "With a photo", preview: "text-with-photo" } : option,
+                  )
+                : COVER_LOOKS,
             onChange: (id) => {
               if (id === "own-image") {
                 set({ pageType: "image" });
@@ -7016,16 +7036,17 @@ export default function PrintPage() {
     // toolbar looking as though the control had been taken out.
     if (!recipe) return null;
     const own = recipe.image;
-    const history = projectMeta.meta.itemPlacements?.[recipeId]?.photoHistory ?? [];
+    const arrived = photoArrivedWith(projectMeta.meta.itemPlacements?.[recipeId]?.photoHistory);
     const recipeItem = items?.find((item) => item.id === recipeId);
     const shown = recipePhotoShown(recipeId);
     const offered = ownPhotosOnly ? importedBookPhotoOf(recipeItem) : own;
     return (
       <ImagePicker
         current={shown}
-        // The recipe's own photo plus the ones it has worn before, so a photo
-        // replaced by an upload stays reachable instead of vanishing.
-        images={Array.from(new Set([...(offered ? [offered] : []), ...(shown ? [shown] : []), ...history]))}
+        // The photo on the page and the one the recipe was imported with.
+        // A photo the cook uploaded and then replaced isn't offered again: a
+        // recipe has one photo, so a new one changes it.
+        images={Array.from(new Set([offered, shown, arrived].filter((url): url is string => Boolean(url))))}
         onSelect={(url) =>
           ownPhotosOnly
             ? chooseBookPhoto(recipeId, url)
@@ -7078,7 +7099,7 @@ export default function PrintPage() {
   const renderImagePagePhotoControl = (recipeId: string) => {
     const own = items?.find((item) => item.id === recipeId)?.recipe?.image;
     const placement = projectMeta.meta.itemPlacements?.[recipeId];
-    const history = placement?.photoHistory ?? [];
+    const arrived = photoArrivedWith(placement?.photoHistory);
     // A book of the cook's own photos keeps one photo per recipe, the same one
     // the recipe page's picker sets; the full page shows it (or a placeholder).
     const pageItem = items?.find((item) => item.id === recipeId);
@@ -7094,7 +7115,7 @@ export default function PrintPage() {
         current={shown}
         // Only this recipe's own photo (plus upload) — never a grid of OTHER
         // recipes' images, which isn't what "change this photo" means.
-        images={Array.from(new Set([...(offered ? [offered] : []), ...(shown ? [shown] : []), ...history]))}
+        images={Array.from(new Set([offered, shown, arrived].filter((url): url is string => Boolean(url))))}
         onSelect={(url) =>
           ownPhotosOnly
             ? url
@@ -7150,6 +7171,29 @@ export default function PrintPage() {
             imageUrl: undefined,
             layout: urls.length ? "collage" : "typographic",
           })
+        }
+        // The front cover's layout: behind the title, in the page under it
+        // (lib/bookTheme.tsx), or None, which clears the photos, so the photos
+        // below are only ever which one. With no photo it reads None, unless
+        // the cook has just picked a placement and is choosing the photo.
+        layoutChoice={
+          side === "front"
+            ? {
+                label: "Photo layout",
+                value:
+                  cover.imageUrl || gridImages.length
+                    ? coverPhotoPlacement(cover, Boolean(projectMeta.meta.quietTheme))
+                    : (cover.photoPlacement ?? "none"),
+                options: COVER_PHOTO_PLACEMENTS,
+                onChange: (id) =>
+                  setCoverForSide(
+                    side,
+                    id === "none"
+                      ? { ...cover, imageUrl: undefined, gridImages: undefined, layout: "typographic", photoPlacement: undefined }
+                      : { ...cover, photoPlacement: id as "card" | "background" },
+                  ),
+              }
+            : undefined
         }
         openSignal={photoDialogSignal(`cover:${side}`)}
         onOpenSignalConsumed={() => clearPhotoDialogSignal(`cover:${side}`)}
@@ -7469,14 +7513,12 @@ export default function PrintPage() {
        * back short of re-importing the recipe.
        */
       if (previous?.image && previous.image !== next.image) {
+        // Only the photo the recipe arrived with: a photo the cook chose and
+        // is now replacing is changed, not piled up in the picker.
         const kept = projectMeta.meta.itemPlacements?.[id]?.photoHistory ?? [];
-        if (!kept.includes(previous.image)) {
-          projectMeta.setItemPlacement(id, {
-            // Newest first: the photo just replaced is the likeliest one to want
-            // back, and the list is capped so a cook cycling through uploads
-            // doesn't accumulate a wall of tiles.
-            photoHistory: [previous.image, ...kept.filter((url) => url !== next.image)].slice(0, 8),
-          });
+        const history = historyAfterReplacing(previous, kept);
+        if (history && (kept.length !== 1 || kept[0] !== history[0])) {
+          projectMeta.setItemPlacement(id, { photoHistory: history });
         }
       }
       /**
@@ -7883,6 +7925,7 @@ export default function PrintPage() {
   return (
     <ThemeArtProvider value={themeArt}>
     <RecipeFieldsProvider value={fieldSwitches}>
+    <QuietThemeProvider quiet={cookbookMode && Boolean(projectMeta.meta.quietTheme)}>
     <div
       className={`h-dvh recipe-print-page ${printWatermarked ? "rp-print-locked" : ""} ${
         // A Pro benefit: no "Printed with RecipePrinter" line, on any theme.
@@ -9101,6 +9144,7 @@ export default function PrintPage() {
         </div>
       )}
     </div>
+    </QuietThemeProvider>
     </RecipeFieldsProvider>
     </ThemeArtProvider>
   );

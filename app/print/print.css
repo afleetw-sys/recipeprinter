@@ -6961,6 +6961,19 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   field-sizing: content;
 }
 
+/* The edition line reads like the author line above it. It had no colour of
+   its own, so it kept this white on every theme's paper and couldn't be read.
+   Each rule that colours `.recipe-card__cover-author` has an edition twin with
+   the same selector right after it (e2e/cover-edition.spec.ts). This one is
+   scoped to the cover only because globals.css owns the bare class (its size).
+   Its weight is the author line's too: set in regular weight, a real line
+   that prints read as faint placeholder text. */
+.recipe-card--cover .recipe-card__cover-edition {
+  color: #fff;
+  opacity: 0.86;
+  font-weight: 700;
+}
+
 /* Back cover: centered closing content on the template's own paper. */
 .recipe-card__cover-back-content {
   position: absolute;
@@ -7068,6 +7081,12 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   text-shadow: none;
   opacity: 1;
 }
+.recipe-template--heirloom .recipe-card__cover-edition,
+.recipe-template--keepsake .recipe-card__cover-edition {
+  color: var(--recipe-accent);
+  text-shadow: none;
+  opacity: 1;
+}
 .recipe-template--heirloom .recipe-card__cover-subtitle,
 .recipe-template--keepsake .recipe-card__cover-subtitle {
   margin-bottom: 0.28in;
@@ -7076,6 +7095,10 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
 .recipe-template--keepsake .recipe-card__cover-author {
   color: var(--recipe-muted);
   margin-top: 0.3in;
+}
+.recipe-template--heirloom .recipe-card__cover-edition,
+.recipe-template--keepsake .recipe-card__cover-edition {
+  color: var(--recipe-muted);
 }
 .recipe-template--heirloom .recipe-card__cover-rule,
 .recipe-template--keepsake .recipe-card__cover-rule {
@@ -7160,6 +7183,10 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   text-shadow: none;
   opacity: 1;
 }
+.recipe-template--bistro .recipe-card__cover-edition {
+  text-shadow: none;
+  opacity: 1;
+}
 .recipe-template--bistro .recipe-card__cover-title {
   color: var(--recipe-accent-2);
 }
@@ -7167,6 +7194,9 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   color: var(--recipe-accent);
 }
 .recipe-template--bistro .recipe-card__cover-author {
+  color: var(--recipe-ink);
+}
+.recipe-template--bistro .recipe-card__cover-edition {
   color: var(--recipe-ink);
 }
 .recipe-template--bistro .recipe-card__cover-rule {
@@ -7216,6 +7246,11 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   opacity: 1;
   text-transform: uppercase;
 }
+.recipe-template--counter .recipe-card__cover-edition {
+  color: var(--recipe-ink);
+  text-shadow: none;
+  opacity: 1;
+}
 .recipe-template--counter .recipe-card__cover-subtitle {
   color: var(--recipe-accent-2);
   opacity: 1;
@@ -7249,6 +7284,15 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   text-align: center;
   margin-left: auto;
   margin-right: auto;
+}
+/* A text-only framed opener centres its words on the page. The opener is a
+   plain block here and its body only as tall as its words, so the body's
+   own centring had no height to work in and the words printed at the top.
+   Filling the page gives it the room. */
+.recipe-template--heirloom .recipe-card--chapter:not(.recipe-card--chapter-with-photo) > .recipe-card__chapter-body,
+.recipe-template--keepsake .recipe-card--chapter:not(.recipe-card--chapter-with-photo) > .recipe-card__chapter-body {
+  box-sizing: border-box;
+  min-height: 100%;
 }
 /* Keepsake's chapter draws no inset frame of its own: the card's double
    border is its frame. One was declared here, but the theme's
@@ -7653,34 +7697,35 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   bottom: 0.24in;
 }
 
-.recipe-print-preview .recipe-card-set.recipe-template--christmas .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview .recipe-card-set.recipe-template--market .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--continued[data-in-book] {
+.recipe-print-preview .recipe-card-set.recipe-template--christmas .recipe-card.recipe-card--edge-only,
+.recipe-print-preview .recipe-card-set.recipe-template--market .recipe-card.recipe-card--edge-only,
+.recipe-print-preview .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--edge-only,
+.recipe-print-preview .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--edge-only,
+.recipe-print-preview .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--edge-only,
+.recipe-print-preview .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--edge-only {
   --recipe-card-padding-bottom: 0.42in;
   --recipe-card-keepout-w: 0in;
   --recipe-card-keepout-h: 0in;
 }
 
-.recipe-print-preview--letter .recipe-card-set.recipe-template--christmas .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview--letter .recipe-card-set.recipe-template--market .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview--letter .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview--letter .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview--letter .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview--letter .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--continued[data-in-book] {
+.recipe-print-preview--letter .recipe-card-set.recipe-template--christmas .recipe-card.recipe-card--edge-only,
+.recipe-print-preview--letter .recipe-card-set.recipe-template--market .recipe-card.recipe-card--edge-only,
+.recipe-print-preview--letter .recipe-card-set.recipe-template--garden .recipe-card.recipe-card--edge-only,
+.recipe-print-preview--letter .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--edge-only,
+.recipe-print-preview--letter .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--edge-only,
+.recipe-print-preview--letter .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--edge-only {
   --recipe-card-padding-bottom: 0.5in;
 }
 
 /* Fall's continued book pages have no leaves to clear, and Halloween's no
-   hand to wrap around. */
-.recipe-print-preview .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--continued[data-in-book],
-.recipe-print-preview .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--continued[data-in-book] {
+   hand to wrap around. Continued pages only: a quiet book's first page of a
+   recipe has no leaves either, but keeps the room above its title. */
+.recipe-print-preview .recipe-card-set.recipe-template--fall .recipe-card.recipe-card--edge-only.recipe-card--continued,
+.recipe-print-preview .recipe-card-set.recipe-template--winter .recipe-card.recipe-card--edge-only.recipe-card--continued {
   --recipe-card-padding-top: 0.16in;
 }
 
-.recipe-print-preview .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--continued[data-in-book] .recipe-card__method::before {
+.recipe-print-preview .recipe-card-set.recipe-template--halloween .recipe-card.recipe-card--edge-only .recipe-card__method::before {
   display: none;
 }
 
@@ -8185,11 +8230,44 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   text-align: center;
   opacity: 1;
 }
+.recipe-card--cover-front[data-cover-mode="none"] .recipe-card__cover-edition {
+  color: var(--recipe-muted);
+  opacity: 1;
+}
 .recipe-card--cover-front[data-cover-mode="none"] .recipe-card__cover-rule {
   background: var(--recipe-accent);
   margin-left: auto;
   margin-right: auto;
   opacity: 1;
+}
+
+/* A photo "in the card" (`data-cover-photo="card"`, CoverConfig.photoPlacement):
+   the theme's designed cover above, the picture under the words, inside the
+   same centered lockup so the two move as one. Sized by the page, not the
+   photo, so every book's cover holds the same shape whatever is chosen.
+   The gap above it is at least the one between a theme's rule and its author
+   line (Heirloom's is 0.58in): any less and the byline and edition drift
+   down onto the photo instead of reading with the title. */
+.recipe-card__cover-inset {
+  position: relative;
+  flex: none;
+  width: 82%;
+  height: calc(var(--recipe-card-min-height, 11in) * 0.3);
+  margin-top: 0.56in;
+  overflow: hidden;
+  border-radius: 0.06in;
+  background: color-mix(in srgb, var(--recipe-bg) 88%, var(--recipe-muted));
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.recipe-card__cover-inset-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 /* ── Photo covers on the paper themes: readable title plate ────────────────
@@ -8243,6 +8321,12 @@ html[data-pages-view="closing"] .recipe-mobile-topbar__actions {
   color: var(--recipe-muted);
   text-shadow: none;
   text-align: center;
+  opacity: 1;
+}
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="grid"] .recipe-card__cover-edition,
+.recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="photo"] .recipe-card__cover-edition {
+  color: var(--recipe-muted);
+  text-shadow: none;
   opacity: 1;
 }
 .recipe-card-set:not(.recipe-template--classic):not(.recipe-template--pantry) .recipe-card--cover-front[data-cover-mode="grid"] .recipe-card__cover-rule,
@@ -8840,13 +8924,16 @@ textarea.recipe-card__toc-title {
    grid-photo cover then sizes to its (square) images and shoves the title lockup
    off the bottom of the page (fixed only by an edit-triggered reflow). Covers
    manage their own stacking, so re-assert their pieces as absolute. Placed after
-   all four theme rules so it wins on source order at equal specificity. */
+   all four theme rules so it wins on source order at equal specificity. The
+   back cover and dedication's words were missed, so on Heirloom and Keepsake
+   they sat at the top of the page instead of its middle. */
 .recipe-card--cover > .recipe-card__cover-photo,
 .recipe-card--cover > .recipe-card__cover-image,
 .recipe-card--cover > .recipe-card__cover-scrim,
 .recipe-card--cover > .recipe-card__cover-band,
 .recipe-card--cover > .recipe-card__cover-frame,
-.recipe-card--cover > .recipe-card__cover-content {
+.recipe-card--cover > .recipe-card__cover-content,
+.recipe-card--cover > .recipe-card__cover-back-content {
   position: absolute;
 }
 
@@ -13569,6 +13656,78 @@ textarea.recipe-card__toc-title {
   ) {
   display: none;
 }
+
+/* ── A quiet book's recipe pages ──────────────────────────────────────────
+   A book with `quietTheme` (lib/bookTheme.tsx) shows its theme's art on
+   chapter openers and none on recipe pages: no spine, band, strip, ruled
+   lines or frame there (RecipeCardFace skips its `TemplateDecoration`), only
+   the theme's paper, type and colours. Art is shown or not, never faded.
+   Books made before never get `data-quiet-theme` and print as they did. */
+.recipe-card-page:has(.recipe-card[data-quiet-theme]) .recipe-card-page__spine {
+  display: none;
+}
+
+/* Heirloom's utensil row is drawn by the card itself, not the art layer, so
+   it goes here: chapter openers keep it. */
+.recipe-template--heirloom .recipe-card[data-quiet-theme]:not(.recipe-card--divider)::before {
+  display: none;
+}
+
+/* Quilt's recipe pages left an inch down the left edge for its strip. With no
+   strip there, the recipe, its footer and the page foot take the usual margin.
+   Named with the card set to outrank the theme's own padding. */
+.recipe-card-set.recipe-template--quilt .recipe-card[data-quiet-theme]:not(.recipe-card--divider) {
+  padding-left: var(--recipe-card-padding-x);
+}
+
+.recipe-card-set.recipe-template--quilt .recipe-card[data-quiet-theme]:not(.recipe-card--divider) .recipe-card__footer {
+  left: var(--recipe-card-padding-x);
+}
+
+.recipe-card-set.recipe-template--quilt .recipe-card-page:has(.recipe-card[data-quiet-theme]:not(.recipe-card--divider)) {
+  --rp-foot-inset-l: var(--recipe-card-padding-x);
+}
+
+/* Keepsake's inset frame is drawn by the card itself, so it goes here too:
+   covers, the dedication and chapter openers keep it. */
+.recipe-template--keepsake .recipe-card[data-quiet-theme]:not(.recipe-card--divider):not(.recipe-card--cover) {
+  box-shadow: none;
+}
+
+.recipe-template--keepsake .recipe-card[data-quiet-theme]:not(.recipe-card--divider):not(.recipe-card--cover)::before {
+  display: none;
+}
+
+/* Counter's big accent disc on its paper covers and opening page. */
+.recipe-template--counter .recipe-card--cover[data-quiet-theme][data-cover-mode="none"] .recipe-card__cover-photo::after {
+  display: none;
+}
+
+/* A quiet book's chapter openers carry the full art. Quilt's strip runs down
+   the opener's left edge, where its words start, so they start past it. */
+.recipe-template--quilt .recipe-card--divider[data-quiet-theme] .recipe-card__chapter-body {
+  padding-left: calc(var(--quilt-strip) + var(--quilt-gutter) + 0.2in);
+}
+
+/* Art along the foot (Halloween's headstone under the words, Garden's hills,
+   Market's groceries, Christmas's hats) stays put; the opener's words sit
+   above it, as a recipe page's do. */
+.recipe-template--halloween .recipe-card--divider[data-quiet-theme] .recipe-card__chapter-body {
+  padding-bottom: calc(282 * var(--halloween-u) + 0.2in);
+}
+
+.recipe-template--garden .recipe-card--divider[data-quiet-theme] .recipe-card__chapter-body {
+  padding-bottom: calc(var(--garden-foot) + 0.2in);
+}
+
+.recipe-template--market .recipe-card--divider[data-quiet-theme] .recipe-card__chapter-body {
+  padding-bottom: calc(var(--market-band-top) + 0.2in);
+}
+
+.recipe-template--christmas .recipe-card--divider[data-quiet-theme] .recipe-card__chapter-body {
+  padding-bottom: calc(176 * var(--christmas-u) + 0.2in);
+}
+
 
 /* Print and its download arrow as one control: a hairline of the header
    between two halves that share their outer corners. Alone (a cookbook has no
