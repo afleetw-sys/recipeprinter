@@ -65,6 +65,17 @@ export const test = base.extend<{ guard: void }>({
       await page.route("**/api/parse", (route) =>
         route.continue({ headers: { ...route.request().headers(), "x-forwarded-for": caller } }),
       );
+      // The sale banner (lib/blackFriday.ts) turns itself on by the date, so
+      // it is dismissed for every test: a suite that changes behaviour at 5pm
+      // on a given day with no code change is how CI went red on 2026-11-24.
+      // It takes 52px off the window, which every layout here is measured in.
+      await page.addInitScript(() => {
+        try {
+          localStorage.setItem("rp.blackFriday2026Dismissed", "1");
+        } catch {
+          // A page with no storage (about:blank) has no banner either.
+        }
+      });
       await use();
       expect(pageErrors, "uncaught errors on the page").toEqual([]);
       expect(Array.from(external), "requests that left localhost").toEqual([]);
