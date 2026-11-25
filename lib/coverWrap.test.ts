@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { getCookbookPreset } from "@/lib/cookbookPresets";
+import { COOKBOOK_PRESETS, getCookbookPreset } from "@/lib/cookbookPresets";
 import {
   DEFAULT_COVER_WRAP_SPEC,
   LULU_CASEWRAP_SPEC,
   coverWrapGeometry,
+  coverStepAfterInterior,
   coverWrapGeometryFromSheet,
   LULU_COIL_SPEC,
   spineFitsTitle,
@@ -333,5 +334,24 @@ describe("the Lulu US Letter hardcover format", () => {
     const g = coverWrapGeometry(preset, 288);
     expect(g.sheetWidthIn).toBeCloseTo(19.25, 1);
     expect(g.sheetHeightIn).toBeCloseTo(12.75, 6);
+  });
+});
+
+// A spiral book's cover is one size with no spine, so it downloads with the
+// book. It used to wait behind a Cover size step whose spine box refused the
+// 0 Lulu states, so a spiral cook never got a cover.
+describe("coverStepAfterInterior", () => {
+  it("downloads a fixed-size cover with the book and asks only when the spine depends on it", () => {
+    for (const preset of COOKBOOK_PRESETS) {
+      const expected = !preset.wrapRequired
+        ? "none"
+        : wrapSpecFor(preset).fixedSpineIn !== undefined
+          ? "download"
+          : "ask-size";
+      expect(coverStepAfterInterior(preset), preset.id).toBe(expected);
+      expect(coverStepAfterInterior(preset, true), preset.id).toBe("none");
+    }
+    expect(coverStepAfterInterior(coil)).toBe("download");
+    expect(coverWrapGeometry(coil, 120)).toMatchObject({ sheetWidthIn: 17.25, sheetHeightIn: 11.25, spineWidthIn: 0 });
   });
 });

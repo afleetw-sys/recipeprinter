@@ -16,6 +16,7 @@ import {
 } from "@/components/icons";
 import type { PrinterOption } from "@/lib/cookbookPresets";
 import { getCookbookPreset } from "@/lib/cookbookPresets";
+import { coverSizeIsFixed } from "@/lib/coverWrap";
 import type { CookbookPdfProgress, PreparedCookbookPages, PreparedPdfFile } from "@/lib/cookbookPdfExport";
 import {
   NO_BOOK_CHOICE,
@@ -276,14 +277,22 @@ function ExportProgress({
   progress: CookbookPdfProgress;
 }) {
   const preset = getCookbookPreset(presetId);
-  // A cover renders on its own now, as its own later click once the cook has
-  // a real spine width from the printer — never in the same request as the
-  // interior — so this component only ever sees "rendering-cover" when it is
-  // literally the only thing being rendered.
+  // A cover renders on its own, after the interior has downloaded: a
+  // hardcover's once the cook has the printer's spine width, a spiral book's
+  // straight away (`coverStepAfterInterior`). Never in the same request as
+  // the interior, so "rendering-cover" means the interior is already done.
   if (progress === "rendering-cover") {
     return (
       <section className="cookbook-export-progress">
         <ol className="cookbook-export-progress__steps" aria-label="Cover export progress" aria-live="polite">
+          <li className="is-done">
+            <span className="cookbook-export-progress__mark" aria-hidden>
+              <CheckIcon size={ICON_SIZE.sm} />
+            </span>
+            <span className="cookbook-export-progress__copy">
+              <strong>Interior pages PDF downloaded</strong>
+            </span>
+          </li>
           <li className="is-current" aria-current="step">
             <span className="cookbook-export-progress__mark" aria-hidden>
               <SpinnerIcon size={ICON_SIZE.sm} />
@@ -291,7 +300,9 @@ function ExportProgress({
             <span className="cookbook-export-progress__copy">
               <strong>Creating the cover PDF</strong>
               <span className="cookbook-export-progress__activity" role="status">
-                Sizing the cover and spine to the finished book.
+                {coverSizeIsFixed(preset)
+                  ? "Downloading your cover next."
+                  : "Sizing the cover and spine to the finished book."}
               </span>
             </span>
           </li>
@@ -664,6 +675,9 @@ function AwaitingCover({
   onPrinterClick: (printer: string, url: string) => void;
 }) {
   const preset = getCookbookPreset(pages.preset);
+  // A spiral book's cover is one size with no spine, so there is nothing to
+  // ask: the cover is drawn to that size (`coverSizeIsFixed`).
+  const fixedSize = coverSizeIsFixed(preset);
   const size = coverSizes[preset.id] ?? { w: "", h: "", spine: "" };
   const widthIn = parseCoverInches(size.w);
   const heightIn = parseCoverInches(size.h);
@@ -773,65 +787,69 @@ function AwaitingCover({
                 Upload the interior to Lulu
               </a>
             )
-          : "Upload the interior to your printer. On the cover step, copy its required cover dimensions and spine width below."}
+          : fixedSize
+            ? "Upload the interior to your printer, then download the cover."
+            : "Upload the interior to your printer. On the cover step, copy its required cover dimensions and spine width below."}
       </p>
 
-      <div className="cookbook-cover-size">
-        <span className="cookbook-cover-size__label">Cover size</span>
-        <span className="cookbook-cover-size__hint">
-          {shopStatesNumbers && destination?.id === "lulu"
-            ? "Depends on your page count and paper. Paste Lulu's REQUIREMENTS into any box, or enter the Dimensions and Spine Width."
-            : "Depends on your page count and paper. Paste your printer's cover requirements into any box, or enter the exact numbers."}
-        </span>
-        {/* Sheet first, spine last: that is the order a print service states
-            them in, and reading them back off their page in a different
-            order is how a number lands in the wrong box. */}
-        <span className="cookbook-cover-size__fields">
-          <input
-            type="text"
-            inputMode="decimal"
-            aria-label="Cover width in inches"
-            value={size.w}
-            disabled={busy}
-            onChange={(event) => setCoverField(preset.id, "w", event.target.value)}
-            onPaste={pasteInto("w")}
-            aria-invalid={flagged("w") || undefined}
-            aria-describedby={flagged("w") ? "cookbook-cover-size-error" : undefined}
-          />
-          <span aria-hidden>×</span>
-          <input
-            type="text"
-            inputMode="decimal"
-            aria-label="Cover height in inches"
-            value={size.h}
-            disabled={busy}
-            onChange={(event) => setCoverField(preset.id, "h", event.target.value)}
-            onPaste={pasteInto("h")}
-            aria-invalid={flagged("h") || undefined}
-            aria-describedby={flagged("h") ? "cookbook-cover-size-error" : undefined}
-          />
-          <span className="cookbook-cover-size__unit" aria-hidden>
-            in, spine
+      {!fixedSize && (
+        <div className="cookbook-cover-size">
+          <span className="cookbook-cover-size__label">Cover size</span>
+          <span className="cookbook-cover-size__hint">
+            {shopStatesNumbers && destination?.id === "lulu"
+              ? "Depends on your page count and paper. Paste Lulu's REQUIREMENTS into any box, or enter the Dimensions and Spine Width."
+              : "Depends on your page count and paper. Paste your printer's cover requirements into any box, or enter the exact numbers."}
           </span>
-          <input
-            type="text"
-            inputMode="decimal"
-            aria-label="Spine width in inches"
-            value={size.spine}
-            disabled={busy}
-            onChange={(event) => setCoverField(preset.id, "spine", event.target.value)}
-            onPaste={pasteInto("spine")}
-            aria-invalid={flagged("spine") || undefined}
-            aria-describedby={flagged("spine") ? "cookbook-cover-size-error" : undefined}
-          />
-          <span className="cookbook-cover-size__unit">in</span>
-        </span>
-        {coverProblem && (
-          <span className="cookbook-cover-size__error" role="alert" id="cookbook-cover-size-error">
-            {coverProblem}
+          {/* Sheet first, spine last: that is the order a print service states
+              them in, and reading them back off their page in a different
+              order is how a number lands in the wrong box. */}
+          <span className="cookbook-cover-size__fields">
+            <input
+              type="text"
+              inputMode="decimal"
+              aria-label="Cover width in inches"
+              value={size.w}
+              disabled={busy}
+              onChange={(event) => setCoverField(preset.id, "w", event.target.value)}
+              onPaste={pasteInto("w")}
+              aria-invalid={flagged("w") || undefined}
+              aria-describedby={flagged("w") ? "cookbook-cover-size-error" : undefined}
+            />
+            <span aria-hidden>×</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              aria-label="Cover height in inches"
+              value={size.h}
+              disabled={busy}
+              onChange={(event) => setCoverField(preset.id, "h", event.target.value)}
+              onPaste={pasteInto("h")}
+              aria-invalid={flagged("h") || undefined}
+              aria-describedby={flagged("h") ? "cookbook-cover-size-error" : undefined}
+            />
+            <span className="cookbook-cover-size__unit" aria-hidden>
+              in, spine
+            </span>
+            <input
+              type="text"
+              inputMode="decimal"
+              aria-label="Spine width in inches"
+              value={size.spine}
+              disabled={busy}
+              onChange={(event) => setCoverField(preset.id, "spine", event.target.value)}
+              onPaste={pasteInto("spine")}
+              aria-invalid={flagged("spine") || undefined}
+              aria-describedby={flagged("spine") ? "cookbook-cover-size-error" : undefined}
+            />
+            <span className="cookbook-cover-size__unit">in</span>
           </span>
-        )}
-      </div>
+          {coverProblem && (
+            <span className="cookbook-cover-size__error" role="alert" id="cookbook-cover-size-error">
+              {coverProblem}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="cookbook-next__actions">
         <button
@@ -839,6 +857,7 @@ function AwaitingCover({
           className="btn btn-primary btn-compact"
           disabled={busy}
           onClick={() => {
+            if (fixedSize) return onDownloadCover?.(undefined);
             setTriedCover(true);
             if (statedSheet) onDownloadCover?.(statedSheet);
           }}

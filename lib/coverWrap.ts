@@ -243,6 +243,36 @@ export function wrapSpecFor(preset: CookbookPreset): CoverWrapSpec {
 }
 
 /**
+ * Whether this format's cover is one known size, whatever the book holds.
+ *
+ * True for a spine a printer quotes outright (Lulu's coil: "Spine Width:
+ * 0in"), so the whole sheet follows from the trim and bleed and there is
+ * nothing to copy off the printer's page. A spine that grows with the page
+ * count is only known once the printer has seen the interior, so those
+ * covers still ask for the printer's numbers.
+ */
+export function coverSizeIsFixed(preset: CookbookPreset): boolean {
+  return wrapSpecFor(preset).fixedSpineIn !== undefined;
+}
+
+/**
+ * What happens about the cover once the interior has downloaded.
+ *
+ * `none` — no separate cover: the format has none, or the covers are in the
+ * one file. `download` — a cover of one known size (`coverSizeIsFixed`),
+ * made and downloaded straight after the interior with nothing to ask.
+ * `ask-size` — the spine depends on the book, so the cook copies the
+ * printer's numbers first.
+ */
+export function coverStepAfterInterior(
+  preset: CookbookPreset,
+  coversInline?: boolean,
+): "none" | "download" | "ask-size" {
+  if (!preset.wrapRequired || coversInline) return "none";
+  return coverSizeIsFixed(preset) ? "download" : "ask-size";
+}
+
+/**
  * Spine width for a finished book, in inches.
  *
  * `pageCount` is PAGES (sides), matching how both the printer's order form and

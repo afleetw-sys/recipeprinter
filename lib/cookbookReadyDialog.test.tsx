@@ -3,6 +3,8 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CookbookReadyDialog } from "@/components/CookbookReadyDialog";
 import type { PreparedCookbookPages } from "@/lib/cookbookPdfExport";
+import { COOKBOOK_PRESETS } from "@/lib/cookbookPresets";
+import { wrapSpecFor } from "@/lib/coverWrap";
 import {
   PHOTOS_HELP,
   PRINT_DESTINATIONS,
@@ -69,16 +71,19 @@ function renderFinishedDialog() {
   );
 }
 
-function fakePages(): PreparedCookbookPages {
+function fakePages(preset: PreparedCookbookPages["preset"] = "hardcover-8x10"): PreparedCookbookPages {
   return {
     project: { id: "book-1", sections: [] } as unknown as PreparedCookbookPages["project"],
-    preset: "hardcover-8x10",
+    preset,
     file: { name: "Family-Hardcover-8x10.pdf", downloadUrl: "https://storage.example/pages.pdf", role: "pages" },
     pageCount: 148,
   };
 }
 
-function renderAwaitingCoverDialog(onDownloadCover = () => {}) {
+function renderAwaitingCoverDialog(
+  onDownloadCover: (sheet?: unknown) => void = () => {},
+  preset: PreparedCookbookPages["preset"] = "hardcover-8x10",
+) {
   return render(
     <CookbookReadyDialog
       open
@@ -88,7 +93,7 @@ function renderAwaitingCoverDialog(onDownloadCover = () => {}) {
       onPrinterClick={() => {}}
       exportingPreset={null}
       exportError={null}
-      awaitingCover={fakePages()}
+      awaitingCover={fakePages(preset)}
       onDownloadCover={onDownloadCover}
       onExportAnother={() => {}}
     />,
@@ -188,6 +193,26 @@ describe("the cookbook print dialog", () => {
       heightIn: 12.75,
       spineWidthIn: 0.938,
     });
+  });
+
+  // A spiral book's cover is one fixed size with no spine (Lulu: "Spine Width:
+  // 0in"), yet it was asked for width, height and spine, and the spine box
+  // refused the 0 Lulu gives, so the cover could not be downloaded at all.
+  // Only a cover whose spine depends on the book asks the printer's numbers.
+  it("asks for a cover size only when the spine depends on the book", () => {
+    for (const preset of COOKBOOK_PRESETS.filter((candidate) => candidate.wrapRequired)) {
+      const download = vi.fn();
+      renderAwaitingCoverDialog(download, preset.id);
+      const fixed = wrapSpecFor(preset).fixedSpineIn !== undefined;
+      expect(Boolean(screen.queryByLabelText("Spine width in inches")), preset.id).toBe(!fixed);
+      fireEvent.click(screen.getByRole("button", { name: "Download cover" }));
+      if (fixed) {
+        expect(download, preset.id).toHaveBeenCalledWith(undefined);
+      } else {
+        expect(download, preset.id).not.toHaveBeenCalled();
+      }
+      cleanup();
+    }
   });
 
   it("offers every place as an optional shortcut, with no price", () => {
