@@ -1791,6 +1791,17 @@
        constant to maintain. */
     height: 100%;
   }
+  /* The page toolbar lives in that top inset: where a page fills the deck's
+     height it is pinned there, inside the strip `scroll-padding-top` keeps
+     clear. A browser focusing one of its buttons (every click does) then
+     "scrolled it into view" out of that strip, ran the deck to the first
+     page, and the toolbar was rebuilt for that page, closing the dialog the
+     press had just opened. Pulling the toolbar's scroll box down by the same
+     inset tells the browser it is already in view. */
+  .recipe-page-canvas__controls,
+  .recipe-page-canvas__controls * {
+    scroll-margin-top: -72px;
+  }
 }
 
 .recipe-page-deck::-webkit-scrollbar {
