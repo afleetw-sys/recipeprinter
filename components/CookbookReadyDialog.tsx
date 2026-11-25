@@ -277,14 +277,22 @@ function ExportProgress({
   progress: CookbookPdfProgress;
 }) {
   const preset = getCookbookPreset(presetId);
-  // A cover renders on its own now, as its own later click once the cook has
-  // a real spine width from the printer — never in the same request as the
-  // interior — so this component only ever sees "rendering-cover" when it is
-  // literally the only thing being rendered.
+  // A cover renders on its own, after the interior has downloaded: a
+  // hardcover's once the cook has the printer's spine width, a spiral book's
+  // straight away (`coverStepAfterInterior`). Never in the same request as
+  // the interior, so "rendering-cover" means the interior is already done.
   if (progress === "rendering-cover") {
     return (
       <section className="cookbook-export-progress">
         <ol className="cookbook-export-progress__steps" aria-label="Cover export progress" aria-live="polite">
+          <li className="is-done">
+            <span className="cookbook-export-progress__mark" aria-hidden>
+              <CheckIcon size={ICON_SIZE.sm} />
+            </span>
+            <span className="cookbook-export-progress__copy">
+              <strong>Interior pages PDF downloaded</strong>
+            </span>
+          </li>
           <li className="is-current" aria-current="step">
             <span className="cookbook-export-progress__mark" aria-hidden>
               <SpinnerIcon size={ICON_SIZE.sm} />
@@ -292,7 +300,9 @@ function ExportProgress({
             <span className="cookbook-export-progress__copy">
               <strong>Creating the cover PDF</strong>
               <span className="cookbook-export-progress__activity" role="status">
-                Sizing the cover and spine to the finished book.
+                {coverSizeIsFixed(preset)
+                  ? "Downloading your cover next."
+                  : "Sizing the cover and spine to the finished book."}
               </span>
             </span>
           </li>

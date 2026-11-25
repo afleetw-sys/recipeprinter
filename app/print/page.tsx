@@ -186,6 +186,7 @@ import {
   getCookbookPreset,
   presetCardDims,
 } from "@/lib/cookbookPresets";
+import { coverStepAfterInterior } from "@/lib/coverWrap";
 import { track } from "@/lib/analytics";
 import { reportCookbookCreated } from "@/lib/adTags";
 import {
@@ -4326,8 +4327,9 @@ export default function PrintPage() {
       // A real, cook-initiated download the instant the interior is ready —
       // not bundled with a cover that doesn't exist yet. Lulu (and every other
       // printer) only states the real spine width after seeing this file, so
-      // for a wrap-required preset the cover has to wait for that number
-      // rather than being rendered from our own estimate right now.
+      // a hardcover's cover waits for that number rather than being rendered
+      // from our own estimate right now. A spiral book's cover has no spine
+      // and follows straight after (`coverStepAfterInterior`).
       downloadPreparedFile(pages.file);
       setLastCookbookExport({ presetId, files: [pages.file] });
       track("cookbook_export_ready", {
@@ -4337,9 +4339,12 @@ export default function PrintPage() {
         ...(cookbookProjectId ? { cookbookId: cookbookProjectId } : {}),
       });
       track("cookbook_export_download_started", { preset: presetId, role: "pages" });
-      if (getCookbookPreset(presetId).wrapRequired && !pages.coversInline) {
-        setCookbookCoverPending(pages);
-      }
+      const coverStep = coverStepAfterInterior(getCookbookPreset(presetId), pages.coversInline);
+      if (coverStep !== "none") setCookbookCoverPending(pages);
+      // A spiral book's cover is one size, so it follows the interior with
+      // nothing to ask. Left pending until it lands, so a failure still offers
+      // the cover's own Download button to try again.
+      if (coverStep === "download") await renderCookbookCover(pages);
     } catch (error) {
       track("cookbook_export_failed", { preset: presetId, role: "pages", ...cookbookExportFailure(error) });
       setCookbookExportError(
@@ -4361,6 +4366,10 @@ export default function PrintPage() {
   async function downloadCookbookCover(coverSheet?: CoverSheetSpec) {
     const pages = cookbookCoverPending;
     if (!pages) return;
+    await renderCookbookCover(pages, coverSheet);
+  }
+
+  async function renderCookbookCover(pages: PreparedCookbookPages, coverSheet?: CoverSheetSpec) {
     const presetId = pages.preset;
     setCookbookExportError(null);
     setExportingPreset(presetId);
