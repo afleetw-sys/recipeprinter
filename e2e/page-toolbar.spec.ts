@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./guarded";
-import { startAddingRecipes } from "./workspace";
+import { deckSettled, startAddingRecipes } from "./workspace";
 
 /**
  * The bar over a deck page is one row at every width. Where its controls do
@@ -298,4 +298,68 @@ test("a phone's page name stands clear of the bar's edge, on every kind of page"
     expect(inset.gap, inset.label).toBeGreaterThanOrEqual(14);
   }
   expect(seen.size).toBeGreaterThan(1);
+});
+
+/**
+ * Pressing a button on the bar leaves the deck on the page it belongs to.
+ *
+ * Where the page fills the deck's height, the bar is pinned in the strip the
+ * deck keeps clear above the page, and the browser took focusing one of its
+ * buttons as a reason to scroll it into view: the deck ran back to the first
+ * page, the bar was rebuilt for that page, and the Photo dialog the press had
+ * opened closed with it (seen when the Black Friday banner took 52px off the
+ * window, 2026-11-24). Checked at window sizes on both sides of that line.
+ * Safari doesn't focus a button it clicks, so there the button is focused
+ * the way Tab does it; and Playwright's own scroll before a WebKit click
+ * moves the deck by itself, which no cook's click does.
+ * The book is opened from session storage, so nothing is imported.
+ */
+test("pressing a page's toolbar keeps the deck on that page, at any window height", async ({ page, isMobile, browserName }) => {
+  test.skip(isMobile, "the desktop deck's pinned toolbar");
+  const recipe = (id: string, title: string) => ({
+    id,
+    method: "manual",
+    source: "test",
+    status: "ready",
+    title,
+    addedAt: 0,
+    recipe: { title, ingredients: [{ raw: "1 cup flour" }], instructions: [{ step: 1, text: "Mix and bake." }] },
+  });
+  const items = [recipe("r1", "Pancakes"), recipe("r2", "Waffles"), recipe("r3", "Toast")];
+  for (const size of [
+    { width: 1600, height: 900 },
+    { width: 1600, height: 800 },
+    { width: 1280, height: 720 },
+  ]) {
+    const at = `${size.width}x${size.height}`;
+    await page.setViewportSize(size);
+    await page.goto("/robots.txt");
+    await page.evaluate((seed) => {
+      sessionStorage.clear();
+      sessionStorage.setItem("recipeprinter:queue:v1", JSON.stringify(seed));
+      sessionStorage.setItem(
+        "recipeprinter:print-job:current:v1",
+        JSON.stringify({ ids: seed.map((item: { id: string }) => item.id) }),
+      );
+      sessionStorage.setItem(
+        "recipeprinter:project-meta:v1",
+        JSON.stringify({ cookbookMode: true, ownPhotosOnly: true, photoStyle: "none", sections: [] }),
+      );
+    }, items);
+    await page.goto("/print");
+    await page.getByRole("navigation", { name: "Pages" }).getByRole("button", { name: /^\d+ Waffles$/ }).click();
+    await deckSettled(page);
+    const deck = page.locator("#recipe-page-deck");
+    const before = await deck.evaluate((el) => el.scrollTop);
+    const photo = page.locator(".recipe-page-toolbar__photo").filter({ visible: true });
+    if (browserName === "webkit") {
+      await photo.focus();
+      await page.waitForTimeout(500);
+    } else {
+      await photo.click();
+      await page.waitForTimeout(500);
+      await expect(page.getByRole("dialog", { name: "Recipe photo" }), at).toBeVisible();
+    }
+    expect(await deck.evaluate((el) => el.scrollTop), at).toBe(before);
+  }
 });
