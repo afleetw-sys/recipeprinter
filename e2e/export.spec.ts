@@ -325,3 +325,55 @@ test("every photo on the book's pages has loaded by the time it says ready", asy
   );
   expect(unloaded).toEqual([]);
 });
+
+/**
+ * The cover a print service prints is the cover the book shows.
+ *
+ * The cover wrap (back | spine | front on one sheet, the file Lulu prints)
+ * drew its panels without the page context the book's own cover page has, so
+ * every theme fell back to default sizes: the title came out about a third of
+ * its size and the theme's art about three times bigger, running into the
+ * title (found 2026-11-24 comparing every theme's wrap with its cover page).
+ * For every theme and every format with a wrap, the wrap's front panel sets
+ * its title at the book's size and its art at the book's size, measured
+ * against the panel.
+ */
+test("a cover wrap's front panel draws the cover the book prints, in every theme and format", async ({ page }) => {
+  const off: string[] = [];
+  const measure = (selector: string) =>
+    page.$eval(selector, (cover) => {
+      const box = cover.getBoundingClientRect();
+      const title = cover.querySelector(".recipe-card__cover-title");
+      return {
+        title: title ? parseFloat(getComputedStyle(title).fontSize) : 0,
+        art: Array.from(cover.querySelectorAll<HTMLImageElement>("img[aria-hidden]"))
+          .map((art) => art.getBoundingClientRect().width / box.width)
+          .filter((share) => share > 0),
+      };
+    });
+  for (const { id: template } of RECIPE_PRINT_TEMPLATE_OPTIONS) {
+    for (const preset of ["coil-us-letter", "hardcover-us-letter"] as const) {
+      const book = structuredClone(fixture) as Payload & Record<string, unknown>;
+      book.project.settings.template = template;
+      book.project.cover = { title: "Grandma's Kitchen", subtitle: "Recipes worth keeping", author: "The Family" } as typeof book.project.cover;
+      await openExport(page, { ...book, preset, coversInline: true } as Payload);
+      const printed = await measure(".recipe-card--cover-front");
+      await openExport(page, { ...book, preset, mode: "cover-wrap", pageCount: 120 } as Payload);
+      const wrapped = await measure(".cookbook-wrap .recipe-card--cover-front");
+      const at = `${template} ${preset}`;
+      if (Math.abs(wrapped.title - printed.title) > printed.title * 0.03) {
+        off.push(`${at}: title ${wrapped.title.toFixed(1)}px, book ${printed.title.toFixed(1)}px`);
+      }
+      if (wrapped.art.length !== printed.art.length) {
+        off.push(`${at}: ${wrapped.art.length} pieces of art, book ${printed.art.length}`);
+      } else {
+        wrapped.art.forEach((share, index) => {
+          if (Math.abs(share - printed.art[index]) > 0.03) {
+            off.push(`${at}: art ${index} ${(share * 100).toFixed(0)}% of the cover wide, book ${(printed.art[index] * 100).toFixed(0)}%`);
+          }
+        });
+      }
+    }
+  }
+  expect(off).toEqual([]);
+});
