@@ -6,11 +6,12 @@ import { usePrintSheets } from "@/lib/usePrintSheets";
 import { bookRecipeImage } from "@/lib/bookPhotos";
 import {
   getCookbookPreset,
+  presetCardVars,
   presetSheetInches,
 } from "@/lib/cookbookPresets";
 import { openingPageFor } from "@/lib/frontMatterPage";
 import { isPrintCardSize, isRecipePrintTemplate } from "@/lib/printSettings";
-import { normalizeFontScale } from "@/lib/fontScale";
+import { fontScaleVars, normalizeFontScale } from "@/lib/fontScale";
 import { normalizePageLooks } from "@/lib/pageLooks";
 import { normalizePhotoScale } from "@/lib/photoScale";
 import { accentRootProps } from "@/lib/themeAccent";
@@ -334,6 +335,17 @@ function CoverWrapDocument({ payload }: { payload: ExportPayload }) {
     "--rp-sheet-w": geometry.sheetWidthIn,
     "--rp-sheet-h": geometry.sheetHeightIn,
   } as CSSProperties;
+  /**
+   * The page context every other cover is drawn in (ScaledPage): the book's
+   * card size and text size, under `recipe-print-preview--letter` and the
+   * book classes below. Without them the panels fell back to defaults, so the
+   * cover Lulu printed had its title at a third of its size and its art about
+   * three times bigger than the cover the book shows.
+   */
+  const bookPageVars = {
+    ...presetCardVars(preset),
+    ...fontScaleVars(normalizeFontScale(project.settings.fontScale)),
+  } as CSSProperties;
 
   // No cover means no wrap to draw. Guarded after the hook so the hook order is
   // stable, and before `backCover` so its fallback has a defined cover to use.
@@ -344,10 +356,10 @@ function CoverWrapDocument({ payload }: { payload: ExportPayload }) {
     // The front panel places its photo as the book does (lib/bookTheme.tsx).
     <QuietThemeProvider quiet={Boolean(project.settings.quietTheme)}>
     <div
-      className={`recipe-page-deck rp-exporting rp-page-cover-wrap ${accentRoot.className}${
+      className={`recipe-page-deck rp-exporting rp-page-cover-wrap recipe-print-preview recipe-print-preview--letter recipe-print-preview--book-preset recipe-print-preview--book-art ${accentRoot.className}${
         look.background ? "" : " recipe-background-off"
       }`}
-      style={{ ...wrapStyle, ...accentRoot.style }}
+      style={{ ...bookPageVars, ...wrapStyle, ...accentRoot.style }}
       data-export-root="true"
     >
       {/* The wrap's sheet size depends on the book's page count, so it cannot
