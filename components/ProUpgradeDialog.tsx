@@ -410,7 +410,7 @@ export function ProUpgradeDialog({
           <h2 id="pro-upgrade-title" className="pr-8 text-cp-dialog-title font-extrabold tracking-tight">
             {saleTitle ? (
               <>
-                Enjoy <span className="text-[var(--cp-accent-warm)]">50% off</span> your first{" "}
+                Get <span className="text-[var(--cp-accent-warm)]">50% off</span> your first{" "}
                 {BLACK_FRIDAY_PRO_MONTHLY_MONTHS} months of RecipePrinter Pro
               </>
             ) : (
@@ -466,8 +466,10 @@ export function ProUpgradeDialog({
                         <span className="sr-only">now </span>
                       </>
                     )}
-                    {cycle === "annual" ? annualPerMonth : saleLive ? saleMonthlyAmount : monthlyAmount}
-                    <span className="pro-plan-option__per"> / month</span>
+                    <span className="pro-plan-option__now">
+                      {cycle === "annual" ? annualPerMonth : saleLive ? saleMonthlyAmount : monthlyAmount}{" "}
+                      <span className="pro-plan-option__per">/ month</span>
+                    </span>
                   </span>
                   {/* Annual says what it charges once a year; Monthly's
                       "/ month" already says it all (Amelia, 2026-11-17). */}
