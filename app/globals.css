@@ -1942,14 +1942,30 @@
     font-size: var(--cp-fs-small);
     font-weight: 600;
   }
+  /* The sale's struck price and "$2.49 / month" each stay whole, but the
+     struck one wraps above when they don't fit: on a phone "US$4.99 $2.49 /
+     month" is wider than half the dialog and ran out of the Monthly card.
+     Sitting at the foot of the shared row keeps both cards' prices level
+     when only Monthly wraps. */
   .pro-plan-option__price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    align-self: end;
+    column-gap: 0.25em;
     margin-top: 2px;
     font-size: var(--cp-fs-dialog-title);
     font-weight: 800;
     line-height: 1.2;
     white-space: nowrap;
   }
+  /* "/ month" drops below the price only when even "US$3.33 / month"
+     won't fit (a 320px phone in a US$ currency). */
+  .pro-plan-option__now {
+    white-space: normal;
+  }
   .pro-plan-option__per {
+    white-space: nowrap;
     color: var(--cp-ink-soft);
     font-size: var(--cp-fs-label);
     font-weight: 600;

@@ -466,8 +466,10 @@ export function ProUpgradeDialog({
                         <span className="sr-only">now </span>
                       </>
                     )}
-                    {cycle === "annual" ? annualPerMonth : saleLive ? saleMonthlyAmount : monthlyAmount}
-                    <span className="pro-plan-option__per"> / month</span>
+                    <span className="pro-plan-option__now">
+                      {cycle === "annual" ? annualPerMonth : saleLive ? saleMonthlyAmount : monthlyAmount}{" "}
+                      <span className="pro-plan-option__per">/ month</span>
+                    </span>
                   </span>
                   {/* Annual says what it charges once a year; Monthly's
                       "/ month" already says it all (Amelia, 2026-11-17). */}
